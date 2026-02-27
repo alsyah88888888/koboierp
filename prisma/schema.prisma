@@ -1,0 +1,258 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// --- AUTH MODULE ---
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  role          String    @default("USER") // ADMIN, FINANCE, PURCHASE, WAREHOUSE
+  password      String?
+  accounts      Account[]
+  sessions      Session[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// --- FINANCE MODULE ---
+model FinanceAccount {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  name      String
+  type      String   // ASSET, LIABILITY, EQUITY, INCOME, EXPENSE
+  journals  JournalEntry[]
+}
+
+model JournalEntry {
+  id          String   @id @default(cuid())
+  date        DateTime @default(now())
+  description String
+  amount      Decimal
+  type        String   // DEBIT, CREDIT
+  accountId   String
+  account     FinanceAccount  @relation(fields: [accountId], references: [id])
+  transactionId String?
+  transaction   FinanceTransaction? @relation(fields: [transactionId], references: [id])
+}
+
+model FinanceTransaction {
+  id              String   @id @default(cuid())
+  transactionType String   // PAYMENT, RECEIPT
+  bank            String   // Bank Name / Method
+  date            DateTime // Payment Date
+  referenceNumber String?  // No Bukti Transfer
+  description     String
+  amount          Decimal
+  category        String?  // Category for tracking
+  journals        JournalEntry[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// --- PARTNER MODULE (Suppliers & Buyers) ---
+model Vendor {
+  id        String   @id @default(cuid())
+  name      String
+  email     String?
+  phone     String?
+  address   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  purchaseOrders PurchaseOrder[]
+}
+
+model Customer {
+  id        String   @id @default(cuid())
+  name      String
+  email     String?
+  phone     String?
+  address   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// --- PURCHASE MODULE ---
+model PurchaseOrder {
+  id          String   @id @default(cuid())
+  number      String   @unique
+  date        DateTime @default(now())
+  vendorId    String
+  vendor      Vendor   @relation(fields: [vendorId], references: [id])
+  items       PurchaseOrderItem[]
+  status      String   @default("PENDING") // PENDING, RECEIVED, CANCELLED
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model PurchaseOrderItem {
+  id              String        @id @default(cuid())
+  purchaseOrderId String
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
+  productId       String
+  product         Product       @relation(fields: [productId], references: [id])
+  quantity        Int
+  price           Decimal
+}
+
+model GoodsReceipt {
+  id                String   @id @default(cuid())
+  receiptNumber     String   @unique
+  receivedFrom      String
+  formNumber        String   @unique
+  date              DateTime?
+  taxInvoiceDate    DateTime?
+  taxInvoiceNumber  String?
+  salesPerson       String?  // BC or PF
+  warehouseId       String
+  warehouse         Warehouse @relation(fields: [warehouseId], references: [id])
+  items             GoodsReceiptItem[]
+  verifications     GoodsReceiptVerification[]
+  isVerified        Boolean  @default(false)
+  verifiedAt        DateTime?
+  verifiedBy        String?
+  createdAt         DateTime @default(now())
+}
+
+model GoodsReceiptItem {
+  id              String       @id @default(cuid())
+  receiptId       String
+  receipt         GoodsReceipt @relation(fields: [receiptId], references: [id])
+  productId       String
+  product         Product      @relation(fields: [productId], references: [id])
+  quantity        Int
+  purchasePrice   Decimal      @default(0)
+  uom             String?
+}
+
+model GoodsReceiptVerification {
+  id               String       @id @default(cuid())
+  receiptId        String
+  receipt          GoodsReceipt @relation(fields: [receiptId], references: [id])
+  productId        String
+  product          Product      @relation(fields: [productId], references: [id])
+  expectedQuantity Int
+  actualQuantity   Int
+  expectedPrice    Decimal
+  actualPrice      Decimal
+  notes            String?
+  createdAt        DateTime     @default(now())
+  verifiedBy       String
+}
+
+// --- SALES MODULE (Simplified: Sales Delivery) ---
+model SalesDelivery {
+  id             String   @id @default(cuid())
+  deliveryNumber String   @unique // No. Pengiriman (SJ-YYYYMMDD-XXX)
+  recipient      String   // Kirim Ke
+  buyerName      String   // Pengiriman ke Buyer
+  date           DateTime @default(now())
+  items          SalesDeliveryItem[]
+  warehouseId    String
+  warehouse      Warehouse @relation(fields: [warehouseId], references: [id])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model SalesDeliveryItem {
+  id             String        @id @default(cuid())
+  deliveryId     String
+  delivery       SalesDelivery @relation(fields: [deliveryId], references: [id])
+  productId      String
+  product        Product       @relation(fields: [productId], references: [id])
+  quantity       Int
+  salesPrice     Decimal?      // Added for financial tracking
+  uom            String?       // Unit of Measure
+}
+
+// --- WAREHOUSE MODULE ---
+model Warehouse {
+  id       String   @id @default(cuid())
+  name     String
+  location String
+  stocks   Stock[]
+  receipts GoodsReceipt[]
+  deliveries SalesDelivery[]
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  sku         String   @unique
+  name        String
+  brand       String?
+  category    String?
+  barcode     String?
+  uom         String?   // Unit of Measure
+  lowStockThreshold Int @default(10)
+  stocks      Stock[]
+  receiptItems GoodsReceiptItem[]
+  verifications GoodsReceiptVerification[]
+  salesItems   SalesDeliveryItem[]
+  purchaseOrderItems PurchaseOrderItem[]
+}
+
+model Stock {
+  id          String   @id @default(cuid())
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id])
+  warehouseId String
+  warehouse   Warehouse @relation(fields: [warehouseId], references: [id])
+  quantity    Int
+  @@unique([productId, warehouseId])
+}
+
+model StockMovement {
+  id          String   @id @default(cuid())
+  productId   String
+  warehouseId String
+  quantity    Int      // Positive for in, negative for out
+  type        String   // GOODS_RECEIPT, SALE, ADJUSTMENT
+  reference   String?  // Receipt Number or Transaction ID
+  createdAt   DateTime @default(now())
+}
+
+model SystemSetting {
+  id        String   @id @default("global")
+  companyName String @default("PT. Kola Borasi Indonesia")
+  address     String @default("Jl. Industri No. 12, Jakarta Pusat, DKI Jakarta")
+  taxId       String @default("01.234.567.8-012.000")
+  website     String @default("www.kolaborasi.id")
+  updatedAt   DateTime @updatedAt
+}

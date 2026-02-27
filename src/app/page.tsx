@@ -1,65 +1,99 @@
-import Image from "next/image";
+import prisma from "@/lib/prisma";
+import { formatCurrency } from "@/lib/utils";
+import { AdminDashboard } from "./AdminDashboard";
+import {
+  Wallet,
+  ShoppingCart,
+  ShoppingBag,
+  Package
+} from "lucide-react";
 
-export default function Home() {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
-  );
+export default async function DashboardPage() {
+  // 1. Fetch Basic Totals
+  const accounts = await prisma.financeAccount.findMany({ include: { journals: true } }).catch(() => []);
+  const receipts = await prisma.goodsReceipt.findMany({ include: { items: true } }).catch(() => []);
+  const sales = await prisma.salesDelivery.findMany({ include: { items: true } }).catch(() => []);
+  const products = await prisma.product.findMany({ include: { stocks: true } }).catch(() => []);
+
+  // 2. Calculate KPI Stats
+  const totalBalance = accounts.reduce((sum: number, acc: any) => {
+    const accBalance = (acc.journals as any[]).reduce((b: number, j: any) => {
+      if (j.type === "DEBIT") return b + Number(j.amount);
+      return b - Number(j.amount);
+    }, 0);
+    return sum + (acc.type === 'ASSET' ? accBalance : 0);
+  }, 0);
+
+  const totalRevenue = sales.reduce((sum: number, s: any) => sum + s.items.reduce((iSum: number, item: any) => iSum + (Number(item.salesPrice || 0) * item.quantity), 0), 0);
+  const totalPurchases = receipts.reduce((sum: number, r: any) => sum + r.items.reduce((iSum: number, item: any) => iSum + (Number(item.purchasePrice || 0) * item.quantity), 0), 0);
+  const totalStockQty = products.reduce((sum: number, p: any) => sum + p.stocks.reduce((sSum: number, s: any) => sSum + s.quantity, 0), 0);
+
+  const stats = [
+    {
+      name: "Total Revenue",
+      value: formatCurrency(totalRevenue),
+      change: "+12.5%", trend: 'up',
+      iconName: "ShoppingBag", iconBg: "bg-blue-50", iconColor: "text-blue-500"
+    },
+    {
+      name: "Asset Value",
+      value: formatCurrency(totalBalance),
+      change: "+3.2%", trend: 'up',
+      iconName: "Wallet", iconBg: "bg-emerald-50", iconColor: "text-emerald-500"
+    },
+    {
+      name: "Purchase Vol.",
+      value: formatCurrency(totalPurchases),
+      change: "-2.1%", trend: 'down',
+      iconName: "ShoppingCart", iconBg: "bg-amber-50", iconColor: "text-amber-500"
+    },
+    {
+      name: "Current Stock",
+      value: totalStockQty.toLocaleString(),
+      change: "+5.1%", trend: 'up',
+      iconName: "Package", iconBg: "bg-slate-50", iconColor: "text-slate-500"
+    },
+  ];
+
+  // 3. Prepare Chart Data (Mocking last 7 days distribution)
+  const salesData = [
+    { name: 'Mon', sales: 4000, purchases: 2400 },
+    { name: 'Tue', sales: 3000, purchases: 1398 },
+    { name: 'Wed', sales: 2000, purchases: 9800 },
+    { name: 'Thu', sales: 2780, purchases: 3908 },
+    { name: 'Fri', sales: 1890, purchases: 4800 },
+    { name: 'Sat', sales: 2390, purchases: 3800 },
+    { name: 'Sun', sales: 3490, purchases: 4300 },
+  ];
+
+  // 4. Group Inventory by Category
+  const categoryMap: any = {};
+  products.forEach((p: any) => {
+    const cat = p.category || "Uncategorized";
+    const qty = p.stocks.reduce((s: number, st: any) => s + st.quantity, 0);
+    categoryMap[cat] = (categoryMap[cat] || 0) + qty;
+  });
+
+  const inventoryData = Object.entries(categoryMap).map(([name, value]) => ({ name, value })).slice(0, 5);
+
+  // 5. Fetch Recent Activity
+  const recentJournal = await prisma.journalEntry.findMany({
+    take: 5,
+    orderBy: { date: 'desc' }
+  });
+
+  const recentActivity = recentJournal.map((j: any) => ({
+    type: j.type === 'CREDIT' ? 'SALE' : 'PURCHASE',
+    description: j.description,
+    amount: Number(j.amount),
+    date: new Date(j.date).toLocaleDateString('id-ID'),
+    reference: "GL-" + j.id.slice(-4).toUpperCase()
+  }));
+
+  return <AdminDashboard
+    stats={stats}
+    salesData={salesData}
+    inventoryData={inventoryData}
+    recentActivity={recentActivity}
+  />;
 }
