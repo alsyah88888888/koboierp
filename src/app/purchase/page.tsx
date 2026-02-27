@@ -9,13 +9,17 @@ export default async function PurchasePage() {
     }).catch(() => []);
 
     const warehouses = await prisma.warehouse.findMany().catch(() => []);
+    const vendors = (await prisma.vendor.findMany({ orderBy: { name: 'asc' } }).catch(() => [])).map((v: any) => ({
+        ...v,
+        balance: Number(v.balance)
+    }));
 
     const receipts = await prisma.goodsReceipt.findMany({
         include: { warehouse: true, items: true },
         orderBy: { createdAt: 'desc' }
     }).catch(() => []);
 
-    // Serialize Decimal objects for Client Component
+    // ... (rest of serialization)
     const serializedReceipts = receipts.map((r: any) => ({
         ...r,
         items: r.items.map((i: any) => ({
@@ -24,5 +28,5 @@ export default async function PurchasePage() {
         }))
     }));
 
-    return <PurchaseDashboard initialReceipts={serializedReceipts} products={products} warehouses={warehouses} />;
+    return <PurchaseDashboard initialReceipts={serializedReceipts} products={products} warehouses={warehouses} vendors={vendors} />;
 }

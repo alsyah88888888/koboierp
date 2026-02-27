@@ -16,7 +16,7 @@ export function DocumentLayout({ title, docNumber, date, children, headerInfo, i
     const router = useRouter();
 
     return (
-        <div className="min-h-screen bg-slate-100 p-4 md:p-8 flex flex-col items-center">
+        <div className="min-h-screen bg-slate-100 p-4 md:p-8 flex flex-col items-center print:bg-white print:p-0 print:block">
             {/* Toolbar - No Print */}
             <div className={`w-full ${isA5 ? 'max-w-[210mm]' : 'max-w-[210mm]'} bg-white border-2 border-slate-200 rounded-2xl p-4 mb-6 flex justify-between items-center shadow-sm no-print`}>
                 <button
@@ -65,7 +65,7 @@ export function DocumentLayout({ title, docNumber, date, children, headerInfo, i
                 </div>
 
                 {/* Sub-Header / Billing Info */}
-                <div className={`${isA5 ? 'mb-6' : 'mb-10'} no-print`}>
+                <div className={`${isA5 ? 'mb-6' : 'mb-10'}`}>
                     {headerInfo}
                 </div>
 

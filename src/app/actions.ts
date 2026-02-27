@@ -16,11 +16,15 @@ export async function createGoodsReceiptAction(data: {
     salesPerson?: string;
     items: { productId: string; quantity: number; purchasePrice: number; uom?: string }[];
 }) {
-    // Generate automatic Form Number (Form-YYYYMMDD-Random)
+    // Generate automatic Form Number (Form-YYYYMMDD-HHmmss-Random)
     const txDate = data.date || new Date();
+    const now = new Date();
     const dateStr = txDate.toISOString().split('T')[0].replace(/-/g, '');
+    const timeStr = now.getHours().toString().padStart(2, '0') +
+        now.getMinutes().toString().padStart(2, '0') +
+        now.getSeconds().toString().padStart(2, '0');
     const randomSuffix = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-    const formNumber = `FORM-${dateStr}-${randomSuffix}`;
+    const formNumber = `FORM-${dateStr}-${timeStr}-${randomSuffix}`;
 
     try {
         return await prisma.$transaction(async (tx: any) => {
@@ -45,22 +49,80 @@ export async function createGoodsReceiptAction(data: {
                 }
             });
 
-            // After creation, manually set isVerified to 0 (false) via raw SQL since client might be out of sync
-            await tx.$executeRaw`UPDATE GoodsReceipt SET isVerified = 0 WHERE id = ${receipt.id}`;
+            // --- AUTOMATIC STOCK UPDATE ON CREATE ---
+            for (const item of data.items) {
+                await tx.stock.upsert({
+                    where: {
+                        productId_warehouseId: {
+                            productId: item.productId,
+                            warehouseId: data.warehouseId
+                        }
+                    },
+                    update: { quantity: { increment: item.quantity } },
+                    create: {
+                        productId: item.productId,
+                        warehouseId: data.warehouseId,
+                        quantity: item.quantity
+                    }
+                });
 
-            return receipt;
+                await tx.stockMovement.create({
+                    data: {
+                        productId: item.productId,
+                        warehouseId: data.warehouseId,
+                        quantity: item.quantity,
+                        type: "GOODS_RECEIPT",
+                        reference: data.receiptNumber
+                    }
+                });
+            }
 
-            // NOTE: Stock and Journal Entries are now handled in the verifyGoodsReceiptAction
+            // --- ACCRUAL JOURNAL ON CREATE (Inventory vs Accounts Payable) ---
+            const totalValue = data.items.reduce((sum, item) => sum + (item.quantity * Number(item.purchasePrice)), 0);
+            if (totalValue > 0) {
+                const invAccount = await tx.financeAccount.findUnique({ where: { code: '104' } }); // Persediaan
+                const apAccount = await tx.financeAccount.findUnique({ where: { code: '201' } }); // Hutang
+
+                if (invAccount && apAccount) {
+                    await tx.journalEntry.create({
+                        data: {
+                            description: `Persediaan (Hutang): ${data.receiptNumber} (${data.receivedFrom})`,
+                            amount: totalValue as any,
+                            type: "DEBIT",
+                            accountId: invAccount.id,
+                            date: txDate
+                        }
+                    });
+
+                    await tx.journalEntry.create({
+                        data: {
+                            description: `Hutang Pembelian: ${data.receiptNumber} (${data.receivedFrom})`,
+                            amount: totalValue as any,
+                            type: "CREDIT",
+                            accountId: apAccount.id,
+                            date: txDate
+                        }
+                    });
+                }
+            }
 
             revalidatePath("/purchase");
             revalidatePath("/warehouse");
+            revalidatePath("/finance");
             revalidatePath("/");
 
-            return { success: true, formNumber };
+            return receipt;
         });
     } catch (error: any) {
         if (error.code === 'P2002') {
-            throw new Error(`Nomor Surat Jalan atau Form sudah ada. Harap gunakan nomor yang berbeda.`);
+            const target = error.meta?.target || "";
+            if (target.includes('receiptNumber')) {
+                throw new Error(`Nomor Surat Jalan "${data.receiptNumber}" sudah terdaftar. Gunakan nomor lain.`);
+            }
+            if (target.includes('formNumber')) {
+                throw new Error(`Terjadi tabrakan nomor FORM otomatis. Silakan coba simpan kembali.`);
+            }
+            throw new Error(`Data dengan nomor tersebut sudah ada. Harap gunakan nomor yang berbeda.`);
         }
         throw error;
     }
@@ -80,10 +142,26 @@ export async function updateGoodsReceiptAction(id: string, data: {
     items: { productId: string; quantity: number; purchasePrice: number; uom?: string }[];
 }) {
     return await prisma.$transaction(async (tx: any) => {
-        // 1. Check if verified. If verified, only Admin can edit (or restricted)
-        const existing = await tx.goodsReceipt.findUnique({ where: { id } });
+        // 1. Check if verified. include items to adjust stock
+        const existing = await tx.goodsReceipt.findUnique({
+            where: { id },
+            include: { items: true }
+        });
         if (!existing) throw new Error("Receipt not found");
         if (existing.isVerified) throw new Error("Cannot edit verified receipt");
+
+        // --- REVERSE OLD STOCK ---
+        for (const item of existing.items) {
+            await tx.stock.update({
+                where: {
+                    productId_warehouseId: {
+                        productId: item.productId,
+                        warehouseId: existing.warehouseId
+                    }
+                },
+                data: { quantity: { decrement: item.quantity } }
+            });
+        }
 
         // 2. Update Header
         await tx.goodsReceipt.update({
@@ -99,7 +177,7 @@ export async function updateGoodsReceiptAction(id: string, data: {
             }
         });
 
-        // 3. Update Items (Delete and Re-create for simplicity in a transaction)
+        // 3. Update Items
         await tx.goodsReceiptItem.deleteMany({ where: { receiptId: id } });
         await tx.goodsReceiptItem.createMany({
             data: data.items.map(item => ({
@@ -110,6 +188,24 @@ export async function updateGoodsReceiptAction(id: string, data: {
                 uom: item.uom
             }))
         });
+
+        // --- APPLY NEW STOCK ---
+        for (const item of data.items) {
+            await tx.stock.upsert({
+                where: {
+                    productId_warehouseId: {
+                        productId: item.productId,
+                        warehouseId: data.warehouseId
+                    }
+                },
+                update: { quantity: { increment: item.quantity } },
+                create: {
+                    productId: item.productId,
+                    warehouseId: data.warehouseId,
+                    quantity: item.quantity
+                }
+            });
+        }
 
         revalidatePath("/purchase");
         revalidatePath("/warehouse");
@@ -131,65 +227,11 @@ export async function verifyGoodsReceiptAction(id: string, verifiedBy: string) {
         if (!receipt) throw new Error("Penerimaan barang tidak ditemukan.");
         if (receipt.isVerified) throw new Error("Penerimaan barang sudah diverifikasi.");
 
-        // 1. Update Stock and Record Movement
-        for (const item of receipt.items) {
-            await tx.stock.upsert({
-                where: {
-                    productId_warehouseId: {
-                        productId: item.productId,
-                        warehouseId: receipt.warehouseId
-                    }
-                },
-                update: { quantity: { increment: item.quantity } },
-                create: {
-                    productId: item.productId,
-                    warehouseId: receipt.warehouseId,
-                    quantity: item.quantity
-                }
-            });
+        // Stock is already updated during creation/input as per new requirement
 
-            await tx.stockMovement.create({
-                data: {
-                    productId: item.productId,
-                    warehouseId: receipt.warehouseId,
-                    quantity: item.quantity,
-                    type: "GOODS_RECEIPT",
-                    reference: receipt.receiptNumber
-                }
-            });
-        }
-
-        // 2. Create Finance Journal Entries
-        const totalValue = receipt.items.reduce((sum: number, item: any) => sum + (item.quantity * Number(item.purchasePrice)), 0);
-
-        if (totalValue > 0) {
-            const invAccount = await tx.financeAccount.findUnique({ where: { code: '104' } }); // Persediaan
-            const apAccount = await tx.financeAccount.findUnique({ where: { code: '201' } });  // Hutang
-
-            if (invAccount && apAccount) {
-                // Debit Inventory
-                await tx.journalEntry.create({
-                    data: {
-                        description: `Penerimaan Barang (Verified): ${receipt.receiptNumber} (${receipt.receivedFrom})`,
-                        amount: totalValue as any,
-                        type: "DEBIT",
-                        accountId: invAccount.id,
-                        date: new Date()
-                    }
-                });
-
-                // Credit Accounts Payable
-                await tx.journalEntry.create({
-                    data: {
-                        description: `Hutang Pembelian (Verified): ${receipt.receiptNumber} (${receipt.receivedFrom})`,
-                        amount: totalValue as any,
-                        type: "CREDIT",
-                        accountId: apAccount.id,
-                        date: new Date()
-                    }
-                });
-            }
-        }
+        // Journal entries are now handled during creation (createGoodsReceiptAction)
+        // because stock is also updated during creation. 
+        // This ensures the books and the stock are always in sync.
 
         // 3. Mark as verified
         // Using raw execute because of client generation lock
@@ -280,10 +322,13 @@ export async function createSalesDeliveryAction(data: {
     recipient: string;
     buyerName: string;
     warehouseId: string;
+    salesPerson?: string;
+    createdAt?: Date;
     items: { productId: string; quantity: number; salesPrice: number; uom?: string }[];
 }) {
     // Generate automatic Delivery Number (SJ-YYYYMMDD-Random)
-    const dateStr = new Date().toISOString().split('T')[0].replace(/-/g, '');
+    const txDate = data.createdAt || new Date();
+    const dateStr = txDate.toISOString().split('T')[0].replace(/-/g, '');
     const randomSuffix = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
     const deliveryNumber = `SJ-${dateStr}-${randomSuffix}`;
 
@@ -295,6 +340,8 @@ export async function createSalesDeliveryAction(data: {
                 recipient: data.recipient,
                 buyerName: data.buyerName,
                 warehouseId: data.warehouseId,
+                salesPerson: data.salesPerson,
+                createdAt: txDate,
                 items: {
                     create: data.items.map(item => ({
                         productId: item.productId,
@@ -345,30 +392,36 @@ export async function createSalesDeliveryAction(data: {
         }
 
         // 3. Create Finance Journal Entries
-        const totalSales = data.items.reduce((sum, item) => sum + (item.quantity * item.salesPrice), 0);
+        // Payment Journal is now handled by updatePaymentStatusAction when verified as Lunas (PAID)
+        // Only Sales Revenue remains as an accrual-like entry (Debit AR/Other, Credit Sales) 
+        // to show revenue on dashboard. But user wants Revenue separate.
+        // Let's keep Revenue entry (Credit 401) but use a temporary clearing account for Debit
+        // until it's PAID (to Bank 102).
+
+        const totalSales = data.items.reduce((sum, item) => sum + (item.quantity * Number(item.salesPrice)), 0);
 
         if (totalSales > 0) {
-            const arAccount = await tx.financeAccount.findUnique({ where: { code: '105' } }); // Piutang
+            const tempAccount = await tx.financeAccount.findUnique({ where: { code: '105' } }); // Piutang/Clearing
             const salesAccount = await tx.financeAccount.findUnique({ where: { code: '401' } }); // Pendapatan
 
-            if (arAccount && salesAccount) {
-                // Debit AR
+            if (tempAccount && salesAccount) {
                 await tx.journalEntry.create({
                     data: {
                         description: `Piutang Penjualan: ${deliveryNumber} (${data.buyerName})`,
                         amount: totalSales as any,
                         type: "DEBIT",
-                        accountId: arAccount.id
+                        accountId: tempAccount.id,
+                        date: txDate
                     }
                 });
 
-                // Credit Sales Income
                 await tx.journalEntry.create({
                     data: {
-                        description: `Penjualan Barang: ${deliveryNumber} (${data.buyerName})`,
+                        description: `Pendapatan Penjualan: ${deliveryNumber} (${data.buyerName})`,
                         amount: totalSales as any,
                         type: "CREDIT",
-                        accountId: salesAccount.id
+                        accountId: salesAccount.id,
+                        date: txDate
                     }
                 });
             }
@@ -443,6 +496,112 @@ export async function deleteSalesDeliveryAction(id: string) {
 /**
  * Finance Actions
  */
+/**
+ * FINANCE: Update Payment Status (Lunas / Belum Lunas)
+ * This handles the actual cash flow to Bank BCA (102)
+ */
+export async function updatePaymentStatusAction(type: "PURCHASE" | "SALE", id: string, status: "PAID" | "PENDING") {
+    return await prisma.$transaction(async (tx: any) => {
+        let reference = "";
+        let amount = 0;
+        let party = "";
+
+        if (type === "PURCHASE") {
+            const receipt = await (tx.goodsReceipt as any).findUnique({
+                where: { id },
+                include: { items: true }
+            });
+            if (!receipt) throw new Error("Receipt not found");
+            reference = receipt.receiptNumber;
+            party = receipt.receivedFrom;
+            amount = receipt.items.reduce((sum: number, i: any) => sum + (i.quantity * Number(i.purchasePrice)), 0);
+
+            await (tx.goodsReceipt as any).update({
+                where: { id },
+                data: { paymentStatus: status }
+            });
+
+            // If changing to PAID, create Bank BCA Journal
+            if (status === "PAID") {
+                const bankAccount = await tx.financeAccount.findUnique({ where: { code: '102' } }); // Bank BCA
+                const apAccount = await tx.financeAccount.findUnique({ where: { code: '201' } }); // Hutang
+
+                if (bankAccount && apAccount) {
+                    // Debit Hutang (Settling AP)
+                    await tx.journalEntry.create({
+                        data: {
+                            description: `Pelunasan Hutang: ${reference} (${party})`,
+                            amount: amount as any,
+                            type: "DEBIT",
+                            accountId: apAccount.id,
+                            date: new Date()
+                        }
+                    });
+
+                    // Credit Bank BCA (Actual Payment Out)
+                    await tx.journalEntry.create({
+                        data: {
+                            description: `Pembelian Lunas (Bank): ${reference} (${party})`,
+                            amount: amount as any,
+                            type: "CREDIT",
+                            accountId: bankAccount.id,
+                            date: new Date()
+                        }
+                    });
+                }
+            }
+
+        } else {
+            const delivery = await (tx.salesDelivery as any).findUnique({
+                where: { id },
+                include: { items: true }
+            });
+            if (!delivery) throw new Error("Delivery not found");
+            reference = delivery.deliveryNumber;
+            party = delivery.buyerName;
+            amount = delivery.items.reduce((sum: number, i: any) => sum + (i.quantity * Number(i.salesPrice || 0)), 0);
+
+            await (tx.salesDelivery as any).update({
+                where: { id },
+                data: { paymentStatus: status }
+            });
+
+            if (status === "PAID") {
+                const bankAccount = await tx.financeAccount.findUnique({ where: { code: '102' } }); // Bank BCA
+                const arAccount = await tx.financeAccount.findUnique({ where: { code: '105' } });   // Piutang
+
+                if (bankAccount && arAccount) {
+                    // Debit Bank BCA (Actual Cash In)
+                    await tx.journalEntry.create({
+                        data: {
+                            description: `Penerimaan Pelunasan Penjualan: ${reference} (${party})`,
+                            amount: amount as any,
+                            type: "DEBIT",
+                            accountId: bankAccount.id,
+                            date: new Date()
+                        }
+                    });
+
+                    // Credit Piutang (Settling AR)
+                    await tx.journalEntry.create({
+                        data: {
+                            description: `Penyelesaian Piutang: ${reference} (${party})`,
+                            amount: amount as any,
+                            type: "CREDIT",
+                            accountId: arAccount.id,
+                            date: new Date()
+                        }
+                    });
+                }
+            }
+        }
+
+        revalidatePath("/finance");
+        revalidatePath("/");
+        return { success: true };
+    });
+}
+
 export async function createFinanceTransactionAction(data: {
     transactionType: "PAYMENT" | "RECEIPT";
     bank: string;
@@ -551,7 +710,7 @@ export async function createPurchaseOrderAction(data: {
     vendorId: string;
     items: { productId: string; quantity: number; price: number }[];
 }) {
-    const res = await prisma.purchaseOrder.create({
+    const res = await (prisma as any).purchaseOrder.create({
         data: {
             number: data.number,
             vendorId: data.vendorId,
@@ -635,18 +794,23 @@ export async function updateStockAction(data: {
  */
 export async function wipeDatabaseAction() {
     return await prisma.$transaction(async (tx: any) => {
-        // Delete transactional data but keep Master Data (COA, Warehouses etc)
+        // Delete transactional data but keep Master Data (Products, Warehouses, COA, Partners, Users)
         // Order matters due to foreign keys
         await tx.journalEntry.deleteMany();
         await tx.financeTransaction.deleteMany();
-        await tx.stockMovement.deleteMany();
-        await tx.salesDeliveryItem.deleteMany();
-        await tx.salesDelivery.deleteMany();
+        await tx.goodsReceiptVerification.deleteMany();
         await tx.goodsReceiptItem.deleteMany();
         await tx.goodsReceipt.deleteMany();
+        await tx.salesDeliveryItem.deleteMany();
+        await tx.salesDelivery.deleteMany();
+        await tx.purchaseOrderItem.deleteMany();
+        await tx.purchaseOrder.deleteMany();
+        await tx.stockMovement.deleteMany();
         await tx.stock.deleteMany();
 
-        // Optional: Reset stock to zero (included in stock deleteMany above)
+        // Reset Partner Balances (Hutang/Piutang) to 0
+        await tx.vendor.updateMany({ data: { balance: 0 } });
+        await tx.customer.updateMany({ data: { balance: 0 } });
 
         revalidatePath("/");
         revalidatePath("/finance");
@@ -935,14 +1099,41 @@ export async function getDashboardSummaryAction() {
         verifiedItems.forEach(i => purchaseVol += i.quantity);
     }
 
-    // 4. Finance Cash Balance (Sum of Cash/Bank accounts)
+    // 4. Finance Cash & Bank Balance (Sum of Cash/Bank accounts: codes starting with 101 or 102)
     const bankEntries = await prisma.journalEntry.findMany({
-        where: { account: { code: { startsWith: '101' } } }
+        where: {
+            account: {
+                OR: [
+                    { code: { startsWith: '101' } },
+                    { code: { startsWith: '102' } }
+                ]
+            }
+        }
     });
     let cashBalance = 0;
     bankEntries.forEach(e => {
         if (e.type === "DEBIT") cashBalance += Number(e.amount);
         else cashBalance -= Number(e.amount);
+    });
+
+    // 5. Total Hutang (Account 201) & Total Piutang (Account 105)
+    const detailEntries = await prisma.journalEntry.findMany({
+        where: { account: { code: { in: ['201', '105'] } } },
+        include: { account: true }
+    });
+
+    let totalHutang = 0;
+    let totalPiutang = 0;
+
+    detailEntries.forEach(e => {
+        const amt = Number(e.amount);
+        if (e.account.code === '201') {
+            if (e.type === "CREDIT") totalHutang += amt;
+            else totalHutang -= amt;
+        } else if (e.account.code === '105') {
+            if (e.type === "DEBIT") totalPiutang += amt;
+            else totalPiutang -= amt;
+        }
     });
 
     return {
@@ -951,6 +1142,8 @@ export async function getDashboardSummaryAction() {
         purchaseVol: purchaseVol || 0,
         totalStockQty: totalStockQty || 0,
         cashBalance: cashBalance || 0,
+        totalHutang: totalHutang || 0,
+        totalPiutang: totalPiutang || 0,
         productCount: stockItems.length
     };
 }
@@ -984,7 +1177,23 @@ export async function getMDAction() {
         prisma.financeAccount.findMany({ orderBy: { code: 'asc' } }),
     ]);
 
-    return { vendors: vendors || [], customers: customers || [], warehouses: warehouses || [], coa: coa || [] };
+    // Serialize balances for client components
+    const serializedVendors = (vendors || []).map(v => ({
+        ...v,
+        balance: Number(v.balance)
+    }));
+
+    const serializedCustomers = (customers || []).map(c => ({
+        ...c,
+        balance: Number(c.balance)
+    }));
+
+    return {
+        vendors: serializedVendors,
+        customers: serializedCustomers,
+        warehouses: warehouses || [],
+        coa: coa || []
+    };
 }
 
 /**
@@ -1101,6 +1310,7 @@ export async function updateSalesDeliveryAction(id: string, data: {
     recipient: string;
     buyerName: string;
     warehouseId: string;
+    salesPerson?: string;
     items: { productId: string; quantity: number; salesPrice: number; uom?: string }[];
 }) {
     return await prisma.$transaction(async (tx: any) => {
@@ -1147,7 +1357,8 @@ export async function updateSalesDeliveryAction(id: string, data: {
             data: {
                 recipient: data.recipient,
                 buyerName: data.buyerName,
-                warehouseId: data.warehouseId
+                warehouseId: data.warehouseId,
+                salesPerson: data.salesPerson
             }
         });
 
@@ -1189,16 +1400,16 @@ export async function updateSalesDeliveryAction(id: string, data: {
         // 6. APPLY NEW JOURNALS
         const totalSales = data.items.reduce((sum, item) => sum + (item.quantity * item.salesPrice), 0);
         if (totalSales > 0) {
-            const arAccount = await tx.financeAccount.findUnique({ where: { code: '105' } });
+            const bankAccount = await tx.financeAccount.findUnique({ where: { code: '102' } });
             const salesAccount = await tx.financeAccount.findUnique({ where: { code: '401' } });
 
-            if (arAccount && salesAccount) {
+            if (bankAccount && salesAccount) {
                 await tx.journalEntry.create({
                     data: {
-                        description: `Piutang Penjualan (Updated): ${existing.deliveryNumber} (${data.buyerName})`,
+                        description: `Penerimaan Penjualan (Updated): ${existing.deliveryNumber} (${data.buyerName})`,
                         amount: totalSales as any,
                         type: "DEBIT",
-                        accountId: arAccount.id,
+                        accountId: bankAccount.id,
                         date: new Date()
                     }
                 });

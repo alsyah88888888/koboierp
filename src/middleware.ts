@@ -1,9 +1,10 @@
 import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
+import { getToken } from "next-auth/jwt";
 
 export default withAuth(
-    function middleware(req) {
-        const token = req.nextauth.token;
+    async function middleware(req) {
+        const token = await getToken({ req });
         const path = req.nextUrl.pathname;
 
         // Role-based access rules

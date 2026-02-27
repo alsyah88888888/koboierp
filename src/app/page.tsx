@@ -1,4 +1,5 @@
 import prisma from "@/lib/prisma";
+import { getDashboardSummaryAction } from "@/app/actions";
 import { formatCurrency } from "@/lib/utils";
 import { AdminDashboard } from "./AdminDashboard";
 import {
@@ -9,49 +10,34 @@ import {
 } from "lucide-react";
 
 export default async function DashboardPage() {
-  // 1. Fetch Basic Totals
-  const accounts = await prisma.financeAccount.findMany({ include: { journals: true } }).catch(() => []);
-  const receipts = await prisma.goodsReceipt.findMany({ include: { items: true } }).catch(() => []);
-  const sales = await prisma.salesDelivery.findMany({ include: { items: true } }).catch(() => []);
+  // 2. Fetch Data via Server Action
+  const summary = await getDashboardSummaryAction();
   const products = await prisma.product.findMany({ include: { stocks: true } }).catch(() => []);
-
-  // 2. Calculate KPI Stats
-  const totalBalance = accounts.reduce((sum: number, acc: any) => {
-    const accBalance = (acc.journals as any[]).reduce((b: number, j: any) => {
-      if (j.type === "DEBIT") return b + Number(j.amount);
-      return b - Number(j.amount);
-    }, 0);
-    return sum + (acc.type === 'ASSET' ? accBalance : 0);
-  }, 0);
-
-  const totalRevenue = sales.reduce((sum: number, s: any) => sum + s.items.reduce((iSum: number, item: any) => iSum + (Number(item.salesPrice || 0) * item.quantity), 0), 0);
-  const totalPurchases = receipts.reduce((sum: number, r: any) => sum + r.items.reduce((iSum: number, item: any) => iSum + (Number(item.purchasePrice || 0) * item.quantity), 0), 0);
-  const totalStockQty = products.reduce((sum: number, p: any) => sum + p.stocks.reduce((sSum: number, s: any) => sSum + s.quantity, 0), 0);
 
   const stats = [
     {
       name: "Total Revenue",
-      value: formatCurrency(totalRevenue),
-      change: "+12.5%", trend: 'up',
+      value: formatCurrency(summary.totalRevenue),
+      change: "Berdasarkan Penjualan", trend: 'up',
       iconName: "ShoppingBag", iconBg: "bg-blue-50", iconColor: "text-blue-500"
     },
     {
-      name: "Asset Value",
-      value: formatCurrency(totalBalance),
-      change: "+3.2%", trend: 'up',
+      name: "Cash/Bank Balance",
+      value: formatCurrency(summary.cashBalance),
+      change: "Saldo Bank BCA", trend: 'up',
       iconName: "Wallet", iconBg: "bg-emerald-50", iconColor: "text-emerald-500"
     },
     {
-      name: "Purchase Vol.",
-      value: formatCurrency(totalPurchases),
-      change: "-2.1%", trend: 'down',
+      name: "Total Hutang (Pending)",
+      value: formatCurrency(summary.totalHutang),
+      change: "Belum Dibayar", trend: 'down',
       iconName: "ShoppingCart", iconBg: "bg-amber-50", iconColor: "text-amber-500"
     },
     {
-      name: "Current Stock",
-      value: totalStockQty.toLocaleString(),
-      change: "+5.1%", trend: 'up',
-      iconName: "Package", iconBg: "bg-slate-50", iconColor: "text-slate-500"
+      name: "Total Piutang (Pending)",
+      value: formatCurrency(summary.totalPiutang),
+      change: "Belum Diterima", trend: 'up',
+      iconName: "Package", iconBg: "bg-rose-50", iconColor: "text-rose-500"
     },
   ];
 

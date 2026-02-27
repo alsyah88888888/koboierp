@@ -8,13 +8,42 @@ import { useSession } from "next-auth/react";
 import { deleteSalesDeliveryAction } from "@/app/actions";
 import { DashboardStats } from "../components/DashboardStats";
 import Link from "next/link";
+import { BarChart3, TrendingUp, TrendingDown, Users } from "lucide-react";
 
-export default function SalesDashboard({ initialDeliveries, products, warehouses }: { initialDeliveries: any[], products: any[], warehouses: any[] }) {
+interface SalesDashboardProps {
+    initialDeliveries: any[];
+    initialReceipts?: any[];
+    products: any[];
+    warehouses: any[];
+    customers: any[];
+}
+
+export default function SalesDashboard({ initialDeliveries, initialReceipts = [], products, warehouses, customers }: SalesDashboardProps) {
     const { data: session } = useSession() as any;
     const isAdmin = session?.user?.role === "ADMIN";
     const [showSalesModal, setShowSalesModal] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [editData, setEditData] = useState<any>(null);
+
+    // Calculate Performance for BC & PF
+    const getStats = (id: string) => {
+        const sales = initialDeliveries.filter(d => d.salesPerson === id);
+        const purchases = initialReceipts.filter(r => r.salesPerson === id);
+
+        const salesVal = sales.reduce((acc, d) => acc + d.items.reduce((sum: number, i: any) => sum + (i.quantity * Number(i.salesPrice || 0)), 0), 0);
+        const purchaseVal = purchases.reduce((acc, r) => acc + r.items.reduce((sum: number, i: any) => sum + (i.quantity * Number(i.purchasePrice || 0)), 0), 0);
+
+        return {
+            salesCount: sales.length,
+            purchaseCount: purchases.length,
+            salesVal,
+            purchaseVal,
+            margin: salesVal - purchaseVal
+        };
+    };
+
+    const bcStats = getStats("BC");
+    const pfStats = getStats("PF");
 
     const handlePrint = () => {
         window.print();
@@ -65,13 +94,95 @@ export default function SalesDashboard({ initialDeliveries, products, warehouses
                 <DashboardStats />
             </div>
 
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
+                {/* BC Performance Card */}
+                <div className="bg-gradient-to-br from-indigo-50 to-white border-2 border-indigo-100 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all">
+                    <div className="flex justify-between items-center mb-4">
+                        <div className="flex items-center gap-3">
+                            <div className="bg-indigo-600 text-white p-2 rounded-xl shadow-lg shadow-indigo-200">
+                                <Users className="h-6 w-6" />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-bold text-slate-900">Performance ID: BC</h3>
+                                <p className="text-xs text-slate-500 font-medium tracking-wide font-mono uppercase">Salesperson Overview</p>
+                            </div>
+                        </div>
+                        <div className="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-indigo-200">Active</div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter mb-1 flex items-center gap-1">
+                                <TrendingUp className="h-3 w-3 text-emerald-500" /> Total Penjualan
+                            </p>
+                            <p className="text-lg font-black text-emerald-600">Rp {bcStats.salesVal.toLocaleString('id-ID')}</p>
+                            <p className="text-[10px] text-slate-500 mt-0.5">{bcStats.salesCount} Transaksi</p>
+                        </div>
+                        <div className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter mb-1 flex items-center gap-1">
+                                <TrendingDown className="h-3 w-3 text-rose-500" /> Total Pembelian
+                            </p>
+                            <p className="text-lg font-black text-rose-600">Rp {bcStats.purchaseVal.toLocaleString('id-ID')}</p>
+                            <p className="text-[10px] text-slate-500 mt-0.5">{bcStats.purchaseCount} Transaksi</p>
+                        </div>
+                    </div>
+
+                    <div className="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center">
+                        <span className="text-xs font-bold text-slate-500 uppercase italic">Nett Margin</span>
+                        <span className={`text-sm font-black ${bcStats.margin >= 0 ? 'text-indigo-600' : 'text-rose-600'}`}>
+                            Rp {bcStats.margin.toLocaleString('id-ID')}
+                        </span>
+                    </div>
+                </div>
+
+                {/* PF Performance Card */}
+                <div className="bg-gradient-to-br from-amber-50 to-white border-2 border-amber-100 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all">
+                    <div className="flex justify-between items-center mb-4">
+                        <div className="flex items-center gap-3">
+                            <div className="bg-amber-600 text-white p-2 rounded-xl shadow-lg shadow-amber-200">
+                                <Users className="h-6 w-6" />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-bold text-slate-900">Performance ID: PF</h3>
+                                <p className="text-xs text-slate-500 font-medium tracking-wide font-mono uppercase">Salesperson Overview</p>
+                            </div>
+                        </div>
+                        <div className="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-amber-200">Active</div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter mb-1 flex items-center gap-1">
+                                <TrendingUp className="h-3 w-3 text-emerald-500" /> Total Penjualan
+                            </p>
+                            <p className="text-lg font-black text-emerald-600">Rp {pfStats.salesVal.toLocaleString('id-ID')}</p>
+                            <p className="text-[10px] text-slate-500 mt-0.5">{pfStats.salesCount} Transaksi</p>
+                        </div>
+                        <div className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter mb-1 flex items-center gap-1">
+                                <TrendingDown className="h-3 w-3 text-rose-500" /> Total Pembelian
+                            </p>
+                            <p className="text-lg font-black text-rose-600">Rp {pfStats.purchaseVal.toLocaleString('id-ID')}</p>
+                            <p className="text-[10px] text-slate-500 mt-0.5">{pfStats.purchaseCount} Transaksi</p>
+                        </div>
+                    </div>
+
+                    <div className="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center">
+                        <span className="text-xs font-bold text-slate-500 uppercase italic">Nett Margin</span>
+                        <span className={`text-sm font-black ${pfStats.margin >= 0 ? 'text-amber-600' : 'text-rose-600'}`}>
+                            Rp {pfStats.margin.toLocaleString('id-ID')}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
             <div className="grid gap-4 md:grid-cols-4">
                 <div className="p-6 rounded-xl border bg-card shadow-sm">
                     <div className="flex justify-between items-start">
-                        <p className="text-sm font-medium text-muted-foreground">Total Penjualan</p>
-                        <Truck className="h-4 w-4 text-muted-foreground" />
+                        <p className="text-sm font-medium text-muted-foreground italic uppercase font-bold tracking-tighter">Global Total Penjualan</p>
+                        <BarChart3 className="h-4 w-4 text-primary" />
                     </div>
-                    <h3 className="text-2xl font-bold mt-2">{initialDeliveries.length}</h3>
+                    <h3 className="text-2xl font-black mt-2 text-primary">{initialDeliveries.length}</h3>
                 </div>
                 <div className="p-6 rounded-xl border bg-card shadow-sm">
                     <div className="flex justify-between items-start">
@@ -182,6 +293,7 @@ export default function SalesDashboard({ initialDeliveries, products, warehouses
                 <SalesModal
                     products={products}
                     warehouses={warehouses}
+                    customers={customers}
                     initialData={editData}
                     onClose={() => {
                         setShowSalesModal(false);

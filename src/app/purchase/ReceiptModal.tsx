@@ -12,7 +12,7 @@ interface ReceiptItem {
     barcode: string;
 }
 
-export function ReceiptModal({ products, warehouses, onClose, initialData }: { products: any[], warehouses: any[], onClose: () => void, initialData?: any }) {
+export function ReceiptModal({ products, warehouses, vendors, onClose, initialData }: { products: any[], warehouses: any[], vendors: any[], onClose: () => void, initialData?: any }) {
     // Header States
     const [receiptNumber, setReceiptNumber] = useState("");
     const [receivedFrom, setReceivedFrom] = useState("");
@@ -188,9 +188,7 @@ export function ReceiptModal({ products, warehouses, onClose, initialData }: { p
                                 required
                             />
                             <datalist id="supplier-list">
-                                <option value="PT. ABC Indonesia" />
-                                <option value="CV. Jaya Makmur" />
-                                <option value="PT. Sumber Makmur" />
+                                {vendors.map(v => <option key={v.id} value={v.name} />)}
                             </datalist>
                         </div>
                         <div className="space-y-2">

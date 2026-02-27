@@ -10,7 +10,7 @@ interface SalesItem {
     uom: string;
 }
 
-export default function SalesModal({ products, warehouses, onClose, initialData }: { products: any[], warehouses: any[], onClose: () => void, initialData?: any }) {
+export default function SalesModal({ products, warehouses, customers, onClose, initialData }: { products: any[], warehouses: any[], customers: any[], onClose: () => void, initialData?: any }) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
@@ -19,6 +19,7 @@ export default function SalesModal({ products, warehouses, onClose, initialData 
     const [buyerName, setBuyerName] = useState("");
     const [warehouseId, setWarehouseId] = useState(warehouses[0]?.id || "");
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+    const [salesPerson, setSalesPerson] = useState("");
 
     // Body (Items)
     const [items, setItems] = useState<SalesItem[]>([{ productId: "", sku: "", quantity: 1, salesPrice: 0, uom: "" }]);
@@ -28,6 +29,7 @@ export default function SalesModal({ products, warehouses, onClose, initialData 
             setRecipient(initialData.recipient || "");
             setBuyerName(initialData.buyerName || "");
             setWarehouseId(initialData.warehouseId || "");
+            setSalesPerson(initialData.salesPerson || "");
             setDate(new Date(initialData.createdAt).toISOString().split('T')[0]);
 
             if (initialData.items && initialData.items.length > 0) {
@@ -98,6 +100,8 @@ export default function SalesModal({ products, warehouses, onClose, initialData 
                 recipient,
                 buyerName,
                 warehouseId,
+                salesPerson,
+                createdAt: new Date(date),
                 items: items.map(i => ({
                     productId: i.productId,
                     quantity: Number(i.quantity),
@@ -154,9 +158,7 @@ export default function SalesModal({ products, warehouses, onClose, initialData 
                                 required
                             />
                             <datalist id="buyer-list">
-                                <option value="CV. Sejahtera Persada" />
-                                <option value="PT. Global Niaga" />
-                                <option value="Toko Berkah Utama" />
+                                {customers.map(c => <option key={c.id} value={c.name} />)}
                             </datalist>
                         </div>
                         <div className="space-y-2">
@@ -169,7 +171,7 @@ export default function SalesModal({ products, warehouses, onClose, initialData 
                                 required
                             />
                         </div>
-                        <div className="space-y-2 md:col-span-2 lg:col-span-1">
+                        <div className="space-y-2 lg:col-span-1">
                             <label className="text-xs font-bold uppercase tracking-wider text-slate-600">Dari Gudang</label>
                             <select
                                 value={warehouseId}
@@ -177,6 +179,19 @@ export default function SalesModal({ products, warehouses, onClose, initialData 
                                 className="w-full bg-white border-2 border-slate-300 px-3 py-2.5 rounded-lg focus:border-primary outline-none transition-all font-medium"
                             >
                                 {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+                            </select>
+                        </div>
+                        <div className="space-y-2 lg:col-span-1">
+                            <label className="text-xs font-bold uppercase tracking-wider text-slate-600">Sales Person (Ref ID)</label>
+                            <select
+                                value={salesPerson}
+                                onChange={e => setSalesPerson(e.target.value)}
+                                className="w-full bg-slate-100 border-2 border-slate-300 px-3 py-2.5 rounded-lg focus:border-primary outline-none transition-all font-bold text-primary"
+                                required
+                            >
+                                <option value="">Pilih Sales...</option>
+                                <option value="BC">BC (ID: BC)</option>
+                                <option value="PF">PF (ID: PF)</option>
                             </select>
                         </div>
                     </div>

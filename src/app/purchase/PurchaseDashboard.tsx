@@ -10,7 +10,7 @@ import { deleteGoodsReceiptAction } from "@/app/actions";
 import { DashboardStats } from "../components/DashboardStats";
 import Link from "next/link";
 
-export function PurchaseDashboard({ initialReceipts, products, warehouses }: { initialReceipts: any[], products: any[], warehouses: any[] }) {
+export function PurchaseDashboard({ initialReceipts, products, warehouses, vendors }: { initialReceipts: any[], products: any[], warehouses: any[], vendors: any[] }) {
     const { data: session } = useSession() as any;
     const isAdmin = session?.user?.role === "ADMIN";
     const [showReceiptModal, setShowReceiptModal] = useState(false);
@@ -177,6 +177,7 @@ export function PurchaseDashboard({ initialReceipts, products, warehouses }: { i
                 <ReceiptModal
                     products={products}
                     warehouses={warehouses}
+                    vendors={vendors}
                     initialData={editData}
                     onClose={() => {
                         setShowReceiptModal(false);

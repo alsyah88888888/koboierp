@@ -90,10 +90,17 @@ model FinanceTransaction {
 // --- PARTNER MODULE (Suppliers & Buyers) ---
 model Vendor {
   id        String   @id @default(cuid())
+  code      String?  @unique // ID Pemasok
   name      String
   email     String?
   phone     String?
   address   String?
+  city      String?
+  province  String?
+  postalCode String?
+  npwp      String?
+  taxName   String?  // Nama Wajib Pajak
+  balance   Decimal  @default(0) // Hutang ke Vendor
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   purchaseOrders PurchaseOrder[]
@@ -101,10 +108,17 @@ model Vendor {
 
 model Customer {
   id        String   @id @default(cuid())
+  code      String?  @unique // ID Pelanggan
   name      String
   email     String?
   phone     String?
   address   String?
+  city      String?
+  province  String?
+  postalCode String?
+  npwp      String?
+  taxName   String?  // Nama Wajib Pajak
+  balance   Decimal  @default(0) // Piutang dari Customer
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -148,6 +162,7 @@ model GoodsReceipt {
   isVerified        Boolean  @default(false)
   verifiedAt        DateTime?
   verifiedBy        String?
+  paymentStatus     String   @default("PENDING") // PENDING, PAID
   createdAt         DateTime @default(now())
 }
 
@@ -183,10 +198,12 @@ model SalesDelivery {
   deliveryNumber String   @unique // No. Pengiriman (SJ-YYYYMMDD-XXX)
   recipient      String   // Kirim Ke
   buyerName      String   // Pengiriman ke Buyer
+  salesPerson    String?  // BC or PF
   date           DateTime @default(now())
   items          SalesDeliveryItem[]
   warehouseId    String
   warehouse      Warehouse @relation(fields: [warehouseId], references: [id])
+  paymentStatus  String   @default("PENDING") // PENDING, PAID
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 }
