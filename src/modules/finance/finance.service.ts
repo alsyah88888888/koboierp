@@ -31,9 +31,16 @@ export async function getBalanceSheet() {
     });
 
     return accounts.map((account: any) => {
+        const isAssetOrExpense = account.type === "ASSET" || account.type === "EXPENSE";
+
         const balance = (account.journals as any[]).reduce((acc: any, journal: any) => {
-            if (journal.type === "DEBIT") return acc.add(journal.amount);
-            return acc.sub(journal.amount);
+            if (isAssetOrExpense) {
+                if (journal.type === "DEBIT") return acc.add(journal.amount);
+                return acc.sub(journal.amount);
+            } else {
+                if (journal.type === "CREDIT") return acc.add(journal.amount);
+                return acc.sub(journal.amount);
+            }
         }, new Decimal(0));
 
         const { journals, ...accountData } = account;

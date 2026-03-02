@@ -19,6 +19,7 @@
     "next-auth": "^4.24.13",
     "prisma": "^6.19.2",
     "react": "19.2.3",
+    "react-barcode": "^1.6.1",
     "react-dom": "19.2.3",
     "react-hot-toast": "^2.6.0",
     "recharts": "^3.7.0",

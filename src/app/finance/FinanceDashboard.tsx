@@ -11,6 +11,7 @@ import { updatePaymentStatusAction, deleteFinanceTransactionAction, deleteJourna
 import { DashboardStats } from "../components/DashboardStats";
 import { CheckCircle2, Clock } from "lucide-react";
 import { exportToExcel } from "@/lib/excel";
+import { useRouter } from "next/navigation";
 
 export function FinanceDashboard({ accounts, ledger, vendors, customers, pendingPurchases, pendingSales, unverifiedReceipts, transactions }: {
     accounts: any[],
@@ -29,6 +30,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
     const [searchTerm, setSearchTerm] = useState("");
     const [activeTab, setActiveTab] = useState<"ledger" | "ap" | "ar" | "checker" | "history">("ledger");
     const [loading, setLoading] = useState<string | null>(null);
+    const router = useRouter();
 
     const [showPreview, setShowPreview] = useState(false);
     const [previewData, setPreviewData] = useState<any[]>([]);
@@ -44,6 +46,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
         try {
             await updatePaymentStatusAction(type, id, "PAID");
             alert("Pembayaran berhasil diverifikasi.");
+            router.refresh();
         } catch (e) {
             alert("Gagal memverifikasi pembayaran.");
         } finally {
@@ -58,8 +61,9 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
             if (isManual) await deleteJournalEntryAction(id);
             else await deleteFinanceTransactionAction(id);
             alert("Berhasil dihapus");
+            router.refresh();
         } catch (e) {
-            alert("Gagal menghapus");
+            alert("Gagal menghapus.");
         }
     };
 

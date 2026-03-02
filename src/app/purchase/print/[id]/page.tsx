@@ -23,60 +23,54 @@ export default async function ReceiptPrintPage({ params }: { params: Promise<{ i
             docNumber={receipt.formNumber}
             date={format(new Date(receipt.date || receipt.createdAt), "dd MMM yyyy")}
             headerInfo={
-                <div className="grid grid-cols-2 gap-12 text-sm">
-                    <div className="space-y-3">
-                        <div className="flex gap-4">
-                            <span className="font-bold text-slate-400 uppercase w-32">Supplier:</span>
-                            <span className="font-black text-slate-800">{receipt.receivedFrom}</span>
-                        </div>
-                        <div className="flex gap-4">
-                            <span className="font-bold text-slate-400 uppercase w-32">No. SJ/Receipt:</span>
-                            <span className="font-black text-slate-900">{receipt.receiptNumber}</span>
-                        </div>
-                    </div>
-                    <div className="space-y-3 text-right">
-                        <div className="flex justify-end gap-4">
-                            <span className="font-bold text-slate-400 uppercase">Gudang:</span>
-                            <span className="font-black text-slate-900 uppercase">{receipt.warehouse.name}</span>
-                        </div>
-                        <div className="flex justify-end gap-4">
-                            <span className="font-bold text-slate-400 uppercase">Input By:</span>
-                            <span className="font-black text-slate-900 uppercase text-[10px]">{receipt.salesPerson || "STAFF"}</span>
-                        </div>
-                    </div>
+                <div className="grid grid-cols-[100px_1fr] gap-x-4 gap-y-2 text-xs font-bold">
+                    <span className="text-slate-400 uppercase">Supplier:</span>
+                    <span className="text-slate-900 uppercase tabular-nums">{receipt.receivedFrom}</span>
+                    <span className="text-slate-400 uppercase">No. SJ/Receipt:</span>
+                    <span className="text-slate-600 uppercase">{receipt.receiptNumber}</span>
                 </div>
             }
         >
-            <table className="w-full border-collapse border-2 border-slate-900 mb-8">
+            <table className="w-full border-collapse border border-slate-900 mb-4">
                 <thead>
-                    <tr className="bg-slate-50 uppercase text-[10px] font-black">
-                        <th className="border-2 border-slate-900 p-2 text-center w-12">No</th>
-                        <th className="border-2 border-slate-900 p-2 text-left">SKU / Nama Barang</th>
-                        <th className="border-2 border-slate-900 p-2 text-center w-24">Qty Masuk</th>
-                        <th className="border-2 border-slate-900 p-2 text-center w-24">Satuan</th>
-                        <th className="border-2 border-slate-900 p-2 text-right w-32">Harga Beli (@)</th>
-                        <th className="border-2 border-slate-900 p-2 text-right w-40">Total</th>
+                    <tr className="uppercase text-[10px] font-black tracking-widest">
+                        <th className="border border-slate-900 p-2 text-center w-8">No</th>
+                        <th className="border border-slate-900 p-2 text-left">SKU / Nama Barang</th>
+                        <th className="border border-slate-900 p-2 text-left w-32">Barcode</th>
+                        <th className="border border-slate-900 p-2 text-center w-20">Qty Masuk</th>
+                        <th className="border border-slate-900 p-2 text-center w-20">Satuan</th>
+                        <th className="border border-slate-900 p-2 text-right w-32">Harga Beli (@)</th>
+                        <th className="border border-slate-900 p-2 text-right w-40">Total</th>
                     </tr>
                 </thead>
-                <tbody className="text-[11px] font-bold">
+                <tbody className="text-[10px] font-bold text-slate-800">
                     {receipt.items.map((item: any, idx: number) => (
                         <tr key={idx}>
-                            <td className="border-2 border-slate-900 p-3 text-center">{idx + 1}</td>
-                            <td className="border-2 border-slate-900 p-3 uppercase">{item.product.sku} - {item.product.name}</td>
-                            <td className="border-2 border-slate-900 p-3 text-center">{item.quantity}</td>
-                            <td className="border-2 border-slate-900 p-3 text-center uppercase">{item.uom || item.product.uom || "-"}</td>
-                            <td className="border-2 border-slate-900 p-3 text-right">{formatCurrency(Number(item.purchasePrice))}</td>
-                            <td className="border-2 border-slate-900 p-3 text-right">{formatCurrency(item.quantity * Number(item.purchasePrice))}</td>
+                            <td className="border border-slate-900 p-2.5 text-center font-black">{idx + 1}</td>
+                            <td className="border border-slate-900 p-2.5 uppercase">{item.product.sku} - {item.product.name}</td>
+                            <td className="border border-slate-900 p-2.5 text-left font-mono tracking-tighter text-[9px]">{item.product.barcode || item.product.sku || "-"}</td>
+                            <td className="border border-slate-900 p-2.5 text-center">{item.quantity}</td>
+                            <td className="border border-slate-900 p-2.5 text-center uppercase">{item.uom || item.product.uom || "-"}</td>
+                            <td className="border border-slate-900 p-2.5 text-right font-medium">{formatCurrency(Number(item.purchasePrice))}</td>
+                            <td className="border border-slate-900 p-2.5 text-right font-black">{formatCurrency(item.quantity * Number(item.purchasePrice))}</td>
+                        </tr>
+                    ))}
+                    {[...Array(Math.max(0, 5 - receipt.items.length))].map((_, i) => (
+                        <tr key={`empty-${i}`} className="h-8">
+                            <td className="border border-slate-900"></td><td className="border border-slate-900"></td>
+                            <td className="border border-slate-900"></td><td className="border border-slate-900"></td>
+                            <td className="border border-slate-900"></td><td className="border border-slate-900"></td>
+                            <td className="border border-slate-900"></td>
                         </tr>
                     ))}
                 </tbody>
             </table>
 
-            <div className="flex justify-end">
-                <div className="w-80 border-2 border-slate-900 p-4 bg-slate-50">
+            <div className="flex justify-end mt-4">
+                <div className="w-80 border border-slate-900 p-3 bg-slate-50">
                     <div className="flex justify-between items-center">
                         <span className="text-[10px] font-black uppercase text-slate-400">Total Nilai Barang</span>
-                        <span className="text-xl font-black text-slate-900">{formatCurrency(subTotal)}</span>
+                        <span className="text-lg font-black text-slate-900">{formatCurrency(subTotal)}</span>
                     </div>
                 </div>
             </div>

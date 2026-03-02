@@ -37,8 +37,8 @@ export function PurchaseRequestModal({ onClose }: { onClose: () => void }) {
 
     const totalEstimation = useMemo(() => {
         return items.reduce((acc, item) => {
-            const q = typeof item.quantity === 'number' ? item.quantity : 0;
-            const p = typeof item.estimatedPrice === 'number' ? item.estimatedPrice : 0;
+            const q = Number(item.quantity) || 0;
+            const p = Number(item.estimatedPrice) || 0;
             return acc + (q * p);
         }, 0);
     }, [items]);

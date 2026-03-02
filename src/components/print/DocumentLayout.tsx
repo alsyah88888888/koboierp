@@ -2,6 +2,7 @@
 
 import { Printer, ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { ClientBarcode as Barcode } from "@/components/print/ClientBarcode";
 
 interface DocumentLayoutProps {
     title: string;
@@ -38,7 +39,7 @@ export function DocumentLayout({ title, docNumber, date, children, headerInfo, i
             </div>
 
             {/* Document Container */}
-            <div className={`w-full ${isA5 ? 'max-w-[210mm] min-h-[148.5mm] p-[10mm]' : 'max-w-[210mm] min-h-[297mm] p-[20mm]'} bg-white shadow-2xl printable-area overflow-hidden flex flex-col font-sans text-slate-900`}>
+            <div className={`w-full ${isA5 ? 'max-w-[210mm] min-h-[148.5mm] p-[10mm]' : 'max-w-[210mm] min-h-[297mm] p-[20mm]'} bg-white shadow-2xl printable-area flex flex-col font-sans text-slate-900`}>
                 {/* Header */}
                 <div className={`flex justify-between items-start border-b-4 border-slate-900 ${isA5 ? 'pb-4 mb-6' : 'pb-8 mb-10'}`}>
                     <div>
@@ -48,10 +49,10 @@ export function DocumentLayout({ title, docNumber, date, children, headerInfo, i
                         <p className={`${isA5 ? 'text-[9px]' : 'text-xs'} font-medium text-slate-400`}>Telp: 0857-7444-4805</p>
                     </div>
                     <div className="text-right">
-                        <div className={`bg-slate-900 text-white ${isA5 ? 'px-4 py-1.5 text-lg' : 'px-6 py-2 text-2xl'} rounded-lg font-black mb-2`}>
+                        <div className={`inline-block border-2 border-slate-900 text-slate-900 ${isA5 ? 'px-4 py-1.5 text-lg' : 'px-6 py-2 text-2xl'} font-black mb-2 tracking-widest`}>
                             {title.toUpperCase()}
                         </div>
-                        <div className="space-y-1">
+                        <div className="space-y-1 mt-2">
                             <div className="flex justify-end gap-4 text-[10px]">
                                 <span className="font-bold text-slate-400 uppercase tracking-widest">No. Dokumen</span>
                                 <span className="font-black text-slate-900">{docNumber}</span>
@@ -64,8 +65,14 @@ export function DocumentLayout({ title, docNumber, date, children, headerInfo, i
                     </div>
                 </div>
 
+                {/* Main Header Barcode Separator */}
+                <div className="flex justify-end mb-2">
+                    <Barcode value={docNumber} format="CODE128" width={1.2} height={40} displayValue={false} margin={0} background="transparent" />
+                </div>
+                <div className="border-b-4 border-slate-900 mb-6"></div>
+
                 {/* Sub-Header / Billing Info */}
-                <div className={`${isA5 ? 'mb-6' : 'mb-10'}`}>
+                <div className={`${isA5 ? 'mb-4' : 'mb-8'}`}>
                     {headerInfo}
                 </div>
 

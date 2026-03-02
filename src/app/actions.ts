@@ -78,12 +78,47 @@ export async function updatePurchaseRequestStatusAction(id: string, status: "APP
         updateData.verifiedAt = new Date();
     }
 
-    await prisma.purchaseRequest.update({
-        where: { id },
-        data: updateData
+    await prisma.$transaction(async (tx: any) => {
+        await tx.purchaseRequest.update({
+            where: { id },
+            data: updateData
+        });
+
+        // Create Journal Entries if Verified by Finance
+        if (status === "VERIFIED_BY_FINANCE") {
+            const expenseAccount = await tx.financeAccount.findUnique({ where: { code: '601' } }); // Biaya Operasional
+            const bankAccount = await tx.financeAccount.findUnique({ where: { code: '102' } }); // Bank BCA
+
+            if (expenseAccount && bankAccount) {
+                const totalAmount = pr.items.reduce((sum: number, item: any) => sum + (item.quantity * Number(item.estimatedPrice)), 0);
+
+                // Debit Expense
+                await tx.journalEntry.create({
+                    data: {
+                        description: `Biaya Operasional (PR): ${pr.number}`,
+                        amount: totalAmount as any,
+                        type: "DEBIT",
+                        accountId: expenseAccount.id,
+                        date: new Date()
+                    }
+                });
+
+                // Credit Bank
+                await tx.journalEntry.create({
+                    data: {
+                        description: `Pencairan Dana (PR): ${pr.number}`,
+                        amount: totalAmount as any,
+                        type: "CREDIT",
+                        accountId: bankAccount.id,
+                        date: new Date()
+                    }
+                });
+            }
+        }
     });
 
     revalidatePath("/purchase");
+    revalidatePath("/finance");
     return { success: true };
 }
 
@@ -1438,11 +1473,25 @@ export async function importProductsAction(products: {
     });
 }
 
+export async function createProductAction(data: {
+    sku: string;
+    name: string;
+    category?: string;
+    uom?: string;
+    barcode?: string;
+}) {
+    await prisma.product.create({ data });
+    revalidatePath("/settings");
+    revalidatePath("/warehouse");
+    return { success: true };
+}
+
 /**
  * Settings & System Actions
  */
 /**
  * ADMIN: Delete Product
+
  */
 export async function deleteProductAction(id: string) {
     // Check if product is in use (to avoid DB errors or orphan records)

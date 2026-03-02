@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { format } from "date-fns";
-import { Clock, CheckCircle2, XCircle, ShieldCheck, Trash2, Eye, ChevronDown, ChevronUp } from "lucide-react";
+import { Clock, CheckCircle2, XCircle, ShieldCheck, Trash2, Eye, ChevronDown, ChevronUp, Printer } from "lucide-react";
 import { formatCurrency, cn } from "@/lib/utils";
 import { updatePurchaseRequestStatusAction, deletePurchaseRequestAction } from "@/app/actions";
 
@@ -42,9 +42,9 @@ export function PurchaseRequestTab({ requests, userRole, userId }: { requests: a
             case "PENDING":
                 return <span className="bg-amber-100 text-amber-700 px-2 py-1 rounded-full text-[10px] font-black uppercase flex items-center gap-1 w-fit"><Clock className="h-3 w-3" /> Menunggu Admin</span>;
             case "APPROVED_BY_ADMIN":
-                return <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-[10px] font-black uppercase flex items-center gap-1 w-fit"><ShieldCheck className="h-3 w-3" /> Disetujui Admin</span>;
+                return <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-[10px] font-black uppercase flex items-center gap-1 w-fit"><Clock className="h-3 w-3" /> Menunggu Finance</span>;
             case "VERIFIED_BY_FINANCE":
-                return <span className="bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full text-[10px] font-black uppercase flex items-center gap-1 w-fit"><CheckCircle2 className="h-3 w-3" /> Terverifikasi Finance</span>;
+                return <span className="bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full text-[10px] font-black uppercase flex items-center gap-1 w-fit"><CheckCircle2 className="h-3 w-3" /> Terverifikasi</span>;
             case "REJECTED":
                 return <span className="bg-red-100 text-red-700 px-2 py-1 rounded-full text-[10px] font-black uppercase flex items-center gap-1 w-fit"><XCircle className="h-3 w-3" /> Ditolak</span>;
             default:
@@ -111,7 +111,7 @@ export function PurchaseRequestTab({ requests, userRole, userId }: { requests: a
                                                     onClick={() => handleStatusUpdate(pr.id, "APPROVED_BY_ADMIN")}
                                                     className="bg-primary text-white px-3 py-1.5 rounded text-[10px] font-bold hover:bg-primary/90 transition-all shrink-0"
                                                 >
-                                                    {loading === pr.id ? "..." : "Approve (Admin)"}
+                                                    {loading === pr.id ? "..." : "Setuju (Admin)"}
                                                 </button>
                                             )}
 
@@ -122,7 +122,7 @@ export function PurchaseRequestTab({ requests, userRole, userId }: { requests: a
                                                     onClick={() => handleStatusUpdate(pr.id, "VERIFIED_BY_FINANCE")}
                                                     className="bg-emerald-600 text-white px-3 py-1.5 rounded text-[10px] font-bold hover:bg-emerald-700 transition-all shrink-0"
                                                 >
-                                                    {loading === pr.id ? "..." : "Verify (Finance)"}
+                                                    {loading === pr.id ? "..." : "Verifikasi (Finance)"}
                                                 </button>
                                             )}
 
@@ -132,11 +132,20 @@ export function PurchaseRequestTab({ requests, userRole, userId }: { requests: a
                                                     disabled={loading === pr.id}
                                                     onClick={() => handleStatusUpdate(pr.id, "REJECTED")}
                                                     className="border-2 border-red-200 text-red-600 p-1.5 rounded hover:bg-red-50 transition-all"
-                                                    title="Reject"
+                                                    title="Tolak"
                                                 >
                                                     <XCircle className="h-4 w-4" />
                                                 </button>
                                             )}
+
+                                            {/* Print Button */}
+                                            <a
+                                                href={`/purchase/request/print/${pr.id}`}
+                                                target="_blank"
+                                                className="p-1.5 text-slate-400 hover:text-slate-900 rounded transition-colors"
+                                            >
+                                                <Printer className="h-4 w-4" />
+                                            </a>
 
                                             {/* Delete Button */}
                                             {(userRole === "ADMIN" || pr.requestedById === userId) && (

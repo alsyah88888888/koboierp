@@ -23,6 +23,7 @@ import {
 import {
     wipeDatabaseAction,
     importProductsAction,
+    createProductAction,
     getSystemSettingsAction,
     updateSystemSettingsAction,
     createVendorAction,
@@ -45,9 +46,13 @@ export function SettingsDashboard() {
     const [customers, setCustomers] = useState<any[]>([]);
     const [warehouses, setWarehouses] = useState<any[]>([]);
     const [coa, setCoa] = useState<any[]>([]);
-    const [showMDModal, setShowMDModal] = useState<"vendor" | "customer" | "warehouse" | "opening" | null>(null);
+    const [showMDModal, setShowMDModal] = useState<"product" | "vendor" | "customer" | "warehouse" | "opening" | null>(null);
 
-    const [mdForm, setMdForm] = useState({ name: "", email: "", phone: "", address: "", location: "", accountId: "", amount: 0 });
+    const [mdForm, setMdForm] = useState({
+        sku: "", name: "", category: "", uom: "", barcode: "",
+        email: "", phone: "", address: "",
+        location: "", accountId: "", amount: 0
+    });
 
     const [company, setCompany] = useState({
         name: "PT. Kola Borasi Indonesia",
@@ -87,14 +92,15 @@ export function SettingsDashboard() {
     const handleMDSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            if (showMDModal === "vendor") await createVendorAction({ name: mdForm.name, email: mdForm.email, phone: mdForm.phone, address: mdForm.address });
+            if (showMDModal === "product") await createProductAction({ sku: mdForm.sku, name: mdForm.name, category: mdForm.category, uom: mdForm.uom, barcode: mdForm.barcode });
+            else if (showMDModal === "vendor") await createVendorAction({ name: mdForm.name, email: mdForm.email, phone: mdForm.phone, address: mdForm.address });
             else if (showMDModal === "customer") await createCustomerAction({ name: mdForm.name, email: mdForm.email, phone: mdForm.phone, address: mdForm.address });
             else if (showMDModal === "warehouse") await createWarehouseAction({ name: mdForm.name, location: mdForm.location });
             else if (showMDModal === "opening") await setOpeningBalanceAction({ accountId: mdForm.accountId, amount: mdForm.amount });
 
             alert("Data berhasil disimpan.");
             setShowMDModal(null);
-            setMdForm({ name: "", email: "", phone: "", address: "", location: "", accountId: "", amount: 0 });
+            setMdForm({ sku: "", name: "", category: "", uom: "", barcode: "", email: "", phone: "", address: "", location: "", accountId: "", amount: 0 });
             loadData();
         } catch (e: any) {
             alert(e.message || "Gagal menyimpan data.");
@@ -455,8 +461,8 @@ export function SettingsDashboard() {
                 <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                     <div className="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl animate-in zoom-in duration-200">
                         <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-xl font-bold uppercase tracking-tight">Add {showMDModal}</h3>
-                            <button onClick={() => setShowMDModal(null)}><X className="h-6 w-6 text-slate-400" /></button>
+                            <h3 className="text-xl font-bold uppercase tracking-tight">Tambah {showMDModal === 'product' ? 'Produk' : showMDModal}</h3>
+                            <button type="button" onClick={() => setShowMDModal(null)}><X className="h-6 w-6 text-slate-400" /></button>
                         </div>
 
                         <form onSubmit={handleMDSubmit} className="space-y-4">
@@ -490,44 +496,98 @@ export function SettingsDashboard() {
                             ) : (
                                 <>
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black uppercase text-slate-400">Name</label>
+                                        <label className="text-[10px] font-black uppercase text-slate-400">Nama Lengkap</label>
                                         <input
                                             value={mdForm.name}
                                             onChange={e => setMdForm({ ...mdForm, name: e.target.value })}
                                             className="w-full bg-slate-50 border-2 border-slate-100 px-4 py-3 rounded-xl outline-none focus:border-primary font-bold text-sm"
-                                            placeholder="Enter name..."
+                                            placeholder="Nama Lengkap..."
                                             required
                                         />
                                     </div>
-                                    {showMDModal === "warehouse" ? (
+
+                                    {showMDModal === "product" ? (
+                                        <>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black uppercase text-slate-400">SKU / Kode unik</label>
+                                                    <input
+                                                        value={mdForm.sku}
+                                                        onChange={e => setMdForm({ ...mdForm, sku: e.target.value })}
+                                                        className="w-full bg-slate-50 border-2 border-slate-100 px-4 py-3 rounded-xl outline-none focus:border-primary font-bold text-sm"
+                                                        placeholder="Kode SKU..."
+                                                        required
+                                                    />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black uppercase text-slate-400">Kategori</label>
+                                                    <input
+                                                        value={mdForm.category}
+                                                        onChange={e => setMdForm({ ...mdForm, category: e.target.value })}
+                                                        className="w-full bg-slate-50 border-2 border-slate-100 px-4 py-3 rounded-xl outline-none focus:border-primary font-bold text-sm"
+                                                        placeholder="Mis. Elektronik"
+                                                    />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black uppercase text-slate-400">Satuan (UOM)</label>
+                                                    <input
+                                                        value={mdForm.uom}
+                                                        onChange={e => setMdForm({ ...mdForm, uom: e.target.value })}
+                                                        className="w-full bg-slate-50 border-2 border-slate-100 px-4 py-3 rounded-xl outline-none focus:border-primary font-bold text-sm"
+                                                        placeholder="Mis. Pcs, Box"
+                                                    />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black uppercase text-slate-400">Barcode (Opsional)</label>
+                                                    <input
+                                                        value={mdForm.barcode}
+                                                        onChange={e => setMdForm({ ...mdForm, barcode: e.target.value })}
+                                                        className="w-full bg-slate-50 border-2 border-slate-100 px-4 py-3 rounded-xl outline-none focus:border-primary font-bold text-sm"
+                                                        placeholder="Scan Barcode"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </>
+                                    ) : showMDModal === "warehouse" ? (
                                         <div className="space-y-2">
-                                            <label className="text-[10px] font-black uppercase text-slate-400">Location</label>
+                                            <label className="text-[10px] font-black uppercase text-slate-400">Lokasi / Alamat Cabang</label>
                                             <input
                                                 value={mdForm.location}
                                                 onChange={e => setMdForm({ ...mdForm, location: e.target.value })}
                                                 className="w-full bg-slate-50 border-2 border-slate-100 px-4 py-3 rounded-xl outline-none focus:border-primary font-bold text-sm"
-                                                placeholder="Enter location..."
+                                                placeholder="Alamat lengkap lokasi..."
                                                 required
                                             />
                                         </div>
                                     ) : (
                                         <>
                                             <div className="space-y-2">
-                                                <label className="text-[10px] font-black uppercase text-slate-400">Contact (Phone/Email)</label>
+                                                <label className="text-[10px] font-black uppercase text-slate-400">Kontak (HP/WhatsApp)</label>
                                                 <input
                                                     value={mdForm.phone}
                                                     onChange={e => setMdForm({ ...mdForm, phone: e.target.value })}
                                                     className="w-full bg-slate-50 border-2 border-slate-100 px-4 py-3 rounded-xl outline-none focus:border-primary font-bold text-sm"
-                                                    placeholder="Phone / Email..."
+                                                    placeholder="081xxx..."
                                                 />
                                             </div>
                                             <div className="space-y-2">
-                                                <label className="text-[10px] font-black uppercase text-slate-400">Address</label>
+                                                <label className="text-[10px] font-black uppercase text-slate-400">Email Utama</label>
                                                 <input
-                                                    value={mdForm.address}
-                                                    onChange={e => setMdForm({ ...mdForm, address: e.target.value })}
+                                                    type="email"
+                                                    value={mdForm.email}
+                                                    onChange={e => setMdForm({ ...mdForm, email: e.target.value })}
                                                     className="w-full bg-slate-50 border-2 border-slate-100 px-4 py-3 rounded-xl outline-none focus:border-primary font-bold text-sm"
-                                                    placeholder="Full address..."
+                                                    placeholder="email@perusahaan.com"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black uppercase text-slate-400">Alamat Lengkap</label>
+                                                <textarea
+                                                    value={mdForm.address}
+                                                    rows={3}
+                                                    onChange={e => setMdForm({ ...mdForm, address: e.target.value })}
+                                                    className="w-full bg-slate-50 border-2 border-slate-100 px-4 py-3 rounded-xl outline-none focus:border-primary font-bold text-sm resize-none"
+                                                    placeholder="Alamat domisili / kantor pusat..."
                                                 />
                                             </div>
                                         </>
