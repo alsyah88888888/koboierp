@@ -1,22 +1,22 @@
 import prisma from "@/lib/prisma";
 import { DocumentLayout } from "@/components/print/DocumentLayout";
 import { format } from "date-fns";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, serializeDecimal } from "@/lib/utils";
 
 export default async function InvoicePrintPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
-    const delivery = await prisma.salesDelivery.findUnique({
+    const delivery: any = await prisma.salesDelivery.findUnique({
         where: { id },
         include: {
             items: { include: { product: true } },
             warehouse: true
         }
-    });
+    }).then(res => serializeDecimal(res));
 
     if (!delivery) return <div>Data not found</div>;
 
-    const totalQty = delivery.items.reduce((acc, item) => acc + item.quantity, 0);
-    const subTotal = delivery.items.reduce((acc, item) => acc + (item.quantity * Number(item.salesPrice)), 0);
+    const totalQty = delivery.items.reduce((acc: number, item: any) => acc + item.quantity, 0);
+    const subTotal = delivery.items.reduce((acc: number, item: any) => acc + (item.quantity * Number(item.salesPrice)), 0);
     const ppn = subTotal * 0.11;
     const grandTotal = subTotal + ppn;
 
@@ -62,7 +62,7 @@ export default async function InvoicePrintPage({ params }: { params: Promise<{ i
                     </tr>
                 </thead>
                 <tbody className="text-xs font-bold">
-                    {delivery.items.map((item, idx) => (
+                    {delivery.items.map((item: any, idx: number) => (
                         <tr key={idx}>
                             <td className="border-2 border-slate-900 p-3 text-center font-black">{idx + 1}</td>
                             <td className="border-2 border-slate-900 p-3 uppercase">{item.product.name}</td>

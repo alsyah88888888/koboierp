@@ -36,7 +36,8 @@ const IconMap: any = {
     ShoppingBag,
     Wallet,
     ShoppingCart,
-    Package
+    Package,
+    TrendingUp
 };
 
 export function AdminDashboard({ stats, salesData, inventoryData, recentActivity }: any) {

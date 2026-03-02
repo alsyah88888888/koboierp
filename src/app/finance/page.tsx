@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma";
 import { getBalanceSheet } from "@/modules/finance/finance.service";
 import { FinanceDashboard } from "./FinanceDashboard";
+import { serializeDecimal } from "@/lib/utils";
 
 export default async function FinancePage() {
     const accounts = await getBalanceSheet().catch(() => []);
@@ -16,12 +17,12 @@ export default async function FinancePage() {
 
     const vendors = await (prisma.vendor as any).findMany({
         orderBy: { balance: 'desc' },
-        where: { balance: { gt: 0 } }
+        where: { balance: { not: 0 } }
     }).catch(() => []);
 
     const customers = await (prisma.customer as any).findMany({
         orderBy: { balance: 'desc' },
-        where: { balance: { gt: 0 } }
+        where: { balance: { not: 0 } }
     }).catch(() => []);
 
     const pendingPurchases = await (prisma.goodsReceipt as any).findMany({
@@ -43,43 +44,22 @@ export default async function FinancePage() {
     }).catch(() => []);
 
     // Serialize Decimal objects for Client Component
-    const serializedLedger = ledger.map((entry: any) => ({
-        ...entry,
-        amount: Number(entry.amount),
-        transaction: entry.transaction ? {
-            ...entry.transaction,
-            amount: Number(entry.transaction.amount)
-        } : null
-    }));
+    const serializedLedger = serializeDecimal(ledger);
+    const serializedVendors = serializeDecimal(vendors);
+    const serializedCustomers = serializeDecimal(customers);
 
-    const serializedVendors = vendors.map((v: any) => ({ ...v, balance: Number(v.balance) }));
-    const serializedCustomers = customers.map((c: any) => ({ ...c, balance: Number(c.balance) }));
-
-    const serializedPurchases = pendingPurchases.map((p: any) => ({
+    // Add calculated totals for display
+    const serializedPurchases = serializeDecimal(pendingPurchases).map((p: any) => ({
         ...p,
-        total: p.items.reduce((sum: number, i: any) => sum + (i.quantity * Number(i.purchasePrice)), 0),
-        items: p.items.map((i: any) => ({
-            ...i,
-            purchasePrice: Number(i.purchasePrice)
-        }))
+        total: p.items.reduce((sum: number, i: any) => sum + (i.quantity * i.purchasePrice), 0)
     }));
 
-    const serializedSales = pendingSales.map((s: any) => ({
+    const serializedSales = serializeDecimal(pendingSales).map((s: any) => ({
         ...s,
-        total: s.items.reduce((sum: number, i: any) => sum + (i.quantity * Number(i.salesPrice || 0)), 0),
-        items: s.items.map((i: any) => ({
-            ...i,
-            salesPrice: Number(i.salesPrice || 0)
-        }))
+        total: s.items.reduce((sum: number, i: any) => sum + (i.quantity * (s.salesPrice || 0)), 0)
     }));
 
-    const serializedUnverifiedReceipts = unverifiedReceipts.map((r: any) => ({
-        ...r,
-        items: r.items.map((i: any) => ({
-            ...i,
-            purchasePrice: Number(i.purchasePrice)
-        }))
-    }));
+    const serializedUnverifiedReceipts = serializeDecimal(unverifiedReceipts);
 
     return (
         <FinanceDashboard
@@ -94,4 +74,3 @@ export default async function FinancePage() {
     );
 }
 
-import { cn } from "@/lib/utils";

@@ -22,6 +22,24 @@ export default async function DashboardPage() {
       iconName: "ShoppingBag", iconBg: "bg-blue-50", iconColor: "text-blue-500"
     },
     {
+      name: "Nett Margin Sales",
+      value: formatCurrency(summary.nettMarginSales),
+      change: "Revenue - COGS - Exp", trend: summary.nettMarginSales > 0 ? 'up' : 'down',
+      iconName: "TrendingUp", iconBg: "bg-indigo-50", iconColor: "text-indigo-500"
+    },
+    {
+      name: "Margin BC",
+      value: formatCurrency(summary.nettMarginBC),
+      change: "Sales Team BC", trend: summary.nettMarginBC > 0 ? 'up' : 'down',
+      iconName: "TrendingUp", iconBg: "bg-orange-50", iconColor: "text-orange-500"
+    },
+    {
+      name: "Margin PF",
+      value: formatCurrency(summary.nettMarginPF),
+      change: "Sales Team PF", trend: summary.nettMarginPF > 0 ? 'up' : 'down',
+      iconName: "TrendingUp", iconBg: "bg-purple-50", iconColor: "text-purple-500"
+    },
+    {
       name: "Cash/Bank Balance",
       value: formatCurrency(summary.cashBalance),
       change: "Saldo Bank BCA", trend: 'up',
@@ -41,16 +59,8 @@ export default async function DashboardPage() {
     },
   ];
 
-  // 3. Prepare Chart Data (Mocking last 7 days distribution)
-  const salesData = [
-    { name: 'Mon', sales: 4000, purchases: 2400 },
-    { name: 'Tue', sales: 3000, purchases: 1398 },
-    { name: 'Wed', sales: 2000, purchases: 9800 },
-    { name: 'Thu', sales: 2780, purchases: 3908 },
-    { name: 'Fri', sales: 1890, purchases: 4800 },
-    { name: 'Sat', sales: 2390, purchases: 3800 },
-    { name: 'Sun', sales: 3490, purchases: 4300 },
-  ];
+  // 3. Prepare Chart Data
+  const salesData = summary.weeklyStats || [];
 
   // 4. Group Inventory by Category
   const categoryMap: any = {};

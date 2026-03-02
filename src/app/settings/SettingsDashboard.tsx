@@ -51,7 +51,7 @@ export function SettingsDashboard() {
 
     const [company, setCompany] = useState({
         name: "PT. Kola Borasi Indonesia",
-        address: "Jl. Industri No. 12, Jakarta Pusat, DKI Jakarta",
+        address: "Jl. Arjuna IV Green Kartika Residence Blok EE NO.2, CIBINONG, KAB. BOGOR - JAWA BARAT, 16911",
         taxId: "01.234.567.8-012.000",
         website: "www.kolaborasi.id"
     });

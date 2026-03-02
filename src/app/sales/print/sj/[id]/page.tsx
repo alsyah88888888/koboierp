@@ -1,16 +1,17 @@
 import prisma from "@/lib/prisma";
 import { DocumentLayout } from "@/components/print/DocumentLayout";
 import { format } from "date-fns";
+import { serializeDecimal } from "@/lib/utils";
 
 export default async function SJPrintPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
-    const delivery = await prisma.salesDelivery.findUnique({
+    const delivery: any = await prisma.salesDelivery.findUnique({
         where: { id },
         include: {
             items: { include: { product: true } },
             warehouse: true
         }
-    });
+    }).then(res => serializeDecimal(res));
 
     if (!delivery) return <div>Data not found</div>;
 
@@ -47,7 +48,7 @@ export default async function SJPrintPage({ params }: { params: Promise<{ id: st
                     </tr>
                 </thead>
                 <tbody className="text-[11px] font-bold">
-                    {delivery.items.map((item, idx) => (
+                    {delivery.items.map((item: any, idx: number) => (
                         <tr key={idx}>
                             <td className="border-2 border-slate-900 p-2 text-center">{idx + 1}</td>
                             <td className="border-2 border-slate-900 p-2 uppercase">{item.product.name}</td>

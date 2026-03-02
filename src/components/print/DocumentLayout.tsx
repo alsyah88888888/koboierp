@@ -44,7 +44,7 @@ export function DocumentLayout({ title, docNumber, date, children, headerInfo, i
                     <div>
                         <h1 className={`${isA5 ? 'text-2xl' : 'text-3xl'} font-black tracking-tighter text-slate-900`}>PT KOLA BORASI INDONESIA</h1>
                         <p className={`${isA5 ? 'text-[10px]' : 'text-sm'} font-bold text-slate-500 italic`}>Trading and Distribution</p>
-                        <p className={`${isA5 ? 'text-[9px]' : 'text-xs'} font-medium text-slate-400 mt-1`}>Jl. Industri Raya No. 12, Jakarta</p>
+                        <p className={`${isA5 ? 'text-[9px]' : 'text-xs'} font-medium text-slate-400 mt-1`}>Jl. Arjuna IV Green Kartika Residence Blok EE NO.2, CIBINONG, KAB. BOGOR - JAWA BARAT, 16911</p>
                         <p className={`${isA5 ? 'text-[9px]' : 'text-xs'} font-medium text-slate-400`}>Telp: 0857-7444-4805</p>
                     </div>
                     <div className="text-right">

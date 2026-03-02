@@ -10,6 +10,9 @@ const STANDARD_ACCOUNTS = [
     { code: '201', name: 'Hutang Supplier (AP)', type: 'LIABILITY' },
     { code: '401', name: 'Pendapatan Penjualan', type: 'REVENUE' },
     { code: '501', name: 'Harga Pokok Penjualan (HPP)', type: 'EXPENSE' },
+    { code: '601', name: 'Biaya Operasional', type: 'EXPENSE' },
+    { code: '602', name: 'Biaya Gaji & Upah', type: 'EXPENSE' },
+    { code: '603', name: 'Biaya Listrik, Air & WiFi', type: 'EXPENSE' },
 ];
 
 async function main() {

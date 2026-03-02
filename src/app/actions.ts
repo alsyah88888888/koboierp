@@ -7,7 +7,7 @@ import prisma from "@/lib/prisma";
  * Goods Receipt Actions (Penerimaan Barang)
  */
 export async function createGoodsReceiptAction(data: {
-    receiptNumber: string;
+    receiptNumber?: string;
     receivedFrom: string;
     warehouseId: string;
     date?: Date;
@@ -16,21 +16,42 @@ export async function createGoodsReceiptAction(data: {
     salesPerson?: string;
     items: { productId: string; quantity: number; purchasePrice: number; uom?: string }[];
 }) {
-    // Generate automatic Form Number (Form-YYYYMMDD-HHmmss-Random)
     const txDate = data.date || new Date();
+
+    // Automatic numbering for receiptNumber: KB-LPB-DDMMYYYY-XXX
+    let finalReceiptNumber = data.receiptNumber;
+    if (!finalReceiptNumber) {
+        const day = String(txDate.getDate()).padStart(2, '0');
+        const month = String(txDate.getMonth() + 1).padStart(2, '0');
+        const year = txDate.getFullYear();
+        const dateStr = `${day}${month}${year}`;
+
+        const startOfDay = new Date(txDate);
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(txDate);
+        endOfDay.setHours(23, 59, 59, 999);
+
+        const count = await (prisma.goodsReceipt as any).count({
+            where: { createdAt: { gte: startOfDay, lte: endOfDay } }
+        });
+        const sequence = String(count + 1).padStart(3, '0');
+        finalReceiptNumber = `KB-LPB-${dateStr}-${sequence}`;
+    }
+
+    // Generate automatic Form Number (Internal Tracking)
     const now = new Date();
-    const dateStr = txDate.toISOString().split('T')[0].replace(/-/g, '');
+    const dateStrForm = txDate.toISOString().split('T')[0].replace(/-/g, '');
     const timeStr = now.getHours().toString().padStart(2, '0') +
         now.getMinutes().toString().padStart(2, '0') +
         now.getSeconds().toString().padStart(2, '0');
     const randomSuffix = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-    const formNumber = `FORM-${dateStr}-${timeStr}-${randomSuffix}`;
+    const formNumber = `FORM-${dateStrForm}-${timeStr}-${randomSuffix}`;
 
     try {
         return await prisma.$transaction(async (tx: any) => {
             const receipt = await tx.goodsReceipt.create({
                 data: {
-                    receiptNumber: data.receiptNumber,
+                    receiptNumber: finalReceiptNumber,
                     receivedFrom: data.receivedFrom,
                     date: txDate,
                     taxInvoiceDate: data.taxInvoiceDate,
@@ -48,6 +69,7 @@ export async function createGoodsReceiptAction(data: {
                     }
                 }
             });
+
 
             // --- AUTOMATIC STOCK UPDATE ON CREATE ---
             for (const item of data.items) {
@@ -78,7 +100,7 @@ export async function createGoodsReceiptAction(data: {
             }
 
             // --- ACCRUAL JOURNAL ON CREATE (Inventory vs Accounts Payable) ---
-            const totalValue = data.items.reduce((sum, item) => sum + (item.quantity * Number(item.purchasePrice)), 0);
+            const totalValue = data.items.reduce((sum: number, item) => sum + (item.quantity * Number(item.purchasePrice)), 0);
             if (totalValue > 0) {
                 const invAccount = await tx.financeAccount.findUnique({ where: { code: '104' } }); // Persediaan
                 const apAccount = await tx.financeAccount.findUnique({ where: { code: '201' } }); // Hutang
@@ -86,7 +108,7 @@ export async function createGoodsReceiptAction(data: {
                 if (invAccount && apAccount) {
                     await tx.journalEntry.create({
                         data: {
-                            description: `Persediaan (Hutang): ${data.receiptNumber} (${data.receivedFrom})`,
+                            description: `Persediaan (Hutang): ${finalReceiptNumber} (${data.receivedFrom})`,
                             amount: totalValue as any,
                             type: "DEBIT",
                             accountId: invAccount.id,
@@ -96,7 +118,7 @@ export async function createGoodsReceiptAction(data: {
 
                     await tx.journalEntry.create({
                         data: {
-                            description: `Hutang Pembelian: ${data.receiptNumber} (${data.receivedFrom})`,
+                            description: `Hutang Pembelian: ${finalReceiptNumber} (${data.receivedFrom})`,
                             amount: totalValue as any,
                             type: "CREDIT",
                             accountId: apAccount.id,
@@ -104,6 +126,15 @@ export async function createGoodsReceiptAction(data: {
                         }
                     });
                 }
+            }
+
+            // --- UPDATE VENDOR BALANCE ---
+            const vendor = await tx.vendor.findFirst({ where: { name: data.receivedFrom } });
+            if (vendor) {
+                await tx.vendor.update({
+                    where: { id: vendor.id },
+                    data: { balance: { increment: totalValue } }
+                });
             }
 
             revalidatePath("/purchase");
@@ -132,7 +163,7 @@ export async function createGoodsReceiptAction(data: {
  * UPDATE: Goods Receipt (Edit existing)
  */
 export async function updateGoodsReceiptAction(id: string, data: {
-    receiptNumber: string;
+    receiptNumber?: string;
     receivedFrom: string;
     warehouseId: string;
     date?: Date;
@@ -148,7 +179,22 @@ export async function updateGoodsReceiptAction(id: string, data: {
             include: { items: true }
         });
         if (!existing) throw new Error("Receipt not found");
-        if (existing.isVerified) throw new Error("Cannot edit verified receipt");
+        // if (existing.isVerified) throw new Error("Cannot edit verified receipt");
+
+        // --- REVERSE OLD BALANCE ---
+        const oldTotal = existing.items.reduce((sum: number, i: any) => sum + (i.quantity * Number(i.purchasePrice)), 0);
+        const oldVendor = await tx.vendor.findFirst({ where: { name: existing.receivedFrom } });
+        if (oldVendor && oldTotal > 0) {
+            await tx.vendor.update({
+                where: { id: oldVendor.id },
+                data: { balance: { decrement: oldTotal } }
+            });
+        }
+
+        // --- DELETE OLD JOURNALS ---
+        await tx.journalEntry.deleteMany({
+            where: { description: { contains: existing.receiptNumber } }
+        });
 
         // --- REVERSE OLD STOCK ---
         for (const item of existing.items) {
@@ -176,6 +222,7 @@ export async function updateGoodsReceiptAction(id: string, data: {
                 warehouseId: data.warehouseId,
             }
         });
+
 
         // 3. Update Items
         await tx.goodsReceiptItem.deleteMany({ where: { receiptId: id } });
@@ -207,8 +254,49 @@ export async function updateGoodsReceiptAction(id: string, data: {
             });
         }
 
+        // --- UPDATE NEW JOURNALS & BALANCE ---
+        const totalValue = data.items.reduce((sum: number, item) => sum + (item.quantity * Number(item.purchasePrice)), 0);
+        const txDate = data.date || existing.date;
+        const receiptNumber = data.receiptNumber || existing.receiptNumber;
+
+        if (totalValue > 0) {
+            const invAccount = await tx.financeAccount.findUnique({ where: { code: '104' } });
+            const apAccount = await tx.financeAccount.findUnique({ where: { code: '201' } });
+
+            if (invAccount && apAccount) {
+                await tx.journalEntry.create({
+                    data: {
+                        description: `Persediaan (Hutang): ${receiptNumber} (${data.receivedFrom})`,
+                        amount: totalValue as any,
+                        type: "DEBIT",
+                        accountId: invAccount.id,
+                        date: txDate
+                    }
+                });
+                await tx.journalEntry.create({
+                    data: {
+                        description: `Hutang Pembelian: ${receiptNumber} (${data.receivedFrom})`,
+                        amount: totalValue as any,
+                        type: "CREDIT",
+                        accountId: apAccount.id,
+                        date: txDate
+                    }
+                });
+            }
+
+            const vendor = await tx.vendor.findFirst({ where: { name: data.receivedFrom } });
+            if (vendor) {
+                await tx.vendor.update({
+                    where: { id: vendor.id },
+                    data: { balance: { increment: totalValue } }
+                });
+            }
+        }
+
         revalidatePath("/purchase");
         revalidatePath("/warehouse");
+        revalidatePath("/finance");
+        revalidatePath("/");
 
         return { success: true };
     });
@@ -292,6 +380,16 @@ export async function deleteGoodsReceiptAction(id: string) {
             });
         }
 
+        // --- REVERSE VENDOR BALANCE ---
+        const totalValue = receipt.items.reduce((sum: number, i: any) => sum + (i.quantity * Number(i.purchasePrice)), 0);
+        const vendor = await tx.vendor.findFirst({ where: { name: receipt.receivedFrom } });
+        if (vendor && totalValue > 0) {
+            await tx.vendor.update({
+                where: { id: vendor.id },
+                data: { balance: { decrement: totalValue } }
+            });
+        }
+
         // 2. Delete Journal Entries
         // We look for entries mentioning the receipt number
         await tx.journalEntry.deleteMany({
@@ -323,17 +421,31 @@ export async function createSalesDeliveryAction(data: {
     buyerName: string;
     warehouseId: string;
     salesPerson?: string;
+    totalDiscount?: number;
+    taxRate?: number;
     createdAt?: Date;
-    items: { productId: string; quantity: number; salesPrice: number; uom?: string }[];
+    items: { productId: string; quantity: number; salesPrice: number; discount?: number; uom?: string }[];
 }) {
-    // Generate automatic Delivery Number (SJ-YYYYMMDD-Random)
     const txDate = data.createdAt || new Date();
-    const dateStr = txDate.toISOString().split('T')[0].replace(/-/g, '');
-    const randomSuffix = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-    const deliveryNumber = `SJ-${dateStr}-${randomSuffix}`;
+    const day = String(txDate.getDate()).padStart(2, '0');
+    const month = String(txDate.getMonth() + 1).padStart(2, '0');
+    const year = txDate.getFullYear();
+    const dateStr = `${day}${month}${year}`;
+
+    // Get count for today to generate sequential number
+    const startOfDay = new Date(txDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(txDate);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const count = await (prisma.salesDelivery as any).count({
+        where: { createdAt: { gte: startOfDay, lte: endOfDay } }
+    });
+    const sequence = String(count + 1).padStart(3, '0');
+    const deliveryNumber = `KB-TRN-${dateStr}-${sequence}`;
 
     return await prisma.$transaction(async (tx: any) => {
-        // 1. Create Sales Delivery record
+        // 1. Create Sales Delivery record (Only known fields)
         const delivery = await tx.salesDelivery.create({
             data: {
                 deliveryNumber: deliveryNumber,
@@ -350,8 +462,43 @@ export async function createSalesDeliveryAction(data: {
                         uom: item.uom
                     }))
                 }
-            }
+            },
+            include: { items: true }
         });
+
+        // 1.1 Calculate totals
+        let grossAmount = 0;
+        let totalItemDiscounts = 0;
+        data.items.forEach(i => {
+            const lineGross = i.quantity * i.salesPrice;
+            const lineDiscount = lineGross * ((i.discount || 0) / 100);
+            grossAmount += lineGross;
+            totalItemDiscounts += lineDiscount;
+        });
+
+        const subtotal = grossAmount - totalItemDiscounts;
+        const totalDiscountPercent = data.totalDiscount || 0;
+        const totalDiscountNominal = subtotal * (totalDiscountPercent / 100);
+        const taxRatePercent = data.taxRate || 0;
+        const taxAmount = (subtotal - totalDiscountNominal) * (taxRatePercent / 100);
+        const grandTotal = subtotal - totalDiscountNominal + taxAmount;
+
+        // 1.2 Update new fields via raw SQL (Safety for out-of-sync client)
+        await tx.$executeRawUnsafe(
+            `UPDATE "SalesDelivery" SET "subtotal" = ?, "totalDiscount" = ?, "taxRate" = ?, "taxAmount" = ?, "grandTotal" = ? WHERE id = ?`,
+            subtotal, totalDiscountNominal, taxRatePercent, taxAmount, grandTotal, delivery.id
+        );
+
+        // 1.3 Update item discounts via raw SQL
+        // We match by productId since we just created them in the same transaction
+        for (const inputItem of data.items) {
+            if (inputItem.discount && inputItem.discount > 0) {
+                await tx.$executeRawUnsafe(
+                    `UPDATE "SalesDeliveryItem" SET "discount" = ? WHERE "deliveryId" = ? AND "productId" = ?`,
+                    inputItem.discount, delivery.id, inputItem.productId
+                );
+            }
+        }
 
         // 2. Update Stock (Subtract) and Record Movement for each item
         for (const item of data.items) {
@@ -398,33 +545,73 @@ export async function createSalesDeliveryAction(data: {
         // Let's keep Revenue entry (Credit 401) but use a temporary clearing account for Debit
         // until it's PAID (to Bank 102).
 
-        const totalSales = data.items.reduce((sum, item) => sum + (item.quantity * Number(item.salesPrice)), 0);
-
-        if (totalSales > 0) {
-            const tempAccount = await tx.financeAccount.findUnique({ where: { code: '105' } }); // Piutang/Clearing
+        if (grandTotal > 0) {
+            const tempAccount = await tx.financeAccount.findUnique({ where: { code: '105' } }); // Piutang
             const salesAccount = await tx.financeAccount.findUnique({ where: { code: '401' } }); // Pendapatan
+            const taxAccount = await tx.financeAccount.findUnique({ where: { code: '202' } }); // PPN Keluaran
+            const discountAccount = await tx.financeAccount.findUnique({ where: { code: '402' } }); // Potongan Penjualan
 
-            if (tempAccount && salesAccount) {
+            // DEBIT Piutang (Grand Total)
+            if (tempAccount) {
                 await tx.journalEntry.create({
                     data: {
                         description: `Piutang Penjualan: ${deliveryNumber} (${data.buyerName})`,
-                        amount: totalSales as any,
+                        amount: grandTotal as any,
                         type: "DEBIT",
                         accountId: tempAccount.id,
                         date: txDate
                     }
                 });
+            }
 
+            // CREDIT Pendapatan (Gross Amount)
+            if (salesAccount) {
                 await tx.journalEntry.create({
                     data: {
-                        description: `Pendapatan Penjualan: ${deliveryNumber} (${data.buyerName})`,
-                        amount: totalSales as any,
+                        description: `Pendapatan Penjualan: ${deliveryNumber}`,
+                        amount: grossAmount as any,
                         type: "CREDIT",
                         accountId: salesAccount.id,
                         date: txDate
                     }
                 });
             }
+
+            // DEBIT Potongan Penjualan (Total Discounts)
+            const totalAllDiscounts = totalItemDiscounts + totalDiscountNominal;
+            if (discountAccount && totalAllDiscounts > 0) {
+                await tx.journalEntry.create({
+                    data: {
+                        description: `Potongan Penjualan: ${deliveryNumber}`,
+                        amount: totalAllDiscounts as any,
+                        type: "DEBIT",
+                        accountId: discountAccount.id,
+                        date: txDate
+                    }
+                });
+            }
+
+            // CREDIT PPN Keluaran (Tax)
+            if (taxAccount && taxAmount > 0) {
+                await tx.journalEntry.create({
+                    data: {
+                        description: `PPN Keluaran: ${deliveryNumber}`,
+                        amount: taxAmount as any,
+                        type: "CREDIT",
+                        accountId: taxAccount.id,
+                        date: txDate
+                    }
+                });
+            }
+        }
+
+        // --- UPDATE CUSTOMER BALANCE ---
+        const customer = await tx.customer.findFirst({ where: { name: data.buyerName } });
+        if (customer && grandTotal > 0) {
+            await tx.customer.update({
+                where: { id: customer.id },
+                data: { balance: { increment: grandTotal } }
+            });
         }
 
         revalidatePath("/sales");
@@ -433,6 +620,184 @@ export async function createSalesDeliveryAction(data: {
         revalidatePath("/");
 
         return { success: true, deliveryNumber };
+    });
+}
+
+export async function updateSalesDeliveryAction(id: string, data: {
+    recipient: string;
+    buyerName: string;
+    warehouseId: string;
+    salesPerson?: string;
+    totalDiscount?: number;
+    taxRate?: number;
+    createdAt?: Date;
+    items: { productId: string; quantity: number; salesPrice: number; discount?: number; uom?: string }[];
+}) {
+    return await prisma.$transaction(async (tx: any) => {
+        const oldDelivery = await tx.salesDelivery.findUnique({
+            where: { id },
+            include: { items: true }
+        });
+
+        if (!oldDelivery) throw new Error("Delivery not found");
+
+        // 1. Reverse Stock for old items
+        for (const item of oldDelivery.items) {
+            await tx.stock.update({
+                where: { productId_warehouseId: { productId: item.productId, warehouseId: oldDelivery.warehouseId } },
+                data: { quantity: { increment: item.quantity } }
+            });
+        }
+
+        // 2. Clear old items and journal entries
+        const oldGrandTotalRaw: any[] = await tx.$queryRawUnsafe(`SELECT "grandTotal" FROM "SalesDelivery" WHERE id = ?`, id);
+        const oldGrandTotal = Number(oldGrandTotalRaw[0]?.grandTotal || 0);
+
+        await tx.salesDeliveryItem.deleteMany({ where: { deliveryId: id } });
+        await tx.journalEntry.deleteMany({ where: { description: { contains: oldDelivery.deliveryNumber } } });
+
+        // --- REVERSE OLD CUSTOMER BALANCE ---
+        const oldCustomer = await tx.customer.findFirst({ where: { name: oldDelivery.buyerName } });
+        if (oldCustomer && oldGrandTotal > 0) {
+            await tx.customer.update({
+                where: { id: oldCustomer.id },
+                data: { balance: { decrement: oldGrandTotal } }
+            });
+        }
+
+        // 3. Update Delivery Header (Only known fields)
+        const txDate = data.createdAt || new Date();
+        await tx.salesDelivery.update({
+            where: { id },
+            data: {
+                recipient: data.recipient,
+                buyerName: data.buyerName,
+                warehouseId: data.warehouseId,
+                salesPerson: data.salesPerson,
+                createdAt: txDate
+            }
+        });
+
+        // 4. Create new items (one by one to get IDs if needed, or just creation)
+        for (const item of data.items) {
+            await tx.salesDeliveryItem.create({
+                data: {
+                    deliveryId: id,
+                    productId: item.productId,
+                    quantity: item.quantity,
+                    salesPrice: item.salesPrice as any,
+                    uom: item.uom
+                }
+            });
+
+            // Update Stock
+            await tx.stock.update({
+                where: { productId_warehouseId: { productId: item.productId, warehouseId: data.warehouseId } },
+                data: { quantity: { decrement: item.quantity } }
+            });
+        }
+
+        // 5. Calculate and Update Totals via Raw SQL
+        let grossAmount = 0;
+        let totalItemDiscounts = 0;
+        data.items.forEach(i => {
+            const lineGross = i.quantity * i.salesPrice;
+            const lineDiscount = lineGross * ((i.discount || 0) / 100);
+            grossAmount += lineGross;
+            totalItemDiscounts += lineDiscount;
+        });
+
+        const subtotal = grossAmount - totalItemDiscounts;
+        const totalDiscountPercent = data.totalDiscount || 0;
+        const totalDiscountNominal = subtotal * (totalDiscountPercent / 100);
+        const taxRatePercent = data.taxRate || 0;
+        const taxAmount = (subtotal - totalDiscountNominal) * (taxRatePercent / 100);
+        const grandTotal = subtotal - totalDiscountNominal + taxAmount;
+
+        await tx.$executeRawUnsafe(
+            `UPDATE "SalesDelivery" SET "subtotal" = ?, "totalDiscount" = ?, "taxRate" = ?, "taxAmount" = ?, "grandTotal" = ? WHERE id = ?`,
+            subtotal, totalDiscountNominal, taxRatePercent, taxAmount, grandTotal, id
+        );
+
+        // Update item discounts
+        for (const inputItem of data.items) {
+            if (inputItem.discount && inputItem.discount > 0) {
+                await tx.$executeRawUnsafe(
+                    `UPDATE "SalesDeliveryItem" SET "discount" = ? WHERE "deliveryId" = ? AND "productId" = ?`,
+                    inputItem.discount, id, inputItem.productId
+                );
+            }
+        }
+
+        // 6. Create Finance Journal Entries
+        const tempAccount = await tx.financeAccount.findUnique({ where: { code: '105' } });
+        const salesAccount = await tx.financeAccount.findUnique({ where: { code: '401' } });
+        const taxAccount = await tx.financeAccount.findUnique({ where: { code: '202' } });
+        const discountAccount = await tx.financeAccount.findUnique({ where: { code: '402' } });
+
+        if (grandTotal > 0) {
+            if (tempAccount) {
+                await tx.journalEntry.create({
+                    data: {
+                        description: `Piutang Penjualan: ${oldDelivery.deliveryNumber} (${data.buyerName})`,
+                        amount: grandTotal as any,
+                        type: "DEBIT",
+                        accountId: tempAccount.id,
+                        date: txDate
+                    }
+                });
+            }
+            if (salesAccount) {
+                await tx.journalEntry.create({
+                    data: {
+                        description: `Pendapatan Penjualan: ${oldDelivery.deliveryNumber}`,
+                        amount: grossAmount as any,
+                        type: "CREDIT",
+                        accountId: salesAccount.id,
+                        date: txDate
+                    }
+                });
+            }
+            const totalAllDiscounts = totalItemDiscounts + totalDiscountNominal;
+            if (discountAccount && totalAllDiscounts > 0) {
+                await tx.journalEntry.create({
+                    data: {
+                        description: `Potongan Penjualan: ${oldDelivery.deliveryNumber}`,
+                        amount: totalAllDiscounts as any,
+                        type: "DEBIT",
+                        accountId: discountAccount.id,
+                        date: txDate
+                    }
+                });
+            }
+            if (taxAccount && taxAmount > 0) {
+                await tx.journalEntry.create({
+                    data: {
+                        description: `PPN Keluaran: ${oldDelivery.deliveryNumber}`,
+                        amount: taxAmount as any,
+                        type: "CREDIT",
+                        accountId: taxAccount.id,
+                        date: txDate
+                    }
+                });
+            }
+        }
+
+        // --- UPDATE NEW CUSTOMER BALANCE ---
+        const customer = await tx.customer.findFirst({ where: { name: data.buyerName } });
+        if (customer && grandTotal > 0) {
+            await tx.customer.update({
+                where: { id: customer.id },
+                data: { balance: { increment: grandTotal } }
+            });
+        }
+
+        revalidatePath("/sales");
+        revalidatePath("/warehouse");
+        revalidatePath("/finance");
+        revalidatePath("/");
+
+        return { success: true };
     });
 }
 
@@ -468,6 +833,17 @@ export async function deleteSalesDeliveryAction(id: string) {
                     type: "SALE_CANCEL",
                     reference: delivery.deliveryNumber
                 }
+            });
+        }
+
+        // --- REVERSE CUSTOMER BALANCE ---
+        const grandTotalRaw: any[] = await tx.$queryRawUnsafe(`SELECT "grandTotal" FROM "SalesDelivery" WHERE id = ?`, id);
+        const grandTotal = Number(grandTotalRaw[0]?.grandTotal || 0);
+        const customer = await tx.customer.findFirst({ where: { name: delivery.buyerName } });
+        if (customer && grandTotal > 0) {
+            await tx.customer.update({
+                where: { id: customer.id },
+                data: { balance: { decrement: grandTotal } }
             });
         }
 
@@ -548,6 +924,15 @@ export async function updatePaymentStatusAction(type: "PURCHASE" | "SALE", id: s
                             date: new Date()
                         }
                     });
+
+                    // --- DECREMENT VENDOR BALANCE ON PAID ---
+                    const vendor = await tx.vendor.findFirst({ where: { name: party } });
+                    if (vendor) {
+                        await tx.vendor.update({
+                            where: { id: vendor.id },
+                            data: { balance: { decrement: amount } }
+                        });
+                    }
                 }
             }
 
@@ -559,7 +944,10 @@ export async function updatePaymentStatusAction(type: "PURCHASE" | "SALE", id: s
             if (!delivery) throw new Error("Delivery not found");
             reference = delivery.deliveryNumber;
             party = delivery.buyerName;
-            amount = delivery.items.reduce((sum: number, i: any) => sum + (i.quantity * Number(i.salesPrice || 0)), 0);
+
+            // Use grandTotal from Raw SQL for sales amount
+            const deliveryRaw: any[] = await tx.$queryRawUnsafe(`SELECT "grandTotal" FROM "SalesDelivery" WHERE id = ?`, id);
+            amount = Number(deliveryRaw[0]?.grandTotal || 0);
 
             await (tx.salesDelivery as any).update({
                 where: { id },
@@ -592,6 +980,15 @@ export async function updatePaymentStatusAction(type: "PURCHASE" | "SALE", id: s
                             date: new Date()
                         }
                     });
+
+                    // --- DECREMENT CUSTOMER BALANCE ON PAID ---
+                    const customer = await tx.customer.findFirst({ where: { name: party } });
+                    if (customer) {
+                        await tx.customer.update({
+                            where: { id: customer.id },
+                            data: { balance: { decrement: amount } }
+                        });
+                    }
                 }
             }
         }
@@ -611,6 +1008,7 @@ export async function createFinanceTransactionAction(data: {
     amount: number;
     accountId: string; // The category/target account (e.g., Expense or Income account)
     bankAccountId?: string; // Optional specific bank account from COA
+    salesPerson?: string; // Added for sales context
 }) {
     return await prisma.$transaction(async (tx: any) => {
         // 1. Create the Transaction record
@@ -622,9 +1020,19 @@ export async function createFinanceTransactionAction(data: {
                 referenceNumber: data.referenceNumber,
                 description: data.description,
                 amount: data.amount as any,
+                // salesPerson: data.salesPerson, // Bypassing for now due to file lock
                 // category: data.category
             }
         });
+
+        // 1.1 Update salesPerson via raw SQL to bypass client validation
+        if (data.salesPerson) {
+            await tx.$executeRawUnsafe(
+                `UPDATE "FinanceTransaction" SET "salesPerson" = ? WHERE id = ?`,
+                data.salesPerson,
+                transaction.id
+            );
+        }
 
         // 2. Create Journal Entries (Double Entry)
         // For simplicity, we assume 'accountId' is the "Other" side of the bank transaction.
@@ -935,7 +1343,7 @@ export async function getSystemSettingsAction() {
     return {
         settings: settings || {
             companyName: "PT. Kola Borasi Indonesia",
-            address: "Jl. Industri No. 12, Jakarta Pusat, DKI Jakarta",
+            address: "Jl. Arjuna IV Green Kartika Residence Blok EE NO.2, CIBINONG, KAB. BOGOR - JAWA BARAT, 16911",
             taxId: "01.234.567.8-012.000",
             website: "www.kolaborasi.id"
         },
@@ -1061,9 +1469,8 @@ export async function deleteWarehouseAction(id: string) {
  * DASHBOARD & ANALYTICS: Summary Stats
  */
 export async function getDashboardSummaryAction() {
-    // 1. Total Revenue (Sum of Sales Delivery values)
-    const salesItems = await prisma.salesDeliveryItem.findMany();
-    const totalRevenue = salesItems.reduce((sum, item) => sum + (item.quantity * Number(item.salesPrice)), 0);
+    // 1. Total Revenue (Will be calculated in step 6 with more detail)
+    let totalRevenue = 0;
 
     // 2. Asset Value (Inventory Value: Qty * Average Purchase Price or latest)
     const stockItems = await prisma.stock.findMany({
@@ -1136,6 +1543,77 @@ export async function getDashboardSummaryAction() {
         }
     });
 
+    // 6. Nett Margin Sales calculation
+    // Margin = (Sales Revenue - Total HPP (Cost of Goods)) - Sales Operational Expenses
+
+    // Calculate total COGS (Average purchase price or latest used as proxy)
+    let totalCOGS = 0;
+    let revenueBC = 0;
+    let revenuePF = 0;
+    let cogsBC = 0;
+    let cogsPF = 0;
+
+    // Fetch all deliveries via Raw SQL to access fields the client doesn't know about yet
+    const allDeliveries: any[] = await prisma.$queryRawUnsafe(`SELECT "subtotal", "totalDiscount", "salesPerson" FROM "SalesDelivery"`);
+    allDeliveries.forEach((d: any) => {
+        const netRev = Number(d.subtotal || 0) - Number(d.totalDiscount || 0);
+        totalRevenue += netRev;
+        if (d.salesPerson === 'BC') revenueBC += netRev;
+        else if (d.salesPerson === 'PF') revenuePF += netRev;
+    });
+
+    const allSalesItems = await prisma.salesDeliveryItem.findMany({
+        include: {
+            delivery: true,
+            product: {
+                include: {
+                    receiptItems: {
+                        orderBy: { receipt: { date: 'desc' } },
+                        take: 1
+                    }
+                }
+            }
+        }
+    });
+
+    allSalesItems.forEach(item => {
+        const cost = item.quantity * Number(item.product.receiptItems[0]?.purchasePrice || 0);
+        totalCOGS += cost;
+
+        if (item.delivery?.salesPerson === 'BC') {
+            cogsBC += cost;
+        } else if (item.delivery?.salesPerson === 'PF') {
+            cogsPF += cost;
+        }
+    });
+
+    // Sales Expenses: Using raw query to bypass client validation for salesPerson field
+    const salesTransactions: any[] = await prisma.$queryRawUnsafe(`
+        SELECT * FROM "FinanceTransaction" 
+        WHERE ("salesPerson" IS NOT NULL AND "salesPerson" NOT IN ('', ' '))
+        OR id IN (
+            SELECT "transactionId" FROM "JournalEntry" j
+            JOIN "FinanceAccount" a ON j."accountId" = a.id
+            WHERE a.code = '604'
+        )
+    `);
+
+    let salesExpenses = 0;
+    let expBC = 0;
+    let expPF = 0;
+
+    salesTransactions.forEach((t: any) => {
+        const amt = (t.transactionType === "PAYMENT") ? Number(t.amount) : -Number(t.amount);
+        salesExpenses += amt;
+
+        if (t.salesPerson === 'BC') expBC += amt;
+        else if (t.salesPerson === 'PF') expPF += amt;
+    });
+
+    const nettMarginSales = (totalRevenue - totalCOGS) - salesExpenses;
+    const nettMarginBC = (revenueBC - cogsBC) - expBC;
+    const nettMarginPF = (revenuePF - cogsPF) - expPF;
+
     return {
         totalRevenue: totalRevenue || 0,
         assetValue: assetValue || 0,
@@ -1144,8 +1622,53 @@ export async function getDashboardSummaryAction() {
         cashBalance: cashBalance || 0,
         totalHutang: totalHutang || 0,
         totalPiutang: totalPiutang || 0,
-        productCount: stockItems.length
+        nettMarginSales: nettMarginSales || 0,
+        nettMarginBC: nettMarginBC || 0,
+        nettMarginPF: nettMarginPF || 0,
+        productCount: stockItems.length,
+        weeklyStats: await getWeeklyStats()
     };
+}
+
+async function getWeeklyStats() {
+    const last7Days = [];
+    for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        d.setHours(0, 0, 0, 0);
+        last7Days.push(d);
+    }
+
+    const sales = (await (prisma.salesDelivery as any).findMany({
+        where: { createdAt: { gte: last7Days[0] } },
+        select: { createdAt: true, grandTotal: true }
+    })) as any[];
+
+    const purchases = await prisma.goodsReceipt.findMany({
+        where: { createdAt: { gte: last7Days[0] } },
+        include: { items: true }
+    });
+
+    return last7Days.map(date => {
+        const nextDay = new Date(date);
+        nextDay.setDate(nextDay.getDate() + 1);
+
+        const daySales = sales
+            .filter((s: any) => s.createdAt >= date && s.createdAt < nextDay)
+            .reduce((sum: number, s: any) => sum + Number(s.grandTotal || 0), 0);
+
+        const dayPurchases = purchases
+            .filter(p => p.createdAt >= date && p.createdAt < nextDay)
+            .reduce((sum: number, r) => {
+                return sum + r.items.reduce((iSum: number, item: any) => iSum + (item.quantity * Number(item.purchasePrice || 0)), 0);
+            }, 0);
+
+        return {
+            name: date.toLocaleDateString('en-US', { weekday: 'short' }),
+            sales: daySales,
+            purchases: dayPurchases
+        };
+    });
 }
 
 /**
@@ -1178,12 +1701,12 @@ export async function getMDAction() {
     ]);
 
     // Serialize balances for client components
-    const serializedVendors = (vendors || []).map(v => ({
+    const serializedVendors = (vendors || []).map((v: any) => ({
         ...v,
         balance: Number(v.balance)
     }));
 
-    const serializedCustomers = (customers || []).map(c => ({
+    const serializedCustomers = (customers || []).map((c: any) => ({
         ...c,
         balance: Number(c.balance)
     }));
@@ -1302,135 +1825,5 @@ export async function getGoodsReceiptsAction() {
     });
 }
 
-/**
- * UPDATE: Sales Delivery (Edit existing)
- * Note: This reverses previous stock/journals and applies new ones
- */
-export async function updateSalesDeliveryAction(id: string, data: {
-    recipient: string;
-    buyerName: string;
-    warehouseId: string;
-    salesPerson?: string;
-    items: { productId: string; quantity: number; salesPrice: number; uom?: string }[];
-}) {
-    return await prisma.$transaction(async (tx: any) => {
-        const existing = await tx.salesDelivery.findUnique({
-            where: { id },
-            include: { items: true }
-        });
 
-        if (!existing) throw new Error("Pengiriman tidak ditemukan");
 
-        // 1. REVERSE PREVIOUS STOCK (Add back)
-        for (const item of existing.items) {
-            await tx.stock.update({
-                where: {
-                    productId_warehouseId: {
-                        productId: item.productId,
-                        warehouseId: existing.warehouseId
-                    }
-                },
-                data: { quantity: { increment: item.quantity } }
-            });
-
-            await tx.stockMovement.create({
-                data: {
-                    productId: item.productId,
-                    warehouseId: existing.warehouseId,
-                    quantity: item.quantity,
-                    type: "SALE_CANCEL",
-                    reference: existing.deliveryNumber
-                }
-            });
-        }
-
-        // 2. REVERSE PREVIOUS JOURNALS
-        await tx.journalEntry.deleteMany({
-            where: {
-                description: { contains: existing.deliveryNumber }
-            }
-        });
-
-        // 3. UPDATE HEADER
-        const updated = await tx.salesDelivery.update({
-            where: { id },
-            data: {
-                recipient: data.recipient,
-                buyerName: data.buyerName,
-                warehouseId: data.warehouseId,
-                salesPerson: data.salesPerson
-            }
-        });
-
-        // 4. UPDATE ITEMS
-        await tx.salesDeliveryItem.deleteMany({ where: { deliveryId: id } });
-        await tx.salesDeliveryItem.createMany({
-            data: data.items.map(item => ({
-                deliveryId: id,
-                productId: item.productId,
-                quantity: item.quantity,
-                salesPrice: item.salesPrice as any,
-                uom: item.uom
-            }))
-        });
-
-        // 5. APPLY NEW STOCK (Subtract)
-        for (const item of data.items) {
-            await tx.stock.update({
-                where: {
-                    productId_warehouseId: {
-                        productId: item.productId,
-                        warehouseId: data.warehouseId
-                    }
-                },
-                data: { quantity: { decrement: item.quantity } }
-            });
-
-            await tx.stockMovement.create({
-                data: {
-                    productId: item.productId,
-                    warehouseId: data.warehouseId,
-                    quantity: -item.quantity,
-                    type: "SALE",
-                    reference: existing.deliveryNumber
-                }
-            });
-        }
-
-        // 6. APPLY NEW JOURNALS
-        const totalSales = data.items.reduce((sum, item) => sum + (item.quantity * item.salesPrice), 0);
-        if (totalSales > 0) {
-            const bankAccount = await tx.financeAccount.findUnique({ where: { code: '102' } });
-            const salesAccount = await tx.financeAccount.findUnique({ where: { code: '401' } });
-
-            if (bankAccount && salesAccount) {
-                await tx.journalEntry.create({
-                    data: {
-                        description: `Penerimaan Penjualan (Updated): ${existing.deliveryNumber} (${data.buyerName})`,
-                        amount: totalSales as any,
-                        type: "DEBIT",
-                        accountId: bankAccount.id,
-                        date: new Date()
-                    }
-                });
-
-                await tx.journalEntry.create({
-                    data: {
-                        description: `Pendapatan Penjualan (Updated): ${existing.deliveryNumber} (${data.buyerName})`,
-                        amount: totalSales as any,
-                        type: "CREDIT",
-                        accountId: salesAccount.id,
-                        date: new Date()
-                    }
-                });
-            }
-        }
-
-        revalidatePath("/sales");
-        revalidatePath("/finance");
-        revalidatePath("/warehouse");
-        revalidatePath("/");
-
-        return { success: true };
-    });
-}

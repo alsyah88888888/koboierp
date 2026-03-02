@@ -19,6 +19,7 @@ const navigation = [
     { name: "Keuangan", href: "/finance", icon: Wallet, roles: ["ADMIN", "FINANCE"] },
     { name: "Penerimaan Barang", href: "/purchase", icon: ShoppingCart, roles: ["ADMIN", "PURCHASE"] },
     { name: "Penjualan", href: "/sales", icon: ShoppingBag, roles: ["ADMIN", "SALES"] },
+    { name: "Operasional", href: "/operational", icon: Wallet, roles: ["ADMIN", "FINANCE"] },
     { name: "Gudang", href: "/warehouse", icon: Warehouse, roles: ["ADMIN", "WAREHOUSE"] },
     { name: "Settings", href: "/settings", icon: Settings, roles: ["ADMIN"] },
 ];

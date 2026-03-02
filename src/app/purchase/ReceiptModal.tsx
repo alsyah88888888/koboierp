@@ -29,6 +29,7 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [result, setResult] = useState<{ formNumber: string } | null>(null);
 
+
     useEffect(() => {
         if (initialData) {
             setReceiptNumber(initialData.receiptNumber || "");
@@ -95,7 +96,7 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
 
         // Validation
         const hasEmptyItems = items.some(i => !i.productId || i.quantity === "" || i.purchasePrice === "");
-        if (!receiptNumber || !receivedFrom || !warehouseId || hasEmptyItems) {
+        if (!receivedFrom || !warehouseId || hasEmptyItems) {
             alert("Mohon lengkapi semua data dan pastikan harga/qty terisi.");
             return;
         }
@@ -109,7 +110,7 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
         setIsSubmitting(true);
         try {
             const data = {
-                receiptNumber,
+                receiptNumber: receiptNumber || undefined, // Backend will auto-generate if missing
                 receivedFrom,
                 warehouseId,
                 date: txDate,
@@ -125,10 +126,10 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
             };
 
             if (initialData) {
-                await updateGoodsReceiptAction(initialData.id, data);
+                await updateGoodsReceiptAction(initialData.id, data as any);
                 onClose();
             } else {
-                const res = await createGoodsReceiptAction(data);
+                const res = await createGoodsReceiptAction(data as any);
                 setResult({ formNumber: res.formNumber });
             }
         } catch (error) {
@@ -197,9 +198,9 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
                                 value={receiptNumber}
                                 onChange={e => setReceiptNumber(e.target.value)}
                                 className="w-full p-2.5 bg-white border-2 border-slate-300 rounded-lg focus:border-primary outline-none transition-all font-medium"
-                                placeholder="Misal: SJ-001"
-                                required
+                                placeholder="Otomatis (Format: KB-LPB-...)"
                             />
+                            <p className="text-[10px] text-slate-400 italic mt-0.5">Kosongkan untuk penomoran otomatis</p>
                         </div>
                         <div className="space-y-2">
                             <label className="text-xs font-bold uppercase text-slate-600">Tanggal Penerimaan</label>
