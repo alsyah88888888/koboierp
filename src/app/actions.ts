@@ -2,6 +2,127 @@
 
 import { revalidatePath } from "next/cache";
 import prisma from "@/lib/prisma";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+
+/**
+ * Purchase Request Actions (Pengajuan Pembelian)
+ */
+export async function createPurchaseRequestAction(data: {
+    items: { itemName: string; quantity: number; estimatedPrice: number }[];
+    notes?: string;
+}) {
+    const session = await getServerSession(authOptions) as any;
+    if (!session?.user?.id) throw new Error("Unauthorized");
+
+    const txDate = new Date();
+    const day = String(txDate.getDate()).padStart(2, '0');
+    const month = String(txDate.getMonth() + 1).padStart(2, '0');
+    const year = txDate.getFullYear();
+    const dateStr = `${year}${month}${day}`;
+
+    return await prisma.$transaction(async (tx: any) => {
+        // Generate Number: PR-YYYYMMDD-XXXX
+        const count = await tx.purchaseRequest.count({
+            where: {
+                createdAt: {
+                    gte: new Date(new Date().setHours(0, 0, 0, 0)),
+                    lt: new Date(new Date().setHours(23, 59, 59, 999))
+                }
+            }
+        });
+        const prNumber = `PR-${dateStr}-${String(count + 1).padStart(4, '0')}`;
+
+        await tx.purchaseRequest.create({
+            data: {
+                number: prNumber,
+                notes: data.notes,
+                requestedById: session.user.id,
+                items: {
+                    create: data.items.map((i: any) => ({
+                        itemName: i.itemName,
+                        quantity: i.quantity,
+                        estimatedPrice: i.estimatedPrice as any
+                    }))
+                }
+            }
+        });
+
+        revalidatePath("/purchase");
+        return { success: true, prNumber };
+    });
+}
+
+export async function updatePurchaseRequestStatusAction(id: string, status: "APPROVED_BY_ADMIN" | "VERIFIED_BY_FINANCE" | "REJECTED") {
+    const session = await getServerSession(authOptions) as any;
+    if (!session?.user?.id) throw new Error("Unauthorized");
+    const role = session.user.role?.toUpperCase();
+
+    const pr = await prisma.purchaseRequest.findUnique({
+        where: { id },
+        include: { items: true }
+    });
+    if (!pr) throw new Error("Request not found");
+
+    // Logic Check
+    if (status === "APPROVED_BY_ADMIN" && role !== "ADMIN") throw new Error("Hanya Admin Utama yang bisa menyetujui.");
+    if (status === "VERIFIED_BY_FINANCE" && role !== "FINANCE") throw new Error("Hanya Finance yang bisa memverifikasi.");
+    if (status === "VERIFIED_BY_FINANCE" && pr.status !== "APPROVED_BY_ADMIN") throw new Error("Harus disetujui Admin Utama terlebih dahulu.");
+
+    const updateData: any = { status };
+    if (status === "APPROVED_BY_ADMIN") {
+        updateData.approvedById = session.user.id;
+        updateData.approvedAt = new Date();
+    } else if (status === "VERIFIED_BY_FINANCE") {
+        updateData.verifiedById = session.user.id;
+        updateData.verifiedAt = new Date();
+    }
+
+    await prisma.purchaseRequest.update({
+        where: { id },
+        data: updateData
+    });
+
+    revalidatePath("/purchase");
+    return { success: true };
+}
+
+export async function deletePurchaseRequestAction(id: string) {
+    const session = await getServerSession(authOptions) as any;
+    if (!session?.user?.id) throw new Error("Unauthorized");
+    const role = session.user.role?.toUpperCase();
+
+    const pr = await prisma.purchaseRequest.findUnique({ where: { id } });
+    if (!pr) throw new Error("Request not found");
+
+    if (role !== "ADMIN" && pr.requestedById !== session.user.id) {
+        throw new Error("Hanya Admin atau Pembuat Request yang bisa menghapus.");
+    }
+
+    if (pr.status !== "PENDING" && role !== "ADMIN") {
+        throw new Error("Hanya Admin yang bisa menghapus request yang sudah diproses.");
+    }
+
+    await prisma.$transaction(async (tx: any) => {
+        await tx.purchaseRequestItem.deleteMany({ where: { purchaseRequestId: id } });
+        await tx.purchaseRequest.delete({ where: { id } });
+    });
+
+    revalidatePath("/purchase");
+    return { success: true };
+}
+
+export async function getPurchaseRequestsAction() {
+    return await prisma.purchaseRequest.findMany({
+        include: {
+            items: true,
+            requestedBy: { select: { name: true } },
+            approvedBy: { select: { name: true } },
+            verifiedBy: { select: { name: true } }
+        },
+        orderBy: { createdAt: 'desc' }
+    });
+}
 
 /**
  * Goods Receipt Actions (Penerimaan Barang)
@@ -1012,16 +1133,21 @@ export async function createFinanceTransactionAction(data: {
 }) {
     return await prisma.$transaction(async (tx: any) => {
         // 1. Create the Transaction record
+        // Use current time if the date is today to maintain chronological order
+        const now = new Date();
+        const txDate = new Date(data.date);
+        if (txDate.toDateString() === now.toDateString()) {
+            txDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds());
+        }
+
         const transaction = await tx.financeTransaction.create({
             data: {
                 transactionType: data.transactionType,
                 bank: data.bank,
-                date: data.date,
+                date: txDate,
                 referenceNumber: data.referenceNumber,
                 description: data.description,
                 amount: data.amount as any,
-                // salesPerson: data.salesPerson, // Bypassing for now due to file lock
-                // category: data.category
             }
         });
 
@@ -1062,7 +1188,7 @@ export async function createFinanceTransactionAction(data: {
                     type: isPayment ? "CREDIT" : "DEBIT", // Payment Credits Asset (Bank), Receipt Debits Asset (Bank)
                     accountId: data.bankAccountId,
                     transactionId: transaction.id,
-                    date: data.date
+                    date: txDate
                 }
             });
         }
@@ -1071,6 +1197,13 @@ export async function createFinanceTransactionAction(data: {
         revalidatePath("/");
 
         return { success: true, transactionId: transaction.id };
+    });
+}
+
+export async function getFinanceTransactionsAction() {
+    return await prisma.financeTransaction.findMany({
+        orderBy: { date: 'desc' },
+        take: 200 // Show more for history
     });
 }
 
@@ -1544,16 +1677,15 @@ export async function getDashboardSummaryAction() {
     });
 
     // 6. Nett Margin Sales calculation
-    // Margin = (Sales Revenue - Total HPP (Cost of Goods)) - Sales Operational Expenses
-
-    // Calculate total COGS (Average purchase price or latest used as proxy)
-    let totalCOGS = 0;
+    // Calculate Revenue, Purchase Cost (Acquisition), and Expenses per Salesperson
     let revenueBC = 0;
     let revenuePF = 0;
-    let cogsBC = 0;
-    let cogsPF = 0;
+    let purchaseBC = 0;
+    let purchasePF = 0;
+    let expBC = 0;
+    let expPF = 0;
 
-    // Fetch all deliveries via Raw SQL to access fields the client doesn't know about yet
+    // A. Revenue from SalesDeliveries
     const allDeliveries: any[] = await prisma.$queryRawUnsafe(`SELECT "subtotal", "totalDiscount", "salesPerson" FROM "SalesDelivery"`);
     allDeliveries.forEach((d: any) => {
         const netRev = Number(d.subtotal || 0) - Number(d.totalDiscount || 0);
@@ -1562,57 +1694,42 @@ export async function getDashboardSummaryAction() {
         else if (d.salesPerson === 'PF') revenuePF += netRev;
     });
 
-    const allSalesItems = await prisma.salesDeliveryItem.findMany({
-        include: {
-            delivery: true,
-            product: {
-                include: {
-                    receiptItems: {
-                        orderBy: { receipt: { date: 'desc' } },
-                        take: 1
-                    }
-                }
-            }
-        }
+    // B. Purchase Cost from GoodsReceipts (To match SalesDashboard UI)
+    const allReceipts = await prisma.goodsReceipt.findMany({
+        where: { isVerified: true },
+        include: { items: true }
     });
 
-    allSalesItems.forEach(item => {
-        const cost = item.quantity * Number(item.product.receiptItems[0]?.purchasePrice || 0);
-        totalCOGS += cost;
-
-        if (item.delivery?.salesPerson === 'BC') {
-            cogsBC += cost;
-        } else if (item.delivery?.salesPerson === 'PF') {
-            cogsPF += cost;
-        }
+    let totalPurchaseCost = 0;
+    allReceipts.forEach(r => {
+        const cost = r.items.reduce((sum, i) => sum + (i.quantity * Number(i.purchasePrice || 0)), 0);
+        totalPurchaseCost += cost;
+        if (r.salesPerson === 'BC') purchaseBC += cost;
+        else if (r.salesPerson === 'PF') purchasePF += cost;
     });
 
-    // Sales Expenses: Using raw query to bypass client validation for salesPerson field
-    const salesTransactions: any[] = await prisma.$queryRawUnsafe(`
-        SELECT * FROM "FinanceTransaction" 
-        WHERE ("salesPerson" IS NOT NULL AND "salesPerson" NOT IN ('', ' '))
-        OR id IN (
-            SELECT "transactionId" FROM "JournalEntry" j
-            JOIN "FinanceAccount" a ON j."accountId" = a.id
-            WHERE a.code = '604'
-        )
+    // C. Operational Expenses (Account code starts with 6)
+    const allExpensesTransactions: any[] = await prisma.$queryRawUnsafe(`
+        SELECT t.*, a.code as "accountCode" FROM "FinanceTransaction" t
+        JOIN "JournalEntry" j ON t.id = j."transactionId"
+        JOIN "FinanceAccount" a ON j."accountId" = a.id
+        WHERE a.code LIKE '6%'
+        GROUP BY t.id
     `);
 
-    let salesExpenses = 0;
-    let expBC = 0;
-    let expPF = 0;
-
-    salesTransactions.forEach((t: any) => {
+    let totalOperationalExpenses = 0;
+    allExpensesTransactions.forEach((t: any) => {
         const amt = (t.transactionType === "PAYMENT") ? Number(t.amount) : -Number(t.amount);
-        salesExpenses += amt;
-
+        totalOperationalExpenses += amt;
         if (t.salesPerson === 'BC') expBC += amt;
         else if (t.salesPerson === 'PF') expPF += amt;
     });
 
-    const nettMarginSales = (totalRevenue - totalCOGS) - salesExpenses;
-    const nettMarginBC = (revenueBC - cogsBC) - expBC;
-    const nettMarginPF = (revenuePF - cogsPF) - expPF;
+    // D. Final Calculations
+    // For Global Nett Margin, we use Revenue - Purchase Cost - All Expenses
+    const nettMarginSales = (totalRevenue - totalPurchaseCost) - totalOperationalExpenses;
+    const nettMarginBC = (revenueBC - purchaseBC) - expBC;
+    const nettMarginPF = (revenuePF - purchasePF) - expPF;
 
     return {
         totalRevenue: totalRevenue || 0,
@@ -1825,5 +1942,28 @@ export async function getGoodsReceiptsAction() {
     });
 }
 
+/**
+ * PR DASHBOARD: Get PR-specific statistics
+ */
+export async function getPurchaseRequestSummaryAction() {
+    const session = await getServerSession(authOptions) as any;
+    if (!session?.user?.id) throw new Error("Unauthorized");
 
+    const allRequests = await prisma.purchaseRequest.findMany({
+        include: { items: true }
+    });
 
+    const stats = {
+        pending: allRequests.filter((r: any) => r.status === "PENDING").length,
+        approved: allRequests.filter((r: any) => r.status === "APPROVED_BY_ADMIN").length,
+        verified: allRequests.filter((r: any) => r.status === "VERIFIED_BY_FINANCE").length,
+        totalEstimation: allRequests
+            .filter((r: any) => r.status !== "REJECTED")
+            .reduce((acc: number, r: any) => {
+                const prTotal = r.items.reduce((sum: number, item: any) => sum + (item.quantity * Number(item.estimatedPrice)), 0);
+                return acc + prTotal;
+            }, 0)
+    };
+
+    return stats;
+}

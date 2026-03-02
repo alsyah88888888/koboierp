@@ -1,14 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Clock, FileText, Search, Truck, Trash2, Eye, Edit2 } from "lucide-react";
+import { Plus, Clock, FileText, Search, Truck, Trash2, Eye, Edit2, BarChart3, TrendingUp, TrendingDown, Users } from "lucide-react";
 import { format } from "date-fns";
 import SalesModal from "@/app/sales/SalesModal";
 import { useSession } from "next-auth/react";
 import { deleteSalesDeliveryAction } from "@/app/actions";
 import { DashboardStats } from "../components/DashboardStats";
 import Link from "next/link";
-import { BarChart3, TrendingUp, TrendingDown, Users } from "lucide-react";
+import { ReportPreviewModal } from "@/components/ReportPreviewModal";
+import { exportToExcel } from "@/lib/excel";
 
 interface SalesDashboardProps {
     initialDeliveries: any[];
@@ -16,9 +17,10 @@ interface SalesDashboardProps {
     products: any[];
     warehouses: any[];
     customers: any[];
+    salesExpenses?: any[];
 }
 
-export default function SalesDashboard({ initialDeliveries, initialReceipts = [], products, warehouses, customers }: SalesDashboardProps) {
+export default function SalesDashboard({ initialDeliveries, initialReceipts = [], products, warehouses, customers, salesExpenses = [] }: SalesDashboardProps) {
     const { data: session } = useSession() as any;
     const isAdmin = session?.user?.role === "ADMIN";
     const [showSalesModal, setShowSalesModal] = useState(false);
@@ -28,22 +30,26 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
     // Calculate Performance for BC & PF
     const getStats = (id: string) => {
         const sales = initialDeliveries.filter(d => d.salesPerson === id);
-        const purchases = initialReceipts.filter(r => r.salesPerson === id);
 
-        const salesVal = sales.reduce((acc, d) => acc + d.items.reduce((sum: number, i: any) => sum + (i.quantity * Number(i.salesPrice || 0)), 0), 0);
-        const purchaseVal = purchases.reduce((acc, r) => acc + r.items.reduce((sum: number, i: any) => sum + (i.quantity * Number(i.purchasePrice || 0)), 0), 0);
+        // Saring 3 pengiriman terbaru
+        const recentDeliveries = [...sales].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 3);
+
+        // Total Qty
+        const totalQty = sales.reduce((acc, d) => acc + d.items.reduce((sum: number, i: any) => sum + i.quantity, 0), 0);
 
         return {
-            salesCount: sales.length,
-            purchaseCount: purchases.length,
-            salesVal,
-            purchaseVal,
-            margin: salesVal - purchaseVal
+            sjCount: sales.length,
+            totalQty,
+            recentDeliveries
         };
     };
 
     const bcStats = getStats("BC");
     const pfStats = getStats("PF");
+
+    const [showPreview, setShowPreview] = useState(false);
+    const [previewData, setPreviewData] = useState<any[]>([]);
+    const [previewTitle, setPreviewTitle] = useState("");
 
     const handlePrint = () => {
         window.print();
@@ -65,20 +71,61 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
         d.buyerName.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+    const handleExport = () => {
+        const data = filteredDeliveries.map(d => ({
+            'No. SJ': d.deliveryNumber,
+            'Tanggal': format(new Date(d.createdAt), "dd/MM/yyyy HH:mm"),
+            'Kirim Ke': d.recipient,
+            'Buyer': d.buyerName,
+            'Gudang': d.warehouse.name,
+            'Sales Person': d.salesPerson,
+            'Total Qty': d.items.reduce((acc: number, i: any) => acc + i.quantity, 0),
+            'Subtotal': Number(d.subtotal),
+            'Discount': Number(d.totalDiscount),
+            'Total': Number(d.subtotal) - Number(d.totalDiscount)
+        }));
+        exportToExcel(data, 'Laporan_Penjualan', 'Penjualan');
+    };
+
+    const handlePreview = () => {
+        const data = filteredDeliveries.map(d => ({
+            'No. SJ': d.deliveryNumber,
+            'Tanggal': format(new Date(d.createdAt), "dd/MM/yyyy HH:mm"),
+            'Kirim Ke': d.recipient,
+            'Buyer': d.buyerName,
+            'Gudang': d.warehouse.name,
+            'Sales Person': d.salesPerson,
+            'Qty': d.items.reduce((acc: number, i: any) => acc + i.quantity, 0),
+            'Subtotal': Number(d.subtotal),
+            'Discount': Number(d.totalDiscount),
+            'Total': Number(d.subtotal) - Number(d.totalDiscount)
+        }));
+        setPreviewData(data);
+        setPreviewTitle("Riwayat Pengiriman (Sales SJ)");
+        setShowPreview(true);
+    };
+
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center hide-print">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hide-print">
                 <div>
                     <h2 className="text-3xl font-bold tracking-tight text-primary">Penjualan (Sales Delivery)</h2>
                     <p className="text-muted-foreground">Input pengiriman barang ke buyer dan monitoring stok keluar.</p>
                 </div>
-                <div className="flex gap-3">
+                <div className="flex flex-wrap gap-3">
                     <button
-                        onClick={handlePrint}
-                        className="bg-white border-2 border-slate-200 text-slate-700 px-6 py-2 rounded-md flex items-center gap-2 hover:bg-slate-50 transition-all font-bold"
+                        onClick={handlePreview}
+                        className="bg-white border-2 border-emerald-600 text-emerald-600 px-6 py-2 rounded-md flex items-center gap-2 hover:bg-emerald-50 transition-all font-bold shadow-sm active:scale-95"
+                    >
+                        <Eye className="h-5 w-5" />
+                        <span>Preview Laporan</span>
+                    </button>
+                    <button
+                        onClick={handleExport}
+                        className="bg-emerald-600 text-white px-6 py-2 rounded-md flex items-center gap-2 hover:bg-emerald-700 shadow-lg shadow-emerald-200 transition-all active:scale-95 font-bold"
                     >
                         <FileText className="h-5 w-5" />
-                        <span>Cetak Surat Jalan</span>
+                        <span>Export Excel</span>
                     </button>
                     <button
                         onClick={() => setShowSalesModal(true)}
@@ -113,25 +160,40 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                     <div className="grid grid-cols-2 gap-4">
                         <div className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm">
                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter mb-1 flex items-center gap-1">
-                                <TrendingUp className="h-3 w-3 text-emerald-500" /> Total Penjualan
+                                <FileText className="h-3 w-3 text-indigo-500" /> Total SJ Diterbitkan
                             </p>
-                            <p className="text-lg font-black text-emerald-600">Rp {bcStats.salesVal.toLocaleString('id-ID')}</p>
-                            <p className="text-[10px] text-slate-500 mt-0.5">{bcStats.salesCount} Transaksi</p>
+                            <p className="text-2xl font-black text-indigo-600">{bcStats.sjCount}</p>
+                            <p className="text-[10px] text-slate-500 mt-0.5">Surat Jalan</p>
                         </div>
                         <div className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm">
                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter mb-1 flex items-center gap-1">
-                                <TrendingDown className="h-3 w-3 text-rose-500" /> Total Pembelian
+                                <Truck className="h-3 w-3 text-indigo-500" /> Total Qty Dikirim
                             </p>
-                            <p className="text-lg font-black text-rose-600">Rp {bcStats.purchaseVal.toLocaleString('id-ID')}</p>
-                            <p className="text-[10px] text-slate-500 mt-0.5">{bcStats.purchaseCount} Transaksi</p>
+                            <p className="text-2xl font-black text-indigo-600">{bcStats.totalQty}</p>
+                            <p className="text-[10px] text-slate-500 mt-0.5">Pcs / Item</p>
                         </div>
                     </div>
 
-                    <div className="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center">
-                        <span className="text-xs font-bold text-slate-500 uppercase italic">Nett Margin</span>
-                        <span className={`text-sm font-black ${bcStats.margin >= 0 ? 'text-indigo-600' : 'text-rose-600'}`}>
-                            Rp {bcStats.margin.toLocaleString('id-ID')}
-                        </span>
+                    <div className="mt-4 pt-4 border-t border-slate-100">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase mb-2 block tracking-widest">Riwayat Pengiriman Terbaru</span>
+                        {bcStats.recentDeliveries.length > 0 ? (
+                            <div className="space-y-2">
+                                {bcStats.recentDeliveries.map((delivery, idx) => (
+                                    <div key={idx} className="flex justify-between items-center text-xs p-2 bg-slate-50 rounded border border-slate-100">
+                                        <div>
+                                            <p className="font-bold text-slate-700">{delivery.deliveryNumber}</p>
+                                            <p className="text-[10px] text-slate-500 truncate max-w-[120px]">{delivery.buyerName}</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="font-medium text-slate-600">{format(new Date(delivery.createdAt), "dd MMM yy")}</p>
+                                            <p className="text-[10px] font-black text-indigo-600">{delivery.items.reduce((s: number, i: any) => s + i.quantity, 0)} Pcs</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-xs text-muted-foreground italic text-center py-2">Belum ada pengiriman</p>
+                        )}
                     </div>
                 </div>
 
@@ -153,25 +215,40 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                     <div className="grid grid-cols-2 gap-4">
                         <div className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm">
                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter mb-1 flex items-center gap-1">
-                                <TrendingUp className="h-3 w-3 text-emerald-500" /> Total Penjualan
+                                <FileText className="h-3 w-3 text-amber-500" /> Total SJ Diterbitkan
                             </p>
-                            <p className="text-lg font-black text-emerald-600">Rp {pfStats.salesVal.toLocaleString('id-ID')}</p>
-                            <p className="text-[10px] text-slate-500 mt-0.5">{pfStats.salesCount} Transaksi</p>
+                            <p className="text-2xl font-black text-amber-600">{pfStats.sjCount}</p>
+                            <p className="text-[10px] text-slate-500 mt-0.5">Surat Jalan</p>
                         </div>
                         <div className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm">
                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter mb-1 flex items-center gap-1">
-                                <TrendingDown className="h-3 w-3 text-rose-500" /> Total Pembelian
+                                <Truck className="h-3 w-3 text-amber-500" /> Total Qty Dikirim
                             </p>
-                            <p className="text-lg font-black text-rose-600">Rp {pfStats.purchaseVal.toLocaleString('id-ID')}</p>
-                            <p className="text-[10px] text-slate-500 mt-0.5">{pfStats.purchaseCount} Transaksi</p>
+                            <p className="text-2xl font-black text-amber-600">{pfStats.totalQty}</p>
+                            <p className="text-[10px] text-slate-500 mt-0.5">Pcs / Item</p>
                         </div>
                     </div>
 
-                    <div className="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center">
-                        <span className="text-xs font-bold text-slate-500 uppercase italic">Nett Margin</span>
-                        <span className={`text-sm font-black ${pfStats.margin >= 0 ? 'text-amber-600' : 'text-rose-600'}`}>
-                            Rp {pfStats.margin.toLocaleString('id-ID')}
-                        </span>
+                    <div className="mt-4 pt-4 border-t border-slate-100">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase mb-2 block tracking-widest">Riwayat Pengiriman Terbaru</span>
+                        {pfStats.recentDeliveries.length > 0 ? (
+                            <div className="space-y-2">
+                                {pfStats.recentDeliveries.map((delivery, idx) => (
+                                    <div key={idx} className="flex justify-between items-center text-xs p-2 bg-slate-50 rounded border border-slate-100">
+                                        <div>
+                                            <p className="font-bold text-slate-700">{delivery.deliveryNumber}</p>
+                                            <p className="text-[10px] text-slate-500 truncate max-w-[120px]">{delivery.buyerName}</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="font-medium text-slate-600">{format(new Date(delivery.createdAt), "dd MMM yy")}</p>
+                                            <p className="text-[10px] font-black text-amber-600">{delivery.items.reduce((s: number, i: any) => s + i.quantity, 0)} Pcs</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-xs text-muted-foreground italic text-center py-2">Belum ada pengiriman</p>
+                        )}
                     </div>
                 </div>
             </div>
@@ -299,6 +376,15 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                         setShowSalesModal(false);
                         setEditData(null);
                     }}
+                />
+            )}
+
+            {showPreview && (
+                <ReportPreviewModal
+                    title={previewTitle}
+                    data={previewData}
+                    onClose={() => setShowPreview(false)}
+                    onExport={handleExport}
                 />
             )}
         </div>

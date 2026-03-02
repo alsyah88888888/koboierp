@@ -16,6 +16,7 @@ export default async function SalesPage() {
     }).catch(() => []));
 
     const receipts = serializeDecimal(await prisma.goodsReceipt.findMany({
+        where: { isVerified: true },
         include: { items: true },
         orderBy: { createdAt: 'desc' }
     }).catch(() => []));
@@ -24,6 +25,14 @@ export default async function SalesPage() {
         orderBy: { name: 'asc' }
     }).catch(() => []));
 
+    const salesExpenses = serializeDecimal(await prisma.$queryRawUnsafe(`
+        SELECT t.*, a.code as "accountCode" FROM "FinanceTransaction" t
+        JOIN "JournalEntry" j ON t.id = j."transactionId"
+        JOIN "FinanceAccount" a ON j."accountId" = a.id
+        WHERE a.code LIKE '6%'
+        GROUP BY t.id
+    `).catch(() => [])) as any[];
+
     return (
         <SalesDashboard
             initialDeliveries={deliveries}
@@ -31,6 +40,7 @@ export default async function SalesPage() {
             products={products}
             warehouses={warehouses}
             customers={serializedCustomers}
+            salesExpenses={salesExpenses}
         />
     );
 }

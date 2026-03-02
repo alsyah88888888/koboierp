@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Plus, Warehouse as WarehouseIcon, Layers, Trash2, FileText, Search, Activity, Box, ArrowUpRight, ArrowDownLeft } from "lucide-react";
+import { Plus, Warehouse as WarehouseIcon, Layers, Trash2, FileText, Search, Activity, Box, ArrowUpRight, ArrowDownLeft, Download, Eye } from "lucide-react";
 import { StockInputModal } from "./StockInputModal";
 import { CheckerBoard } from "./CheckerBoard";
 import { DashboardStats } from "../components/DashboardStats";
@@ -9,6 +9,8 @@ import { cn, formatCurrency } from "@/lib/utils";
 import { useSession } from "next-auth/react";
 import { deleteProductAction } from "@/app/actions";
 import { format } from "date-fns";
+import { exportToExcel } from "@/lib/excel";
+import { ReportPreviewModal } from "@/components/ReportPreviewModal";
 
 export function WarehouseDashboard({ initialProducts, warehouses, unverifiedReceipts, movements }: {
     initialProducts: any[],
@@ -21,6 +23,10 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
     const [showInputModal, setShowInputModal] = useState(false);
     const [activeTab, setActiveTab] = useState<"inventory" | "checker">("inventory");
     const [searchTerm, setSearchTerm] = useState("");
+
+    const [showPreview, setShowPreview] = useState(false);
+    const [previewData, setPreviewData] = useState<any[]>([]);
+    const [previewTitle, setPreviewTitle] = useState("");
 
     const filteredProducts = useMemo(() => {
         return initialProducts.filter(p =>
@@ -38,6 +44,55 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
         } catch (e: any) {
             alert(e.message || "Gagal menghapus produk");
         }
+    };
+
+    const handleExport = () => {
+        if (activeTab === "inventory") {
+            const data = filteredProducts.map(p => ({
+                'SKU': p.sku,
+                'Nama Barang': p.name,
+                'UOM': p.uom,
+                'Total Stok': p.stocks.reduce((acc: number, s: any) => acc + s.quantity, 0),
+                'Threshold': p.lowStockThreshold,
+                'Status': p.stocks.reduce((acc: number, s: any) => acc + s.quantity, 0) <= p.lowStockThreshold ? 'LOW' : 'NORMAL'
+            }));
+            exportToExcel(data, 'Laporan_Stok_Gudang', 'Inventory');
+        } else {
+            const data = unverifiedReceipts.map(r => ({
+                'Tanggal': format(new Date(r.createdAt), "dd/MM/yyyy"),
+                'No. Terima': r.receiptNumber,
+                'Supplier': r.receivedFrom,
+                'Gudang': r.warehouse?.name,
+                'Jumlah Item': r.items.length
+            }));
+            exportToExcel(data, 'Laporan_Penerimaan_Pending', 'Checker');
+        }
+    };
+
+    const handlePreview = () => {
+        if (activeTab === "inventory") {
+            const data = filteredProducts.map(p => ({
+                'SKU': p.sku,
+                'Nama Barang': p.name,
+                'UOM': p.uom,
+                'Total Stok': p.stocks.reduce((acc: number, s: any) => acc + s.quantity, 0),
+                'Threshold': p.lowStockThreshold,
+                'Status': p.stocks.reduce((acc: number, s: any) => acc + s.quantity, 0) <= p.lowStockThreshold ? 'LOW' : 'NORMAL'
+            }));
+            setPreviewData(data);
+            setPreviewTitle("Laporan Master Stok Gudang");
+        } else {
+            const data = unverifiedReceipts.map(r => ({
+                'Tanggal': format(new Date(r.createdAt), "dd/MM/yyyy"),
+                'No. Terima': r.receiptNumber,
+                'Supplier': r.receivedFrom,
+                'Gudang': r.warehouse?.name,
+                'Jumlah Item': r.items.length
+            }));
+            setPreviewData(data);
+            setPreviewTitle("Daftar Penerimaan Barang Pending (Checker)");
+        }
+        setShowPreview(true);
     };
 
     return (
@@ -69,13 +124,15 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                         </button>
                     </div>
 
+
                     <button
-                        onClick={() => window.print()}
-                        className="bg-white border-2 border-slate-200 text-slate-700 px-5 py-2.5 rounded-xl flex items-center gap-2 hover:bg-slate-50 transition-all font-bold shadow-sm active:scale-95"
+                        onClick={handleExport}
+                        className="bg-emerald-600 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 hover:bg-emerald-700 transition-all font-bold shadow-sm active:scale-95 border-2 border-emerald-600"
                     >
-                        <FileText className="h-4 w-4" />
-                        <span>Cetak</span>
+                        <Download className="h-4 w-4" />
+                        <span>Export Excel</span>
                     </button>
+
                     <button
                         onClick={() => setShowInputModal(true)}
                         className="bg-primary text-white px-6 py-2.5 rounded-xl flex items-center gap-2 hover:bg-primary/95 transition-all font-black shadow-lg shadow-primary/20 active:scale-95 border-2 border-primary"
@@ -278,6 +335,15 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                 </>
             )
             }
+
+            {showPreview && (
+                <ReportPreviewModal
+                    title={previewTitle}
+                    data={previewData}
+                    onClose={() => setShowPreview(false)}
+                    onExport={handleExport}
+                />
+            )}
         </div >
     );
 }

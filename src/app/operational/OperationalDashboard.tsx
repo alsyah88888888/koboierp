@@ -19,11 +19,37 @@ import { deleteFinanceTransactionAction } from "@/app/actions";
 interface OperationalDashboardProps {
     transactions: any[];
     coa: any[];
+    initialDeliveries?: any[];
+    initialReceipts?: any[];
 }
 
-export function OperationalDashboard({ transactions, coa }: OperationalDashboardProps) {
+export function OperationalDashboard({ transactions, coa, initialDeliveries = [], initialReceipts = [] }: OperationalDashboardProps) {
     const [searchTerm, setSearchTerm] = useState("");
     const [isModalOpen, setIsModalOpen] = useState(false);
+
+    // Calculate Performance for BC & PF
+    const getStats = (id: string) => {
+        const sales = initialDeliveries.filter((d: any) => d.salesPerson === id);
+        const purchases = initialReceipts.filter((r: any) => r.salesPerson === id);
+        const expenses = transactions.filter(e => e.salesPerson === id);
+
+        const salesVal = sales.reduce((acc, d) => acc + d.items.reduce((sum: number, i: any) => sum + (i.quantity * Number(i.salesPrice || 0)), 0), 0);
+        const purchaseVal = purchases.reduce((acc, r) => acc + r.items.reduce((sum: number, i: any) => sum + (i.quantity * Number(i.purchasePrice || 0)), 0), 0);
+        const expenseVal = expenses.reduce((acc, e) => {
+            const amt = (e.transactionType === "PAYMENT") ? Number(e.amount) : -Number(e.amount);
+            return acc + amt;
+        }, 0);
+
+        return {
+            salesVal,
+            purchaseVal,
+            expenseVal,
+            margin: (salesVal - purchaseVal) - expenseVal
+        };
+    };
+
+    const bcStats = getStats("BC");
+    const pfStats = getStats("PF");
 
     const filteredTransactions = transactions.filter(t =>
         t.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -56,6 +82,49 @@ export function OperationalDashboard({ transactions, coa }: OperationalDashboard
                     <Plus className="w-4 h-4" strokeWidth={3} />
                     Input Operasional
                 </button>
+            </div>
+
+            {/* Nett Margin Cards for Sales */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-gradient-to-br from-indigo-50 to-white border border-indigo-100 shadow-sm p-5 rounded-3xl flex justify-between items-center transition-all hover:shadow-md">
+                    <div>
+                        <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1 shadow-sm px-2 py-0.5 rounded-full bg-white w-fit border border-indigo-50">Sales BC</p>
+                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mt-2">Nett Margin</p>
+                        <p className={`text-2xl font-black tracking-tighter ${bcStats.margin >= 0 ? 'text-indigo-600' : 'text-rose-600'}`}>
+                            Rp {bcStats.margin.toLocaleString('id-ID')}
+                        </p>
+                    </div>
+                    <div className="text-right flex flex-col items-end gap-1">
+                        <div className="bg-white px-3 py-1.5 rounded-xl border border-indigo-50 shadow-sm">
+                            <p className="text-[9px] font-bold text-emerald-500 uppercase">Total Penjualan</p>
+                            <p className="text-xs font-black text-emerald-600 tracking-tighter">Rp {bcStats.salesVal.toLocaleString('id-ID')}</p>
+                        </div>
+                        <div className="bg-white px-3 py-1.5 rounded-xl border border-indigo-50 shadow-sm">
+                            <p className="text-[9px] font-bold text-rose-400 uppercase">Total Pembelian & Ops</p>
+                            <p className="text-xs font-black text-rose-500 tracking-tighter">Rp {(bcStats.purchaseVal + bcStats.expenseVal).toLocaleString('id-ID')}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bg-gradient-to-br from-amber-50 to-white border border-amber-100 shadow-sm p-5 rounded-3xl flex justify-between items-center transition-all hover:shadow-md">
+                    <div>
+                        <p className="text-[10px] font-black text-amber-400 uppercase tracking-widest mb-1 shadow-sm px-2 py-0.5 rounded-full bg-white w-fit border border-amber-50">Sales PF</p>
+                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mt-2">Nett Margin</p>
+                        <p className={`text-2xl font-black tracking-tighter ${pfStats.margin >= 0 ? 'text-amber-600' : 'text-rose-600'}`}>
+                            Rp {pfStats.margin.toLocaleString('id-ID')}
+                        </p>
+                    </div>
+                    <div className="text-right flex flex-col items-end gap-1">
+                        <div className="bg-white px-3 py-1.5 rounded-xl border border-amber-50 shadow-sm">
+                            <p className="text-[9px] font-bold text-emerald-500 uppercase">Total Penjualan</p>
+                            <p className="text-xs font-black text-emerald-600 tracking-tighter">Rp {pfStats.salesVal.toLocaleString('id-ID')}</p>
+                        </div>
+                        <div className="bg-white px-3 py-1.5 rounded-xl border border-amber-50 shadow-sm">
+                            <p className="text-[9px] font-bold text-rose-400 uppercase">Total Pembelian & Ops</p>
+                            <p className="text-xs font-black text-rose-500 tracking-tighter">Rp {(pfStats.purchaseVal + pfStats.expenseVal).toLocaleString('id-ID')}</p>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

@@ -2,6 +2,7 @@ import prisma from "@/lib/prisma";
 import { getBalanceSheet } from "@/modules/finance/finance.service";
 import { FinanceDashboard } from "./FinanceDashboard";
 import { serializeDecimal } from "@/lib/utils";
+import { getFinanceTransactionsAction } from "../actions";
 
 export default async function FinancePage() {
     const accounts = await getBalanceSheet().catch(() => []);
@@ -43,6 +44,8 @@ export default async function FinancePage() {
         orderBy: { createdAt: 'desc' }
     }).catch(() => []);
 
+    const transactions = await getFinanceTransactionsAction().catch(() => []);
+
     // Serialize Decimal objects for Client Component
     const serializedLedger = serializeDecimal(ledger);
     const serializedVendors = serializeDecimal(vendors);
@@ -60,6 +63,7 @@ export default async function FinancePage() {
     }));
 
     const serializedUnverifiedReceipts = serializeDecimal(unverifiedReceipts);
+    const serializedTransactions = serializeDecimal(transactions);
 
     return (
         <FinanceDashboard
@@ -70,6 +74,7 @@ export default async function FinancePage() {
             pendingPurchases={serializedPurchases}
             pendingSales={serializedSales}
             unverifiedReceipts={serializedUnverifiedReceipts}
+            transactions={serializedTransactions}
         />
     );
 }

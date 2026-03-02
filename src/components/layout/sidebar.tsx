@@ -10,7 +10,8 @@ import {
     ShoppingBag,
     Warehouse,
     Settings,
-    LogOut
+    LogOut,
+    FileText
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 
@@ -18,8 +19,9 @@ const navigation = [
     { name: "Dashboard", href: "/", icon: LayoutDashboard, roles: ["ADMIN", "FINANCE", "PURCHASE", "SALES", "WAREHOUSE"] },
     { name: "Keuangan", href: "/finance", icon: Wallet, roles: ["ADMIN", "FINANCE"] },
     { name: "Penerimaan Barang", href: "/purchase", icon: ShoppingCart, roles: ["ADMIN", "PURCHASE"] },
-    { name: "Penjualan", href: "/sales", icon: ShoppingBag, roles: ["ADMIN", "SALES"] },
-    { name: "Operasional", href: "/operational", icon: Wallet, roles: ["ADMIN", "FINANCE"] },
+    { name: "Pengajuan Pembelian", href: "/purchase/request", icon: FileText, roles: ["ADMIN", "PURCHASE", "FINANCE"] },
+    { name: "Penjualan", href: "/sales", icon: ShoppingBag, roles: ["ADMIN", "SALES", "FINANCE"] },
+    { name: "Operasional", href: "/operational", icon: Wallet, roles: ["ADMIN", "FINANCE", "SALES"] },
     { name: "Gudang", href: "/warehouse", icon: Warehouse, roles: ["ADMIN", "WAREHOUSE"] },
     { name: "Settings", href: "/settings", icon: Settings, roles: ["ADMIN"] },
 ];

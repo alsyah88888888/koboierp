@@ -24,14 +24,27 @@ export default async function OperationalPage() {
         orderBy: { code: 'asc' }
     });
 
+    const deliveries = await prisma.salesDelivery.findMany({
+        include: { items: true }
+    }).catch(() => []);
+
+    const receipts = await prisma.goodsReceipt.findMany({
+        where: { isVerified: true },
+        include: { items: true }
+    }).catch(() => []);
+
     // Serialize Decimal for client
     const serializedTransactions = serializeDecimal(transactionsWithJournals);
     const serializedCoa = serializeDecimal(coa);
+    const serializedDeliveries = serializeDecimal(deliveries);
+    const serializedReceipts = serializeDecimal(receipts);
 
     return (
         <OperationalDashboard
             transactions={serializedTransactions}
             coa={serializedCoa}
+            initialDeliveries={serializedDeliveries}
+            initialReceipts={serializedReceipts}
         />
     );
 }

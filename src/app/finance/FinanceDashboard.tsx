@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Search, Wallet, ArrowUpCircle, ArrowDownCircle, FileText, Trash2 } from "lucide-react";
+import { Plus, Search, Wallet, ArrowUpCircle, ArrowDownCircle, FileText, Trash2, Download, Eye } from "lucide-react";
+import { ReportPreviewModal } from "@/components/ReportPreviewModal";
 import { formatCurrency, cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { FinanceModal } from "./FinanceModal";
@@ -9,23 +10,29 @@ import { useSession } from "next-auth/react";
 import { updatePaymentStatusAction, deleteFinanceTransactionAction, deleteJournalEntryAction } from "@/app/actions";
 import { DashboardStats } from "../components/DashboardStats";
 import { CheckCircle2, Clock } from "lucide-react";
+import { exportToExcel } from "@/lib/excel";
 
-export function FinanceDashboard({ accounts, ledger, vendors, customers, pendingPurchases, pendingSales, unverifiedReceipts }: {
+export function FinanceDashboard({ accounts, ledger, vendors, customers, pendingPurchases, pendingSales, unverifiedReceipts, transactions }: {
     accounts: any[],
     ledger: any[],
     vendors: any[],
     customers: any[],
     pendingPurchases: any[],
     pendingSales: any[],
-    unverifiedReceipts: any[]
+    unverifiedReceipts: any[],
+    transactions: any[]
 }) {
     const { data: session } = useSession() as any;
     const userRole = session?.user?.role?.toUpperCase() || "";
     const isAdminOrFinance = userRole === "ADMIN" || userRole === "FINANCE";
     const [showModal, setShowModal] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
-    const [activeTab, setActiveTab] = useState<"ledger" | "ap" | "ar" | "checker">("ledger");
+    const [activeTab, setActiveTab] = useState<"ledger" | "ap" | "ar" | "checker" | "history">("ledger");
     const [loading, setLoading] = useState<string | null>(null);
+
+    const [showPreview, setShowPreview] = useState(false);
+    const [previewData, setPreviewData] = useState<any[]>([]);
+    const [previewTitle, setPreviewTitle] = useState("");
 
     const handlePrint = () => {
         window.print();
@@ -71,23 +78,119 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
         s.buyerName.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+    const handleExport = () => {
+        if (activeTab === "ledger") {
+            const data = filteredLedger.map(tx => ({
+                'Tanggal': format(new Date(tx.date), "dd/MM/yyyy"),
+                'Deskripsi': tx.description,
+                'Ref': tx.transaction?.referenceNumber || '-',
+                'Akun': tx.account?.name,
+                'Tipe': tx.type,
+                'Nominal': Number(tx.amount)
+            }));
+            exportToExcel(data, 'Laporan_Jurnal_Keuangan', 'Ledger');
+        } else if (activeTab === "ap") {
+            const data = filteredPurchases.map(p => ({
+                'Tanggal': format(new Date(p.createdAt), "dd/MM/yyyy"),
+                'No. Terima': p.receiptNumber,
+                'Supplier': p.receivedFrom,
+                'Total': Number(p.total),
+                'Status Pembayaran': p.paymentStatus,
+                'Status Gudang': p.isVerified ? 'VERIFIED' : 'PENDING'
+            }));
+            exportToExcel(data, 'Laporan_Hutang_Dagang', 'AP');
+        } else if (activeTab === "ar") {
+            const data = filteredSales.map(s => ({
+                'Tanggal': format(new Date(s.createdAt), "dd/MM/yyyy"),
+                'No. SJ': s.deliveryNumber,
+                'Pelanggan': s.buyerName,
+                'Total': Number(s.total),
+                'Status Pembayaran': s.paymentStatus
+            }));
+            exportToExcel(data, 'Laporan_Piutang_Dagang', 'AR');
+        } else if (activeTab === "checker") {
+            const data = unverifiedReceipts.map(r => ({
+                'Tanggal': format(new Date(r.createdAt), "dd/MM/yyyy"),
+                'No. Terima': r.receiptNumber,
+                'Supplier': r.receivedFrom,
+                'Gudang': r.warehouse?.name,
+                'Item Count': r.items.length
+            }));
+            exportToExcel(data, 'Laporan_Penerimaan_Pending_Gudang', 'Pending');
+        }
+    };
+
+    const handlePreview = () => {
+        if (activeTab === "ledger") {
+            const data = filteredLedger.map(tx => ({
+                'Tanggal': format(new Date(tx.date), "dd/MM/yyyy"),
+                'Deskripsi': tx.description,
+                'Ref': tx.transaction?.referenceNumber || '-',
+                'Akun': tx.account?.name,
+                'Tipe': tx.type,
+                'Nominal': Number(tx.amount)
+            }));
+            setPreviewData(data);
+            setPreviewTitle("Laporan Jurnal Keuangan (Ledger)");
+        } else if (activeTab === "ap") {
+            const data = filteredPurchases.map(p => ({
+                'Tanggal': format(new Date(p.createdAt), "dd/MM/yyyy"),
+                'No. Terima': p.receiptNumber,
+                'Supplier': p.receivedFrom,
+                'Total': Number(p.total),
+                'Status': p.paymentStatus,
+                'Gudang': p.isVerified ? 'VERIFIED' : 'PENDING'
+            }));
+            setPreviewData(data);
+            setPreviewTitle("Buku Pembantu Hutang (AP)");
+        } else if (activeTab === "ar") {
+            const data = filteredSales.map(s => ({
+                'Tanggal': format(new Date(s.createdAt), "dd/MM/yyyy"),
+                'No. SJ': s.deliveryNumber,
+                'Pelanggan': s.buyerName,
+                'Total': Number(s.total),
+                'Status': s.paymentStatus
+            }));
+            setPreviewData(data);
+            setPreviewTitle("Buku Pembantu Piutang (AR)");
+        } else if (activeTab === "checker") {
+            const data = unverifiedReceipts.map(r => ({
+                'Tanggal': format(new Date(r.createdAt), "dd/MM/yyyy"),
+                'No. Terima': r.receiptNumber,
+                'Supplier': r.receivedFrom,
+                'Gudang': r.warehouse?.name,
+                'Item Count': r.items.length
+            }));
+            setPreviewData(data);
+            setPreviewTitle("Daftar Penerimaan Menunggu Checker");
+        }
+        setShowPreview(true);
+    };
+
     const totalHutang = vendors.reduce((sum, v) => sum + v.balance, 0);
     const totalPiutang = customers.reduce((sum, c) => sum + c.balance, 0);
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center hide-print">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hide-print">
                 <div>
                     <h2 className="text-3xl font-bold tracking-tight text-primary">Manajemen Keuangan</h2>
                     <p className="text-muted-foreground">Verifikasi Pelunasan dan Monitoring Arus Kas.</p>
                 </div>
-                <div className="flex gap-3">
+                <div className="flex flex-wrap gap-3">
                     <button
-                        onClick={handlePrint}
-                        className="bg-white border-2 border-slate-200 text-slate-700 px-6 py-2 rounded-md flex items-center gap-2 hover:bg-slate-50 transition-all font-bold"
+                        onClick={handlePreview}
+                        className="bg-white border-2 border-emerald-600 text-emerald-600 px-6 py-2 rounded-md flex items-center gap-2 hover:bg-emerald-50 transition-all font-bold shadow-sm active:scale-95"
                     >
-                        <FileText className="h-5 w-5" />
-                        <span>Cetak Laporan</span>
+                        <Eye className="h-5 w-5" />
+                        <span>Preview Laporan</span>
+                    </button>
+                    <button
+                        onClick={handleExport}
+                        className="bg-emerald-600 text-white px-6 py-2 rounded-md flex items-center gap-2 hover:bg-emerald-700 shadow-lg shadow-emerald-200 transition-all active:scale-95 font-bold"
+                    >
+                        <Download className="h-5 w-5" />
+                        <span>Export Excel</span>
                     </button>
                     <button
                         onClick={() => setShowModal(true)}
@@ -154,13 +257,26 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                     Penerimaan (Gudang)
                     {unverifiedReceipts.length > 0 && <span className="bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center">{unverifiedReceipts.length}</span>}
                 </button>
+                <button
+                    onClick={() => setActiveTab("history")}
+                    className={cn(
+                        "px-6 py-3 text-sm font-bold transition-all border-b-2",
+                        activeTab === "history" ? "border-primary text-primary" : "border-transparent text-slate-400 hover:text-slate-600"
+                    )}
+                >
+                    Riwayat Transaksi
+                </button>
             </div>
 
             {/* Tab Content */}
             <div className="rounded-xl border bg-card shadow-sm">
                 <div className="p-6 border-b flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <h3 className="text-lg font-semibold text-primary capitalize">
-                        {activeTab === "ledger" ? "Data Jurnal & Ledger" : activeTab === "ap" ? "Buku Pembantu Hutang & Pelunasan" : "Buku Pembantu Piutang & Pelunasan"}
+                        {activeTab === "ledger" ? "Data Jurnal & Ledger" :
+                            activeTab === "ap" ? "Buku Pembantu Hutang & Pelunasan" :
+                                activeTab === "ar" ? "Buku Pembantu Piutang & Pelunasan" :
+                                    activeTab === "checker" ? "Penerimaan Menunggu Checker" :
+                                        "Riwayat Input Transaksi Keuangan"}
                     </h3>
                     <div className="relative w-full md:w-80">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -384,6 +500,62 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                         </table>
                     </div>
                 )}
+                {activeTab === "history" && (
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm text-left">
+                            <thead className="bg-muted/30 text-muted-foreground border-b text-xs uppercase tracking-wider">
+                                <tr>
+                                    <th className="px-6 py-4">Waktu Input</th>
+                                    <th className="px-6 py-4">Tipe</th>
+                                    <th className="px-6 py-4">Bank / Metode</th>
+                                    <th className="px-6 py-4">Deskripsi</th>
+                                    <th className="px-6 py-4 text-right">Nominal</th>
+                                    {isAdminOrFinance && <th className="px-6 py-4 text-center w-10">Aksi</th>}
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y">
+                                {transactions.map((tx: any) => (
+                                    <tr key={tx.id} className="hover:bg-muted/20 transition-colors text-xs">
+                                        <td className="px-6 py-4">
+                                            <div className="font-bold text-slate-900">{format(new Date(tx.date), "dd/MM/yyyy")}</div>
+                                            <div className="text-[10px] text-muted-foreground">{format(new Date(tx.date), "HH:mm:ss")}</div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${tx.transactionType === "PAYMENT" ? "bg-red-500/10 text-red-600" : "bg-emerald-500/10 text-emerald-600"}`}>
+                                                {tx.transactionType === "PAYMENT" ? "KELUAR" : "MASUK"}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 font-medium uppercase tracking-tighter">{tx.bank}</td>
+                                        <td className="px-6 py-4">
+                                            <div className="font-medium line-clamp-1" title={tx.description}>{tx.description}</div>
+                                            {tx.referenceNumber && <div className="text-[10px] text-muted-foreground">Ref: {tx.referenceNumber}</div>}
+                                        </td>
+                                        <td className={`px-6 py-4 text-right font-black ${tx.transactionType === "PAYMENT" ? "text-red-600" : "text-emerald-600"}`}>
+                                            {formatCurrency(Number(tx.amount))}
+                                        </td>
+                                        {isAdminOrFinance && (
+                                            <td className="px-6 py-4 text-center">
+                                                <button
+                                                    onClick={() => handleDelete(tx.id, false)}
+                                                    className="p-1.5 text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </button>
+                                            </td>
+                                        )}
+                                    </tr>
+                                ))}
+                                {transactions.length === 0 && (
+                                    <tr>
+                                        <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground italic">
+                                            Belum ada riwayat transaksi.
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
             </div>
 
             {/* Partner Summaries (Only shown when relevant) */}
@@ -439,6 +611,15 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                 <FinanceModal
                     accounts={accounts}
                     onClose={() => setShowModal(false)}
+                />
+            )}
+
+            {showPreview && (
+                <ReportPreviewModal
+                    title={previewTitle}
+                    data={previewData}
+                    onClose={() => setShowPreview(false)}
+                    onExport={handleExport}
                 />
             )}
         </div>

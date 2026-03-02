@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Clock, FileText, Search, Trash2, Printer as PrintIcon, Edit2, Eye } from "lucide-react";
+import { Plus, Search, Trash2, Edit2, Eye, Download } from "lucide-react";
+import { ReportPreviewModal } from "@/components/ReportPreviewModal";
 import { format } from "date-fns";
 import { ReceiptModal } from "./ReceiptModal";
 import { cn } from "@/lib/utils";
@@ -9,17 +10,25 @@ import { useSession } from "next-auth/react";
 import { deleteGoodsReceiptAction } from "@/app/actions";
 import { DashboardStats } from "../components/DashboardStats";
 import Link from "next/link";
+import { exportToExcel } from "@/lib/excel";
 
-export function PurchaseDashboard({ initialReceipts, products, warehouses, vendors }: { initialReceipts: any[], products: any[], warehouses: any[], vendors: any[] }) {
+export function PurchaseDashboard({ initialReceipts, products, warehouses, vendors }: {
+    initialReceipts: any[],
+    products: any[],
+    warehouses: any[],
+    vendors: any[]
+}) {
     const { data: session } = useSession() as any;
     const isAdmin = session?.user?.role === "ADMIN";
+    const userRole = session?.user?.role || "";
+
     const [showReceiptModal, setShowReceiptModal] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [editData, setEditData] = useState<any>(null);
 
-    const handlePrint = () => {
-        window.print();
-    };
+    const [showPreview, setShowPreview] = useState(false);
+    const [previewData, setPreviewData] = useState<any[]>([]);
+    const [previewTitle, setPreviewTitle] = useState("");
 
     const handleDelete = async (id: string) => {
         if (!confirm("Hapus penerimaan ini? Stok akan otomatis dikurangi kembali dan jurnal akan dihapus.")) return;
@@ -37,20 +46,59 @@ export function PurchaseDashboard({ initialReceipts, products, warehouses, vendo
         r.formNumber.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+    const handleExport = () => {
+        const data = filteredReceipts.map(r => ({
+            'No. Form': r.formNumber,
+            'Tanggal': format(new Date(r.date || r.createdAt), "dd/MM/yyyy"),
+            'Terima Dari': r.receivedFrom,
+            'No. Terima': r.receiptNumber,
+            'Gudang': r.warehouse.name,
+            'Sales Person': r.salesPerson,
+            'Total Qty': r.items.reduce((acc: number, i: any) => acc + i.quantity, 0),
+            'Total Harga': r.items.reduce((acc: number, i: any) => acc + (i.quantity * Number(i.purchasePrice || 0)), 0),
+            'Status': r.isVerified ? 'VERIFIED' : 'PENDING'
+        }));
+        exportToExcel(data, 'Laporan_Penerimaan_Barang', 'Penerimaan');
+    };
+
+    const handlePreview = () => {
+        const data = filteredReceipts.map(r => ({
+            'No. Form': r.formNumber,
+            'Tanggal': format(new Date(r.date || r.createdAt), "dd/MM/yyyy"),
+            'Terima Dari': r.receivedFrom,
+            'No. Terima': r.receiptNumber,
+            'Gudang': r.warehouse.name,
+            'Sales Person': r.salesPerson,
+            'Qty': r.items.reduce((acc: number, i: any) => acc + i.quantity, 0),
+            'Total Harga': Number(r.items.reduce((acc: number, i: any) => acc + (i.quantity * Number(i.purchasePrice || 0)), 0)),
+            'Status': r.isVerified ? 'VERIFIED' : 'PENDING'
+        }));
+        setPreviewData(data);
+        setPreviewTitle("Riwayat Penerimaan Barang (LPB)");
+        setShowPreview(true);
+    };
+
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center hide-print">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hide-print">
                 <div>
-                    <h2 className="text-3xl font-bold tracking-tight text-primary">Penerimaan Barang (Purchase)</h2>
-                    <p className="text-muted-foreground">Input dan monitoring surat penerimaan barang untuk stok gudang.</p>
+                    <h2 className="text-3xl font-bold tracking-tight text-primary">Modul Penerimaan Barang</h2>
+                    <p className="text-muted-foreground tracking-tight">Kelola penerimaan barang gudang (LPB).</p>
                 </div>
-                <div className="flex gap-3">
+                <div className="flex flex-wrap gap-3">
                     <button
-                        onClick={handlePrint}
-                        className="bg-white border-2 border-slate-200 text-slate-700 px-6 py-2 rounded-md flex items-center gap-2 hover:bg-slate-50 transition-all font-bold"
+                        onClick={handlePreview}
+                        className="bg-white border-2 border-emerald-600 text-emerald-600 px-6 py-2 rounded-md flex items-center gap-2 hover:bg-emerald-50 transition-all font-bold shadow-sm active:scale-95"
                     >
-                        <FileText className="h-5 w-5" />
-                        <span>Cetak Bukti Terima</span>
+                        <Eye className="h-5 w-5" />
+                        <span>Preview Laporan</span>
+                    </button>
+                    <button
+                        onClick={handleExport}
+                        className="bg-emerald-600 text-white px-6 py-2 rounded-md flex items-center gap-2 hover:bg-emerald-700 shadow-lg shadow-emerald-200 transition-all active:scale-95 font-bold"
+                    >
+                        <Download className="h-5 w-5" />
+                        <span>Export Excel</span>
                     </button>
                     <button
                         onClick={() => setShowReceiptModal(true)}
@@ -66,38 +114,20 @@ export function PurchaseDashboard({ initialReceipts, products, warehouses, vendo
                 <DashboardStats />
             </div>
 
-            <div className="grid gap-4 md:grid-cols-4">
-                <div className="p-6 rounded-xl border bg-card shadow-sm">
-                    <div className="flex justify-between items-start">
-                        <p className="text-sm font-medium text-muted-foreground">Total Penerimaan</p>
-                        <FileText className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                    <h3 className="text-2xl font-bold mt-2">{initialReceipts.length}</h3>
-                </div>
-                <div className="p-6 rounded-xl border bg-card shadow-sm">
-                    <div className="flex justify-between items-start">
-                        <p className="text-sm font-medium text-muted-foreground">Hari Ini</p>
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                    <h3 className="text-2xl font-bold mt-2">
-                        {initialReceipts.filter(r => new Date(r.date || r.createdAt).toDateString() === new Date().toDateString()).length}
-                    </h3>
-                </div>
-            </div>
-
             <div className="rounded-xl border bg-card shadow-sm">
-                <div className="p-6 border-b flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <h3 className="text-lg font-semibold text-primary">Riwayat Penerimaan</h3>
+                <div className="p-6 border-b flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-primary">
+                    <h3 className="text-lg font-bold capitalize">Data Penerimaan Barang</h3>
                     <div className="relative w-full md:w-80">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <input
                             value={searchTerm}
                             onChange={e => setSearchTerm(e.target.value)}
-                            placeholder="Cari No. Terima / Supplier..."
+                            placeholder="Cari..."
                             className="w-full pl-10 pr-4 py-2 bg-muted/50 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
                         />
                     </div>
                 </div>
+
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm text-left">
                         <thead className="bg-muted/30 text-muted-foreground border-b text-xs uppercase tracking-wider">
@@ -108,7 +138,7 @@ export function PurchaseDashboard({ initialReceipts, products, warehouses, vendo
                                 <th className="px-6 py-4">Gudang</th>
                                 <th className="px-6 py-4 text-right">Qty Barang</th>
                                 <th className="px-6 py-4 text-right">Tanggal</th>
-                                {isAdmin && <th className="px-6 py-4 text-center w-10">Aksi</th>}
+                                <th className="px-6 py-4 text-center w-10">Aksi</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y">
@@ -163,7 +193,7 @@ export function PurchaseDashboard({ initialReceipts, products, warehouses, vendo
                             ))}
                             {filteredReceipts.length === 0 && (
                                 <tr>
-                                    <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground italic">
+                                    <td colSpan={7} className="px-6 py-12 text-center text-muted-foreground italic">
                                         Belum ada data penerimaan barang.
                                     </td>
                                 </tr>
@@ -183,6 +213,15 @@ export function PurchaseDashboard({ initialReceipts, products, warehouses, vendo
                         setShowReceiptModal(false);
                         setEditData(null);
                     }}
+                />
+            )}
+
+            {showPreview && (
+                <ReportPreviewModal
+                    title={previewTitle}
+                    data={previewData}
+                    onClose={() => setShowPreview(false)}
+                    onExport={handleExport}
                 />
             )}
         </div>
