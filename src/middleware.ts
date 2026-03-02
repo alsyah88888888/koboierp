@@ -11,10 +11,22 @@ export default withAuth(
         if (path.startsWith("/finance") && token?.role !== "ADMIN" && token?.role !== "FINANCE") {
             return NextResponse.redirect(new URL("/", req.url));
         }
-        if (path.startsWith("/purchase") && token?.role !== "ADMIN" && token?.role !== "PURCHASE") {
+        if (path.startsWith("/accounting") && token?.role !== "ADMIN" && token?.role !== "FINANCE") {
             return NextResponse.redirect(new URL("/", req.url));
         }
-        if (path.startsWith("/sales") && token?.role !== "ADMIN" && token?.role !== "SALES") {
+
+        if (path.startsWith("/purchase")) {
+            if (path.startsWith("/purchase/request")) {
+                if (token?.role !== "ADMIN" && token?.role !== "PURCHASE" && token?.role !== "FINANCE") {
+                    return NextResponse.redirect(new URL("/", req.url));
+                }
+            } else {
+                if (token?.role !== "ADMIN" && token?.role !== "PURCHASE" && token?.role !== "SALES") {
+                    return NextResponse.redirect(new URL("/", req.url));
+                }
+            }
+        }
+        if (path.startsWith("/sales") && token?.role !== "ADMIN" && token?.role !== "SALES" && token?.role !== "PURCHASE") {
             return NextResponse.redirect(new URL("/", req.url));
         }
         if (path.startsWith("/warehouse") && token?.role !== "ADMIN" && token?.role !== "WAREHOUSE") {

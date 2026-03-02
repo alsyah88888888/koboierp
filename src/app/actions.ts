@@ -1121,7 +1121,7 @@ export async function updatePaymentStatusAction(type: "PURCHASE" | "SALE", id: s
 }
 
 export async function createFinanceTransactionAction(data: {
-    transactionType: "PAYMENT" | "RECEIPT";
+    transactionType: "PAYMENT" | "RECEIPT" | "MUTATION";
     bank: string;
     date: Date;
     referenceNumber?: string;
@@ -1162,30 +1162,39 @@ export async function createFinanceTransactionAction(data: {
 
         // 2. Create Journal Entries (Double Entry)
         // For simplicity, we assume 'accountId' is the "Other" side of the bank transaction.
-        // We'll also need a "Bank Account" in the COA. 
+        // We'll also need a "Bank Account" in the COA.
         // If bankAccountId is not provided, we might need a default Bank Asset account.
 
         const isPayment = data.transactionType === "PAYMENT";
+        const isMutation = data.transactionType === "MUTATION";
 
-        // Entry for target account
+        let typeTargetAccount = isPayment ? "DEBIT" : "CREDIT";
+        let typeBankAccount = isPayment ? "CREDIT" : "DEBIT";
+
+        if (isMutation) {
+            typeTargetAccount = "DEBIT"; // Target bank receives money (Asset Debit)
+            typeBankAccount = "CREDIT";  // Source bank sends money (Asset Credit)
+        }
+
+        // Entry for target account (Expense, Income, or Target Bank if Mutation)
         await tx.journalEntry.create({
             data: {
                 description: data.description,
                 amount: data.amount as any,
-                type: isPayment ? "DEBIT" : "CREDIT", // Payment usually Debits Expense, Receipt Credits Income
+                type: typeTargetAccount as any,
                 accountId: data.accountId,
                 transactionId: transaction.id,
                 date: data.date
             }
         });
 
-        // Entry for bank account (if provided or defaulted)
+        // Entry for bank account
         if (data.bankAccountId) {
             await tx.journalEntry.create({
                 data: {
                     description: `${data.transactionType}: ${data.bank} - ${data.referenceNumber || ''}`,
                     amount: data.amount as any,
-                    type: isPayment ? "CREDIT" : "DEBIT", // Payment Credits Asset (Bank), Receipt Debits Asset (Bank)
+                    type: typeBankAccount as any,
                     accountId: data.bankAccountId,
                     transactionId: transaction.id,
                     date: txDate
@@ -1198,6 +1207,27 @@ export async function createFinanceTransactionAction(data: {
 
         return { success: true, transactionId: transaction.id };
     });
+}
+
+export async function getAccountingDataAction() {
+    const session = await getServerSession(authOptions) as any;
+
+    if (!session?.user) throw new Error("Unauthorized");
+
+    const [journals, accounts] = await Promise.all([
+        prisma.journalEntry.findMany({
+            orderBy: { date: 'desc' },
+            include: {
+                account: true,
+                transaction: true
+            }
+        }),
+        prisma.financeAccount.findMany({
+            orderBy: { code: 'asc' }
+        })
+    ]);
+
+    return { journals, accounts };
 }
 
 export async function getFinanceTransactionsAction() {
