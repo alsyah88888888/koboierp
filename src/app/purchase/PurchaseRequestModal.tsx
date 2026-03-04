@@ -22,11 +22,11 @@ export function PurchaseRequestModal({ onClose }: { onClose: () => void }) {
     const updateItem = (index: number, field: string, value: any) => {
         const newItems = [...items];
         if (field === 'quantity') {
-            const val = parseInt(value);
-            (newItems[index] as any)[field] = isNaN(val) ? "" : val;
+            const raw = String(value).replace(/\D/g, "");
+            (newItems[index] as any)[field] = raw ? parseInt(raw, 10) : "";
         } else if (field === 'estimatedPrice') {
-            const val = parseFloat(value);
-            (newItems[index] as any)[field] = isNaN(val) ? "" : val;
+            const raw = String(value).replace(/\D/g, "");
+            (newItems[index] as any)[field] = raw ? parseInt(raw, 10) : "";
         } else {
             (newItems[index] as any)[field] = value;
         }
@@ -140,16 +140,16 @@ export function PurchaseRequestModal({ onClose }: { onClose: () => void }) {
                                             </td>
                                             <td className="px-4 py-2">
                                                 <input
-                                                    type="number"
-                                                    value={item.quantity}
+                                                    type="text"
+                                                    value={item.quantity ? item.quantity.toLocaleString('id-ID') : ""}
                                                     onChange={e => updateItem(index, 'quantity', e.target.value)}
                                                     className="w-full p-2 bg-transparent border-none text-right focus:ring-0 font-mono"
                                                 />
                                             </td>
                                             <td className="px-4 py-2">
                                                 <input
-                                                    type="number"
-                                                    value={item.estimatedPrice}
+                                                    type="text"
+                                                    value={item.estimatedPrice ? item.estimatedPrice.toLocaleString('id-ID') : ""}
                                                     onChange={e => updateItem(index, 'estimatedPrice', e.target.value)}
                                                     className="w-full p-2 bg-transparent border-none text-right focus:ring-0 font-mono"
                                                 />

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { X, Plus, Trash2, Loader2, Save } from "lucide-react";
 import { createSalesDeliveryAction, updateSalesDeliveryAction } from "../actions";
+import { formatCurrency } from "@/lib/utils";
 
 interface SalesItem {
     productId: string;
@@ -26,8 +27,8 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
     const [items, setItems] = useState<SalesItem[]>([{ productId: "", sku: "", quantity: 1, salesPrice: 0, discount: 0, uom: "" }]);
 
     // Financials
-    const [totalDiscount, setTotalDiscount] = useState<number>(0);
-    const [taxRate, setTaxRate] = useState<number>(0); // 0 or 0.11
+    const [totalDiscount, setTotalDiscount] = useState<number | "">(0);
+    const [taxRate, setTaxRate] = useState<number | "">(0); // 0 or 0.11
 
     useEffect(() => {
         if (initialData) {
@@ -60,9 +61,12 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
 
         // Handle number inputs to prevent NaN
         if (field === 'quantity') {
-            const val = parseInt(value);
-            (newItems[index] as any)[field] = isNaN(val) ? "" : val;
-        } else if (field === 'salesPrice' || field === 'discount') {
+            const raw = String(value).replace(/\D/g, "");
+            (newItems[index] as any)[field] = raw ? parseInt(raw, 10) : "";
+        } else if (field === 'salesPrice') {
+            const raw = String(value).replace(/\D/g, "");
+            (newItems[index] as any)[field] = raw ? parseInt(raw, 10) : "";
+        } else if (field === 'discount') {
             const val = parseFloat(value);
             (newItems[index] as any)[field] = isNaN(val) ? "" : val;
         } else {
@@ -102,9 +106,9 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
     }, 0);
 
     const subtotal = grossAmount - itemDiscounts;
-    const finalDiscountPercent = totalDiscount || 0;
+    const finalDiscountPercent = Number(totalDiscount) || 0;
     const finalDiscountNominal = subtotal * (finalDiscountPercent / 100);
-    const taxAmount = (subtotal - finalDiscountNominal) * (taxRate / 100);
+    const taxAmount = (subtotal - finalDiscountNominal) * (Number(taxRate) / 100);
     const grandTotal = subtotal - finalDiscountNominal + taxAmount;
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -124,8 +128,8 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                 buyerName,
                 warehouseId,
                 salesPerson,
-                totalDiscount,
-                taxRate,
+                totalDiscount: Number(totalDiscount) || 0,
+                taxRate: Number(taxRate) || 0,
                 createdAt: new Date(date),
                 items: items.map(i => ({
                     productId: i.productId,
@@ -249,9 +253,8 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                     <div className="w-20 space-y-1">
                                         <label className="text-[10px] font-bold text-slate-500 uppercase ml-1 tracking-widest">Qty</label>
                                         <input
-                                            type="number"
-                                            min="1"
-                                            value={item.quantity}
+                                            type="text"
+                                            value={item.quantity ? item.quantity.toLocaleString('id-ID') : ""}
                                             onChange={e => updateItem(index, "quantity", e.target.value)}
                                             className="w-full bg-white border-2 border-slate-200 px-3 py-2 rounded-lg text-sm font-black outline-none text-center focus:border-primary transition-all h-11"
                                             required
@@ -260,9 +263,8 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                     <div className="w-32 space-y-1">
                                         <label className="text-[10px] font-bold text-slate-500 uppercase ml-1 tracking-widest">Harga (@)</label>
                                         <input
-                                            type="number"
-                                            min="0"
-                                            value={item.salesPrice}
+                                            type="text"
+                                            value={item.salesPrice ? item.salesPrice.toLocaleString('id-ID') : ""}
                                             onChange={e => updateItem(index, "salesPrice", e.target.value)}
                                             className="w-full bg-white border-2 border-slate-200 px-3 py-2 rounded-lg text-sm font-black outline-none text-right focus:border-primary transition-all h-11"
                                             required
@@ -272,11 +274,12 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                         <label className="text-[10px] font-bold text-orange-500 uppercase ml-1 tracking-widest">Diskon (%)</label>
                                         <div className="relative h-11">
                                             <input
-                                                type="number"
-                                                min="0"
-                                                max="100"
+                                                type="text"
                                                 value={item.discount}
-                                                onChange={e => updateItem(index, "discount", e.target.value)}
+                                                onChange={e => {
+                                                    const val = e.target.value.replace(/\D/g, '');
+                                                    updateItem(index, "discount", val === '' ? '' : Number(val));
+                                                }}
                                                 className="w-full bg-orange-50 border-2 border-orange-200 pl-3 pr-7 py-2 rounded-lg text-sm font-black outline-none text-right text-orange-600 focus:border-orange-500 transition-all h-full"
                                                 placeholder="0"
                                             />
@@ -313,11 +316,12 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                         <label className="text-xs font-bold text-slate-500 uppercase ml-1 tracking-wider">Diskon Final (%)</label>
                                         <div className="relative h-12">
                                             <input
-                                                type="number"
-                                                min="0"
-                                                max="100"
+                                                type="text"
                                                 value={totalDiscount}
-                                                onChange={e => setTotalDiscount(parseFloat(e.target.value) || 0)}
+                                                onChange={e => {
+                                                    const val = e.target.value.replace(/\D/g, '');
+                                                    setTotalDiscount(val === '' ? '' : Number(val));
+                                                }}
                                                 className="w-full bg-white border-2 border-slate-300 pl-3 pr-8 py-2 rounded-xl text-lg font-black text-primary outline-none focus:border-primary transition-all h-full shadow-sm"
                                                 placeholder="0"
                                             />
@@ -328,11 +332,12 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                         <label className="text-xs font-bold text-slate-500 uppercase ml-1 tracking-wider">PPN (%)</label>
                                         <div className="relative h-12">
                                             <input
-                                                type="number"
-                                                min="0"
-                                                max="100"
+                                                type="text"
                                                 value={taxRate}
-                                                onChange={e => setTaxRate(parseFloat(e.target.value) || 0)}
+                                                onChange={e => {
+                                                    const val = e.target.value.replace(/\D/g, '');
+                                                    setTaxRate(val === '' ? '' : Number(val));
+                                                }}
                                                 className="w-full bg-indigo-50 border-2 border-indigo-200 pl-3 pr-8 py-2 rounded-xl text-lg font-black text-indigo-600 outline-none focus:border-indigo-500 transition-all h-full shadow-sm"
                                                 placeholder="11"
                                             />
@@ -349,8 +354,8 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                         <span className="font-black text-slate-700">Rp {subtotal.toLocaleString('id-ID')}</span>
                                     </div>
                                     <div className="flex justify-between items-center text-sm font-bold text-orange-500">
-                                        <span>TOTAL DISKON TAMBAHAN ({totalDiscount}%)</span>
-                                        <span className="font-black">- Rp {(subtotal * (totalDiscount / 100)).toLocaleString('id-ID')}</span>
+                                        <span>TOTAL DISKON TAMBAHAN ({totalDiscount === "" ? 0 : totalDiscount}%)</span>
+                                        <span className="font-black">- Rp {(subtotal * (Number(totalDiscount) / 100)).toLocaleString('id-ID')}</span>
                                     </div>
                                     <div className="flex justify-between items-center text-sm font-bold text-indigo-500">
                                         <span>PPN (11%)</span>

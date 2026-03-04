@@ -4,9 +4,12 @@ import { useEffect, useState } from "react";
 import { DollarSign, Package, ShoppingCart, Wallet, TrendingUp, Box } from "lucide-react";
 import { getDashboardSummaryAction } from "@/app/actions";
 import { formatCurrency } from "@/lib/utils";
+import { useSession } from "next-auth/react";
 
 export function DashboardStats() {
     const [stats, setStats] = useState<any>(null);
+    const { data: session } = useSession();
+    const userRole = (session?.user as any)?.role || "USER";
 
     useEffect(() => {
         const loadStats = async () => {
@@ -58,7 +61,12 @@ export function DashboardStats() {
             bg: "bg-indigo-50",
             border: "border-indigo-100"
         }
-    ];
+    ].filter(item => {
+        if (userRole === "WAREHOUSE" && (item.label === "Total Revenue" || item.label === "Cash/Bank Balance")) {
+            return false;
+        }
+        return true;
+    });
 
     return (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

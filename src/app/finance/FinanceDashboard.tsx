@@ -1,19 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Search, Wallet, ArrowUpCircle, ArrowDownCircle, FileText, Trash2, Download, Eye } from "lucide-react";
+import { Plus, Search, Wallet, ArrowUpCircle, ArrowDownCircle, FileText, Trash2, Download, Eye, FileCode2 } from "lucide-react";
 import { ReportPreviewModal } from "@/components/ReportPreviewModal";
 import { formatCurrency, cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { FinanceModal } from "./FinanceModal";
 import { useSession } from "next-auth/react";
-import { updatePaymentStatusAction, deleteFinanceTransactionAction, deleteJournalEntryAction } from "@/app/actions";
+import { updatePaymentStatusAction, deleteFinanceTransactionAction, deleteJournalEntryAction, getCortexXmlContentAction, verifyPurchaseReturnAction } from "@/app/actions";
 import { DashboardStats } from "../components/DashboardStats";
 import { CheckCircle2, Clock } from "lucide-react";
 import { exportToExcel } from "@/lib/excel";
 import { useRouter } from "next/navigation";
 
-export function FinanceDashboard({ accounts, ledger, vendors, customers, pendingPurchases, pendingSales, unverifiedReceipts, transactions }: {
+export function FinanceDashboard({ accounts, ledger, vendors, customers, pendingPurchases, pendingSales, unverifiedReceipts, pendingReturns, transactions }: {
     accounts: any[],
     ledger: any[],
     vendors: any[],
@@ -21,6 +21,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
     pendingPurchases: any[],
     pendingSales: any[],
     unverifiedReceipts: any[],
+    pendingReturns: any[],
     transactions: any[]
 }) {
     const { data: session } = useSession() as any;
@@ -86,6 +87,11 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
         s.buyerName.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+    const filteredReturns = pendingReturns.filter(r =>
+        r.returnNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        r.receipt?.receivedFrom.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
     const handleExport = () => {
         if (activeTab === "ledger") {
             const data = filteredLedger.map(tx => ({
@@ -125,6 +131,39 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                 'Item Count': r.items.length
             }));
             exportToExcel(data, 'Laporan_Penerimaan_Pending_Gudang', 'Pending');
+        }
+    };
+
+    const handleExportCortex = async () => {
+        if (activeTab !== "ar") return;
+        try {
+            const xml = await getCortexXmlContentAction();
+            const blob = new Blob([xml], { type: "application/xml" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `Cortex_Sales_Export_${format(new Date(), "yyyyMMdd_HHmm")}.xml`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error("Failed to generate Cortex XML:", error);
+            alert("Gagal melakukan export XML Cortex.");
+        }
+    };
+
+    const handleVerifyReturn = async (id: string, vendorName: string) => {
+        if (!confirm(`Verifikasi retur ini? Saldo Hutang (AP) ke ${vendorName} akan otomatis dikurangi!`)) return;
+        setLoading(id);
+        try {
+            await verifyPurchaseReturnAction(id);
+            alert("Retur berhasil diverifikasi, hutang vendor berkurang.");
+            router.refresh();
+        } catch (e: any) {
+            alert(e.message || "Gagal memverifikasi retur.");
+        } finally {
+            setLoading(null);
         }
     };
 
@@ -175,8 +214,12 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
         setShowPreview(true);
     };
 
-    const totalHutang = vendors.reduce((sum, v) => sum + v.balance, 0);
-    const totalPiutang = customers.reduce((sum, c) => sum + c.balance, 0);
+    const apAccount = accounts.find((a: any) => a.code === '201');
+    const arAccount = accounts.find((a: any) => a.code === '105');
+
+    // We display absolute numeric value from the ledger (GL balances). Liability is technically credit-normal so it is positive in our UI since we handle subtraction under the hood or we Math.abs it, same for AR.
+    const totalHutang = Math.abs(apAccount ? apAccount.balance : 0);
+    const totalPiutang = Math.abs(arAccount ? arAccount.balance : 0);
 
     return (
         <div className="space-y-6">
@@ -200,6 +243,15 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                         <Download className="h-5 w-5" />
                         <span>Export Excel</span>
                     </button>
+                    {activeTab === "ar" && (
+                        <button
+                            onClick={handleExportCortex}
+                            className="bg-orange-600 text-white px-6 py-2 rounded-md flex items-center gap-2 hover:bg-orange-700 shadow-lg shadow-orange-200 transition-all active:scale-95 font-bold animate-in fade-in"
+                        >
+                            <FileCode2 className="h-5 w-5" />
+                            <span>Export Cortex (XML)</span>
+                        </button>
+                    )}
                     <button
                         onClick={() => setShowModal(true)}
                         className="bg-primary text-white px-6 py-2 rounded-md flex items-center gap-2 hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all active:scale-95 font-bold"
@@ -356,72 +408,121 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                 )}
 
                 {activeTab === "ap" && (
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-left">
-                            <thead className="bg-muted/30 text-muted-foreground border-b text-xs uppercase tracking-wider">
-                                <tr>
-                                    <th className="px-6 py-4">Tgl / Ref</th>
-                                    <th className="px-6 py-4">Supplier</th>
-                                    <th className="px-6 py-4">Status</th>
-                                    <th className="px-6 py-4 text-right">Nominal</th>
-                                    <th className="px-6 py-4 text-center">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y">
-                                {filteredPurchases.map((p: any) => (
-                                    <tr key={p.id} className="hover:bg-muted/20 transition-colors">
-                                        <td className="px-6 py-4">
-                                            <div className="text-xs text-muted-foreground">{format(new Date(p.createdAt), "dd/MM/yy")}</div>
-                                            <div className="font-mono text-[10px]">{p.receiptNumber}</div>
-                                        </td>
-                                        <td className="px-6 py-4 font-bold">{p.receivedFrom}</td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex flex-col gap-1">
-                                                <span className="flex items-center gap-1.5 text-amber-600 font-bold text-xs uppercase">
-                                                    <Clock className="h-3 w-3" /> {p.paymentStatus}
-                                                </span>
-                                                <span className={`text-[9px] font-black px-1.5 py-0.5 rounded w-fit uppercase ${p.isVerified ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
-                                                    {p.isVerified ? "Gudang: Check OK" : "Gudang: Pending"}
-                                                </span>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 text-right font-black text-red-600">
-                                            {formatCurrency(p.total)}
-                                        </td>
-                                        <td className="px-6 py-4 text-center">
-                                            <div className="flex flex-col gap-2 items-center justify-center">
-                                                {p.paymentStatus === 'PENDING' && (
+                    <>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm text-left">
+                                <thead className="bg-muted/30 text-muted-foreground border-b text-xs uppercase tracking-wider">
+                                    <tr>
+                                        <th className="px-6 py-4">Tgl / Ref</th>
+                                        <th className="px-6 py-4">Supplier</th>
+                                        <th className="px-6 py-4">Status</th>
+                                        <th className="px-6 py-4 text-right">Nominal</th>
+                                        <th className="px-6 py-4 text-center">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y">
+                                    {filteredPurchases.map((p: any) => (
+                                        <tr key={p.id} className="hover:bg-muted/20 transition-colors">
+                                            <td className="px-6 py-4">
+                                                <div className="text-xs text-muted-foreground">{format(new Date(p.createdAt), "dd/MM/yy")}</div>
+                                                <div className="font-mono text-[10px]">{p.receiptNumber}</div>
+                                            </td>
+                                            <td className="px-6 py-4 font-bold">{p.receivedFrom}</td>
+                                            <td className="px-6 py-4">
+                                                <div className="flex flex-col gap-1">
+                                                    <span className="flex items-center gap-1.5 text-amber-600 font-bold text-xs uppercase">
+                                                        <Clock className="h-3 w-3" /> {p.paymentStatus}
+                                                    </span>
+                                                    <span className={`text-[9px] font-black px-1.5 py-0.5 rounded w-fit uppercase ${p.isVerified ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
+                                                        {p.isVerified ? "Gudang: Check OK" : "Gudang: Pending"}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 text-right font-black text-red-600">
+                                                {formatCurrency(p.total)}
+                                            </td>
+                                            <td className="px-6 py-4 text-center">
+                                                <div className="flex flex-col gap-2 items-center justify-center">
+                                                    {p.paymentStatus === 'PENDING' && (
+                                                        <button
+                                                            disabled={loading === p.id || !p.isVerified}
+                                                            onClick={() => handleVerifyPayment("PURCHASE", p.id, "CREDIT")}
+                                                            className="bg-amber-500 w-full text-white px-3 py-1 rounded text-[10px] font-bold hover:bg-amber-600 transition-all disabled:opacity-50"
+                                                            title={!p.isVerified ? "Mohon tunggu verifikasi stok gudang" : "Catat sebagai Hutang Tempo"}
+                                                        >
+                                                            {loading === p.id ? "..." : "Set HUTANG"}
+                                                        </button>
+                                                    )}
                                                     <button
                                                         disabled={loading === p.id || !p.isVerified}
-                                                        onClick={() => handleVerifyPayment("PURCHASE", p.id, "CREDIT")}
-                                                        className="bg-amber-500 w-full text-white px-3 py-1 rounded text-[10px] font-bold hover:bg-amber-600 transition-all disabled:opacity-50"
-                                                        title={!p.isVerified ? "Mohon tunggu verifikasi stok gudang" : "Catat sebagai Hutang Tempo"}
+                                                        onClick={() => handleVerifyPayment("PURCHASE", p.id, "PAID")}
+                                                        className="bg-emerald-500 w-full text-white px-3 py-1 rounded text-[10px] font-bold hover:bg-emerald-600 transition-all disabled:opacity-50"
+                                                        title={!p.isVerified ? "Mohon tunggu verifikasi stok gudang" : "Lunas Kas/Bank"}
                                                     >
-                                                        {loading === p.id ? "..." : "Set HUTANG"}
+                                                        {loading === p.id ? "..." : "Set LUNAS"}
                                                     </button>
-                                                )}
-                                                <button
-                                                    disabled={loading === p.id || !p.isVerified}
-                                                    onClick={() => handleVerifyPayment("PURCHASE", p.id, "PAID")}
-                                                    className="bg-emerald-500 w-full text-white px-3 py-1 rounded text-[10px] font-bold hover:bg-emerald-600 transition-all disabled:opacity-50"
-                                                    title={!p.isVerified ? "Mohon tunggu verifikasi stok gudang" : "Lunas Kas/Bank"}
-                                                >
-                                                    {loading === p.id ? "..." : "Set LUNAS"}
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                                {filteredPurchases.length === 0 && (
-                                    <tr>
-                                        <td colSpan={5} className="px-6 py-12 text-center text-muted-foreground italic">
-                                            Tidak ada pembelian yang butuh verifikasi (Lunas).
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {filteredPurchases.length === 0 && (
+                                        <tr>
+                                            <td colSpan={5} className="px-6 py-12 text-center text-muted-foreground italic">
+                                                Tidak ada pembelian yang butuh verifikasi (Lunas).
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div className="mt-8 border-t pt-6">
+                            <h3 className="text-lg font-bold text-rose-800 mb-4 capitalize">Pengajuan Retur Pembelian (Pending)</h3>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm text-left">
+                                    <thead className="bg-rose-50 border-b border-rose-100 text-rose-800 text-xs uppercase tracking-wider">
+                                        <tr>
+                                            <th className="px-6 py-4">No. Retur</th>
+                                            <th className="px-6 py-4">Tanggal Pengajuan</th>
+                                            <th className="px-6 py-4">Ref. LPB</th>
+                                            <th className="px-6 py-4">Vendor</th>
+                                            <th className="px-6 py-4 text-center">Qty Diretur</th>
+                                            <th className="px-6 py-4 text-center">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-rose-50">
+                                        {filteredReturns.map((r: any) => (
+                                            <tr key={r.id} className="hover:bg-rose-50/50 transition-colors">
+                                                <td className="px-6 py-4 font-mono font-bold text-rose-600">{r.returnNumber}</td>
+                                                <td className="px-6 py-4 text-slate-500">{format(new Date(r.date || r.createdAt), "dd/MM/yyyy")}</td>
+                                                <td className="px-6 py-4 text-slate-600">{r.receipt?.receiptNumber}</td>
+                                                <td className="px-6 py-4 font-medium text-slate-700">{r.receipt?.receivedFrom}</td>
+                                                <td className="px-6 py-4 text-center font-bold text-rose-600">
+                                                    {r.items?.reduce((acc: number, i: any) => acc + i.quantity, 0)} Items
+                                                </td>
+                                                <td className="px-6 py-4 text-center">
+                                                    <button
+                                                        disabled={loading === r.id}
+                                                        onClick={() => handleVerifyReturn(r.id, r.receipt?.receivedFrom)}
+                                                        className="bg-rose-600 text-white px-4 py-1.5 rounded text-xs font-bold hover:bg-rose-700 shadow-sm transition-all disabled:opacity-50"
+                                                    >
+                                                        {loading === r.id ? "..." : "Verifikasi Retur"}
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                        {filteredReturns.length === 0 && (
+                                            <tr>
+                                                <td colSpan={6} className="px-6 py-12 text-center text-rose-400 italic">
+                                                    Tidak ada pengajuan retur pembelian yang pending.
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </>
                 )}
 
                 {activeTab === "ar" && (
@@ -592,69 +693,77 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
             </div>
 
             {/* Partner Summaries (Only shown when relevant) */}
-            {(activeTab === "ap" || activeTab === "ar") && (
-                <div className="rounded-xl border bg-card shadow-sm mt-6">
-                    <div className="p-6 border-b">
-                        <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-widest">
-                            {activeTab === "ap" ? "Ringkasan Saldo Hutang Supplier" : "Ringkasan Saldo Piutang Buyer"}
-                        </h3>
-                    </div>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-left">
-                            <thead className="bg-muted/10 text-muted-foreground border-b text-[10px] uppercase tracking-wider">
-                                <tr>
-                                    <th className="px-6 py-4">Nama</th>
-                                    <th className="px-6 py-4 text-right">Total Saldo</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y">
-                                {(activeTab === "ap" ? vendors : customers).map((v: any) => (
-                                    <tr key={v.id}>
-                                        <td className="px-6 py-3 font-medium">{v.name}</td>
-                                        <td className={`px-6 py-3 text-right font-bold ${activeTab === "ap" ? "text-red-600" : "text-emerald-600"}`}>
-                                            {formatCurrency(v.balance)}
-                                        </td>
+            {
+                (activeTab === "ap" || activeTab === "ar") && (
+                    <div className="rounded-xl border bg-card shadow-sm mt-6">
+                        <div className="p-6 border-b">
+                            <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-widest">
+                                {activeTab === "ap" ? "Ringkasan Saldo Hutang Supplier" : "Ringkasan Saldo Piutang Buyer"}
+                            </h3>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm text-left">
+                                <thead className="bg-muted/10 text-muted-foreground border-b text-[10px] uppercase tracking-wider">
+                                    <tr>
+                                        <th className="px-6 py-4">Nama</th>
+                                        <th className="px-6 py-4 text-right">Total Saldo</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody className="divide-y">
+                                    {(activeTab === "ap" ? vendors : customers).map((v: any) => (
+                                        <tr key={v.id}>
+                                            <td className="px-6 py-3 font-medium">{v.name}</td>
+                                            <td className={`px-6 py-3 text-right font-bold ${activeTab === "ap" ? "text-red-600" : "text-emerald-600"}`}>
+                                                {formatCurrency(v.balance)}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* Account Summary Cards */}
-            {activeTab === "ledger" && (
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 hide-print">
-                    {accounts.map((account: any) => (
-                        <div key={account.id} className="p-6 rounded-xl border bg-card hover:border-primary/50 transition-colors shadow-sm">
-                            <div className="flex justify-between items-start">
-                                <div>
-                                    <p className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">{account.code}</p>
-                                    <h3 className="text-sm font-bold mt-1 leading-tight">{account.name}</h3>
+            {
+                activeTab === "ledger" && (
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 hide-print">
+                        {accounts.map((account: any) => (
+                            <div key={account.id} className="p-6 rounded-xl border bg-card hover:border-primary/50 transition-colors shadow-sm">
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <p className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">{account.code}</p>
+                                        <h3 className="text-sm font-bold mt-1 leading-tight">{account.name}</h3>
+                                    </div>
+                                    <Wallet className="h-4 w-4 text-muted-foreground" />
                                 </div>
-                                <Wallet className="h-4 w-4 text-muted-foreground" />
+                                <p className="text-xl font-bold mt-4 tracking-tight">{formatCurrency(account.balance)}</p>
                             </div>
-                            <p className="text-xl font-bold mt-4 tracking-tight">{formatCurrency(account.balance)}</p>
-                        </div>
-                    ))}
-                </div>
-            )}
+                        ))}
+                    </div>
+                )
+            }
 
-            {showModal && (
-                <FinanceModal
-                    accounts={accounts}
-                    onClose={() => setShowModal(false)}
-                />
-            )}
+            {
+                showModal && (
+                    <FinanceModal
+                        accounts={accounts}
+                        onClose={() => setShowModal(false)}
+                    />
+                )
+            }
 
-            {showPreview && (
-                <ReportPreviewModal
-                    title={previewTitle}
-                    data={previewData}
-                    onClose={() => setShowPreview(false)}
-                    onExport={handleExport}
-                />
-            )}
-        </div>
+            {
+                showPreview && (
+                    <ReportPreviewModal
+                        title={previewTitle}
+                        data={previewData}
+                        onClose={() => setShowPreview(false)}
+                        onExport={handleExport}
+                    />
+                )
+            }
+        </div >
     );
 }

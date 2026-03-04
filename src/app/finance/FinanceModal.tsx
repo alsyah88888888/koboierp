@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { X, Loader2, Save, ArrowDownLeft, ArrowUpRight } from "lucide-react";
 import { createFinanceTransactionAction } from "../actions";
+import { formatCurrency } from "@/lib/utils";
 
 export function FinanceModal({ accounts, onClose }: { accounts: any[], onClose: () => void }) {
     const [loading, setLoading] = useState(false);
@@ -150,9 +151,12 @@ export function FinanceModal({ accounts, onClose }: { accounts: any[], onClose: 
                             <div className="relative">
                                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-bold">Rp</span>
                                 <input
-                                    type="number"
-                                    value={amount}
-                                    onChange={e => setAmount(parseFloat(e.target.value))}
+                                    type="text"
+                                    value={amount ? amount.toLocaleString('id-ID') : ""}
+                                    onChange={e => {
+                                        const raw = e.target.value.replace(/\D/g, "");
+                                        setAmount(raw ? parseInt(raw, 10) : 0);
+                                    }}
                                     className="w-full bg-slate-50 border-2 border-slate-300 pl-10 pr-3 py-2.5 rounded-lg outline-none focus:border-primary transition-all font-black text-xl text-primary"
                                     required
                                 />

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { X, Save, AlertCircle } from "lucide-react";
 import { createFinanceTransactionAction } from "@/app/actions";
 import { toast } from "react-hot-toast";
+import { formatCurrency } from "@/lib/utils";
 
 interface OperationalModalProps {
     isOpen: boolean;
@@ -118,11 +119,14 @@ export function OperationalModal({ isOpen, onClose, coa }: OperationalModalProps
                         <div className="space-y-2">
                             <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Jumlah (Rp)</label>
                             <input
-                                type="number"
+                                type="text"
                                 placeholder="0"
                                 className="w-full bg-accent/50 border-none rounded-xl py-2 px-3 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all"
-                                value={formData.amount}
-                                onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                                value={formData.amount ? Number(formData.amount).toLocaleString('id-ID') : ""}
+                                onChange={(e) => {
+                                    const raw = e.target.value.replace(/\D/g, "");
+                                    setFormData({ ...formData, amount: raw ? parseInt(raw, 10).toString() : "" });
+                                }}
                                 required
                             />
                         </div>

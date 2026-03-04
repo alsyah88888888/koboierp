@@ -21,9 +21,15 @@ export default async function PurchasePage() {
         orderBy: { createdAt: 'desc' }
     }).catch(() => []));
 
+    const returns = serializeDecimal(await prisma.purchaseReturn.findMany({
+        include: { receipt: true, items: { include: { product: true } } },
+        orderBy: { createdAt: 'desc' }
+    }).catch(() => []));
+
     return (
         <PurchaseDashboard
             initialReceipts={receipts}
+            initialReturns={returns}
             products={products}
             warehouses={warehouses}
             vendors={vendors}

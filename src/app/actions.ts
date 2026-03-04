@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { generateCortexXml } from "@/lib/cortex";
 
 /**
  * Purchase Request Actions (Pengajuan Pembelian)
@@ -66,7 +67,7 @@ export async function updatePurchaseRequestStatusAction(id: string, status: "APP
 
     // Logic Check
     if (status === "APPROVED_BY_ADMIN" && role !== "ADMIN") throw new Error("Hanya Admin Utama yang bisa menyetujui.");
-    if (status === "VERIFIED_BY_FINANCE" && role !== "FINANCE") throw new Error("Hanya Finance yang bisa memverifikasi.");
+    if (status === "VERIFIED_BY_FINANCE" && role !== "FINANCE" && role !== "ADMIN") throw new Error("Hanya Finance atau Admin yang bisa memverifikasi.");
     if (status === "VERIFIED_BY_FINANCE" && pr.status !== "APPROVED_BY_ADMIN") throw new Error("Harus disetujui Admin Utama terlebih dahulu.");
 
     const updateData: any = { status };
@@ -155,7 +156,7 @@ export async function getPurchaseRequestsAction() {
             approvedBy: { select: { name: true } },
             verifiedBy: { select: { name: true } }
         },
-        orderBy: { createdAt: 'desc' }
+        orderBy: { updatedAt: 'desc' }
     });
 }
 
@@ -1164,6 +1165,8 @@ export async function wipeDatabaseAction() {
         await tx.salesDelivery.deleteMany();
         await tx.purchaseOrderItem.deleteMany();
         await tx.purchaseOrder.deleteMany();
+        await tx.purchaseRequestItem.deleteMany();
+        await tx.purchaseRequest.deleteMany();
         await tx.stockMovement.deleteMany();
         await tx.stock.deleteMany();
 
@@ -1518,12 +1521,14 @@ export async function getDashboardSummaryAction() {
     let expPF = 0;
 
     // A. Revenue from SalesDeliveries
-    const allDeliveries: any[] = await prisma.$queryRawUnsafe(`SELECT "subtotal", "totalDiscount", "salesPerson" FROM "SalesDelivery"`);
+    const allDeliveries: any[] = await prisma.$queryRawUnsafe(`SELECT "subtotal", "totalDiscount", "salesPerson", "paymentStatus" FROM "SalesDelivery"`);
     allDeliveries.forEach((d: any) => {
-        const netRev = Number(d.subtotal || 0) - Number(d.totalDiscount || 0);
-        totalRevenue += netRev;
-        if (d.salesPerson === 'BC') revenueBC += netRev;
-        else if (d.salesPerson === 'PF') revenuePF += netRev;
+        if (d.paymentStatus === 'PAID') {
+            const netRev = Number(d.subtotal || 0) - Number(d.totalDiscount || 0);
+            totalRevenue += netRev;
+            if (d.salesPerson === 'BC') revenueBC += netRev;
+            else if (d.salesPerson === 'PF') revenuePF += netRev;
+        }
     });
 
     // B. Purchase Cost from GoodsReceipts (To match SalesDashboard UI)
@@ -1798,4 +1803,130 @@ export async function getPurchaseRequestSummaryAction() {
     };
 
     return stats;
+}
+
+/**
+ * CORTEX EXPORT: Get All Sales data encoded in XML
+ */
+
+export async function getCortexXmlContentAction() {
+    const allSales = await (prisma.salesDelivery as any).findMany({
+        include: { items: { include: { product: true } } },
+        orderBy: { createdAt: 'desc' }
+    });
+
+    return generateCortexXml(allSales);
+}
+
+/**
+ * PURCHASE RETURN: Create a new Return Request (Warehouse / Purchase)
+ */
+export async function createPurchaseReturnAction(data: {
+    receiptId: string;
+    items: { productId: string; quantity: number; reason: string }[];
+    notes?: string;
+}) {
+    return await prisma.$transaction(async (tx: any) => {
+        const today = new Date();
+        const dateStr = `${today.getFullYear()}${(today.getMonth() + 1).toString().padStart(2, '0')}${today.getDate().toString().padStart(2, '0')}`;
+        const count = await tx.purchaseReturn.count({
+            where: { returnNumber: { startsWith: `RET-${dateStr}-` } }
+        });
+        const returnNumber = `RET-${dateStr}-${(count + 1).toString().padStart(3, '0')}`;
+
+        const ret = await tx.purchaseReturn.create({
+            data: {
+                returnNumber,
+                receiptId: data.receiptId,
+                notes: data.notes,
+                items: {
+                    create: data.items.map(i => ({
+                        productId: i.productId,
+                        quantity: i.quantity,
+                        reason: i.reason
+                    }))
+                }
+            }
+        });
+
+        const receipt = await tx.goodsReceipt.findUnique({ where: { id: data.receiptId } });
+        if (receipt) {
+            for (const item of data.items) {
+                await tx.stock.update({
+                    where: {
+                        productId_warehouseId: {
+                            productId: item.productId,
+                            warehouseId: receipt.warehouseId
+                        }
+                    },
+                    data: { quantity: { decrement: item.quantity } }
+                });
+
+                await tx.stockMovement.create({
+                    data: {
+                        productId: item.productId,
+                        warehouseId: receipt.warehouseId,
+                        quantity: -item.quantity,
+                        type: "ADJUSTMENT",
+                        reference: returnNumber
+                    }
+                });
+            }
+        }
+
+        revalidatePath("/purchase");
+        revalidatePath("/finance");
+        revalidatePath("/warehouse");
+        return ret;
+    });
+}
+
+/**
+ * PURCHASE RETURN: Verify Return by Finance
+ */
+export async function verifyPurchaseReturnAction(id: string) {
+    return await prisma.$transaction(async (tx: any) => {
+        const ret = await tx.purchaseReturn.findUnique({
+            where: { id },
+            include: {
+                receipt: { include: { items: true } },
+                items: true
+            }
+        });
+
+        if (!ret || ret.status !== "PENDING") throw new Error("Invalid or already verified return");
+
+        let totalValue = 0;
+        ret.items.forEach((retItem: any) => {
+            const receiptItem = ret.receipt.items.find((i: any) => i.productId === retItem.productId);
+            if (receiptItem) {
+                totalValue += (retItem.quantity * Number(receiptItem.purchasePrice));
+            }
+        });
+
+        await tx.purchaseReturn.update({
+            where: { id },
+            data: { status: "VERIFIED_BY_FINANCE" }
+        });
+
+        const vendor = await tx.vendor.findFirst({ where: { name: ret.receipt.receivedFrom } });
+        if (vendor) {
+            await tx.vendor.update({
+                where: { id: vendor.id },
+                data: { balance: { decrement: totalValue } }
+            });
+        }
+
+        const apAccount = await tx.financeAccount.findUnique({ where: { code: '201' } }); // Hutang
+        const invAccount = await tx.financeAccount.findUnique({ where: { code: '104' } }); // Persediaan
+
+        if (apAccount && invAccount) {
+            await tx.journalEntry.create({ data: { description: `Retur Pembelian: ${ret.returnNumber}`, amount: totalValue as any, type: "DEBIT", accountId: apAccount.id, date: new Date() } });
+            await tx.journalEntry.create({ data: { description: `Persediaan Keluar (Retur): ${ret.returnNumber}`, amount: totalValue as any, type: "CREDIT", accountId: invAccount.id, date: new Date() } });
+        }
+
+        revalidatePath("/finance");
+        revalidatePath("/");
+        return { success: true };
+    });
 }

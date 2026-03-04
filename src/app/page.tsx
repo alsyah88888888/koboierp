@@ -11,7 +11,14 @@ import {
   Package
 } from "lucide-react";
 
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+
 export default async function DashboardPage() {
+  const session = await getServerSession(authOptions) as any;
+  const userRole = session?.user?.role || "USER";
+  const isWarehouse = userRole === "WAREHOUSE";
+
   // 2. Fetch Data via Server Action
   const summary = await getDashboardSummaryAction();
   const products = await prisma.product.findMany({ include: { stocks: true } }).catch(() => []);
@@ -59,7 +66,14 @@ export default async function DashboardPage() {
       change: "Belum Diterima", trend: 'up',
       iconName: "Package", iconBg: "bg-rose-50", iconColor: "text-rose-500"
     },
-  ];
+  ].filter(stat => {
+    if (isWarehouse) {
+      if (['Total Revenue', 'Nett Margin Sales', 'Margin BC', 'Margin PF', 'Cash/Bank Balance', 'Total Hutang (Pending)', 'Total Piutang (Pending)'].includes(stat.name)) {
+        return false;
+      }
+    }
+    return true;
+  });
 
   // 3. Prepare Chart Data
   const salesData = summary.weeklyStats || [];

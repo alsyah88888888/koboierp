@@ -116,7 +116,7 @@ export function PurchaseRequestTab({ requests, userRole, userId }: { requests: a
                                             )}
 
                                             {/* Finance Verification */}
-                                            {userRole === "FINANCE" && pr.status === "APPROVED_BY_ADMIN" && (
+                                            {(userRole === "FINANCE" || userRole === "ADMIN") && pr.status === "APPROVED_BY_ADMIN" && (
                                                 <button
                                                     disabled={loading === pr.id}
                                                     onClick={() => handleStatusUpdate(pr.id, "VERIFIED_BY_FINANCE")}
@@ -127,7 +127,7 @@ export function PurchaseRequestTab({ requests, userRole, userId }: { requests: a
                                             )}
 
                                             {/* Reject Button (for Admin & Finance) */}
-                                            {((userRole === "ADMIN" && pr.status === "PENDING") || (userRole === "FINANCE" && pr.status === "APPROVED_BY_ADMIN")) && (
+                                            {((userRole === "ADMIN" && (pr.status === "PENDING" || pr.status === "APPROVED_BY_ADMIN")) || (userRole === "FINANCE" && pr.status === "APPROVED_BY_ADMIN")) && (
                                                 <button
                                                     disabled={loading === pr.id}
                                                     onClick={() => handleStatusUpdate(pr.id, "REJECTED")}

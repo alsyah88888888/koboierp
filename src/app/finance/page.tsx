@@ -29,20 +29,26 @@ export default async function FinancePage() {
     }).catch(() => []);
 
     const pendingPurchases = await (prisma.goodsReceipt as any).findMany({
-        where: { paymentStatus: 'PENDING' },
+        where: { paymentStatus: { in: ['PENDING', 'CREDIT'] } },
         orderBy: { createdAt: 'desc' },
         include: { items: true }
     }).catch(() => []);
 
     const pendingSales = await (prisma.salesDelivery as any).findMany({
-        where: { paymentStatus: 'PENDING' },
+        where: { paymentStatus: { in: ['PENDING', 'CREDIT'] } },
         orderBy: { createdAt: 'desc' },
-        include: { items: true }
+        include: { items: { include: { product: true } } }
     }).catch(() => []);
 
     const unverifiedReceipts = await prisma.goodsReceipt.findMany({
         where: { isVerified: false },
         include: { items: { include: { product: true } }, warehouse: true },
+        orderBy: { createdAt: 'desc' }
+    }).catch(() => []);
+
+    const pendingReturns = await prisma.purchaseReturn.findMany({
+        where: { status: 'PENDING' },
+        include: { items: { include: { product: true } }, receipt: true },
         orderBy: { createdAt: 'desc' }
     }).catch(() => []);
 
@@ -65,6 +71,7 @@ export default async function FinancePage() {
     }));
 
     const serializedUnverifiedReceipts = serializeDecimal(unverifiedReceipts);
+    const serializedPendingReturns = serializeDecimal(pendingReturns);
     const serializedTransactions = serializeDecimal(transactions);
 
     return (
@@ -76,6 +83,7 @@ export default async function FinancePage() {
             pendingPurchases={serializedPurchases}
             pendingSales={serializedSales}
             unverifiedReceipts={serializedUnverifiedReceipts}
+            pendingReturns={serializedPendingReturns}
             transactions={serializedTransactions}
         />
     );

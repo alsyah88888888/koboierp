@@ -22,7 +22,7 @@ export function DocumentLayout({ title, docNumber, date, children, headerInfo, i
                 {`
                 @media print {
                     @page {
-                        size: ${isA5 ? "A5 landscape" : "A4 portrait"};
+                        size: 23cm 27cm;
                         margin: 0;
                     }
                     body {
@@ -33,7 +33,7 @@ export function DocumentLayout({ title, docNumber, date, children, headerInfo, i
                 `}
             </style>
             {/* Toolbar - No Print */}
-            <div className={`w-full ${isA5 ? 'max-w-[210mm]' : 'max-w-[210mm]'} bg-white border-2 border-slate-200 rounded-2xl p-4 mb-6 flex justify-between items-center shadow-sm no-print`}>
+            <div className={`w-full max-w-[230mm] bg-white border-2 border-slate-200 rounded-2xl p-4 mb-6 flex justify-between items-center shadow-sm no-print`}>
                 <button
                     onClick={() => router.back()}
                     className="flex items-center gap-2 text-slate-600 font-bold hover:text-slate-900 transition-colors"
@@ -53,7 +53,7 @@ export function DocumentLayout({ title, docNumber, date, children, headerInfo, i
             </div>
 
             {/* Document Container */}
-            <div className={`w-full ${isA5 ? 'max-w-[210mm] min-h-[148.5mm] p-[10mm]' : 'max-w-[210mm] min-h-[297mm] p-[20mm]'} bg-white shadow-2xl printable-area flex flex-col font-sans text-slate-900`}>
+            <div className={`w-full max-w-[230mm] min-h-[270mm] p-[10mm] bg-white shadow-2xl printable-area flex flex-col font-sans text-slate-900`}>
                 {/* Header */}
                 <div className={`flex justify-between items-start ${isA5 ? 'pb-2 mb-2' : 'pb-4 mb-4'}`}>
                     <div>
@@ -130,13 +130,13 @@ export function DocumentLayout({ title, docNumber, date, children, headerInfo, i
                         box-shadow: none !important; 
                         margin: 0 !important; 
                         width: 100% !important;
-                        max-width: ${isA5 ? '210mm' : '100%'} !important;
-                        min-height: ${isA5 ? '148.5mm' : 'auto'} !important;
-                        height: ${isA5 ? '148.5mm' : 'auto'} !important;
-                        padding: ${isA5 ? '10mm' : '20mm'} !important;
+                        max-width: 230mm !important;
+                        min-height: 270mm !important;
+                        height: 270mm !important;
+                        padding: 10mm !important;
                     }
                     @page {
-                        size: ${isA5 ? 'A5 landscape' : 'A4 portrait'};
+                        size: 230mm 270mm;
                         margin: 0;
                     }
                 }

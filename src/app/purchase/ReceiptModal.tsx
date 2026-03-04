@@ -61,11 +61,11 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
 
         // Handle number inputs to prevent NaN
         if (field === 'quantity') {
-            const val = parseInt(value);
-            (newItems[index] as any)[field] = isNaN(val) ? "" : val;
+            const raw = String(value).replace(/\D/g, "");
+            (newItems[index] as any)[field] = raw ? parseInt(raw, 10) : "";
         } else if (field === 'purchasePrice') {
-            const val = parseFloat(value);
-            (newItems[index] as any)[field] = isNaN(val) ? "" : val;
+            const raw = String(value).replace(/\D/g, "");
+            (newItems[index] as any)[field] = raw ? parseInt(raw, 10) : "";
         } else {
             (newItems[index] as any)[field] = value;
         }
@@ -303,21 +303,20 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
                                     <div className="col-span-1 space-y-1">
                                         <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Qty</label>
                                         <input
-                                            type="number"
-                                            value={item.quantity}
+                                            type="text"
+                                            value={item.quantity ? item.quantity.toLocaleString('id-ID') : ""}
                                             onChange={e => updateItem(index, 'quantity', e.target.value)}
                                             className="w-full p-2 bg-white border-2 border-slate-300 rounded-lg text-sm font-bold outline-none text-center h-10"
-                                            min="1"
                                             required
                                         />
                                     </div>
-                                    <div className="col-span-2 space-y-1">
+                                    <div className="col-span-2 space-y-1 relative">
                                         <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Harga Beli (@)</label>
-                                        <div className="relative h-10">
+                                        <div className="relative h-10 w-full">
                                             <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400">Rp</span>
                                             <input
-                                                type="number"
-                                                value={item.purchasePrice}
+                                                type="text"
+                                                value={item.purchasePrice ? item.purchasePrice.toLocaleString('id-ID') : ""}
                                                 onChange={e => updateItem(index, 'purchasePrice', e.target.value)}
                                                 className="w-full p-2 pl-7 h-full bg-white border-2 border-slate-300 rounded-lg text-sm font-bold outline-none"
                                                 required
@@ -376,8 +375,8 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
                             {isSubmitting ? "Memproses..." : <span className="text-white">{initialData ? "Simpan Perubahan" : "Simpan Penerimaan"}</span>}
                         </button>
                     </div>
-                </form>
-            </div>
-        </div>
+                </form >
+            </div >
+        </div >
     );
 }

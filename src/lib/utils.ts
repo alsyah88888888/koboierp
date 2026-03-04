@@ -10,7 +10,7 @@ export function formatCurrency(amount: number) {
         style: "currency",
         currency: "IDR",
         minimumFractionDigits: 0,
-    }).format(amount);
+    }).format(Math.abs(amount));
 }
 
 /**

@@ -201,6 +201,7 @@ model GoodsReceipt {
   verifiedBy        String?
   paymentStatus     String   @default("PENDING") // PENDING, PAID
   createdAt         DateTime @default(now())
+  returns           PurchaseReturn[]
 }
 
 model GoodsReceiptItem {
@@ -227,6 +228,33 @@ model GoodsReceiptVerification {
   notes            String?
   createdAt        DateTime     @default(now())
   verifiedBy       String
+}
+
+model PurchaseReturn {
+  id              String   @id @default(cuid())
+  returnNumber    String   @unique // Format: RET-YYYYMMDD-XXX
+  date            DateTime @default(now())
+  
+  receiptId       String
+  receipt         GoodsReceipt @relation(fields: [receiptId], references: [id])
+  
+  status          String   @default("PENDING") // PENDING, APPROVED_BY_FINANCE
+  notes           String?
+  
+  items           PurchaseReturnItem[]
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model PurchaseReturnItem {
+  id               String         @id @default(cuid())
+  purchaseReturnId String
+  purchaseReturn   PurchaseReturn @relation(fields: [purchaseReturnId], references: [id])
+  productId        String
+  product          Product        @relation(fields: [productId], references: [id])
+  quantity         Int
+  reason           String?
 }
 
 // --- SALES MODULE (Simplified: Sales Delivery) ---
@@ -290,6 +318,7 @@ model Product {
   verifications GoodsReceiptVerification[]
   salesItems   SalesDeliveryItem[]
   purchaseOrderItems PurchaseOrderItem[]
+  purchaseReturnItems PurchaseReturnItem[]
   movements StockMovement[]
 }
 
