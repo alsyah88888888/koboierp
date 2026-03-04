@@ -18,6 +18,20 @@ export function DocumentLayout({ title, docNumber, date, children, headerInfo, i
 
     return (
         <div className="min-h-screen bg-slate-100 p-4 md:p-8 flex flex-col items-center print:bg-white print:p-0 print:block">
+            <style type="text/css">
+                {`
+                @media print {
+                    @page {
+                        size: ${isA5 ? "A5 landscape" : "A4 portrait"};
+                        margin: 0;
+                    }
+                    body {
+                        -webkit-print-color-adjust: exact;
+                        print-color-adjust: exact;
+                    }
+                }
+                `}
+            </style>
             {/* Toolbar - No Print */}
             <div className={`w-full ${isA5 ? 'max-w-[210mm]' : 'max-w-[210mm]'} bg-white border-2 border-slate-200 rounded-2xl p-4 mb-6 flex justify-between items-center shadow-sm no-print`}>
                 <button
@@ -41,7 +55,7 @@ export function DocumentLayout({ title, docNumber, date, children, headerInfo, i
             {/* Document Container */}
             <div className={`w-full ${isA5 ? 'max-w-[210mm] min-h-[148.5mm] p-[10mm]' : 'max-w-[210mm] min-h-[297mm] p-[20mm]'} bg-white shadow-2xl printable-area flex flex-col font-sans text-slate-900`}>
                 {/* Header */}
-                <div className={`flex justify-between items-start border-b-4 border-slate-900 ${isA5 ? 'pb-4 mb-6' : 'pb-8 mb-10'}`}>
+                <div className={`flex justify-between items-start ${isA5 ? 'pb-2 mb-2' : 'pb-4 mb-4'}`}>
                     <div>
                         <h1 className={`${isA5 ? 'text-2xl' : 'text-3xl'} font-black tracking-tighter text-slate-900`}>PT KOLA BORASI INDONESIA</h1>
                         <p className={`${isA5 ? 'text-[10px]' : 'text-sm'} font-bold text-slate-500 italic`}>Trading and Distribution</p>

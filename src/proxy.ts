@@ -29,7 +29,7 @@ export default withAuth(
         if (path.startsWith("/sales") && token?.role !== "ADMIN" && token?.role !== "SALES" && token?.role !== "PURCHASE") {
             return NextResponse.redirect(new URL("/", req.url));
         }
-        if (path.startsWith("/warehouse") && token?.role !== "ADMIN" && token?.role !== "WAREHOUSE") {
+        if (path.startsWith("/warehouse") && token?.role !== "ADMIN" && token?.role !== "WAREHOUSE" && token?.role !== "PURCHASE") {
             return NextResponse.redirect(new URL("/", req.url));
         }
         if (path.startsWith("/settings") && token?.role !== "ADMIN") {

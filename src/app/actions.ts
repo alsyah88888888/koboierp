@@ -255,43 +255,8 @@ export async function createGoodsReceiptAction(data: {
                 });
             }
 
-            // --- ACCRUAL JOURNAL ON CREATE (Inventory vs Accounts Payable) ---
-            const totalValue = data.items.reduce((sum: number, item) => sum + (item.quantity * Number(item.purchasePrice)), 0);
-            if (totalValue > 0) {
-                const invAccount = await tx.financeAccount.findUnique({ where: { code: '104' } }); // Persediaan
-                const apAccount = await tx.financeAccount.findUnique({ where: { code: '201' } }); // Hutang
-
-                if (invAccount && apAccount) {
-                    await tx.journalEntry.create({
-                        data: {
-                            description: `Persediaan (Hutang): ${finalReceiptNumber} (${data.receivedFrom})`,
-                            amount: totalValue as any,
-                            type: "DEBIT",
-                            accountId: invAccount.id,
-                            date: txDate
-                        }
-                    });
-
-                    await tx.journalEntry.create({
-                        data: {
-                            description: `Hutang Pembelian: ${finalReceiptNumber} (${data.receivedFrom})`,
-                            amount: totalValue as any,
-                            type: "CREDIT",
-                            accountId: apAccount.id,
-                            date: txDate
-                        }
-                    });
-                }
-            }
-
-            // --- UPDATE VENDOR BALANCE ---
-            const vendor = await tx.vendor.findFirst({ where: { name: data.receivedFrom } });
-            if (vendor) {
-                await tx.vendor.update({
-                    where: { id: vendor.id },
-                    data: { balance: { increment: totalValue } }
-                });
-            }
+            // Jurnal & Saldo Hutang tidak lagi dicatat di sini. 
+            // Akan dicatat oleh Finance saat klik verifikasi (Lunas/Hutang)
 
             revalidatePath("/purchase");
             revalidatePath("/warehouse");
@@ -337,20 +302,7 @@ export async function updateGoodsReceiptAction(id: string, data: {
         if (!existing) throw new Error("Receipt not found");
         // if (existing.isVerified) throw new Error("Cannot edit verified receipt");
 
-        // --- REVERSE OLD BALANCE ---
-        const oldTotal = existing.items.reduce((sum: number, i: any) => sum + (i.quantity * Number(i.purchasePrice)), 0);
-        const oldVendor = await tx.vendor.findFirst({ where: { name: existing.receivedFrom } });
-        if (oldVendor && oldTotal > 0) {
-            await tx.vendor.update({
-                where: { id: oldVendor.id },
-                data: { balance: { decrement: oldTotal } }
-            });
-        }
-
-        // --- DELETE OLD JOURNALS ---
-        await tx.journalEntry.deleteMany({
-            where: { description: { contains: existing.receiptNumber } }
-        });
+        // NO OLD BALANCE/JOURNALS to reverse (Moved to Finance workflow)
 
         // --- REVERSE OLD STOCK ---
         for (const item of existing.items) {
@@ -410,44 +362,7 @@ export async function updateGoodsReceiptAction(id: string, data: {
             });
         }
 
-        // --- UPDATE NEW JOURNALS & BALANCE ---
-        const totalValue = data.items.reduce((sum: number, item) => sum + (item.quantity * Number(item.purchasePrice)), 0);
-        const txDate = data.date || existing.date;
-        const receiptNumber = data.receiptNumber || existing.receiptNumber;
-
-        if (totalValue > 0) {
-            const invAccount = await tx.financeAccount.findUnique({ where: { code: '104' } });
-            const apAccount = await tx.financeAccount.findUnique({ where: { code: '201' } });
-
-            if (invAccount && apAccount) {
-                await tx.journalEntry.create({
-                    data: {
-                        description: `Persediaan (Hutang): ${receiptNumber} (${data.receivedFrom})`,
-                        amount: totalValue as any,
-                        type: "DEBIT",
-                        accountId: invAccount.id,
-                        date: txDate
-                    }
-                });
-                await tx.journalEntry.create({
-                    data: {
-                        description: `Hutang Pembelian: ${receiptNumber} (${data.receivedFrom})`,
-                        amount: totalValue as any,
-                        type: "CREDIT",
-                        accountId: apAccount.id,
-                        date: txDate
-                    }
-                });
-            }
-
-            const vendor = await tx.vendor.findFirst({ where: { name: data.receivedFrom } });
-            if (vendor) {
-                await tx.vendor.update({
-                    where: { id: vendor.id },
-                    data: { balance: { increment: totalValue } }
-                });
-            }
-        }
+        // NO NEW BALANCE/JOURNALS to create (Moved to Finance workflow)
 
         revalidatePath("/purchase");
         revalidatePath("/warehouse");
@@ -536,25 +451,8 @@ export async function deleteGoodsReceiptAction(id: string) {
             });
         }
 
-        // --- REVERSE VENDOR BALANCE ---
-        const totalValue = receipt.items.reduce((sum: number, i: any) => sum + (i.quantity * Number(i.purchasePrice)), 0);
-        const vendor = await tx.vendor.findFirst({ where: { name: receipt.receivedFrom } });
-        if (vendor && totalValue > 0) {
-            await tx.vendor.update({
-                where: { id: vendor.id },
-                data: { balance: { decrement: totalValue } }
-            });
-        }
-
-        // 2. Delete Journal Entries
-        // We look for entries mentioning the receipt number
-        await tx.journalEntry.deleteMany({
-            where: {
-                description: {
-                    contains: receipt.receiptNumber
-                }
-            }
-        });
+        // Reverse Vendor Balance / Delete Journals are NOT needed 
+        // because Unverified Receipts don't create them anymore.
 
         // 3. Delete the Receipt and Items
         await tx.goodsReceiptItem.deleteMany({ where: { receiptId: id } });
@@ -694,81 +592,8 @@ export async function createSalesDeliveryAction(data: {
             });
         }
 
-        // 3. Create Finance Journal Entries
-        // Payment Journal is now handled by updatePaymentStatusAction when verified as Lunas (PAID)
-        // Only Sales Revenue remains as an accrual-like entry (Debit AR/Other, Credit Sales) 
-        // to show revenue on dashboard. But user wants Revenue separate.
-        // Let's keep Revenue entry (Credit 401) but use a temporary clearing account for Debit
-        // until it's PAID (to Bank 102).
-
-        if (grandTotal > 0) {
-            const tempAccount = await tx.financeAccount.findUnique({ where: { code: '105' } }); // Piutang
-            const salesAccount = await tx.financeAccount.findUnique({ where: { code: '401' } }); // Pendapatan
-            const taxAccount = await tx.financeAccount.findUnique({ where: { code: '202' } }); // PPN Keluaran
-            const discountAccount = await tx.financeAccount.findUnique({ where: { code: '402' } }); // Potongan Penjualan
-
-            // DEBIT Piutang (Grand Total)
-            if (tempAccount) {
-                await tx.journalEntry.create({
-                    data: {
-                        description: `Piutang Penjualan: ${deliveryNumber} (${data.buyerName})`,
-                        amount: grandTotal as any,
-                        type: "DEBIT",
-                        accountId: tempAccount.id,
-                        date: txDate
-                    }
-                });
-            }
-
-            // CREDIT Pendapatan (Gross Amount)
-            if (salesAccount) {
-                await tx.journalEntry.create({
-                    data: {
-                        description: `Pendapatan Penjualan: ${deliveryNumber}`,
-                        amount: grossAmount as any,
-                        type: "CREDIT",
-                        accountId: salesAccount.id,
-                        date: txDate
-                    }
-                });
-            }
-
-            // DEBIT Potongan Penjualan (Total Discounts)
-            const totalAllDiscounts = totalItemDiscounts + totalDiscountNominal;
-            if (discountAccount && totalAllDiscounts > 0) {
-                await tx.journalEntry.create({
-                    data: {
-                        description: `Potongan Penjualan: ${deliveryNumber}`,
-                        amount: totalAllDiscounts as any,
-                        type: "DEBIT",
-                        accountId: discountAccount.id,
-                        date: txDate
-                    }
-                });
-            }
-
-            // CREDIT PPN Keluaran (Tax)
-            if (taxAccount && taxAmount > 0) {
-                await tx.journalEntry.create({
-                    data: {
-                        description: `PPN Keluaran: ${deliveryNumber}`,
-                        amount: taxAmount as any,
-                        type: "CREDIT",
-                        accountId: taxAccount.id,
-                        date: txDate
-                    }
-                });
-            }
-        }
-
-        // --- UPDATE CUSTOMER BALANCE ---
-        const customer = await tx.customer.findFirst({ where: { name: data.buyerName } });
-        if (customer && grandTotal > 0) {
-            await tx.customer.update({
-                where: { id: customer.id },
-                data: { balance: { increment: grandTotal } }
-            });
-        }
+        // 3. Finance Journals dan Customer Balance tidak ditambahkan di sini.
+        // Akan ditambahkan oleh Finance saat verifikasi LUNAS / HUTANG
 
         revalidatePath("/sales");
         revalidatePath("/warehouse");
@@ -810,16 +635,7 @@ export async function updateSalesDeliveryAction(id: string, data: {
         const oldGrandTotal = Number(oldGrandTotalRaw[0]?.grandTotal || 0);
 
         await tx.salesDeliveryItem.deleteMany({ where: { deliveryId: id } });
-        await tx.journalEntry.deleteMany({ where: { description: { contains: oldDelivery.deliveryNumber } } });
-
-        // --- REVERSE OLD CUSTOMER BALANCE ---
-        const oldCustomer = await tx.customer.findFirst({ where: { name: oldDelivery.buyerName } });
-        if (oldCustomer && oldGrandTotal > 0) {
-            await tx.customer.update({
-                where: { id: oldCustomer.id },
-                data: { balance: { decrement: oldGrandTotal } }
-            });
-        }
+        // Jurnal and Balance are not reversed here because they are not created during sales input
 
         // 3. Update Delivery Header (Only known fields)
         const txDate = data.createdAt || new Date();
@@ -885,68 +701,7 @@ export async function updateSalesDeliveryAction(id: string, data: {
             }
         }
 
-        // 6. Create Finance Journal Entries
-        const tempAccount = await tx.financeAccount.findUnique({ where: { code: '105' } });
-        const salesAccount = await tx.financeAccount.findUnique({ where: { code: '401' } });
-        const taxAccount = await tx.financeAccount.findUnique({ where: { code: '202' } });
-        const discountAccount = await tx.financeAccount.findUnique({ where: { code: '402' } });
-
-        if (grandTotal > 0) {
-            if (tempAccount) {
-                await tx.journalEntry.create({
-                    data: {
-                        description: `Piutang Penjualan: ${oldDelivery.deliveryNumber} (${data.buyerName})`,
-                        amount: grandTotal as any,
-                        type: "DEBIT",
-                        accountId: tempAccount.id,
-                        date: txDate
-                    }
-                });
-            }
-            if (salesAccount) {
-                await tx.journalEntry.create({
-                    data: {
-                        description: `Pendapatan Penjualan: ${oldDelivery.deliveryNumber}`,
-                        amount: grossAmount as any,
-                        type: "CREDIT",
-                        accountId: salesAccount.id,
-                        date: txDate
-                    }
-                });
-            }
-            const totalAllDiscounts = totalItemDiscounts + totalDiscountNominal;
-            if (discountAccount && totalAllDiscounts > 0) {
-                await tx.journalEntry.create({
-                    data: {
-                        description: `Potongan Penjualan: ${oldDelivery.deliveryNumber}`,
-                        amount: totalAllDiscounts as any,
-                        type: "DEBIT",
-                        accountId: discountAccount.id,
-                        date: txDate
-                    }
-                });
-            }
-            if (taxAccount && taxAmount > 0) {
-                await tx.journalEntry.create({
-                    data: {
-                        description: `PPN Keluaran: ${oldDelivery.deliveryNumber}`,
-                        amount: taxAmount as any,
-                        type: "CREDIT",
-                        accountId: taxAccount.id,
-                        date: txDate
-                    }
-                });
-            }
-        }
-
-        // --- UPDATE NEW CUSTOMER BALANCE ---
-        const customer = await tx.customer.findFirst({ where: { name: data.buyerName } });
-        if (customer && grandTotal > 0) {
-            await tx.customer.update({
-                where: { id: customer.id },
-                data: { balance: { increment: grandTotal } }
-            });
-        }
+        // NO NEW BALANCE/JOURNALS to create (Moved to Finance workflow)
 
         revalidatePath("/sales");
         revalidatePath("/warehouse");
@@ -992,25 +747,7 @@ export async function deleteSalesDeliveryAction(id: string) {
             });
         }
 
-        // --- REVERSE CUSTOMER BALANCE ---
-        const grandTotalRaw: any[] = await tx.$queryRawUnsafe(`SELECT "grandTotal" FROM "SalesDelivery" WHERE id = ?`, id);
-        const grandTotal = Number(grandTotalRaw[0]?.grandTotal || 0);
-        const customer = await tx.customer.findFirst({ where: { name: delivery.buyerName } });
-        if (customer && grandTotal > 0) {
-            await tx.customer.update({
-                where: { id: customer.id },
-                data: { balance: { decrement: grandTotal } }
-            });
-        }
-
-        // 2. Delete Journal Entries
-        await tx.journalEntry.deleteMany({
-            where: {
-                description: {
-                    contains: delivery.deliveryNumber
-                }
-            }
-        });
+        // Customer Balance & Journals are not reversed because they aren't generated by Sales role
 
         // 3. Delete the Delivery and Items
         await tx.salesDeliveryItem.deleteMany({ where: { deliveryId: id } });
@@ -1032,7 +769,7 @@ export async function deleteSalesDeliveryAction(id: string) {
  * FINANCE: Update Payment Status (Lunas / Belum Lunas)
  * This handles the actual cash flow to Bank BCA (102)
  */
-export async function updatePaymentStatusAction(type: "PURCHASE" | "SALE", id: string, status: "PAID" | "PENDING") {
+export async function updatePaymentStatusAction(type: "PURCHASE" | "SALE", id: string, status: "PAID" | "CREDIT" | "PENDING") {
     return await prisma.$transaction(async (tx: any) => {
         let reference = "";
         let amount = 0;
@@ -1044,6 +781,10 @@ export async function updatePaymentStatusAction(type: "PURCHASE" | "SALE", id: s
                 include: { items: true }
             });
             if (!receipt) throw new Error("Receipt not found");
+
+            const previousStatus = receipt.paymentStatus;
+            if (previousStatus === status) return { success: true };
+
             reference = receipt.receiptNumber;
             party = receipt.receivedFrom;
             amount = receipt.items.reduce((sum: number, i: any) => sum + (i.quantity * Number(i.purchasePrice)), 0);
@@ -1053,42 +794,32 @@ export async function updatePaymentStatusAction(type: "PURCHASE" | "SALE", id: s
                 data: { paymentStatus: status }
             });
 
-            // If changing to PAID, create Bank BCA Journal
-            if (status === "PAID") {
-                const bankAccount = await tx.financeAccount.findUnique({ where: { code: '102' } }); // Bank BCA
-                const apAccount = await tx.financeAccount.findUnique({ where: { code: '201' } }); // Hutang
+            const invAccount = await tx.financeAccount.findUnique({ where: { code: '104' } }); // Persediaan
+            const bankAccount = await tx.financeAccount.findUnique({ where: { code: '102' } }); // Bank BCA
+            const apAccount = await tx.financeAccount.findUnique({ where: { code: '201' } }); // Hutang
 
-                if (bankAccount && apAccount) {
-                    // Debit Hutang (Settling AP)
-                    await tx.journalEntry.create({
-                        data: {
-                            description: `Pelunasan Hutang: ${reference} (${party})`,
-                            amount: amount as any,
-                            type: "DEBIT",
-                            accountId: apAccount.id,
-                            date: new Date()
-                        }
-                    });
-
-                    // Credit Bank BCA (Actual Payment Out)
-                    await tx.journalEntry.create({
-                        data: {
-                            description: `Pembelian Lunas (Bank): ${reference} (${party})`,
-                            amount: amount as any,
-                            type: "CREDIT",
-                            accountId: bankAccount.id,
-                            date: new Date()
-                        }
-                    });
-
-                    // --- DECREMENT VENDOR BALANCE ON PAID ---
-                    const vendor = await tx.vendor.findFirst({ where: { name: party } });
-                    if (vendor) {
-                        await tx.vendor.update({
-                            where: { id: vendor.id },
-                            data: { balance: { decrement: amount } }
-                        });
-                    }
+            if (previousStatus === "PENDING" && status === "CREDIT") {
+                if (invAccount && apAccount) {
+                    await tx.journalEntry.create({ data: { description: `Persediaan (Hutang): ${reference} (${party})`, amount: amount as any, type: "DEBIT", accountId: invAccount.id, date: new Date() } });
+                    await tx.journalEntry.create({ data: { description: `Hutang Pembelian: ${reference} (${party})`, amount: amount as any, type: "CREDIT", accountId: apAccount.id, date: new Date() } });
+                }
+                const vendor = await tx.vendor.findFirst({ where: { name: party } });
+                if (vendor) {
+                    await tx.vendor.update({ where: { id: vendor.id }, data: { balance: { increment: amount } } });
+                }
+            } else if (previousStatus === "PENDING" && status === "PAID") {
+                if (invAccount && bankAccount) {
+                    await tx.journalEntry.create({ data: { description: `Persediaan (Lunas Kas): ${reference} (${party})`, amount: amount as any, type: "DEBIT", accountId: invAccount.id, date: new Date() } });
+                    await tx.journalEntry.create({ data: { description: `Pembelian Tunai (Bank): ${reference} (${party})`, amount: amount as any, type: "CREDIT", accountId: bankAccount.id, date: new Date() } });
+                }
+            } else if (previousStatus === "CREDIT" && status === "PAID") {
+                if (apAccount && bankAccount) {
+                    await tx.journalEntry.create({ data: { description: `Pelunasan Hutang: ${reference} (${party})`, amount: amount as any, type: "DEBIT", accountId: apAccount.id, date: new Date() } });
+                    await tx.journalEntry.create({ data: { description: `Pembayaran Hutang (Bank): ${reference} (${party})`, amount: amount as any, type: "CREDIT", accountId: bankAccount.id, date: new Date() } });
+                }
+                const vendor = await tx.vendor.findFirst({ where: { name: party } });
+                if (vendor) {
+                    await tx.vendor.update({ where: { id: vendor.id }, data: { balance: { decrement: amount } } });
                 }
             }
 
@@ -1098,63 +829,85 @@ export async function updatePaymentStatusAction(type: "PURCHASE" | "SALE", id: s
                 include: { items: true }
             });
             if (!delivery) throw new Error("Delivery not found");
+
+            const previousStatus = delivery.paymentStatus;
+            if (previousStatus === status) return { success: true };
+
             reference = delivery.deliveryNumber;
             party = delivery.buyerName;
 
-            // Use grandTotal from Raw SQL for sales amount
-            const deliveryRaw: any[] = await tx.$queryRawUnsafe(`SELECT "grandTotal" FROM "SalesDelivery" WHERE id = ?`, id);
+            const deliveryRaw: any[] = await tx.$queryRawUnsafe(`SELECT "grandTotal", "taxAmount", "totalDiscount" FROM "SalesDelivery" WHERE id = ?`, id);
             amount = Number(deliveryRaw[0]?.grandTotal || 0);
+            const taxAmount = Number(deliveryRaw[0]?.taxAmount || 0);
+            const totalDiscountNominal = Number(deliveryRaw[0]?.totalDiscount || 0);
+
+            const grossAmount = delivery.items.reduce((sum: number, i: any) => sum + (i.quantity * Number(i.salesPrice)), 0);
+            let totalItemDiscounts = 0;
+            delivery.items.forEach((i: any) => {
+                const lineGross = i.quantity * Number(i.salesPrice);
+                totalItemDiscounts += lineGross * ((Number(i.discount) || 0) / 100);
+            });
+            const totalAllDiscounts = totalItemDiscounts + totalDiscountNominal;
 
             await (tx.salesDelivery as any).update({
                 where: { id },
                 data: { paymentStatus: status }
             });
 
-            if (status === "PAID") {
-                const bankAccount = await tx.financeAccount.findUnique({ where: { code: '102' } }); // Bank BCA
-                const arAccount = await tx.financeAccount.findUnique({ where: { code: '105' } });   // Piutang
+            const arAccount = await tx.financeAccount.findUnique({ where: { code: '105' } });   // Piutang
+            const bankAccount = await tx.financeAccount.findUnique({ where: { code: '102' } }); // Bank BCA
+            const salesAccount = await tx.financeAccount.findUnique({ where: { code: '401' } }); // Pendapatan
+            const taxAccountRef = await tx.financeAccount.findUnique({ where: { code: '202' } }); // PPN Keluaran
+            const discountAccount = await tx.financeAccount.findUnique({ where: { code: '402' } }); // Potongan
 
-                if (bankAccount && arAccount) {
-                    // Debit Bank BCA (Actual Cash In)
-                    await tx.journalEntry.create({
-                        data: {
-                            description: `Penerimaan Pelunasan Penjualan: ${reference} (${party})`,
-                            amount: amount as any,
-                            type: "DEBIT",
-                            accountId: bankAccount.id,
-                            date: new Date()
-                        }
-                    });
+            if (previousStatus === "PENDING" && status === "CREDIT") {
+                if (arAccount && salesAccount) {
+                    await tx.journalEntry.create({ data: { description: `Piutang Penjualan: ${reference} (${party})`, amount: amount as any, type: "DEBIT", accountId: arAccount.id, date: new Date() } });
+                    await tx.journalEntry.create({ data: { description: `Pendapatan Penjualan: ${reference}`, amount: grossAmount as any, type: "CREDIT", accountId: salesAccount.id, date: new Date() } });
 
-                    // Credit Piutang (Settling AR)
-                    await tx.journalEntry.create({
-                        data: {
-                            description: `Penyelesaian Piutang: ${reference} (${party})`,
-                            amount: amount as any,
-                            type: "CREDIT",
-                            accountId: arAccount.id,
-                            date: new Date()
-                        }
-                    });
-
-                    // --- DECREMENT CUSTOMER BALANCE ON PAID ---
-                    const customer = await tx.customer.findFirst({ where: { name: party } });
-                    if (customer) {
-                        await tx.customer.update({
-                            where: { id: customer.id },
-                            data: { balance: { decrement: amount } }
-                        });
+                    if (discountAccount && totalAllDiscounts > 0) {
+                        await tx.journalEntry.create({ data: { description: `Potongan Penjualan: ${reference}`, amount: totalAllDiscounts as any, type: "DEBIT", accountId: discountAccount.id, date: new Date() } });
                     }
+                    if (taxAccountRef && taxAmount > 0) {
+                        await tx.journalEntry.create({ data: { description: `PPN Keluaran: ${reference}`, amount: taxAmount as any, type: "CREDIT", accountId: taxAccountRef.id, date: new Date() } });
+                    }
+                }
+                const customer = await tx.customer.findFirst({ where: { name: party } });
+                if (customer) {
+                    await tx.customer.update({ where: { id: customer.id }, data: { balance: { increment: amount } } });
+                }
+            } else if (previousStatus === "PENDING" && status === "PAID") {
+                if (bankAccount && salesAccount) {
+                    await tx.journalEntry.create({ data: { description: `Kas Bank (Penjualan Tunai): ${reference} (${party})`, amount: amount as any, type: "DEBIT", accountId: bankAccount.id, date: new Date() } });
+                    await tx.journalEntry.create({ data: { description: `Pendapatan Penjualan: ${reference}`, amount: grossAmount as any, type: "CREDIT", accountId: salesAccount.id, date: new Date() } });
+
+                    if (discountAccount && totalAllDiscounts > 0) {
+                        await tx.journalEntry.create({ data: { description: `Potongan Penjualan: ${reference}`, amount: totalAllDiscounts as any, type: "DEBIT", accountId: discountAccount.id, date: new Date() } });
+                    }
+                    if (taxAccountRef && taxAmount > 0) {
+                        await tx.journalEntry.create({ data: { description: `PPN Keluaran: ${reference}`, amount: taxAmount as any, type: "CREDIT", accountId: taxAccountRef.id, date: new Date() } });
+                    }
+                }
+            } else if (previousStatus === "CREDIT" && status === "PAID") {
+                if (bankAccount && arAccount) {
+                    await tx.journalEntry.create({ data: { description: `Penerimaan Pelunasan Penjualan: ${reference} (${party})`, amount: amount as any, type: "DEBIT", accountId: bankAccount.id, date: new Date() } });
+                    await tx.journalEntry.create({ data: { description: `Penyelesaian Piutang: ${reference} (${party})`, amount: amount as any, type: "CREDIT", accountId: arAccount.id, date: new Date() } });
+                }
+                const customer = await tx.customer.findFirst({ where: { name: party } });
+                if (customer) {
+                    await tx.customer.update({ where: { id: customer.id }, data: { balance: { decrement: amount } } });
                 }
             }
         }
 
         revalidatePath("/finance");
         revalidatePath("/");
+        revalidatePath("/purchase");
+        revalidatePath("/sales");
+
         return { success: true };
     });
 }
-
 export async function createFinanceTransactionAction(data: {
     transactionType: "PAYMENT" | "RECEIPT" | "MUTATION";
     bank: string;

@@ -40,15 +40,19 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
         window.print();
     };
 
-    const handleVerifyPayment = async (type: "PURCHASE" | "SALE", id: string) => {
-        if (!confirm("Konfirmasi pelunasan transaksi ini? Saldo Bank BCA akan otomatis terupdate.")) return;
+    const handleVerifyPayment = async (type: "PURCHASE" | "SALE", id: string, status: "PAID" | "CREDIT") => {
+        const msg = status === "PAID"
+            ? "Konfirmasi pelunasan transaksi ini? Saldo Kas/Bank BCA akan otomatis terupdate."
+            : `Konfirmasi pencatatan sebagai ${type === "PURCHASE" ? "Hutang" : "Piutang"}?`;
+
+        if (!confirm(msg)) return;
         setLoading(id);
         try {
-            await updatePaymentStatusAction(type, id, "PAID");
-            alert("Pembayaran berhasil diverifikasi.");
+            await updatePaymentStatusAction(type, id, status);
+            alert("Verifikasi berhasil.");
             router.refresh();
         } catch (e) {
-            alert("Gagal memverifikasi pembayaran.");
+            alert("Gagal memverifikasi.");
         } finally {
             setLoading(null);
         }
@@ -385,14 +389,26 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                             {formatCurrency(p.total)}
                                         </td>
                                         <td className="px-6 py-4 text-center">
-                                            <button
-                                                disabled={loading === p.id || !p.isVerified}
-                                                onClick={() => handleVerifyPayment("PURCHASE", p.id)}
-                                                className="bg-emerald-500 text-white px-3 py-1 rounded text-[10px] font-bold hover:bg-emerald-600 transition-all disabled:opacity-50"
-                                                title={!p.isVerified ? "Mohon tunggu verifikasi stok gudang" : ""}
-                                            >
-                                                {loading === p.id ? "..." : "Set LUNAS"}
-                                            </button>
+                                            <div className="flex flex-col gap-2 items-center justify-center">
+                                                {p.paymentStatus === 'PENDING' && (
+                                                    <button
+                                                        disabled={loading === p.id || !p.isVerified}
+                                                        onClick={() => handleVerifyPayment("PURCHASE", p.id, "CREDIT")}
+                                                        className="bg-amber-500 w-full text-white px-3 py-1 rounded text-[10px] font-bold hover:bg-amber-600 transition-all disabled:opacity-50"
+                                                        title={!p.isVerified ? "Mohon tunggu verifikasi stok gudang" : "Catat sebagai Hutang Tempo"}
+                                                    >
+                                                        {loading === p.id ? "..." : "Set HUTANG"}
+                                                    </button>
+                                                )}
+                                                <button
+                                                    disabled={loading === p.id || !p.isVerified}
+                                                    onClick={() => handleVerifyPayment("PURCHASE", p.id, "PAID")}
+                                                    className="bg-emerald-500 w-full text-white px-3 py-1 rounded text-[10px] font-bold hover:bg-emerald-600 transition-all disabled:opacity-50"
+                                                    title={!p.isVerified ? "Mohon tunggu verifikasi stok gudang" : "Lunas Kas/Bank"}
+                                                >
+                                                    {loading === p.id ? "..." : "Set LUNAS"}
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}
@@ -438,13 +454,26 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                             {formatCurrency(s.total)}
                                         </td>
                                         <td className="px-6 py-4 text-center">
-                                            <button
-                                                disabled={loading === s.id}
-                                                onClick={() => handleVerifyPayment("SALE", s.id)}
-                                                className="bg-emerald-500 text-white px-3 py-1 rounded text-[10px] font-bold hover:bg-emerald-600 transition-all disabled:opacity-50"
-                                            >
-                                                {loading === s.id ? "..." : "Set LUNAS"}
-                                            </button>
+                                            <div className="flex flex-col gap-2 items-center justify-center">
+                                                {s.paymentStatus === 'PENDING' && (
+                                                    <button
+                                                        disabled={loading === s.id}
+                                                        onClick={() => handleVerifyPayment("SALE", s.id, "CREDIT")}
+                                                        className="bg-blue-500 w-full text-white px-3 py-1 rounded text-[10px] font-bold hover:bg-blue-600 transition-all disabled:opacity-50"
+                                                        title="Catat sebagai Piutang Tempo"
+                                                    >
+                                                        {loading === s.id ? "..." : "Set PIUTANG"}
+                                                    </button>
+                                                )}
+                                                <button
+                                                    disabled={loading === s.id}
+                                                    onClick={() => handleVerifyPayment("SALE", s.id, "PAID")}
+                                                    className="bg-emerald-500 w-full text-white px-3 py-1 rounded text-[10px] font-bold hover:bg-emerald-600 transition-all disabled:opacity-50"
+                                                    title="Lunas Kas/Bank"
+                                                >
+                                                    {loading === s.id ? "..." : "Set LUNAS"}
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}

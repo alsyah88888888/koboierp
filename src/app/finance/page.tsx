@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import prisma from "@/lib/prisma";
 import { getBalanceSheet } from "@/modules/finance/finance.service";
 import { FinanceDashboard } from "./FinanceDashboard";

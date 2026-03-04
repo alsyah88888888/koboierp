@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import prisma from "@/lib/prisma";
 import { getDashboardSummaryAction } from "@/app/actions";
 import { formatCurrency } from "@/lib/utils";

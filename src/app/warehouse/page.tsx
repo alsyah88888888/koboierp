@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import prisma from "@/lib/prisma";
 import { WarehouseDashboard } from "./WarehouseDashboard";
 import { serializeDecimal } from "@/lib/utils";

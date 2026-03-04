@@ -21,8 +21,8 @@ const navigation = [
     { name: "Penerimaan Barang", href: "/purchase", icon: ShoppingCart, roles: ["ADMIN", "PURCHASE", "SALES"] },
     { name: "Pengajuan Pembelian", href: "/purchase/request", icon: FileText, roles: ["ADMIN", "PURCHASE", "FINANCE"] },
     { name: "Penjualan", href: "/sales", icon: ShoppingBag, roles: ["ADMIN", "SALES", "PURCHASE"] },
-    { name: "Operasional", href: "/operational", icon: Wallet, roles: ["ADMIN", "FINANCE", "SALES"] },
-    { name: "Gudang", href: "/warehouse", icon: Warehouse, roles: ["ADMIN", "WAREHOUSE"] },
+    { name: "Operasional", href: "/operational", icon: Wallet, roles: ["ADMIN", "FINANCE"] },
+    { name: "Gudang", href: "/warehouse", icon: Warehouse, roles: ["ADMIN", "WAREHOUSE", "PURCHASE"] },
     { name: "Akuntansi", href: "/accounting", icon: FileText, roles: ["ADMIN", "FINANCE"] },
     { name: "Settings", href: "/settings", icon: Settings, roles: ["ADMIN"] },
 ];
