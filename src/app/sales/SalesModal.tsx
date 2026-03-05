@@ -10,6 +10,7 @@ interface SalesItem {
     salesPrice: number | "";
     discount: number | "";
     uom: string;
+    vendorName: string;
 }
 
 export default function SalesModal({ products, warehouses, customers, onClose, initialData }: { products: any[], warehouses: any[], customers: any[], onClose: () => void, initialData?: any }) {
@@ -24,7 +25,7 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
     const [salesPerson, setSalesPerson] = useState("");
 
     // Body (Items)
-    const [items, setItems] = useState<SalesItem[]>([{ productId: "", sku: "", quantity: 1, salesPrice: 0, discount: 0, uom: "" }]);
+    const [items, setItems] = useState<SalesItem[]>([{ productId: "", sku: "", quantity: 1, salesPrice: 0, discount: 0, uom: "", vendorName: "UMUM" }]);
 
     // Financials
     const [totalDiscount, setTotalDiscount] = useState<number | "">(0);
@@ -47,13 +48,14 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                     quantity: i.quantity,
                     salesPrice: Number(i.salesPrice),
                     discount: Number(i.discount || 0),
-                    uom: i.uom || i.product?.uom || ""
+                    uom: i.uom || i.product?.uom || "",
+                    vendorName: i.vendorName || "UMUM"
                 })));
             }
         }
     }, [initialData]);
 
-    const addItem = () => setItems([...items, { productId: "", sku: "", quantity: 1, salesPrice: 0, discount: 0, uom: "" }]);
+    const addItem = () => setItems([...items, { productId: "", sku: "", quantity: 1, salesPrice: 0, discount: 0, uom: "", vendorName: "UMUM" }]);
     const removeItem = (index: number) => setItems(items.filter((_, i) => i !== index));
 
     const updateItem = (index: number, field: string, value: any) => {
@@ -73,7 +75,7 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
             (newItems[index] as any)[field] = value;
         }
 
-        // Auto-fill UOM if product selected via SKU typing
+        // Auto-fill UOM and Vendor if product selected via SKU typing
         if (field === "sku") {
             const product = products.find(p => p.sku === value);
             if (product) {
@@ -82,8 +84,15 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                 if (newItems[index].salesPrice === 0 || newItems[index].salesPrice === "") {
                     newItems[index].salesPrice = Number(product.price || 0);
                 }
+                // Pre-select first vendor with stock if available
+                if (product.stocks && product.stocks.length > 0) {
+                    newItems[index].vendorName = product.stocks[0].vendorName;
+                } else {
+                    newItems[index].vendorName = "UMUM";
+                }
             } else {
                 newItems[index].productId = "";
+                newItems[index].vendorName = "UMUM";
             }
         }
 
@@ -136,7 +145,8 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                     quantity: Number(i.quantity),
                     salesPrice: Number(i.salesPrice),
                     discount: Number(i.discount || 0),
-                    uom: i.uom
+                    uom: i.uom,
+                    vendorName: i.vendorName
                 }))
             };
 
@@ -249,6 +259,23 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                         <datalist id={`product-list-sale-${index}`}>
                                             {products.map(p => <option key={p.id} value={p.sku}>{p.name}</option>)}
                                         </datalist>
+                                    </div>
+                                    <div className="flex-1 space-y-1">
+                                        <label className="text-[10px] font-bold text-slate-500 uppercase ml-1 tracking-widest">Pilih Stok (Vendor)</label>
+                                        <select
+                                            value={item.vendorName}
+                                            onChange={e => updateItem(index, 'vendorName', e.target.value)}
+                                            className="w-full bg-slate-50 border-2 border-slate-200 px-3 py-2 rounded-lg text-sm font-bold outline-none focus:border-primary transition-all h-11"
+                                            required
+                                        >
+                                            <option value="">Pilih Vendor...</option>
+                                            {item.productId && products.find(p => p.id === item.productId)?.stocks?.map((s: any) => (
+                                                <option key={s.id} value={s.vendorName}>
+                                                    {s.vendorName} (Sisa: {s.quantity})
+                                                </option>
+                                            ))}
+                                            {!item.productId && <option value="UMUM">UMUM</option>}
+                                        </select>
                                     </div>
                                     <div className="w-20 space-y-1">
                                         <label className="text-[10px] font-bold text-slate-500 uppercase ml-1 tracking-widest">Qty</label>

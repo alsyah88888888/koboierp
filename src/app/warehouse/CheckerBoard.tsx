@@ -123,8 +123,8 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
                                     return (
                                         <tr key={item.id} className={isComplete ? "bg-emerald-50/50" : ""}>
                                             <td className="px-4 py-3">
-                                                <div className="font-bold text-primary">{item.product.name}</div>
-                                                <div className="text-[10px] text-muted-foreground uppercase">{item.product.sku} | Barcode: {item.product.barcode || "-"}</div>
+                                                <div className="font-bold text-primary">{item.product?.name || "Unknown Product"}</div>
+                                                <div className="text-[10px] text-muted-foreground uppercase">{item.product?.sku || "-"} | Barcode: {item.product?.barcode || "-"}</div>
                                             </td>
                                             <td className="px-4 py-3 text-right font-mono font-bold text-lg">{item.quantity}</td>
                                             <td className={`px-4 py-3 text-right font-mono font-bold text-lg ${scanned > item.quantity ? "text-red-500" : "text-primary"}`}>
@@ -191,8 +191,8 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
                                 {r.items.length} Jenis Barang
                             </p>
                             <div className="flex justify-between items-center text-[10px] text-muted-foreground mb-4">
-                                <span>{format(new Date(r.createdAt), "dd MMM yyyy")}</span>
-                                <span className="uppercase">{r.warehouse.name}</span>
+                                <span>{r.createdAt ? format(new Date(r.createdAt), "dd MMM yyyy") : "-"}</span>
+                                <span className="uppercase">{r.warehouse?.name || "Unknown"}</span>
                             </div>
                             <button
                                 onClick={() => setSelectedReceipt(r)}

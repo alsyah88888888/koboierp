@@ -7,13 +7,13 @@ import { formatCurrency, cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { FinanceModal } from "./FinanceModal";
 import { useSession } from "next-auth/react";
-import { updatePaymentStatusAction, deleteFinanceTransactionAction, deleteJournalEntryAction, getCortexXmlContentAction, verifyPurchaseReturnAction } from "@/app/actions";
+import { updatePaymentStatusAction, deleteFinanceTransactionAction, deleteJournalEntryAction, getCortexXmlContentAction, verifyPurchaseReturnAction, verifySalesReturnAction } from "@/app/actions";
 import { DashboardStats } from "../components/DashboardStats";
 import { CheckCircle2, Clock } from "lucide-react";
 import { exportToExcel } from "@/lib/excel";
 import { useRouter } from "next/navigation";
 
-export function FinanceDashboard({ accounts, ledger, vendors, customers, pendingPurchases, pendingSales, unverifiedReceipts, pendingReturns, transactions }: {
+export function FinanceDashboard({ accounts, ledger, vendors, customers, pendingPurchases, pendingSales, unverifiedReceipts, pendingReturns, pendingSalesReturns, transactions }: {
     accounts: any[],
     ledger: any[],
     vendors: any[],
@@ -22,6 +22,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
     pendingSales: any[],
     unverifiedReceipts: any[],
     pendingReturns: any[],
+    pendingSalesReturns: any[],
     transactions: any[]
 }) {
     const { data: session } = useSession() as any;
@@ -90,6 +91,11 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
     const filteredReturns = pendingReturns.filter(r =>
         r.returnNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
         r.receipt?.receivedFrom.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    const filteredSalesReturns = pendingSalesReturns.filter(r =>
+        r.returnNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        r.delivery?.buyerName.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     const handleExport = () => {
@@ -162,6 +168,20 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
             router.refresh();
         } catch (e: any) {
             alert(e.message || "Gagal memverifikasi retur.");
+        } finally {
+            setLoading(null);
+        }
+    };
+
+    const handleVerifySalesReturn = async (id: string, buyerName: string) => {
+        if (!confirm(`Verifikasi retur penjualan ini? Saldo Piutang (AR) dari ${buyerName} akan otomatis dikurangi!`)) return;
+        setLoading(id);
+        try {
+            await verifySalesReturnAction(id);
+            alert("Retur berhasil diverifikasi, piutang buyer berkurang.");
+            router.refresh();
+        } catch (e: any) {
+            alert(e.message || "Gagal memverifikasi retur penjualan.");
         } finally {
             setLoading(null);
         }
@@ -526,68 +546,117 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                 )}
 
                 {activeTab === "ar" && (
-                    // ... (Sales table remains same)
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-left">
-                            <thead className="bg-muted/30 text-muted-foreground border-b text-xs uppercase tracking-wider">
-                                <tr>
-                                    <th className="px-6 py-4">Tgl / Ref</th>
-                                    <th className="px-6 py-4">Pelanggan</th>
-                                    <th className="px-6 py-4">Status</th>
-                                    <th className="px-6 py-4 text-right">Nominal</th>
-                                    <th className="px-6 py-4 text-center">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y">
-                                {filteredSales.map((s: any) => (
-                                    <tr key={s.id} className="hover:bg-muted/20 transition-colors">
-                                        <td className="px-6 py-4">
-                                            <div className="text-xs text-muted-foreground">{format(new Date(s.createdAt), "dd/MM/yy")}</div>
-                                            <div className="font-mono text-[10px]">{s.deliveryNumber}</div>
-                                        </td>
-                                        <td className="px-6 py-4 font-bold">{s.buyerName}</td>
-                                        <td className="px-6 py-4">
-                                            <span className="flex items-center gap-1.5 text-blue-600 font-bold text-xs">
-                                                <Clock className="h-3 w-3" /> {s.paymentStatus}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 text-right font-black text-emerald-600">
-                                            {formatCurrency(s.total)}
-                                        </td>
-                                        <td className="px-6 py-4 text-center">
-                                            <div className="flex flex-col gap-2 items-center justify-center">
-                                                {s.paymentStatus === 'PENDING' && (
+                    <>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm text-left">
+                                <thead className="bg-muted/30 text-muted-foreground border-b text-xs uppercase tracking-wider">
+                                    <tr>
+                                        <th className="px-6 py-4">Tgl / Ref</th>
+                                        <th className="px-6 py-4">Pelanggan</th>
+                                        <th className="px-6 py-4">Status</th>
+                                        <th className="px-6 py-4 text-right">Nominal</th>
+                                        <th className="px-6 py-4 text-center">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y">
+                                    {filteredSales.map((s: any) => (
+                                        <tr key={s.id} className="hover:bg-muted/20 transition-colors">
+                                            <td className="px-6 py-4">
+                                                <div className="text-xs text-muted-foreground">{format(new Date(s.createdAt), "dd/MM/yy")}</div>
+                                                <div className="font-mono text-[10px]">{s.deliveryNumber}</div>
+                                            </td>
+                                            <td className="px-6 py-4 font-bold">{s.buyerName}</td>
+                                            <td className="px-6 py-4">
+                                                <span className="flex items-center gap-1.5 text-blue-600 font-bold text-xs">
+                                                    <Clock className="h-3 w-3" /> {s.paymentStatus}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 text-right font-black text-emerald-600">
+                                                {formatCurrency(s.total)}
+                                            </td>
+                                            <td className="px-6 py-4 text-center">
+                                                <div className="flex flex-col gap-2 items-center justify-center">
+                                                    {s.paymentStatus === 'PENDING' && (
+                                                        <button
+                                                            disabled={loading === s.id}
+                                                            onClick={() => handleVerifyPayment("SALE", s.id, "CREDIT")}
+                                                            className="bg-blue-500 w-full text-white px-3 py-1 rounded text-[10px] font-bold hover:bg-blue-600 transition-all disabled:opacity-50"
+                                                            title="Catat sebagai Piutang Tempo"
+                                                        >
+                                                            {loading === s.id ? "..." : "Set PIUTANG"}
+                                                        </button>
+                                                    )}
                                                     <button
                                                         disabled={loading === s.id}
-                                                        onClick={() => handleVerifyPayment("SALE", s.id, "CREDIT")}
-                                                        className="bg-blue-500 w-full text-white px-3 py-1 rounded text-[10px] font-bold hover:bg-blue-600 transition-all disabled:opacity-50"
-                                                        title="Catat sebagai Piutang Tempo"
+                                                        onClick={() => handleVerifyPayment("SALE", s.id, "PAID")}
+                                                        className="bg-emerald-500 w-full text-white px-3 py-1 rounded text-[10px] font-bold hover:bg-emerald-600 transition-all disabled:opacity-50"
+                                                        title="Lunas Kas/Bank"
                                                     >
-                                                        {loading === s.id ? "..." : "Set PIUTANG"}
+                                                        {loading === s.id ? "..." : "Set LUNAS"}
                                                     </button>
-                                                )}
-                                                <button
-                                                    disabled={loading === s.id}
-                                                    onClick={() => handleVerifyPayment("SALE", s.id, "PAID")}
-                                                    className="bg-emerald-500 w-full text-white px-3 py-1 rounded text-[10px] font-bold hover:bg-emerald-600 transition-all disabled:opacity-50"
-                                                    title="Lunas Kas/Bank"
-                                                >
-                                                    {loading === s.id ? "..." : "Set LUNAS"}
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                                {filteredSales.length === 0 && (
-                                    <tr>
-                                        <td colSpan={5} className="px-6 py-12 text-center text-muted-foreground italic">
-                                            Tidak ada penjualan yang butuh verifikasi (Lunas).
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {filteredSales.length === 0 && (
+                                        <tr>
+                                            <td colSpan={5} className="px-6 py-12 text-center text-muted-foreground italic">
+                                                Tidak ada penjualan yang butuh verifikasi (Lunas).
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div className="mt-8 border-t pt-6">
+                            <h3 className="text-lg font-bold text-blue-800 mb-4 capitalize">Pengajuan Retur Penjualan (Pending)</h3>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm text-left">
+                                    <thead className="bg-blue-50 border-b border-blue-100 text-blue-800 text-xs uppercase tracking-wider">
+                                        <tr>
+                                            <th className="px-6 py-4">No. Retur</th>
+                                            <th className="px-6 py-4">Tanggal Pengajuan</th>
+                                            <th className="px-6 py-4">Ref. SJ</th>
+                                            <th className="px-6 py-4 text-right">Qty Diretur</th>
+                                            <th className="px-6 py-4 text-center">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-blue-50">
+                                        {filteredSalesReturns.map((r: any) => (
+                                            <tr key={r.id} className="hover:bg-blue-50/50 transition-colors">
+                                                <td className="px-6 py-4 font-mono font-bold text-blue-600">
+                                                    <div>{r.returnNumber}</div>
+                                                    <div className="text-[10px] text-slate-500 font-normal">{r.delivery?.buyerName}</div>
+                                                </td>
+                                                <td className="px-6 py-4 text-slate-500">{format(new Date(r.date || r.createdAt), "dd/MM/yyyy")}</td>
+                                                <td className="px-6 py-4 text-slate-600">{r.delivery?.deliveryNumber}</td>
+                                                <td className="px-6 py-4 text-right font-bold text-blue-600">
+                                                    {r.items?.reduce((acc: number, i: any) => acc + i.quantity, 0)} Items
+                                                </td>
+                                                <td className="px-6 py-4 text-center">
+                                                    <button
+                                                        disabled={loading === r.id}
+                                                        onClick={() => handleVerifySalesReturn(r.id, r.delivery?.buyerName)}
+                                                        className="bg-blue-600 text-white px-4 py-1.5 rounded text-xs font-bold hover:bg-blue-700 shadow-sm transition-all disabled:opacity-50"
+                                                    >
+                                                        {loading === r.id ? "..." : "Verifikasi Retur"}
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                        {filteredSalesReturns.length === 0 && (
+                                            <tr>
+                                                <td colSpan={5} className="px-6 py-12 text-center text-blue-400 italic">
+                                                    Tidak ada pengajuan retur penjualan yang pending.
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </>
                 )}
 
                 {activeTab === "checker" && (

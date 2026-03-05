@@ -17,7 +17,12 @@ export default async function PurchasePage() {
     }).catch(() => []));
 
     const receipts = serializeDecimal(await prisma.goodsReceipt.findMany({
-        include: { warehouse: true, items: true },
+        include: {
+            warehouse: true,
+            items: {
+                include: { product: true }
+            }
+        },
         orderBy: { createdAt: 'desc' }
     }).catch(() => []));
 

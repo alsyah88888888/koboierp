@@ -21,6 +21,7 @@ export function StockInputModal({ products, warehouses, onClose }: { products: P
     const [warehouseId, setWarehouseId] = useState("");
     const [quantity, setQuantity] = useState(0);
     const [type, setType] = useState<"ADJUSTMENT" | "SALE" | "GOODS_RECEIPT">("ADJUSTMENT");
+    const [vendorName, setVendorName] = useState("UMUM");
     const [reference, setReference] = useState("");
     const [isLoading, setIsLoading] = useState(false);
 
@@ -30,7 +31,7 @@ export function StockInputModal({ products, warehouses, onClose }: { products: P
 
         setIsLoading(true);
         try {
-            await updateStockAction({ productId, warehouseId, quantity, type, reference });
+            await updateStockAction({ productId, warehouseId, quantity, vendorName, type, reference });
             onClose();
         } catch (error) {
             alert("Gagal memperbarui stok");
@@ -96,9 +97,15 @@ export function StockInputModal({ products, warehouses, onClose }: { products: P
                         </div>
                     </div>
 
-                    <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Reference / Note (Optional)</label>
-                        <input value={reference} onChange={e => setReference(e.target.value)} className="w-full px-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl text-sm font-medium focus:border-primary focus:bg-white transition-all outline-none placeholder:text-slate-300" placeholder="Contoh: Stock Opname Februari" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Vendor / Pemasok</label>
+                            <input value={vendorName} onChange={e => setVendorName(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-2xl text-sm font-bold focus:border-primary focus:bg-white transition-all outline-none placeholder:text-slate-300" placeholder="UMUM" />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Reference / Note (Optional)</label>
+                            <input value={reference} onChange={e => setReference(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-2xl text-sm font-medium focus:border-primary focus:bg-white transition-all outline-none placeholder:text-slate-300" placeholder="Contoh: Stock Opname" />
+                        </div>
                     </div>
 
                     <div className="pt-6 flex flex-col md:flex-row gap-3">

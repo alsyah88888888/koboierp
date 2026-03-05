@@ -217,7 +217,7 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
                                                     }}
                                                     className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
                                                     title="Edit Data"
-                                                    disabled={r.isVerified && !isAdmin}
+                                                    disabled={r.isVerified && !isAdmin && userRole !== "PURCHASE"}
                                                 >
                                                     <Edit2 className="h-4 w-4" />
                                                 </button>

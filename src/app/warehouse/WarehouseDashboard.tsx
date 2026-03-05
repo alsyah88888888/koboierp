@@ -48,14 +48,18 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
 
     const handleExport = () => {
         if (activeTab === "inventory") {
-            const data = filteredProducts.map(p => ({
-                'SKU': p.sku,
-                'Nama Barang': p.name,
-                'UOM': p.uom,
-                'Total Stok': p.stocks.reduce((acc: number, s: any) => acc + s.quantity, 0),
-                'Threshold': p.lowStockThreshold,
-                'Status': p.stocks.reduce((acc: number, s: any) => acc + s.quantity, 0) <= p.lowStockThreshold ? 'LOW' : 'NORMAL'
-            }));
+            const data = filteredProducts.flatMap(p =>
+                p.stocks.map((s: any) => ({
+                    'SKU': p.sku,
+                    'Nama Barang': p.name,
+                    'Vendor / PT': s.vendorName || "UMUM",
+                    'Gudang': warehouses.find(w => w.id === s.warehouseId)?.name || 'Unknown',
+                    'UOM': p.uom,
+                    'Total Stok': s.quantity,
+                    'Threshold': p.lowStockThreshold,
+                    'Status': s.quantity <= p.lowStockThreshold ? 'LOW' : 'NORMAL'
+                }))
+            );
             exportToExcel(data, 'Laporan_Stok_Gudang', 'Inventory');
         } else {
             const data = unverifiedReceipts.map(r => ({
@@ -71,16 +75,20 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
 
     const handlePreview = () => {
         if (activeTab === "inventory") {
-            const data = filteredProducts.map(p => ({
-                'SKU': p.sku,
-                'Nama Barang': p.name,
-                'UOM': p.uom,
-                'Total Stok': p.stocks.reduce((acc: number, s: any) => acc + s.quantity, 0),
-                'Threshold': p.lowStockThreshold,
-                'Status': p.stocks.reduce((acc: number, s: any) => acc + s.quantity, 0) <= p.lowStockThreshold ? 'LOW' : 'NORMAL'
-            }));
+            const data = filteredProducts.flatMap(p =>
+                p.stocks.map((s: any) => ({
+                    'SKU': p.sku,
+                    'Nama Barang': p.name,
+                    'Vendor / PT': s.vendorName || "UMUM",
+                    'Gudang': warehouses.find(w => w.id === s.warehouseId)?.name || 'Unknown',
+                    'UOM': p.uom,
+                    'Total Stok': s.quantity,
+                    'Threshold': p.lowStockThreshold,
+                    'Status': s.quantity <= p.lowStockThreshold ? 'LOW' : 'NORMAL'
+                }))
+            );
             setPreviewData(data);
-            setPreviewTitle("Laporan Master Stok Gudang");
+            setPreviewTitle("Laporan Master Stok Gudang (Berdasarkan Vendor)");
         } else {
             const data = unverifiedReceipts.map(r => ({
                 'Tanggal': format(new Date(r.createdAt), "dd/MM/yyyy"),
@@ -216,45 +224,63 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                         <thead className="bg-slate-50/50 text-slate-500 border-b-2 border-slate-50">
                                             <tr>
                                                 <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest">Barang / SKU</th>
+                                                <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest text-left">Vendor / Pemasok</th>
                                                 <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest text-right">Qty Tersedia</th>
                                                 <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest text-right">Status</th>
                                                 {isAdmin && <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest text-center">Aksi</th>}
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-50">
-                                            {filteredProducts.slice(0, 30).map((p: any) => {
-                                                const totalQty = p.stocks.reduce((acc: number, s: any) => acc + s.quantity, 0);
-                                                const isLow = totalQty <= p.lowStockThreshold;
-                                                return (
-                                                    <tr key={p.id} className="hover:bg-slate-50/50 transition-colors group">
-                                                        <td className="px-6 py-4">
-                                                            <div className="font-bold text-slate-800">{p.name}</div>
-                                                            <div className="text-[10px] font-mono text-slate-400 uppercase group-hover:text-primary transition-colors">{p.sku}</div>
-                                                        </td>
-                                                        <td className="px-6 py-4 text-right">
-                                                            <div className="text-lg font-black text-slate-800">{totalQty.toLocaleString()} <span className="text-[10px] text-slate-400 font-bold uppercase">{p.uom}</span></div>
-                                                        </td>
-                                                        <td className="px-6 py-4 text-right">
-                                                            <span className={cn(
-                                                                "px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter shadow-sm",
-                                                                isLow ? "bg-amber-100 text-amber-700 shadow-amber-100" : "bg-emerald-100 text-emerald-700 shadow-emerald-100"
-                                                            )}>
-                                                                {isLow ? "Low Stock" : "In Stock"}
-                                                            </span>
-                                                        </td>
-                                                        {isAdmin && (
-                                                            <td className="px-6 py-4 text-center">
-                                                                <button
-                                                                    onClick={() => handleDeleteProduct(p.id)}
-                                                                    className="p-2 text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                                                                    title="Hapus Produk"
-                                                                >
-                                                                    <Trash2 className="h-4 w-4" />
-                                                                </button>
+                                            {filteredProducts.slice(0, 30).flatMap((p: any) => {
+                                                // Group stocks by vendor for this product
+                                                const vendorStocks = p.stocks.reduce((acc: any, curr: any) => {
+                                                    const vendor = curr.vendorName || "UMUM";
+                                                    acc[vendor] = (acc[vendor] || 0) + curr.quantity;
+                                                    return acc;
+                                                }, {});
+
+                                                const rows = [];
+                                                for (const [vendor, qty] of Object.entries(vendorStocks)) {
+                                                    const totalQty = qty as number;
+                                                    const isLow = totalQty <= p.lowStockThreshold;
+                                                    rows.push(
+                                                        <tr key={`${p.id}-${vendor}`} className="hover:bg-slate-50/50 transition-colors group">
+                                                            <td className="px-6 py-4">
+                                                                <div className="font-bold text-slate-800">{p.name}</div>
+                                                                <div className="text-[10px] font-mono text-slate-400 uppercase group-hover:text-primary transition-colors">{p.sku}</div>
                                                             </td>
-                                                        )}
-                                                    </tr>
-                                                );
+                                                            <td className="px-6 py-4 text-left">
+                                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 text-xs font-bold border border-slate-200">
+                                                                    <WarehouseIcon className="h-3 w-3 text-slate-400" />
+                                                                    {vendor}
+                                                                </span>
+                                                            </td>
+                                                            <td className="px-6 py-4 text-right">
+                                                                <div className="text-lg font-black text-slate-800">{(totalQty || 0).toLocaleString()} <span className="text-[10px] text-slate-400 font-bold uppercase">{p.uom}</span></div>
+                                                            </td>
+                                                            <td className="px-6 py-4 text-right">
+                                                                <span className={cn(
+                                                                    "px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter shadow-sm",
+                                                                    isLow ? "bg-amber-100 text-amber-700 shadow-amber-100" : "bg-emerald-100 text-emerald-700 shadow-emerald-100"
+                                                                )}>
+                                                                    {isLow ? "Low Stock" : "In Stock"}
+                                                                </span>
+                                                            </td>
+                                                            {isAdmin && (
+                                                                <td className="px-6 py-4 text-center">
+                                                                    <button
+                                                                        onClick={() => handleDeleteProduct(p.id)}
+                                                                        className="p-2 text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                                                                        title="Hapus Produk"
+                                                                    >
+                                                                        <Trash2 className="h-4 w-4" />
+                                                                    </button>
+                                                                </td>
+                                                            )}
+                                                        </tr>
+                                                    );
+                                                }
+                                                return rows;
                                             })}
                                             {filteredProducts.length === 0 && (
                                                 <tr>
@@ -288,18 +314,18 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                                 )} />
                                                 <div className="space-y-1">
                                                     <div className="flex justify-between items-start">
-                                                        <p className="text-[10px] font-black text-slate-800 line-clamp-1 uppercase leading-tight">{m.product.name}</p>
+                                                        <p className="text-[10px] font-black text-slate-800 line-clamp-1 uppercase leading-tight">{m.product?.name || "Product Deleted"}</p>
                                                         <div className={cn(
                                                             "flex items-center text-[10px] font-black",
                                                             m.quantity > 0 ? "text-emerald-600" : "text-red-600"
                                                         )}>
                                                             {m.quantity > 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownLeft className="h-3 w-3" />}
-                                                            {Math.abs(m.quantity)}
+                                                            {Math.abs(m.quantity || 0)}
                                                         </div>
                                                     </div>
                                                     <div className="flex justify-between items-center">
-                                                        <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">{m.warehouse.name}</span>
-                                                        <span className="text-[8px] font-bold text-slate-400">{format(new Date(m.createdAt), "HH:mm")}</span>
+                                                        <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">{m.warehouse?.name || "Unknown"}</span>
+                                                        <span className="text-[8px] font-bold text-slate-400">{m.createdAt ? format(new Date(m.createdAt), "HH:mm") : "-"}</span>
                                                     </div>
                                                     <p className="text-[9px] text-slate-500 italic bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100 inline-block">{m.type}</p>
                                                 </div>

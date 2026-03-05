@@ -10,6 +10,8 @@ import { DashboardStats } from "../components/DashboardStats";
 import Link from "next/link";
 import { ReportPreviewModal } from "@/components/ReportPreviewModal";
 import { exportToExcel } from "@/lib/excel";
+import { SalesReturnModal } from "./SalesReturnModal";
+import { Undo2 } from "lucide-react";
 
 interface SalesDashboardProps {
     initialDeliveries: any[];
@@ -24,6 +26,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
     const { data: session } = useSession() as any;
     const isAdmin = session?.user?.role === "ADMIN";
     const [showSalesModal, setShowSalesModal] = useState(false);
+    const [showReturnModal, setShowReturnModal] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [editData, setEditData] = useState<any>(null);
 
@@ -126,6 +129,13 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                     >
                         <FileText className="h-5 w-5" />
                         <span>Export Excel</span>
+                    </button>
+                    <button
+                        onClick={() => setShowReturnModal(true)}
+                        className="bg-white border-2 border-blue-600 text-blue-600 px-6 py-2 rounded-md flex items-center gap-2 hover:bg-blue-50 transition-all font-bold shadow-sm active:scale-95"
+                    >
+                        <Undo2 className="h-5 w-5" />
+                        <span>Retur Penjualan</span>
                     </button>
                     <button
                         onClick={() => setShowSalesModal(true)}
@@ -376,6 +386,13 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                         setShowSalesModal(false);
                         setEditData(null);
                     }}
+                />
+            )}
+
+            {showReturnModal && (
+                <SalesReturnModal
+                    deliveries={initialDeliveries}
+                    onClose={() => setShowReturnModal(false)}
                 />
             )}
 

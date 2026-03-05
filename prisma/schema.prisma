@@ -200,7 +200,15 @@ model GoodsReceipt {
   verifiedAt        DateTime?
   verifiedBy        String?
   paymentStatus     String   @default("PENDING") // PENDING, PAID
-  createdAt         DateTime @default(now())
+  
+  // New financial fields
+  subtotal       Decimal  @default(0)
+  totalDiscount  Decimal  @default(0)
+  taxRate        Decimal  @default(0) // e.g. 0.11
+  taxAmount      Decimal  @default(0)
+  grandTotal     Decimal  @default(0)
+
+  createdAt       DateTime @default(now())
   returns           PurchaseReturn[]
 }
 
@@ -212,6 +220,7 @@ model GoodsReceiptItem {
   product         Product      @relation(fields: [productId], references: [id])
   quantity        Int
   purchasePrice   Decimal      @default(0)
+  discount        Decimal      @default(0) // Manual Nominal Discount
   uom             String?
 }
 
@@ -279,6 +288,7 @@ model SalesDelivery {
 
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+  returns        SalesReturn[]
 }
 
 model SalesDeliveryItem {
@@ -291,6 +301,37 @@ model SalesDeliveryItem {
   salesPrice     Decimal?      // Added for financial tracking
   discount       Decimal       @default(0) // Discount per item
   uom            String?       // Unit of Measure
+  vendorName     String        @default("UMUM") // To track which vendor stock was deducted
+  salesReturnItems SalesReturnItem[]
+}
+
+model SalesReturn {
+  id              String   @id @default(cuid())
+  returnNumber    String   @unique // Format: SRET-YYYYMMDD-XXX
+  date            DateTime @default(now())
+  
+  deliveryId      String
+  delivery        SalesDelivery @relation(fields: [deliveryId], references: [id])
+  
+  status          String   @default("PENDING") // PENDING, VERIFIED_BY_FINANCE
+  notes           String?
+  
+  items           SalesReturnItem[]
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model SalesReturnItem {
+  id               String         @id @default(cuid())
+  salesReturnId    String
+  salesReturn      SalesReturn    @relation(fields: [salesReturnId], references: [id])
+  productId        String
+  product          Product        @relation(fields: [productId], references: [id])
+  deliveryItemId   String?
+  deliveryItem     SalesDeliveryItem? @relation(fields: [deliveryItemId], references: [id])
+  quantity         Int
+  reason           String?
 }
 
 // --- WAREHOUSE MODULE ---
@@ -319,6 +360,7 @@ model Product {
   salesItems   SalesDeliveryItem[]
   purchaseOrderItems PurchaseOrderItem[]
   purchaseReturnItems PurchaseReturnItem[]
+  salesReturnItems    SalesReturnItem[]
   movements StockMovement[]
 }
 
@@ -328,8 +370,9 @@ model Stock {
   product     Product  @relation(fields: [productId], references: [id])
   warehouseId String
   warehouse   Warehouse @relation(fields: [warehouseId], references: [id])
+  vendorName  String   @default("UMUM") // To track which vendor this stock came from
   quantity    Int
-  @@unique([productId, warehouseId])
+  @@unique([productId, warehouseId, vendorName])
 }
 
 model StockMovement {
@@ -338,6 +381,7 @@ model StockMovement {
   product     Product  @relation(fields: [productId], references: [id])
   warehouseId String
   warehouse   Warehouse @relation(fields: [warehouseId], references: [id])
+  vendorName  String?  // Optional, tracks which vendor stock was affected
   quantity    Int      // Positive for in, negative for out
   type        String   // GOODS_RECEIPT, SALE, ADJUSTMENT
   reference   String?  // Receipt Number or Transaction ID

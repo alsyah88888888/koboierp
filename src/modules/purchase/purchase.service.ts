@@ -38,20 +38,25 @@ export async function receivePurchaseOrder(poId: string, warehouseId: string) {
         // 1. Get PO items
         const po = await tx.purchaseOrder.findUnique({
             where: { id: poId },
-            include: { items: true }
+            include: {
+                items: true,
+                vendor: { select: { name: true } }
+            }
         });
 
         if (!po) throw new Error("Purchase Order not found");
         if (po.status === "RECEIVED") throw new Error("Purchase Order already received");
 
         // 2. Update Stock and create StockMovements
+        const vendorName = po.vendor?.name || "UMUM";
         for (const item of (po.items as any[])) {
             // Update or Create Stock record
             await tx.stock.upsert({
                 where: {
-                    productId_warehouseId: {
+                    productId_warehouseId_vendorName: {
                         productId: item.productId,
-                        warehouseId: warehouseId
+                        warehouseId: warehouseId,
+                        vendorName: vendorName
                     }
                 },
                 update: {
@@ -60,6 +65,7 @@ export async function receivePurchaseOrder(poId: string, warehouseId: string) {
                 create: {
                     productId: item.productId,
                     warehouseId: warehouseId,
+                    vendorName: vendorName,
                     quantity: item.quantity
                 }
             });
@@ -69,8 +75,9 @@ export async function receivePurchaseOrder(poId: string, warehouseId: string) {
                 data: {
                     productId: item.productId,
                     warehouseId: warehouseId,
+                    vendorName: vendorName,
                     quantity: item.quantity,
-                    type: "PURCHASE_RECEIPT",
+                    type: "GOODS_RECEIPT", // Changed from PURCHASE_RECEIPT to match other actions
                     reference: po.number
                 }
             });

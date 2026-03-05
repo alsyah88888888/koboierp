@@ -52,6 +52,12 @@ export default async function FinancePage() {
         orderBy: { createdAt: 'desc' }
     }).catch(() => []);
 
+    const pendingSalesReturns = await (prisma.salesReturn as any).findMany({
+        where: { status: 'PENDING' },
+        include: { items: { include: { product: true } }, delivery: true },
+        orderBy: { createdAt: 'desc' }
+    }).catch(() => []);
+
     const transactions = await getFinanceTransactionsAction().catch(() => []);
 
     // Serialize Decimal objects for Client Component
@@ -67,11 +73,12 @@ export default async function FinancePage() {
 
     const serializedSales = serializeDecimal(pendingSales).map((s: any) => ({
         ...s,
-        total: s.items.reduce((sum: number, i: any) => sum + (i.quantity * (s.salesPrice || 0)), 0)
+        total: s.items.reduce((sum: number, i: any) => sum + (i.quantity * (Number(i.salesPrice) || 0)), 0)
     }));
 
     const serializedUnverifiedReceipts = serializeDecimal(unverifiedReceipts);
     const serializedPendingReturns = serializeDecimal(pendingReturns);
+    const serializedPendingSalesReturns = serializeDecimal(pendingSalesReturns);
     const serializedTransactions = serializeDecimal(transactions);
 
     return (
@@ -84,6 +91,7 @@ export default async function FinancePage() {
             pendingSales={serializedSales}
             unverifiedReceipts={serializedUnverifiedReceipts}
             pendingReturns={serializedPendingReturns}
+            pendingSalesReturns={serializedPendingSalesReturns}
             transactions={serializedTransactions}
         />
     );

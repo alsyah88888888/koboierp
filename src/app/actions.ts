@@ -171,7 +171,12 @@ export async function createGoodsReceiptAction(data: {
     taxInvoiceDate?: Date;
     taxInvoiceNumber?: string;
     salesPerson?: string;
-    items: { productId: string; quantity: number; purchasePrice: number; uom?: string }[];
+    subtotal?: number;
+    totalDiscount?: number;
+    taxRate?: number;
+    taxAmount?: number;
+    grandTotal?: number;
+    items: { productId: string; quantity: number; purchasePrice: number; discount: number; uom?: string }[];
 }) {
     const txDate = data.date || new Date();
 
@@ -216,11 +221,17 @@ export async function createGoodsReceiptAction(data: {
                     salesPerson: data.salesPerson,
                     formNumber: formNumber,
                     warehouseId: data.warehouseId,
+                    subtotal: data.subtotal || 0,
+                    totalDiscount: data.totalDiscount || 0,
+                    taxRate: data.taxRate || 0,
+                    taxAmount: data.taxAmount || 0,
+                    grandTotal: data.grandTotal || 0,
                     items: {
                         create: data.items.map(item => ({
                             productId: item.productId,
                             quantity: item.quantity,
                             purchasePrice: item.purchasePrice as any,
+                            discount: item.discount as any,
                             uom: item.uom
                         }))
                     }
@@ -232,15 +243,17 @@ export async function createGoodsReceiptAction(data: {
             for (const item of data.items) {
                 await tx.stock.upsert({
                     where: {
-                        productId_warehouseId: {
+                        productId_warehouseId_vendorName: {
                             productId: item.productId,
-                            warehouseId: data.warehouseId
+                            warehouseId: data.warehouseId,
+                            vendorName: data.receivedFrom
                         }
                     },
                     update: { quantity: { increment: item.quantity } },
                     create: {
                         productId: item.productId,
                         warehouseId: data.warehouseId,
+                        vendorName: data.receivedFrom,
                         quantity: item.quantity
                     }
                 });
@@ -249,6 +262,7 @@ export async function createGoodsReceiptAction(data: {
                     data: {
                         productId: item.productId,
                         warehouseId: data.warehouseId,
+                        vendorName: data.receivedFrom,
                         quantity: item.quantity,
                         type: "GOODS_RECEIPT",
                         reference: data.receiptNumber
@@ -292,7 +306,12 @@ export async function updateGoodsReceiptAction(id: string, data: {
     taxInvoiceDate?: Date;
     taxInvoiceNumber?: string;
     salesPerson?: string;
-    items: { productId: string; quantity: number; purchasePrice: number; uom?: string }[];
+    subtotal?: number;
+    totalDiscount?: number;
+    taxRate?: number;
+    taxAmount?: number;
+    grandTotal?: number;
+    items: { productId: string; quantity: number; purchasePrice: number; discount: number; uom?: string }[];
 }) {
     return await prisma.$transaction(async (tx: any) => {
         // 1. Check if verified. include items to adjust stock
@@ -309,9 +328,10 @@ export async function updateGoodsReceiptAction(id: string, data: {
         for (const item of existing.items) {
             await tx.stock.update({
                 where: {
-                    productId_warehouseId: {
+                    productId_warehouseId_vendorName: {
                         productId: item.productId,
-                        warehouseId: existing.warehouseId
+                        warehouseId: existing.warehouseId,
+                        vendorName: existing.receivedFrom
                     }
                 },
                 data: { quantity: { decrement: item.quantity } }
@@ -329,6 +349,11 @@ export async function updateGoodsReceiptAction(id: string, data: {
                 taxInvoiceNumber: data.taxInvoiceNumber,
                 salesPerson: data.salesPerson,
                 warehouseId: data.warehouseId,
+                subtotal: data.subtotal || 0,
+                totalDiscount: data.totalDiscount || 0,
+                taxRate: data.taxRate || 0,
+                taxAmount: data.taxAmount || 0,
+                grandTotal: data.grandTotal || 0,
             }
         });
 
@@ -341,6 +366,7 @@ export async function updateGoodsReceiptAction(id: string, data: {
                 productId: item.productId,
                 quantity: item.quantity,
                 purchasePrice: item.purchasePrice as any,
+                discount: item.discount as any,
                 uom: item.uom
             }))
         });
@@ -349,15 +375,17 @@ export async function updateGoodsReceiptAction(id: string, data: {
         for (const item of data.items) {
             await tx.stock.upsert({
                 where: {
-                    productId_warehouseId: {
+                    productId_warehouseId_vendorName: {
                         productId: item.productId,
-                        warehouseId: data.warehouseId
+                        warehouseId: data.warehouseId,
+                        vendorName: data.receivedFrom
                     }
                 },
                 update: { quantity: { increment: item.quantity } },
                 create: {
                     productId: item.productId,
                     warehouseId: data.warehouseId,
+                    vendorName: data.receivedFrom,
                     quantity: item.quantity
                 }
             });
@@ -433,9 +461,10 @@ export async function deleteGoodsReceiptAction(id: string) {
         for (const item of receipt.items) {
             await tx.stock.update({
                 where: {
-                    productId_warehouseId: {
+                    productId_warehouseId_vendorName: {
                         productId: item.productId,
-                        warehouseId: receipt.warehouseId
+                        warehouseId: receipt.warehouseId,
+                        vendorName: receipt.receivedFrom
                     }
                 },
                 data: { quantity: { decrement: item.quantity } }
@@ -445,6 +474,7 @@ export async function deleteGoodsReceiptAction(id: string) {
                 data: {
                     productId: item.productId,
                     warehouseId: receipt.warehouseId,
+                    vendorName: receipt.receivedFrom,
                     quantity: -item.quantity,
                     type: "GOODS_RECEIPT_CANCEL",
                     reference: receipt.receiptNumber
@@ -479,7 +509,7 @@ export async function createSalesDeliveryAction(data: {
     totalDiscount?: number;
     taxRate?: number;
     createdAt?: Date;
-    items: { productId: string; quantity: number; salesPrice: number; discount?: number; uom?: string }[];
+    items: { productId: string; quantity: number; salesPrice: number; discount?: number; uom?: string; vendorName?: string }[];
 }) {
     const txDate = data.createdAt || new Date();
     const day = String(txDate.getDate()).padStart(2, '0');
@@ -514,7 +544,8 @@ export async function createSalesDeliveryAction(data: {
                         productId: item.productId,
                         quantity: item.quantity,
                         salesPrice: item.salesPrice as any,
-                        uom: item.uom
+                        uom: item.uom,
+                        vendorName: item.vendorName || "UMUM"
                     }))
                 }
             },
@@ -557,26 +588,30 @@ export async function createSalesDeliveryAction(data: {
 
         // 2. Update Stock (Subtract) and Record Movement for each item
         for (const item of data.items) {
+            const vendorName = item.vendorName || "UMUM";
+
             // Check if stock exists and is sufficient
             const currentStock = await tx.stock.findUnique({
                 where: {
-                    productId_warehouseId: {
+                    productId_warehouseId_vendorName: {
                         productId: item.productId,
-                        warehouseId: data.warehouseId
+                        warehouseId: data.warehouseId,
+                        vendorName: vendorName
                     }
                 }
             });
 
             if (!currentStock || currentStock.quantity < item.quantity) {
                 const product = await tx.product.findUnique({ where: { id: item.productId } });
-                throw new Error(`Stok tidak mencukupi untuk produk ${product?.name || item.productId}`);
+                throw new Error(`Stok tidak mencukupi untuk produk ${product?.name || item.productId} dari vendor ${vendorName}`);
             }
 
             await tx.stock.update({
                 where: {
-                    productId_warehouseId: {
+                    productId_warehouseId_vendorName: {
                         productId: item.productId,
-                        warehouseId: data.warehouseId
+                        warehouseId: data.warehouseId,
+                        vendorName: vendorName
                     }
                 },
                 data: { quantity: { decrement: item.quantity } }
@@ -586,6 +621,7 @@ export async function createSalesDeliveryAction(data: {
                 data: {
                     productId: item.productId,
                     warehouseId: data.warehouseId,
+                    vendorName: vendorName,
                     quantity: -item.quantity, // Negative for out
                     type: "SALE",
                     reference: deliveryNumber
@@ -613,7 +649,7 @@ export async function updateSalesDeliveryAction(id: string, data: {
     totalDiscount?: number;
     taxRate?: number;
     createdAt?: Date;
-    items: { productId: string; quantity: number; salesPrice: number; discount?: number; uom?: string }[];
+    items: { productId: string; quantity: number; salesPrice: number; discount?: number; uom?: string; vendorName?: string }[];
 }) {
     return await prisma.$transaction(async (tx: any) => {
         const oldDelivery = await tx.salesDelivery.findUnique({
@@ -626,7 +662,13 @@ export async function updateSalesDeliveryAction(id: string, data: {
         // 1. Reverse Stock for old items
         for (const item of oldDelivery.items) {
             await tx.stock.update({
-                where: { productId_warehouseId: { productId: item.productId, warehouseId: oldDelivery.warehouseId } },
+                where: {
+                    productId_warehouseId_vendorName: {
+                        productId: item.productId,
+                        warehouseId: oldDelivery.warehouseId,
+                        vendorName: item.vendorName
+                    }
+                },
                 data: { quantity: { increment: item.quantity } }
             });
         }
@@ -636,7 +678,6 @@ export async function updateSalesDeliveryAction(id: string, data: {
         const oldGrandTotal = Number(oldGrandTotalRaw[0]?.grandTotal || 0);
 
         await tx.salesDeliveryItem.deleteMany({ where: { deliveryId: id } });
-        // Jurnal and Balance are not reversed here because they are not created during sales input
 
         // 3. Update Delivery Header (Only known fields)
         const txDate = data.createdAt || new Date();
@@ -653,19 +694,27 @@ export async function updateSalesDeliveryAction(id: string, data: {
 
         // 4. Create new items (one by one to get IDs if needed, or just creation)
         for (const item of data.items) {
+            const vendorName = item.vendorName || "UMUM";
             await tx.salesDeliveryItem.create({
                 data: {
                     deliveryId: id,
                     productId: item.productId,
                     quantity: item.quantity,
                     salesPrice: item.salesPrice as any,
-                    uom: item.uom
+                    uom: item.uom,
+                    vendorName: vendorName
                 }
             });
 
             // Update Stock
             await tx.stock.update({
-                where: { productId_warehouseId: { productId: item.productId, warehouseId: data.warehouseId } },
+                where: {
+                    productId_warehouseId_vendorName: {
+                        productId: item.productId,
+                        warehouseId: data.warehouseId,
+                        vendorName: vendorName
+                    }
+                },
                 data: { quantity: { decrement: item.quantity } }
             });
         }
@@ -729,9 +778,10 @@ export async function deleteSalesDeliveryAction(id: string) {
         for (const item of delivery.items) {
             await tx.stock.update({
                 where: {
-                    productId_warehouseId: {
+                    productId_warehouseId_vendorName: {
                         productId: item.productId,
-                        warehouseId: delivery.warehouseId
+                        warehouseId: delivery.warehouseId,
+                        vendorName: item.vendorName
                     }
                 },
                 data: { quantity: { increment: item.quantity } }
@@ -741,6 +791,7 @@ export async function deleteSalesDeliveryAction(id: string) {
                 data: {
                     productId: item.productId,
                     warehouseId: delivery.warehouseId,
+                    vendorName: item.vendorName,
                     quantity: item.quantity,
                     type: "SALE_CANCEL",
                     reference: delivery.deliveryNumber
@@ -788,7 +839,11 @@ export async function updatePaymentStatusAction(type: "PURCHASE" | "SALE", id: s
 
             reference = receipt.receiptNumber;
             party = receipt.receivedFrom;
-            amount = receipt.items.reduce((sum: number, i: any) => sum + (i.quantity * Number(i.purchasePrice)), 0);
+            amount = Number(receipt.grandTotal || 0);
+
+            const subtotal = Number(receipt.subtotal || 0);
+            const totalDiscount = Number(receipt.totalDiscount || 0);
+            const taxAmount = Number(receipt.taxAmount || 0);
 
             await (tx.goodsReceipt as any).update({
                 where: { id },
@@ -798,11 +853,20 @@ export async function updatePaymentStatusAction(type: "PURCHASE" | "SALE", id: s
             const invAccount = await tx.financeAccount.findUnique({ where: { code: '104' } }); // Persediaan
             const bankAccount = await tx.financeAccount.findUnique({ where: { code: '102' } }); // Bank BCA
             const apAccount = await tx.financeAccount.findUnique({ where: { code: '201' } }); // Hutang
+            const taxAccount = await tx.financeAccount.findUnique({ where: { code: '106' } }); // PPN Masukan
+            const discAccount = await tx.financeAccount.findUnique({ where: { code: '502' } }); // Potongan Pembelian
 
             if (previousStatus === "PENDING" && status === "CREDIT") {
                 if (invAccount && apAccount) {
-                    await tx.journalEntry.create({ data: { description: `Persediaan (Hutang): ${reference} (${party})`, amount: amount as any, type: "DEBIT", accountId: invAccount.id, date: new Date() } });
+                    await tx.journalEntry.create({ data: { description: `Persediaan (Hutang): ${reference} (${party})`, amount: subtotal as any, type: "DEBIT", accountId: invAccount.id, date: new Date() } });
                     await tx.journalEntry.create({ data: { description: `Hutang Pembelian: ${reference} (${party})`, amount: amount as any, type: "CREDIT", accountId: apAccount.id, date: new Date() } });
+
+                    if (taxAccount && taxAmount > 0) {
+                        await tx.journalEntry.create({ data: { description: `PPN Masukan: ${reference}`, amount: taxAmount as any, type: "DEBIT", accountId: taxAccount.id, date: new Date() } });
+                    }
+                    if (discAccount && totalDiscount > 0) {
+                        await tx.journalEntry.create({ data: { description: `Potongan Pembelian: ${reference}`, amount: totalDiscount as any, type: "CREDIT", accountId: discAccount.id, date: new Date() } });
+                    }
                 }
                 const vendor = await tx.vendor.findFirst({ where: { name: party } });
                 if (vendor) {
@@ -810,8 +874,15 @@ export async function updatePaymentStatusAction(type: "PURCHASE" | "SALE", id: s
                 }
             } else if (previousStatus === "PENDING" && status === "PAID") {
                 if (invAccount && bankAccount) {
-                    await tx.journalEntry.create({ data: { description: `Persediaan (Lunas Kas): ${reference} (${party})`, amount: amount as any, type: "DEBIT", accountId: invAccount.id, date: new Date() } });
+                    await tx.journalEntry.create({ data: { description: `Persediaan (Lunas Kas): ${reference} (${party})`, amount: subtotal as any, type: "DEBIT", accountId: invAccount.id, date: new Date() } });
                     await tx.journalEntry.create({ data: { description: `Pembelian Tunai (Bank): ${reference} (${party})`, amount: amount as any, type: "CREDIT", accountId: bankAccount.id, date: new Date() } });
+
+                    if (taxAccount && taxAmount > 0) {
+                        await tx.journalEntry.create({ data: { description: `PPN Masukan: ${reference}`, amount: taxAmount as any, type: "DEBIT", accountId: taxAccount.id, date: new Date() } });
+                    }
+                    if (discAccount && totalDiscount > 0) {
+                        await tx.journalEntry.create({ data: { description: `Potongan Pembelian: ${reference}`, amount: totalDiscount as any, type: "CREDIT", accountId: discAccount.id, date: new Date() } });
+                    }
                 }
             } else if (previousStatus === "CREDIT" && status === "PAID") {
                 if (apAccount && bankAccount) {
@@ -1115,21 +1186,25 @@ export async function updateStockAction(data: {
     productId: string;
     warehouseId: string;
     quantity: number;
+    vendorName?: string;
     type: "ADJUSTMENT" | "SALE" | "GOODS_RECEIPT";
     reference?: string;
 }) {
     await prisma.$transaction(async (tx: any) => {
+        const vendorName = data.vendorName || "UMUM";
         await tx.stock.upsert({
             where: {
-                productId_warehouseId: {
+                productId_warehouseId_vendorName: {
                     productId: data.productId,
-                    warehouseId: data.warehouseId
+                    warehouseId: data.warehouseId,
+                    vendorName: vendorName
                 }
             },
             update: { quantity: { increment: data.quantity } },
             create: {
                 productId: data.productId,
                 warehouseId: data.warehouseId,
+                vendorName: vendorName,
                 quantity: data.quantity
             }
         });
@@ -1138,6 +1213,7 @@ export async function updateStockAction(data: {
             data: {
                 productId: data.productId,
                 warehouseId: data.warehouseId,
+                vendorName: vendorName,
                 quantity: data.quantity,
                 type: data.type,
                 reference: data.reference
@@ -1257,14 +1333,25 @@ export async function deleteProductAction(id: string) {
             _count: {
                 select: {
                     receiptItems: true,
-                    salesItems: true
+                    salesItems: true,
+                    purchaseOrderItems: true,
+                    purchaseReturnItems: true,
+                    salesReturnItems: true,
+                    verifications: true
                 }
             }
         }
     });
 
-    if (inUse?._count.receiptItems || inUse?._count.salesItems) {
-        throw new Error("Produk tidak bisa dihapus karena sudah memiliki riwayat transaksi.");
+    if (
+        inUse?._count.receiptItems ||
+        inUse?._count.salesItems ||
+        inUse?._count.purchaseOrderItems ||
+        inUse?._count.purchaseReturnItems ||
+        inUse?._count.salesReturnItems ||
+        inUse?._count.verifications
+    ) {
+        throw new Error("Produk tidak bisa dihapus karena sudah memiliki riwayat transaksi (Pembelian, Penjualan, atau Retur).");
     }
 
     await prisma.$transaction([
@@ -1396,6 +1483,21 @@ export async function createVendorAction(data: { name: string; email?: string; p
 }
 
 export async function deleteVendorAction(id: string) {
+    const vendor = await prisma.vendor.findUnique({
+        where: { id },
+        include: {
+            _count: {
+                select: {
+                    purchaseOrders: true
+                }
+            }
+        }
+    });
+
+    if (vendor?._count.purchaseOrders || (vendor?.balance && Number(vendor.balance) !== 0)) {
+        throw new Error("Vendor tidak bisa dihapus karena memiliki riwayat transaksi atau saldo.");
+    }
+
     await prisma.vendor.delete({ where: { id } });
     revalidatePath("/settings");
     revalidatePath("/purchase");
@@ -1410,6 +1512,17 @@ export async function createCustomerAction(data: { name: string; email?: string;
 }
 
 export async function deleteCustomerAction(id: string) {
+    const customer = await prisma.customer.findUnique({ where: { id } });
+
+    // Check for balance or if used in SalesDelivery (via buyerName)
+    const usageCount = await prisma.salesDelivery.count({
+        where: { buyerName: customer?.name }
+    });
+
+    if (usageCount > 0 || (customer?.balance && Number(customer.balance) !== 0)) {
+        throw new Error("Customer tidak bisa dihapus karena memiliki riwayat transaksi atau saldo.");
+    }
+
     await prisma.customer.delete({ where: { id } });
     revalidatePath("/settings");
     revalidatePath("/sales");
@@ -1425,7 +1538,17 @@ export async function createWarehouseAction(data: { name: string; location: stri
 
 export async function deleteWarehouseAction(id: string) {
     const stocks = await prisma.stock.count({ where: { warehouseId: id } });
-    if (stocks > 0) throw new Error("Gudang tidak bisa dihapus karena masih ada stok.");
+    if (stocks > 0) throw new Error("Gudang tidak bisa dihapus karena masih ada stok yang tercatat.");
+
+    const usageCount = await Promise.all([
+        prisma.goodsReceipt.count({ where: { warehouseId: id } }),
+        prisma.salesDelivery.count({ where: { warehouseId: id } }),
+        prisma.stockMovement.count({ where: { warehouseId: id } })
+    ]);
+
+    if (usageCount.some(c => c > 0)) {
+        throw new Error("Gudang tidak bisa dihapus karena memiliki riwayat transaksi (Penerimaan/Pengiriman/Pergerakan Stok).");
+    }
 
     await prisma.warehouse.delete({ where: { id } });
     revalidatePath("/settings");
@@ -1726,18 +1849,21 @@ export async function submitGoodsReceiptVerificationAction(data: {
             });
 
             if (receipt) {
+                const vendorName = receipt.receivedFrom || "UMUM";
                 for (const item of receipt.items) {
                     await tx.stock.upsert({
                         where: {
-                            productId_warehouseId: {
+                            productId_warehouseId_vendorName: {
                                 productId: item.productId,
-                                warehouseId: receipt.warehouseId
+                                warehouseId: receipt.warehouseId,
+                                vendorName: vendorName
                             }
                         },
                         update: { quantity: { increment: item.quantity } },
                         create: {
                             productId: item.productId,
                             warehouseId: receipt.warehouseId,
+                            vendorName: vendorName,
                             quantity: item.quantity
                         }
                     });
@@ -1746,6 +1872,7 @@ export async function submitGoodsReceiptVerificationAction(data: {
                         data: {
                             productId: item.productId,
                             warehouseId: receipt.warehouseId,
+                            vendorName: vendorName,
                             quantity: item.quantity,
                             type: "GOODS_RECEIPT",
                             reference: receipt.receiptNumber
@@ -1851,12 +1978,14 @@ export async function createPurchaseReturnAction(data: {
 
         const receipt = await tx.goodsReceipt.findUnique({ where: { id: data.receiptId } });
         if (receipt) {
+            const vendorName = receipt.receivedFrom || "UMUM";
             for (const item of data.items) {
                 await tx.stock.update({
                     where: {
-                        productId_warehouseId: {
+                        productId_warehouseId_vendorName: {
                             productId: item.productId,
-                            warehouseId: receipt.warehouseId
+                            warehouseId: receipt.warehouseId,
+                            vendorName: vendorName
                         }
                     },
                     data: { quantity: { decrement: item.quantity } }
@@ -1866,6 +1995,7 @@ export async function createPurchaseReturnAction(data: {
                     data: {
                         productId: item.productId,
                         warehouseId: receipt.warehouseId,
+                        vendorName: vendorName,
                         quantity: -item.quantity,
                         type: "ADJUSTMENT",
                         reference: returnNumber
@@ -1923,6 +2053,137 @@ export async function verifyPurchaseReturnAction(id: string) {
         if (apAccount && invAccount) {
             await tx.journalEntry.create({ data: { description: `Retur Pembelian: ${ret.returnNumber}`, amount: totalValue as any, type: "DEBIT", accountId: apAccount.id, date: new Date() } });
             await tx.journalEntry.create({ data: { description: `Persediaan Keluar (Retur): ${ret.returnNumber}`, amount: totalValue as any, type: "CREDIT", accountId: invAccount.id, date: new Date() } });
+        }
+
+        revalidatePath("/finance");
+        revalidatePath("/");
+        return { success: true };
+    });
+}
+
+/**
+ * SALES RETURN: Create Return Request
+ */
+export async function createSalesReturnAction(data: {
+    deliveryId: string;
+    items: { productId: string; quantity: number; reason: string; deliveryItemId?: string }[];
+    notes?: string;
+}) {
+    return await prisma.$transaction(async (tx: any) => {
+        const today = new Date();
+        const dateStr = `${today.getFullYear()}${(today.getMonth() + 1).toString().padStart(2, '0')}${today.getDate().toString().padStart(2, '0')}`;
+        const count = await tx.salesReturn.count({
+            where: { returnNumber: { startsWith: `SRET-${dateStr}-` } }
+        });
+        const returnNumber = `SRET-${dateStr}-${(count + 1).toString().padStart(3, '0')}`;
+
+        const ret = await tx.salesReturn.create({
+            data: {
+                returnNumber,
+                deliveryId: data.deliveryId,
+                notes: data.notes,
+                items: {
+                    create: data.items.map(i => ({
+                        productId: i.productId,
+                        deliveryItemId: i.deliveryItemId,
+                        quantity: i.quantity,
+                        reason: i.reason
+                    }))
+                }
+            }
+        });
+
+        // Update Stock (Increment because goods come back)
+        const delivery = await tx.salesDelivery.findUnique({
+            where: { id: data.deliveryId },
+            include: { items: true }
+        });
+
+        if (delivery) {
+            for (const item of data.items) {
+                // Find vendorName from the original delivery item
+                const originalItem = delivery.items.find((di: any) => di.productId === item.productId);
+                const vendorName = originalItem?.vendorName || "UMUM";
+
+                await tx.stock.upsert({
+                    where: {
+                        productId_warehouseId_vendorName: {
+                            productId: item.productId,
+                            warehouseId: delivery.warehouseId,
+                            vendorName: vendorName
+                        }
+                    },
+                    update: { quantity: { increment: item.quantity } },
+                    create: {
+                        productId: item.productId,
+                        warehouseId: delivery.warehouseId,
+                        vendorName: vendorName,
+                        quantity: item.quantity
+                    }
+                });
+
+                await tx.stockMovement.create({
+                    data: {
+                        productId: item.productId,
+                        warehouseId: delivery.warehouseId,
+                        vendorName: vendorName,
+                        quantity: item.quantity,
+                        type: "ADJUSTMENT",
+                        reference: returnNumber
+                    }
+                });
+            }
+        }
+
+        revalidatePath("/sales");
+        revalidatePath("/finance");
+        revalidatePath("/warehouse");
+        return ret;
+    });
+}
+
+/**
+ * SALES RETURN: Verify Return by Finance
+ */
+export async function verifySalesReturnAction(id: string) {
+    return await prisma.$transaction(async (tx: any) => {
+        const ret = await tx.salesReturn.findUnique({
+            where: { id },
+            include: {
+                delivery: { include: { items: true } },
+                items: true
+            }
+        });
+
+        if (!ret || ret.status !== "PENDING") throw new Error("Invalid or already verified return");
+
+        let totalValue = 0;
+        ret.items.forEach((retItem: any) => {
+            const deliveryItem = ret.delivery.items.find((i: any) => i.productId === retItem.productId);
+            if (deliveryItem) {
+                totalValue += (retItem.quantity * Number(deliveryItem.salesPrice));
+            }
+        });
+
+        await tx.salesReturn.update({
+            where: { id },
+            data: { status: "VERIFIED_BY_FINANCE" }
+        });
+
+        const customer = await tx.customer.findFirst({ where: { name: ret.delivery.buyerName } });
+        if (customer) {
+            await tx.customer.update({
+                where: { id: customer.id },
+                data: { balance: { decrement: totalValue } }
+            });
+        }
+
+        const arAccount = await tx.financeAccount.findUnique({ where: { code: '105' } }); // Piutang
+        const salesAccount = await tx.financeAccount.findUnique({ where: { code: '401' } }); // Pendapatan Penjualan
+
+        if (arAccount && salesAccount) {
+            await tx.journalEntry.create({ data: { description: `Retur Penjualan (Potongan Piutang): ${ret.returnNumber}`, amount: totalValue as any, type: "CREDIT", accountId: arAccount.id, date: new Date() } });
+            await tx.journalEntry.create({ data: { description: `Retur Penjualan (Potongan Pendapatan): ${ret.returnNumber}`, amount: totalValue as any, type: "DEBIT", accountId: salesAccount.id, date: new Date() } });
         }
 
         revalidatePath("/finance");
