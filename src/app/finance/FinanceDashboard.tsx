@@ -28,7 +28,8 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
 }) {
     const { data: session } = useSession() as any;
     const userRole = session?.user?.role?.toUpperCase() || "";
-    const isAdminOrFinance = userRole === "ADMIN" || userRole === "FINANCE";
+    const isAdmin = userRole === "ADMIN";
+    const isAdminOrFinance = isAdmin || userRole === "FINANCE";
     const [showModal, setShowModal] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [activeTab, setActiveTab] = useState<"ledger" | "ap" | "ar" | "checker" | "purchase_requests" | "history">("ledger");
@@ -43,15 +44,17 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
         window.print();
     };
 
-    const handleVerifyPayment = async (type: "PURCHASE" | "SALE", id: string, status: "PAID" | "CREDIT") => {
-        const msg = status === "PAID"
+    const handleVerifyPayment = async (type: "PURCHASE" | "SALE", id: string, status: "PAID" | "CREDIT" | "PARTIAL", partialAmount?: number) => {
+        let msg = status === "PAID"
             ? "Konfirmasi pelunasan transaksi ini? Saldo Kas/Bank BCA akan otomatis terupdate."
-            : `Konfirmasi pencatatan sebagai ${type === "PURCHASE" ? "Hutang" : "Piutang"}?`;
+            : status === "PARTIAL"
+                ? `Konfirmasi pembayaran DP / Sebagian sebesar ${formatCurrency(partialAmount || 0)}?`
+                : `Konfirmasi pencatatan sebagai ${type === "PURCHASE" ? "Hutang" : "Piutang"}?`;
 
         if (!confirm(msg)) return;
         setLoading(id);
         try {
-            await updatePaymentStatusAction(type, id, status);
+            await updatePaymentStatusAction(type, id, status, partialAmount);
             alert("Verifikasi berhasil.");
             router.refresh();
         } catch (e) {
@@ -59,6 +62,18 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
         } finally {
             setLoading(null);
         }
+    };
+
+    const handlePartialPayment = (type: "PURCHASE" | "SALE", id: string, total: number, alreadyPaid: number) => {
+        const remaining = total - alreadyPaid;
+        const input = prompt(`Masukkan jumlah pembayaran (Sisa: ${formatCurrency(remaining)}):`, remaining.toString());
+        if (!input) return;
+        const amount = Number(input);
+        if (isNaN(amount) || amount <= 0 || amount > remaining) {
+            alert("Jumlah tidak valid atau melebihi sisa pembayaran.");
+            return;
+        }
+        handleVerifyPayment(type, id, amount === remaining ? "PAID" : "PARTIAL", amount);
     };
 
     const handleDelete = async (id: string, isManual: boolean) => {
@@ -489,28 +504,42 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                                     </span>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4 text-right font-black text-red-600">
-                                                {formatCurrency(p.total)}
+                                            <td className="px-6 py-4 text-right">
+                                                <div className="font-black text-red-600">{formatCurrency(p.total)}</div>
+                                                {Number(p.paidAmount || 0) > 0 && (
+                                                    <div className="text-[10px] text-emerald-600 font-bold mt-1">
+                                                        Dibayar: {formatCurrency(Number(p.paidAmount))}
+                                                    </div>
+                                                )}
                                             </td>
                                             <td className="px-6 py-4 text-center">
                                                 <div className="flex flex-col gap-2 items-center justify-center">
                                                     {p.paymentStatus === 'PENDING' && (
                                                         <button
-                                                            disabled={loading === p.id || !p.isVerified}
+                                                            disabled={loading === p.id || (!p.isVerified && !isAdmin)}
                                                             onClick={() => handleVerifyPayment("PURCHASE", p.id, "CREDIT")}
-                                                            className="bg-amber-500 w-full text-white px-3 py-1 rounded text-[10px] font-bold hover:bg-amber-600 transition-all disabled:opacity-50"
-                                                            title={!p.isVerified ? "Mohon tunggu verifikasi stok gudang" : "Catat sebagai Hutang Tempo"}
+                                                            className="bg-amber-100 text-amber-700 hover:bg-amber-200 w-full px-3 py-1 rounded text-[10px] font-bold transition-all disabled:opacity-50"
+                                                            title={!p.isVerified ? (isAdmin ? "Bypass verifikasi gudang (Admin)" : "Mohon tunggu verifikasi stok gudang") : "Catat sebagai Hutang Tempo"}
                                                         >
-                                                            {loading === p.id ? "..." : "Set HUTANG"}
+                                                            {loading === p.id ? "..." : "SET HUTANG"}
+                                                        </button>
+                                                    )}
+                                                    {(p.paymentStatus === 'CREDIT' || p.paymentStatus === 'PARTIAL') && (
+                                                        <button
+                                                            disabled={loading === p.id}
+                                                            onClick={() => handlePartialPayment("PURCHASE", p.id, Number(p.total), Number(p.paidAmount || 0))}
+                                                            className="bg-blue-100 text-blue-700 hover:bg-blue-200 w-full px-3 py-1 rounded text-[10px] font-bold transition-all disabled:opacity-50"
+                                                        >
+                                                            DP / SEBAGIAN
                                                         </button>
                                                     )}
                                                     <button
-                                                        disabled={loading === p.id || !p.isVerified}
+                                                        disabled={loading === p.id || (!p.isVerified && !isAdmin)}
                                                         onClick={() => handleVerifyPayment("PURCHASE", p.id, "PAID")}
-                                                        className="bg-emerald-500 w-full text-white px-3 py-1 rounded text-[10px] font-bold hover:bg-emerald-600 transition-all disabled:opacity-50"
-                                                        title={!p.isVerified ? "Mohon tunggu verifikasi stok gudang" : "Lunas Kas/Bank"}
+                                                        className="bg-emerald-500 w-full text-white px-3 py-1 rounded text-[10px] font-bold hover:bg-emerald-600 transition-all disabled:opacity-50 shadow-sm"
+                                                        title={!p.isVerified ? (isAdmin ? "Bypass verifikasi gudang (Admin)" : "Mohon tunggu verifikasi stok gudang") : "Lunas Kas/Bank"}
                                                     >
-                                                        {loading === p.id ? "..." : "Set LUNAS"}
+                                                        {loading === p.id ? "..." : (p.paymentStatus === 'PENDING' ? "LUNAS TUNAI" : "PELUNASAN")}
                                                     </button>
                                                 </div>
                                             </td>
@@ -602,8 +631,13 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                                     <Clock className="h-3 w-3" /> {s.paymentStatus}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-4 text-right font-black text-emerald-600">
-                                                {formatCurrency(s.total)}
+                                            <td className="px-6 py-4 text-right">
+                                                <div className="font-black text-emerald-600">{formatCurrency(s.total)}</div>
+                                                {Number(s.paidAmount || 0) > 0 && (
+                                                    <div className="text-[10px] text-blue-600 font-bold mt-1">
+                                                        Diterima: {formatCurrency(Number(s.paidAmount))}
+                                                    </div>
+                                                )}
                                             </td>
                                             <td className="px-6 py-4 text-center">
                                                 <div className="flex flex-col gap-2 items-center justify-center">
@@ -611,19 +645,28 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                                         <button
                                                             disabled={loading === s.id}
                                                             onClick={() => handleVerifyPayment("SALE", s.id, "CREDIT")}
-                                                            className="bg-blue-500 w-full text-white px-3 py-1 rounded text-[10px] font-bold hover:bg-blue-600 transition-all disabled:opacity-50"
+                                                            className="bg-blue-100 text-blue-700 hover:bg-blue-200 w-full px-3 py-1 rounded text-[10px] font-bold transition-all disabled:opacity-50"
                                                             title="Catat sebagai Piutang Tempo"
                                                         >
-                                                            {loading === s.id ? "..." : "Set PIUTANG"}
+                                                            {loading === s.id ? "..." : "SET PIUTANG"}
+                                                        </button>
+                                                    )}
+                                                    {(s.paymentStatus === 'CREDIT' || s.paymentStatus === 'PARTIAL') && (
+                                                        <button
+                                                            disabled={loading === s.id}
+                                                            onClick={() => handlePartialPayment("SALE", s.id, Number(s.total), Number(s.paidAmount || 0))}
+                                                            className="bg-blue-100 text-blue-700 hover:bg-blue-200 w-full px-3 py-1 rounded text-[10px] font-bold transition-all disabled:opacity-50"
+                                                        >
+                                                            DP / SEBAGIAN
                                                         </button>
                                                     )}
                                                     <button
                                                         disabled={loading === s.id}
                                                         onClick={() => handleVerifyPayment("SALE", s.id, "PAID")}
-                                                        className="bg-emerald-500 w-full text-white px-3 py-1 rounded text-[10px] font-bold hover:bg-emerald-600 transition-all disabled:opacity-50"
+                                                        className="bg-emerald-500 w-full text-white px-3 py-1 rounded text-[10px] font-bold hover:bg-emerald-600 transition-all disabled:opacity-50 shadow-sm"
                                                         title="Lunas Kas/Bank"
                                                     >
-                                                        {loading === s.id ? "..." : "Set LUNAS"}
+                                                        {loading === s.id ? "..." : (s.paymentStatus === 'PENDING' ? "LUNAS TUNAI" : "PELUNASAN")}
                                                     </button>
                                                 </div>
                                             </td>

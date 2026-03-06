@@ -11,6 +11,7 @@ import { deleteProductAction } from "@/app/actions";
 import { format } from "date-fns";
 import { exportToExcel } from "@/lib/excel";
 import { ReportPreviewModal } from "@/components/ReportPreviewModal";
+import Link from "next/link";
 
 export function WarehouseDashboard({ initialProducts, warehouses, unverifiedReceipts, movements }: {
     initialProducts: any[],
@@ -141,6 +142,15 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                         <span>Export Excel</span>
                     </button>
 
+                    <Link
+                        href="/warehouse/print-database"
+                        target="_blank"
+                        className="bg-white text-slate-700 px-5 py-2.5 rounded-xl flex items-center gap-2 hover:bg-slate-50 transition-all font-bold shadow-sm active:scale-95 border-2 border-slate-200"
+                    >
+                        <FileText className="h-4 w-4 text-primary" />
+                        <span>Cetak Database (PDF)</span>
+                    </Link>
+
                     <button
                         onClick={() => setShowInputModal(true)}
                         className="bg-primary text-white px-6 py-2.5 rounded-xl flex items-center gap-2 hover:bg-primary/95 transition-all font-black shadow-lg shadow-primary/20 active:scale-95 border-2 border-primary"
@@ -162,7 +172,7 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                             {/* Warehouse Occupancy Indicators */}
                             <div className="grid gap-4 md:grid-cols-3">
                                 {warehouses.map((w) => {
-                                    const totalStock = w.stocks?.reduce((acc: number, s: any) => acc + s.quantity, 0) || 0;
+                                    const totalStock = initialProducts.reduce((acc: number, p: any) => acc + p.stocks.filter((s: any) => s.warehouseId === w.id).reduce((sacc: number, s: any) => sacc + s.quantity, 0), 0);
                                     const capacity = 5000; // Placeholder capacity
                                     const percentage = Math.min(Math.round((totalStock / capacity) * 100), 100);
 
@@ -224,6 +234,7 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                         <thead className="bg-slate-50/50 text-slate-500 border-b-2 border-slate-50">
                                             <tr>
                                                 <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest">Barang / SKU</th>
+                                                <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest text-left">Gudang</th>
                                                 <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest text-left">Vendor / Pemasok</th>
                                                 <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest text-right">Qty Tersedia</th>
                                                 <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest text-right">Status</th>
@@ -231,47 +242,75 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-50">
-                                            {filteredProducts.slice(0, 30).flatMap((p: any) => {
-                                                // Group stocks by vendor for this product
-                                                const vendorStocks = p.stocks.reduce((acc: any, curr: any) => {
-                                                    const vendor = curr.vendorName || "UMUM";
-                                                    acc[vendor] = (acc[vendor] || 0) + curr.quantity;
-                                                    return acc;
-                                                }, {});
-
+                                            {filteredProducts.flatMap((p: any) => {
                                                 const rows = [];
-                                                for (const [vendor, qty] of Object.entries(vendorStocks)) {
-                                                    const totalQty = qty as number;
-                                                    const isLow = totalQty <= p.lowStockThreshold;
+
+                                                if (p.stocks && p.stocks.length > 0) {
+                                                    // Display each stock entry (per warehouse and vendor)
+                                                    p.stocks.forEach((s: any) => {
+                                                        const whName = warehouses.find(w => w.id === s.warehouseId)?.name || "Unknown";
+                                                        const isLow = s.quantity <= p.lowStockThreshold;
+                                                        rows.push(
+                                                            <tr key={`${p.id}-${s.id}`} className="hover:bg-slate-50/50 transition-colors group">
+                                                                <td className="px-6 py-4">
+                                                                    <div className="font-bold text-slate-800">{p.name}</div>
+                                                                    <div className="text-[10px] font-mono text-slate-400 uppercase group-hover:text-primary transition-colors">{p.sku}</div>
+                                                                </td>
+                                                                <td className="px-6 py-4 text-left font-bold text-slate-600 text-xs">
+                                                                    {whName}
+                                                                </td>
+                                                                <td className="px-6 py-4 text-left">
+                                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 text-xs font-bold border border-slate-200">
+                                                                        <WarehouseIcon className="h-3 w-3 text-slate-400" />
+                                                                        {s.vendorName || "UMUM"}
+                                                                    </span>
+                                                                </td>
+                                                                <td className="px-6 py-4 text-right">
+                                                                    <div className="text-lg font-black text-slate-800">{(s.quantity || 0).toLocaleString()} <span className="text-[10px] text-slate-400 font-bold uppercase">{p.uom}</span></div>
+                                                                </td>
+                                                                <td className="px-6 py-4 text-right">
+                                                                    <span className={cn(
+                                                                        "px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter shadow-sm",
+                                                                        isLow ? "bg-amber-100 text-amber-700 shadow-amber-100" : "bg-emerald-100 text-emerald-700 shadow-emerald-100"
+                                                                    )}>
+                                                                        {isLow ? "Low Stock" : "In Stock"}
+                                                                    </span>
+                                                                </td>
+                                                                {isAdmin && (
+                                                                    <td className="px-6 py-4 text-center">
+                                                                        <button
+                                                                            onClick={() => handleDeleteProduct(p.id)}
+                                                                            className="p-2 text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                                                                            title="Hapus Produk"
+                                                                        >
+                                                                            <Trash2 className="h-4 w-4" />
+                                                                        </button>
+                                                                    </td>
+                                                                )}
+                                                            </tr>
+                                                        );
+                                                    });
+                                                } else {
+                                                    // Show empty stock row for product if it exists in master but has no inventory
                                                     rows.push(
-                                                        <tr key={`${p.id}-${vendor}`} className="hover:bg-slate-50/50 transition-colors group">
+                                                        <tr key={`${p.id}-empty`} className="hover:bg-slate-50/50 transition-colors group">
                                                             <td className="px-6 py-4">
                                                                 <div className="font-bold text-slate-800">{p.name}</div>
                                                                 <div className="text-[10px] font-mono text-slate-400 uppercase group-hover:text-primary transition-colors">{p.sku}</div>
                                                             </td>
-                                                            <td className="px-6 py-4 text-left">
-                                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 text-xs font-bold border border-slate-200">
-                                                                    <WarehouseIcon className="h-3 w-3 text-slate-400" />
-                                                                    {vendor}
-                                                                </span>
+                                                            <td className="px-6 py-4 text-left text-slate-400 italic text-xs">No Stock Data</td>
+                                                            <td className="px-6 py-4 text-left">-</td>
+                                                            <td className="px-6 py-4 text-right">
+                                                                <div className="text-lg font-black text-slate-400">0 <span className="text-[10px] text-slate-300 font-bold uppercase">{p.uom}</span></div>
                                                             </td>
                                                             <td className="px-6 py-4 text-right">
-                                                                <div className="text-lg font-black text-slate-800">{(totalQty || 0).toLocaleString()} <span className="text-[10px] text-slate-400 font-bold uppercase">{p.uom}</span></div>
-                                                            </td>
-                                                            <td className="px-6 py-4 text-right">
-                                                                <span className={cn(
-                                                                    "px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter shadow-sm",
-                                                                    isLow ? "bg-amber-100 text-amber-700 shadow-amber-100" : "bg-emerald-100 text-emerald-700 shadow-emerald-100"
-                                                                )}>
-                                                                    {isLow ? "Low Stock" : "In Stock"}
-                                                                </span>
+                                                                <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter bg-slate-100 text-slate-400">Empty</span>
                                                             </td>
                                                             {isAdmin && (
                                                                 <td className="px-6 py-4 text-center">
                                                                     <button
                                                                         onClick={() => handleDeleteProduct(p.id)}
                                                                         className="p-2 text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                                                                        title="Hapus Produk"
                                                                     >
                                                                         <Trash2 className="h-4 w-4" />
                                                                     </button>

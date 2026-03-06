@@ -11,19 +11,21 @@ import {
     Warehouse,
     Settings,
     LogOut,
-    FileText
+    FileText,
+    Database
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 
 const navigation = [
     { name: "Dashboard", href: "/", icon: LayoutDashboard, roles: ["ADMIN", "FINANCE", "PURCHASE", "SALES", "WAREHOUSE"] },
     { name: "Keuangan", href: "/finance", icon: Wallet, roles: ["ADMIN", "FINANCE"] },
-    { name: "Penerimaan Barang", href: "/purchase", icon: ShoppingCart, roles: ["ADMIN", "PURCHASE", "SALES"] },
+    { name: "Pembelian", href: "/purchase", icon: ShoppingCart, roles: ["ADMIN", "PURCHASE", "SALES"] },
     { name: "Pengajuan Pembelian", href: "/purchase/request", icon: FileText, roles: ["ADMIN", "PURCHASE", "FINANCE"] },
     { name: "Penjualan", href: "/sales", icon: ShoppingBag, roles: ["ADMIN", "SALES", "PURCHASE"] },
     { name: "Operasional", href: "/operational", icon: Wallet, roles: ["ADMIN", "FINANCE"] },
     { name: "Gudang", href: "/warehouse", icon: Warehouse, roles: ["ADMIN", "WAREHOUSE", "PURCHASE"] },
     { name: "Akuntansi", href: "/accounting", icon: FileText, roles: ["ADMIN", "FINANCE"] },
+    { name: "Master Data", href: "/master-data", icon: Database, roles: ["ADMIN", "PURCHASE"] },
     { name: "Settings", href: "/settings", icon: Settings, roles: ["ADMIN"] },
 ];
 

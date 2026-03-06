@@ -1,14 +1,16 @@
 import { useState, useEffect } from "react";
-import { X, Plus, Trash2, Loader2, Save } from "lucide-react";
+import { X, Plus, Trash2, Loader2, Save, Tag } from "lucide-react";
 import { createSalesDeliveryAction, updateSalesDeliveryAction } from "../actions";
 import { formatCurrency } from "@/lib/utils";
+import { useMemo } from "react";
 
 interface SalesItem {
     productId: string;
     sku: string;
     quantity: number | "";
     salesPrice: number | "";
-    discount: number | "";
+    discount: number | ""; // Nominal discount per line
+    discountPercent?: number | string; // Percentage discount per line
     uom: string;
     vendorName: string;
 }
@@ -25,10 +27,12 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
     const [salesPerson, setSalesPerson] = useState("");
 
     // Body (Items)
-    const [items, setItems] = useState<SalesItem[]>([{ productId: "", sku: "", quantity: 1, salesPrice: 0, discount: 0, uom: "", vendorName: "UMUM" }]);
+    const [items, setItems] = useState<SalesItem[]>([{ productId: "", sku: "", quantity: 1, salesPrice: 0, discount: 0, discountPercent: "", uom: "", vendorName: "UMUM" }]);
 
     // Financials
+    const [showDiscount, setShowDiscount] = useState(false);
     const [totalDiscount, setTotalDiscount] = useState<number | "">(0);
+    const [totalDiscountPercent, setTotalDiscountPercent] = useState<number | string>("");
     const [taxRate, setTaxRate] = useState<number | "">(0); // 0 or 0.11
 
     useEffect(() => {
@@ -42,35 +46,61 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
             setTaxRate(Number(initialData.taxRate || 0));
 
             if (initialData.items && initialData.items.length > 0) {
-                setItems(initialData.items.map((i: any) => ({
-                    productId: i.productId,
-                    sku: i.product?.sku || "",
-                    quantity: i.quantity,
-                    salesPrice: Number(i.salesPrice),
-                    discount: Number(i.discount || 0),
-                    uom: i.uom || i.product?.uom || "",
-                    vendorName: i.vendorName || "UMUM"
-                })));
+                setItems(initialData.items.map((i: any) => {
+                    const qty = Number(i.quantity) || 0;
+                    const price = Number(i.salesPrice) || 0;
+                    const discNominal = Number(i.discount || 0);
+                    const gross = qty * price;
+                    const discPercent = gross > 0 && discNominal > 0 ? Number(((discNominal / gross) * 100).toFixed(2)) : "";
+
+                    return {
+                        productId: i.productId,
+                        sku: i.product?.sku || "",
+                        quantity: i.quantity,
+                        salesPrice: Number(i.salesPrice),
+                        discount: discNominal,
+                        discountPercent: discPercent,
+                        uom: i.uom || i.product?.uom || "",
+                        vendorName: i.vendorName || "UMUM"
+                    };
+                }));
+            }
+            if (Number(initialData.totalDiscount) > 0 || initialData.items.some((i: any) => Number(i.discount) > 0)) {
+                setShowDiscount(true);
             }
         }
     }, [initialData]);
 
-    const addItem = () => setItems([...items, { productId: "", sku: "", quantity: 1, salesPrice: 0, discount: 0, uom: "", vendorName: "UMUM" }]);
+    const addItem = () => setItems([...items, { productId: "", sku: "", quantity: 1, salesPrice: 0, discount: 0, discountPercent: "", uom: "", vendorName: "UMUM" }]);
     const removeItem = (index: number) => setItems(items.filter((_, i) => i !== index));
 
     const updateItem = (index: number, field: string, value: any) => {
         const newItems = [...items];
 
         // Handle number inputs to prevent NaN
-        if (field === 'quantity') {
+        if (field === 'quantity' || field === 'salesPrice') {
             const raw = String(value).replace(/\D/g, "");
             (newItems[index] as any)[field] = raw ? parseInt(raw, 10) : "";
-        } else if (field === 'salesPrice') {
-            const raw = String(value).replace(/\D/g, "");
-            (newItems[index] as any)[field] = raw ? parseInt(raw, 10) : "";
+
+            // Sync discount if percent exists
+            if (newItems[index].discountPercent !== "" && newItems[index].discountPercent !== undefined) {
+                const qty = Number(newItems[index].quantity) || 0;
+                const price = Number(newItems[index].salesPrice) || 0;
+                const gross = qty * price;
+                newItems[index].discount = Math.round(gross * (Number(newItems[index].discountPercent) / 100));
+            }
+        } else if (field === 'discountPercent') {
+            newItems[index].discountPercent = value;
+            const numVal = Number(value) || 0;
+            const qty = Number(newItems[index].quantity) || 0;
+            const price = Number(newItems[index].salesPrice) || 0;
+            const gross = qty * price;
+            newItems[index].discount = Math.round(gross * (numVal / 100));
         } else if (field === 'discount') {
-            const val = parseFloat(value);
-            (newItems[index] as any)[field] = isNaN(val) ? "" : val;
+            const raw = String(value).replace(/\D/g, "");
+            const val = raw ? parseInt(raw, 10) : "";
+            newItems[index].discount = val;
+            newItems[index].discountPercent = ""; // Clear percent when manual nominal entered
         } else {
             (newItems[index] as any)[field] = value;
         }
@@ -107,16 +137,18 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
     }, 0);
 
     const itemDiscounts = items.reduce((sum, item) => {
-        const q = typeof item.quantity === 'number' ? item.quantity : 0;
-        const p = typeof item.salesPrice === 'number' ? item.salesPrice : 0;
-        const dPercent = typeof item.discount === 'number' ? item.discount : 0;
-        const nominalDiscount = (q * p) * (dPercent / 100);
-        return sum + nominalDiscount;
+        return sum + (Number(item.discount) || 0);
     }, 0);
 
     const subtotal = grossAmount - itemDiscounts;
-    const finalDiscountPercent = Number(totalDiscount) || 0;
-    const finalDiscountNominal = subtotal * (finalDiscountPercent / 100);
+
+    const finalDiscountNominal = useMemo(() => {
+        if (totalDiscountPercent !== "" && Number(totalDiscountPercent) > 0) {
+            return Math.round(subtotal * (Number(totalDiscountPercent) / 100));
+        }
+        return Number(totalDiscount) || 0;
+    }, [subtotal, totalDiscountPercent, totalDiscount]);
+
     const taxAmount = (subtotal - finalDiscountNominal) * (Number(taxRate) / 100);
     const grandTotal = subtotal - finalDiscountNominal + taxAmount;
 
@@ -137,7 +169,7 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                 buyerName,
                 warehouseId,
                 salesPerson,
-                totalDiscount: Number(totalDiscount) || 0,
+                totalDiscount: Number(finalDiscountNominal) || 0,
                 taxRate: Number(taxRate) || 0,
                 createdAt: new Date(date),
                 items: items.map(i => ({
@@ -248,6 +280,14 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                 <Plus className="h-5 w-5 group-hover:rotate-90 transition-transform" />
                                 <span>Tambah Barang</span>
                             </button>
+                            <button
+                                type="button"
+                                onClick={() => setShowDiscount(!showDiscount)}
+                                className={`px-6 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 border-2 ${showDiscount ? "bg-orange-500 border-orange-600 text-white shadow-lg shadow-orange-200" : "bg-white border-slate-200 text-slate-500 hover:border-orange-500 hover:text-orange-500"}`}
+                            >
+                                <Tag className={`h-4 w-4 ${showDiscount ? "animate-pulse" : ""}`} />
+                                <span>{showDiscount ? "Simpan Diskon" : "Tambah Diskon"}</span>
+                            </button>
                         </div>
 
                         <div className="space-y-4">
@@ -304,26 +344,37 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                             required
                                         />
                                     </div>
-                                    <div className="w-28 space-y-1">
-                                        <label className="text-[10px] font-bold text-orange-500 uppercase ml-1 tracking-widest">Diskon (%)</label>
-                                        <div className="relative h-11">
-                                            <input
-                                                type="text"
-                                                value={item.discount}
-                                                onChange={e => {
-                                                    const val = e.target.value.replace(/\D/g, '');
-                                                    updateItem(index, "discount", val === '' ? '' : Number(val));
-                                                }}
-                                                className="w-full bg-orange-50 border-2 border-orange-200 pl-3 pr-7 py-2 rounded-lg text-sm font-black outline-none text-right text-orange-600 focus:border-orange-500 transition-all h-full"
-                                                placeholder="0"
-                                            />
-                                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-bold text-orange-400">%</span>
-                                        </div>
-                                    </div>
+                                    {showDiscount && (
+                                        <>
+                                            <div className="w-28 space-y-1">
+                                                <label className="text-[10px] font-bold text-orange-500 uppercase ml-1 tracking-widest">Diskon (%)</label>
+                                                <div className="relative h-11">
+                                                    <input
+                                                        type="text"
+                                                        value={item.discountPercent}
+                                                        onChange={e => updateItem(index, "discountPercent", e.target.value)}
+                                                        className="w-full bg-orange-50 border-2 border-orange-200 pl-3 pr-7 py-2 rounded-lg text-sm font-black outline-none text-right text-orange-600 focus:border-orange-500 transition-all h-full"
+                                                        placeholder="0"
+                                                    />
+                                                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-bold text-orange-400">%</span>
+                                                </div>
+                                            </div>
+                                            <div className="w-32 space-y-1">
+                                                <label className="text-[10px] font-bold text-orange-500 uppercase ml-1 tracking-widest">Diskon (Rp)</label>
+                                                <input
+                                                    type="text"
+                                                    value={item.discount ? item.discount.toLocaleString('id-ID') : ""}
+                                                    onChange={e => updateItem(index, "discount", e.target.value)}
+                                                    className="w-full bg-orange-50 border-2 border-orange-200 px-3 py-2 rounded-lg text-sm font-black outline-none text-right text-orange-600 focus:border-orange-500 transition-all h-11"
+                                                    placeholder="0"
+                                                />
+                                            </div>
+                                        </>
+                                    )}
                                     <div className="w-36 space-y-1">
                                         <label className="text-[10px] font-bold text-slate-500 uppercase ml-1 tracking-widest">Total Harga</label>
                                         <div className="w-full bg-slate-50 border-2 border-slate-200 px-3 py-2 rounded-lg text-sm font-black text-right text-slate-700 h-11 flex items-center justify-end shadow-inner">
-                                            {((typeof item.quantity === 'number' ? item.quantity : 0) * (typeof item.salesPrice === 'number' ? item.salesPrice : 0) * (1 - (Number(item.discount || 0) / 100))).toLocaleString('id-ID')}
+                                            {((typeof item.quantity === 'number' ? item.quantity : 0) * (typeof item.salesPrice === 'number' ? item.salesPrice : 0) - (Number(item.discount || 0))).toLocaleString('id-ID')}
                                         </div>
                                     </div>
                                     <button
@@ -345,23 +396,43 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                     <Save className="h-4 w-4 text-primary" />
                                     Discount & Tax Settings
                                 </h4>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-bold text-slate-500 uppercase ml-1 tracking-wider">Diskon Final (%)</label>
-                                        <div className="relative h-12">
-                                            <input
-                                                type="text"
-                                                value={totalDiscount}
-                                                onChange={e => {
-                                                    const val = e.target.value.replace(/\D/g, '');
-                                                    setTotalDiscount(val === '' ? '' : Number(val));
-                                                }}
-                                                className="w-full bg-white border-2 border-slate-300 pl-3 pr-8 py-2 rounded-xl text-lg font-black text-primary outline-none focus:border-primary transition-all h-full shadow-sm"
-                                                placeholder="0"
-                                            />
-                                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-bold text-primary">%</span>
-                                        </div>
-                                    </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {showDiscount && (
+                                        <>
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-bold text-orange-500 uppercase ml-1 tracking-wider">Diskon Final (%)</label>
+                                                <div className="relative h-12">
+                                                    <input
+                                                        type="text"
+                                                        value={totalDiscountPercent}
+                                                        onChange={e => {
+                                                            setTotalDiscountPercent(e.target.value);
+                                                            setTotalDiscount("");
+                                                        }}
+                                                        className="w-full bg-orange-50 border-2 border-orange-200 pl-3 pr-8 py-2 rounded-xl text-lg font-black text-orange-600 outline-none focus:border-orange-500 transition-all h-full shadow-sm"
+                                                        placeholder="0"
+                                                    />
+                                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-bold text-orange-400">%</span>
+                                                </div>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-bold text-orange-500 uppercase ml-1 tracking-wider">Diskon Final (Rp)</label>
+                                                <div className="relative h-12">
+                                                    <input
+                                                        type="text"
+                                                        value={totalDiscount ? totalDiscount.toLocaleString('id-ID') : ""}
+                                                        onChange={e => {
+                                                            const val = e.target.value.replace(/\D/g, '');
+                                                            setTotalDiscount(val === '' ? '' : Number(val));
+                                                            setTotalDiscountPercent("");
+                                                        }}
+                                                        className="w-full bg-orange-50 border-2 border-orange-200 px-3 py-2 rounded-xl text-lg font-black text-orange-600 outline-none focus:border-orange-500 transition-all h-full shadow-sm"
+                                                        placeholder="0"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
                                     <div className="space-y-2">
                                         <label className="text-xs font-bold text-slate-500 uppercase ml-1 tracking-wider">PPN (%)</label>
                                         <div className="relative h-12">
@@ -388,11 +459,11 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                         <span className="font-black text-slate-700">Rp {subtotal.toLocaleString('id-ID')}</span>
                                     </div>
                                     <div className="flex justify-between items-center text-sm font-bold text-orange-500">
-                                        <span>TOTAL DISKON TAMBAHAN ({totalDiscount === "" ? 0 : totalDiscount}%)</span>
-                                        <span className="font-black">- Rp {(subtotal * (Number(totalDiscount) / 100)).toLocaleString('id-ID')}</span>
+                                        <span>TOTAL DISKON TAMBAHAN ({totalDiscountPercent !== "" ? `${totalDiscountPercent}%` : "Manual"})</span>
+                                        <span className="font-black">- Rp {finalDiscountNominal.toLocaleString('id-ID')}</span>
                                     </div>
                                     <div className="flex justify-between items-center text-sm font-bold text-indigo-500">
-                                        <span>PPN (11%)</span>
+                                        <span>PPN ({taxRate}%)</span>
                                         <span className="font-black">+ Rp {taxAmount.toLocaleString('id-ID')}</span>
                                     </div>
                                 </div>

@@ -9,6 +9,7 @@ interface ReceiptItem {
     quantity: number | "";
     purchasePrice: number | "";
     discount: number | ""; // Manual Nominal Discount per line
+    discountPercent?: number | string; // Percentage discount per line
     uom: string;
     barcode: string;
 }
@@ -21,18 +22,20 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
 
     // New Header States
+    const [hasTaxInvoice, setHasTaxInvoice] = useState(false);
     const [taxInvoiceNumber, setTaxInvoiceNumber] = useState("");
     const [taxInvoiceDate, setTaxInvoiceDate] = useState("");
     const [salesPerson, setSalesPerson] = useState(""); // BC or PF
 
     // Body States
-    const [items, setItems] = useState<ReceiptItem[]>([{ productId: "", sku: "", quantity: 1, purchasePrice: 0, discount: 0, uom: "", barcode: "" }]);
+    const [items, setItems] = useState<ReceiptItem[]>([{ productId: "", sku: "", quantity: 1, purchasePrice: 0, discount: 0, discountPercent: "", uom: "", barcode: "" }]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [result, setResult] = useState<{ formNumber: string } | null>(null);
 
     // Financials
     const [showDiscount, setShowDiscount] = useState(false);
     const [totalDiscount, setTotalDiscount] = useState<number | "">(0);
+    const [totalDiscountPercent, setTotalDiscountPercent] = useState<number | string>("");
     const [taxRate, setTaxRate] = useState<number | "">(0); // 11 means 11%
 
 
@@ -44,6 +47,7 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
             setDate(new Date(initialData.date || initialData.createdAt).toISOString().split('T')[0]);
             setTaxInvoiceNumber(initialData.taxInvoiceNumber || "");
             setTaxInvoiceDate(initialData.taxInvoiceDate ? new Date(initialData.taxInvoiceDate).toISOString().split('T')[0] : "");
+            setHasTaxInvoice(!!initialData.taxInvoiceNumber || !!initialData.taxInvoiceDate);
             setSalesPerson(initialData.salesPerson || "");
             setTotalDiscount(Number(initialData.totalDiscount || 0));
             setTaxRate(Number(initialData.taxRate || 0));
@@ -52,35 +56,57 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
             }
 
             if (initialData.items && initialData.items.length > 0) {
-                setItems(initialData.items.map((i: any) => ({
-                    productId: i.productId,
-                    sku: i.product?.sku || "",
-                    quantity: i.quantity,
-                    purchasePrice: Number(i.purchasePrice),
-                    discount: Number(i.discount || 0),
-                    uom: i.uom || i.product?.uom || "",
-                    barcode: i.product?.barcode || "-"
-                })));
+                setItems(initialData.items.map((i: any) => {
+                    const qty = Number(i.quantity) || 0;
+                    const price = Number(i.purchasePrice) || 0;
+                    const discount = Number(i.discount || 0);
+                    const gross = qty * price;
+                    const discountPercent = gross > 0 && discount > 0 ? Number(((discount / gross) * 100).toFixed(2)) : "";
+
+                    return {
+                        productId: i.productId,
+                        sku: i.product?.sku || "",
+                        quantity: i.quantity,
+                        purchasePrice: Number(i.purchasePrice),
+                        discount: discount,
+                        discountPercent: discountPercent,
+                        uom: i.uom || i.product?.uom || "",
+                        barcode: i.product?.barcode || "-"
+                    };
+                }));
             }
         }
     }, [initialData]);
 
-    const addItem = () => setItems([...items, { productId: "", sku: "", quantity: 1, purchasePrice: 0, discount: 0, uom: "", barcode: "" }]);
+    const addItem = () => setItems([...items, { productId: "", sku: "", quantity: 1, purchasePrice: 0, discount: 0, discountPercent: "", uom: "", barcode: "" }]);
     const removeItem = (index: number) => setItems(items.filter((_, i) => i !== index));
 
     const updateItem = (index: number, field: string, value: any) => {
         const newItems = [...items];
 
         // Handle number inputs to prevent NaN
-        if (field === 'quantity') {
+        if (field === 'quantity' || field === 'purchasePrice') {
             const raw = String(value).replace(/\D/g, "");
             (newItems[index] as any)[field] = raw ? parseInt(raw, 10) : "";
-        } else if (field === 'purchasePrice') {
-            const raw = String(value).replace(/\D/g, "");
-            (newItems[index] as any)[field] = raw ? parseInt(raw, 10) : "";
+
+            if (newItems[index].discountPercent !== "" && newItems[index].discountPercent !== undefined) {
+                const qty = Number(newItems[index].quantity) || 0;
+                const price = Number(newItems[index].purchasePrice) || 0;
+                const gross = qty * price;
+                newItems[index].discount = Math.round(gross * (Number(newItems[index].discountPercent) / 100));
+            }
+        } else if (field === 'discountPercent') {
+            newItems[index].discountPercent = value;
+            const numVal = Number(value) || 0;
+            const qty = Number(newItems[index].quantity) || 0;
+            const price = Number(newItems[index].purchasePrice) || 0;
+            const gross = qty * price;
+            newItems[index].discount = Math.round(gross * (numVal / 100));
         } else if (field === 'discount') {
             const raw = String(value).replace(/\D/g, "");
-            (newItems[index] as any)[field] = raw ? parseInt(raw, 10) : "";
+            const val = raw ? parseInt(raw, 10) : "";
+            newItems[index].discount = val;
+            newItems[index].discountPercent = "";
         } else {
             (newItems[index] as any)[field] = value;
         }
@@ -115,16 +141,21 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
         }, 0);
     }, [items]);
 
+    const finalDiscountNominal = useMemo(() => {
+        if (totalDiscountPercent !== "" && Number(totalDiscountPercent) > 0) {
+            return Math.round(subtotal * (Number(totalDiscountPercent) / 100));
+        }
+        return Number(totalDiscount) || 0;
+    }, [subtotal, totalDiscountPercent, totalDiscount]);
+
     const taxAmount = useMemo(() => {
-        const finalDiscountNominal = typeof totalDiscount === 'number' ? totalDiscount : 0;
         const amountForTax = subtotal - finalDiscountNominal;
         return amountForTax * (Number(taxRate || 0) / 100);
-    }, [subtotal, totalDiscount, taxRate]);
+    }, [subtotal, finalDiscountNominal, taxRate]);
 
     const grandTotal = useMemo(() => {
-        const finalDiscountNominal = typeof totalDiscount === 'number' ? totalDiscount : 0;
         return subtotal - finalDiscountNominal + taxAmount;
-    }, [subtotal, totalDiscount, taxAmount]);
+    }, [subtotal, finalDiscountNominal, taxAmount]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -149,11 +180,11 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
                 receivedFrom,
                 warehouseId,
                 date: txDate,
-                taxInvoiceNumber,
-                taxInvoiceDate: taxInvoiceDate ? new Date(taxInvoiceDate + "T00:00:00") : undefined,
+                taxInvoiceNumber: hasTaxInvoice ? taxInvoiceNumber : undefined,
+                taxInvoiceDate: hasTaxInvoice && taxInvoiceDate ? new Date(taxInvoiceDate + "T00:00:00") : undefined,
                 salesPerson,
                 subtotal,
-                totalDiscount: Number(totalDiscount) || 0,
+                totalDiscount: finalDiscountNominal,
                 taxRate: Number(taxRate) || 0,
                 taxAmount,
                 grandTotal,
@@ -255,23 +286,48 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
                             />
                         </div>
 
-                        <div className="space-y-2">
-                            <label className="text-xs font-bold uppercase text-slate-600">Nomor Faktur Pajak</label>
-                            <input
-                                value={taxInvoiceNumber}
-                                onChange={e => setTaxInvoiceNumber(e.target.value)}
-                                className="w-full p-2.5 bg-white border-2 border-slate-300 rounded-lg focus:border-primary outline-none transition-all font-medium"
-                                placeholder="000.000-00.00000000"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-xs font-bold uppercase text-slate-600">Tgl Faktur Pajak</label>
-                            <input
-                                type="date"
-                                value={taxInvoiceDate}
-                                onChange={e => setTaxInvoiceDate(e.target.value)}
-                                className="w-full p-2.5 bg-white border-2 border-slate-300 rounded-lg focus:border-primary outline-none transition-all font-medium"
-                            />
+                        <div className="space-y-4 md:col-span-2 bg-white p-4 rounded-xl border-2 border-slate-200">
+                            <div className="flex items-center justify-between">
+                                <label className="text-sm font-bold text-slate-700">Gunakan Faktur Pajak?</label>
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        className="sr-only peer"
+                                        checked={hasTaxInvoice}
+                                        onChange={(e) => {
+                                            setHasTaxInvoice(e.target.checked);
+                                            if (!e.target.checked) {
+                                                setTaxInvoiceNumber("");
+                                                setTaxInvoiceDate("");
+                                            }
+                                        }}
+                                    />
+                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                                </label>
+                            </div>
+
+                            <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 transition-all duration-300 overflow-hidden ${hasTaxInvoice ? 'h-auto opacity-100 mt-4' : 'h-0 opacity-0 m-0'}`}>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold uppercase text-slate-600">Nomor Faktur Pajak</label>
+                                    <input
+                                        value={taxInvoiceNumber}
+                                        onChange={e => setTaxInvoiceNumber(e.target.value)}
+                                        className="w-full p-2.5 bg-slate-50 border-2 border-slate-300 rounded-lg focus:border-primary outline-none transition-all font-medium"
+                                        placeholder="000.000-00.00000000"
+                                        disabled={!hasTaxInvoice}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold uppercase text-slate-600">Tgl Faktur Pajak</label>
+                                    <input
+                                        type="date"
+                                        value={taxInvoiceDate}
+                                        onChange={e => setTaxInvoiceDate(e.target.value)}
+                                        className="w-full p-2.5 bg-slate-50 border-2 border-slate-300 rounded-lg focus:border-primary outline-none transition-all font-medium"
+                                        disabled={!hasTaxInvoice}
+                                    />
+                                </div>
+                            </div>
                         </div>
                         <div className="space-y-2">
                             <label className="text-xs font-bold uppercase text-slate-600">Sales / PIC</label>
@@ -373,16 +429,29 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
                                         </div>
                                     </div>
                                     {showDiscount && (
-                                        <div className="w-32 space-y-1 animate-in slide-in-from-right duration-300">
-                                            <label className="text-[10px] uppercase font-bold text-orange-500 ml-1">Diskon (Nominal)</label>
-                                            <input
-                                                type="text"
-                                                value={item.discount ? item.discount.toLocaleString('id-ID') : ""}
-                                                onChange={e => updateItem(index, 'discount', e.target.value)}
-                                                className="w-full p-2 bg-orange-50 border-2 border-orange-200 rounded-lg text-sm font-black outline-none text-right text-orange-600 h-10 focus:border-orange-500 transition-all"
-                                                placeholder="0"
-                                            />
-                                        </div>
+                                        <>
+                                            <div className="w-24 space-y-1 animate-in slide-in-from-right duration-300">
+                                                <label className="text-[10px] uppercase font-bold text-orange-500 ml-1">Diskon (%)</label>
+                                                <input
+                                                    type="number"
+                                                    step="0.01"
+                                                    value={item.discountPercent}
+                                                    onChange={e => updateItem(index, 'discountPercent', e.target.value)}
+                                                    className="w-full p-2 bg-orange-50 border-2 border-orange-200 rounded-lg text-sm font-black outline-none text-right text-orange-600 h-10 focus:border-orange-500 transition-all"
+                                                    placeholder="0"
+                                                />
+                                            </div>
+                                            <div className="w-32 space-y-1 animate-in slide-in-from-right duration-300">
+                                                <label className="text-[10px] uppercase font-bold text-orange-500 ml-1">Diskon (Rp)</label>
+                                                <input
+                                                    type="text"
+                                                    value={item.discount ? item.discount.toLocaleString('id-ID') : ""}
+                                                    onChange={e => updateItem(index, 'discount', e.target.value)}
+                                                    className="w-full p-2 bg-orange-50 border-2 border-orange-200 rounded-lg text-sm font-black outline-none text-right text-orange-600 h-10 focus:border-orange-500 transition-all"
+                                                    placeholder="0"
+                                                />
+                                            </div>
+                                        </>
                                     )}
                                     <div className="w-36 space-y-1">
                                         <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Net Total</label>
@@ -411,20 +480,38 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
                                 Pengaturan Potongan & Pajak
                             </h4>
                             <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-1">
-                                    <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Diskon Final (Nominal Rp)</label>
-                                    <input
-                                        type="text"
-                                        value={totalDiscount ? totalDiscount.toLocaleString('id-ID') : ""}
-                                        onChange={e => {
-                                            const val = e.target.value.replace(/\D/g, '');
-                                            setTotalDiscount(val === '' ? '' : Number(val));
-                                        }}
-                                        className="w-full bg-white border-2 border-slate-300 px-3 py-2 rounded-xl text-lg font-black text-primary outline-none focus:border-primary transition-all h-12 shadow-sm"
-                                        placeholder="0"
-                                    />
+                                <div className="space-y-1 flex gap-2 col-span-2 md:col-span-1 border-r border-slate-200 pr-4">
+                                    <div className="flex-1">
+                                        <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Diskon (%)</label>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            value={totalDiscountPercent}
+                                            onChange={e => {
+                                                const val = e.target.value;
+                                                setTotalDiscountPercent(val);
+                                                setTotalDiscount("");
+                                            }}
+                                            className="w-full bg-white border-2 border-slate-300 px-3 py-2 rounded-xl text-lg font-black text-primary outline-none focus:border-primary transition-all h-12 shadow-sm"
+                                            placeholder="0"
+                                        />
+                                    </div>
+                                    <div className="flex-1">
+                                        <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Diskon (Rp)</label>
+                                        <input
+                                            type="text"
+                                            value={totalDiscount ? totalDiscount.toLocaleString('id-ID') : ""}
+                                            onChange={e => {
+                                                const val = e.target.value.replace(/\D/g, '');
+                                                setTotalDiscount(val === '' ? '' : Number(val));
+                                                setTotalDiscountPercent("");
+                                            }}
+                                            className="w-full bg-white border-2 border-slate-300 px-3 py-2 rounded-xl text-lg font-black text-primary outline-none focus:border-primary transition-all h-12 shadow-sm"
+                                            placeholder="0"
+                                        />
+                                    </div>
                                 </div>
-                                <div className="space-y-1">
+                                <div className="space-y-1 col-span-2 md:col-span-1 pl-0 md:pl-2">
                                     <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Pajak PPN (%)</label>
                                     <select
                                         value={taxRate}
@@ -454,7 +541,7 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
                                         </div>
                                         <div className="flex justify-between items-center text-xs font-bold text-primary">
                                             <span>DISKON FINAL</span>
-                                            <span className="font-mono font-black italic">- {formatCurrency(Number(totalDiscount) || 0)}</span>
+                                            <span className="font-mono font-black italic">- {formatCurrency(finalDiscountNominal)}</span>
                                         </div>
                                     </>
                                 )}

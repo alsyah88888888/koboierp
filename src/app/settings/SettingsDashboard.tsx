@@ -18,19 +18,24 @@ import {
     AlertCircle,
     Plus,
     X,
-    Banknote
+    Banknote,
+    Pencil
 } from "lucide-react";
 import {
     wipeDatabaseAction,
     importProductsAction,
     createProductAction,
+    updateProductAction,
     getSystemSettingsAction,
     updateSystemSettingsAction,
     createVendorAction,
+    updateVendorAction,
     deleteVendorAction,
     createCustomerAction,
+    updateCustomerAction,
     deleteCustomerAction,
     createWarehouseAction,
+    updateWarehouseAction,
     deleteWarehouseAction,
     setOpeningBalanceAction,
     getMDAction
@@ -45,13 +50,13 @@ export function SettingsDashboard() {
     const [vendors, setVendors] = useState<any[]>([]);
     const [customers, setCustomers] = useState<any[]>([]);
     const [warehouses, setWarehouses] = useState<any[]>([]);
+    const [products, setProducts] = useState<any[]>([]);
     const [coa, setCoa] = useState<any[]>([]);
     const [showMDModal, setShowMDModal] = useState<"product" | "vendor" | "customer" | "warehouse" | "opening" | null>(null);
+    const [editId, setEditId] = useState<string | null>(null);
 
     const [mdForm, setMdForm] = useState({
-        sku: "", name: "", category: "", uom: "", barcode: "",
-        email: "", phone: "", address: "",
-        location: "", accountId: "", amount: 0
+        accountId: "", amount: 0
     });
 
     const [company, setCompany] = useState({
@@ -79,9 +84,6 @@ export function SettingsDashboard() {
         setCounts(settingsData.counts);
 
         const md = await getMDAction();
-        setVendors(md.vendors);
-        setCustomers(md.customers);
-        setWarehouses(md.warehouses);
         setCoa(md.coa);
     };
 
@@ -92,15 +94,11 @@ export function SettingsDashboard() {
     const handleMDSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            if (showMDModal === "product") await createProductAction({ sku: mdForm.sku, name: mdForm.name, category: mdForm.category, uom: mdForm.uom, barcode: mdForm.barcode });
-            else if (showMDModal === "vendor") await createVendorAction({ name: mdForm.name, email: mdForm.email, phone: mdForm.phone, address: mdForm.address });
-            else if (showMDModal === "customer") await createCustomerAction({ name: mdForm.name, email: mdForm.email, phone: mdForm.phone, address: mdForm.address });
-            else if (showMDModal === "warehouse") await createWarehouseAction({ name: mdForm.name, location: mdForm.location });
-            else if (showMDModal === "opening") await setOpeningBalanceAction({ accountId: mdForm.accountId, amount: mdForm.amount });
+            if (showMDModal === "opening") await setOpeningBalanceAction({ accountId: mdForm.accountId, amount: mdForm.amount });
 
             alert("Data berhasil disimpan.");
             setShowMDModal(null);
-            setMdForm({ sku: "", name: "", category: "", uom: "", barcode: "", email: "", phone: "", address: "", location: "", accountId: "", amount: 0 });
+            setMdForm({ accountId: "", amount: 0 });
             loadData();
         } catch (e: any) {
             alert(e.message || "Gagal menyimpan data.");
@@ -355,10 +353,10 @@ export function SettingsDashboard() {
                             {masterData.map((item, i) => (
                                 <div
                                     key={i}
-                                    className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 border-2 border-transparent hover:border-slate-100 transition-all group"
+                                    className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 border-2 border-transparent shadow-sm transition-all"
                                 >
                                     <div className="flex items-center gap-4">
-                                        <div className="bg-white p-3 rounded-xl group-hover:bg-primary/10 group-hover:text-primary transition-colors shadow-sm">
+                                        <div className="bg-white p-3 rounded-xl shadow-sm text-slate-400">
                                             <item.icon className="h-5 w-5" />
                                         </div>
                                         <div>
@@ -366,12 +364,7 @@ export function SettingsDashboard() {
                                             <div className="text-xs font-medium text-slate-400">{item.count}</div>
                                         </div>
                                     </div>
-                                    <button
-                                        onClick={() => setShowMDModal(item.type as any)}
-                                        className="p-2 bg-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity border hover:border-primary text-primary"
-                                    >
-                                        <Plus className="h-4 w-4" />
-                                    </button>
+                                    <div className="text-[10px] font-black uppercase text-slate-300 tracking-widest">System Master</div>
                                 </div>
                             ))}
                         </div>
@@ -397,76 +390,18 @@ export function SettingsDashboard() {
                 </div>
             </div>
 
-            <div className="bg-white border-2 border-slate-200 rounded-3xl p-8 shadow-sm">
-                <h3 className="text-xl font-bold mb-8 flex items-center gap-2">
-                    <Users className="h-6 w-6 text-primary" />
-                    Master Data Management
-                </h3>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    <div className="space-y-4">
-                        <h4 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Suppliers</h4>
-                        <div className="max-h-64 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
-                            {vendors.map(v => (
-                                <div key={v.id} className="p-3 bg-slate-50 rounded-xl border flex justify-between items-center group">
-                                    <div className="truncate">
-                                        <div className="text-sm font-bold truncate">{v.name}</div>
-                                        <div className="text-[10px] text-slate-500 truncate">{v.phone || v.email || "No contact info"}</div>
-                                    </div>
-                                    <button onClick={() => handleDeleteMD("vendor", v.id)} className="p-1.5 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all">
-                                        <Trash2 className="h-3.5 w-3.5" />
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div className="space-y-4">
-                        <h4 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Buyers</h4>
-                        <div className="max-h-64 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
-                            {customers.map(c => (
-                                <div key={c.id} className="p-3 bg-slate-50 rounded-xl border flex justify-between items-center group">
-                                    <div className="truncate">
-                                        <div className="text-sm font-bold truncate">{c.name}</div>
-                                        <div className="text-[10px] text-slate-500 truncate">{c.phone || c.email || "No contact info"}</div>
-                                    </div>
-                                    <button onClick={() => handleDeleteMD("customer", c.id)} className="p-1.5 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all">
-                                        <Trash2 className="h-3.5 w-3.5" />
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div className="space-y-4">
-                        <h4 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Warehouses</h4>
-                        <div className="max-h-64 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
-                            {warehouses.map(w => (
-                                <div key={w.id} className="p-3 bg-slate-50 rounded-xl border flex justify-between items-center group">
-                                    <div className="truncate">
-                                        <div className="text-sm font-bold truncate">{w.name}</div>
-                                        <div className="text-[10px] text-slate-500 truncate">{w.location}</div>
-                                    </div>
-                                    <button onClick={() => handleDeleteMD("warehouse", w.id)} className="p-1.5 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all">
-                                        <Trash2 className="h-3.5 w-3.5" />
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            </div>
 
             {showMDModal && (
                 <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                     <div className="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl animate-in zoom-in duration-200">
                         <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-xl font-bold uppercase tracking-tight">Tambah {showMDModal === 'product' ? 'Produk' : showMDModal}</h3>
-                            <button type="button" onClick={() => setShowMDModal(null)}><X className="h-6 w-6 text-slate-400" /></button>
+                            <h3 className="text-xl font-bold uppercase tracking-tight">{editId ? 'Edit' : 'Tambah'} {showMDModal === 'product' ? 'Produk' : showMDModal}</h3>
+                            <button type="button" onClick={() => { setShowMDModal(null); setEditId(null); }}><X className="h-6 w-6 text-slate-400" /></button>
                         </div>
 
                         <form onSubmit={handleMDSubmit} className="space-y-4">
-                            {showMDModal === "opening" ? (
+                            {showMDModal === "opening" && (
                                 <>
                                     <div className="space-y-2">
                                         <label className="text-[10px] font-black uppercase text-slate-400">Account (COA)</label>
@@ -493,109 +428,9 @@ export function SettingsDashboard() {
                                         />
                                     </div>
                                 </>
-                            ) : (
-                                <>
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black uppercase text-slate-400">Nama Lengkap</label>
-                                        <input
-                                            value={mdForm.name}
-                                            onChange={e => setMdForm({ ...mdForm, name: e.target.value })}
-                                            className="w-full bg-slate-50 border-2 border-slate-100 px-4 py-3 rounded-xl outline-none focus:border-primary font-bold text-sm"
-                                            placeholder="Nama Lengkap..."
-                                            required
-                                        />
-                                    </div>
-
-                                    {showMDModal === "product" ? (
-                                        <>
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div className="space-y-2">
-                                                    <label className="text-[10px] font-black uppercase text-slate-400">SKU / Kode unik</label>
-                                                    <input
-                                                        value={mdForm.sku}
-                                                        onChange={e => setMdForm({ ...mdForm, sku: e.target.value })}
-                                                        className="w-full bg-slate-50 border-2 border-slate-100 px-4 py-3 rounded-xl outline-none focus:border-primary font-bold text-sm"
-                                                        placeholder="Kode SKU..."
-                                                        required
-                                                    />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <label className="text-[10px] font-black uppercase text-slate-400">Kategori</label>
-                                                    <input
-                                                        value={mdForm.category}
-                                                        onChange={e => setMdForm({ ...mdForm, category: e.target.value })}
-                                                        className="w-full bg-slate-50 border-2 border-slate-100 px-4 py-3 rounded-xl outline-none focus:border-primary font-bold text-sm"
-                                                        placeholder="Mis. Elektronik"
-                                                    />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <label className="text-[10px] font-black uppercase text-slate-400">Satuan (UOM)</label>
-                                                    <input
-                                                        value={mdForm.uom}
-                                                        onChange={e => setMdForm({ ...mdForm, uom: e.target.value })}
-                                                        className="w-full bg-slate-50 border-2 border-slate-100 px-4 py-3 rounded-xl outline-none focus:border-primary font-bold text-sm"
-                                                        placeholder="Mis. Pcs, Box"
-                                                    />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <label className="text-[10px] font-black uppercase text-slate-400">Barcode (Opsional)</label>
-                                                    <input
-                                                        value={mdForm.barcode}
-                                                        onChange={e => setMdForm({ ...mdForm, barcode: e.target.value })}
-                                                        className="w-full bg-slate-50 border-2 border-slate-100 px-4 py-3 rounded-xl outline-none focus:border-primary font-bold text-sm"
-                                                        placeholder="Scan Barcode"
-                                                    />
-                                                </div>
-                                            </div>
-                                        </>
-                                    ) : showMDModal === "warehouse" ? (
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-black uppercase text-slate-400">Lokasi / Alamat Cabang</label>
-                                            <input
-                                                value={mdForm.location}
-                                                onChange={e => setMdForm({ ...mdForm, location: e.target.value })}
-                                                className="w-full bg-slate-50 border-2 border-slate-100 px-4 py-3 rounded-xl outline-none focus:border-primary font-bold text-sm"
-                                                placeholder="Alamat lengkap lokasi..."
-                                                required
-                                            />
-                                        </div>
-                                    ) : (
-                                        <>
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-black uppercase text-slate-400">Kontak (HP/WhatsApp)</label>
-                                                <input
-                                                    value={mdForm.phone}
-                                                    onChange={e => setMdForm({ ...mdForm, phone: e.target.value })}
-                                                    className="w-full bg-slate-50 border-2 border-slate-100 px-4 py-3 rounded-xl outline-none focus:border-primary font-bold text-sm"
-                                                    placeholder="081xxx..."
-                                                />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-black uppercase text-slate-400">Email Utama</label>
-                                                <input
-                                                    type="email"
-                                                    value={mdForm.email}
-                                                    onChange={e => setMdForm({ ...mdForm, email: e.target.value })}
-                                                    className="w-full bg-slate-50 border-2 border-slate-100 px-4 py-3 rounded-xl outline-none focus:border-primary font-bold text-sm"
-                                                    placeholder="email@perusahaan.com"
-                                                />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-black uppercase text-slate-400">Alamat Lengkap</label>
-                                                <textarea
-                                                    value={mdForm.address}
-                                                    rows={3}
-                                                    onChange={e => setMdForm({ ...mdForm, address: e.target.value })}
-                                                    className="w-full bg-slate-50 border-2 border-slate-100 px-4 py-3 rounded-xl outline-none focus:border-primary font-bold text-sm resize-none"
-                                                    placeholder="Alamat domisili / kantor pusat..."
-                                                />
-                                            </div>
-                                        </>
-                                    )}
-                                </>
                             )}
                             <button className="w-full bg-primary text-white py-4 rounded-2xl font-black uppercase tracking-widest mt-4 shadow-xl shadow-primary/20 hover:bg-primary/90 transition-all">
-                                Save Data
+                                {editId ? 'Update Data' : 'Save Data'}
                             </button>
                         </form>
                     </div>

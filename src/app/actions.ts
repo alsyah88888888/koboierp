@@ -5,7 +5,6 @@ import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { generateCortexXml } from "@/lib/cortex";
-
 /**
  * Purchase Request Actions (Pengajuan Pembelian)
  */
@@ -186,7 +185,7 @@ export async function createGoodsReceiptAction(data: {
         const day = String(txDate.getDate()).padStart(2, '0');
         const month = String(txDate.getMonth() + 1).padStart(2, '0');
         const year = txDate.getFullYear();
-        const dateStr = `${day}${month}${year}`;
+        const fullDateStr = `${year}${month}${day}`;
 
         const startOfDay = new Date(txDate);
         startOfDay.setHours(0, 0, 0, 0);
@@ -197,7 +196,7 @@ export async function createGoodsReceiptAction(data: {
             where: { createdAt: { gte: startOfDay, lte: endOfDay } }
         });
         const sequence = String(count + 1).padStart(3, '0');
-        finalReceiptNumber = `KB-LPB-${dateStr}-${sequence}`;
+        finalReceiptNumber = `KB-LPB-${fullDateStr}-${sequence}`;
     }
 
     // Generate automatic Form Number (Internal Tracking)
@@ -393,6 +392,17 @@ export async function updateGoodsReceiptAction(id: string, data: {
                         quantity: item.quantity
                     }
                 });
+
+                await tx.stockMovement.create({
+                    data: {
+                        productId: item.productId,
+                        warehouseId: data.warehouseId,
+                        vendorName: data.receivedFrom,
+                        quantity: item.quantity,
+                        type: "GOODS_RECEIPT_UPDATE",
+                        reference: data.receiptNumber
+                    }
+                });
             }
         });
 
@@ -499,10 +509,6 @@ export async function deleteGoodsReceiptAction(id: string) {
             });
         }
 
-        // Reverse Vendor Balance / Delete Journals are NOT needed 
-        // because Unverified Receipts don't create them anymore.
-
-        // 3. Delete the Receipt and Items
         await tx.goodsReceiptItem.deleteMany({ where: { receiptId: id } });
         await tx.goodsReceipt.delete({ where: { id } });
 
@@ -574,15 +580,14 @@ export async function createSalesDeliveryAction(data: {
         let totalItemDiscounts = 0;
         data.items.forEach(i => {
             const lineGross = i.quantity * i.salesPrice;
-            const lineDiscount = lineGross * ((i.discount || 0) / 100);
+            const lineDiscount = Number(i.discount || 0); // Already nominal from frontend
             grossAmount += lineGross;
             totalItemDiscounts += lineDiscount;
         });
 
         const subtotal = grossAmount - totalItemDiscounts;
-        const totalDiscountPercent = data.totalDiscount || 0;
-        const totalDiscountNominal = subtotal * (totalDiscountPercent / 100);
-        const taxRatePercent = data.taxRate || 0;
+        const totalDiscountNominal = Number(data.totalDiscount) || 0; // Already nominal from frontend
+        const taxRatePercent = Number(data.taxRate) || 0;
         const taxAmount = (subtotal - totalDiscountNominal) * (taxRatePercent / 100);
         const grandTotal = subtotal - totalDiscountNominal + taxAmount;
 
@@ -734,6 +739,17 @@ export async function updateSalesDeliveryAction(id: string, data: {
                 },
                 data: { quantity: { decrement: item.quantity } }
             });
+
+            await tx.stockMovement.create({
+                data: {
+                    productId: item.productId,
+                    warehouseId: data.warehouseId,
+                    vendorName: vendorName,
+                    quantity: -item.quantity,
+                    type: "SALE_UPDATE",
+                    reference: oldDelivery.deliveryNumber
+                }
+            });
         }
 
         // 5. Calculate and Update Totals via Raw SQL
@@ -741,15 +757,14 @@ export async function updateSalesDeliveryAction(id: string, data: {
         let totalItemDiscounts = 0;
         data.items.forEach(i => {
             const lineGross = i.quantity * i.salesPrice;
-            const lineDiscount = lineGross * ((i.discount || 0) / 100);
+            const lineDiscount = Number(i.discount || 0); // Already nominal
             grossAmount += lineGross;
             totalItemDiscounts += lineDiscount;
         });
 
         const subtotal = grossAmount - totalItemDiscounts;
-        const totalDiscountPercent = data.totalDiscount || 0;
-        const totalDiscountNominal = subtotal * (totalDiscountPercent / 100);
-        const taxRatePercent = data.taxRate || 0;
+        const totalDiscountNominal = Number(data.totalDiscount) || 0; // Already nominal
+        const taxRatePercent = Number(data.taxRate) || 0;
         const taxAmount = (subtotal - totalDiscountNominal) * (taxRatePercent / 100);
         const grandTotal = subtotal - totalDiscountNominal + taxAmount;
 
@@ -810,7 +825,7 @@ export async function deleteSalesDeliveryAction(id: string) {
                     warehouseId: delivery.warehouseId,
                     vendorName: item.vendorName,
                     quantity: item.quantity,
-                    type: "SALE_CANCEL",
+                    type: "SALE_DELETE",
                     reference: delivery.deliveryNumber
                 }
             });
@@ -838,7 +853,7 @@ export async function deleteSalesDeliveryAction(id: string) {
  * FINANCE: Update Payment Status (Lunas / Belum Lunas)
  * This handles the actual cash flow to Bank BCA (102)
  */
-export async function updatePaymentStatusAction(type: "PURCHASE" | "SALE", id: string, status: "PAID" | "CREDIT" | "PENDING") {
+export async function updatePaymentStatusAction(type: "PURCHASE" | "SALE", id: string, status: "PAID" | "CREDIT" | "PENDING" | "PARTIAL", partialAmount?: number) {
     return await prisma.$transaction(async (tx: any) => {
         let reference = "";
         let amount = 0;
@@ -857,14 +872,20 @@ export async function updatePaymentStatusAction(type: "PURCHASE" | "SALE", id: s
             reference = receipt.receiptNumber;
             party = receipt.receivedFrom;
             amount = Number(receipt.grandTotal || 0);
+            const currentPaid = Number(receipt.paidAmount || 0);
+            const toPay = partialAmount ? Number(partialAmount) : (status === "PAID" ? amount - currentPaid : 0);
 
-            const subtotal = Number(receipt.subtotal || 0);
-            const totalDiscount = Number(receipt.totalDiscount || 0);
-            const taxAmount = Number(receipt.taxAmount || 0);
+            let newStatus = status;
+            if (status === "PAID" && currentPaid + toPay < amount) {
+                newStatus = "PARTIAL";
+            }
 
             await (tx.goodsReceipt as any).update({
                 where: { id },
-                data: { paymentStatus: status }
+                data: {
+                    paymentStatus: newStatus,
+                    paidAmount: { increment: toPay }
+                }
             });
 
             const invAccount = await tx.financeAccount.findUnique({ where: { code: '104' } }); // Persediaan
@@ -874,7 +895,12 @@ export async function updatePaymentStatusAction(type: "PURCHASE" | "SALE", id: s
             const discAccount = await tx.financeAccount.findUnique({ where: { code: '502' } }); // Potongan Pembelian
 
             if (previousStatus === "PENDING" && status === "CREDIT") {
+                // Initial recognition of debt
                 if (invAccount && apAccount) {
+                    const subtotal = Number(receipt.subtotal || 0);
+                    const totalDiscount = Number(receipt.totalDiscount || 0);
+                    const taxAmount = Number(receipt.taxAmount || 0);
+
                     await tx.journalEntry.create({ data: { description: `Persediaan (Hutang): ${reference} (${party})`, amount: subtotal as any, type: "DEBIT", accountId: invAccount.id, date: new Date() } });
                     await tx.journalEntry.create({ data: { description: `Hutang Pembelian: ${reference} (${party})`, amount: amount as any, type: "CREDIT", accountId: apAccount.id, date: new Date() } });
 
@@ -890,7 +916,12 @@ export async function updatePaymentStatusAction(type: "PURCHASE" | "SALE", id: s
                     await tx.vendor.update({ where: { id: vendor.id }, data: { balance: { increment: amount } } });
                 }
             } else if (previousStatus === "PENDING" && status === "PAID") {
+                // Full immediate payment
                 if (invAccount && bankAccount) {
+                    const subtotal = Number(receipt.subtotal || 0);
+                    const totalDiscount = Number(receipt.totalDiscount || 0);
+                    const taxAmount = Number(receipt.taxAmount || 0);
+
                     await tx.journalEntry.create({ data: { description: `Persediaan (Lunas Kas): ${reference} (${party})`, amount: subtotal as any, type: "DEBIT", accountId: invAccount.id, date: new Date() } });
                     await tx.journalEntry.create({ data: { description: `Pembelian Tunai (Bank): ${reference} (${party})`, amount: amount as any, type: "CREDIT", accountId: bankAccount.id, date: new Date() } });
 
@@ -901,14 +932,15 @@ export async function updatePaymentStatusAction(type: "PURCHASE" | "SALE", id: s
                         await tx.journalEntry.create({ data: { description: `Potongan Pembelian: ${reference}`, amount: totalDiscount as any, type: "CREDIT", accountId: discAccount.id, date: new Date() } });
                     }
                 }
-            } else if (previousStatus === "CREDIT" && status === "PAID") {
-                if (apAccount && bankAccount) {
-                    await tx.journalEntry.create({ data: { description: `Pelunasan Hutang: ${reference} (${party})`, amount: amount as any, type: "DEBIT", accountId: apAccount.id, date: new Date() } });
-                    await tx.journalEntry.create({ data: { description: `Pembayaran Hutang (Bank): ${reference} (${party})`, amount: amount as any, type: "CREDIT", accountId: bankAccount.id, date: new Date() } });
+            } else if ((previousStatus === "CREDIT" || previousStatus === "PARTIAL") && (status === "PAID" || status === "PARTIAL")) {
+                // Payment against existing debt (DP or installments)
+                if (apAccount && bankAccount && toPay > 0) {
+                    await tx.journalEntry.create({ data: { description: `Pembayaran ${status === "PARTIAL" ? "DP/Sebagian" : "Pelunasan"} Hutang: ${reference} (${party})`, amount: toPay as any, type: "DEBIT", accountId: apAccount.id, date: new Date() } });
+                    await tx.journalEntry.create({ data: { description: `Kas Bank (Keluar): ${reference} (${party})`, amount: toPay as any, type: "CREDIT", accountId: bankAccount.id, date: new Date() } });
                 }
                 const vendor = await tx.vendor.findFirst({ where: { name: party } });
-                if (vendor) {
-                    await tx.vendor.update({ where: { id: vendor.id }, data: { balance: { decrement: amount } } });
+                if (vendor && toPay > 0) {
+                    await tx.vendor.update({ where: { id: vendor.id }, data: { balance: { decrement: toPay } } });
                 }
             }
 
@@ -925,10 +957,32 @@ export async function updatePaymentStatusAction(type: "PURCHASE" | "SALE", id: s
             reference = delivery.deliveryNumber;
             party = delivery.buyerName;
 
-            const deliveryRaw: any[] = await tx.$queryRawUnsafe(`SELECT "grandTotal", "taxAmount", "totalDiscount" FROM "SalesDelivery" WHERE id = ?`, id);
+            const deliveryRaw: any[] = await tx.$queryRawUnsafe(`SELECT "grandTotal", "taxAmount", "totalDiscount", "paidAmount" FROM "SalesDelivery" WHERE id = ?`, id);
             amount = Number(deliveryRaw[0]?.grandTotal || 0);
-            const taxAmount = Number(deliveryRaw[0]?.taxAmount || 0);
+            const currentPaid = Number(deliveryRaw[0]?.paidAmount || 0);
+            const toReceive = partialAmount ? Number(partialAmount) : (status === "PAID" ? amount - currentPaid : 0);
+
+            const taxAmountValue = Number(deliveryRaw[0]?.taxAmount || 0);
             const totalDiscountNominal = Number(deliveryRaw[0]?.totalDiscount || 0);
+
+            let newStatus = status;
+            if (status === "PAID" && currentPaid + toReceive < amount) {
+                newStatus = "PARTIAL";
+            }
+
+            await (tx.salesDelivery as any).update({
+                where: { id },
+                data: {
+                    paymentStatus: newStatus,
+                    paidAmount: { increment: toReceive }
+                }
+            });
+
+            const arAccount = await tx.financeAccount.findUnique({ where: { code: '105' } });   // Piutang
+            const bankAccount = await tx.financeAccount.findUnique({ where: { code: '102' } }); // Bank BCA
+            const salesAccount = await tx.financeAccount.findUnique({ where: { code: '401' } }); // Pendapatan
+            const taxAccountRef = await tx.financeAccount.findUnique({ where: { code: '202' } }); // PPN Keluaran
+            const discountAccount = await tx.financeAccount.findUnique({ where: { code: '402' } }); // Potongan
 
             const grossAmount = delivery.items.reduce((sum: number, i: any) => sum + (i.quantity * Number(i.salesPrice)), 0);
             let totalItemDiscounts = 0;
@@ -938,17 +992,6 @@ export async function updatePaymentStatusAction(type: "PURCHASE" | "SALE", id: s
             });
             const totalAllDiscounts = totalItemDiscounts + totalDiscountNominal;
 
-            await (tx.salesDelivery as any).update({
-                where: { id },
-                data: { paymentStatus: status }
-            });
-
-            const arAccount = await tx.financeAccount.findUnique({ where: { code: '105' } });   // Piutang
-            const bankAccount = await tx.financeAccount.findUnique({ where: { code: '102' } }); // Bank BCA
-            const salesAccount = await tx.financeAccount.findUnique({ where: { code: '401' } }); // Pendapatan
-            const taxAccountRef = await tx.financeAccount.findUnique({ where: { code: '202' } }); // PPN Keluaran
-            const discountAccount = await tx.financeAccount.findUnique({ where: { code: '402' } }); // Potongan
-
             if (previousStatus === "PENDING" && status === "CREDIT") {
                 if (arAccount && salesAccount) {
                     await tx.journalEntry.create({ data: { description: `Piutang Penjualan: ${reference} (${party})`, amount: amount as any, type: "DEBIT", accountId: arAccount.id, date: new Date() } });
@@ -957,8 +1000,8 @@ export async function updatePaymentStatusAction(type: "PURCHASE" | "SALE", id: s
                     if (discountAccount && totalAllDiscounts > 0) {
                         await tx.journalEntry.create({ data: { description: `Potongan Penjualan: ${reference}`, amount: totalAllDiscounts as any, type: "DEBIT", accountId: discountAccount.id, date: new Date() } });
                     }
-                    if (taxAccountRef && taxAmount > 0) {
-                        await tx.journalEntry.create({ data: { description: `PPN Keluaran: ${reference}`, amount: taxAmount as any, type: "CREDIT", accountId: taxAccountRef.id, date: new Date() } });
+                    if (taxAccountRef && taxAmountValue > 0) {
+                        await tx.journalEntry.create({ data: { description: `PPN Keluaran: ${reference}`, amount: taxAmountValue as any, type: "CREDIT", accountId: taxAccountRef.id, date: new Date() } });
                     }
                 }
                 const customer = await tx.customer.findFirst({ where: { name: party } });
@@ -973,18 +1016,18 @@ export async function updatePaymentStatusAction(type: "PURCHASE" | "SALE", id: s
                     if (discountAccount && totalAllDiscounts > 0) {
                         await tx.journalEntry.create({ data: { description: `Potongan Penjualan: ${reference}`, amount: totalAllDiscounts as any, type: "DEBIT", accountId: discountAccount.id, date: new Date() } });
                     }
-                    if (taxAccountRef && taxAmount > 0) {
-                        await tx.journalEntry.create({ data: { description: `PPN Keluaran: ${reference}`, amount: taxAmount as any, type: "CREDIT", accountId: taxAccountRef.id, date: new Date() } });
+                    if (taxAccountRef && taxAmountValue > 0) {
+                        await tx.journalEntry.create({ data: { description: `PPN Keluaran: ${reference}`, amount: taxAmountValue as any, type: "CREDIT", accountId: taxAccountRef.id, date: new Date() } });
                     }
                 }
-            } else if (previousStatus === "CREDIT" && status === "PAID") {
-                if (bankAccount && arAccount) {
-                    await tx.journalEntry.create({ data: { description: `Penerimaan Pelunasan Penjualan: ${reference} (${party})`, amount: amount as any, type: "DEBIT", accountId: bankAccount.id, date: new Date() } });
-                    await tx.journalEntry.create({ data: { description: `Penyelesaian Piutang: ${reference} (${party})`, amount: amount as any, type: "CREDIT", accountId: arAccount.id, date: new Date() } });
+            } else if ((previousStatus === "CREDIT" || previousStatus === "PARTIAL") && (status === "PAID" || status === "PARTIAL")) {
+                if (bankAccount && arAccount && toReceive > 0) {
+                    await tx.journalEntry.create({ data: { description: `Penerimaan ${status === "PARTIAL" ? "DP/Sebagian" : "Pelunasan"} Piutang: ${reference} (${party})`, amount: toReceive as any, type: "DEBIT", accountId: bankAccount.id, date: new Date() } });
+                    await tx.journalEntry.create({ data: { description: `Penyelesaian Piutang: ${reference} (${party})`, amount: toReceive as any, type: "CREDIT", accountId: arAccount.id, date: new Date() } });
                 }
                 const customer = await tx.customer.findFirst({ where: { name: party } });
-                if (customer) {
-                    await tx.customer.update({ where: { id: customer.id }, data: { balance: { decrement: amount } } });
+                if (customer && toReceive > 0) {
+                    await tx.customer.update({ where: { id: customer.id }, data: { balance: { decrement: toReceive } } });
                 }
             }
         }
@@ -1329,7 +1372,29 @@ export async function createProductAction(data: {
     uom?: string;
     barcode?: string;
 }) {
+    const session = await getServerSession(authOptions) as any;
+    if (session?.user?.role !== "ADMIN") throw new Error("Hanya Admin yang bisa menambah produk.");
+
     await prisma.product.create({ data });
+    revalidatePath("/settings");
+    revalidatePath("/warehouse");
+    return { success: true };
+}
+
+export async function updateProductAction(id: string, data: {
+    sku: string;
+    name: string;
+    category?: string;
+    uom?: string;
+    barcode?: string;
+}) {
+    const session = await getServerSession(authOptions) as any;
+    if (session?.user?.role !== "ADMIN") throw new Error("Hanya Admin yang bisa mengubah produk.");
+
+    await prisma.product.update({
+        where: { id },
+        data
+    });
     revalidatePath("/settings");
     revalidatePath("/warehouse");
     return { success: true };
@@ -1493,7 +1558,23 @@ export async function setOpeningBalanceAction(data: { accountId: string; amount:
  * ADMIN: Master Data Actions
  */
 export async function createVendorAction(data: { name: string; email?: string; phone?: string; address?: string }) {
+    const session = await getServerSession(authOptions) as any;
+    if (session?.user?.role !== "ADMIN") throw new Error("Hanya Admin yang bisa menambah vendor.");
+
     await prisma.vendor.create({ data });
+    revalidatePath("/settings");
+    revalidatePath("/purchase");
+    return { success: true };
+}
+
+export async function updateVendorAction(id: string, data: { name: string; email?: string; phone?: string; address?: string }) {
+    const session = await getServerSession(authOptions) as any;
+    if (session?.user?.role !== "ADMIN") throw new Error("Hanya Admin yang bisa mengubah vendor.");
+
+    await prisma.vendor.update({
+        where: { id },
+        data
+    });
     revalidatePath("/settings");
     revalidatePath("/purchase");
     return { success: true };
@@ -1522,7 +1603,23 @@ export async function deleteVendorAction(id: string) {
 }
 
 export async function createCustomerAction(data: { name: string; email?: string; phone?: string; address?: string }) {
+    const session = await getServerSession(authOptions) as any;
+    if (session?.user?.role !== "ADMIN") throw new Error("Hanya Admin yang bisa menambah customer.");
+
     await prisma.customer.create({ data });
+    revalidatePath("/settings");
+    revalidatePath("/sales");
+    return { success: true };
+}
+
+export async function updateCustomerAction(id: string, data: { name: string; email?: string; phone?: string; address?: string }) {
+    const session = await getServerSession(authOptions) as any;
+    if (session?.user?.role !== "ADMIN") throw new Error("Hanya Admin yang bisa mengubah customer.");
+
+    await prisma.customer.update({
+        where: { id },
+        data
+    });
     revalidatePath("/settings");
     revalidatePath("/sales");
     return { success: true };
@@ -1547,7 +1644,23 @@ export async function deleteCustomerAction(id: string) {
 }
 
 export async function createWarehouseAction(data: { name: string; location: string }) {
+    const session = await getServerSession(authOptions) as any;
+    if (session?.user?.role !== "ADMIN") throw new Error("Hanya Admin yang bisa menambah gudang.");
+
     await prisma.warehouse.create({ data });
+    revalidatePath("/settings");
+    revalidatePath("/warehouse");
+    return { success: true };
+}
+
+export async function updateWarehouseAction(id: string, data: { name: string; location: string }) {
+    const session = await getServerSession(authOptions) as any;
+    if (session?.user?.role !== "ADMIN") throw new Error("Hanya Admin yang bisa mengubah gudang.");
+
+    await prisma.warehouse.update({
+        where: { id },
+        data
+    });
     revalidatePath("/settings");
     revalidatePath("/warehouse");
     return { success: true };
@@ -1787,11 +1900,12 @@ export async function getUnverifiedReceiptsAction() {
  * SETTINGS: Fetch All Master Data for management
  */
 export async function getMDAction() {
-    const [vendors, customers, warehouses, coa] = await Promise.all([
+    const [vendors, customers, warehouses, coa, products] = await Promise.all([
         prisma.vendor.findMany({ orderBy: { name: 'asc' } }),
         prisma.customer.findMany({ orderBy: { name: 'asc' } }),
         prisma.warehouse.findMany({ orderBy: { name: 'asc' } }),
         prisma.financeAccount.findMany({ orderBy: { code: 'asc' } }),
+        prisma.product.findMany({ orderBy: { name: 'asc' } }),
     ]);
 
     // Serialize balances for client components
@@ -1809,7 +1923,8 @@ export async function getMDAction() {
         vendors: serializedVendors,
         customers: serializedCustomers,
         warehouses: warehouses || [],
-        coa: coa || []
+        coa: coa || [],
+        products: products || []
     };
 }
 
@@ -1860,43 +1975,8 @@ export async function submitGoodsReceiptVerificationAction(data: {
                 }
             });
 
-            const receipt = await tx.goodsReceipt.findUnique({
-                where: { id: data.receiptId },
-                include: { items: true }
-            });
-
-            if (receipt) {
-                const vendorName = receipt.receivedFrom || "UMUM";
-                for (const item of receipt.items) {
-                    await tx.stock.upsert({
-                        where: {
-                            productId_warehouseId_vendorName: {
-                                productId: item.productId,
-                                warehouseId: receipt.warehouseId,
-                                vendorName: vendorName
-                            }
-                        },
-                        update: { quantity: { increment: item.quantity } },
-                        create: {
-                            productId: item.productId,
-                            warehouseId: receipt.warehouseId,
-                            vendorName: vendorName,
-                            quantity: item.quantity
-                        }
-                    });
-
-                    await tx.stockMovement.create({
-                        data: {
-                            productId: item.productId,
-                            warehouseId: receipt.warehouseId,
-                            vendorName: vendorName,
-                            quantity: item.quantity,
-                            type: "GOODS_RECEIPT",
-                            reference: receipt.receiptNumber
-                        }
-                    });
-                }
-            }
+            // Stock is already updated at create/input as per new requirement. 
+            // Removed double-counting logic that was here.
         }
 
         revalidatePath("/warehouse");

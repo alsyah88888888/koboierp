@@ -12,6 +12,9 @@ import { DashboardStats } from "../components/DashboardStats";
 import Link from "next/link";
 import { exportToExcel } from "@/lib/excel";
 import { ReturnModal } from "./ReturnModal";
+import { SupplierModal } from "@/components/modals/SupplierModal";
+import { BuyerModal } from "@/components/modals/BuyerModal";
+import { ProductModal } from "@/components/modals/ProductModal";
 
 export function PurchaseDashboard({ initialReceipts, initialReturns, products, warehouses, vendors }: {
     initialReceipts: any[],
@@ -34,6 +37,11 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
 
     const [activeTab, setActiveTab] = useState<"LPB" | "RETUR">("LPB");
     const [showReturnModal, setShowReturnModal] = useState(false);
+
+    // Quick Add Modals States
+    const [showSupplierModal, setShowSupplierModal] = useState(false);
+    const [showBuyerModal, setShowBuyerModal] = useState(false);
+    const [showProductModal, setShowProductModal] = useState(false);
 
     const handleDelete = async (id: string) => {
         if (!confirm("Hapus penerimaan ini? Stok akan otomatis dikurangi kembali dan jurnal akan dihapus.")) return;
@@ -93,7 +101,7 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hide-print">
                 <div>
-                    <h2 className="text-3xl font-bold tracking-tight text-primary">Modul Pembelian</h2>
+                    <h2 className="text-3xl font-bold tracking-tight text-primary">Pembelian</h2>
                     <p className="text-muted-foreground tracking-tight">Kelola pembelian barang gudang (LPB).</p>
                 </div>
                 <div className="flex flex-wrap gap-3">
@@ -111,6 +119,17 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
                         <Download className="h-5 w-5" />
                         <span>Export Excel</span>
                     </button>
+
+                    <button onClick={() => setShowSupplierModal(true)} className="bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 px-4 py-2 rounded-md font-bold text-sm hidden md:block">
+                        + Supplier
+                    </button>
+                    <button onClick={() => setShowBuyerModal(true)} className="bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 px-4 py-2 rounded-md font-bold text-sm hidden md:block">
+                        + Buyer
+                    </button>
+                    <button onClick={() => setShowProductModal(true)} className="bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 px-4 py-2 rounded-md font-bold text-sm hidden md:block">
+                        + Barang
+                    </button>
+
                     {activeTab === "LPB" ? (
                         <button
                             onClick={() => setShowReceiptModal(true)}
@@ -331,6 +350,32 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
                     data={previewData}
                     onClose={() => setShowPreview(false)}
                     onExport={handleExport}
+                />
+            )}
+            {showSupplierModal && (
+                <SupplierModal
+                    onClose={() => setShowSupplierModal(false)}
+                    onSuccess={(newSupplier) => {
+                        window.location.reload(); // Simple reload to refetch initial data
+                    }}
+                />
+            )}
+
+            {showBuyerModal && (
+                <BuyerModal
+                    onClose={() => setShowBuyerModal(false)}
+                    onSuccess={(newBuyer) => {
+                        window.location.reload();
+                    }}
+                />
+            )}
+
+            {showProductModal && (
+                <ProductModal
+                    onClose={() => setShowProductModal(false)}
+                    onSuccess={(newProduct) => {
+                        window.location.reload();
+                    }}
                 />
             )}
         </div>
