@@ -57,7 +57,7 @@ export function DocumentLayout({ title, docNumber, date, children, headerInfo, i
                 {/* Header */}
                 <div className={`flex justify-between items-start ${isA5 ? 'pb-2 mb-2' : 'pb-4 mb-4'}`}>
                     <div className="flex items-start gap-4">
-                        <img src="/logo.png" alt="Logo Kola Borasi" className={`${isA5 ? 'h-16' : 'h-20'} w-auto object-contain mix-blend-multiply`} />
+                        <img src="/logo.png" alt="Logo Kola Borasi" className={`${isA5 ? 'h-16' : 'h-24'} w-auto object-contain shrink-0`} />
                         <div>
                             <h1 className={`${isA5 ? 'text-2xl' : 'text-3xl'} font-black tracking-tighter text-slate-900`}>PT KOLA BORASI INDONESIA</h1>
                             <p className={`${isA5 ? 'text-[10px]' : 'text-sm'} font-bold text-slate-500 italic`}>Trading and Distribution</p>

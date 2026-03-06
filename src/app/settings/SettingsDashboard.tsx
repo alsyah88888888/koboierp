@@ -211,8 +211,8 @@ export function SettingsDashboard() {
                 <div className="lg:col-span-2 space-y-6">
                     <div className="bg-white border-2 border-slate-200 rounded-3xl p-8 shadow-sm">
                         <div className="flex items-center gap-3 mb-8 pb-4 border-b-2 border-slate-50">
-                            <div className="bg-primary/10 p-2.5 rounded-xl">
-                                <Building2 className="h-6 w-6 text-primary" />
+                            <div className="bg-primary/5 p-2 rounded-xl">
+                                <img src="/logo.png" alt="Logo Kola Borasi" className="h-6 w-auto object-contain" />
                             </div>
                             <h2 className="text-xl font-bold text-slate-800">Company Profile</h2>
                         </div>

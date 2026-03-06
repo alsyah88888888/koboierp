@@ -38,6 +38,7 @@ export function Sidebar() {
     return (
         <div className="flex flex-col w-64 border-r bg-card h-screen sticky top-0 no-print">
             <div className="p-6">
+                <img src="/logo.png" alt="Logo Kola Borasi" className="h-10 w-auto mb-4 object-contain" />
                 <h1 className="text-xl font-bold text-primary">Kola Borasi Indonesia</h1>
                 <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1">ERP System</p>
                 {session?.user && (

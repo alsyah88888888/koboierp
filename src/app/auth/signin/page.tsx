@@ -48,10 +48,8 @@ export default function SignInPage() {
         <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 selection:bg-primary selection:text-white">
             <div className="max-w-md w-full animate-in fade-in zoom-in duration-500">
                 {/* Brand Logo & Header */}
-                <div className="text-center mb-8">
-                    <div className="inline-flex items-center justify-center p-3 bg-primary rounded-2xl shadow-xl shadow-primary/20 mb-4 rotate-3 hover:rotate-0 transition-transform duration-300">
-                        <Building2 className="h-8 w-8 text-white" />
-                    </div>
+                <div className="text-center mb-8 flex flex-col items-center">
+                    <img src="/logo.png" alt="Logo Kola Borasi" className="h-24 w-auto mb-6 object-contain hover:scale-105 transition-transform duration-300 drop-shadow-md" />
                     <h1 className="text-3xl font-black text-slate-900 tracking-tight">Kola Borasi Indonesia</h1>
                     <p className="text-slate-500 font-medium mt-1 uppercase tracking-[0.2em] text-[10px]">ERP Management System</p>
                 </div>

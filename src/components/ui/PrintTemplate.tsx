@@ -29,10 +29,13 @@ export function PrintTemplate({ title, children }: PrintTemplateProps) {
             <div className="border shadow-sm p-12 printable-content">
                 {/* Header Section */}
                 <div className="flex justify-between items-start mb-12 border-b-2 border-slate-900 pb-8">
-                    <div>
-                        <h2 className="text-3xl font-black text-slate-900">PT. KOLA BORASI INDONESIA</h2>
-                        <p className="text-sm text-slate-500 font-medium">Jl. Arjuna IV Green Kartika Residence Blok EE NO.2, CIBINONG, KAB. BOGOR - JAWA BARAT, 16911</p>
-                        <p className="text-sm text-slate-500 font-medium">NPWP: 01.234.567.8-012.000</p>
+                    <div className="flex items-start gap-4">
+                        <img src="/logo.png" alt="Logo Kola Borasi" className="h-24 w-auto object-contain shrink-0" />
+                        <div>
+                            <h2 className="text-3xl font-black text-slate-900">PT. KOLA BORASI INDONESIA</h2>
+                            <p className="text-sm text-slate-500 font-medium pb-1 mt-1">Jl. Arjuna IV Green Kartika Residence Blok EE NO.2, CIBINONG, KAB. BOGOR - JAWA BARAT, 16911</p>
+                            <p className="text-sm text-slate-500 font-medium">NPWP: 01.234.567.8-012.000</p>
+                        </div>
                     </div>
                     <div className="text-right">
                         <div className="bg-slate-900 text-white px-4 py-2 text-xl font-black rounded-lg">
