@@ -209,7 +209,7 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
             <div className="bg-white border-2 border-slate-300 rounded-2xl shadow-2xl w-full max-w-5xl max-h-[95vh] overflow-hidden flex flex-col">
                 <div className="p-6 border-b-2 border-slate-100 flex justify-between items-center bg-slate-50">
                     <div>
-                        <h2 className="text-2xl font-bold text-slate-900">{initialData ? "Edit Penerimaan Barang" : "Input Penerimaan Barang"}</h2>
+                        <h2 className="text-2xl font-bold text-slate-900">{initialData ? "Edit Pembelian" : "Input Pembelian"}</h2>
                         <p className="text-sm text-slate-500 font-medium">{initialData ? `Mengedit ${initialData.formNumber}` : "Lengkapi detail faktur, sales, dan rincian barang."}</p>
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-slate-200 rounded-full transition-colors border border-slate-200 bg-white">

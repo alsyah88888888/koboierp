@@ -73,7 +73,7 @@ export function ReturnModal({ receipts, onClose }: { receipts: any[], onClose: (
                     <form id="returnForm" onSubmit={handleSubmit} className="space-y-6">
                         <div className="bg-slate-50 p-4 rounded-xl border space-y-4">
                             <div>
-                                <label className="text-xs font-bold text-slate-500 uppercase">Pilih LPB (Penerimaan Barang)</label>
+                                <label className="text-xs font-bold text-slate-500 uppercase">Pilih LPB (Pembelian)</label>
                                 <select
                                     className="w-full p-2 border rounded mt-1 bg-white"
                                     onChange={handleReceiptChange}

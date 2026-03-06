@@ -98,7 +98,7 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                 'Jumlah Item': r.items.length
             }));
             setPreviewData(data);
-            setPreviewTitle("Daftar Penerimaan Barang Pending (Checker)");
+            setPreviewTitle("Daftar Pembelian Pending (Checker)");
         }
         setShowPreview(true);
     };

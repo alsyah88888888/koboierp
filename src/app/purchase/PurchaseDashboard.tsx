@@ -93,8 +93,8 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hide-print">
                 <div>
-                    <h2 className="text-3xl font-bold tracking-tight text-primary">Modul Penerimaan Barang</h2>
-                    <p className="text-muted-foreground tracking-tight">Kelola penerimaan barang gudang (LPB).</p>
+                    <h2 className="text-3xl font-bold tracking-tight text-primary">Modul Pembelian</h2>
+                    <p className="text-muted-foreground tracking-tight">Kelola pembelian barang gudang (LPB).</p>
                 </div>
                 <div className="flex flex-wrap gap-3">
                     <button
@@ -143,7 +143,7 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
                         activeTab === "LPB" ? "border-primary text-primary" : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
                     )}
                 >
-                    Penerimaan Barang (LPB)
+                    Pembelian (LPB)
                 </button>
                 <button
                     onClick={() => setActiveTab("RETUR")}
@@ -159,7 +159,7 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
             {activeTab === "LPB" && (
                 <div className="rounded-xl border bg-card shadow-sm">
                     <div className="p-6 border-b flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-primary">
-                        <h3 className="text-lg font-bold capitalize">Data Penerimaan Barang</h3>
+                        <h3 className="text-lg font-bold capitalize">Data Pembelian</h3>
                         <div className="relative w-full md:w-80">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <input

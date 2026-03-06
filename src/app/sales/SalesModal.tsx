@@ -192,7 +192,14 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                             <input
                                 list="buyer-list"
                                 value={buyerName}
-                                onChange={e => setBuyerName(e.target.value)}
+                                onChange={e => {
+                                    const val = e.target.value;
+                                    setBuyerName(val);
+                                    const customer = customers.find(c => c.name === val);
+                                    if (customer && customer.address) {
+                                        setRecipient(customer.address);
+                                    }
+                                }}
                                 className="w-full bg-white border-2 border-slate-300 px-3 py-2.5 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-medium"
                                 placeholder="Ketik/Pilih Buyer"
                                 required
