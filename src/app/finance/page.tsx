@@ -58,6 +58,12 @@ export default async function FinancePage() {
         orderBy: { createdAt: 'desc' }
     }).catch(() => []);
 
+    const pendingPurchaseRequests = await prisma.purchaseRequest.findMany({
+        where: { status: 'APPROVED_BY_ADMIN' },
+        include: { items: true, requestedBy: true, approvedBy: true },
+        orderBy: { createdAt: 'desc' }
+    }).catch(() => []);
+
     const transactions = await getFinanceTransactionsAction().catch(() => []);
 
     // Serialize Decimal objects for Client Component
@@ -79,6 +85,7 @@ export default async function FinancePage() {
     const serializedUnverifiedReceipts = serializeDecimal(unverifiedReceipts);
     const serializedPendingReturns = serializeDecimal(pendingReturns);
     const serializedPendingSalesReturns = serializeDecimal(pendingSalesReturns);
+    const serializedPendingPurchaseRequests = serializeDecimal(pendingPurchaseRequests);
     const serializedTransactions = serializeDecimal(transactions);
 
     return (
@@ -92,6 +99,7 @@ export default async function FinancePage() {
             unverifiedReceipts={serializedUnverifiedReceipts}
             pendingReturns={serializedPendingReturns}
             pendingSalesReturns={serializedPendingSalesReturns}
+            pendingPurchaseRequests={serializedPendingPurchaseRequests}
             transactions={serializedTransactions}
         />
     );

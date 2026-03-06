@@ -136,7 +136,7 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
             return;
         }
 
-        const txDate = date ? new Date(date) : new Date();
+        const txDate = date ? new Date(date + "T00:00:00") : new Date();
         if (isNaN(txDate.getTime())) {
             alert("Tanggal tidak valid.");
             return;
@@ -150,7 +150,7 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
                 warehouseId,
                 date: txDate,
                 taxInvoiceNumber,
-                taxInvoiceDate: taxInvoiceDate ? new Date(taxInvoiceDate) : undefined,
+                taxInvoiceDate: taxInvoiceDate ? new Date(taxInvoiceDate + "T00:00:00") : undefined,
                 salesPerson,
                 subtotal,
                 totalDiscount: Number(totalDiscount) || 0,

@@ -56,11 +56,14 @@ export function DocumentLayout({ title, docNumber, date, children, headerInfo, i
             <div className={`w-full max-w-[230mm] min-h-[270mm] p-[10mm] bg-white shadow-2xl printable-area flex flex-col font-sans text-slate-900`}>
                 {/* Header */}
                 <div className={`flex justify-between items-start ${isA5 ? 'pb-2 mb-2' : 'pb-4 mb-4'}`}>
-                    <div>
-                        <h1 className={`${isA5 ? 'text-2xl' : 'text-3xl'} font-black tracking-tighter text-slate-900`}>PT KOLA BORASI INDONESIA</h1>
-                        <p className={`${isA5 ? 'text-[10px]' : 'text-sm'} font-bold text-slate-500 italic`}>Trading and Distribution</p>
-                        <p className={`${isA5 ? 'text-[9px]' : 'text-xs'} font-medium text-slate-400 mt-1`}>Jl. Arjuna IV Green Kartika Residence Blok EE NO.2, CIBINONG, KAB. BOGOR - JAWA BARAT, 16911</p>
-                        <p className={`${isA5 ? 'text-[9px]' : 'text-xs'} font-medium text-slate-400`}>Telp: 0857-7444-4805</p>
+                    <div className="flex items-start gap-4">
+                        <img src="/logo.png" alt="Logo Kola Borasi" className={`${isA5 ? 'h-16' : 'h-20'} w-auto object-contain mix-blend-multiply`} />
+                        <div>
+                            <h1 className={`${isA5 ? 'text-2xl' : 'text-3xl'} font-black tracking-tighter text-slate-900`}>PT KOLA BORASI INDONESIA</h1>
+                            <p className={`${isA5 ? 'text-[10px]' : 'text-sm'} font-bold text-slate-500 italic`}>Trading and Distribution</p>
+                            <p className={`${isA5 ? 'text-[9px]' : 'text-xs'} font-medium text-slate-400 mt-1`}>Jl. Arjuna IV Green Kartika Residence Blok EE NO.2, CIBINONG, KAB. BOGOR - JAWA BARAT, 16911</p>
+                            <p className={`${isA5 ? 'text-[9px]' : 'text-xs'} font-medium text-slate-400`}>Telp: 0857-7444-4805</p>
+                        </div>
                     </div>
                     <div className="text-right">
                         <div className={`inline-block border-2 border-slate-900 text-slate-900 ${isA5 ? 'px-4 py-1.5 text-lg' : 'px-6 py-2 text-2xl'} font-black mb-2 tracking-widest`}>

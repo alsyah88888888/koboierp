@@ -7,13 +7,13 @@ import { formatCurrency, cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { FinanceModal } from "./FinanceModal";
 import { useSession } from "next-auth/react";
-import { updatePaymentStatusAction, deleteFinanceTransactionAction, deleteJournalEntryAction, getCortexXmlContentAction, verifyPurchaseReturnAction, verifySalesReturnAction } from "@/app/actions";
+import { updatePaymentStatusAction, deleteFinanceTransactionAction, deleteJournalEntryAction, getCortexXmlContentAction, verifyPurchaseReturnAction, verifySalesReturnAction, updatePurchaseRequestStatusAction } from "@/app/actions";
 import { DashboardStats } from "../components/DashboardStats";
 import { CheckCircle2, Clock } from "lucide-react";
 import { exportToExcel } from "@/lib/excel";
 import { useRouter } from "next/navigation";
 
-export function FinanceDashboard({ accounts, ledger, vendors, customers, pendingPurchases, pendingSales, unverifiedReceipts, pendingReturns, pendingSalesReturns, transactions }: {
+export function FinanceDashboard({ accounts, ledger, vendors, customers, pendingPurchases, pendingSales, unverifiedReceipts, pendingReturns, pendingSalesReturns, pendingPurchaseRequests, transactions }: {
     accounts: any[],
     ledger: any[],
     vendors: any[],
@@ -23,6 +23,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
     unverifiedReceipts: any[],
     pendingReturns: any[],
     pendingSalesReturns: any[],
+    pendingPurchaseRequests: any[],
     transactions: any[]
 }) {
     const { data: session } = useSession() as any;
@@ -30,7 +31,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
     const isAdminOrFinance = userRole === "ADMIN" || userRole === "FINANCE";
     const [showModal, setShowModal] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
-    const [activeTab, setActiveTab] = useState<"ledger" | "ap" | "ar" | "checker" | "history">("ledger");
+    const [activeTab, setActiveTab] = useState<"ledger" | "ap" | "ar" | "checker" | "purchase_requests" | "history">("ledger");
     const [loading, setLoading] = useState<string | null>(null);
     const router = useRouter();
 
@@ -187,6 +188,25 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
         }
     };
 
+    const handleVerifyPurchaseRequest = async (id: string, reqNumber: string) => {
+        if (!confirm(`Verifikasi pengajuan ${reqNumber}? Saldo Kas/Bank BCA dan Biaya Operasional akan dicatat otomatis.`)) return;
+        setLoading(id);
+        try {
+            await updatePurchaseRequestStatusAction(id, "VERIFIED_BY_FINANCE");
+            alert("Pengajuan berhasil diverifikasi.");
+            router.refresh();
+        } catch (e: any) {
+            alert(e.message || "Gagal memverifikasi pengajuan.");
+        } finally {
+            setLoading(null);
+        }
+    };
+
+    const filteredPurchaseRequests = pendingPurchaseRequests.filter(r =>
+        r.number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        r.requestedBy?.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
     const handlePreview = () => {
         if (activeTab === "ledger") {
             const data = filteredLedger.map(tx => ({
@@ -338,6 +358,16 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                     {unverifiedReceipts.length > 0 && <span className="bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center">{unverifiedReceipts.length}</span>}
                 </button>
                 <button
+                    onClick={() => setActiveTab("purchase_requests")}
+                    className={cn(
+                        "px-6 py-3 text-sm font-bold transition-all border-b-2 flex items-center gap-2",
+                        activeTab === "purchase_requests" ? "border-primary text-primary" : "border-transparent text-slate-400 hover:text-slate-600"
+                    )}
+                >
+                    Pengajuan Pembelian
+                    {pendingPurchaseRequests.length > 0 && <span className="bg-orange-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center">{pendingPurchaseRequests.length}</span>}
+                </button>
+                <button
                     onClick={() => setActiveTab("history")}
                     className={cn(
                         "px-6 py-3 text-sm font-bold transition-all border-b-2",
@@ -356,7 +386,8 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                             activeTab === "ap" ? "Buku Pembantu Hutang & Pelunasan" :
                                 activeTab === "ar" ? "Buku Pembantu Piutang & Pelunasan" :
                                     activeTab === "checker" ? "Penerimaan Menunggu Checker" :
-                                        "Riwayat Input Transaksi Keuangan"}
+                                        activeTab === "purchase_requests" ? "Pengajuan Pembelian (Menunggu Finance)" :
+                                            "Riwayat Input Transaksi Keuangan"}
                     </h3>
                     <div className="relative w-full md:w-80">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -703,6 +734,62 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                         </table>
                     </div>
                 )}
+
+                {activeTab === "purchase_requests" && (
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm text-left">
+                            <thead className="bg-muted/30 text-muted-foreground border-b text-xs uppercase tracking-wider">
+                                <tr>
+                                    <th className="px-6 py-4">Tgl / No. Pengajuan</th>
+                                    <th className="px-6 py-4">Pemohon</th>
+                                    <th className="px-6 py-4">Status</th>
+                                    <th className="px-6 py-4 text-right">Estimasi Biaya</th>
+                                    <th className="px-6 py-4 text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y">
+                                {filteredPurchaseRequests.map((r: any) => {
+                                    const totalEst = r.items.reduce((acc: number, item: any) => acc + (item.quantity * Number(item.estimatedPrice)), 0);
+                                    return (
+                                        <tr key={r.id} className="hover:bg-muted/20 transition-colors">
+                                            <td className="px-6 py-4">
+                                                <div className="text-xs text-muted-foreground">{format(new Date(r.createdAt), "dd/MM/yy")}</div>
+                                                <div className="font-mono text-[10px] font-bold text-orange-600">{r.number}</div>
+                                            </td>
+                                            <td className="px-6 py-4 font-bold">{r.requestedBy?.name}</td>
+                                            <td className="px-6 py-4">
+                                                <span className="flex items-center gap-1.5 text-orange-600 font-bold text-xs uppercase">
+                                                    <Clock className="h-3 w-3" /> {r.status === "APPROVED_BY_ADMIN" ? "MENUNGGU FINANCE" : r.status}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 text-right font-black text-rose-600">
+                                                {formatCurrency(totalEst)}
+                                            </td>
+                                            <td className="px-6 py-4 text-center">
+                                                <button
+                                                    disabled={loading === r.id}
+                                                    onClick={() => handleVerifyPurchaseRequest(r.id, r.number)}
+                                                    className="bg-orange-500 w-full text-white px-3 py-1.5 rounded text-[10px] font-bold hover:bg-orange-600 transition-all disabled:opacity-50 uppercase shadow-sm"
+                                                    title="Verifikasi dan Catat Pengeluaran Bank"
+                                                >
+                                                    {loading === r.id ? "..." : "Selesai / Lunas"}
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                                {filteredPurchaseRequests.length === 0 && (
+                                    <tr>
+                                        <td colSpan={5} className="px-6 py-12 text-center text-muted-foreground italic">
+                                            Tidak ada pengajuan pembelian yang menunggu verifikasi Finance.
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+
                 {activeTab === "history" && (
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm text-left">

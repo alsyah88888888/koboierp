@@ -313,93 +313,110 @@ export async function updateGoodsReceiptAction(id: string, data: {
     grandTotal?: number;
     items: { productId: string; quantity: number; purchasePrice: number; discount: number; uom?: string }[];
 }) {
-    return await prisma.$transaction(async (tx: any) => {
-        // 1. Check if verified. include items to adjust stock
-        const existing = await tx.goodsReceipt.findUnique({
-            where: { id },
-            include: { items: true }
-        });
-        if (!existing) throw new Error("Receipt not found");
-        // if (existing.isVerified) throw new Error("Cannot edit verified receipt");
+    try {
+        await prisma.$transaction(async (tx: any) => {
+            // 1. Check if verified. include items to adjust stock
+            const existing = await (tx.goodsReceipt as any).findUnique({
+                where: { id },
+                include: { items: true }
+            });
+            if (!existing) throw new Error("Penerimaan barang tidak ditemukan.");
 
-        // NO OLD BALANCE/JOURNALS to reverse (Moved to Finance workflow)
-
-        // --- REVERSE OLD STOCK ---
-        for (const item of existing.items) {
-            await tx.stock.update({
-                where: {
-                    productId_warehouseId_vendorName: {
+            // --- REVERSE OLD STOCK ---
+            for (const item of existing.items) {
+                await tx.stock.updateMany({
+                    where: {
                         productId: item.productId,
                         warehouseId: existing.warehouseId,
                         vendorName: existing.receivedFrom
-                    }
-                },
-                data: { quantity: { decrement: item.quantity } }
-            });
-        }
+                    },
+                    data: { quantity: { decrement: item.quantity } }
+                });
+            }
 
-        // 2. Update Header
-        await tx.goodsReceipt.update({
-            where: { id },
-            data: {
-                receiptNumber: data.receiptNumber,
-                receivedFrom: data.receivedFrom,
-                date: data.date,
-                taxInvoiceDate: data.taxInvoiceDate,
-                taxInvoiceNumber: data.taxInvoiceNumber,
-                salesPerson: data.salesPerson,
-                warehouseId: data.warehouseId,
-                subtotal: data.subtotal || 0,
-                totalDiscount: data.totalDiscount || 0,
-                taxRate: data.taxRate || 0,
-                taxAmount: data.taxAmount || 0,
-                grandTotal: data.grandTotal || 0,
+            // 2. Update Header
+            await tx.goodsReceipt.update({
+                where: { id },
+                data: {
+                    receiptNumber: data.receiptNumber,
+                    receivedFrom: data.receivedFrom,
+                    date: data.date,
+                    taxInvoiceDate: data.taxInvoiceDate,
+                    taxInvoiceNumber: data.taxInvoiceNumber,
+                    salesPerson: data.salesPerson,
+                    warehouseId: data.warehouseId,
+                    subtotal: data.subtotal || 0,
+                    totalDiscount: data.totalDiscount || 0,
+                    taxRate: data.taxRate || 0,
+                    taxAmount: data.taxAmount || 0,
+                    grandTotal: data.grandTotal || 0,
+                }
+            });
+
+            // 3. Update Items
+            // NOTE: If this fails due to foreign keys (verifications/returns), 
+            // it means the items are locked and shouldn't be deleted/recreated.
+            try {
+                await tx.goodsReceiptItem.deleteMany({ where: { receiptId: id } });
+                await tx.goodsReceiptItem.createMany({
+                    data: data.items.map(item => ({
+                        receiptId: id,
+                        productId: item.productId,
+                        quantity: item.quantity,
+                        purchasePrice: item.purchasePrice as any,
+                        discount: item.discount as any,
+                        uom: item.uom
+                    }))
+                });
+            } catch (err: any) {
+                if (err.code === 'P2003') {
+                    throw new Error("Gagal mengupdate barang karena sudah ada riwayat verifikasi/retur pada barang ini. Hanya informasi header yang bisa diubah.");
+                }
+                throw err;
+            }
+
+            // --- APPLY NEW STOCK ---
+            for (const item of data.items) {
+                await tx.stock.upsert({
+                    where: {
+                        productId_warehouseId_vendorName: {
+                            productId: item.productId,
+                            warehouseId: data.warehouseId,
+                            vendorName: data.receivedFrom
+                        }
+                    },
+                    update: { quantity: { increment: item.quantity } },
+                    create: {
+                        productId: item.productId,
+                        warehouseId: data.warehouseId,
+                        vendorName: data.receivedFrom,
+                        quantity: item.quantity
+                    }
+                });
             }
         });
 
-
-        // 3. Update Items
-        await tx.goodsReceiptItem.deleteMany({ where: { receiptId: id } });
-        await tx.goodsReceiptItem.createMany({
-            data: data.items.map(item => ({
-                receiptId: id,
-                productId: item.productId,
-                quantity: item.quantity,
-                purchasePrice: item.purchasePrice as any,
-                discount: item.discount as any,
-                uom: item.uom
-            }))
-        });
-
-        // --- APPLY NEW STOCK ---
-        for (const item of data.items) {
-            await tx.stock.upsert({
-                where: {
-                    productId_warehouseId_vendorName: {
-                        productId: item.productId,
-                        warehouseId: data.warehouseId,
-                        vendorName: data.receivedFrom
-                    }
-                },
-                update: { quantity: { increment: item.quantity } },
-                create: {
-                    productId: item.productId,
-                    warehouseId: data.warehouseId,
-                    vendorName: data.receivedFrom,
-                    quantity: item.quantity
-                }
-            });
-        }
-
-        // NO NEW BALANCE/JOURNALS to create (Moved to Finance workflow)
-
+        // Revalidate outside transaction for better performance and safety
         revalidatePath("/purchase");
         revalidatePath("/warehouse");
         revalidatePath("/finance");
         revalidatePath("/");
 
         return { success: true };
-    });
+    } catch (error: any) {
+        console.error("Update Goods Receipt Error:", error);
+
+        if (error.code === 'P2002') {
+            const target = error.meta?.target || "";
+            if (target.includes('receiptNumber')) {
+                throw new Error(`Nomor Surat Jalan "${data.receiptNumber}" sudah terdaftar pada data lain.`);
+            }
+            throw new Error(`Terjadi duplikasi data unik saat update.`);
+        }
+
+        // Return clear error message for the UI
+        throw new Error(error.message || "Terjadi kesalahan saat menyimpan perubahan.");
+    }
 }
 
 /**
