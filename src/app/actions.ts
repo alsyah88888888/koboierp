@@ -1383,12 +1383,25 @@ export async function createProductAction(data: {
     barcode?: string;
 }) {
     const session = await getServerSession(authOptions) as any;
-    if (session?.user?.role !== "ADMIN") throw new Error("Hanya Admin yang bisa menambah produk.");
+    if (!["ADMIN", "PURCHASE", "SALES"].includes(session?.user?.role)) throw new Error("Hanya Admin/Purchase/Sales yang bisa menambah produk.");
 
-    await prisma.product.create({ data });
-    revalidatePath("/settings");
-    revalidatePath("/warehouse");
-    return { success: true };
+    try {
+        await prisma.product.create({
+            data: {
+                sku: data.sku,
+                name: data.name,
+                category: data.category || null,
+                uom: data.uom || null,
+                barcode: data.barcode || null,
+            }
+        });
+        revalidatePath("/settings");
+        revalidatePath("/warehouse");
+        return { success: true };
+    } catch (error: any) {
+        if (error.code === 'P2002') throw new Error("SKU atau Barcode sudah terdaftar.");
+        throw error;
+    }
 }
 
 export async function updateProductAction(id: string, data: {
@@ -1399,15 +1412,28 @@ export async function updateProductAction(id: string, data: {
     barcode?: string;
 }) {
     const session = await getServerSession(authOptions) as any;
-    if (session?.user?.role !== "ADMIN") throw new Error("Hanya Admin yang bisa mengubah produk.");
+    if (!["ADMIN", "PURCHASE", "SALES"].includes(session?.user?.role)) throw new Error("Hanya Admin/Purchase/Sales yang bisa mengubah produk.");
 
-    await prisma.product.update({
-        where: { id },
-        data
-    });
-    revalidatePath("/settings");
-    revalidatePath("/warehouse");
-    return { success: true };
+    console.log("Updating Product:", id, data);
+
+    try {
+        await prisma.product.update({
+            where: { id },
+            data: {
+                sku: data.sku,
+                name: data.name,
+                category: data.category || null,
+                uom: data.uom || null,
+                barcode: data.barcode || null,
+            }
+        });
+        revalidatePath("/settings");
+        revalidatePath("/warehouse");
+        return { success: true };
+    } catch (error: any) {
+        if (error.code === 'P2002') throw new Error("SKU atau Barcode sudah terdaftar.");
+        throw error;
+    }
 }
 
 /**
@@ -1569,25 +1595,49 @@ export async function setOpeningBalanceAction(data: { accountId: string; amount:
  */
 export async function createVendorAction(data: { name: string; email?: string; phone?: string; address?: string }) {
     const session = await getServerSession(authOptions) as any;
-    if (session?.user?.role !== "ADMIN") throw new Error("Hanya Admin yang bisa menambah vendor.");
+    if (!["ADMIN", "PURCHASE", "SALES"].includes(session?.user?.role)) throw new Error("Hanya Admin/Purchase/Sales yang bisa menambah vendor.");
 
-    await prisma.vendor.create({ data });
-    revalidatePath("/settings");
-    revalidatePath("/purchase");
-    return { success: true };
+    try {
+        await prisma.vendor.create({
+            data: {
+                name: data.name,
+                email: data.email || null,
+                phone: data.phone || null,
+                address: data.address || null,
+            }
+        });
+        revalidatePath("/settings");
+        revalidatePath("/warehouse");
+        return { success: true };
+    } catch (error: any) {
+        if (error.code === 'P2002') throw new Error("ID/Code Vendor atau Email sudah terdaftar.");
+        throw error;
+    }
 }
 
 export async function updateVendorAction(id: string, data: { name: string; email?: string; phone?: string; address?: string }) {
     const session = await getServerSession(authOptions) as any;
-    if (session?.user?.role !== "ADMIN") throw new Error("Hanya Admin yang bisa mengubah vendor.");
+    if (!["ADMIN", "PURCHASE", "SALES"].includes(session?.user?.role)) throw new Error("Hanya Admin/Purchase/Sales yang bisa mengubah vendor.");
 
-    await prisma.vendor.update({
-        where: { id },
-        data
-    });
-    revalidatePath("/settings");
-    revalidatePath("/purchase");
-    return { success: true };
+    console.log("Updating Vendor:", id, data);
+
+    try {
+        await prisma.vendor.update({
+            where: { id },
+            data: {
+                name: data.name,
+                email: data.email || null,
+                phone: data.phone || null,
+                address: data.address || null,
+            }
+        });
+        revalidatePath("/settings");
+        revalidatePath("/warehouse");
+        return { success: true };
+    } catch (error: any) {
+        if (error.code === 'P2002') throw new Error("ID/Code Vendor atau Email sudah terdaftar.");
+        throw error;
+    }
 }
 
 export async function deleteVendorAction(id: string) {
@@ -1614,25 +1664,49 @@ export async function deleteVendorAction(id: string) {
 
 export async function createCustomerAction(data: { name: string; email?: string; phone?: string; address?: string }) {
     const session = await getServerSession(authOptions) as any;
-    if (session?.user?.role !== "ADMIN") throw new Error("Hanya Admin yang bisa menambah customer.");
+    if (!["ADMIN", "PURCHASE", "SALES"].includes(session?.user?.role)) throw new Error("Hanya Admin/Purchase/Sales yang bisa menambah customer.");
 
-    await prisma.customer.create({ data });
-    revalidatePath("/settings");
-    revalidatePath("/sales");
-    return { success: true };
+    try {
+        await prisma.customer.create({
+            data: {
+                name: data.name,
+                email: data.email || null,
+                phone: data.phone || null,
+                address: data.address || null,
+            }
+        });
+        revalidatePath("/settings");
+        revalidatePath("/warehouse");
+        return { success: true };
+    } catch (error: any) {
+        if (error.code === 'P2002') throw new Error("ID/Code Customer atau Email sudah terdaftar.");
+        throw error;
+    }
 }
 
 export async function updateCustomerAction(id: string, data: { name: string; email?: string; phone?: string; address?: string }) {
     const session = await getServerSession(authOptions) as any;
-    if (session?.user?.role !== "ADMIN") throw new Error("Hanya Admin yang bisa mengubah customer.");
+    if (!["ADMIN", "PURCHASE", "SALES"].includes(session?.user?.role)) throw new Error("Hanya Admin/Purchase/Sales yang bisa mengubah customer.");
 
-    await prisma.customer.update({
-        where: { id },
-        data
-    });
-    revalidatePath("/settings");
-    revalidatePath("/sales");
-    return { success: true };
+    console.log("Updating Customer:", id, data);
+
+    try {
+        await prisma.customer.update({
+            where: { id },
+            data: {
+                name: data.name,
+                email: data.email || null,
+                phone: data.phone || null,
+                address: data.address || null,
+            }
+        });
+        revalidatePath("/settings");
+        revalidatePath("/warehouse");
+        return { success: true };
+    } catch (error: any) {
+        if (error.code === 'P2002') throw new Error("ID/Code Customer atau Email sudah terdaftar.");
+        throw error;
+    }
 }
 
 export async function deleteCustomerAction(id: string) {
@@ -1657,23 +1731,43 @@ export async function createWarehouseAction(data: { name: string; location: stri
     const session = await getServerSession(authOptions) as any;
     if (session?.user?.role !== "ADMIN") throw new Error("Hanya Admin yang bisa menambah gudang.");
 
-    await prisma.warehouse.create({ data });
-    revalidatePath("/settings");
-    revalidatePath("/warehouse");
-    return { success: true };
+    try {
+        await prisma.warehouse.create({
+            data: {
+                name: data.name,
+                location: data.location || "",
+            }
+        });
+        revalidatePath("/settings");
+        revalidatePath("/warehouse");
+        return { success: true };
+    } catch (error: any) {
+        if (error.code === 'P2002') throw new Error("Nama Gudang sudah terdaftar.");
+        throw error;
+    }
 }
 
 export async function updateWarehouseAction(id: string, data: { name: string; location: string }) {
     const session = await getServerSession(authOptions) as any;
     if (session?.user?.role !== "ADMIN") throw new Error("Hanya Admin yang bisa mengubah gudang.");
 
-    await prisma.warehouse.update({
-        where: { id },
-        data
-    });
-    revalidatePath("/settings");
-    revalidatePath("/warehouse");
-    return { success: true };
+    console.log("Updating Warehouse:", id, data);
+
+    try {
+        await prisma.warehouse.update({
+            where: { id },
+            data: {
+                name: data.name,
+                location: data.location || "",
+            }
+        });
+        revalidatePath("/settings");
+        revalidatePath("/warehouse");
+        return { success: true };
+    } catch (error: any) {
+        if (error.code === 'P2002') throw new Error("Nama Gudang sudah terdaftar.");
+        throw error;
+    }
 }
 
 export async function deleteWarehouseAction(id: string) {

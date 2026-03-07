@@ -108,9 +108,14 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
 
         // Auto-fill UOM and Vendor if product selected via SKU typing
         if (field === "sku") {
-            const product = products.find(p => p.sku === value);
+            const valStr = String(value).trim().toLowerCase();
+            const product = products.find(p =>
+                (p.sku && p.sku.toLowerCase() === valStr) ||
+                (p.barcode && p.barcode.toLowerCase() === valStr)
+            );
             if (product) {
                 newItems[index].productId = product.id;
+                newItems[index].sku = product.sku;
                 newItems[index].uom = product.uom || "";
                 if (newItems[index].salesPrice === 0 || newItems[index].salesPrice === "") {
                     newItems[index].salesPrice = Number(product.price || 0);

@@ -25,6 +25,7 @@ interface SalesDashboardProps {
 export default function SalesDashboard({ initialDeliveries, initialReceipts = [], products, warehouses, customers, salesExpenses = [] }: SalesDashboardProps) {
     const { data: session } = useSession() as any;
     const isAdmin = session?.user?.role === "ADMIN";
+    const userRole = session?.user?.role || "";
     const [showSalesModal, setShowSalesModal] = useState(false);
     const [showReturnModal, setShowReturnModal] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
@@ -305,7 +306,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                                 <th className="px-6 py-4">Gudang</th>
                                 <th className="px-6 py-4 text-right">Total Qty (Jumlah)</th>
                                 <th className="px-6 py-4 text-right">Tanggal</th>
-                                {isAdmin && <th className="px-6 py-4 text-center w-10">Aksi</th>}
+                                {(isAdmin || userRole === "SALES") && <th className="px-6 py-4 text-center w-10">Aksi</th>}
                             </tr>
                         </thead>
                         <tbody className="divide-y">
@@ -351,7 +352,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                                             >
                                                 <Edit2 className="h-4 w-4" />
                                             </button>
-                                            {isAdmin && (
+                                            {(isAdmin || userRole === "SALES") && (
                                                 <button
                                                     onClick={() => handleDelete(d.id)}
                                                     className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
