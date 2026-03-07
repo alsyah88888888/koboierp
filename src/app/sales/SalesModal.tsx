@@ -25,6 +25,7 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
     const [warehouseId, setWarehouseId] = useState(warehouses[0]?.id || "");
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
     const [salesPerson, setSalesPerson] = useState("");
+    const [isManualBuyer, setIsManualBuyer] = useState(false);
 
     // Body (Items)
     const [items, setItems] = useState<SalesItem[]>([{ productId: "", sku: "", quantity: 1, salesPrice: 0, discount: 0, discountPercent: "", uom: "", vendorName: "UMUM" }]);
@@ -208,7 +209,23 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
 
                 <form onSubmit={handleSubmit} className="overflow-y-auto flex-1 p-8 space-y-8 bg-white">
                     {/* Header Section */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 bg-slate-50 p-6 rounded-xl border-2 border-slate-200 shadow-sm transition-all duration-300">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6 bg-slate-50 p-6 rounded-xl border-2 border-slate-200 shadow-sm transition-all duration-300">
+                        <div className="lg:col-span-6 flex items-center justify-between pb-2 border-b border-slate-200 mb-2">
+                            <div className="flex items-center gap-2">
+                                <label className="text-sm font-bold text-slate-700">Input Buyer Manual?</label>
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        className="sr-only peer"
+                                        checked={isManualBuyer}
+                                        onChange={(e) => setIsManualBuyer(e.target.checked)}
+                                    />
+                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                                </label>
+                            </div>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{isManualBuyer ? "Mode: Manual Typing" : "Mode: Selection List"}</p>
+                        </div>
+
                         <div className="space-y-2 lg:col-span-2">
                             <label className="text-xs font-bold uppercase tracking-wider text-slate-600 mb-1 block">Kirim Ke (Recipient Address/Name)</label>
                             <input
@@ -219,26 +236,38 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                 required
                             />
                         </div>
-                        <div className="space-y-2">
-                            <label className="text-xs font-bold uppercase tracking-wider text-slate-600 mb-1 block">Pengiriman ke Buyer</label>
-                            <input
-                                list="buyer-list"
-                                value={buyerName}
-                                onChange={e => {
-                                    const val = e.target.value;
-                                    setBuyerName(val);
-                                    const customer = customers.find(c => c.name === val);
-                                    if (customer && customer.address) {
-                                        setRecipient(customer.address);
-                                    }
-                                }}
-                                className="w-full bg-white border-2 border-slate-300 px-3 py-2.5 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-medium"
-                                placeholder="Ketik/Pilih Buyer"
-                                required
-                            />
-                            <datalist id="buyer-list">
-                                {customers.map(c => <option key={c.id} value={c.name} />)}
-                            </datalist>
+                        <div className="space-y-2 lg:col-span-2">
+                            <label className="text-xs font-bold uppercase tracking-wider text-slate-600 mb-1 block">{isManualBuyer ? "Nama Buyer (Manual)" : "Pilih Buyer"}</label>
+                            {isManualBuyer ? (
+                                <input
+                                    value={buyerName}
+                                    onChange={e => setBuyerName(e.target.value)}
+                                    className="w-full bg-white border-2 border-slate-300 px-3 py-2.5 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-medium"
+                                    placeholder="Ketik Nama Buyer..."
+                                    required
+                                />
+                            ) : (
+                                <>
+                                    <input
+                                        list="buyer-list"
+                                        value={buyerName}
+                                        onChange={e => {
+                                            const val = e.target.value;
+                                            setBuyerName(val);
+                                            const customer = customers.find(c => c.name === val);
+                                            if (customer && customer.address) {
+                                                setRecipient(customer.address);
+                                            }
+                                        }}
+                                        className="w-full bg-white border-2 border-slate-300 px-3 py-2.5 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-medium"
+                                        placeholder="Ketik/Pilih Buyer"
+                                        required
+                                    />
+                                    <datalist id="buyer-list">
+                                        {customers.map(c => <option key={c.id} value={c.name} />)}
+                                    </datalist>
+                                </>
+                            )}
                         </div>
                         <div className="space-y-2">
                             <label className="text-xs font-bold uppercase tracking-wider text-slate-600 mb-1 block">Tanggal</label>

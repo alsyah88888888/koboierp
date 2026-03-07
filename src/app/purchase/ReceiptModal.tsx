@@ -124,6 +124,10 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
         setItems(newItems);
     };
 
+    const totalQty = useMemo(() => {
+        return items.reduce((acc, item) => acc + (Number(item.quantity) || 0), 0);
+    }, [items]);
+
     const grossAmount = useMemo(() => {
         return items.reduce((acc, item) => {
             const q = typeof item.quantity === 'number' ? item.quantity : 0;
@@ -392,6 +396,12 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
                                     <div className="w-8 flex flex-col items-center justify-center p-2 bg-slate-50 rounded-lg border border-slate-200 h-10 mb-0.5">
                                         <span className="text-[10px] font-black text-slate-400">{index + 1}</span>
                                     </div>
+                                    <div className="w-40 space-y-1">
+                                        <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Barcode</label>
+                                        <div className="w-full p-2 bg-slate-50 border-2 border-slate-200 rounded-lg text-sm font-mono text-slate-500 h-10 flex items-center overflow-hidden">
+                                            {item.barcode}
+                                        </div>
+                                    </div>
                                     <div className="flex-1 space-y-1">
                                         <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Barang</label>
                                         <input
@@ -399,7 +409,7 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
                                             value={item.sku}
                                             onChange={e => updateItem(index, 'sku', e.target.value)}
                                             className="w-full p-2 bg-white border-2 border-slate-300 rounded-lg text-sm font-medium outline-none h-10 focus:border-primary transition-all"
-                                            placeholder="SKU"
+                                            placeholder="Cari SKU / Nama..."
                                             required
                                         />
                                         <datalist id={`product-list-${index}`}>
@@ -529,6 +539,10 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
                         <div className="flex flex-col justify-center p-8 bg-slate-900 rounded-[2.5rem] text-white border-2 border-slate-800 shadow-2xl relative overflow-hidden group">
                             <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-primary/30 transition-all duration-700" />
                             <div className="space-y-3 pb-4 border-b border-white/10 relative z-10">
+                                <div className="flex justify-between items-center text-xs font-bold text-slate-400">
+                                    <span>TOTAL QTY</span>
+                                    <span className="font-mono text-white tracking-widest">{totalQty.toLocaleString('id-ID')}</span>
+                                </div>
                                 <div className="flex justify-between items-center text-xs font-bold text-slate-400">
                                     <span>SUBTOTAL ITEM (Bruto)</span>
                                     <span className="font-mono text-white tracking-widest">{formatCurrency(grossAmount)}</span>

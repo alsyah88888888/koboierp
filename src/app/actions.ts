@@ -199,6 +199,11 @@ export async function createGoodsReceiptAction(data: {
         finalReceiptNumber = `KB-LPB-${fullDateStr}-${sequence}`;
     }
 
+    // Append -P suffix if tax invoice is used (and doesn't already have it)
+    if (data.taxInvoiceNumber && finalReceiptNumber && !finalReceiptNumber.endsWith("-P")) {
+        finalReceiptNumber += "-P";
+    }
+
     // Generate automatic Form Number (Internal Tracking)
     const now = new Date();
     const dateStrForm = txDate.toISOString().split('T')[0].replace(/-/g, '');
@@ -334,10 +339,15 @@ export async function updateGoodsReceiptAction(id: string, data: {
             }
 
             // 2. Update Header
+            let finalReceiptNumber = data.receiptNumber || existing.receiptNumber;
+            if (data.taxInvoiceNumber && finalReceiptNumber && !finalReceiptNumber.endsWith("-P")) {
+                finalReceiptNumber += "-P";
+            }
+
             await tx.goodsReceipt.update({
                 where: { id },
                 data: {
-                    receiptNumber: data.receiptNumber,
+                    receiptNumber: finalReceiptNumber,
                     receivedFrom: data.receivedFrom,
                     date: data.date,
                     taxInvoiceDate: data.taxInvoiceDate,
