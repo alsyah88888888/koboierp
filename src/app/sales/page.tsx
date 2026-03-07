@@ -35,10 +35,19 @@ export default async function SalesPage() {
         GROUP BY t.id
     `).catch(() => [])) as any[];
 
+    const salesReturns = serializeDecimal(await prisma.salesReturn.findMany({
+        include: {
+            delivery: { include: { items: { include: { product: true } } } },
+            items: { include: { product: true } }
+        },
+        orderBy: { createdAt: 'desc' }
+    }).catch(() => []));
+
     return (
         <SalesDashboard
             initialDeliveries={deliveries}
             initialReceipts={receipts}
+            initialReturns={salesReturns}
             products={products}
             warehouses={warehouses}
             customers={serializedCustomers}

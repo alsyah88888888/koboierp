@@ -5,7 +5,8 @@ import { Plus, Clock, FileText, Search, Truck, Trash2, Eye, Edit2, BarChart3, Tr
 import { format } from "date-fns";
 import SalesModal from "@/app/sales/SalesModal";
 import { useSession } from "next-auth/react";
-import { deleteSalesDeliveryAction } from "@/app/actions";
+import { deleteSalesDeliveryAction, deleteSalesReturnAction } from "@/app/actions";
+import { cn } from "@/lib/utils";
 import { DashboardStats } from "../components/DashboardStats";
 import Link from "next/link";
 import { ReportPreviewModal } from "@/components/ReportPreviewModal";
@@ -16,13 +17,14 @@ import { Undo2 } from "lucide-react";
 interface SalesDashboardProps {
     initialDeliveries: any[];
     initialReceipts?: any[];
+    initialReturns?: any[];
     products: any[];
     warehouses: any[];
     customers: any[];
     salesExpenses?: any[];
 }
 
-export default function SalesDashboard({ initialDeliveries, initialReceipts = [], products, warehouses, customers, salesExpenses = [] }: SalesDashboardProps) {
+export default function SalesDashboard({ initialDeliveries, initialReceipts = [], initialReturns = [], products, warehouses, customers, salesExpenses = [] }: SalesDashboardProps) {
     const { data: session } = useSession() as any;
     const isAdmin = session?.user?.role === "ADMIN";
     const userRole = session?.user?.role || "";
@@ -30,6 +32,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
     const [showReturnModal, setShowReturnModal] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [editData, setEditData] = useState<any>(null);
+    const [activeTab, setActiveTab] = useState<"SJ" | "RETURNS">("SJ");
 
     // Calculate Performance for BC & PF
     const getStats = (id: string) => {
@@ -69,10 +72,25 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
         }
     };
 
+    const handleDeleteReturn = async (id: string) => {
+        if (!confirm("Hapus retur ini? Stok akan dikurangi kembali (revert).")) return;
+        try {
+            await deleteSalesReturnAction(id);
+            alert("Retur berhasil dihapus");
+        } catch (e: any) {
+            alert(e.message || "Gagal menghapus retur");
+        }
+    };
+
     const filteredDeliveries = initialDeliveries.filter(d =>
         d.deliveryNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
         d.recipient.toLowerCase().includes(searchTerm.toLowerCase()) ||
         d.buyerName.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    const filteredReturns = initialReturns.filter(r =>
+        r.returnNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        r.delivery?.buyerName.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     const handleExport = () => {
@@ -111,40 +129,51 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hide-print">
-                <div>
-                    <h2 className="text-3xl font-bold tracking-tight text-primary">Penjualan (Sales Delivery)</h2>
-                    <p className="text-muted-foreground">Input pengiriman barang ke buyer dan monitoring stok keluar.</p>
-                </div>
-                <div className="flex flex-wrap gap-3">
+            <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 hide-print mb-4">
+                <div className="flex flex-wrap gap-2 justify-center md:justify-start">
                     <button
                         onClick={handlePreview}
-                        className="bg-white border-2 border-emerald-600 text-emerald-600 px-6 py-2 rounded-md flex items-center gap-2 hover:bg-emerald-50 transition-all font-bold shadow-sm active:scale-95"
+                        className="bg-white border-2 border-emerald-600 text-emerald-600 px-4 md:px-6 py-2 rounded-xl flex items-center gap-2 hover:bg-emerald-50 transition-all font-bold shadow-sm active:scale-95 text-xs md:text-sm"
                     >
-                        <Eye className="h-5 w-5" />
-                        <span>Preview Laporan</span>
+                        <Eye className="h-4 w-4 md:h-5 md:w-5" />
+                        <span>Preview</span>
                     </button>
                     <button
                         onClick={handleExport}
-                        className="bg-emerald-600 text-white px-6 py-2 rounded-md flex items-center gap-2 hover:bg-emerald-700 shadow-lg shadow-emerald-200 transition-all active:scale-95 font-bold"
+                        className="bg-emerald-600 text-white px-4 md:px-6 py-2 rounded-xl flex items-center gap-2 hover:bg-emerald-700 shadow-lg shadow-emerald-200 transition-all active:scale-95 font-bold text-xs md:text-sm"
                     >
-                        <FileText className="h-5 w-5" />
-                        <span>Export Excel</span>
+                        <FileText className="h-4 w-4 md:h-5 md:w-5" />
+                        <span>Export</span>
                     </button>
                     <button
                         onClick={() => setShowReturnModal(true)}
-                        className="bg-white border-2 border-blue-600 text-blue-600 px-6 py-2 rounded-md flex items-center gap-2 hover:bg-blue-50 transition-all font-bold shadow-sm active:scale-95"
+                        className="bg-white border-2 border-blue-600 text-blue-600 px-4 md:px-6 py-2 rounded-xl flex items-center gap-2 hover:bg-blue-50 transition-all font-bold shadow-sm active:scale-95 text-xs md:text-sm"
                     >
-                        <Undo2 className="h-5 w-5" />
-                        <span>Retur Penjualan</span>
+                        <Undo2 className="h-4 w-4 md:h-5 md:w-5" />
+                        <span>Retur</span>
                     </button>
-                    <button
-                        onClick={() => setShowSalesModal(true)}
-                        className="bg-primary text-white px-6 py-2 rounded-md flex items-center gap-2 hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all active:scale-95 font-bold"
-                    >
-                        <Plus className="h-5 w-5 text-white" />
-                        <span className="text-white">Input Penjualan</span>
-                    </button>
+                </div>
+                <div className="flex justify-center md:justify-end">
+                    {activeTab === "SJ" ? (
+                        <button
+                            onClick={() => setShowSalesModal(true)}
+                            className="bg-primary text-white px-4 md:px-6 py-2 rounded-xl flex items-center gap-2 hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all active:scale-95 font-bold text-xs md:text-sm w-full md:w-auto justify-center"
+                        >
+                            <Plus className="h-4 w-4 md:h-5 md:w-5 text-white" />
+                            <span className="text-white">Input Penjualan</span>
+                        </button>
+                    ) : (
+                        <button
+                            onClick={() => {
+                                setEditData(null);
+                                setShowReturnModal(true);
+                            }}
+                            className="bg-blue-600 text-white px-4 md:px-6 py-2 rounded-xl flex items-center gap-2 hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all active:scale-95 font-bold text-xs md:text-sm w-full md:w-auto justify-center"
+                        >
+                            <Plus className="h-4 w-4 md:h-5 md:w-5 text-white" />
+                            <span className="text-white">Tambah Retur</span>
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -285,7 +314,26 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
 
             <div className="rounded-xl border bg-card shadow-sm">
                 <div className="p-6 border-b flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <h3 className="text-lg font-semibold text-primary">Riwayat Pengiriman</h3>
+                    <div className="flex items-center gap-4">
+                        <button
+                            onClick={() => setActiveTab("SJ")}
+                            className={cn(
+                                "text-lg font-bold transition-all border-b-2 pb-1",
+                                activeTab === "SJ" ? "text-primary border-primary" : "text-muted-foreground border-transparent hover:text-slate-600"
+                            )}
+                        >
+                            Riwayat Pengiriman
+                        </button>
+                        <button
+                            onClick={() => setActiveTab("RETURNS")}
+                            className={cn(
+                                "text-lg font-bold transition-all border-b-2 pb-1",
+                                activeTab === "RETURNS" ? "text-blue-600 border-blue-600" : "text-muted-foreground border-transparent hover:text-slate-600"
+                            )}
+                        >
+                            Retur Penjualan
+                        </button>
+                    </div>
                     <div className="relative w-full md:w-80">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <input
@@ -296,84 +344,147 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                         />
                     </div>
                 </div>
-                <div className="overflow-x-auto">
-                    <table className="w-full text-sm text-left">
-                        <thead className="bg-muted/30 text-muted-foreground border-b text-xs uppercase tracking-wider">
-                            <tr>
-                                <th className="px-6 py-4">No. Pengiriman (SJ)</th>
-                                <th className="px-6 py-4">Kirim Ke</th>
-                                <th className="px-6 py-4">Buyer</th>
-                                <th className="px-6 py-4">Gudang</th>
-                                <th className="px-6 py-4 text-right">Total Qty (Jumlah)</th>
-                                <th className="px-6 py-4 text-right">Tanggal</th>
-                                {(isAdmin || userRole === "SALES") && <th className="px-6 py-4 text-center w-10">Aksi</th>}
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y">
-                            {filteredDeliveries.map((d: any) => (
-                                <tr key={d.id} className="hover:bg-muted/20 transition-colors">
-                                    <td className="px-6 py-4 font-mono text-primary font-medium">{d.deliveryNumber}</td>
-                                    <td className="px-6 py-4 font-medium">{d.recipient}</td>
-                                    <td className="px-6 py-4">{d.buyerName}</td>
-                                    <td className="px-6 py-4 text-xs">
-                                        <span className="bg-muted px-2 py-0.5 rounded uppercase font-bold text-[10px]">
-                                            {d.warehouse.name}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 text-right">
-                                        {d.items.reduce((acc: number, i: any) => acc + i.quantity, 0)} {d.items[0]?.uom || ""}
-                                    </td>
-                                    <td className="px-6 py-4 text-right text-muted-foreground">
-                                        {format(new Date(d.createdAt), "dd/MM/yyyy HH:mm")}
-                                    </td>
-                                    <td className="px-6 py-4 text-center">
-                                        <div className="flex items-center justify-center gap-2">
-                                            <Link
-                                                href={`/sales/print/sj/${d.id}`}
-                                                className="p-1.5 text-slate-400 hover:text-primary hover:bg-slate-50 rounded-lg transition-colors"
-                                                title="Lihat Surat Jalan"
-                                            >
-                                                <Eye className="h-4 w-4" />
-                                            </Link>
-                                            <Link
-                                                href={`/sales/print/${d.id}`}
-                                                className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
-                                                title="Lihat Invoice"
-                                            >
-                                                <FileText className="h-4 w-4" />
-                                            </Link>
-                                            <button
-                                                onClick={() => {
-                                                    setEditData(d);
-                                                    setShowSalesModal(true);
-                                                }}
-                                                className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
-                                                title="Edit Data"
-                                            >
-                                                <Edit2 className="h-4 w-4" />
-                                            </button>
-                                            {(isAdmin || userRole === "SALES") && (
+                <div className="overflow-x-auto custom-scrollbar">
+                    {activeTab === "SJ" ? (
+                        <table className="w-full text-sm text-left min-w-[1000px]">
+                            <thead className="bg-muted/30 text-muted-foreground border-b text-xs uppercase tracking-wider">
+                                <tr>
+                                    <th className="px-6 py-4">No. Pengiriman (SJ)</th>
+                                    <th className="px-6 py-4">Kirim Ke</th>
+                                    <th className="px-6 py-4">Buyer</th>
+                                    <th className="px-6 py-4">Gudang</th>
+                                    <th className="px-6 py-4 text-right">Total Qty (Jumlah)</th>
+                                    <th className="px-6 py-4 text-right">Tanggal</th>
+                                    {(isAdmin || userRole === "SALES") && <th className="px-6 py-4 text-center w-10">Aksi</th>}
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y">
+                                {filteredDeliveries.map((d: any) => (
+                                    <tr key={d.id} className="hover:bg-muted/20 transition-colors">
+                                        <td className="px-6 py-4 font-mono text-primary font-medium">{d.deliveryNumber}</td>
+                                        <td className="px-6 py-4 font-medium">{d.recipient}</td>
+                                        <td className="px-6 py-4">{d.buyerName}</td>
+                                        <td className="px-6 py-4 text-xs">
+                                            <span className="bg-muted px-2 py-0.5 rounded uppercase font-bold text-[10px]">
+                                                {d.warehouse.name}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            {d.items.reduce((acc: number, i: any) => acc + i.quantity, 0)} {d.items[0]?.uom || ""}
+                                        </td>
+                                        <td className="px-6 py-4 text-right text-muted-foreground">
+                                            {format(new Date(d.createdAt), "dd/MM/yyyy HH:mm")}
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            <div className="flex items-center justify-center gap-2">
+                                                <Link
+                                                    href={`/sales/print/sj/${d.id}`}
+                                                    className="p-1.5 text-slate-400 hover:text-primary hover:bg-slate-50 rounded-lg transition-colors"
+                                                    title="Lihat Surat Jalan"
+                                                >
+                                                    <Eye className="h-4 w-4" />
+                                                </Link>
+                                                <Link
+                                                    href={`/sales/print/${d.id}`}
+                                                    className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                                                    title="Lihat Invoice"
+                                                >
+                                                    <FileText className="h-4 w-4" />
+                                                </Link>
                                                 <button
-                                                    onClick={() => handleDelete(d.id)}
+                                                    onClick={() => {
+                                                        setEditData(d);
+                                                        setShowSalesModal(true);
+                                                    }}
+                                                    className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                                                    title="Edit Data"
+                                                >
+                                                    <Edit2 className="h-4 w-4" />
+                                                </button>
+                                                {(isAdmin || userRole === "SALES") && (
+                                                    <button
+                                                        onClick={() => handleDelete(d.id)}
+                                                        className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                        title="Hapus Penjualan"
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                                {filteredDeliveries.length === 0 && (
+                                    <tr>
+                                        <td colSpan={7} className="px-6 py-12 text-center text-muted-foreground italic">
+                                            Belum ada data penjualan.
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    ) : (
+                        <table className="w-full text-sm text-left min-w-[1000px]">
+                            <thead className="bg-blue-50/50 text-blue-900 border-b text-xs uppercase tracking-wider">
+                                <tr>
+                                    <th className="px-6 py-4">No. Retur</th>
+                                    <th className="px-6 py-4">No. SJ Terkait</th>
+                                    <th className="px-6 py-4">Buyer</th>
+                                    <th className="px-6 py-4 text-right">Total Qty Retur</th>
+                                    <th className="px-6 py-4 text-center">Status</th>
+                                    <th className="px-6 py-4 text-center w-24">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-blue-50">
+                                {filteredReturns.map((r: any) => (
+                                    <tr key={r.id} className="hover:bg-blue-50/20 transition-colors">
+                                        <td className="px-6 py-4 font-mono text-blue-700 font-bold">{r.returnNumber}</td>
+                                        <td className="px-6 py-4 font-mono text-slate-500">{r.delivery.deliveryNumber}</td>
+                                        <td className="px-6 py-4 font-medium">{r.delivery.buyerName}</td>
+                                        <td className="px-6 py-4 text-right font-bold text-blue-600">
+                                            {r.items.reduce((acc: number, item: any) => acc + item.quantity, 0)} {r.items[0]?.product?.uom || ""}
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            {r.status === "PENDING" ? (
+                                                <span className="px-3 py-1 bg-amber-100 text-amber-700 text-xs font-bold rounded-full border border-amber-200">PENDING</span>
+                                            ) : (
+                                                <span className="px-3 py-1 bg-emerald-100 text-emerald-700 text-xs font-bold rounded-full border border-emerald-200">VERIFIED</span>
+                                            )}
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            <div className="flex items-center justify-center gap-2">
+                                                <button
+                                                    onClick={() => {
+                                                        setEditData(r);
+                                                        setShowReturnModal(true);
+                                                    }}
+                                                    className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                                                    title="Edit Retur"
+                                                    disabled={r.status !== "PENDING"}
+                                                >
+                                                    <Edit2 className="h-4 w-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteReturn(r.id)}
                                                     className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                                    title="Hapus Penjualan"
+                                                    title="Hapus Retur"
                                                 >
                                                     <Trash2 className="h-4 w-4" />
                                                 </button>
-                                            )}
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                            {filteredDeliveries.length === 0 && (
-                                <tr>
-                                    <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground italic">
-                                        Belum ada data penjualan.
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                                {filteredReturns.length === 0 && (
+                                    <tr>
+                                        <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground italic">
+                                            Belum ada data retur penjualan.
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    )}
                 </div>
             </div>
 
@@ -393,7 +504,11 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
             {showReturnModal && (
                 <SalesReturnModal
                     deliveries={initialDeliveries}
-                    onClose={() => setShowReturnModal(false)}
+                    initialData={editData}
+                    onClose={() => {
+                        setShowReturnModal(false);
+                        setEditData(null);
+                    }}
                 />
             )}
 

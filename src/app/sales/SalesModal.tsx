@@ -202,9 +202,9 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
     };
 
     return (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white border-2 border-slate-300 shadow-2xl rounded-2xl w-full max-w-6xl max-h-[95vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
-                <div className="p-6 border-b-2 border-slate-100 flex justify-between items-center bg-slate-50">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-0 md:p-4">
+            <div className="bg-white border-2 border-slate-300 shadow-2xl rounded-none md:rounded-2xl w-full max-w-7xl h-full md:max-h-[95vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
+                <div className="p-4 md:p-6 border-b-2 border-slate-100 flex justify-between items-center bg-slate-50">
                     <div>
                         <h2 className="text-xl font-bold text-slate-900">{initialData ? "Edit Penjualan" : "Input Penjualan Baru"}</h2>
                         <p className="text-sm text-slate-500 mt-1 font-medium">{initialData ? `Mengedit ${initialData.deliveryNumber}` : "Isi detail pengiriman dan barang yang akan dikirim."}</p>
@@ -212,9 +212,9 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                     <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors border border-slate-200 bg-white"><X className="h-6 w-6 text-slate-600" /></button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="overflow-y-auto flex-1 p-8 space-y-8 bg-white">
+                <form onSubmit={handleSubmit} className="overflow-y-auto flex-1 p-4 md:p-8 space-y-6 md:space-y-8 bg-white">
                     {/* Header Section */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6 bg-slate-50 p-6 rounded-xl border-2 border-slate-200 shadow-sm transition-all duration-300">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 md:gap-6 bg-slate-50 p-4 md:p-6 rounded-xl border-2 border-slate-200 shadow-sm transition-all duration-300">
                         <div className="lg:col-span-6 flex items-center justify-between pb-2 border-b border-slate-200 mb-2">
                             <div className="flex items-center gap-2">
                                 <label className="text-sm font-bold text-slate-700">Input Buyer Manual?</label>
@@ -301,36 +301,52 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
 
                     {/* Body Section (Items) */}
                     <div className="space-y-4">
-                        <div className="flex justify-between items-center px-1 border-b-2 border-slate-100 pb-2">
-                            <h3 className="font-bold text-slate-800 flex items-center gap-2 text-lg">
+                        <div className="flex flex-col sm:flex-row justify-between items-center px-1 border-b-2 border-slate-100 pb-2 gap-3">
+                            <h3 className="font-bold text-slate-800 flex items-center gap-2 text-base md:text-lg w-full sm:w-auto">
                                 <span className="bg-primary text-white h-7 w-7 rounded-full flex items-center justify-center text-xs shadow-md font-black">2</span>
                                 Daftar Barang & Diskon
                             </h3>
-                            <button
-                                type="button"
-                                onClick={addItem}
-                                className="bg-primary hover:bg-primary/90 text-white px-6 py-2 rounded-xl text-sm font-bold transition-all shadow-lg shadow-primary/20 flex items-center gap-2 group active:scale-95"
-                            >
-                                <Plus className="h-5 w-5 group-hover:rotate-90 transition-transform" />
-                                <span>Tambah Barang</span>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    const nextState = !showDiscount;
-                                    setShowDiscount(nextState);
-                                    if (!nextState) setTaxRate(0);
-                                }}
-                                className={`px-6 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 border-2 ${showDiscount ? "bg-orange-500 border-orange-600 text-white shadow-lg shadow-orange-200" : "bg-white border-slate-200 text-slate-500 hover:border-orange-500 hover:text-orange-500"}`}
-                            >
-                                <Tag className={`h-4 w-4 ${showDiscount ? "animate-pulse" : ""}`} />
-                                <span>{showDiscount ? "Simpan Diskon" : "Tambah Diskon"}</span>
-                            </button>
+                            <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                                <button
+                                    type="button"
+                                    onClick={addItem}
+                                    className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-xl text-xs md:text-sm font-bold transition-all shadow-lg shadow-primary/20 flex items-center gap-2 group active:scale-95"
+                                >
+                                    <Plus className="h-4 w-4 md:h-5 md:w-5 group-hover:rotate-90 transition-transform" />
+                                    <span>Tambah Baru</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const nextState = !showDiscount;
+                                        setShowDiscount(nextState);
+                                        if (!nextState) setTaxRate(0);
+                                    }}
+                                    className={`px-4 py-2 rounded-xl text-xs md:text-sm font-bold transition-all flex items-center gap-2 border-2 ${showDiscount ? "bg-orange-500 border-orange-600 text-white shadow-lg shadow-orange-200" : "bg-white border-slate-200 text-slate-500 hover:border-orange-500 hover:text-orange-500"}`}
+                                >
+                                    <Tag className={`h-4 w-4 ${showDiscount ? "animate-pulse" : ""}`} />
+                                    <span>Diskon</span>
+                                </button>
+                            </div>
                         </div>
 
                         <div className="space-y-4">
                             {items.map((item, index) => (
-                                <div key={index} className="flex gap-4 items-end bg-white p-5 rounded-2xl border-2 border-slate-200 shadow-sm hover:border-primary/30 transition-all group relative overflow-hidden">
+                                <div key={index} className="flex flex-col xl:flex-row gap-4 items-stretch xl:items-end bg-white p-4 md:p-5 rounded-2xl border-2 border-slate-200 shadow-sm hover:border-primary/30 transition-all group relative overflow-hidden">
+                                    <div className="flex items-center gap-3 xl:hidden border-b pb-2 mb-1">
+                                        <div className="w-8 h-8 flex items-center justify-center bg-primary text-white rounded-full font-black text-xs">
+                                            {index + 1}
+                                        </div>
+                                        <span className="font-bold text-slate-700 text-sm">Item #{index + 1}</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => removeItem(index)}
+                                            className="ml-auto p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"
+                                            disabled={items.length === 1}
+                                        >
+                                            <Trash2 className="h-5 w-5" />
+                                        </button>
+                                    </div>
                                     <div className="flex-1 space-y-1">
                                         <label className="text-[10px] font-bold text-slate-500 uppercase ml-1 tracking-widest">Nama Barang / SKU</label>
                                         <input
@@ -409,16 +425,16 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                             </div>
                                         </>
                                     )}
-                                    <div className="w-36 space-y-1">
+                                    <div className="w-full xl:w-36 space-y-1">
                                         <label className="text-[10px] font-bold text-slate-500 uppercase ml-1 tracking-widest">Total Harga</label>
-                                        <div className="w-full bg-slate-50 border-2 border-slate-200 px-3 py-2 rounded-lg text-sm font-black text-right text-slate-700 h-11 flex items-center justify-end shadow-inner">
+                                        <div className="w-full bg-slate-900 border-2 border-slate-800 px-3 py-2 rounded-lg text-sm font-black text-right text-primary h-11 flex items-center justify-end shadow-inner">
                                             {((typeof item.quantity === 'number' ? item.quantity : 0) * (typeof item.salesPrice === 'number' ? item.salesPrice : 0) - (Number(item.discount || 0))).toLocaleString('id-ID')}
                                         </div>
                                     </div>
                                     <button
                                         type="button"
                                         onClick={() => removeItem(index)}
-                                        className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl border-2 border-transparent hover:border-red-100 transition-all h-11 w-11 flex items-center justify-center animate-in zoom-in duration-300"
+                                        className="hidden xl:flex p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl border-2 border-transparent hover:border-red-100 transition-all h-11 w-11 items-center justify-center animate-in zoom-in duration-300"
                                         disabled={items.length === 1}
                                     >
                                         <Trash2 className="h-5 w-5" />
@@ -527,18 +543,18 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                     )}
                 </form>
 
-                <div className="p-8 border-t-2 border-slate-100 bg-slate-50 flex justify-end gap-4">
+                <div className="p-4 md:p-8 border-t-2 border-slate-100 bg-slate-50 flex flex-col md:flex-row justify-end gap-3 md:gap-4">
                     <button
                         type="button"
                         onClick={onClose}
-                        className="px-8 py-3.5 border-2 border-slate-300 rounded-[1.25rem] hover:bg-white font-black transition-all text-slate-700 shadow-md hover:shadow-lg active:scale-95"
+                        className="w-full md:w-auto px-8 py-3 md:py-3.5 border-2 border-slate-300 rounded-[1.25rem] hover:bg-white font-black transition-all text-slate-700 shadow-md hover:shadow-lg active:scale-95 order-2 md:order-1"
                     >
                         <span>BATAL</span>
                     </button>
                     <button
                         onClick={handleSubmit}
                         disabled={loading}
-                        className="px-12 py-3.5 bg-primary text-white rounded-[1.25rem] hover:bg-primary/90 font-black shadow-2xl shadow-primary/30 flex items-center gap-3 transition-all active:scale-95 disabled:opacity-50 border-2 border-primary"
+                        className="w-full md:w-auto px-12 py-3 md:py-3.5 bg-primary text-white rounded-[1.25rem] hover:bg-primary/90 font-black shadow-2xl shadow-primary/30 flex items-center justify-center gap-3 transition-all active:scale-95 disabled:opacity-50 border-2 border-primary order-1 md:order-2"
                     >
                         {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
                         <span>SIMPAN PENJUALAN</span>

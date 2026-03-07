@@ -245,9 +245,9 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
     }
 
     return (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-            <div className="bg-white border-2 border-slate-300 rounded-2xl shadow-2xl w-full max-w-5xl max-h-[95vh] overflow-hidden flex flex-col">
-                <div className="p-6 border-b-2 border-slate-100 flex justify-between items-center bg-slate-50">
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-0 md:p-4 backdrop-blur-sm">
+            <div className="bg-white border-2 border-slate-300 rounded-none md:rounded-2xl shadow-2xl w-full max-w-7xl h-full md:max-h-[95vh] overflow-hidden flex flex-col">
+                <div className="p-4 md:p-6 border-b-2 border-slate-100 flex justify-between items-center bg-slate-50">
                     <div>
                         <h2 className="text-2xl font-bold text-slate-900">{initialData ? "Edit Pembelian" : "Input Pembelian"}</h2>
                         <p className="text-sm text-slate-500 font-medium">{initialData ? `Mengedit ${initialData.formNumber}` : "Lengkapi detail faktur, sales, dan rincian barang."}</p>
@@ -257,9 +257,9 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-8 overflow-y-auto space-y-8 bg-white">
+                <form onSubmit={handleSubmit} className="p-4 md:p-8 overflow-y-auto space-y-6 md:space-y-8 bg-white">
                     {/* Header Section */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-slate-50 p-6 rounded-xl border-2 border-slate-200">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 bg-slate-50 p-4 md:p-6 rounded-xl border-2 border-slate-200">
                         <div className="space-y-2">
                             <label className="text-xs font-bold uppercase text-slate-600">Terima Dari (Supplier)</label>
                             <input
@@ -315,7 +315,7 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
                                 </label>
                             </div>
 
-                            <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 transition-all duration-300 overflow-hidden ${hasTaxInvoice ? 'h-auto opacity-100 mt-4' : 'h-0 opacity-0 m-0'}`}>
+                            <div className={`grid grid-cols-1 sm:grid-cols-2 gap-4 transition-all duration-300 overflow-hidden ${hasTaxInvoice ? 'h-auto opacity-100 mt-4' : 'h-0 opacity-0 m-0'}`}>
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold uppercase text-slate-600">Nomor Faktur Pajak</label>
                                     <input
@@ -397,11 +397,26 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
 
                         <div className="space-y-4">
                             {items.map((item, index) => (
-                                <div key={index} className="flex gap-3 items-end border-2 border-slate-200 p-4 rounded-xl shadow-sm bg-white hover:border-primary/20 transition-all">
-                                    <div className="w-8 flex flex-col items-center justify-center p-2 bg-slate-50 rounded-lg border border-slate-200 h-10 mb-0.5">
+                                <div key={index} className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-end border-2 border-slate-200 p-4 rounded-xl shadow-sm bg-white hover:border-primary/20 transition-all relative">
+                                    <div className="flex items-center gap-3 lg:hidden border-b pb-2 mb-1">
+                                        <div className="w-8 h-8 flex items-center justify-center bg-primary text-white rounded-full font-black text-xs">
+                                            {index + 1}
+                                        </div>
+                                        <span className="font-bold text-slate-700 text-sm">Item #{index + 1}</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => removeItem(index)}
+                                            className="ml-auto p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"
+                                            disabled={items.length === 1}
+                                        >
+                                            <Trash2 className="h-5 w-5" />
+                                        </button>
+                                    </div>
+
+                                    <div className="hidden lg:flex w-8 flex-col items-center justify-center p-2 bg-slate-50 rounded-lg border border-slate-200 h-10 mb-0.5">
                                         <span className="text-[10px] font-black text-slate-400">{index + 1}</span>
                                     </div>
-                                    <div className="w-40 space-y-1">
+                                    <div className="w-32 space-y-1">
                                         <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Barcode</label>
                                         <div className="w-full p-2 bg-slate-50 border-2 border-slate-200 rounded-lg text-sm font-mono text-slate-500 h-10 flex items-center overflow-hidden">
                                             {item.barcode}
@@ -468,16 +483,16 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
                                             </div>
                                         </>
                                     )}
-                                    <div className="w-36 space-y-1">
+                                    <div className="w-full lg:w-36 space-y-1">
                                         <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Net Total</label>
-                                        <div className="w-full p-2 bg-slate-50 border-2 border-slate-200 rounded-lg text-sm font-black text-slate-700 text-right h-10 flex items-center justify-end shadow-inner">
+                                        <div className="w-full p-2 bg-slate-900 border-2 border-slate-800 rounded-lg text-sm font-black text-primary text-right h-10 flex items-center justify-end shadow-inner">
                                             {formatCurrency(((Number(item.quantity) || 0) * (Number(item.purchasePrice) || 0)) - (Number(item.discount) || 0))}
                                         </div>
                                     </div>
                                     <button
                                         type="button"
                                         onClick={() => removeItem(index)}
-                                        className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg border-2 border-transparent hover:border-red-100 transition-all h-10 w-10 flex items-center justify-center animate-in zoom-in"
+                                        className="hidden lg:flex p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg border-2 border-transparent hover:border-red-100 transition-all h-10 w-10 items-center justify-center animate-in zoom-in"
                                         disabled={items.length === 1}
                                     >
                                         <Trash2 className="h-5 w-5" />
@@ -541,61 +556,61 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
                             </div>
                         </div>
 
-                        <div className="flex flex-col justify-center p-8 bg-slate-900 rounded-[2.5rem] text-white border-2 border-slate-800 shadow-2xl relative overflow-hidden group">
+                        <div className="flex flex-col justify-center p-6 md:p-8 bg-slate-900 rounded-2xl md:rounded-[2.5rem] text-white border-2 border-slate-800 shadow-2xl relative overflow-hidden group">
                             <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-primary/30 transition-all duration-700" />
                             <div className="space-y-3 pb-4 border-b border-white/10 relative z-10">
-                                <div className="flex justify-between items-center text-xs font-bold text-slate-400">
+                                <div className="flex justify-between items-center text-[10px] md:text-xs font-bold text-slate-400">
                                     <span>TOTAL QTY</span>
                                     <span className="font-mono text-white tracking-widest">{totalQty.toLocaleString('id-ID')}</span>
                                 </div>
-                                <div className="flex justify-between items-center text-xs font-bold text-slate-400">
+                                <div className="flex justify-between items-center text-[10px] md:text-xs font-bold text-slate-400">
                                     <span>SUBTOTAL ITEM (Bruto)</span>
                                     <span className="font-mono text-white tracking-widest">{formatCurrency(grossAmount)}</span>
                                 </div>
                                 {showDiscount && (
                                     <>
-                                        <div className="flex justify-between items-center text-xs font-bold text-orange-400">
+                                        <div className="flex justify-between items-center text-[10px] md:text-xs font-bold text-orange-400">
                                             <span>TOTAL POTONGAN ITEM</span>
                                             <span className="font-mono">- {formatCurrency(grossAmount - subtotal)}</span>
                                         </div>
-                                        <div className="flex justify-between items-center text-xs font-bold text-primary">
+                                        <div className="flex justify-between items-center text-[10px] md:text-xs font-bold text-primary">
                                             <span>DISKON FINAL</span>
                                             <span className="font-mono font-black italic">- {formatCurrency(finalDiscountNominal)}</span>
                                         </div>
                                     </>
                                 )}
-                                <div className="flex justify-between items-center text-xs font-bold text-indigo-400">
+                                <div className="flex justify-between items-center text-[10px] md:text-xs font-bold text-indigo-400">
                                     <span>PPN ({taxRate}%)</span>
                                     <span className="font-mono tracking-widest">+ {formatCurrency(taxAmount)}</span>
                                 </div>
                             </div>
-                            <div className="flex justify-between items-center pt-4 relative z-10">
+                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center pt-4 relative z-10 gap-4">
                                 <div>
                                     <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Grand Total Akhir</p>
-                                    <h4 className="text-4xl font-black text-primary tracking-tighter drop-shadow-md">
+                                    <h4 className="text-3xl md:text-4xl font-black text-primary tracking-tighter drop-shadow-md">
                                         {formatCurrency(grandTotal)}
                                     </h4>
                                 </div>
-                                <div className="text-right">
+                                <div className="text-left md:text-right w-full md:w-auto border-t md:border-none pt-2 md:pt-0">
                                     <span className="text-[10px] font-bold text-slate-500 block">Metode: API/Hutang</span>
-                                    <span className="text-xs font-bold text-primary italic uppercase tracking-tighter bg-primary/10 px-2 py-0.5 rounded mt-1 inline-block border border-primary/20">Checked by System</span>
+                                    <span className="text-[10px] md:text-xs font-bold text-primary italic uppercase tracking-tighter bg-primary/10 px-2 py-0.5 rounded mt-1 inline-block border border-primary/20">Checked by System</span>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div className="pt-8 border-t-2 border-slate-100 flex justify-end gap-4">
+                    <div className="pt-6 md:pt-8 border-t-2 border-slate-100 flex flex-col md:flex-row justify-end gap-3 md:gap-4">
                         <button
                             type="button"
                             onClick={onClose}
-                            className="px-8 py-3 border-2 border-slate-300 rounded-xl hover:bg-slate-50 font-bold transition-all text-slate-600 shadow-sm"
+                            className="w-full md:w-auto px-8 py-3 border-2 border-slate-300 rounded-xl hover:bg-slate-50 font-bold transition-all text-slate-600 shadow-sm order-2 md:order-1"
                         >
                             <span className="text-slate-600">Batal</span>
                         </button>
                         <button
                             type="submit"
                             disabled={isSubmitting}
-                            className="px-10 py-3 bg-primary text-white rounded-xl hover:bg-primary/90 flex items-center gap-2 font-bold shadow-xl shadow-primary/20 active:scale-95 disabled:opacity-50 transition-all border-2 border-primary"
+                            className="w-full md:w-auto px-10 py-3 bg-primary text-white rounded-xl hover:bg-primary/90 flex items-center justify-center gap-2 font-bold shadow-xl shadow-primary/20 active:scale-95 disabled:opacity-50 transition-all border-2 border-primary order-1 md:order-2"
                         >
                             {isSubmitting ? "Memproses..." : <span className="text-white">{initialData ? "Simpan Perubahan" : "Simpan Penerimaan"}</span>}
                         </button>

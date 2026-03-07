@@ -24,9 +24,7 @@ import {
     ShoppingBag,
     Wallet,
     ArrowUpRight,
-    ArrowDownRight,
-    Search,
-    Bell
+    ArrowDownRight
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 
@@ -42,30 +40,8 @@ const IconMap: any = {
 
 export function AdminDashboard({ stats, salesData, inventoryData, recentActivity }: any) {
     return (
-        <div className="space-y-8 pb-12 animate-in fade-in duration-700">
-            {/* Top Bar / Welcome */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-black text-slate-900 tracking-tight">Kola Borasi Intelligence</h1>
-                    <div className="flex items-center gap-2 mt-1">
-                        <span className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse" />
-                        <p className="text-slate-500 font-medium text-sm">System operational • Real-time data sync active</p>
-                    </div>
-                </div>
-                <div className="flex items-center gap-3">
-                    <div className="relative group invisible md:visible">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
-                        <input
-                            placeholder="Cari transaksi..."
-                            className="bg-white border-2 border-slate-200 pl-10 pr-4 py-2 rounded-xl text-sm font-medium focus:border-primary outline-none transition-all w-64 shadow-sm"
-                        />
-                    </div>
-                    <button className="p-2.5 bg-white border-2 border-slate-200 rounded-xl hover:bg-slate-50 transition-all shadow-sm relative text-primary">
-                        <Bell className="h-5 w-5" />
-                        <span className="absolute top-2 right-2 h-2 w-2 bg-red-500 rounded-full border-2 border-white" />
-                    </button>
-                </div>
-            </div>
+        <div className="space-y-6 md:space-y-10 pb-12 animate-in fade-in duration-700">
+            {/* KPI Section */}
 
             {/* KPI Section */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -95,9 +71,9 @@ export function AdminDashboard({ stats, salesData, inventoryData, recentActivity
             </div>
 
             {/* Charts Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
                 {/* Sales Area Chart */}
-                <div className="lg:col-span-2 bg-white border-2 border-slate-200 rounded-[2.5rem] p-8 shadow-sm">
+                <div className="lg:col-span-2 bg-white border-2 border-slate-200 rounded-2xl md:rounded-[2.5rem] p-4 md:p-8 shadow-sm">
                     <div className="flex items-center justify-between mb-8">
                         <div>
                             <h3 className="text-xl font-black text-slate-900">Weekly Operations</h3>
@@ -135,7 +111,7 @@ export function AdminDashboard({ stats, salesData, inventoryData, recentActivity
                 </div>
 
                 {/* Inventory Pie Chart */}
-                <div className="bg-white border-2 border-slate-200 rounded-[2.5rem] p-8 shadow-sm flex flex-col">
+                <div className="bg-white border-2 border-slate-200 rounded-2xl md:rounded-[2.5rem] p-4 md:p-8 shadow-sm flex flex-col">
                     <div className="mb-6">
                         <h3 className="text-xl font-black text-slate-900">Inventory Distribution</h3>
                         <p className="text-slate-500 text-sm font-medium">By product category</p>
@@ -181,9 +157,9 @@ export function AdminDashboard({ stats, salesData, inventoryData, recentActivity
             </div>
 
             {/* Bottom Section: Recent Activity & Low Stock */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
                 {/* Recent Activity Table */}
-                <div className="bg-white border-2 border-slate-200 rounded-[2.5rem] p-8 shadow-sm">
+                <div className="bg-white border-2 border-slate-200 rounded-2xl md:rounded-[2.5rem] p-4 md:p-8 shadow-sm">
                     <div className="flex items-center justify-between mb-6">
                         <h3 className="text-xl font-black text-slate-900">Latest Operations</h3>
                         <a href="/finance" className="text-xs font-black text-blue-600 border-b-2 border-blue-600/20 hover:border-blue-600 transition-all">View All</a>
@@ -212,7 +188,7 @@ export function AdminDashboard({ stats, salesData, inventoryData, recentActivity
                 </div>
 
                 {/* Stock Alert / Summary */}
-                <div className="bg-slate-900 text-white rounded-[2.5rem] p-8 shadow-xl relative overflow-hidden group">
+                <div className="bg-slate-900 text-white rounded-2xl md:rounded-[2.5rem] p-4 md:p-8 shadow-xl relative overflow-hidden group">
                     <div className="relative z-10">
                         <div className="flex items-center justify-between mb-8">
                             <h3 className="text-xl font-bold">Logistics Summary</h3>

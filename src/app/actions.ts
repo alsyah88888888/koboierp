@@ -2392,3 +2392,259 @@ export async function verifySalesReturnAction(id: string) {
         return { success: true };
     });
 }
+
+/**
+ * PURCHASE RETURN: Delete Return
+ */
+export async function deletePurchaseReturnAction(id: string) {
+    return await prisma.$transaction(async (tx: any) => {
+        const ret = await tx.purchaseReturn.findUnique({
+            where: { id },
+            include: { items: true, receipt: true }
+        });
+        if (!ret) throw new Error("Return not found");
+
+        // Revert Stock
+        const vendorName = ret.receipt.receivedFrom || "UMUM";
+        for (const item of ret.items) {
+            await tx.stock.update({
+                where: {
+                    productId_warehouseId_vendorName: {
+                        productId: item.productId,
+                        warehouseId: ret.receipt.warehouseId,
+                        vendorName: vendorName
+                    }
+                },
+                data: { quantity: { increment: item.quantity } }
+            });
+
+            // Remove Stock Movement
+            await tx.stockMovement.deleteMany({
+                where: { reference: ret.returnNumber, productId: item.productId }
+            });
+        }
+
+        // Revert Finance if Verified
+        if (ret.status === "VERIFIED_BY_FINANCE") {
+            let totalValue = 0;
+            for (const retItem of ret.items) {
+                const receiptItem = await tx.goodsReceiptItem.findFirst({
+                    where: { receiptId: ret.receiptId, productId: retItem.productId }
+                });
+                if (receiptItem) {
+                    totalValue += (retItem.quantity * Number(receiptItem.purchasePrice));
+                }
+            }
+
+            const vendor = await tx.vendor.findFirst({ where: { name: ret.receipt.receivedFrom } });
+            if (vendor) {
+                await tx.vendor.update({
+                    where: { id: vendor.id },
+                    data: { balance: { increment: totalValue } }
+                });
+            }
+
+            // Delete Journal Entries
+            await tx.journalEntry.deleteMany({
+                where: { description: { contains: ret.returnNumber } }
+            });
+        }
+
+        await tx.purchaseReturnItem.deleteMany({ where: { purchaseReturnId: id } });
+        await tx.purchaseReturn.delete({ where: { id } });
+
+        revalidatePath("/purchase");
+        revalidatePath("/finance");
+        revalidatePath("/warehouse");
+    });
+}
+
+/**
+ * SALES RETURN: Delete Return
+ */
+export async function deleteSalesReturnAction(id: string) {
+    return await prisma.$transaction(async (tx: any) => {
+        const ret = await tx.salesReturn.findUnique({
+            where: { id },
+            include: { items: { include: { deliveryItem: true } }, delivery: true }
+        });
+        if (!ret) throw new Error("Return not found");
+
+        // Revert Stock (Decrement because it was added back during return)
+        for (const item of ret.items) {
+            const vendorName = item.deliveryItem?.vendorName || "UMUM";
+            await tx.stock.update({
+                where: {
+                    productId_warehouseId_vendorName: {
+                        productId: item.productId,
+                        warehouseId: ret.delivery.warehouseId,
+                        vendorName: vendorName
+                    }
+                },
+                data: { quantity: { decrement: item.quantity } }
+            });
+
+            await tx.stockMovement.deleteMany({
+                where: { reference: ret.returnNumber, productId: item.productId }
+            });
+        }
+
+        // Revert Finance if Verified (Not implemented in verifySalesReturnAction yet, but prepared)
+        await tx.salesReturnItem.deleteMany({ where: { salesReturnId: id } });
+        await tx.salesReturn.delete({ where: { id } });
+
+        revalidatePath("/sales");
+        revalidatePath("/finance");
+        revalidatePath("/warehouse");
+    });
+}
+
+/**
+ * PURCHASE RETURN: Update Return
+ */
+export async function updatePurchaseReturnAction(id: string, data: {
+    items: { productId: string; quantity: number; reason: string }[];
+    notes?: string;
+}) {
+    return await prisma.$transaction(async (tx: any) => {
+        const ret = await tx.purchaseReturn.findUnique({
+            where: { id },
+            include: { items: true, receipt: true }
+        });
+        if (!ret) throw new Error("Return not found");
+        if (ret.status === "VERIFIED_BY_FINANCE") throw new Error("Cannot edit verified return");
+
+        // 1. Revert Old Stock
+        const vendorName = ret.receipt.receivedFrom || "UMUM";
+        for (const oldItem of ret.items) {
+            await tx.stock.update({
+                where: {
+                    productId_warehouseId_vendorName: {
+                        productId: oldItem.productId,
+                        warehouseId: ret.receipt.warehouseId,
+                        vendorName: vendorName
+                    }
+                },
+                data: { quantity: { increment: oldItem.quantity } }
+            });
+        }
+
+        // 2. Clear Old Items
+        await tx.purchaseReturnItem.deleteMany({ where: { purchaseReturnId: id } });
+
+        // 3. Apply New Stock & Create New Items
+        for (const newItem of data.items) {
+            await tx.stock.update({
+                where: {
+                    productId_warehouseId_vendorName: {
+                        productId: newItem.productId,
+                        warehouseId: ret.receipt.warehouseId,
+                        vendorName: vendorName
+                    }
+                },
+                data: { quantity: { decrement: newItem.quantity } }
+            });
+
+            await tx.purchaseReturnItem.create({
+                data: {
+                    purchaseReturnId: id,
+                    productId: newItem.productId,
+                    quantity: newItem.quantity,
+                    reason: newItem.reason
+                }
+            });
+
+            // Update Stock Movement
+            await tx.stockMovement.updateMany({
+                where: { reference: ret.returnNumber, productId: newItem.productId },
+                data: { quantity: -newItem.quantity }
+            });
+        }
+
+        await tx.purchaseReturn.update({
+            where: { id },
+            data: { notes: data.notes }
+        });
+
+        revalidatePath("/purchase");
+        revalidatePath("/warehouse");
+    });
+}
+
+/**
+ * SALES RETURN: Update Return
+ */
+export async function updateSalesReturnAction(id: string, data: {
+    items: { productId: string; quantity: number; reason: string; deliveryItemId?: string }[];
+    notes?: string;
+}) {
+    return await prisma.$transaction(async (tx: any) => {
+        const ret = await tx.salesReturn.findUnique({
+            where: { id },
+            include: { items: { include: { deliveryItem: true } }, delivery: true }
+        });
+        if (!ret) throw new Error("Return not found");
+        if (ret.status === "VERIFIED_BY_FINANCE") throw new Error("Cannot edit verified return");
+
+        // 1. Revert Old Stock (Decrement because it was incremented)
+        for (const oldItem of ret.items) {
+            const vendorName = oldItem.deliveryItem?.vendorName || "UMUM";
+            await tx.stock.update({
+                where: {
+                    productId_warehouseId_vendorName: {
+                        productId: oldItem.productId,
+                        warehouseId: ret.delivery.warehouseId,
+                        vendorName: vendorName
+                    }
+                },
+                data: { quantity: { decrement: oldItem.quantity } }
+            });
+        }
+
+        // 2. Clear Old Items
+        await tx.salesReturnItem.deleteMany({ where: { salesReturnId: id } });
+
+        // 3. Apply New Stock & Create New Items
+        for (const newItem of data.items) {
+            const originalItem = await tx.salesDeliveryItem.findFirst({
+                where: { deliveryId: ret.deliveryId, productId: newItem.productId }
+            });
+            const vendorName = originalItem?.vendorName || "UMUM";
+
+            await tx.stock.update({
+                where: {
+                    productId_warehouseId_vendorName: {
+                        productId: newItem.productId,
+                        warehouseId: ret.delivery.warehouseId,
+                        vendorName: vendorName
+                    }
+                },
+                data: { quantity: { increment: newItem.quantity } }
+            });
+
+            await tx.salesReturnItem.create({
+                data: {
+                    salesReturnId: id,
+                    productId: newItem.productId,
+                    deliveryItemId: newItem.deliveryItemId || originalItem?.id,
+                    quantity: newItem.quantity,
+                    reason: newItem.reason
+                }
+            });
+
+            // Update Stock Movement
+            await tx.stockMovement.updateMany({
+                where: { reference: ret.returnNumber, productId: newItem.productId },
+                data: { quantity: newItem.quantity }
+            });
+        }
+
+        await tx.salesReturn.update({
+            where: { id },
+            data: { notes: data.notes }
+        });
+
+        revalidatePath("/sales");
+        revalidatePath("/warehouse");
+    });
+}

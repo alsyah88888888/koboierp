@@ -59,17 +59,18 @@ export function StockInputModal({ products, warehouses, onClose }: { products: P
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-10 space-y-6">
+                <form onSubmit={handleSubmit} className="p-8 space-y-6">
+                    {/* Primary Info */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Product</label>
+                            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Product / SKU</label>
                             <select value={productId} onChange={e => setProductId(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-2xl text-sm font-bold focus:border-primary focus:bg-white transition-all outline-none appearance-none" required>
                                 <option value="">Select Product...</option>
                                 {products.map(p => <option key={p.id} value={p.id}>{p.sku} - {p.name}</option>)}
                             </select>
                         </div>
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Warehouse</label>
+                            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Warehouse Location</label>
                             <select value={warehouseId} onChange={e => setWarehouseId(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-2xl text-sm font-bold focus:border-primary focus:bg-white transition-all outline-none appearance-none" required>
                                 <option value="">Select Warehouse...</option>
                                 {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
@@ -77,34 +78,38 @@ export function StockInputModal({ products, warehouses, onClose }: { products: P
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-primary/5 rounded-[2rem] border-2 border-primary/10 border-dashed relative">
-                        <div className="absolute -top-3 left-6 px-2 bg-white text-[10px] font-black text-primary uppercase tracking-widest">Adjustment Info</div>
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Quantity</label>
-                            <input type="number" value={quantity} onChange={e => setQuantity(parseInt(e.target.value))} className="w-full px-4 py-3 bg-white border-2 border-slate-100 rounded-2xl text-lg font-black focus:border-primary transition-all outline-none text-right placeholder:text-slate-200" placeholder="0" required />
-                            <div className="flex items-center gap-1.5 ml-1">
-                                <Info className="h-3 w-3 text-slate-400" />
-                                <p className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">(+) Masuk / (-) Keluar</p>
+                    {/* Stock Adjustment Section */}
+                    <div className="bg-slate-50/80 border-2 border-slate-100 rounded-[2rem] p-6 space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Adjust Quantity</label>
+                                <div className="relative">
+                                    <input type="number" value={quantity} onChange={e => setQuantity(parseInt(e.target.value))} className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-2xl text-xl font-black focus:border-primary transition-all outline-none text-right placeholder:text-slate-200 pr-12" placeholder="0" required />
+                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5 opacity-40">
+                                        <Info className="h-3 w-3" />
+                                        <p className="text-[8px] font-black uppercase tracking-tighter">(+) In / (-) Out</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Transaction Type</label>
+                                <select value={type} onChange={e => setType(e.target.value as any)} className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-2xl text-sm font-bold focus:border-primary transition-all outline-none appearance-none">
+                                    <option value="ADJUSTMENT">Stock Adjustment</option>
+                                    <option value="GOODS_RECEIPT">Goods Receipt (LPB)</option>
+                                    <option value="SALE">Manual Sales Out</option>
+                                </select>
                             </div>
                         </div>
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Transaction Type</label>
-                            <select value={type} onChange={e => setType(e.target.value as any)} className="w-full px-4 py-3 bg-white border-2 border-slate-100 rounded-2xl text-sm font-bold focus:border-primary transition-all outline-none appearance-none">
-                                <option value="ADJUSTMENT">Adjustment</option>
-                                <option value="GOODS_RECEIPT">Receipt</option>
-                                <option value="SALE">Sale</option>
-                            </select>
-                        </div>
-                    </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Vendor / Pemasok</label>
-                            <input value={vendorName} onChange={e => setVendorName(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-2xl text-sm font-bold focus:border-primary focus:bg-white transition-all outline-none placeholder:text-slate-300" placeholder="UMUM" />
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Reference / Note (Optional)</label>
-                            <input value={reference} onChange={e => setReference(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-2xl text-sm font-medium focus:border-primary focus:bg-white transition-all outline-none placeholder:text-slate-300" placeholder="Contoh: Stock Opname" />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Vendor / Source</label>
+                                <input value={vendorName} onChange={e => setVendorName(e.target.value)} className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-2xl text-sm font-bold focus:border-primary transition-all outline-none placeholder:text-slate-300" placeholder="UMUM" />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Reference / Note</label>
+                                <input value={reference} onChange={e => setReference(e.target.value)} className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-2xl text-sm font-medium focus:border-primary transition-all outline-none placeholder:text-slate-300" placeholder="e.g. Stock Opname Ref #1" />
+                            </div>
                         </div>
                     </div>
 

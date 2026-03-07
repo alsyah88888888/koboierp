@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Search, Trash2, Edit2, Eye, Download } from "lucide-react";
+import { Plus, Search, Trash2, Edit2, Eye, Download, FileText } from "lucide-react";
 import { ReportPreviewModal } from "@/components/ReportPreviewModal";
 import { format } from "date-fns";
 import { ReceiptModal } from "./ReceiptModal";
 import { cn } from "@/lib/utils";
 import { useSession } from "next-auth/react";
-import { deleteGoodsReceiptAction } from "@/app/actions";
+import { deleteGoodsReceiptAction, deletePurchaseReturnAction } from "@/app/actions";
 import { DashboardStats } from "../components/DashboardStats";
 import Link from "next/link";
 import { exportToExcel } from "@/lib/excel";
@@ -50,6 +50,16 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
             alert("Penerimaan berhasil dihapus");
         } catch (e) {
             alert("Gagal menghapus penerimaan");
+        }
+    };
+
+    const handleDeleteReturn = async (id: string) => {
+        if (!confirm("Hapus retur ini? Stok akan dikembalikan (revert) dan dampak finansial akan dibatalkan.")) return;
+        try {
+            await deletePurchaseReturnAction(id);
+            alert("Retur berhasil dihapus");
+        } catch (e: any) {
+            alert(e.message || "Gagal menghapus retur");
         }
     };
 
@@ -99,52 +109,51 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hide-print">
-                <div>
-                    <h2 className="text-3xl font-bold tracking-tight text-primary">Pembelian</h2>
-                    <p className="text-muted-foreground tracking-tight">Kelola pembelian barang gudang (LPB).</p>
+            <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 hide-print mb-4">
+                <div className="flex flex-wrap gap-2">
+                    <div className="bg-white border rounded-xl p-1 flex flex-wrap gap-1 shadow-sm w-full md:w-auto justify-center md:justify-start">
+                        <button onClick={() => setShowSupplierModal(true)} className="hover:bg-slate-50 px-3 py-1.5 rounded-lg font-bold text-xs transition-colors flex items-center gap-1.5 text-slate-600">
+                            <Plus className="h-3 w-3" /> Supplier
+                        </button>
+                        <button onClick={() => setShowBuyerModal(true)} className="hover:bg-slate-50 px-3 py-1.5 rounded-lg font-bold text-xs transition-colors flex items-center gap-1.5 text-slate-600">
+                            <Plus className="h-3 w-3" /> Buyer
+                        </button>
+                        <button onClick={() => setShowProductModal(true)} className="hover:bg-slate-50 px-3 py-1.5 rounded-lg font-bold text-xs transition-colors flex items-center gap-1.5 text-slate-600">
+                            <Plus className="h-3 w-3" /> Barang
+                        </button>
+                    </div>
                 </div>
-                <div className="flex flex-wrap gap-3">
+                <div className="flex flex-wrap gap-2 justify-center md:justify-end">
                     <button
                         onClick={handlePreview}
-                        className="bg-white border-2 border-emerald-600 text-emerald-600 px-6 py-2 rounded-md flex items-center gap-2 hover:bg-emerald-50 transition-all font-bold shadow-sm active:scale-95"
+                        className="bg-white border-2 border-emerald-600 text-emerald-600 px-4 md:px-6 py-2 rounded-xl flex items-center gap-2 hover:bg-emerald-50 transition-all font-bold shadow-sm active:scale-95 text-xs md:text-sm"
                     >
-                        <Eye className="h-5 w-5" />
-                        <span>Preview Laporan</span>
+                        <Eye className="h-4 w-4 md:h-5 md:w-5" />
+                        <span>Preview</span>
                     </button>
                     <button
                         onClick={handleExport}
-                        className="bg-emerald-600 text-white px-6 py-2 rounded-md flex items-center gap-2 hover:bg-emerald-700 shadow-lg shadow-emerald-200 transition-all active:scale-95 font-bold"
+                        className="bg-emerald-600 text-white px-4 md:px-6 py-2 rounded-xl flex items-center gap-2 hover:bg-emerald-700 shadow-lg shadow-emerald-200 transition-all active:scale-95 font-bold text-xs md:text-sm"
                     >
-                        <Download className="h-5 w-5" />
-                        <span>Export Excel</span>
-                    </button>
-
-                    <button onClick={() => setShowSupplierModal(true)} className="bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 px-4 py-2 rounded-md font-bold text-sm hidden md:block">
-                        + Supplier
-                    </button>
-                    <button onClick={() => setShowBuyerModal(true)} className="bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 px-4 py-2 rounded-md font-bold text-sm hidden md:block">
-                        + Buyer
-                    </button>
-                    <button onClick={() => setShowProductModal(true)} className="bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 px-4 py-2 rounded-md font-bold text-sm hidden md:block">
-                        + Barang
+                        <Download className="h-4 w-4 md:h-5 md:w-5" />
+                        <span>Export</span>
                     </button>
 
                     {activeTab === "LPB" ? (
                         <button
                             onClick={() => setShowReceiptModal(true)}
-                            className="bg-primary text-white px-6 py-2 rounded-md flex items-center gap-2 hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all active:scale-95 font-bold"
+                            className="bg-primary text-white px-4 md:px-6 py-2 rounded-xl flex items-center gap-2 hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all active:scale-95 font-bold text-xs md:text-sm"
                         >
-                            <Plus className="h-5 w-5 text-white" />
-                            <span className="text-white">Input Penerimaan</span>
+                            <Plus className="h-4 w-4 md:h-5 md:w-5 text-white" />
+                            <span className="text-white">Input LPB</span>
                         </button>
                     ) : (
                         <button
                             onClick={() => setShowReturnModal(true)}
-                            className="bg-rose-600 text-white px-6 py-2 rounded-md flex items-center gap-2 hover:bg-rose-700 shadow-lg shadow-rose-200 transition-all active:scale-95 font-bold"
+                            className="bg-rose-600 text-white px-4 md:px-6 py-2 rounded-xl flex items-center gap-2 hover:bg-rose-700 shadow-lg shadow-rose-200 transition-all active:scale-95 font-bold text-xs md:text-sm"
                         >
-                            <Plus className="h-5 w-5 text-white" />
-                            <span className="text-white">Ajukan Retur</span>
+                            <Plus className="h-4 w-4 md:h-5 md:w-5 text-white" />
+                            <span className="text-white">Retur</span>
                         </button>
                     )}
                 </div>
@@ -190,8 +199,8 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
                         </div>
                     </div>
 
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-left">
+                    <div className="overflow-x-auto custom-scrollbar">
+                        <table className="w-full text-sm text-left min-w-[1000px]">
                             <thead className="bg-muted/30 text-muted-foreground border-b text-xs uppercase tracking-wider">
                                 <tr>
                                     <th className="px-6 py-4">No. Form (Tracking)</th>
@@ -221,13 +230,22 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
                                             {format(new Date(r.date || r.createdAt), "dd/MM/yyyy")}
                                         </td>
                                         <td className="px-6 py-4 text-center">
-                                            <div className="flex items-center justify-center gap-2">
+                                            <div className="flex items-center justify-center gap-1">
                                                 <Link
                                                     href={`/purchase/print/${r.id}`}
-                                                    className="p-1.5 text-slate-400 hover:text-primary hover:bg-slate-50 rounded-lg transition-colors"
-                                                    title="Lihat Form"
+                                                    className="p-1.5 text-slate-400 hover:text-primary hover:bg-slate-50 rounded-lg transition-colors flex items-center gap-1"
+                                                    title="Cetak LPB (Penerimaan)"
                                                 >
                                                     <Eye className="h-4 w-4" />
+                                                    <span className="text-[10px] font-bold">LPB</span>
+                                                </Link>
+                                                <Link
+                                                    href={`/purchase/print/invoice/${r.id}`}
+                                                    className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors flex items-center gap-1"
+                                                    title="Cetak Invoice (Faktur)"
+                                                >
+                                                    <FileText className="h-4 w-4" />
+                                                    <span className="text-[10px] font-bold">INV</span>
                                                 </Link>
                                                 <button
                                                     onClick={() => {
@@ -280,8 +298,8 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
                             />
                         </div>
                     </div>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-left">
+                    <div className="overflow-x-auto custom-scrollbar">
+                        <table className="w-full text-sm text-left min-w-[1000px]">
                             <thead className="bg-rose-50 border-b border-rose-100 text-rose-800 text-xs uppercase tracking-wider">
                                 <tr>
                                     <th className="px-6 py-4">No. Retur</th>
@@ -290,6 +308,7 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
                                     <th className="px-6 py-4">Vendor</th>
                                     <th className="px-6 py-4 text-center">Qty Diretur</th>
                                     <th className="px-6 py-4 text-center">Status</th>
+                                    <th className="px-6 py-4 text-center w-24">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-rose-50">
@@ -308,6 +327,28 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
                                             ) : (
                                                 <span className="px-3 py-1 bg-emerald-100 text-emerald-700 text-xs font-bold rounded-full border border-emerald-200">VERIFIED</span>
                                             )}
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            <div className="flex items-center justify-center gap-2">
+                                                <button
+                                                    onClick={() => {
+                                                        setEditData(r);
+                                                        setShowReturnModal(true);
+                                                    }}
+                                                    className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                                                    title="Edit Retur"
+                                                    disabled={r.status !== "PENDING"}
+                                                >
+                                                    <Edit2 className="h-4 w-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteReturn(r.id)}
+                                                    className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                    title="Hapus Retur"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}
@@ -340,7 +381,11 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
             {showReturnModal && (
                 <ReturnModal
                     receipts={initialReceipts}
-                    onClose={() => setShowReturnModal(false)}
+                    initialData={editData}
+                    onClose={() => {
+                        setShowReturnModal(false);
+                        setEditData(null);
+                    }}
                 />
             )}
 

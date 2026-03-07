@@ -278,12 +278,8 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hide-print">
-                <div>
-                    <h2 className="text-3xl font-bold tracking-tight text-primary">Manajemen Keuangan</h2>
-                    <p className="text-muted-foreground">Verifikasi Pelunasan dan Monitoring Arus Kas.</p>
-                </div>
-                <div className="flex flex-wrap gap-3">
+            <div className="flex flex-col md:flex-row justify-between items-stretch md:items-end gap-4 hide-print mb-4">
+                <div className="flex flex-wrap gap-2 justify-center md:justify-end">
                     <button
                         onClick={handlePreview}
                         className="bg-white border-2 border-emerald-600 text-emerald-600 px-6 py-2 rounded-md flex items-center gap-2 hover:bg-emerald-50 transition-all font-bold shadow-sm active:scale-95"
@@ -416,8 +412,8 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                 </div>
 
                 {activeTab === "ledger" && (
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-left">
+                    <div className="overflow-x-auto custom-scrollbar">
+                        <table className="w-full text-sm text-left min-w-[1000px]">
                             <thead className="bg-muted/30 text-muted-foreground border-b text-xs uppercase tracking-wider">
                                 <tr>
                                     <th className="px-6 py-4">Tanggal</th>

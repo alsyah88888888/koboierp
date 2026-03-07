@@ -53,40 +53,61 @@ export function DocumentLayout({ title, docNumber, date, children, headerInfo, i
             </div>
 
             {/* Document Container */}
-            <div className={`w-full max-w-[230mm] min-h-[270mm] p-[10mm] bg-white shadow-2xl printable-area flex flex-col font-sans text-slate-900`}>
-                {/* Header */}
-                <div className={`flex justify-between items-start ${isA5 ? 'pb-2 mb-2' : 'pb-4 mb-4'}`}>
-                    <div className="flex items-start gap-4">
-                        <img src="/logo.png" alt="Logo Kola Borasi" className={`${isA5 ? 'h-16' : 'h-24'} w-auto object-contain shrink-0`} />
+            <div className={`w-full max-w-[230mm] min-h-[270mm] p-[10mm] bg-white shadow-2xl printable-area flex flex-col font-sans text-slate-900 border-t-[8px] border-slate-900`}>
+                {/* Header Branding */}
+                <div className={`flex justify-between items-start ${isA5 ? 'pb-2 mb-2' : 'pb-4 mb-6'}`}>
+                    <div className="flex items-start gap-5">
+                        <div className="bg-slate-900 p-2 rounded-xl shrink-0">
+                            <img src="/logo.png" alt="Logo Kola Borasi" className={`${isA5 ? 'h-12' : 'h-16'} w-auto object-contain invert grayscale brightness-200`} />
+                        </div>
                         <div>
-                            <h1 className={`${isA5 ? 'text-2xl' : 'text-3xl'} font-black tracking-tighter text-slate-900`}>PT KOLA BORASI INDONESIA</h1>
-                            <p className={`${isA5 ? 'text-[10px]' : 'text-sm'} font-bold text-slate-500 italic`}>Trading and Distribution</p>
-                            <p className={`${isA5 ? 'text-[9px]' : 'text-xs'} font-medium text-slate-400 mt-1`}>Jl. Arjuna IV Green Kartika Residence Blok EE NO.2, CIBINONG, KAB. BOGOR - JAWA BARAT, 16911</p>
-                            <p className={`${isA5 ? 'text-[9px]' : 'text-xs'} font-medium text-slate-400`}>Telp: 0857-7444-4805</p>
+                            <h1 className={`${isA5 ? 'text-2xl' : 'text-3xl'} font-black tracking-tight text-slate-900 uppercase`}>PT KOLA BORASI INDONESIA</h1>
+                            <div className="flex items-center gap-2 mt-1">
+                                <span className="bg-slate-100 px-2 py-0.5 rounded text-[8px] font-black text-slate-500 uppercase tracking-widest border border-slate-200">Official Document</span>
+                                <p className={`${isA5 ? 'text-[9px]' : 'text-xs'} font-bold text-slate-400 italic`}>Trading & Distribution ERP</p>
+                            </div>
+                            <div className="mt-3 space-y-0.5">
+                                <p className={`${isA5 ? 'text-[8px]' : 'text-[10px]'} font-bold text-slate-500 leading-tight max-w-sm`}>
+                                    Jl. Arjuna IV Green Kartika Residence Blok EE NO.2, CIBINONG, KAB. BOGOR - JAWA BARAT, 16911
+                                </p>
+                                <div className="flex gap-4 items-center">
+                                    <p className={`${isA5 ? 'text-[8px]' : 'text-[10px]'} font-bold text-slate-400`}>
+                                        <span className="text-slate-300 mr-1 uppercase text-[7px] tracking-tighter">Phone</span> 0857-7444-4805
+                                    </p>
+                                    <p className={`${isA5 ? 'text-[8px]' : 'text-[10px]'} font-bold text-slate-400`}>
+                                        <span className="text-slate-300 mr-1 uppercase text-[7px] tracking-tighter">Web</span> www.kolaborasi.id
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div className="text-right">
-                        <div className={`inline-block border-2 border-slate-900 text-slate-900 ${isA5 ? 'px-4 py-1.5 text-lg' : 'px-6 py-2 text-2xl'} font-black mb-2 tracking-widest`}>
-                            {title.toUpperCase()}
+
+                    <div className="text-right flex flex-col items-end">
+                        <div className={`bg-slate-900 text-white font-black tracking-[0.2em] shadow-lg shadow-slate-200 uppercase ${isA5 ? 'px-4 py-1.5 text-base rounded' : 'px-8 py-3 text-2xl rounded-lg'}`}>
+                            {title}
                         </div>
-                        <div className="space-y-1 mt-2">
-                            <div className="flex justify-end gap-4 text-[10px]">
-                                <span className="font-bold text-slate-400 uppercase tracking-widest">No. Dokumen</span>
-                                <span className="font-black text-slate-900">{docNumber}</span>
+
+                        <div className="flex flex-col gap-1 items-end mt-4">
+                            <div className={`${isA5 ? 'text-[8px]' : 'text-[10px]'} flex gap-3 items-center justify-end w-full`}>
+                                <span className="font-bold text-slate-300 uppercase tracking-[0.15em]">No. Ref</span>
+                                <span className="font-black text-slate-900 bg-slate-50 px-2 py-0.5 rounded border border-slate-100 font-mono tracking-tighter">#{docNumber}</span>
                             </div>
-                            <div className="flex justify-end gap-4 text-[10px]">
-                                <span className="font-bold text-slate-400 uppercase tracking-widest">Tanggal</span>
+                            <div className={`${isA5 ? 'text-[8px]' : 'text-[10px]'} flex gap-3 items-center justify-end w-full`}>
+                                <span className="font-bold text-slate-300 uppercase tracking-[0.15em]">Date</span>
                                 <span className="font-black text-slate-900">{date}</span>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Main Header Barcode Separator */}
-                <div className="flex justify-end mb-2">
-                    <Barcode value={docNumber} format="CODE128" width={1.2} height={40} displayValue={false} margin={0} background="transparent" />
+                <div className="flex justify-end mb-2 opacity-80">
+                    <Barcode value={docNumber} format="CODE128" width={1.0} height={30} displayValue={false} margin={0} background="transparent" />
                 </div>
-                <div className="border-b-4 border-slate-900 mb-6"></div>
+
+                <div className="relative mb-6">
+                    <div className="border-b-[4px] border-slate-900"></div>
+                    <div className="absolute -bottom-1 left-0 right-0 border-b border-slate-300"></div>
+                </div>
 
                 {/* Sub-Header / Billing Info */}
                 <div className={`${isA5 ? 'mb-4' : 'mb-8'}`}>

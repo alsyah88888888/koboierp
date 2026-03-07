@@ -105,60 +105,96 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
     };
 
     return (
-        <div className="space-y-6">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                    <h2 className="text-3xl font-black tracking-tight text-slate-900 flex items-center gap-2">
-                        <WarehouseIcon className="h-8 w-8 text-primary" />
-                        Management Gudang
-                    </h2>
-                    <p className="text-slate-500 font-medium italic">Monitoring stok, distribusi antar-gudang, dan verifikasi fisik.</p>
-                </div>
-                <div className="flex flex-wrap gap-3">
-                    <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 shadow-sm">
-                        <button
-                            onClick={() => setActiveTab("inventory")}
-                            className={cn("px-6 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all", activeTab === "inventory" ? "bg-white shadow-md text-primary" : "text-slate-500 hover:text-slate-700")}
-                        >
-                            Inventory
-                        </button>
-                        <button
-                            onClick={() => setActiveTab("checker")}
-                            className={cn("px-6 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2", activeTab === "checker" ? "bg-white shadow-md text-primary" : "text-slate-500 hover:text-slate-700")}
-                        >
-                            Checker
-                            {unverifiedReceipts.length > 0 && (
-                                <span className="bg-primary text-white text-[10px] px-1.5 py-0.5 rounded-full animate-pulse">{unverifiedReceipts.length}</span>
-                            )}
-                        </button>
+        <div className="space-y-8 pb-10">
+            {/* Header Section */}
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
+                <div className="space-y-2">
+                    <div className="flex items-center gap-3">
+                        <div className="p-3 bg-primary/10 rounded-2xl shadow-sm border border-primary/10">
+                            <WarehouseIcon className="h-7 w-7 text-primary" />
+                        </div>
+                        <h2 className="text-3xl font-black tracking-tighter text-slate-900">
+                            WarehouseManagement
+                        </h2>
                     </div>
-
-
-                    <button
-                        onClick={handleExport}
-                        className="bg-emerald-600 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 hover:bg-emerald-700 transition-all font-bold shadow-sm active:scale-95 border-2 border-emerald-600"
-                    >
-                        <Download className="h-4 w-4" />
-                        <span>Export Excel</span>
-                    </button>
-
-                    <Link
-                        href="/warehouse/print-database"
-                        target="_blank"
-                        className="bg-white text-slate-700 px-5 py-2.5 rounded-xl flex items-center gap-2 hover:bg-slate-50 transition-all font-bold shadow-sm active:scale-95 border-2 border-slate-200"
-                    >
-                        <FileText className="h-4 w-4 text-primary" />
-                        <span>Cetak Database (PDF)</span>
-                    </Link>
-
-                    <button
-                        onClick={() => setShowInputModal(true)}
-                        className="bg-primary text-white px-6 py-2.5 rounded-xl flex items-center gap-2 hover:bg-primary/95 transition-all font-black shadow-lg shadow-primary/20 active:scale-95 border-2 border-primary"
-                    >
-                        <Plus className="h-5 w-5 text-white" />
-                        <span className="text-white uppercase tracking-wider text-xs">Stock Entry</span>
-                    </button>
+                    <p className="text-slate-500 font-bold text-sm tracking-tight ml-1">Monitor stock, distribution, and verification status across all locations.</p>
                 </div>
+
+                <button
+                    onClick={() => setShowInputModal(true)}
+                    className="w-full lg:w-auto bg-slate-900 text-white px-8 py-3.5 rounded-[1.5rem] flex items-center justify-center gap-3 hover:bg-slate-800 transition-all font-black shadow-xl shadow-slate-200 active:scale-95 border-2 border-slate-900 group"
+                >
+                    <Plus className="h-5 w-5 text-primary group-hover:rotate-90 transition-transform" />
+                    <span className="uppercase tracking-widest text-xs">Stock Entry</span>
+                </button>
+            </div>
+
+            {/* Main Action Grid */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <button
+                    onClick={() => setActiveTab("inventory")}
+                    className={cn(
+                        "p-6 rounded-[2rem] border-2 transition-all group relative overflow-hidden flex flex-col items-center gap-3 text-center",
+                        activeTab === "inventory"
+                            ? "bg-primary border-primary text-white shadow-2xl shadow-primary/30 -translate-y-1"
+                            : "bg-white border-slate-100 text-slate-400 hover:border-primary/20 hover:text-primary shadow-sm"
+                    )}
+                >
+                    <Box className={cn("h-7 w-7 transition-transform group-hover:scale-110", activeTab === "inventory" ? "text-white" : "text-primary")} />
+                    <div className="relative z-10">
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60 mb-0.5">Section</p>
+                        <p className="text-lg font-black tracking-tight">Inventory</p>
+                    </div>
+                    {activeTab === "inventory" && <div className="absolute -right-4 -bottom-4 w-16 h-16 bg-white/10 rounded-full" />}
+                </button>
+
+                <button
+                    onClick={() => setActiveTab("checker")}
+                    className={cn(
+                        "p-6 rounded-[2rem] border-2 transition-all group relative overflow-hidden flex flex-col items-center gap-3 text-center",
+                        activeTab === "checker"
+                            ? "bg-primary border-primary text-white shadow-2xl shadow-primary/30 -translate-y-1"
+                            : "bg-white border-slate-100 text-slate-400 hover:border-primary/20 hover:text-primary shadow-sm"
+                    )}
+                >
+                    <div className="relative">
+                        <Activity className={cn("h-7 w-7 transition-transform group-hover:scale-110", activeTab === "checker" ? "text-white" : "text-primary")} />
+                        {unverifiedReceipts.length > 0 && (
+                            <span className="absolute -top-1 -right-1 flex h-4 w-4">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500 text-[8px] items-center justify-center text-white font-black">{unverifiedReceipts.length}</span>
+                            </span>
+                        )}
+                    </div>
+                    <div className="relative z-10">
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60 mb-0.5">Section</p>
+                        <p className="text-lg font-black tracking-tight">Checker</p>
+                    </div>
+                    {activeTab === "checker" && <div className="absolute -right-4 -bottom-4 w-16 h-16 bg-white/10 rounded-full" />}
+                </button>
+
+                <button
+                    onClick={handleExport}
+                    className="p-6 bg-white border-2 border-slate-100 rounded-[2rem] text-slate-400 hover:border-emerald-500/20 hover:text-emerald-500 transition-all group flex flex-col items-center gap-3 text-center shadow-sm hover:-translate-y-1"
+                >
+                    <Download className="h-7 w-7 text-emerald-500 transition-transform group-hover:scale-110" />
+                    <div>
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60 mb-0.5">Action</p>
+                        <p className="text-lg font-black tracking-tight text-slate-800 group-hover:text-emerald-500 transition-colors">Export Excel</p>
+                    </div>
+                </button>
+
+                <Link
+                    href="/warehouse/print-database"
+                    target="_blank"
+                    className="p-6 bg-white border-2 border-slate-100 rounded-[2rem] text-slate-400 hover:border-indigo-500/20 hover:text-indigo-500 transition-all group flex flex-col items-center gap-3 text-center shadow-sm hover:-translate-y-1"
+                >
+                    <FileText className="h-7 w-7 text-indigo-500 transition-transform group-hover:scale-110" />
+                    <div>
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60 mb-0.5">Report</p>
+                        <p className="text-lg font-black tracking-tight text-slate-800 group-hover:text-indigo-500 transition-colors">Cetak DB</p>
+                    </div>
+                </Link>
             </div>
 
             <DashboardStats />

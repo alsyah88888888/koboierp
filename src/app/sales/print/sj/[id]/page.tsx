@@ -49,7 +49,7 @@ export default async function SJPrintPage({ params }: { params: Promise<{ id: st
                             <td className="border border-slate-900 p-2.5 text-left font-mono tracking-tighter text-[9px]">{item.product.barcode || item.product.sku || "-"}</td>
                             <td className="border border-slate-900 p-2.5 uppercase">{item.product.name}</td>
                             <td className="border border-slate-900 p-2.5 text-center font-black">{item.quantity}</td>
-                            <td className="border border-slate-900 p-2.5 text-center uppercase">{item.uom || item.product.uom || "-"}</td>
+                            <td className="border border-slate-900 p-2.5 text-center uppercase">{(item.uom || item.product.uom || "-").replace(/KARTOON/gi, 'KARTON')}</td>
                             <td className="border border-slate-900 p-2.5"></td>
                         </tr>
                     ))}

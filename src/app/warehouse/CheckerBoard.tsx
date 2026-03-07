@@ -5,6 +5,7 @@ import { Search, CheckCircle, AlertCircle, Barcode, Printer, Package, ChevronRig
 import { format } from "date-fns";
 import { verifyGoodsReceiptAction } from "@/app/actions";
 import { useSession } from "next-auth/react";
+import { cn } from "@/lib/utils";
 
 export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[] }) {
     const { data: session } = useSession() as any;
@@ -71,28 +72,33 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
 
     if (selectedReceipt) {
         return (
-            <div className="bg-card rounded-xl border shadow-lg overflow-hidden animate-in fade-in zoom-in duration-200">
-                <div className="p-4 border-b bg-muted/30 flex justify-between items-center">
-                    <div>
-                        <h3 className="font-bold text-lg flex items-center gap-2">
-                            <Barcode className="h-5 w-5 text-primary" />
-                            Verifikasi Fisik: {selectedReceipt.receiptNumber}
-                        </h3>
-                        <p className="text-xs text-muted-foreground uppercase">Dari: {selectedReceipt.receivedFrom} | Gudang: {selectedReceipt.warehouse.name}</p>
+            <div className="bg-white rounded-[2.5rem] border-2 border-slate-100 shadow-2xl shadow-slate-200/50 overflow-hidden animate-in fade-in zoom-in duration-300">
+                <div className="p-8 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center relative">
+                    <div className="absolute top-0 left-8 w-12 h-1 bg-primary rounded-b-full" />
+                    <div className="flex items-center gap-4">
+                        <div className="p-3 bg-primary/10 rounded-2xl text-primary">
+                            <Barcode className="h-6 w-6" />
+                        </div>
+                        <div>
+                            <h3 className="text-xl font-black text-slate-900 tracking-tight">Verifikasi Fisik</h3>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">
+                                {selectedReceipt.receiptNumber} • {selectedReceipt.warehouse.name}
+                            </p>
+                        </div>
                     </div>
-                    <button onClick={() => setSelectedReceipt(null)} className="p-2 hover:bg-muted rounded-full transition-colors">
+                    <button onClick={() => setSelectedReceipt(null)} className="p-2.5 hover:bg-white hover:shadow-md rounded-2xl transition-all border border-slate-200 bg-slate-50 text-slate-400 hover:text-red-500 active:scale-95">
                         <X className="h-5 w-5" />
                     </button>
                 </div>
 
-                <div className="p-6 space-y-6">
-                    <div className="bg-primary/5 p-4 rounded-lg flex flex-col md:flex-row gap-4 items-center justify-between border border-primary/10">
+                <div className="p-8 space-y-8">
+                    <div className="bg-primary/5 p-6 rounded-[2rem] border-2 border-primary/10 border-dashed flex flex-col md:flex-row gap-6 items-center justify-between">
                         <div className="flex-1">
-                            <p className="text-sm font-medium">Scan Barcode Barang</p>
-                            <p className="text-xs text-muted-foreground">Focus input ini dan scan barang satu persatu</p>
+                            <p className="text-sm font-black text-slate-800">Scan Barcode / SKU</p>
+                            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-tight mt-1">Sistem akan otomatis menghitung jumlah barang yang masuk.</p>
                         </div>
-                        <div className="relative w-full md:w-64">
-                            <Barcode className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-primary" />
+                        <div className="relative w-full md:w-80">
+                            <Barcode className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary" />
                             <input
                                 ref={scanInputRef}
                                 value={scanBuffer}
@@ -100,42 +106,49 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter') handleScan(scanBuffer);
                                 }}
-                                placeholder="Klik disini & Scan..."
-                                className="w-full pl-10 pr-4 py-2 bg-white border-2 border-primary/20 rounded-md focus:border-primary outline-none transition-all font-mono"
+                                placeholder="Klik disini & Tarik Barcode..."
+                                className="w-full pl-12 pr-4 py-3 bg-white border-2 border-primary/20 rounded-2xl focus:border-primary outline-none transition-all font-mono font-bold text-sm shadow-inner"
                             />
                         </div>
                     </div>
 
-                    <div className="overflow-x-auto rounded-lg border">
+                    <div className="overflow-hidden rounded-2xl border-2 border-slate-100 bg-white">
                         <table className="w-full text-sm text-left">
-                            <thead className="bg-muted text-muted-foreground font-bold uppercase text-[10px] tracking-wider">
+                            <thead className="bg-slate-50 text-slate-500 font-bold uppercase text-[10px] tracking-widest border-b-2">
                                 <tr>
-                                    <th className="px-4 py-3">Barang (SKU)</th>
-                                    <th className="px-4 py-3 text-right">Target Qty</th>
-                                    <th className="px-4 py-3 text-right">Scan Qty</th>
-                                    <th className="px-4 py-3 text-center">Status</th>
+                                    <th className="px-6 py-4">Nama Barang (SKU)</th>
+                                    <th className="px-6 py-4 text-right">Target</th>
+                                    <th className="px-6 py-4 text-right">Checked</th>
+                                    <th className="px-6 py-4 text-center">Status</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y">
+                            <tbody className="divide-y divide-slate-50">
                                 {selectedReceipt.items.map((item: any) => {
                                     const scanned = checkedItems[item.id] || 0;
                                     const isComplete = scanned === item.quantity;
                                     return (
-                                        <tr key={item.id} className={isComplete ? "bg-emerald-50/50" : ""}>
-                                            <td className="px-4 py-3">
-                                                <div className="font-bold text-primary">{item.product?.name || "Unknown Product"}</div>
-                                                <div className="text-[10px] text-muted-foreground uppercase">{item.product?.sku || "-"} | Barcode: {item.product?.barcode || "-"}</div>
+                                        <tr key={item.id} className={cn("transition-colors", isComplete ? "bg-emerald-50/30" : "hover:bg-slate-50")}>
+                                            <td className="px-6 py-4">
+                                                <div className="font-black text-slate-800">{item.product?.name || "Unknown Product"}</div>
+                                                <div className="text-[10px] font-mono text-slate-400 uppercase tracking-tighter mt-1">{item.product?.sku || "-"}</div>
                                             </td>
-                                            <td className="px-4 py-3 text-right font-mono font-bold text-lg">{item.quantity}</td>
-                                            <td className={`px-4 py-3 text-right font-mono font-bold text-lg ${scanned > item.quantity ? "text-red-500" : "text-primary"}`}>
+                                            <td className="px-6 py-4 text-right font-black text-slate-400">
+                                                {item.quantity}
+                                            </td>
+                                            <td className={cn(
+                                                "px-6 py-4 text-right font-black text-lg",
+                                                scanned === item.quantity ? "text-emerald-600" : scanned > item.quantity ? "text-rose-600" : "text-primary"
+                                            )}>
                                                 {scanned}
                                             </td>
-                                            <td className="px-4 py-3 text-center">
-                                                {isComplete ? (
-                                                    <CheckCircle className="h-5 w-5 text-emerald-500 mx-auto" />
-                                                ) : (
-                                                    <AlertCircle className="h-5 w-5 text-amber-500 mx-auto" />
-                                                )}
+                                            <td className="px-6 py-4 text-center">
+                                                <div className="flex justify-center">
+                                                    {isComplete ? (
+                                                        <div className="bg-emerald-100 p-1.5 rounded-full"><CheckCircle className="h-4 w-4 text-emerald-600" /></div>
+                                                    ) : (
+                                                        <div className="bg-amber-100 p-1.5 rounded-full"><AlertCircle className="h-4 w-4 text-amber-600" /></div>
+                                                    )}
+                                                </div>
                                             </td>
                                         </tr>
                                     );
