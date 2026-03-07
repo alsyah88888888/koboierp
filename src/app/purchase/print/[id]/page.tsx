@@ -15,19 +15,31 @@ export default async function ReceiptPrintPage({ params }: { params: Promise<{ i
 
     if (!receipt) return <div>Data not found</div>;
 
-    const subTotal = receipt.items.reduce((acc: number, item: any) => acc + (item.quantity * Number(item.purchasePrice)), 0);
+    const subTotal = Number(receipt.subtotal || 0);
+    const totalDiscount = Number(receipt.totalDiscount || 0);
+    const taxAmount = Number(receipt.taxAmount || 0);
+    const taxRate = Number(receipt.taxRate || 0);
+    const grandTotal = Number(receipt.grandTotal || 0);
 
     return (
         <DocumentLayout
-            title="Pembelian"
+            title="Penerimaan Barang"
             docNumber={receipt.formNumber}
             date={format(new Date(receipt.date || receipt.createdAt), "dd MMM yyyy")}
             headerInfo={
-                <div className="grid grid-cols-[100px_1fr] gap-x-4 gap-y-2 text-xs font-bold">
-                    <span className="text-slate-400 uppercase">Supplier:</span>
-                    <span className="text-slate-900 uppercase tabular-nums">{receipt.receivedFrom}</span>
-                    <span className="text-slate-400 uppercase">No. SJ/Receipt:</span>
-                    <span className="text-slate-600 uppercase">{receipt.receiptNumber}</span>
+                <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-xs font-bold">
+                    <div className="grid grid-cols-[100px_1fr] gap-2">
+                        <span className="text-slate-400 uppercase">Supplier:</span>
+                        <span className="text-slate-900 uppercase tabular-nums">{receipt.receivedFrom}</span>
+                        <span className="text-slate-400 uppercase">No. SJ/Receipt:</span>
+                        <span className="text-slate-600 uppercase tabular-nums">{receipt.receiptNumber}</span>
+                    </div>
+                    <div className="grid grid-cols-[100px_1fr] gap-2 text-right">
+                        <span className="text-slate-400 uppercase">Sales / PIC:</span>
+                        <span className="text-slate-900 font-black italic">{receipt.salesPerson || "-"}</span>
+                        <span className="text-slate-400 uppercase">Gudang:</span>
+                        <span className="text-slate-600 uppercase">{receipt.warehouse?.name || "-"}</span>
+                    </div>
                 </div>
             }
         >
@@ -67,14 +79,26 @@ export default async function ReceiptPrintPage({ params }: { params: Promise<{ i
             </table>
 
             <div className="flex justify-end mt-4">
-                <div className="w-80 border border-slate-900 p-3 bg-slate-50 space-y-2">
-                    <div className="flex justify-between items-center border-b border-slate-200 pb-2">
-                        <span className="text-[10px] font-black uppercase text-slate-400">Total Qty Barang</span>
-                        <span className="text-sm font-black text-slate-900">{receipt.items.reduce((acc: number, i: any) => acc + i.quantity, 0).toLocaleString()}</span>
+                <div className="w-80 border border-slate-900 p-3 bg-slate-50 space-y-2 font-black">
+                    <div className="flex justify-between items-center text-xs">
+                        <span className="text-slate-400 uppercase">Total Brutto</span>
+                        <span className="text-slate-900">{formatCurrency(subTotal)}</span>
                     </div>
-                    <div className="flex justify-between items-center">
-                        <span className="text-[10px] font-black uppercase text-slate-400">Total Nilai Barang</span>
-                        <span className="text-lg font-black text-slate-900">{formatCurrency(subTotal)}</span>
+                    {totalDiscount > 0 && (
+                        <div className="flex justify-between items-center text-xs text-orange-600 italic">
+                            <span className="text-slate-400 uppercase">Total Potongan</span>
+                            <span>- {formatCurrency(totalDiscount)}</span>
+                        </div>
+                    )}
+                    {taxAmount > 0 && (
+                        <div className="flex justify-between items-center text-xs text-indigo-600">
+                            <span className="text-slate-400 uppercase">PPN {taxRate}%</span>
+                            <span>+ {formatCurrency(taxAmount)}</span>
+                        </div>
+                    )}
+                    <div className="border-t border-slate-300 pt-2 flex justify-between items-center">
+                        <span className="text-xs font-black uppercase text-slate-600">Grand Total</span>
+                        <span className="text-lg font-black text-primary">{formatCurrency(grandTotal)}</span>
                     </div>
                 </div>
             </div>

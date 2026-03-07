@@ -33,12 +33,12 @@ export default async function SJPrintPage({ params }: { params: Promise<{ id: st
             <div className="mb-2 text-[10px] font-bold uppercase text-slate-500">Harap diterima barang-barang tersebut di bawah ini dengan baik:</div>
             <table className="w-full border-collapse border border-slate-900 mb-4">
                 <thead>
-                    <tr className="uppercase text-[10px] font-black">
+                    <tr className="uppercase text-[10px] font-black bg-slate-50">
                         <th className="border border-slate-900 p-2 text-center w-10">No</th>
-                        <th className="border border-slate-900 p-2 text-left">Nama / Deskripsi Barang</th>
                         <th className="border border-slate-900 p-2 text-left w-32">Barcode</th>
-                        <th className="border border-slate-900 p-2 text-center w-24">Banyaknya</th>
-                        <th className="border border-slate-900 p-2 text-center w-24">Satuan</th>
+                        <th className="border border-slate-900 p-2 text-left">Nama / Deskripsi Barang</th>
+                        <th className="border border-slate-900 p-2 text-center w-24">QTY</th>
+                        <th className="border border-slate-900 p-2 text-center w-24">SATUAN</th>
                         <th className="border border-slate-900 p-2 text-left w-32">Keterangan</th>
                     </tr>
                 </thead>
@@ -46,9 +46,9 @@ export default async function SJPrintPage({ params }: { params: Promise<{ id: st
                     {delivery.items.map((item: any, idx: number) => (
                         <tr key={idx}>
                             <td className="border border-slate-900 p-2.5 text-center font-black">{idx + 1}</td>
-                            <td className="border border-slate-900 p-2.5 uppercase">{item.product.name}</td>
                             <td className="border border-slate-900 p-2.5 text-left font-mono tracking-tighter text-[9px]">{item.product.barcode || item.product.sku || "-"}</td>
-                            <td className="border border-slate-900 p-2.5 text-center">{item.quantity}</td>
+                            <td className="border border-slate-900 p-2.5 uppercase">{item.product.name}</td>
+                            <td className="border border-slate-900 p-2.5 text-center font-black">{item.quantity}</td>
                             <td className="border border-slate-900 p-2.5 text-center uppercase">{item.uom || item.product.uom || "-"}</td>
                             <td className="border border-slate-900 p-2.5"></td>
                         </tr>
@@ -61,6 +61,13 @@ export default async function SJPrintPage({ params }: { params: Promise<{ id: st
                         </tr>
                     ))}
                 </tbody>
+                <tfoot>
+                    <tr className="bg-slate-50 font-black text-[10px]">
+                        <td colSpan={3} className="border border-slate-900 p-2 text-right uppercase tracking-widest">Jumlah QTY:</td>
+                        <td className="border border-slate-900 p-2 text-center">{delivery.items.reduce((acc: number, i: any) => acc + i.quantity, 0).toLocaleString()}</td>
+                        <td colSpan={2} className="border border-slate-900"></td>
+                    </tr>
+                </tfoot>
             </table>
 
             <div className="text-[10px] font-bold text-slate-500 italic mt-4">

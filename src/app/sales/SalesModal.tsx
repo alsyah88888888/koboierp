@@ -316,7 +316,11 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                             </button>
                             <button
                                 type="button"
-                                onClick={() => setShowDiscount(!showDiscount)}
+                                onClick={() => {
+                                    const nextState = !showDiscount;
+                                    setShowDiscount(nextState);
+                                    if (!nextState) setTaxRate(0);
+                                }}
                                 className={`px-6 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 border-2 ${showDiscount ? "bg-orange-500 border-orange-600 text-white shadow-lg shadow-orange-200" : "bg-white border-slate-200 text-slate-500 hover:border-orange-500 hover:text-orange-500"}`}
                             >
                                 <Tag className={`h-4 w-4 ${showDiscount ? "animate-pulse" : ""}`} />
@@ -467,22 +471,24 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                             </div>
                                         </>
                                     )}
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-bold text-slate-500 uppercase ml-1 tracking-wider">PPN (%)</label>
-                                        <div className="relative h-12">
-                                            <input
-                                                type="text"
-                                                value={taxRate}
-                                                onChange={e => {
-                                                    const val = e.target.value.replace(/\D/g, '');
-                                                    setTaxRate(val === '' ? '' : Number(val));
-                                                }}
-                                                className="w-full bg-indigo-50 border-2 border-indigo-200 pl-3 pr-8 py-2 rounded-xl text-lg font-black text-indigo-600 outline-none focus:border-indigo-500 transition-all h-full shadow-sm"
-                                                placeholder="11"
-                                            />
-                                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-bold text-indigo-400">%</span>
+                                    {showDiscount && (
+                                        <div className="space-y-2 animate-in fade-in slide-in-from-left duration-300">
+                                            <label className="text-xs font-bold text-slate-500 uppercase ml-1 tracking-wider">PPN (%)</label>
+                                            <div className="relative h-12">
+                                                <input
+                                                    type="text"
+                                                    value={taxRate}
+                                                    onChange={e => {
+                                                        const val = e.target.value.replace(/\D/g, '');
+                                                        setTaxRate(val === '' ? '' : Number(val));
+                                                    }}
+                                                    className="w-full bg-indigo-50 border-2 border-indigo-200 pl-3 pr-8 py-2 rounded-xl text-lg font-black text-indigo-600 outline-none focus:border-indigo-500 transition-all h-full shadow-sm"
+                                                    placeholder="11"
+                                                />
+                                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-bold text-indigo-400">%</span>
+                                            </div>
                                         </div>
-                                    </div>
+                                    )}
                                 </div>
                             </div>
 
@@ -492,14 +498,18 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                         <span>SUBTOTAL (Net Items)</span>
                                         <span className="font-black text-slate-700">Rp {subtotal.toLocaleString('id-ID')}</span>
                                     </div>
-                                    <div className="flex justify-between items-center text-sm font-bold text-orange-500">
-                                        <span>TOTAL DISKON TAMBAHAN ({totalDiscountPercent !== "" ? `${totalDiscountPercent}%` : "Manual"})</span>
-                                        <span className="font-black">- Rp {finalDiscountNominal.toLocaleString('id-ID')}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center text-sm font-bold text-indigo-500">
-                                        <span>PPN ({taxRate}%)</span>
-                                        <span className="font-black">+ Rp {taxAmount.toLocaleString('id-ID')}</span>
-                                    </div>
+                                    {showDiscount && (
+                                        <>
+                                            <div className="flex justify-between items-center text-sm font-bold text-orange-500">
+                                                <span>TOTAL DISKON TAMBAHAN ({totalDiscountPercent !== "" ? `${totalDiscountPercent}%` : "Manual"})</span>
+                                                <span className="font-black">- Rp {finalDiscountNominal.toLocaleString('id-ID')}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center text-sm font-bold text-indigo-500">
+                                                <span>PPN ({taxRate}%)</span>
+                                                <span className="font-black">+ Rp {taxAmount.toLocaleString('id-ID')}</span>
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                                 <div className="flex justify-between items-center">
                                     <span className="text-slate-900 font-black uppercase tracking-[0.2em] text-sm">Grand Total Akhir</span>
