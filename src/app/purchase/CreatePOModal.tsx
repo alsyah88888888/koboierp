@@ -16,7 +16,9 @@ interface Vendor {
 }
 
 export function CreatePOModal({ vendors, products, onClose }: { vendors: Vendor[], products: Product[], onClose: () => void }) {
-    const [number, setNumber] = useState(`PO-${Date.now().toString().slice(-6)}`);
+    const now = new Date();
+    const dateStr = now.getFullYear().toString() + (now.getMonth() + 1).toString().padStart(2, '0') + now.getDate().toString().padStart(2, '0');
+    const [number, setNumber] = useState(`PO-${dateStr}0001`);
     const [vendorId, setVendorId] = useState("");
     const [items, setItems] = useState([{ productId: "", quantity: 1, price: 0 }]);
 

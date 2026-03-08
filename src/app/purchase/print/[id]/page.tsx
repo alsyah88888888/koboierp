@@ -23,7 +23,7 @@ export default async function ReceiptPrintPage({ params }: { params: Promise<{ i
 
     return (
         <DocumentLayout
-            title="Penerimaan Barang"
+            title="PURCHASE ORDER"
             docNumber={receipt.formNumber}
             date={format(new Date(receipt.date || receipt.createdAt), "dd MMM yyyy")}
             headerInfo={

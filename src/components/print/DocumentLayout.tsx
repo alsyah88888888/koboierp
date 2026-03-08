@@ -57,8 +57,8 @@ export function DocumentLayout({ title, docNumber, date, children, headerInfo, i
                 {/* Header Branding */}
                 <div className={`flex justify-between items-start ${isA5 ? 'pb-2 mb-2' : 'pb-4 mb-6'}`}>
                     <div className="flex items-start gap-5">
-                        <div className="bg-slate-900 p-2 rounded-xl shrink-0">
-                            <img src="/logo.png" alt="Logo Kola Borasi" className={`${isA5 ? 'h-12' : 'h-16'} w-auto object-contain invert grayscale brightness-200`} />
+                        <div className="shrink-0">
+                            <img src="/logo.png" alt="Logo Kola Borasi" className={`${isA5 ? 'h-16' : 'h-24'} w-auto object-contain`} />
                         </div>
                         <div>
                             <h1 className={`${isA5 ? 'text-2xl' : 'text-3xl'} font-black tracking-tight text-slate-900 uppercase`}>PT KOLA BORASI INDONESIA</h1>
@@ -83,16 +83,16 @@ export function DocumentLayout({ title, docNumber, date, children, headerInfo, i
                     </div>
 
                     <div className="text-right flex flex-col items-end">
-                        <div className={`bg-slate-900 text-white font-black tracking-[0.2em] shadow-lg shadow-slate-200 uppercase ${isA5 ? 'px-4 py-1.5 text-base rounded' : 'px-8 py-3 text-2xl rounded-lg'}`}>
+                        <div className={`bg-slate-900 text-white font-black tracking-[0.15em] shadow-lg shadow-slate-200 uppercase ${isA5 ? 'px-4 py-1.5 text-xl rounded' : 'px-6 py-2.5 text-3xl rounded-lg'}`}>
                             {title}
                         </div>
 
                         <div className="flex flex-col gap-1 items-end mt-4">
-                            <div className={`${isA5 ? 'text-[8px]' : 'text-[10px]'} flex gap-3 items-center justify-end w-full`}>
-                                <span className="font-bold text-slate-300 uppercase tracking-[0.15em]">No. Ref</span>
-                                <span className="font-black text-slate-900 bg-slate-50 px-2 py-0.5 rounded border border-slate-100 font-mono tracking-tighter">#{docNumber}</span>
+                            <div className={`${isA5 ? 'text-xs' : 'text-lg'} flex gap-3 items-center justify-end w-full`}>
+                                <span className="font-bold text-slate-400 uppercase tracking-[0.15em]">No. Ref</span>
+                                <span className="font-black text-slate-900 bg-slate-50 px-2.5 py-0.5 rounded-lg border-2 border-slate-200 font-mono tracking-tighter">#{docNumber}</span>
                             </div>
-                            <div className={`${isA5 ? 'text-[8px]' : 'text-[10px]'} flex gap-3 items-center justify-end w-full`}>
+                            <div className={`${isA5 ? 'text-[8px]' : 'text-xs'} flex gap-3 items-center justify-end w-full mt-0.5`}>
                                 <span className="font-bold text-slate-300 uppercase tracking-[0.15em]">Date</span>
                                 <span className="font-black text-slate-900">{date}</span>
                             </div>

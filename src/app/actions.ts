@@ -204,14 +204,22 @@ export async function createGoodsReceiptAction(data: {
         finalReceiptNumber += "-P";
     }
 
-    // Generate automatic Form Number (Internal Tracking)
-    const now = new Date();
-    const dateStrForm = txDate.toISOString().split('T')[0].replace(/-/g, '');
-    const timeStr = now.getHours().toString().padStart(2, '0') +
-        now.getMinutes().toString().padStart(2, '0') +
-        now.getSeconds().toString().padStart(2, '0');
-    const randomSuffix = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-    const formNumber = `FORM-${dateStrForm}-${timeStr}-${randomSuffix}`;
+    // Generate automatic Form Number (Internal Tracking / PO Number)
+    // Format: PO-YYYYMMDDXXXX
+    const day = String(txDate.getDate()).padStart(2, '0');
+    const month = String(txDate.getMonth() + 1).padStart(2, '0');
+    const year = txDate.getFullYear();
+    const dateStrForm = `${year}${month}${day}`;
+
+    const startOfDay = new Date(txDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(txDate);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const formCount = await (prisma.goodsReceipt as any).count({
+        where: { createdAt: { gte: startOfDay, lte: endOfDay } }
+    });
+    const formNumber = `PO-${dateStrForm}${String(formCount + 1).padStart(4, '0')}`;
 
     try {
         return await prisma.$transaction(async (tx: any) => {
