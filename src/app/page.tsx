@@ -107,5 +107,7 @@ export default async function DashboardPage() {
     salesData={salesData}
     inventoryData={inventoryData}
     recentActivity={recentActivity}
+    lowStockCount={summary.lowStockCount || 0}
+    activeOrdersToday={summary.activeOrdersToday || 0}
   />;
 }

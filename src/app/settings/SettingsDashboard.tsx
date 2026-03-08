@@ -19,8 +19,10 @@ import {
     Plus,
     X,
     Banknote,
-    Pencil
+    Pencil,
+    Megaphone
 } from "lucide-react";
+import BroadcastModal from "./BroadcastModal";
 import {
     wipeDatabaseAction,
     importProductsAction,
@@ -53,6 +55,7 @@ export function SettingsDashboard() {
     const [products, setProducts] = useState<any[]>([]);
     const [coa, setCoa] = useState<any[]>([]);
     const [showMDModal, setShowMDModal] = useState<"product" | "vendor" | "customer" | "warehouse" | "opening" | null>(null);
+    const [showBroadcastModal, setShowBroadcastModal] = useState(false);
     const [editId, setEditId] = useState<string | null>(null);
 
     const [mdForm, setMdForm] = useState({
@@ -322,6 +325,22 @@ export function SettingsDashboard() {
                             </div>
                         </div>
 
+                        <div className="bg-amber-50 border-2 border-amber-100 rounded-3xl p-8 shadow-sm group hover:border-amber-500 transition-colors">
+                            <div className="flex items-center gap-3 mb-4 text-amber-700">
+                                <Megaphone className="h-6 w-6" />
+                                <h3 className="text-lg font-bold uppercase tracking-tighter">Broadcast Information</h3>
+                            </div>
+                            <p className="text-amber-900/60 text-sm mb-6 font-medium">Kirim pesan pengumuman resmi ke seluruh akun pengguna di sistem ini.</p>
+
+                            <button
+                                onClick={() => setShowBroadcastModal(true)}
+                                className="w-full bg-amber-500 hover:bg-amber-600 text-white px-6 py-3 rounded-2xl font-bold shadow-lg shadow-amber-200 transition-all flex items-center justify-center gap-2 active:scale-95"
+                            >
+                                <Megaphone className="h-5 w-5 text-white" />
+                                <span className="text-white">Buat Pengumuman</span>
+                            </button>
+                        </div>
+
                         <div className="bg-red-50 border-2 border-red-100 rounded-3xl p-8 shadow-sm group hover:border-red-500 transition-colors">
                             <div className="flex items-center gap-3 mb-4 text-red-700">
                                 <Trash2 className="h-6 w-6" />
@@ -391,6 +410,13 @@ export function SettingsDashboard() {
             </div>
 
 
+
+            {showBroadcastModal && (
+                <BroadcastModal
+                    isOpen={showBroadcastModal}
+                    onClose={() => setShowBroadcastModal(false)}
+                />
+            )}
 
             {showMDModal && (
                 <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">

@@ -200,24 +200,24 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
                     </div>
 
                     <div className="overflow-x-auto custom-scrollbar">
-                        <table className="w-full text-sm text-left min-w-[1000px]">
+                        <table className="w-full text-sm text-left min-w-[1000px] table-fixed">
                             <thead className="bg-muted/30 text-muted-foreground border-b text-xs uppercase tracking-wider">
                                 <tr>
-                                    <th className="px-6 py-4">No. Form (Tracking)</th>
+                                    <th className="px-6 py-4 w-48">No. Form (Tracking)</th>
                                     <th className="px-6 py-4">Terima Dari</th>
-                                    <th className="px-6 py-4">No. Terima</th>
-                                    <th className="px-6 py-4">Gudang</th>
-                                    <th className="px-6 py-4 text-right">Qty Barang</th>
-                                    <th className="px-6 py-4 text-right">Tanggal</th>
-                                    <th className="px-6 py-4 text-center w-10">Aksi</th>
+                                    <th className="px-6 py-4 w-40 text-center">No. Terima</th>
+                                    <th className="px-6 py-4 w-40 text-center">Gudang</th>
+                                    <th className="px-6 py-4 text-right w-32">Qty Barang</th>
+                                    <th className="px-6 py-4 text-right w-32">Tanggal</th>
+                                    <th className="px-6 py-4 text-center w-36">Aksi</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y">
+                            <tbody className="divide-y text-slate-700">
                                 {filteredReceipts.map((r: any) => (
                                     <tr key={r.id} className="hover:bg-muted/20 transition-colors">
-                                        <td className="px-6 py-4 font-mono text-primary font-medium">{r.formNumber}</td>
-                                        <td className="px-6 py-4 font-medium">{r.receivedFrom}</td>
-                                        <td className="px-6 py-4">{r.receiptNumber}</td>
+                                        <td className="px-6 py-4 font-mono text-primary font-medium truncate" title={r.formNumber}>{r.formNumber}</td>
+                                        <td className="px-6 py-4 font-medium truncate" title={r.receivedFrom}>{r.receivedFrom}</td>
+                                        <td className="px-6 py-4 text-center truncate" title={r.receiptNumber}>{r.receiptNumber}</td>
                                         <td className="px-6 py-4">
                                             <span className="bg-muted px-2 py-0.5 rounded text-[10px] uppercase font-bold">
                                                 {r.warehouse.name}
@@ -299,25 +299,27 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
                         </div>
                     </div>
                     <div className="overflow-x-auto custom-scrollbar">
-                        <table className="w-full text-sm text-left min-w-[1000px]">
+                        <table className="w-full text-sm text-left min-w-[1000px] table-fixed">
                             <thead className="bg-rose-50 border-b border-rose-100 text-rose-800 text-xs uppercase tracking-wider">
                                 <tr>
-                                    <th className="px-6 py-4">No. Retur</th>
-                                    <th className="px-6 py-4">Tanggal Pengajuan</th>
-                                    <th className="px-6 py-4">Ref. Penerimaan (LPB)</th>
+                                    <th className="px-6 py-4 w-40">No. Retur</th>
+                                    <th className="px-6 py-4 w-40">Tanggal Pengajuan</th>
+                                    <th className="px-6 py-4 w-52">Ref. Penerimaan (LPB)</th>
                                     <th className="px-6 py-4">Vendor</th>
-                                    <th className="px-6 py-4 text-center">Qty Diretur</th>
-                                    <th className="px-6 py-4 text-center">Status</th>
+                                    <th className="px-6 py-4 text-center w-32">Qty Diretur</th>
+                                    <th className="px-6 py-4 text-center w-32">Status</th>
                                     <th className="px-6 py-4 text-center w-24">Aksi</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-rose-50">
+                            <tbody className="divide-y divide-rose-50 text-slate-700">
                                 {filteredReturns.map((r: any) => (
                                     <tr key={r.id} className="hover:bg-rose-50/50 transition-colors">
-                                        <td className="px-6 py-4 font-mono font-bold text-rose-600">{r.returnNumber}</td>
-                                        <td className="px-6 py-4 text-slate-500">{format(new Date(r.date || r.createdAt), "dd/MM/yyyy")}</td>
-                                        <td className="px-6 py-4 text-slate-600">{r.receipt?.receiptNumber}</td>
-                                        <td className="px-6 py-4 font-medium text-slate-700">{r.receipt?.receivedFrom}</td>
+                                        <td className="px-6 py-4 font-mono font-bold text-rose-600 truncate" title={r.returnNumber}>{r.returnNumber}</td>
+                                        <td className="px-6 py-4 text-slate-500 whitespace-nowrap">{format(new Date(r.date || r.createdAt), "dd/MM/yyyy")}</td>
+                                        <td className="px-6 py-4 text-slate-600 truncate" title={r.receipt?.receiptNumber}>{r.receipt?.receiptNumber}</td>
+                                        <td className="px-6 py-4 font-medium text-slate-700">
+                                            <div className="truncate max-w-[250px]" title={r.receipt?.receivedFrom}>{r.receipt?.receivedFrom}</div>
+                                        </td>
                                         <td className="px-6 py-4 text-center font-bold text-rose-600">
                                             {r.items?.reduce((acc: number, i: any) => acc + i.quantity, 0)} Items
                                         </td>

@@ -1821,11 +1821,22 @@ export async function getDashboardSummaryAction() {
 
     let assetValue = 0;
     let totalStockQty = 0;
+
+    // Group stocks by product for low stock check
+    const productStocks: Record<string, { qty: number, threshold: number }> = {};
+
     stockItems.forEach(s => {
         const latestPrice = Number(s.product.receiptItems[0]?.purchasePrice || 0);
         assetValue += s.quantity * latestPrice;
         totalStockQty += s.quantity;
+
+        if (!productStocks[s.productId]) {
+            productStocks[s.productId] = { qty: 0, threshold: s.product.lowStockThreshold || 10 };
+        }
+        productStocks[s.productId].qty += s.quantity;
     });
+
+    const lowStockCount = Object.values(productStocks).filter(p => p.qty < p.threshold).length;
 
     // 3. Purchase Volume (Sum of Verified Goods Receipt quantity)
     const rawVerified: any[] = await prisma.$queryRaw`SELECT id FROM GoodsReceipt WHERE isVerified = 1`;
@@ -1874,6 +1885,15 @@ export async function getDashboardSummaryAction() {
             if (e.type === "DEBIT") totalPiutang += amt;
             else totalPiutang -= amt;
         }
+    });
+
+    // 5.1 Active Orders Today (PRs + Sales today)
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const activeOrdersToday = await prisma.purchaseRequest.count({
+        where: { createdAt: { gte: todayStart } }
+    }) + await prisma.salesDelivery.count({
+        where: { createdAt: { gte: todayStart } }
     });
 
     // 6. Nett Margin Sales calculation
@@ -1945,6 +1965,8 @@ export async function getDashboardSummaryAction() {
         nettMarginBC: nettMarginBC || 0,
         nettMarginPF: nettMarginPF || 0,
         productCount: stockItems.length,
+        lowStockCount: lowStockCount,
+        activeOrdersToday: activeOrdersToday,
         weeklyStats: await getWeeklyStats()
     };
 }
@@ -2654,5 +2676,38 @@ export async function updateSalesReturnAction(id: string, data: {
 
         revalidatePath("/sales");
         revalidatePath("/warehouse");
+    });
+}
+
+/**
+ * NOTIFICATION ACTIONS
+ */
+export async function createNotificationAction(data: {
+    title: string;
+    message: string;
+    type?: string;
+}) {
+    const session = await getServerSession(authOptions) as any;
+    if (!session?.user?.id || session.user.role !== 'ADMIN') {
+        throw new Error("Hanya Admin yang dapat membuat pengumuman.");
+    }
+
+    const notification = await prisma.notification.create({
+        data: {
+            title: data.title,
+            message: data.message,
+            type: data.type || "broadcast",
+            authorId: session.user.id
+        }
+    });
+
+    revalidatePath("/");
+    return { success: true, notification };
+}
+
+export async function getNotificationsAction() {
+    return await prisma.notification.findMany({
+        orderBy: { createdAt: 'desc' },
+        take: 20
     });
 }

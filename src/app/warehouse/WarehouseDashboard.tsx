@@ -265,16 +265,16 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                         />
                                     </div>
                                 </div>
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-sm text-left">
+                                <div className="overflow-x-auto custom-scrollbar">
+                                    <table className="w-full text-sm text-left min-w-[1000px] table-fixed">
                                         <thead className="bg-slate-50/50 text-slate-500 border-b-2 border-slate-50">
                                             <tr>
-                                                <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest">Barang / SKU</th>
-                                                <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest text-left">Gudang</th>
+                                                <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest w-64">Barang / SKU</th>
+                                                <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest text-left w-48">Gudang</th>
                                                 <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest text-left">Vendor / Pemasok</th>
-                                                <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest text-right">Qty Tersedia</th>
-                                                <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest text-right">Status</th>
-                                                {isAdmin && <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest text-center">Aksi</th>}
+                                                <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest text-right w-40">Qty Tersedia</th>
+                                                <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest text-right w-32">Status</th>
+                                                {isAdmin && <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest text-center w-20">Aksi</th>}
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-50">
@@ -289,16 +289,16 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                                         rows.push(
                                                             <tr key={`${p.id}-${s.id}`} className="hover:bg-slate-50/50 transition-colors group">
                                                                 <td className="px-6 py-4">
-                                                                    <div className="font-bold text-slate-800">{p.name}</div>
-                                                                    <div className="text-[10px] font-mono text-slate-400 uppercase group-hover:text-primary transition-colors">{p.sku}</div>
+                                                                    <div className="font-bold text-slate-800 truncate" title={p.name}>{p.name}</div>
+                                                                    <div className="text-[10px] font-mono text-slate-400 uppercase group-hover:text-primary transition-colors truncate" title={p.sku}>{p.sku}</div>
                                                                 </td>
                                                                 <td className="px-6 py-4 text-left font-bold text-slate-600 text-xs">
                                                                     {whName}
                                                                 </td>
                                                                 <td className="px-6 py-4 text-left">
-                                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 text-xs font-bold border border-slate-200">
-                                                                        <WarehouseIcon className="h-3 w-3 text-slate-400" />
-                                                                        {s.vendorName || "UMUM"}
+                                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 text-xs font-bold border border-slate-200 max-w-full">
+                                                                        <WarehouseIcon className="h-3 w-3 text-slate-400 shrink-0" />
+                                                                        <span className="truncate" title={s.vendorName || "UMUM"}>{s.vendorName || "UMUM"}</span>
                                                                     </span>
                                                                 </td>
                                                                 <td className="px-6 py-4 text-right">
@@ -331,8 +331,8 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                                     rows.push(
                                                         <tr key={`${p.id}-empty`} className="hover:bg-slate-50/50 transition-colors group">
                                                             <td className="px-6 py-4">
-                                                                <div className="font-bold text-slate-800">{p.name}</div>
-                                                                <div className="text-[10px] font-mono text-slate-400 uppercase group-hover:text-primary transition-colors">{p.sku}</div>
+                                                                <div className="font-bold text-slate-800 truncate" title={p.name}>{p.name}</div>
+                                                                <div className="text-[10px] font-mono text-slate-400 uppercase group-hover:text-primary transition-colors truncate" title={p.sku}>{p.sku}</div>
                                                             </td>
                                                             <td className="px-6 py-4 text-left text-slate-400 italic text-xs">No Stock Data</td>
                                                             <td className="px-6 py-4 text-left">-</td>

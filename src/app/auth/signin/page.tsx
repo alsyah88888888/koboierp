@@ -9,7 +9,9 @@ import {
     ArrowRight,
     ShieldCheck,
     Building2,
-    Loader2
+    Loader2,
+    Eye,
+    EyeOff
 } from "lucide-react";
 import Link from "next/link";
 
@@ -18,6 +20,7 @@ export default function SignInPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -49,9 +52,8 @@ export default function SignInPage() {
             <div className="max-w-md w-full animate-in fade-in zoom-in duration-500">
                 {/* Brand Logo & Header */}
                 <div className="text-center mb-8 flex flex-col items-center">
-                    <img src="/logo.png" alt="Logo Kola Borasi" className="h-24 w-auto mb-6 object-contain hover:scale-105 transition-transform duration-300 drop-shadow-md" />
-                    <h1 className="text-3xl font-black text-slate-900 tracking-tight">Kola Borasi Indonesia</h1>
-                    <p className="text-slate-500 font-medium mt-1 uppercase tracking-[0.2em] text-[10px]">ERP Management System</p>
+                    <h1 className="text-3xl font-black text-slate-900 tracking-tight leading-tight uppercase">PT. Kola Borasi Indonesia</h1>
+                    <p className="text-slate-500 font-bold mt-2 uppercase tracking-[0.3em] text-[10px] bg-white border border-slate-100 px-4 py-1.5 rounded-full shadow-sm">ERP System v1.0</p>
                 </div>
 
                 {/* Login Card */}
@@ -74,7 +76,7 @@ export default function SignInPage() {
                                         required
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
-                                        placeholder="admin@kolaborasi.id"
+                                        placeholder="masukan email anda"
                                         className="w-full bg-slate-50 border-2 border-slate-100 px-12 py-3.5 rounded-2xl outline-none focus:border-primary focus:bg-white transition-all font-semibold text-slate-700 placeholder:text-slate-300"
                                     />
                                 </div>
@@ -88,13 +90,20 @@ export default function SignInPage() {
                                 <div className="relative group">
                                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-primary transition-colors" />
                                     <input
-                                        type="password"
+                                        type={showPassword ? "text" : "password"}
                                         required
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
                                         placeholder="••••••••"
                                         className="w-full bg-slate-50 border-2 border-slate-100 px-12 py-3.5 rounded-2xl outline-none focus:border-primary focus:bg-white transition-all font-semibold text-slate-700 placeholder:text-slate-300"
                                     />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary transition-colors focus:outline-none"
+                                    >
+                                        {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                                    </button>
                                 </div>
                             </div>
 

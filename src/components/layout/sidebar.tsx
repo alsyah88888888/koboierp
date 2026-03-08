@@ -64,8 +64,8 @@ export function Sidebar() {
                     </button>
 
                     <div className="flex items-center gap-3 mb-8 group">
-                        <div className="h-12 w-12 bg-white rounded-2xl flex items-center justify-center shadow-lg shadow-white/5 group-hover:scale-105 transition-transform duration-300">
-                            <img src="/logo.png" alt="Logo" className="h-8 w-auto object-contain" />
+                        <div className="h-12 w-12 bg-white rounded-2xl flex items-center justify-center shadow-lg shadow-white/10 group-hover:scale-110 transition-all duration-500 overflow-hidden">
+                            <img src="/logo.png?v=7" alt="Logo" className="h-9 w-auto object-contain" />
                         </div>
                         <div>
                             <h1 className="text-xl font-black text-white leading-tight tracking-tighter">Kola Borasi</h1>

@@ -86,42 +86,42 @@ export function OperationalDashboard({ transactions, coa, initialDeliveries = []
 
             {/* Nett Margin Cards for Sales */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-gradient-to-br from-indigo-50 to-white border border-indigo-100 shadow-sm p-5 rounded-3xl flex justify-between items-center transition-all hover:shadow-md">
-                    <div>
+                <div className="bg-gradient-to-br from-indigo-50 to-white border border-indigo-100 shadow-sm p-5 rounded-3xl flex justify-between items-center transition-all hover:shadow-md gap-4">
+                    <div className="min-w-0 flex-1">
                         <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1 shadow-sm px-2 py-0.5 rounded-full bg-white w-fit border border-indigo-50">Sales BC</p>
                         <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mt-2">Nett Margin</p>
-                        <p className={`text-2xl font-black tracking-tighter ${bcStats.margin >= 0 ? 'text-indigo-600' : 'text-rose-600'}`}>
+                        <p className={`text-2xl font-black tracking-tighter truncate ${bcStats.margin >= 0 ? 'text-indigo-600' : 'text-rose-600'}`} title={`Rp ${bcStats.margin.toLocaleString('id-ID')}`}>
                             Rp {bcStats.margin.toLocaleString('id-ID')}
                         </p>
                     </div>
                     <div className="text-right flex flex-col items-end gap-1">
-                        <div className="bg-white px-3 py-1.5 rounded-xl border border-indigo-50 shadow-sm">
+                        <div className="bg-white px-3 py-1.5 rounded-xl border border-indigo-50 shadow-sm w-full">
                             <p className="text-[9px] font-bold text-emerald-500 uppercase">Total Penjualan</p>
-                            <p className="text-xs font-black text-emerald-600 tracking-tighter">Rp {bcStats.salesVal.toLocaleString('id-ID')}</p>
+                            <p className="text-xs font-black text-emerald-600 tracking-tighter whitespace-nowrap">Rp {bcStats.salesVal.toLocaleString('id-ID')}</p>
                         </div>
-                        <div className="bg-white px-3 py-1.5 rounded-xl border border-indigo-50 shadow-sm">
+                        <div className="bg-white px-3 py-1.5 rounded-xl border border-indigo-50 shadow-sm w-full">
                             <p className="text-[9px] font-bold text-rose-400 uppercase">Total Pembelian & Ops</p>
-                            <p className="text-xs font-black text-rose-500 tracking-tighter">Rp {(bcStats.purchaseVal + bcStats.expenseVal).toLocaleString('id-ID')}</p>
+                            <p className="text-xs font-black text-rose-500 tracking-tighter whitespace-nowrap">Rp {(bcStats.purchaseVal + bcStats.expenseVal).toLocaleString('id-ID')}</p>
                         </div>
                     </div>
                 </div>
 
-                <div className="bg-gradient-to-br from-amber-50 to-white border border-amber-100 shadow-sm p-5 rounded-3xl flex justify-between items-center transition-all hover:shadow-md">
-                    <div>
+                <div className="bg-gradient-to-br from-amber-50 to-white border border-amber-100 shadow-sm p-5 rounded-3xl flex justify-between items-center transition-all hover:shadow-md gap-4">
+                    <div className="min-w-0 flex-1">
                         <p className="text-[10px] font-black text-amber-400 uppercase tracking-widest mb-1 shadow-sm px-2 py-0.5 rounded-full bg-white w-fit border border-amber-50">Sales PF</p>
                         <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mt-2">Nett Margin</p>
-                        <p className={`text-2xl font-black tracking-tighter ${pfStats.margin >= 0 ? 'text-amber-600' : 'text-rose-600'}`}>
+                        <p className={`text-2xl font-black tracking-tighter truncate ${pfStats.margin >= 0 ? 'text-amber-600' : 'text-rose-600'}`} title={`Rp ${pfStats.margin.toLocaleString('id-ID')}`}>
                             Rp {pfStats.margin.toLocaleString('id-ID')}
                         </p>
                     </div>
                     <div className="text-right flex flex-col items-end gap-1">
-                        <div className="bg-white px-3 py-1.5 rounded-xl border border-amber-50 shadow-sm">
+                        <div className="bg-white px-3 py-1.5 rounded-xl border border-amber-50 shadow-sm w-full">
                             <p className="text-[9px] font-bold text-emerald-500 uppercase">Total Penjualan</p>
-                            <p className="text-xs font-black text-emerald-600 tracking-tighter">Rp {pfStats.salesVal.toLocaleString('id-ID')}</p>
+                            <p className="text-xs font-black text-emerald-600 tracking-tighter whitespace-nowrap">Rp {pfStats.salesVal.toLocaleString('id-ID')}</p>
                         </div>
-                        <div className="bg-white px-3 py-1.5 rounded-xl border border-amber-50 shadow-sm">
+                        <div className="bg-white px-3 py-1.5 rounded-xl border border-amber-50 shadow-sm w-full">
                             <p className="text-[9px] font-bold text-rose-400 uppercase">Total Pembelian & Ops</p>
-                            <p className="text-xs font-black text-rose-500 tracking-tighter">Rp {(pfStats.purchaseVal + pfStats.expenseVal).toLocaleString('id-ID')}</p>
+                            <p className="text-xs font-black text-rose-500 tracking-tighter whitespace-nowrap">Rp {(pfStats.purchaseVal + pfStats.expenseVal).toLocaleString('id-ID')}</p>
                         </div>
                     </div>
                 </div>
@@ -180,16 +180,16 @@ export function OperationalDashboard({ transactions, coa, initialDeliveries = []
                     </div>
                 </div>
 
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left">
+                <div className="overflow-x-auto custom-scrollbar">
+                    <table className="w-full text-left table-fixed min-w-[900px]">
                         <thead className="text-[10px] font-black uppercase tracking-widest text-muted-foreground bg-accent/30 border-b">
                             <tr>
-                                <th className="px-6 py-4">Tanggal</th>
+                                <th className="px-6 py-4 w-32">Tanggal</th>
                                 <th className="px-6 py-4">Deskripsi</th>
-                                <th className="px-6 py-4">Kategori</th>
-                                <th className="px-6 py-4 text-right">Jumlah</th>
-                                <th className="px-6 py-4">Metode</th>
-                                <th className="px-6 py-4 text-center">Aksi</th>
+                                <th className="px-6 py-4 w-40">Kategori</th>
+                                <th className="px-6 py-4 text-right w-40">Jumlah</th>
+                                <th className="px-6 py-4 w-32">Metode</th>
+                                <th className="px-6 py-4 text-center w-20">Aksi</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y text-sm">
@@ -202,9 +202,9 @@ export function OperationalDashboard({ transactions, coa, initialDeliveries = []
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <div className="font-bold text-foreground tracking-tight">{t.description}</div>
+                                        <div className="font-bold text-foreground tracking-tight truncate" title={t.description}>{t.description}</div>
                                         {t.referenceNumber && (
-                                            <div className="text-[10px] font-black text-muted-foreground uppercase opacity-60">
+                                            <div className="text-[10px] font-black text-muted-foreground uppercase opacity-60 truncate" title={t.referenceNumber}>
                                                 Ref: {t.referenceNumber}
                                             </div>
                                         )}

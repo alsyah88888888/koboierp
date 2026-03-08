@@ -24,6 +24,7 @@ model User {
   requestedRequests PurchaseRequest[] @relation("RequestedBy")
   approvedRequests PurchaseRequest[]  @relation("ApprovedBy")
   verifiedRequests PurchaseRequest[]  @relation("VerifiedBy")
+  notifications Notification[] @relation("NotificationAuthor")
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
@@ -397,4 +398,14 @@ model SystemSetting {
   taxId       String @default("01.234.567.8-012.000")
   website     String @default("www.kolaborasi.id")
   updatedAt   DateTime @updatedAt
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  title     String
+  message   String
+  type      String   @default("info") // info, alert, broadcast, success
+  authorId  String?
+  author    User?    @relation("NotificationAuthor", fields: [authorId], references: [id])
+  createdAt DateTime @default(now())
 }

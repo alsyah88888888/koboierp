@@ -413,25 +413,25 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
 
                 {activeTab === "ledger" && (
                     <div className="overflow-x-auto custom-scrollbar">
-                        <table className="w-full text-sm text-left min-w-[1000px]">
+                        <table className="w-full text-sm text-left min-w-[1000px] table-fixed">
                             <thead className="bg-muted/30 text-muted-foreground border-b text-xs uppercase tracking-wider">
                                 <tr>
-                                    <th className="px-6 py-4">Tanggal</th>
+                                    <th className="px-6 py-4 w-32">Tanggal</th>
                                     <th className="px-6 py-4">Deskripsi / Ref</th>
-                                    <th className="px-6 py-4">Akun</th>
-                                    <th className="px-6 py-4">Tipe</th>
-                                    <th className="px-6 py-4 text-right">Nominal</th>
-                                    {isAdminOrFinance && <th className="px-6 py-4 text-center w-10">Aksi</th>}
+                                    <th className="px-6 py-4 w-48">Akun</th>
+                                    <th className="px-6 py-4 w-28">Tipe</th>
+                                    <th className="px-6 py-4 text-right w-40">Nominal</th>
+                                    {isAdminOrFinance && <th className="px-6 py-4 text-center w-20">Aksi</th>}
                                 </tr>
                             </thead>
-                            <tbody className="divide-y">
+                            <tbody className="divide-y text-slate-700">
                                 {filteredLedger.map((tx: any) => (
                                     <tr key={tx.id} className="hover:bg-muted/20 transition-colors">
-                                        <td className="px-6 py-4 text-muted-foreground">
+                                        <td className="px-6 py-4 text-muted-foreground whitespace-nowrap">
                                             {format(new Date(tx.date), "dd/MM/yyyy")}
                                         </td>
                                         <td className="px-6 py-4">
-                                            <div className="font-medium">{tx.description}</div>
+                                            <div className="font-medium truncate max-w-[400px]" title={tx.description}>{tx.description}</div>
                                             {tx.transaction && (
                                                 <div className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1 font-mono uppercase">
                                                     <FileText className="h-3 w-3" /> {tx.transaction.bank} | {tx.transaction.referenceNumber || 'Cash'}
@@ -471,25 +471,27 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
 
                 {activeTab === "ap" && (
                     <>
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-sm text-left">
+                        <div className="overflow-x-auto custom-scrollbar">
+                            <table className="w-full text-sm text-left min-w-[900px] table-fixed">
                                 <thead className="bg-muted/30 text-muted-foreground border-b text-xs uppercase tracking-wider">
                                     <tr>
-                                        <th className="px-6 py-4">Tgl / Ref</th>
+                                        <th className="px-6 py-4 w-40">Tgl / Ref</th>
                                         <th className="px-6 py-4">Supplier</th>
-                                        <th className="px-6 py-4">Status</th>
-                                        <th className="px-6 py-4 text-right">Nominal</th>
-                                        <th className="px-6 py-4 text-center">Aksi</th>
+                                        <th className="px-6 py-4 w-48">Status</th>
+                                        <th className="px-6 py-4 text-right w-44">Nominal</th>
+                                        <th className="px-6 py-4 text-center w-40">Aksi</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y">
+                                <tbody className="divide-y text-slate-700">
                                     {filteredPurchases.map((p: any) => (
                                         <tr key={p.id} className="hover:bg-muted/20 transition-colors">
                                             <td className="px-6 py-4">
                                                 <div className="text-xs text-muted-foreground">{format(new Date(p.createdAt), "dd/MM/yy")}</div>
-                                                <div className="font-mono text-[10px]">{p.receiptNumber}</div>
+                                                <div className="font-mono text-[10px] truncate" title={p.receiptNumber}>{p.receiptNumber}</div>
                                             </td>
-                                            <td className="px-6 py-4 font-bold">{p.receivedFrom}</td>
+                                            <td className="px-6 py-4 font-bold">
+                                                <div className="truncate max-w-[250px]" title={p.receivedFrom}>{p.receivedFrom}</div>
+                                            </td>
                                             <td className="px-6 py-4">
                                                 <div className="flex flex-col gap-1">
                                                     <span className="flex items-center gap-1.5 text-amber-600 font-bold text-xs uppercase">
@@ -603,25 +605,27 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
 
                 {activeTab === "ar" && (
                     <>
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-sm text-left">
+                        <div className="overflow-x-auto custom-scrollbar">
+                            <table className="w-full text-sm text-left min-w-[900px] table-fixed">
                                 <thead className="bg-muted/30 text-muted-foreground border-b text-xs uppercase tracking-wider">
                                     <tr>
-                                        <th className="px-6 py-4">Tgl / Ref</th>
+                                        <th className="px-6 py-4 w-40">Tgl / Ref</th>
                                         <th className="px-6 py-4">Pelanggan</th>
-                                        <th className="px-6 py-4">Status</th>
-                                        <th className="px-6 py-4 text-right">Nominal</th>
-                                        <th className="px-6 py-4 text-center">Aksi</th>
+                                        <th className="px-6 py-4 w-40">Status</th>
+                                        <th className="px-6 py-4 text-right w-40">Nominal</th>
+                                        <th className="px-6 py-4 text-center w-40">Aksi</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y">
+                                <tbody className="divide-y text-slate-700">
                                     {filteredSales.map((s: any) => (
                                         <tr key={s.id} className="hover:bg-muted/20 transition-colors">
                                             <td className="px-6 py-4">
                                                 <div className="text-xs text-muted-foreground">{format(new Date(s.createdAt), "dd/MM/yy")}</div>
-                                                <div className="font-mono text-[10px]">{s.deliveryNumber}</div>
+                                                <div className="font-mono text-[10px] truncate" title={s.deliveryNumber}>{s.deliveryNumber}</div>
                                             </td>
-                                            <td className="px-6 py-4 font-bold">{s.buyerName}</td>
+                                            <td className="px-6 py-4 font-bold">
+                                                <div className="truncate max-w-[250px]" title={s.buyerName}>{s.buyerName}</div>
+                                            </td>
                                             <td className="px-6 py-4">
                                                 <span className="flex items-center gap-1.5 text-blue-600 font-bold text-xs">
                                                     <Clock className="h-3 w-3" /> {s.paymentStatus}
@@ -681,18 +685,18 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
 
                         <div className="mt-8 border-t pt-6">
                             <h3 className="text-lg font-bold text-blue-800 mb-4 capitalize">Pengajuan Retur Penjualan (Pending)</h3>
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-sm text-left">
+                            <div className="overflow-x-auto custom-scrollbar">
+                                <table className="w-full text-sm text-left min-w-[800px] table-fixed">
                                     <thead className="bg-blue-50 border-b border-blue-100 text-blue-800 text-xs uppercase tracking-wider">
                                         <tr>
-                                            <th className="px-6 py-4">No. Retur</th>
-                                            <th className="px-6 py-4">Tanggal Pengajuan</th>
-                                            <th className="px-6 py-4">Ref. SJ</th>
+                                            <th className="px-6 py-4 w-52">No. Retur</th>
+                                            <th className="px-6 py-4 w-40">Tanggal Pengajuan</th>
+                                            <th className="px-6 py-4 w-40">Ref. SJ</th>
                                             <th className="px-6 py-4 text-right">Qty Diretur</th>
-                                            <th className="px-6 py-4 text-center">Aksi</th>
+                                            <th className="px-6 py-4 text-center w-40">Aksi</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-blue-50">
+                                    <tbody className="divide-y divide-blue-50 text-slate-700">
                                         {filteredSalesReturns.map((r: any) => (
                                             <tr key={r.id} className="hover:bg-blue-50/50 transition-colors">
                                                 <td className="px-6 py-4 font-mono font-bold text-blue-600">
@@ -730,25 +734,27 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                 )}
 
                 {activeTab === "checker" && (
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-left">
+                    <div className="overflow-x-auto custom-scrollbar">
+                        <table className="w-full text-sm text-left min-w-[900px] table-fixed">
                             <thead className="bg-muted/30 text-muted-foreground border-b text-xs uppercase tracking-wider">
                                 <tr>
-                                    <th className="px-6 py-4">Tgl / No. Terima</th>
+                                    <th className="px-6 py-4 w-40">Tgl / No. Terima</th>
                                     <th className="px-6 py-4">Supplier</th>
-                                    <th className="px-6 py-4">Barang</th>
-                                    <th className="px-6 py-4">Gudang</th>
-                                    <th className="px-6 py-4 text-center">Status Gudang</th>
+                                    <th className="px-6 py-4 w-32">Barang</th>
+                                    <th className="px-6 py-4 w-48">Gudang</th>
+                                    <th className="px-6 py-4 text-center w-40">Status Gudang</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y">
+                            <tbody className="divide-y text-slate-700">
                                 {unverifiedReceipts.map((r: any) => (
-                                    <tr key={r.id}>
+                                    <tr key={r.id} className="hover:bg-muted/20 transition-colors">
                                         <td className="px-6 py-4">
                                             <div className="text-xs text-muted-foreground">{format(new Date(r.createdAt), "dd/MM/yy")}</div>
-                                            <div className="font-mono text-[10px]">{r.receiptNumber}</div>
+                                            <div className="font-mono text-[10px] truncate" title={r.receiptNumber}>{r.receiptNumber}</div>
                                         </td>
-                                        <td className="px-6 py-4 font-bold">{r.receivedFrom}</td>
+                                        <td className="px-6 py-4 font-bold">
+                                            <div className="truncate max-w-[250px]" title={r.receivedFrom}>{r.receivedFrom}</div>
+                                        </td>
                                         <td className="px-6 py-4 text-xs">
                                             {r.items.length} Item
                                         </td>
@@ -775,27 +781,29 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                 )}
 
                 {activeTab === "purchase_requests" && (
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-left">
+                    <div className="overflow-x-auto custom-scrollbar">
+                        <table className="w-full text-sm text-left min-w-[900px] table-fixed">
                             <thead className="bg-muted/30 text-muted-foreground border-b text-xs uppercase tracking-wider">
                                 <tr>
-                                    <th className="px-6 py-4">Tgl / No. Pengajuan</th>
-                                    <th className="px-6 py-4">Pemohon</th>
-                                    <th className="px-6 py-4">Status</th>
-                                    <th className="px-6 py-4 text-right">Estimasi Biaya</th>
-                                    <th className="px-6 py-4 text-center">Aksi</th>
+                                    <th className="px-6 py-4 w-48">Tgl / No. Pengajuan</th>
+                                    <th className="px-6 py-4 font-bold">Pemohon</th>
+                                    <th className="px-6 py-4 w-48">Status</th>
+                                    <th className="px-6 py-4 text-right w-44">Estimasi Biaya</th>
+                                    <th className="px-6 py-4 text-center w-40">Aksi</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y">
+                            <tbody className="divide-y text-slate-700">
                                 {filteredPurchaseRequests.map((r: any) => {
                                     const totalEst = r.items.reduce((acc: number, item: any) => acc + (item.quantity * Number(item.estimatedPrice)), 0);
                                     return (
                                         <tr key={r.id} className="hover:bg-muted/20 transition-colors">
                                             <td className="px-6 py-4">
                                                 <div className="text-xs text-muted-foreground">{format(new Date(r.createdAt), "dd/MM/yy")}</div>
-                                                <div className="font-mono text-[10px] font-bold text-orange-600">{r.number}</div>
+                                                <div className="font-mono text-[10px] font-bold text-orange-600 truncate" title={r.number}>{r.number}</div>
                                             </td>
-                                            <td className="px-6 py-4 font-bold">{r.requestedBy?.name}</td>
+                                            <td className="px-6 py-4 font-bold">
+                                                <div className="truncate max-w-[200px]" title={r.requestedBy?.name}>{r.requestedBy?.name}</div>
+                                            </td>
                                             <td className="px-6 py-4">
                                                 <span className="flex items-center gap-1.5 text-orange-600 font-bold text-xs uppercase">
                                                     <Clock className="h-3 w-3" /> {r.status === "APPROVED_BY_ADMIN" ? "MENUNGGU FINANCE" : r.status}
@@ -830,22 +838,22 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                 )}
 
                 {activeTab === "history" && (
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-left">
+                    <div className="overflow-x-auto custom-scrollbar">
+                        <table className="w-full text-sm text-left min-w-[1000px] table-fixed">
                             <thead className="bg-muted/30 text-muted-foreground border-b text-xs uppercase tracking-wider">
                                 <tr>
-                                    <th className="px-6 py-4">Waktu Input</th>
-                                    <th className="px-6 py-4">Tipe</th>
-                                    <th className="px-6 py-4">Bank / Metode</th>
+                                    <th className="px-6 py-4 w-40">Waktu Input</th>
+                                    <th className="px-6 py-4 w-32">Tipe</th>
+                                    <th className="px-6 py-4 w-40">Bank / Metode</th>
                                     <th className="px-6 py-4">Deskripsi</th>
-                                    <th className="px-6 py-4 text-right">Nominal</th>
-                                    {isAdminOrFinance && <th className="px-6 py-4 text-center w-10">Aksi</th>}
+                                    <th className="px-6 py-4 text-right w-40">Nominal</th>
+                                    {isAdminOrFinance && <th className="px-6 py-4 text-center w-20">Aksi</th>}
                                 </tr>
                             </thead>
-                            <tbody className="divide-y">
+                            <tbody className="divide-y text-slate-700">
                                 {transactions.map((tx: any) => (
                                     <tr key={tx.id} className="hover:bg-muted/20 transition-colors text-xs">
-                                        <td className="px-6 py-4">
+                                        <td className="px-6 py-4 whitespace-nowrap text-muted-foreground">
                                             <div className="font-bold text-slate-900">{format(new Date(tx.date), "dd/MM/yyyy")}</div>
                                             <div className="text-[10px] text-muted-foreground">{format(new Date(tx.date), "HH:mm:ss")}</div>
                                         </td>

@@ -298,14 +298,14 @@ export function AccountingDashboard({ journals, accounts }: { journals: any[], a
                     </div>
 
                     <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-left">
+                        <table className="w-full text-sm text-left min-w-[800px] table-fixed">
                             <thead className="bg-slate-100 text-slate-600 font-bold uppercase tracking-wider text-[10px]">
                                 <tr>
-                                    <th className="px-6 py-4">Tanggal</th>
+                                    <th className="px-6 py-4 w-40">Tanggal</th>
                                     <th className="px-6 py-4">Deskripsi</th>
-                                    <th className="px-6 py-4 text-right text-emerald-600">Debit</th>
-                                    <th className="px-6 py-4 text-right text-rose-600">Kredit</th>
-                                    <th className="px-6 py-4 text-right">Saldo</th>
+                                    <th className="px-6 py-4 text-right text-emerald-600 w-44">Debit</th>
+                                    <th className="px-6 py-4 text-right text-rose-600 w-44">Kredit</th>
+                                    <th className="px-6 py-4 text-right w-44">Saldo</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y text-slate-700">
@@ -320,10 +320,10 @@ export function AccountingDashboard({ journals, accounts }: { journals: any[], a
 
                                         return (
                                             <tr key={j.id} className="hover:bg-slate-50 transition-colors">
-                                                <td className="px-6 py-4 font-mono text-[11px] text-muted-foreground text-nowrap">
+                                                <td className="px-6 py-4 font-mono text-[11px] text-muted-foreground whitespace-nowrap">
                                                     {format(new Date(j.date), "dd/MM/yyyy HH:mm")}
                                                 </td>
-                                                <td className="px-6 py-4 font-medium">{j.description}</td>
+                                                <td className="px-6 py-4 font-medium truncate" title={j.description}>{j.description}</td>
                                                 <td className="px-6 py-4 text-right font-black text-emerald-600">
                                                     {j.type === "DEBIT" ? formatCurrency(amt) : "-"}
                                                 </td>
@@ -370,31 +370,31 @@ export function AccountingDashboard({ journals, accounts }: { journals: any[], a
                     </div>
 
                     <div className="overflow-x-auto h-[600px] overflow-y-auto relative">
-                        <table className="w-full text-sm text-left relative">
+                        <table className="w-full text-sm text-left relative table-fixed min-w-[1000px]">
                             <thead className="bg-slate-100 text-slate-600 font-bold uppercase tracking-wider text-[10px] sticky top-0 z-10 shadow-sm border-b">
                                 <tr>
-                                    <th className="px-6 py-4">Tanggal & Waktu</th>
-                                    <th className="px-6 py-4">Akun (COA)</th>
+                                    <th className="px-6 py-4 w-44">Tanggal & Waktu</th>
+                                    <th className="px-6 py-4 w-72">Akun (COA)</th>
                                     <th className="px-6 py-4">Deskripsi</th>
-                                    <th className="px-6 py-4 text-right">Debit</th>
-                                    <th className="px-6 py-4 text-right">Kredit</th>
+                                    <th className="px-6 py-4 text-right w-44">Debit</th>
+                                    <th className="px-6 py-4 text-right w-44">Kredit</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y text-slate-700">
                                 {filteredJournals.map(j => (
                                     <tr key={j.id} className="hover:bg-slate-50 transition-colors">
-                                        <td className="px-6 py-3 font-mono text-[11px] text-muted-foreground text-nowrap align-top pt-4">
+                                        <td className="px-6 py-3 font-mono text-[11px] text-muted-foreground whitespace-nowrap align-top pt-4">
                                             {format(new Date(j.date), "dd/MM/yyyy HH:mm:ss")}
                                         </td>
                                         <td className="px-6 py-3">
                                             <span className={cn(
-                                                "font-bold text-xs uppercase px-2 py-1 rounded inline-block",
+                                                "font-bold text-xs uppercase px-2 py-1 rounded inline-block truncate max-w-full",
                                                 j.type === "DEBIT" ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700 ml-6"
-                                            )}>
+                                            )} title={`${j.account?.code} - ${j.account?.name}`}>
                                                 {j.account?.code} - {j.account?.name}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-3 font-medium text-xs align-top pt-4">{j.description}</td>
+                                        <td className="px-6 py-3 font-medium text-xs align-top pt-4 truncate" title={j.description}>{j.description}</td>
                                         <td className="px-6 py-3 text-right font-black text-emerald-600 align-top pt-4">
                                             {j.type === "DEBIT" ? formatCurrency(Number(j.amount)) : ""}
                                         </td>

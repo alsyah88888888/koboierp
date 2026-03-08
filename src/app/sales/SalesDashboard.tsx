@@ -346,24 +346,24 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                 </div>
                 <div className="overflow-x-auto custom-scrollbar">
                     {activeTab === "SJ" ? (
-                        <table className="w-full text-sm text-left min-w-[1000px]">
+                        <table className="w-full text-sm text-left min-w-[1000px] table-fixed">
                             <thead className="bg-muted/30 text-muted-foreground border-b text-xs uppercase tracking-wider">
                                 <tr>
-                                    <th className="px-6 py-4">No. Pengiriman (SJ)</th>
+                                    <th className="px-6 py-4 w-48">No. Pengiriman (SJ)</th>
                                     <th className="px-6 py-4">Kirim Ke</th>
-                                    <th className="px-6 py-4">Buyer</th>
-                                    <th className="px-6 py-4">Gudang</th>
-                                    <th className="px-6 py-4 text-right">Total Qty (Jumlah)</th>
-                                    <th className="px-6 py-4 text-right">Tanggal</th>
-                                    {(isAdmin || userRole === "SALES") && <th className="px-6 py-4 text-center w-10">Aksi</th>}
+                                    <th className="px-6 py-4 w-64">Buyer</th>
+                                    <th className="px-6 py-4 w-40">Gudang</th>
+                                    <th className="px-6 py-4 text-right w-40">Total Qty (Jumlah)</th>
+                                    <th className="px-6 py-4 text-right w-40">Tanggal</th>
+                                    {(isAdmin || userRole === "SALES") && <th className="px-6 py-4 text-center w-32">Aksi</th>}
                                 </tr>
                             </thead>
-                            <tbody className="divide-y">
+                            <tbody className="divide-y text-slate-700">
                                 {filteredDeliveries.map((d: any) => (
                                     <tr key={d.id} className="hover:bg-muted/20 transition-colors">
-                                        <td className="px-6 py-4 font-mono text-primary font-medium">{d.deliveryNumber}</td>
-                                        <td className="px-6 py-4 font-medium">{d.recipient}</td>
-                                        <td className="px-6 py-4">{d.buyerName}</td>
+                                        <td className="px-6 py-4 font-mono text-primary font-medium truncate" title={d.deliveryNumber}>{d.deliveryNumber}</td>
+                                        <td className="px-6 py-4 font-medium truncate" title={d.recipient}>{d.recipient}</td>
+                                        <td className="px-6 py-4 truncate" title={d.buyerName}>{d.buyerName}</td>
                                         <td className="px-6 py-4 text-xs">
                                             <span className="bg-muted px-2 py-0.5 rounded uppercase font-bold text-[10px]">
                                                 {d.warehouse.name}
@@ -424,23 +424,23 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                             </tbody>
                         </table>
                     ) : (
-                        <table className="w-full text-sm text-left min-w-[1000px]">
+                        <table className="w-full text-sm text-left min-w-[1000px] table-fixed">
                             <thead className="bg-blue-50/50 text-blue-900 border-b text-xs uppercase tracking-wider">
                                 <tr>
-                                    <th className="px-6 py-4">No. Retur</th>
-                                    <th className="px-6 py-4">No. SJ Terkait</th>
+                                    <th className="px-6 py-4 w-40">No. Retur</th>
+                                    <th className="px-6 py-4 w-48">No. SJ Terkait</th>
                                     <th className="px-6 py-4">Buyer</th>
-                                    <th className="px-6 py-4 text-right">Total Qty Retur</th>
-                                    <th className="px-6 py-4 text-center">Status</th>
+                                    <th className="px-6 py-4 text-right w-40">Total Qty Retur</th>
+                                    <th className="px-6 py-4 text-center w-32">Status</th>
                                     <th className="px-6 py-4 text-center w-24">Aksi</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-blue-50">
+                            <tbody className="divide-y divide-blue-50 text-slate-700">
                                 {filteredReturns.map((r: any) => (
                                     <tr key={r.id} className="hover:bg-blue-50/20 transition-colors">
-                                        <td className="px-6 py-4 font-mono text-blue-700 font-bold">{r.returnNumber}</td>
-                                        <td className="px-6 py-4 font-mono text-slate-500">{r.delivery.deliveryNumber}</td>
-                                        <td className="px-6 py-4 font-medium">{r.delivery.buyerName}</td>
+                                        <td className="px-6 py-4 font-mono text-blue-700 font-bold truncate" title={r.returnNumber}>{r.returnNumber}</td>
+                                        <td className="px-6 py-4 font-mono text-slate-500 truncate" title={r.delivery.deliveryNumber}>{r.delivery.deliveryNumber}</td>
+                                        <td className="px-6 py-4 font-medium truncate" title={r.delivery.buyerName}>{r.delivery.buyerName}</td>
                                         <td className="px-6 py-4 text-right font-bold text-blue-600">
                                             {r.items.reduce((acc: number, item: any) => acc + item.quantity, 0)} {r.items[0]?.product?.uom || ""}
                                         </td>

@@ -218,30 +218,30 @@ export function MasterDataDashboard() {
                         <p className="text-slate-500 font-medium">Try adjusting your search or add a new entry.</p>
                     </div>
                 ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full">
+                    <div className="overflow-x-auto custom-scrollbar">
+                        <table className="w-full table-fixed min-w-[800px]">
                             <thead className="bg-slate-50/80 text-slate-500 border-b-2 border-slate-100">
                                 {activeTab === "product" && (
                                     <tr>
-                                        <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest">Barang / SKU</th>
-                                        <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest">Kategori</th>
-                                        <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest">UOM</th>
-                                        <th className="px-6 py-4 text-right text-[10px] font-black uppercase tracking-widest">Aksi</th>
+                                        <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest w-64">Barang / SKU</th>
+                                        <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest w-40">Kategori</th>
+                                        <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest w-32">UOM</th>
+                                        <th className="px-6 py-4 text-right text-[10px] font-black uppercase tracking-widest w-24">Aksi</th>
                                     </tr>
                                 )}
                                 {(activeTab === "vendor" || activeTab === "customer") && (
                                     <tr>
-                                        <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest">Nama / Partner</th>
-                                        <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest">Kontak</th>
+                                        <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest w-64">Nama / Partner</th>
+                                        <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest w-52">Kontak</th>
                                         <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest">Alamat</th>
-                                        <th className="px-6 py-4 text-right text-[10px] font-black uppercase tracking-widest">Aksi</th>
+                                        <th className="px-6 py-4 text-right text-[10px] font-black uppercase tracking-widest w-24">Aksi</th>
                                     </tr>
                                 )}
                                 {activeTab === "warehouse" && (
                                     <tr>
-                                        <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest">Nama Gudang</th>
+                                        <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest w-72">Nama Gudang</th>
                                         <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest">Lokasi</th>
-                                        <th className="px-6 py-4 text-right text-[10px] font-black uppercase tracking-widest">Aksi</th>
+                                        <th className="px-6 py-4 text-right text-[10px] font-black uppercase tracking-widest w-24">Aksi</th>
                                     </tr>
                                 )}
                             </thead>
@@ -251,8 +251,8 @@ export function MasterDataDashboard() {
                                         {activeTab === "product" && (
                                             <>
                                                 <td className="px-6 py-4">
-                                                    <div className="font-bold text-slate-800 group-hover:text-primary transition-colors">{item.name}</div>
-                                                    <div className="text-[10px] font-mono text-slate-400 uppercase tracking-tighter">{item.sku}</div>
+                                                    <div className="font-bold text-slate-800 group-hover:text-primary transition-colors truncate" title={item.name}>{item.name}</div>
+                                                    <div className="text-[10px] font-mono text-slate-400 uppercase tracking-tighter truncate" title={item.sku}>{item.sku}</div>
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <span className="px-2 py-1 bg-slate-100 text-slate-600 text-[10px] font-bold rounded uppercase">
@@ -267,15 +267,15 @@ export function MasterDataDashboard() {
                                         {(activeTab === "vendor" || activeTab === "customer") && (
                                             <>
                                                 <td className="px-6 py-4">
-                                                    <div className="font-bold text-slate-800">{item.name}</div>
-                                                    <div className="text-[10px] text-slate-400 font-medium">#{item.id.slice(-6).toUpperCase()}</div>
+                                                    <div className="font-bold text-slate-800 truncate" title={item.name}>{item.name}</div>
+                                                    <div className="text-[10px] text-slate-400 font-medium whitespace-nowrap">#{item.id.slice(-6).toUpperCase()}</div>
                                                 </td>
                                                 <td className="px-6 py-4 text-xs font-semibold text-slate-600">
-                                                    {item.phone && <div>{item.phone}</div>}
-                                                    {item.email && <div className="text-slate-400">{item.email}</div>}
+                                                    {item.phone && <div className="truncate" title={item.phone}>{item.phone}</div>}
+                                                    {item.email && <div className="text-slate-400 truncate" title={item.email}>{item.email}</div>}
                                                     {!item.phone && !item.email && <span className="text-slate-300 italic">No contact</span>}
                                                 </td>
-                                                <td className="px-6 py-4 text-xs text-slate-500 font-medium max-w-xs truncate">
+                                                <td className="px-6 py-4 text-xs text-slate-500 font-medium truncate" title={item.address || "-"}>
                                                     {item.address || "-"}
                                                 </td>
                                             </>
@@ -283,7 +283,7 @@ export function MasterDataDashboard() {
                                         {activeTab === "warehouse" && (
                                             <>
                                                 <td className="px-6 py-4">
-                                                    <div className="font-bold text-slate-800">{item.name}</div>
+                                                    <div className="font-bold text-slate-800 truncate" title={item.name}>{item.name}</div>
                                                 </td>
                                                 <td className="px-6 py-4 text-sm text-slate-500 font-medium">
                                                     {item.location || "-"}
