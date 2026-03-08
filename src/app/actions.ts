@@ -2692,7 +2692,7 @@ export async function createNotificationAction(data: {
         throw new Error("Hanya Admin yang dapat membuat pengumuman.");
     }
 
-    const notification = await prisma.notification.create({
+    const notification = await (prisma as any).notification.create({
         data: {
             title: data.title,
             message: data.message,
@@ -2706,7 +2706,7 @@ export async function createNotificationAction(data: {
 }
 
 export async function getNotificationsAction() {
-    return await prisma.notification.findMany({
+    return await (prisma as any).notification.findMany({
         orderBy: { createdAt: 'desc' },
         take: 20
     });
