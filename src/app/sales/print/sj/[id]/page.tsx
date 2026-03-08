@@ -22,11 +22,15 @@ export default async function SJPrintPage({ params }: { params: Promise<{ id: st
             docNumber={delivery.deliveryNumber}
             date={format(new Date(delivery.createdAt), "dd MMM yyyy")}
             headerInfo={
-                <div className="grid grid-cols-[100px_1fr] gap-x-4 gap-y-2 text-xs italic font-bold">
-                    <span className="text-slate-400 uppercase">Penerima:</span>
-                    <span className="text-slate-800 uppercase tabular-nums">{delivery.buyerName}</span>
-                    <span className="text-slate-400 uppercase">Alamat<br />Kirim:</span>
-                    <span className="text-slate-500 uppercase">{delivery.recipient}</span>
+                <div className="flex justify-between items-start gap-8 text-xs font-bold uppercase italic border-2 border-slate-100 p-4 rounded-xl bg-slate-50/30">
+                    <div className="flex-1 space-y-1">
+                        <span className="text-[9px] text-slate-400 tracking-widest not-italic block mb-1">PIHAK PENERIMA</span>
+                        <div className="text-slate-800 text-sm leading-tight font-black tabular-nums">{delivery.buyerName}</div>
+                    </div>
+                    <div className="flex-[1.5] space-y-1 border-l-2 border-slate-200 pl-8">
+                        <span className="text-[9px] text-slate-400 tracking-widest not-italic block mb-1">ALAMAT PENGIRIMAN</span>
+                        <div className="text-slate-500 leading-relaxed font-medium normal-case italic">{delivery.recipient}</div>
+                    </div>
                 </div>
             }
         >

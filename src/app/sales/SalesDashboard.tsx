@@ -350,8 +350,8 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                             <thead className="bg-muted/30 text-muted-foreground border-b text-xs uppercase tracking-wider">
                                 <tr>
                                     <th className="px-6 py-4 w-48">No. Pengiriman (SJ)</th>
-                                    <th className="px-6 py-4">Kirim Ke</th>
-                                    <th className="px-6 py-4 w-64">Buyer</th>
+                                    <th className="px-6 py-4 w-60">Buyer / Penerima</th>
+                                    <th className="px-6 py-4">Alamat Kirim</th>
                                     <th className="px-6 py-4 w-40">Gudang</th>
                                     <th className="px-6 py-4 text-right w-40">Total Qty (Jumlah)</th>
                                     <th className="px-6 py-4 text-right w-40">Tanggal</th>
@@ -362,8 +362,13 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                                 {filteredDeliveries.map((d: any) => (
                                     <tr key={d.id} className="hover:bg-muted/20 transition-colors">
                                         <td className="px-6 py-4 font-mono text-primary font-medium truncate" title={d.deliveryNumber}>{d.deliveryNumber}</td>
-                                        <td className="px-6 py-4 font-medium truncate" title={d.recipient}>{d.recipient}</td>
-                                        <td className="px-6 py-4 truncate" title={d.buyerName}>{d.buyerName}</td>
+                                        <td className="px-6 py-4 font-bold text-slate-900 truncate" title={d.buyerName}>
+                                            <div className="truncate">{d.buyerName}</div>
+                                            <div className="text-[10px] text-slate-400 font-normal truncate uppercase tracking-tighter">{d.recipient?.split(',')[0]}</div>
+                                        </td>
+                                        <td className="px-6 py-4 text-xs font-medium text-slate-500 line-clamp-2 leading-tight" title={d.recipient}>
+                                            {d.recipient}
+                                        </td>
                                         <td className="px-6 py-4 text-xs">
                                             <span className="bg-muted px-2 py-0.5 rounded uppercase font-bold text-[10px]">
                                                 {d.warehouse.name}

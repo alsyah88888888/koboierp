@@ -231,48 +231,53 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{isManualBuyer ? "Mode: Manual Typing" : "Mode: Selection List"}</p>
                         </div>
 
-                        <div className="space-y-2 lg:col-span-2">
-                            <label className="text-xs font-bold uppercase tracking-wider text-slate-600 mb-1 block">Kirim Ke (Recipient Address/Name)</label>
-                            <input
-                                value={recipient}
-                                onChange={e => setRecipient(e.target.value)}
-                                className="w-full bg-white border-2 border-slate-300 px-3 py-2.5 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-medium"
-                                placeholder="Alamat / Lokasi Tujuan"
-                                required
-                            />
-                        </div>
-                        <div className="space-y-2 lg:col-span-2">
-                            <label className="text-xs font-bold uppercase tracking-wider text-slate-600 mb-1 block">{isManualBuyer ? "Nama Buyer (Manual)" : "Pilih Buyer"}</label>
-                            {isManualBuyer ? (
-                                <input
-                                    value={buyerName}
-                                    onChange={e => setBuyerName(e.target.value)}
-                                    className="w-full bg-white border-2 border-slate-300 px-3 py-2.5 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-medium"
-                                    placeholder="Ketik Nama Buyer..."
-                                    required
-                                />
-                            ) : (
-                                <>
+                        <div className="space-y-2 lg:col-span-3">
+                            <label className="text-xs font-black uppercase tracking-widest text-primary mb-1 block">Informasi Buyer / Penerima</label>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase">{isManualBuyer ? "Nama Buyer (Manual)" : "Pilih Buyer Existing"}</label>
+                                    {isManualBuyer ? (
+                                        <input
+                                            value={buyerName}
+                                            onChange={e => setBuyerName(e.target.value)}
+                                            className="w-full bg-white border-2 border-slate-300 px-3 py-2.5 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-bold text-slate-700"
+                                            placeholder="Ketik Nama Buyer..."
+                                            required
+                                        />
+                                    ) : (
+                                        <>
+                                            <input
+                                                list="buyer-list"
+                                                value={buyerName}
+                                                onChange={e => {
+                                                    const val = e.target.value;
+                                                    setBuyerName(val);
+                                                    const customer = customers.find(c => c.name === val);
+                                                    if (customer && customer.address) {
+                                                        setRecipient(customer.address);
+                                                    }
+                                                }}
+                                                className="w-full bg-white border-2 border-slate-300 px-3 py-2.5 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-bold text-slate-700"
+                                                placeholder="Cari Buyer..."
+                                                required
+                                            />
+                                            <datalist id="buyer-list">
+                                                {customers.map(c => <option key={c.id} value={c.name} />)}
+                                            </datalist>
+                                        </>
+                                    )}
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase">Kirim Ke (Alamat Tujuan)</label>
                                     <input
-                                        list="buyer-list"
-                                        value={buyerName}
-                                        onChange={e => {
-                                            const val = e.target.value;
-                                            setBuyerName(val);
-                                            const customer = customers.find(c => c.name === val);
-                                            if (customer && customer.address) {
-                                                setRecipient(customer.address);
-                                            }
-                                        }}
-                                        className="w-full bg-white border-2 border-slate-300 px-3 py-2.5 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-medium"
-                                        placeholder="Ketik/Pilih Buyer"
+                                        value={recipient}
+                                        onChange={e => setRecipient(e.target.value)}
+                                        className="w-full bg-white border-2 border-slate-300 px-3 py-2.5 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-medium text-slate-600"
+                                        placeholder="Alamat Lengkap Pengiriman"
                                         required
                                     />
-                                    <datalist id="buyer-list">
-                                        {customers.map(c => <option key={c.id} value={c.name} />)}
-                                    </datalist>
-                                </>
-                            )}
+                                </div>
+                            </div>
                         </div>
                         <div className="space-y-2">
                             <label className="text-xs font-bold uppercase tracking-wider text-slate-600 mb-1 block">Tanggal</label>
