@@ -15,6 +15,7 @@ async function main() {
         { name: 'Finance User', email: 'finance@kola.id', role: 'FINANCE', password: 'finance123' },
         { name: 'Purchase User', email: 'purchase@kola.id', role: 'PURCHASE', password: 'purchase123' },
         { name: 'Warehouse User', email: 'warehouse@kola.id', role: 'WAREHOUSE', password: 'warehouse123' },
+        { name: 'Bu Cici', email: 'cici@kolaborasi.id', role: 'ADMIN', password: 'cici123' },
         { name: 'Sales User', email: 'sales@kola.id', role: 'SALES', password: 'sales123' },
     ];
 
