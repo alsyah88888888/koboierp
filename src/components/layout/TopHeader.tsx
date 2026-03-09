@@ -1,12 +1,12 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { Bell, Menu, User, Info, AlertTriangle, CheckCircle2, Megaphone, X, Calendar } from "lucide-react";
+import { Bell, Menu, User, Info, AlertTriangle, CheckCircle2, Megaphone, X, Calendar, Trash2 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useSidebar } from "./SidebarContext";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { getNotificationsAction } from "@/app/actions";
+import { getNotificationsAction, deleteNotificationAction, markNotificationAsReadAction } from "@/app/actions";
 
 export function TopHeader() {
     const pathname = usePathname();
@@ -99,13 +99,17 @@ export function TopHeader() {
                                         {notifications.map((n) => (
                                             <div
                                                 key={n.id}
-                                                onClick={() => {
-                                                    setSelectedNotification(n);
-                                                    setShowNotifications(false);
-                                                }}
-                                                className="p-4 border-b last:border-0 hover:bg-slate-50 cursor-pointer transition-colors group"
+                                                className="border-b last:border-0 hover:bg-slate-50 cursor-pointer transition-colors group relative"
                                             >
-                                                <div className="flex gap-3">
+                                                <div
+                                                    onClick={async () => {
+                                                        setSelectedNotification(n);
+                                                        setShowNotifications(false);
+                                                        await markNotificationAsReadAction(n.id);
+                                                        loadNotifications();
+                                                    }}
+                                                    className="p-4 flex gap-3"
+                                                >
                                                     <div className={`mt-0.5 h-8 w-8 rounded-xl flex items-center justify-center shrink-0 ${n.type === 'alert' ? 'bg-rose-100 text-rose-600' :
                                                         n.type === 'info' ? 'bg-blue-100 text-blue-600' :
                                                             n.type === 'broadcast' ? 'bg-amber-100 text-amber-600' :
@@ -125,6 +129,21 @@ export function TopHeader() {
                                                         <p className="text-[9px] font-bold text-slate-300 mt-1.5 uppercase tracking-tighter">{formatRelativeTime(n.createdAt)}</p>
                                                     </div>
                                                 </div>
+
+                                                {(session?.user as any)?.role === 'ADMIN' && (
+                                                    <button
+                                                        onClick={async (e) => {
+                                                            e.stopPropagation();
+                                                            if (confirm("Hapus notifikasi ini?")) {
+                                                                await deleteNotificationAction(n.id);
+                                                                loadNotifications();
+                                                            }
+                                                        }}
+                                                        className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </button>
+                                                )}
                                             </div>
                                         ))}
                                         {notifications.length === 0 && !isLoading && (

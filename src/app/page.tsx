@@ -103,6 +103,7 @@ export default async function DashboardPage() {
   }));
 
   return <AdminDashboard
+    role={userRole}
     stats={stats}
     salesData={salesData}
     inventoryData={inventoryData}

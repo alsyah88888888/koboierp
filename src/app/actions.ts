@@ -31,7 +31,7 @@ export async function createPurchaseRequestAction(data: {
                 }
             }
         });
-        const prNumber = `PR-${dateStr}-${String(count + 1).padStart(4, '0')}`;
+        const prNumber = `PR-${dateStr}-${String(count + 1).padStart(4, '0')}`.replace(/\s+/g, '');
 
         await tx.purchaseRequest.create({
             data: {
@@ -568,7 +568,7 @@ export async function createSalesDeliveryAction(data: {
         where: { createdAt: { gte: startOfDay, lte: endOfDay } }
     });
     const sequence = String(count + 1).padStart(3, '0');
-    const deliveryNumber = `KB-TRN-${dateStr}-${sequence}`;
+    const deliveryNumber = `KB-TRN-${dateStr}-${sequence}`.replace(/\s+/g, '');
 
     return await prisma.$transaction(async (tx: any) => {
         // 1. Create Sales Delivery record (Only known fields)
@@ -2706,8 +2706,72 @@ export async function createNotificationAction(data: {
 }
 
 export async function getNotificationsAction() {
+    const session = await getServerSession(authOptions) as any;
+    if (!session?.user?.id) return [];
+
     return await (prisma as any).notification.findMany({
+        where: {
+            NOT: {
+                reads: {
+                    some: {
+                        userId: session.user.id
+                    }
+                }
+            }
+        },
         orderBy: { createdAt: 'desc' },
         take: 20
     });
+}
+
+export async function deleteNotificationAction(id: string) {
+    const session = await getServerSession(authOptions) as any;
+    if (!session?.user?.id || session.user.role !== 'ADMIN') {
+        throw new Error("Unauthorized");
+    }
+
+    await (prisma as any).notification.delete({
+        where: { id }
+    });
+
+    revalidatePath("/");
+    return { success: true };
+}
+
+export async function markNotificationAsReadAction(notificationId: string) {
+    const session = await getServerSession(authOptions) as any;
+    if (!session?.user?.id) throw new Error("Unauthorized");
+
+    await (prisma as any).$transaction(async (tx: any) => {
+        // Mark as read
+        await tx.notificationRead.upsert({
+            where: {
+                notificationId_userId: {
+                    notificationId,
+                    userId: session.user.id
+                }
+            },
+            update: {},
+            create: {
+                notificationId,
+                userId: session.user.id
+            }
+        });
+
+        // Check if all users have read
+        const totalUsers = await tx.user.count();
+        const readCount = await tx.notificationRead.count({
+            where: { notificationId }
+        });
+
+        // Logic: if all users have read, delete the notification
+        if (readCount >= totalUsers) {
+            await tx.notification.delete({
+                where: { id: notificationId }
+            });
+        }
+    });
+
+    revalidatePath("/");
+    return { success: true };
 }

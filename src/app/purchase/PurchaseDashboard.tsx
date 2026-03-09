@@ -171,7 +171,7 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
                         activeTab === "LPB" ? "border-primary text-primary" : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
                     )}
                 >
-                    Pembelian (LPB)
+                    Pembelian
                 </button>
                 <button
                     onClick={() => setActiveTab("RETUR")}

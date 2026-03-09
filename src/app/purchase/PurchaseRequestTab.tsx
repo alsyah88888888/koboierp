@@ -80,7 +80,11 @@ export function PurchaseRequestTab({ requests, userRole, userId }: { requests: a
                                         </button>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <div className="font-mono text-primary font-bold">{pr.number}</div>
+                                        <div className="font-mono text-primary font-bold">
+                                            {pr.number && pr.number.startsWith('PR-') ? pr.number : (
+                                                <span className="text-red-500 text-[10px] italic">Nomor Tidak Valid</span>
+                                            )}
+                                        </div>
                                         <div className="text-[10px] text-muted-foreground">{format(new Date(pr.date), "dd/MM/yyyy HH:mm")}</div>
                                     </td>
                                     <td className="px-6 py-4 font-medium">

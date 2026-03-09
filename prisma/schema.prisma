@@ -407,5 +407,16 @@ model Notification {
   type      String   @default("info") // info, alert, broadcast, success
   authorId  String?
   author    User?    @relation("NotificationAuthor", fields: [authorId], references: [id])
+  reads     NotificationRead[]
   createdAt DateTime @default(now())
+}
+
+model NotificationRead {
+  id             String       @id @default(cuid())
+  notificationId String
+  notification   Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  userId         String
+  readAt         DateTime     @default(now())
+
+  @@unique([notificationId, userId])
 }

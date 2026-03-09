@@ -27,6 +27,7 @@ import {
     ArrowDownRight
 } from "lucide-react";
 import { formatCurrency, cn } from "@/lib/utils";
+import { RoleGuideline } from "@/components/RoleGuideline";
 
 const COLORS = ['#0f172a', '#3b82f6', '#10b981', '#f59e0b', '#ef4444'];
 
@@ -38,7 +39,7 @@ const IconMap: any = {
     TrendingUp
 };
 
-export function AdminDashboard({ stats, salesData, inventoryData, recentActivity, lowStockCount, activeOrdersToday }: any) {
+export function AdminDashboard({ role, stats, salesData, inventoryData, recentActivity, lowStockCount, activeOrdersToday }: any) {
     const financialStats = stats.filter((s: any) => ['Total Revenue', 'Nett Margin Sales', 'Cash/Bank Balance'].includes(s.name));
     const performanceStats = stats.filter((s: any) => ['Margin BC', 'Margin PF'].includes(s.name));
     const liabilityStats = stats.filter((s: any) => ['Total Hutang (Pending)', 'Total Piutang (Pending)'].includes(s.name));
@@ -71,6 +72,9 @@ export function AdminDashboard({ stats, salesData, inventoryData, recentActivity
     );
     return (
         <div className="space-y-6 md:space-y-10 pb-12 animate-in fade-in duration-700">
+            {/* Role-Specific SOP Guideline */}
+            <RoleGuideline role={role} />
+
             {/* Financial Health Section */}
             <div className="space-y-4">
                 <div className="flex items-center gap-2 px-2">

@@ -361,7 +361,11 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                             <tbody className="divide-y text-slate-700">
                                 {filteredDeliveries.map((d: any) => (
                                     <tr key={d.id} className="hover:bg-muted/20 transition-colors">
-                                        <td className="px-6 py-4 font-mono text-primary font-medium truncate" title={d.deliveryNumber}>{d.deliveryNumber}</td>
+                                        <td className="px-6 py-4 font-mono text-primary font-medium truncate" title={d.deliveryNumber}>
+                                            {d.deliveryNumber && d.deliveryNumber.startsWith('KB-') ? d.deliveryNumber : (
+                                                <span className="text-red-500 text-[10px] italic">ID: {d.id.substring(0, 8)}...</span>
+                                            )}
+                                        </td>
                                         <td className="px-6 py-4 font-bold text-slate-900 truncate" title={d.buyerName}>
                                             <div className="truncate">{d.buyerName}</div>
                                             <div className="text-[10px] text-slate-400 font-normal truncate uppercase tracking-tighter">{d.recipient?.split(',')[0]}</div>
