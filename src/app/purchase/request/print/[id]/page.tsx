@@ -1,7 +1,7 @@
 import prisma from "@/lib/prisma";
 import { DocumentLayout } from "@/components/print/DocumentLayout";
 import { format } from "date-fns";
-import { formatCurrency, serializeDecimal } from "@/lib/utils";
+import { formatCurrency, formatNumber, serializeDecimal } from "@/lib/utils";
 
 export default async function PurchaseRequestPrintPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
@@ -17,7 +17,7 @@ export default async function PurchaseRequestPrintPage({ params }: { params: Pro
 
     if (!request) return <div>Data not found</div>;
 
-    const totalEst = request.items.reduce((acc: number, item: any) => acc + (item.quantity * Number(item.estimatedPrice)), 0);
+    const totalEst = Math.round(request.items.reduce((acc: number, item: any) => acc + (Number(item.quantity) * Number(item.estimatedPrice)), 0));
 
     return (
         <DocumentLayout
@@ -69,9 +69,9 @@ export default async function PurchaseRequestPrintPage({ params }: { params: Pro
                         <tr key={idx}>
                             <td className="border-2 border-slate-900 p-3 text-center">{idx + 1}</td>
                             <td className="border-2 border-slate-900 p-3 uppercase">{item.itemName}</td>
-                            <td className="border-2 border-slate-900 p-3 text-center">{item.quantity}</td>
+                            <td className="border-2 border-slate-900 p-3 text-center">{formatNumber(item.quantity)}</td>
                             <td className="border-2 border-slate-900 p-3 text-right">{formatCurrency(Number(item.estimatedPrice))}</td>
-                            <td className="border-2 border-slate-900 p-3 text-right">{formatCurrency(item.quantity * Number(item.estimatedPrice))}</td>
+                            <td className="border-2 border-slate-900 p-3 text-right">{formatCurrency(Number(item.quantity) * Number(item.estimatedPrice))}</td>
                         </tr>
                     ))}
                     {[...Array(Math.max(0, 5 - request.items.length))].map((_, i) => (
@@ -96,7 +96,7 @@ export default async function PurchaseRequestPrintPage({ params }: { params: Pro
             <div className="flex justify-end mt-4">
                 <div className="w-80 border-2 border-slate-900 p-4 bg-slate-50">
                     <div className="flex justify-between items-center text-primary">
-                        <span className="text-xs font-black uppercase">Total Estimasi Estimasi</span>
+                        <span className="text-xs font-black uppercase">Total Estimasi</span>
                         <span className="text-xl font-black">{formatCurrency(totalEst)}</span>
                     </div>
                 </div>

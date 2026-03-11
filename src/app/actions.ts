@@ -179,50 +179,60 @@ export async function createGoodsReceiptAction(data: {
 }) {
     const txDate = data.date || new Date();
 
-    // Automatic numbering for receiptNumber: KB-LPB-DDMMYYYY-XXX
-    let finalReceiptNumber = data.receiptNumber;
-    if (!finalReceiptNumber) {
-        const day = String(txDate.getDate()).padStart(2, '0');
-        const month = String(txDate.getMonth() + 1).padStart(2, '0');
-        const year = txDate.getFullYear();
-        const fullDateStr = `${year}${month}${day}`;
-
-        const startOfDay = new Date(txDate);
-        startOfDay.setHours(0, 0, 0, 0);
-        const endOfDay = new Date(txDate);
-        endOfDay.setHours(23, 59, 59, 999);
-
-        const count = await (prisma.goodsReceipt as any).count({
-            where: { createdAt: { gte: startOfDay, lte: endOfDay } }
-        });
-        const sequence = String(count + 1).padStart(3, '0');
-        finalReceiptNumber = `KB-LPB-${fullDateStr}-${sequence}`;
-    }
-
-    // Append -P suffix if tax invoice is used (and doesn't already have it)
-    if (data.taxInvoiceNumber && finalReceiptNumber && !finalReceiptNumber.endsWith("-P")) {
-        finalReceiptNumber += "-P";
-    }
-
-    // Generate automatic Form Number (Internal Tracking / PO Number)
-    // Format: PO-YYYYMMDDXXXX
-    const day = String(txDate.getDate()).padStart(2, '0');
-    const month = String(txDate.getMonth() + 1).padStart(2, '0');
-    const year = txDate.getFullYear();
-    const dateStrForm = `${year}${month}${day}`;
-
-    const startOfDay = new Date(txDate);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(txDate);
-    endOfDay.setHours(23, 59, 59, 999);
-
-    const formCount = await (prisma.goodsReceipt as any).count({
-        where: { createdAt: { gte: startOfDay, lte: endOfDay } }
-    });
-    const formNumber = `PO-${dateStrForm}${String(formCount + 1).padStart(4, '0')}`;
-
     try {
         return await prisma.$transaction(async (tx: any) => {
+            // --- MOVED INSIDE TRANSACTION TO PREVENT COLLISIONS ---
+            let finalReceiptNumber = data.receiptNumber;
+            if (!finalReceiptNumber) {
+                const day = String(txDate.getDate()).padStart(2, '0');
+                const month = String(txDate.getMonth() + 1).padStart(2, '0');
+                const year = txDate.getFullYear();
+                const fullDateStr = `${year}${month}${day}`;
+                const prefix = `KB-LPB-${fullDateStr}-`;
+
+                const latest = await tx.goodsReceipt.findFirst({
+                    where: { receiptNumber: { startsWith: prefix } },
+                    orderBy: { receiptNumber: 'desc' }
+                });
+
+                let nextNum = 1;
+                if (latest) {
+                    const parts = latest.receiptNumber.split('-');
+                    const lastSeq = parseInt(parts[parts.length - 1]);
+                    if (!isNaN(lastSeq)) nextNum = lastSeq + 1;
+                }
+                finalReceiptNumber = `${prefix}${String(nextNum).padStart(3, '0')}`;
+            }
+
+            if (data.taxInvoiceNumber && finalReceiptNumber && !finalReceiptNumber.endsWith("-P")) {
+                finalReceiptNumber += "-P";
+            }
+
+            const dayForm = String(txDate.getDate()).padStart(2, '0');
+            const monthForm = String(txDate.getMonth() + 1).padStart(2, '0');
+            const yearForm = txDate.getFullYear();
+            const dateStrForm = `${yearForm}${monthForm}${dayForm}`;
+            const formPrefix = `PO-${dateStrForm}`;
+
+            const latestForm = await tx.goodsReceipt.findFirst({
+                where: { formNumber: { startsWith: formPrefix } },
+                orderBy: { formNumber: 'desc' }
+            });
+
+            let nextFormNum = 1;
+            if (latestForm) {
+                const lastPart = latestForm.formNumber.replace(formPrefix, '');
+                const lastSeq = parseInt(lastPart);
+                if (!isNaN(lastSeq)) nextFormNum = lastSeq + 1;
+            }
+            const formNumber = `${formPrefix}${String(nextFormNum).padStart(4, '0')}`;
+
+            // --- ROUNDING FOR ACCURACY ---
+            const roundedSubtotal = Math.round(data.subtotal || 0);
+            const roundedTotalDiscount = Math.round(data.totalDiscount || 0);
+            const roundedTaxAmount = Math.round(data.taxAmount || 0);
+            const roundedGrandTotal = Math.round(data.grandTotal || 0);
+
             const receipt = await tx.goodsReceipt.create({
                 data: {
                     receiptNumber: finalReceiptNumber,
@@ -233,11 +243,11 @@ export async function createGoodsReceiptAction(data: {
                     salesPerson: data.salesPerson,
                     formNumber: formNumber,
                     warehouseId: data.warehouseId,
-                    subtotal: data.subtotal || 0,
-                    totalDiscount: data.totalDiscount || 0,
+                    subtotal: roundedSubtotal,
+                    totalDiscount: roundedTotalDiscount,
                     taxRate: data.taxRate || 0,
-                    taxAmount: data.taxAmount || 0,
-                    grandTotal: data.grandTotal || 0,
+                    taxAmount: roundedTaxAmount,
+                    grandTotal: roundedGrandTotal,
                     items: {
                         create: data.items.map(item => ({
                             productId: item.productId,
@@ -351,22 +361,27 @@ export async function updateGoodsReceiptAction(id: string, data: {
             if (data.taxInvoiceNumber && finalReceiptNumber && !finalReceiptNumber.endsWith("-P")) {
                 finalReceiptNumber += "-P";
             }
+            // 4. Update Header with Rounded Totals
+            const roundedSubtotal = Math.round(data.subtotal || 0);
+            const roundedTotalDiscount = Math.round(data.totalDiscount || 0);
+            const roundedTaxAmount = Math.round(data.taxAmount || 0);
+            const roundedGrandTotal = Math.round(data.grandTotal || 0);
 
             await tx.goodsReceipt.update({
                 where: { id },
                 data: {
-                    receiptNumber: finalReceiptNumber,
+                    receiptNumber: data.receiptNumber,
                     receivedFrom: data.receivedFrom,
-                    date: data.date,
+                    warehouseId: data.warehouseId,
+                    date: data.date, // Changed from txDate to data.date as txDate is not defined here
                     taxInvoiceDate: data.taxInvoiceDate,
                     taxInvoiceNumber: data.taxInvoiceNumber,
                     salesPerson: data.salesPerson,
-                    warehouseId: data.warehouseId,
-                    subtotal: data.subtotal || 0,
-                    totalDiscount: data.totalDiscount || 0,
+                    subtotal: roundedSubtotal,
+                    totalDiscount: roundedTotalDiscount,
                     taxRate: data.taxRate || 0,
-                    taxAmount: data.taxAmount || 0,
-                    grandTotal: data.grandTotal || 0,
+                    taxAmount: roundedTaxAmount,
+                    grandTotal: roundedGrandTotal
                 }
             });
 
@@ -558,19 +573,22 @@ export async function createSalesDeliveryAction(data: {
     const year = txDate.getFullYear();
     const dateStr = `${day}${month}${year}`;
 
-    // Get count for today to generate sequential number
-    const startOfDay = new Date(txDate);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(txDate);
-    endOfDay.setHours(23, 59, 59, 999);
-
-    const count = await (prisma.salesDelivery as any).count({
-        where: { createdAt: { gte: startOfDay, lte: endOfDay } }
-    });
-    const sequence = String(count + 1).padStart(3, '0');
-    const deliveryNumber = `KB-TRN-${dateStr}-${sequence}`.replace(/\s+/g, '');
-
     return await prisma.$transaction(async (tx: any) => {
+        // --- MOVED INSIDE TRANSACTION ---
+        const prefix = `KB-TRN-${dateStr}-`;
+        const latest = await tx.salesDelivery.findFirst({
+            where: { deliveryNumber: { startsWith: prefix } },
+            orderBy: { deliveryNumber: 'desc' }
+        });
+
+        let nextNum = 1;
+        if (latest) {
+            const parts = latest.deliveryNumber.split('-');
+            const lastSeq = parseInt(parts[parts.length - 1]);
+            if (!isNaN(lastSeq)) nextNum = lastSeq + 1;
+        }
+        const deliveryNumber = `${prefix}${String(nextNum).padStart(3, '0')}`;
+
         // 1. Create Sales Delivery record (Only known fields)
         const delivery = await tx.salesDelivery.create({
             data: {
@@ -603,11 +621,11 @@ export async function createSalesDeliveryAction(data: {
             totalItemDiscounts += lineDiscount;
         });
 
-        const subtotal = grossAmount - totalItemDiscounts;
-        const totalDiscountNominal = Number(data.totalDiscount) || 0; // Already nominal from frontend
+        const subtotal = Math.round(grossAmount - totalItemDiscounts);
+        const totalDiscountNominal = Math.round(Number(data.totalDiscount) || 0); // Already nominal from frontend
         const taxRatePercent = Number(data.taxRate) || 0;
-        const taxAmount = (subtotal - totalDiscountNominal) * (taxRatePercent / 100);
-        const grandTotal = subtotal - totalDiscountNominal + taxAmount;
+        const taxAmount = Math.round((subtotal - totalDiscountNominal) * (taxRatePercent / 100));
+        const grandTotal = Math.round(subtotal - totalDiscountNominal + taxAmount);
 
         // 1.2 Update new fields via raw SQL (Safety for out-of-sync client)
         await tx.$executeRawUnsafe(
@@ -780,11 +798,11 @@ export async function updateSalesDeliveryAction(id: string, data: {
             totalItemDiscounts += lineDiscount;
         });
 
-        const subtotal = grossAmount - totalItemDiscounts;
-        const totalDiscountNominal = Number(data.totalDiscount) || 0; // Already nominal
+        const subtotal = Math.round(grossAmount - totalItemDiscounts);
+        const totalDiscountNominal = Math.round(Number(data.totalDiscount) || 0); // Already nominal
         const taxRatePercent = Number(data.taxRate) || 0;
-        const taxAmount = (subtotal - totalDiscountNominal) * (taxRatePercent / 100);
-        const grandTotal = subtotal - totalDiscountNominal + taxAmount;
+        const taxAmount = Math.round((subtotal - totalDiscountNominal) * (taxRatePercent / 100));
+        const grandTotal = Math.round(subtotal - totalDiscountNominal + taxAmount);
 
         await tx.$executeRawUnsafe(
             `UPDATE "SalesDelivery" SET "subtotal" = ?, "totalDiscount" = ?, "taxRate" = ?, "taxAmount" = ?, "grandTotal" = ? WHERE id = ?`,
@@ -885,23 +903,25 @@ export async function updatePaymentStatusAction(type: "PURCHASE" | "SALE", id: s
             if (!receipt) throw new Error("Receipt not found");
 
             const previousStatus = receipt.paymentStatus;
-            if (previousStatus === status) return { success: true };
+            if (previousStatus === status && !partialAmount) return { success: true };
 
             reference = receipt.receiptNumber;
             party = receipt.receivedFrom;
-            amount = Number(receipt.grandTotal || 0);
-            const currentPaid = Number(receipt.paidAmount || 0);
-            const toPay = partialAmount ? Number(partialAmount) : (status === "PAID" ? amount - currentPaid : 0);
+            amount = Math.round(Number(receipt.grandTotal || 0));
+            const currentPaid = Math.round(Number(receipt.paidAmount || 0));
+            const toPay = partialAmount ? Math.round(Number(partialAmount)) : (status === "PAID" ? amount - currentPaid : 0);
 
             let newStatus = status;
-            if (status === "PAID" && currentPaid + toPay < amount) {
+            if ((status === "PAID" || status === "PARTIAL") && currentPaid + toPay < amount) {
                 newStatus = "PARTIAL";
+            } else if (status === "PAID" || (status === "PARTIAL" && currentPaid + toPay >= amount)) {
+                newStatus = "PAID";
             }
 
             await (tx.goodsReceipt as any).update({
                 where: { id },
                 data: {
-                    paymentStatus: newStatus,
+                    paymentStatus: newStatus as any,
                     paidAmount: { increment: toPay }
                 }
             });
@@ -912,15 +932,16 @@ export async function updatePaymentStatusAction(type: "PURCHASE" | "SALE", id: s
             const taxAccount = await tx.financeAccount.findUnique({ where: { code: '106' } }); // PPN Masukan
             const discAccount = await tx.financeAccount.findUnique({ where: { code: '502' } }); // Potongan Pembelian
 
-            if (previousStatus === "PENDING" && status === "CREDIT") {
+            if (previousStatus === "PENDING" && (status === "CREDIT" || status === "PARTIAL")) {
                 // Initial recognition of debt
                 if (invAccount && apAccount) {
-                    const subtotal = Number(receipt.subtotal || 0);
-                    const totalDiscount = Number(receipt.totalDiscount || 0);
-                    const taxAmount = Number(receipt.taxAmount || 0);
+                    const subtotal = Math.round(Number(receipt.subtotal || 0));
+                    const totalDiscount = Math.round(Number(receipt.totalDiscount || 0));
+                    const taxAmount = Math.round(Number(receipt.taxAmount || 0));
+                    const finalGrandTotal = Math.round(Number(receipt.grandTotal || 0));
 
                     await tx.journalEntry.create({ data: { description: `Persediaan (Hutang): ${reference} (${party})`, amount: subtotal as any, type: "DEBIT", accountId: invAccount.id, date: new Date() } });
-                    await tx.journalEntry.create({ data: { description: `Hutang Pembelian: ${reference} (${party})`, amount: amount as any, type: "CREDIT", accountId: apAccount.id, date: new Date() } });
+                    await tx.journalEntry.create({ data: { description: `Hutang Pembelian: ${reference} (${party})`, amount: finalGrandTotal as any, type: "CREDIT", accountId: apAccount.id, date: new Date() } });
 
                     if (taxAccount && taxAmount > 0) {
                         await tx.journalEntry.create({ data: { description: `PPN Masukan: ${reference}`, amount: taxAmount as any, type: "DEBIT", accountId: taxAccount.id, date: new Date() } });
@@ -933,15 +954,26 @@ export async function updatePaymentStatusAction(type: "PURCHASE" | "SALE", id: s
                 if (vendor) {
                     await tx.vendor.update({ where: { id: vendor.id }, data: { balance: { increment: amount } } });
                 }
+
+                // If it's a DP (PARTIAL), also record the payment
+                if (status === "PARTIAL" && toPay > 0 && apAccount && bankAccount) {
+                    await tx.journalEntry.create({ data: { description: `Pembayaran DP Hutang: ${reference} (${party})`, amount: toPay as any, type: "DEBIT", accountId: apAccount.id, date: new Date() } });
+                    await tx.journalEntry.create({ data: { description: `Kas Bank (Keluar DP): ${reference} (${party})`, amount: toPay as any, type: "CREDIT", accountId: bankAccount.id, date: new Date() } });
+                    const vendorAgain = await tx.vendor.findFirst({ where: { name: party } });
+                    if (vendorAgain) {
+                        await tx.vendor.update({ where: { id: vendorAgain.id }, data: { balance: { decrement: toPay } } });
+                    }
+                }
             } else if (previousStatus === "PENDING" && status === "PAID") {
                 // Full immediate payment
                 if (invAccount && bankAccount) {
-                    const subtotal = Number(receipt.subtotal || 0);
-                    const totalDiscount = Number(receipt.totalDiscount || 0);
-                    const taxAmount = Number(receipt.taxAmount || 0);
+                    const subtotal = Math.round(Number(receipt.subtotal || 0));
+                    const totalDiscount = Math.round(Number(receipt.totalDiscount || 0));
+                    const taxAmount = Math.round(Number(receipt.taxAmount || 0));
+                    const finalGrandTotal = Math.round(Number(receipt.grandTotal || 0));
 
                     await tx.journalEntry.create({ data: { description: `Persediaan (Lunas Kas): ${reference} (${party})`, amount: subtotal as any, type: "DEBIT", accountId: invAccount.id, date: new Date() } });
-                    await tx.journalEntry.create({ data: { description: `Pembelian Tunai (Bank): ${reference} (${party})`, amount: amount as any, type: "CREDIT", accountId: bankAccount.id, date: new Date() } });
+                    await tx.journalEntry.create({ data: { description: `Pembelian Tunai (Bank): ${reference} (${party})`, amount: finalGrandTotal as any, type: "CREDIT", accountId: bankAccount.id, date: new Date() } });
 
                     if (taxAccount && taxAmount > 0) {
                         await tx.journalEntry.create({ data: { description: `PPN Masukan: ${reference}`, amount: taxAmount as any, type: "DEBIT", accountId: taxAccount.id, date: new Date() } });
@@ -951,7 +983,7 @@ export async function updatePaymentStatusAction(type: "PURCHASE" | "SALE", id: s
                     }
                 }
             } else if ((previousStatus === "CREDIT" || previousStatus === "PARTIAL") && (status === "PAID" || status === "PARTIAL")) {
-                // Payment against existing debt (DP or installments)
+                // Payment against existing debt (installments)
                 if (apAccount && bankAccount && toPay > 0) {
                     await tx.journalEntry.create({ data: { description: `Pembayaran ${status === "PARTIAL" ? "DP/Sebagian" : "Pelunasan"} Hutang: ${reference} (${party})`, amount: toPay as any, type: "DEBIT", accountId: apAccount.id, date: new Date() } });
                     await tx.journalEntry.create({ data: { description: `Kas Bank (Keluar): ${reference} (${party})`, amount: toPay as any, type: "CREDIT", accountId: bankAccount.id, date: new Date() } });
@@ -970,28 +1002,30 @@ export async function updatePaymentStatusAction(type: "PURCHASE" | "SALE", id: s
             if (!delivery) throw new Error("Delivery not found");
 
             const previousStatus = delivery.paymentStatus;
-            if (previousStatus === status) return { success: true };
+            if (previousStatus === status && !partialAmount) return { success: true };
 
             reference = delivery.deliveryNumber;
             party = delivery.buyerName;
 
             const deliveryRaw: any[] = await tx.$queryRawUnsafe(`SELECT "grandTotal", "taxAmount", "totalDiscount", "paidAmount" FROM "SalesDelivery" WHERE id = ?`, id);
-            amount = Number(deliveryRaw[0]?.grandTotal || 0);
-            const currentPaid = Number(deliveryRaw[0]?.paidAmount || 0);
-            const toReceive = partialAmount ? Number(partialAmount) : (status === "PAID" ? amount - currentPaid : 0);
+            amount = Math.round(Number(deliveryRaw[0]?.grandTotal || 0));
+            const currentPaid = Math.round(Number(deliveryRaw[0]?.paidAmount || 0));
+            const toReceive = partialAmount ? Math.round(Number(partialAmount)) : (status === "PAID" ? amount - currentPaid : 0);
 
-            const taxAmountValue = Number(deliveryRaw[0]?.taxAmount || 0);
-            const totalDiscountNominal = Number(deliveryRaw[0]?.totalDiscount || 0);
+            const taxAmountValue = Math.round(Number(deliveryRaw[0]?.taxAmount || 0));
+            const totalDiscountNominal = Math.round(Number(deliveryRaw[0]?.totalDiscount || 0));
 
             let newStatus = status;
-            if (status === "PAID" && currentPaid + toReceive < amount) {
+            if ((status === "PAID" || status === "PARTIAL") && currentPaid + toReceive < amount) {
                 newStatus = "PARTIAL";
+            } else if (status === "PAID" || (status === "PARTIAL" && currentPaid + toReceive >= amount)) {
+                newStatus = "PAID";
             }
 
             await (tx.salesDelivery as any).update({
                 where: { id },
                 data: {
-                    paymentStatus: newStatus,
+                    paymentStatus: newStatus as any,
                     paidAmount: { increment: toReceive }
                 }
             });
@@ -1002,15 +1036,16 @@ export async function updatePaymentStatusAction(type: "PURCHASE" | "SALE", id: s
             const taxAccountRef = await tx.financeAccount.findUnique({ where: { code: '202' } }); // PPN Keluaran
             const discountAccount = await tx.financeAccount.findUnique({ where: { code: '402' } }); // Potongan
 
-            const grossAmount = delivery.items.reduce((sum: number, i: any) => sum + (i.quantity * Number(i.salesPrice)), 0);
+            const grossAmount = Math.round(delivery.items.reduce((sum: number, i: any) => sum + (i.quantity * Number(i.salesPrice)), 0));
             let totalItemDiscounts = 0;
             delivery.items.forEach((i: any) => {
                 const lineGross = i.quantity * Number(i.salesPrice);
-                totalItemDiscounts += lineGross * ((Number(i.discount) || 0) / 100);
+                // Adjusting discount calculation to be nominal if percentage is used, and then rounding
+                totalItemDiscounts += Math.round(lineGross * ((Number(i.discount) || 0) / 100));
             });
-            const totalAllDiscounts = totalItemDiscounts + totalDiscountNominal;
+            const totalAllDiscounts = Math.round(totalItemDiscounts + totalDiscountNominal);
 
-            if (previousStatus === "PENDING" && status === "CREDIT") {
+            if (previousStatus === "PENDING" && (status === "CREDIT" || status === "PARTIAL")) {
                 if (arAccount && salesAccount) {
                     await tx.journalEntry.create({ data: { description: `Piutang Penjualan: ${reference} (${party})`, amount: amount as any, type: "DEBIT", accountId: arAccount.id, date: new Date() } });
                     await tx.journalEntry.create({ data: { description: `Pendapatan Penjualan: ${reference}`, amount: grossAmount as any, type: "CREDIT", accountId: salesAccount.id, date: new Date() } });
@@ -1025,6 +1060,16 @@ export async function updatePaymentStatusAction(type: "PURCHASE" | "SALE", id: s
                 const customer = await tx.customer.findFirst({ where: { name: party } });
                 if (customer) {
                     await tx.customer.update({ where: { id: customer.id }, data: { balance: { increment: amount } } });
+                }
+
+                // If it's a DP (PARTIAL), also record the receipt
+                if (status === "PARTIAL" && toReceive > 0 && arAccount && bankAccount) {
+                    await tx.journalEntry.create({ data: { description: `Kas Bank (Terima DP): ${reference} (${party})`, amount: toReceive as any, type: "DEBIT", accountId: bankAccount.id, date: new Date() } });
+                    await tx.journalEntry.create({ data: { description: `Penyelesaian Piutang (DP): ${reference} (${party})`, amount: toReceive as any, type: "CREDIT", accountId: arAccount.id, date: new Date() } });
+                    const customerAgain = await tx.customer.findFirst({ where: { name: party } });
+                    if (customerAgain) {
+                        await tx.customer.update({ where: { id: customerAgain.id }, data: { balance: { decrement: toReceive } } });
+                    }
                 }
             } else if (previousStatus === "PENDING" && status === "PAID") {
                 if (bankAccount && salesAccount) {
@@ -1309,18 +1354,36 @@ export async function updateStockAction(data: {
 export async function wipeDatabaseAction() {
     return await prisma.$transaction(async (tx: any) => {
         // Delete transactional data but keep Master Data (Products, Warehouses, COA, Partners, Users)
-        // Order matters due to foreign keys
+        // Order matters due to foreign key constraints (Delete children before parents)
+
+        // 1. Notifications
+        await tx.notificationRead.deleteMany();
+        await tx.notification.deleteMany();
+
+        // 2. Finance
         await tx.journalEntry.deleteMany();
         await tx.financeTransaction.deleteMany();
+
+        // 3. Purchases & Returns
+        await tx.purchaseReturnItem.deleteMany();
+        await tx.purchaseReturn.deleteMany();
         await tx.goodsReceiptVerification.deleteMany();
         await tx.goodsReceiptItem.deleteMany();
         await tx.goodsReceipt.deleteMany();
+
+        // 4. Sales & Returns
+        await tx.salesReturnItem.deleteMany();
+        await tx.salesReturn.deleteMany();
         await tx.salesDeliveryItem.deleteMany();
         await tx.salesDelivery.deleteMany();
+
+        // 5. Orders & Requests
         await tx.purchaseOrderItem.deleteMany();
         await tx.purchaseOrder.deleteMany();
         await tx.purchaseRequestItem.deleteMany();
         await tx.purchaseRequest.deleteMany();
+
+        // 6. Inventory
         await tx.stockMovement.deleteMany();
         await tx.stock.deleteMany();
 
@@ -1358,8 +1421,8 @@ export async function importProductsAction(products: {
                     category: p.category,
                     unit: p.unit,
                     barcode: p.barcode,
-                    purchasePrice: p.purchasePrice as any,
-                    salesPrice: p.salesPrice as any,
+                    purchasePrice: p.purchasePrice,
+                    salesPrice: p.salesPrice,
                     lowStockThreshold: p.lowStockThreshold
                 },
                 create: {
@@ -1368,8 +1431,8 @@ export async function importProductsAction(products: {
                     category: p.category,
                     unit: p.unit,
                     barcode: p.barcode,
-                    purchasePrice: p.purchasePrice as any,
-                    salesPrice: p.salesPrice as any,
+                    purchasePrice: p.purchasePrice || 0,
+                    salesPrice: p.salesPrice || 0,
                     lowStockThreshold: p.lowStockThreshold || 10
                 }
             });
@@ -1389,18 +1452,24 @@ export async function createProductAction(data: {
     category?: string;
     uom?: string;
     barcode?: string;
+    purchasePrice?: number;
+    salesPrice?: number;
+    lowStockThreshold?: number;
 }) {
     const session = await getServerSession(authOptions) as any;
     if (!["ADMIN", "PURCHASE", "SALES"].includes(session?.user?.role)) throw new Error("Hanya Admin/Purchase/Sales yang bisa menambah produk.");
 
     try {
-        await prisma.product.create({
+        await (prisma.product as any).create({
             data: {
                 sku: data.sku,
                 name: data.name,
                 category: data.category || null,
                 uom: data.uom || null,
                 barcode: data.barcode || null,
+                purchasePrice: data.purchasePrice || 0,
+                salesPrice: data.salesPrice || 0,
+                lowStockThreshold: data.lowStockThreshold || 10,
             }
         });
         revalidatePath("/settings");
@@ -1418,6 +1487,9 @@ export async function updateProductAction(id: string, data: {
     category?: string;
     uom?: string;
     barcode?: string;
+    purchasePrice?: number;
+    salesPrice?: number;
+    lowStockThreshold?: number;
 }) {
     const session = await getServerSession(authOptions) as any;
     if (!["ADMIN", "PURCHASE", "SALES"].includes(session?.user?.role)) throw new Error("Hanya Admin/Purchase/Sales yang bisa mengubah produk.");
@@ -1425,7 +1497,7 @@ export async function updateProductAction(id: string, data: {
     console.log("Updating Product:", id, data);
 
     try {
-        await prisma.product.update({
+        await (prisma.product as any).update({
             where: { id },
             data: {
                 sku: data.sku,
@@ -1433,6 +1505,9 @@ export async function updateProductAction(id: string, data: {
                 category: data.category || null,
                 uom: data.uom || null,
                 barcode: data.barcode || null,
+                purchasePrice: data.purchasePrice || 0,
+                salesPrice: data.salesPrice || 0,
+                lowStockThreshold: data.lowStockThreshold || 10,
             }
         });
         revalidatePath("/settings");
@@ -2187,10 +2262,19 @@ export async function createPurchaseReturnAction(data: {
     return await prisma.$transaction(async (tx: any) => {
         const today = new Date();
         const dateStr = `${today.getFullYear()}${(today.getMonth() + 1).toString().padStart(2, '0')}${today.getDate().toString().padStart(2, '0')}`;
-        const count = await tx.purchaseReturn.count({
-            where: { returnNumber: { startsWith: `RET-${dateStr}-` } }
+        const prefix = `RET-${dateStr}-`;
+        const latest = await tx.purchaseReturn.findFirst({
+            where: { returnNumber: { startsWith: prefix } },
+            orderBy: { returnNumber: 'desc' }
         });
-        const returnNumber = `RET-${dateStr}-${(count + 1).toString().padStart(3, '0')}`;
+
+        let nextNum = 1;
+        if (latest) {
+            const parts = latest.returnNumber.split('-');
+            const lastSeq = parseInt(parts[parts.length - 1]);
+            if (!isNaN(lastSeq)) nextNum = lastSeq + 1;
+        }
+        const returnNumber = `${prefix}${String(nextNum).padStart(3, '0')}`;
 
         const ret = await tx.purchaseReturn.create({
             data: {
@@ -2303,10 +2387,19 @@ export async function createSalesReturnAction(data: {
     return await prisma.$transaction(async (tx: any) => {
         const today = new Date();
         const dateStr = `${today.getFullYear()}${(today.getMonth() + 1).toString().padStart(2, '0')}${today.getDate().toString().padStart(2, '0')}`;
-        const count = await tx.salesReturn.count({
-            where: { returnNumber: { startsWith: `SRET-${dateStr}-` } }
+        const prefix = `SRET-${dateStr}-`;
+        const latest = await tx.salesReturn.findFirst({
+            where: { returnNumber: { startsWith: prefix } },
+            orderBy: { returnNumber: 'desc' }
         });
-        const returnNumber = `SRET-${dateStr}-${(count + 1).toString().padStart(3, '0')}`;
+
+        let nextNum = 1;
+        if (latest) {
+            const parts = latest.returnNumber.split('-');
+            const lastSeq = parseInt(parts[parts.length - 1]);
+            if (!isNaN(lastSeq)) nextNum = lastSeq + 1;
+        }
+        const returnNumber = `${prefix}${String(nextNum).padStart(3, '0')}`;
 
         const ret = await tx.salesReturn.create({
             data: {
@@ -2503,7 +2596,7 @@ export async function deleteSalesReturnAction(id: string) {
         // Revert Stock (Decrement because it was added back during return)
         for (const item of ret.items) {
             const vendorName = item.deliveryItem?.vendorName || "UMUM";
-            await tx.stock.update({
+            await tx.stock.upsert({
                 where: {
                     productId_warehouseId_vendorName: {
                         productId: item.productId,
@@ -2511,7 +2604,13 @@ export async function deleteSalesReturnAction(id: string) {
                         vendorName: vendorName
                     }
                 },
-                data: { quantity: { decrement: item.quantity } }
+                update: { quantity: { decrement: item.quantity } },
+                create: {
+                    productId: item.productId,
+                    warehouseId: ret.delivery.warehouseId,
+                    vendorName: vendorName,
+                    quantity: -item.quantity
+                }
             });
 
             await tx.stockMovement.deleteMany({
@@ -2619,7 +2718,7 @@ export async function updateSalesReturnAction(id: string, data: {
         // 1. Revert Old Stock (Decrement because it was incremented)
         for (const oldItem of ret.items) {
             const vendorName = oldItem.deliveryItem?.vendorName || "UMUM";
-            await tx.stock.update({
+            await tx.stock.upsert({
                 where: {
                     productId_warehouseId_vendorName: {
                         productId: oldItem.productId,
@@ -2627,12 +2726,19 @@ export async function updateSalesReturnAction(id: string, data: {
                         vendorName: vendorName
                     }
                 },
-                data: { quantity: { decrement: oldItem.quantity } }
+                update: { quantity: { decrement: oldItem.quantity } },
+                create: {
+                    productId: oldItem.productId,
+                    warehouseId: ret.delivery.warehouseId,
+                    vendorName: vendorName,
+                    quantity: -oldItem.quantity
+                }
             });
         }
 
-        // 2. Clear Old Items
+        // 2. Clear Old Items & Old movements
         await tx.salesReturnItem.deleteMany({ where: { salesReturnId: id } });
+        await tx.stockMovement.deleteMany({ where: { reference: ret.returnNumber } });
 
         // 3. Apply New Stock & Create New Items
         for (const newItem of data.items) {
@@ -2641,7 +2747,7 @@ export async function updateSalesReturnAction(id: string, data: {
             });
             const vendorName = originalItem?.vendorName || "UMUM";
 
-            await tx.stock.update({
+            await tx.stock.upsert({
                 where: {
                     productId_warehouseId_vendorName: {
                         productId: newItem.productId,
@@ -2649,7 +2755,13 @@ export async function updateSalesReturnAction(id: string, data: {
                         vendorName: vendorName
                     }
                 },
-                data: { quantity: { increment: newItem.quantity } }
+                update: { quantity: { increment: newItem.quantity } },
+                create: {
+                    productId: newItem.productId,
+                    warehouseId: ret.delivery.warehouseId,
+                    vendorName: vendorName,
+                    quantity: newItem.quantity
+                }
             });
 
             await tx.salesReturnItem.create({
@@ -2662,10 +2774,16 @@ export async function updateSalesReturnAction(id: string, data: {
                 }
             });
 
-            // Update Stock Movement
-            await tx.stockMovement.updateMany({
-                where: { reference: ret.returnNumber, productId: newItem.productId },
-                data: { quantity: newItem.quantity }
+            // Create New Stock Movement
+            await tx.stockMovement.create({
+                data: {
+                    productId: newItem.productId,
+                    warehouseId: ret.delivery.warehouseId,
+                    vendorName: vendorName,
+                    quantity: newItem.quantity,
+                    type: "ADJUSTMENT",
+                    reference: ret.returnNumber
+                }
             });
         }
 

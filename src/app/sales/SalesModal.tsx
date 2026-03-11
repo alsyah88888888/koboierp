@@ -7,9 +7,9 @@ import { useMemo } from "react";
 interface SalesItem {
     productId: string;
     sku: string;
-    quantity: number | "";
-    salesPrice: number | "";
-    discount: number | ""; // Nominal discount per line
+    quantity: number | string;
+    salesPrice: number | string;
+    discount: number | string; // Nominal discount per line
     discountPercent?: number | string; // Percentage discount per line
     uom: string;
     vendorName: string;
@@ -32,7 +32,7 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
 
     // Financials
     const [showDiscount, setShowDiscount] = useState(false);
-    const [totalDiscount, setTotalDiscount] = useState<number | "">(0);
+    const [totalDiscount, setTotalDiscount] = useState<number | string>(0);
     const [totalDiscountPercent, setTotalDiscountPercent] = useState<number | string>("");
     const [taxRate, setTaxRate] = useState<number | "">(0); // 0 or 0.11
 
@@ -78,29 +78,28 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
     const updateItem = (index: number, field: string, value: any) => {
         const newItems = [...items];
 
-        // Handle number inputs to prevent NaN
+        // Handle number inputs to support decimals (comma or dot)
         if (field === 'quantity' || field === 'salesPrice') {
-            const raw = String(value).replace(/\D/g, "");
-            (newItems[index] as any)[field] = raw ? parseInt(raw, 10) : "";
+            const userDisplayValue = String(value).replace(/[^0-9,.]/g, '');
+            (newItems[index] as any)[field] = userDisplayValue;
 
             // Sync discount if percent exists
             if (newItems[index].discountPercent !== "" && newItems[index].discountPercent !== undefined) {
-                const qty = Number(newItems[index].quantity) || 0;
-                const price = Number(newItems[index].salesPrice) || 0;
+                const qty = Number(String(newItems[index].quantity).replace(',', '.')) || 0;
+                const price = Number(String(newItems[index].salesPrice).replace(',', '.')) || 0;
                 const gross = qty * price;
                 newItems[index].discount = Math.round(gross * (Number(newItems[index].discountPercent) / 100));
             }
         } else if (field === 'discountPercent') {
             newItems[index].discountPercent = value;
             const numVal = Number(value) || 0;
-            const qty = Number(newItems[index].quantity) || 0;
-            const price = Number(newItems[index].salesPrice) || 0;
+            const qty = Number(String(newItems[index].quantity).replace(',', '.')) || 0;
+            const price = Number(String(newItems[index].salesPrice).replace(',', '.')) || 0;
             const gross = qty * price;
             newItems[index].discount = Math.round(gross * (numVal / 100));
         } else if (field === 'discount') {
-            const raw = String(value).replace(/\D/g, "");
-            const val = raw ? parseInt(raw, 10) : "";
-            newItems[index].discount = val;
+            const userDisplayValue = String(value).replace(/[^0-9,.]/g, '');
+            newItems[index].discount = userDisplayValue;
             newItems[index].discountPercent = ""; // Clear percent when manual nominal entered
         } else {
             (newItems[index] as any)[field] = value;
@@ -135,15 +134,19 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
         setItems(newItems);
     };
 
+    const totalQty = useMemo(() => {
+        return items.reduce((acc, item) => acc + (Number(item.quantity) || 0), 0);
+    }, [items]);
+
     // Totals Calculation
     const grossAmount = items.reduce((sum, item) => {
-        const q = typeof item.quantity === 'number' ? item.quantity : 0;
-        const p = typeof item.salesPrice === 'number' ? item.salesPrice : 0;
+        const q = Number(String(item.quantity).replace(',', '.')) || 0;
+        const p = Number(String(item.salesPrice).replace(',', '.')) || 0;
         return sum + (q * p);
     }, 0);
 
     const itemDiscounts = items.reduce((sum, item) => {
-        return sum + (Number(item.discount) || 0);
+        return sum + (Number(String(item.discount).replace(',', '.')) || 0);
     }, 0);
 
     const subtotal = grossAmount - itemDiscounts;
@@ -152,11 +155,11 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
         if (totalDiscountPercent !== "" && Number(totalDiscountPercent) > 0) {
             return Math.round(subtotal * (Number(totalDiscountPercent) / 100));
         }
-        return Number(totalDiscount) || 0;
+        return Number(String(totalDiscount).replace(',', '.')) || 0;
     }, [subtotal, totalDiscountPercent, totalDiscount]);
 
     const taxAmount = (subtotal - finalDiscountNominal) * (Number(taxRate) / 100);
-    const grandTotal = subtotal - finalDiscountNominal + taxAmount;
+    const grandTotal = Math.round(subtotal - finalDiscountNominal + taxAmount);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -180,9 +183,9 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                 createdAt: new Date(date),
                 items: items.map(i => ({
                     productId: i.productId,
-                    quantity: Number(i.quantity),
-                    salesPrice: Number(i.salesPrice),
-                    discount: Number(i.discount || 0),
+                    quantity: Number(String(i.quantity).replace(',', '.')),
+                    salesPrice: Number(String(i.salesPrice).replace(',', '.')),
+                    discount: Number(String(i.discount || 0).replace(',', '.')),
                     uom: i.uom,
                     vendorName: i.vendorName
                 }))
@@ -387,7 +390,7 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                         <label className="text-[10px] font-bold text-slate-500 uppercase ml-1 tracking-widest">Qty</label>
                                         <input
                                             type="text"
-                                            value={item.quantity ? item.quantity.toLocaleString('id-ID') : ""}
+                                            value={item.quantity}
                                             onChange={e => updateItem(index, "quantity", e.target.value)}
                                             className="w-full bg-white border-2 border-slate-200 px-3 py-2 rounded-lg text-sm font-black outline-none text-center focus:border-primary transition-all h-11"
                                             required
@@ -397,7 +400,7 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                         <label className="text-[10px] font-bold text-slate-500 uppercase ml-1 tracking-widest">Harga (@)</label>
                                         <input
                                             type="text"
-                                            value={item.salesPrice ? item.salesPrice.toLocaleString('id-ID') : ""}
+                                            value={item.salesPrice}
                                             onChange={e => updateItem(index, "salesPrice", e.target.value)}
                                             className="w-full bg-white border-2 border-slate-200 px-3 py-2 rounded-lg text-sm font-black outline-none text-right focus:border-primary transition-all h-11"
                                             required
@@ -422,7 +425,7 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                                 <label className="text-[10px] font-bold text-orange-500 uppercase ml-1 tracking-widest">Diskon (Rp)</label>
                                                 <input
                                                     type="text"
-                                                    value={item.discount ? item.discount.toLocaleString('id-ID') : ""}
+                                                    value={item.discount}
                                                     onChange={e => updateItem(index, "discount", e.target.value)}
                                                     className="w-full bg-orange-50 border-2 border-orange-200 px-3 py-2 rounded-lg text-sm font-black outline-none text-right text-orange-600 focus:border-orange-500 transition-all h-11"
                                                     placeholder="0"
@@ -432,8 +435,8 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                     )}
                                     <div className="w-full xl:w-36 space-y-1">
                                         <label className="text-[10px] font-bold text-slate-500 uppercase ml-1 tracking-widest">Total Harga</label>
-                                        <div className="w-full bg-slate-900 border-2 border-slate-800 px-3 py-2 rounded-lg text-sm font-black text-right text-primary h-11 flex items-center justify-end shadow-inner">
-                                            {((typeof item.quantity === 'number' ? item.quantity : 0) * (typeof item.salesPrice === 'number' ? item.salesPrice : 0) - (Number(item.discount || 0))).toLocaleString('id-ID')}
+                                        <div className="w-full bg-slate-50 border-2 border-slate-200 px-3 py-2 rounded-lg text-sm font-black text-right text-slate-900 h-11 flex items-center justify-end shadow-inner">
+                                            {((Number(String(item.quantity).replace(',', '.')) || 0) * (Number(String(item.salesPrice).replace(',', '.')) || 0) - (Number(String(item.discount || 0).replace(',', '.')))).toLocaleString('id-ID')}
                                         </div>
                                     </div>
                                     <button
@@ -479,10 +482,10 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                                 <div className="relative h-12">
                                                     <input
                                                         type="text"
-                                                        value={totalDiscount ? totalDiscount.toLocaleString('id-ID') : ""}
+                                                        value={totalDiscount}
                                                         onChange={e => {
-                                                            const val = e.target.value.replace(/\D/g, '');
-                                                            setTotalDiscount(val === '' ? '' : Number(val));
+                                                            const val = e.target.value.replace(/[^0-9,.]/g, '');
+                                                            setTotalDiscount(val);
                                                             setTotalDiscountPercent("");
                                                         }}
                                                         className="w-full bg-orange-50 border-2 border-orange-200 px-3 py-2 rounded-xl text-lg font-black text-orange-600 outline-none focus:border-orange-500 transition-all h-full shadow-sm"
@@ -513,28 +516,45 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                 </div>
                             </div>
 
-                            <div className="bg-primary/5 border-2 border-primary/20 rounded-[2.5rem] p-8 space-y-4 shadow-xl">
-                                <div className="space-y-3 pb-4 border-b-2 border-primary/10">
-                                    <div className="flex justify-between items-center text-sm font-bold text-slate-500">
-                                        <span>SUBTOTAL (Net Items)</span>
-                                        <span className="font-black text-slate-700">Rp {subtotal.toLocaleString('id-ID')}</span>
+                            <div className="flex flex-col justify-center p-6 md:p-8 bg-slate-900 rounded-2xl md:rounded-[2.5rem] text-white border-2 border-slate-800 shadow-2xl relative overflow-hidden group">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-primary/30 transition-all duration-700" />
+                                <div className="space-y-3 pb-4 border-b border-white/10 relative z-10">
+                                    <div className="flex justify-between items-center text-[10px] md:text-xs font-bold text-slate-400">
+                                        <span>TOTAL QTY</span>
+                                        <span className="font-mono text-white tracking-widest">{totalQty.toLocaleString('id-ID')}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center text-[10px] md:text-xs font-bold text-slate-400">
+                                        <span>SUBTOTAL ITEM (Bruto)</span>
+                                        <span className="font-mono text-white tracking-widest">{formatCurrency(grossAmount)}</span>
                                     </div>
                                     {showDiscount && (
                                         <>
-                                            <div className="flex justify-between items-center text-sm font-bold text-orange-500">
-                                                <span>TOTAL DISKON TAMBAHAN ({totalDiscountPercent !== "" ? `${totalDiscountPercent}%` : "Manual"})</span>
-                                                <span className="font-black">- Rp {finalDiscountNominal.toLocaleString('id-ID')}</span>
+                                            <div className="flex justify-between items-center text-[10px] md:text-xs font-bold text-orange-400">
+                                                <span>TOTAL POTONGAN ITEM</span>
+                                                <span className="font-mono">- {formatCurrency(itemDiscounts)}</span>
                                             </div>
-                                            <div className="flex justify-between items-center text-sm font-bold text-indigo-500">
+                                            <div className="flex justify-between items-center text-[10px] md:text-xs font-bold text-primary">
+                                                <span>DISKON FINAL</span>
+                                                <span className="font-mono font-black italic">- {formatCurrency(finalDiscountNominal)}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center text-[10px] md:text-xs font-bold text-indigo-400">
                                                 <span>PPN ({taxRate}%)</span>
-                                                <span className="font-black">+ Rp {taxAmount.toLocaleString('id-ID')}</span>
+                                                <span className="font-mono tracking-widest">+ {formatCurrency(taxAmount)}</span>
                                             </div>
                                         </>
                                     )}
                                 </div>
-                                <div className="flex justify-between items-center">
-                                    <span className="text-slate-900 font-black uppercase tracking-[0.2em] text-sm">Grand Total Akhir</span>
-                                    <span className="text-4xl font-black text-primary drop-shadow-sm">Rp {grandTotal.toLocaleString('id-ID')}</span>
+                                <div className="flex flex-col md:flex-row justify-between items-start md:items-center pt-4 relative z-10 gap-4">
+                                    <div>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Grand Total Akhir</p>
+                                        <h4 className="text-3xl md:text-4xl font-black text-emerald-400 tracking-tighter drop-shadow-md">
+                                            {formatCurrency(grandTotal)}
+                                        </h4>
+                                    </div>
+                                    <div className="text-left md:text-right w-full md:w-auto border-t md:border-none pt-2 md:pt-0">
+                                        <span className="text-[10px] font-bold text-slate-500 block">Metode: Piutang</span>
+                                        <span className="text-[10px] md:text-xs font-bold text-primary italic uppercase tracking-tighter bg-primary/10 px-2 py-0.5 rounded mt-1 inline-block border border-primary/20">Checked by System</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>

@@ -14,6 +14,8 @@ export function ProductModal({ onClose, onSuccess }: { onClose: () => void, onSu
         uom: "PCS",
         barcode: "",
         lowStockThreshold: 5,
+        purchasePrice: "0" as string | number,
+        salesPrice: "0" as string | number,
     });
 
     useEffect(() => {
@@ -27,7 +29,12 @@ export function ProductModal({ onClose, onSuccess }: { onClose: () => void, onSu
         e.preventDefault();
         setIsLoading(true);
         try {
-            const product = await createProductAction(formData);
+            const data = {
+                ...formData,
+                purchasePrice: Number(String(formData.purchasePrice).replace(',', '.')) || 0,
+                salesPrice: Number(String(formData.salesPrice).replace(',', '.')) || 0,
+            };
+            const product = await createProductAction(data);
             alert("Produk berhasil ditambahkan!");
             if (onSuccess) onSuccess(product);
             onClose();
@@ -102,6 +109,32 @@ export function ProductModal({ onClose, onSuccess }: { onClose: () => void, onSu
                                 onChange={e => setFormData({ ...formData, uom: e.target.value.toUpperCase() })}
                                 className="w-full p-2.5 border-2 border-slate-200 rounded-lg focus:border-primary outline-none text-sm uppercase font-bold"
                                 placeholder="PCS, LBR, DUS..."
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-bold text-orange-600 uppercase">Harga Beli Standar</label>
+                            <input
+                                type="text"
+                                value={formData.purchasePrice}
+                                onChange={e => {
+                                    const val = e.target.value.replace(/[^0-9,.]/g, '');
+                                    setFormData({ ...formData, purchasePrice: val });
+                                }}
+                                className="w-full p-2.5 border-2 border-orange-100 bg-orange-50/30 rounded-lg focus:border-orange-500 outline-none text-sm font-bold"
+                                placeholder="0"
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-bold text-indigo-600 uppercase">Harga Jual Standar</label>
+                            <input
+                                type="text"
+                                value={formData.salesPrice}
+                                onChange={e => {
+                                    const val = e.target.value.replace(/[^0-9,.]/g, '');
+                                    setFormData({ ...formData, salesPrice: val });
+                                }}
+                                className="w-full p-2.5 border-2 border-indigo-100 bg-indigo-50/30 rounded-lg focus:border-indigo-500 outline-none text-sm font-bold"
+                                placeholder="0"
                             />
                         </div>
                     </div>

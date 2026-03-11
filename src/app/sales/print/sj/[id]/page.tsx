@@ -1,7 +1,7 @@
 import prisma from "@/lib/prisma";
 import { DocumentLayout } from "@/components/print/DocumentLayout";
 import { format } from "date-fns";
-import { serializeDecimal } from "@/lib/utils";
+import { formatNumber, serializeDecimal } from "@/lib/utils";
 
 export default async function SJPrintPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
@@ -52,7 +52,7 @@ export default async function SJPrintPage({ params }: { params: Promise<{ id: st
                             <td className="border border-slate-900 p-2.5 text-center font-black">{idx + 1}</td>
                             <td className="border border-slate-900 p-2.5 text-left font-mono tracking-tighter text-[9px]">{item.product.barcode || item.product.sku || "-"}</td>
                             <td className="border border-slate-900 p-2.5 uppercase">{item.product.name}</td>
-                            <td className="border border-slate-900 p-2.5 text-center font-black">{item.quantity}</td>
+                            <td className="border border-slate-900 p-2.5 text-center font-black">{formatNumber(item.quantity)}</td>
                             <td className="border border-slate-900 p-2.5 text-center uppercase">{(item.uom || item.product.uom || "-").replace(/KARTOON/gi, 'KARTON')}</td>
                             <td className="border border-slate-900 p-2.5"></td>
                         </tr>
@@ -68,7 +68,7 @@ export default async function SJPrintPage({ params }: { params: Promise<{ id: st
                 <tfoot>
                     <tr className="bg-slate-50 font-black text-[10px]">
                         <td colSpan={3} className="border border-slate-900 p-2 text-right uppercase tracking-widest">Jumlah QTY:</td>
-                        <td className="border border-slate-900 p-2 text-center">{delivery.items.reduce((acc: number, i: any) => acc + i.quantity, 0).toLocaleString()}</td>
+                        <td className="border border-slate-900 p-2 text-center">{formatNumber(delivery.items.reduce((acc: number, i: any) => acc + (Number(i.quantity) || 0), 0))}</td>
                         <td colSpan={2} className="border border-slate-900"></td>
                     </tr>
                 </tfoot>

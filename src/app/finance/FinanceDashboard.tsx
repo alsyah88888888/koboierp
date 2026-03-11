@@ -477,8 +477,9 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                     <tr>
                                         <th className="px-6 py-4 w-40">Tgl / Ref</th>
                                         <th className="px-6 py-4">Supplier</th>
-                                        <th className="px-6 py-4 w-48">Status</th>
-                                        <th className="px-6 py-4 text-right w-44">Nominal</th>
+                                        <th className="px-6 py-4 w-32">Status</th>
+                                        <th className="px-6 py-4 text-right w-36">Total</th>
+                                        <th className="px-6 py-4 text-right w-36">Sisa Bayar</th>
                                         <th className="px-6 py-4 text-center w-40">Aksi</th>
                                     </tr>
                                 </thead>
@@ -503,24 +504,37 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 text-right">
-                                                <div className="font-black text-red-600">{formatCurrency(p.total)}</div>
+                                                <div className="font-bold text-slate-900">{formatCurrency(p.total)}</div>
                                                 {Number(p.paidAmount || 0) > 0 && (
                                                     <div className="text-[10px] text-emerald-600 font-bold mt-1">
-                                                        Dibayar: {formatCurrency(Number(p.paidAmount))}
+                                                        Terbayar: {formatCurrency(Number(p.paidAmount))}
                                                     </div>
                                                 )}
+                                            </td>
+                                            <td className="px-6 py-4 text-right">
+                                                <div className="font-black text-red-600">{formatCurrency(Number(p.total) - Number(p.paidAmount || 0))}</div>
                                             </td>
                                             <td className="px-6 py-4 text-center">
                                                 <div className="flex flex-col gap-2 items-center justify-center">
                                                     {p.paymentStatus === 'PENDING' && (
-                                                        <button
-                                                            disabled={loading === p.id || (!p.isVerified && !isAdmin)}
-                                                            onClick={() => handleVerifyPayment("PURCHASE", p.id, "CREDIT")}
-                                                            className="bg-amber-100 text-amber-700 hover:bg-amber-200 w-full px-3 py-1 rounded text-[10px] font-bold transition-all disabled:opacity-50"
-                                                            title={!p.isVerified ? (isAdmin ? "Bypass verifikasi gudang (Admin)" : "Mohon tunggu verifikasi stok gudang") : "Catat sebagai Hutang Tempo"}
-                                                        >
-                                                            {loading === p.id ? "..." : "SET HUTANG"}
-                                                        </button>
+                                                        <>
+                                                            <button
+                                                                disabled={loading === p.id || (!p.isVerified && !isAdmin)}
+                                                                onClick={() => handleVerifyPayment("PURCHASE", p.id, "CREDIT")}
+                                                                className="bg-amber-100 text-amber-700 hover:bg-amber-200 w-full px-3 py-1 rounded text-[10px] font-bold transition-all disabled:opacity-50"
+                                                                title={!p.isVerified ? (isAdmin ? "Bypass verifikasi gudang (Admin)" : "Mohon tunggu verifikasi stok gudang") : "Catat sebagai Hutang Tempo"}
+                                                            >
+                                                                {loading === p.id ? "..." : "SET HUTANG"}
+                                                            </button>
+                                                            <button
+                                                                disabled={loading === p.id || (!p.isVerified && !isAdmin)}
+                                                                onClick={() => handlePartialPayment("PURCHASE", p.id, Number(p.total), 0)}
+                                                                className="bg-blue-100 text-blue-700 hover:bg-blue-200 w-full px-3 py-1 rounded text-[10px] font-bold transition-all disabled:opacity-50"
+                                                                title="Catat Hutang Sambil Bayar DP"
+                                                            >
+                                                                {loading === p.id ? "..." : "HUTANG + DP"}
+                                                            </button>
+                                                        </>
                                                     )}
                                                     {(p.paymentStatus === 'CREDIT' || p.paymentStatus === 'PARTIAL') && (
                                                         <button
@@ -611,8 +625,9 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                     <tr>
                                         <th className="px-6 py-4 w-40">Tgl / Ref</th>
                                         <th className="px-6 py-4">Pelanggan</th>
-                                        <th className="px-6 py-4 w-40">Status</th>
-                                        <th className="px-6 py-4 text-right w-40">Nominal</th>
+                                        <th className="px-6 py-4 w-32">Status</th>
+                                        <th className="px-6 py-4 text-right w-36">Total</th>
+                                        <th className="px-6 py-4 text-right w-36">Sisa Bayar</th>
                                         <th className="px-6 py-4 text-center w-40">Aksi</th>
                                     </tr>
                                 </thead>
@@ -632,24 +647,37 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-right">
-                                                <div className="font-black text-emerald-600">{formatCurrency(s.total)}</div>
+                                                <div className="font-bold text-slate-900">{formatCurrency(s.total)}</div>
                                                 {Number(s.paidAmount || 0) > 0 && (
                                                     <div className="text-[10px] text-blue-600 font-bold mt-1">
-                                                        Diterima: {formatCurrency(Number(s.paidAmount))}
+                                                        Terbayar: {formatCurrency(Number(s.paidAmount))}
                                                     </div>
                                                 )}
+                                            </td>
+                                            <td className="px-6 py-4 text-right">
+                                                <div className="font-black text-emerald-600">{formatCurrency(Number(s.total) - Number(s.paidAmount || 0))}</div>
                                             </td>
                                             <td className="px-6 py-4 text-center">
                                                 <div className="flex flex-col gap-2 items-center justify-center">
                                                     {s.paymentStatus === 'PENDING' && (
-                                                        <button
-                                                            disabled={loading === s.id}
-                                                            onClick={() => handleVerifyPayment("SALE", s.id, "CREDIT")}
-                                                            className="bg-blue-100 text-blue-700 hover:bg-blue-200 w-full px-3 py-1 rounded text-[10px] font-bold transition-all disabled:opacity-50"
-                                                            title="Catat sebagai Piutang Tempo"
-                                                        >
-                                                            {loading === s.id ? "..." : "SET PIUTANG"}
-                                                        </button>
+                                                        <>
+                                                            <button
+                                                                disabled={loading === s.id}
+                                                                onClick={() => handleVerifyPayment("SALE", s.id, "CREDIT")}
+                                                                className="bg-blue-100 text-blue-700 hover:bg-blue-200 w-full px-3 py-1 rounded text-[10px] font-bold transition-all disabled:opacity-50"
+                                                                title="Catat sebagai Piutang Tempo"
+                                                            >
+                                                                {loading === s.id ? "..." : "SET PIUTANG"}
+                                                            </button>
+                                                            <button
+                                                                disabled={loading === s.id}
+                                                                onClick={() => handlePartialPayment("SALE", s.id, Number(s.total), 0)}
+                                                                className="bg-emerald-100 text-emerald-700 hover:bg-emerald-50 w-full px-3 py-1 rounded text-[10px] font-bold transition-all disabled:opacity-50"
+                                                                title="Catat Piutang Sambil Terima DP"
+                                                            >
+                                                                {loading === s.id ? "..." : "PIUTANG + DP"}
+                                                            </button>
+                                                        </>
                                                     )}
                                                     {(s.paymentStatus === 'CREDIT' || s.paymentStatus === 'PARTIAL') && (
                                                         <button

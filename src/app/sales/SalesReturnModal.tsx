@@ -16,7 +16,7 @@ export function SalesReturnModal({ deliveries, initialData, onClose }: { deliver
             setSelectedDelivery(initialData.delivery);
             setNotes(initialData.notes || "");
             setReturnItems(initialData.delivery.items.map((di: any) => {
-                const existingReturnItem = initialData.items.find((i: any) => i.productId === di.productId);
+                const existingReturnItem = initialData.items.find((i: any) => i.deliveryItemId === di.id || i.productId === di.productId);
                 return {
                     productId: di.productId,
                     deliveryItemId: di.id,
@@ -42,15 +42,15 @@ export function SalesReturnModal({ deliveries, initialData, onClose }: { deliver
         }
     };
 
-    const handleQuantityChange = (productId: string, qty: string) => {
+    const handleQuantityChange = (deliveryItemId: string, qty: string) => {
         setReturnItems(prev => prev.map(item =>
-            item.productId === productId ? { ...item, quantity: parseInt(qty) || 0 } : item
+            item.deliveryItemId === deliveryItemId ? { ...item, quantity: parseInt(qty) || 0 } : item
         ));
     };
 
-    const handleReasonChange = (productId: string, reason: string) => {
+    const handleReasonChange = (deliveryItemId: string, reason: string) => {
         setReturnItems(prev => prev.map(item =>
-            item.productId === productId ? { ...item, reason } : item
+            item.deliveryItemId === deliveryItemId ? { ...item, reason } : item
         ));
     };
 
@@ -145,7 +145,7 @@ export function SalesReturnModal({ deliveries, initialData, onClose }: { deliver
                                         </thead>
                                         <tbody className="divide-y">
                                             {selectedDelivery.items.map((item: any) => {
-                                                const retItem = returnItems.find(i => i.productId === item.productId);
+                                                const retItem = returnItems.find(i => i.deliveryItemId === item.id);
                                                 return (
                                                     <tr key={item.id}>
                                                         <td className="p-3 font-medium">
@@ -160,7 +160,7 @@ export function SalesReturnModal({ deliveries, initialData, onClose }: { deliver
                                                                 max={item.quantity}
                                                                 className="w-full p-1.5 border rounded text-right font-bold text-blue-600 focus:ring-2 ring-blue-200"
                                                                 value={retItem?.quantity || ""}
-                                                                onChange={e => handleQuantityChange(item.productId, e.target.value)}
+                                                                onChange={e => handleQuantityChange(item.id, e.target.value)}
                                                             />
                                                         </td>
                                                         <td className="p-3 border-l bg-blue-50/30">
@@ -169,7 +169,7 @@ export function SalesReturnModal({ deliveries, initialData, onClose }: { deliver
                                                                 placeholder="Opsional..."
                                                                 className="w-full p-1.5 border rounded text-sm"
                                                                 value={retItem?.reason || ""}
-                                                                onChange={e => handleReasonChange(item.productId, e.target.value)}
+                                                                onChange={e => handleReasonChange(item.id, e.target.value)}
                                                             />
                                                         </td>
                                                     </tr>
@@ -182,7 +182,7 @@ export function SalesReturnModal({ deliveries, initialData, onClose }: { deliver
                                 {/* Mobile View Items */}
                                 <div className="md:hidden space-y-4">
                                     {selectedDelivery.items.map((item: any) => {
-                                        const retItem = returnItems.find(i => i.productId === item.productId);
+                                        const retItem = returnItems.find(i => i.deliveryItemId === item.id);
                                         return (
                                             <div key={item.id} className="border-2 border-blue-100 rounded-xl p-4 space-y-3 bg-white shadow-sm">
                                                 <div className="flex justify-between items-start">
@@ -202,7 +202,7 @@ export function SalesReturnModal({ deliveries, initialData, onClose }: { deliver
                                                             max={item.quantity}
                                                             className="w-full p-2 border-2 border-blue-200 rounded text-center font-black text-blue-600 focus:border-blue-500 outline-none"
                                                             value={retItem?.quantity || ""}
-                                                            onChange={e => handleQuantityChange(item.productId, e.target.value)}
+                                                            onChange={e => handleQuantityChange(item.id, e.target.value)}
                                                         />
                                                     </div>
                                                     <div className="col-span-2">
@@ -212,7 +212,7 @@ export function SalesReturnModal({ deliveries, initialData, onClose }: { deliver
                                                             placeholder="Contoh: Rusak"
                                                             className="w-full p-2 border-2 border-blue-200 rounded text-sm outline-none focus:border-blue-500"
                                                             value={retItem?.reason || ""}
-                                                            onChange={e => handleReasonChange(item.productId, e.target.value)}
+                                                            onChange={e => handleReasonChange(item.id, e.target.value)}
                                                         />
                                                     </div>
                                                 </div>

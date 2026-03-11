@@ -6,9 +6,9 @@ import { formatCurrency } from "@/lib/utils";
 interface ReceiptItem {
     productId: string;
     sku: string;
-    quantity: number | "";
-    purchasePrice: number | "";
-    discount: number | ""; // Manual Nominal Discount per line
+    quantity: number | string;
+    purchasePrice: number | string;
+    discount: number | string; // Manual Nominal Discount per line
     discountPercent?: number | string; // Percentage discount per line
     uom: string;
     barcode: string;
@@ -34,7 +34,7 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
 
     // Financials
     const [showDiscount, setShowDiscount] = useState(false);
-    const [totalDiscount, setTotalDiscount] = useState<number | "">(0);
+    const [totalDiscount, setTotalDiscount] = useState<number | string>(0);
     const [totalDiscountPercent, setTotalDiscountPercent] = useState<number | string>("");
     const [taxRate, setTaxRate] = useState<number | "">(0); // 11 means 11%
 
@@ -84,28 +84,39 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
     const updateItem = (index: number, field: string, value: any) => {
         const newItems = [...items];
 
-        // Handle number inputs to prevent NaN
+        // Handle number inputs to support decimals (comma or dot)
         if (field === 'quantity' || field === 'purchasePrice') {
-            const raw = String(value).replace(/\D/g, "");
-            (newItems[index] as any)[field] = raw ? parseInt(raw, 10) : "";
+            // Replace comma with dot for standard float conversion internally, 
+            // but keep as string to allow user to finish typing
+            const normalizedValue = String(value).replace(',', '.');
+            // Keep only numbers and one dot
+            const filteredValue = normalizedValue.replace(/[^0-9.]/g, '');
+            // Prevent multiple dots
+            const finalValue = filteredValue.includes('.')
+                ? filteredValue.split('.').slice(0, 2).join('.')
+                : filteredValue;
+
+            // Re-convert back to comma for display if that's what user typed, or just keep finalValue
+            // Actually, best is to keep what user typed but filtered
+            const userDisplayValue = String(value).replace(/[^0-9,.]/g, '');
+            (newItems[index] as any)[field] = userDisplayValue;
 
             if (newItems[index].discountPercent !== "" && newItems[index].discountPercent !== undefined) {
-                const qty = Number(newItems[index].quantity) || 0;
-                const price = Number(newItems[index].purchasePrice) || 0;
+                const qty = Number(String(newItems[index].quantity).replace(',', '.')) || 0;
+                const price = Number(String(newItems[index].purchasePrice).replace(',', '.')) || 0;
                 const gross = qty * price;
                 newItems[index].discount = Math.round(gross * (Number(newItems[index].discountPercent) / 100));
             }
         } else if (field === 'discountPercent') {
             newItems[index].discountPercent = value;
             const numVal = Number(value) || 0;
-            const qty = Number(newItems[index].quantity) || 0;
-            const price = Number(newItems[index].purchasePrice) || 0;
+            const qty = Number(String(newItems[index].quantity).replace(',', '.')) || 0;
+            const price = Number(String(newItems[index].purchasePrice).replace(',', '.')) || 0;
             const gross = qty * price;
             newItems[index].discount = Math.round(gross * (numVal / 100));
         } else if (field === 'discount') {
-            const raw = String(value).replace(/\D/g, "");
-            const val = raw ? parseInt(raw, 10) : "";
-            newItems[index].discount = val;
+            const userDisplayValue = String(value).replace(/[^0-9,.]/g, '');
+            newItems[index].discount = userDisplayValue;
             newItems[index].discountPercent = "";
         } else {
             (newItems[index] as any)[field] = value;
@@ -135,17 +146,17 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
 
     const grossAmount = useMemo(() => {
         return items.reduce((acc, item) => {
-            const q = typeof item.quantity === 'number' ? item.quantity : 0;
-            const p = typeof item.purchasePrice === 'number' ? item.purchasePrice : 0;
+            const q = Number(String(item.quantity).replace(',', '.')) || 0;
+            const p = Number(String(item.purchasePrice).replace(',', '.')) || 0;
             return acc + (q * p);
         }, 0);
     }, [items]);
 
     const subtotal = useMemo(() => {
         return items.reduce((acc, item) => {
-            const q = typeof item.quantity === 'number' ? item.quantity : 0;
-            const p = typeof item.purchasePrice === 'number' ? item.purchasePrice : 0;
-            const d = typeof item.discount === 'number' ? item.discount : 0;
+            const q = Number(String(item.quantity).replace(',', '.')) || 0;
+            const p = Number(String(item.purchasePrice).replace(',', '.')) || 0;
+            const d = Number(String(item.discount).replace(',', '.')) || 0;
             return acc + ((q * p) - d);
         }, 0);
     }, [items]);
@@ -154,7 +165,7 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
         if (totalDiscountPercent !== "" && Number(totalDiscountPercent) > 0) {
             return Math.round(subtotal * (Number(totalDiscountPercent) / 100));
         }
-        return Number(totalDiscount) || 0;
+        return Number(String(totalDiscount).replace(',', '.')) || 0;
     }, [subtotal, totalDiscountPercent, totalDiscount]);
 
     const taxAmount = useMemo(() => {
@@ -163,7 +174,7 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
     }, [subtotal, finalDiscountNominal, taxRate]);
 
     const grandTotal = useMemo(() => {
-        return subtotal - finalDiscountNominal + taxAmount;
+        return Math.round(subtotal - finalDiscountNominal + taxAmount);
     }, [subtotal, finalDiscountNominal, taxAmount]);
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -199,9 +210,9 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
                 grandTotal,
                 items: items.map(i => ({
                     productId: i.productId,
-                    quantity: Number(i.quantity),
-                    purchasePrice: Number(i.purchasePrice),
-                    discount: Number(i.discount) || 0,
+                    quantity: Number(String(i.quantity).replace(',', '.')),
+                    purchasePrice: Number(String(i.purchasePrice).replace(',', '.')),
+                    discount: Number(String(i.discount).replace(',', '.')) || 0,
                     uom: i.uom
                 }))
             };
@@ -387,10 +398,10 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
                                 <button
                                     type="button"
                                     onClick={addItem}
-                                    className="bg-primary/10 text-primary px-4 py-1.5 rounded-lg text-sm font-bold hover:bg-primary/20 transition-all border border-primary/20 flex items-center gap-2"
+                                    className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-xl text-xs md:text-sm font-bold transition-all shadow-lg shadow-primary/20 flex items-center gap-2 group active:scale-95"
                                 >
-                                    <Plus className="h-4 w-4 text-primary" />
-                                    <span className="text-primary">Tambah Baris</span>
+                                    <Plus className="h-4 w-4 md:h-5 md:w-5 group-hover:rotate-90 transition-transform" />
+                                    <span>Tambah Baris</span>
                                 </button>
                             </div>
                         </div>
@@ -413,8 +424,8 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
                                         </button>
                                     </div>
 
-                                    <div className="hidden lg:flex w-8 flex-col items-center justify-center p-2 bg-slate-50 rounded-lg border border-slate-200 h-10 mb-0.5">
-                                        <span className="text-[10px] font-black text-slate-400">{index + 1}</span>
+                                    <div className="hidden lg:flex w-8 flex-col items-center justify-center p-2 bg-primary text-white rounded-lg h-10 mb-0.5 shadow-sm">
+                                        <span className="text-[10px] font-black">{index + 1}</span>
                                     </div>
                                     <div className="w-32 space-y-1">
                                         <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Barcode</label>
@@ -440,7 +451,7 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
                                         <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Qty</label>
                                         <input
                                             type="text"
-                                            value={item.quantity ? item.quantity.toLocaleString('id-ID') : ""}
+                                            value={item.quantity}
                                             onChange={e => updateItem(index, 'quantity', e.target.value)}
                                             className="w-full p-2 bg-white border-2 border-slate-300 rounded-lg text-sm font-black outline-none text-center h-10 focus:border-primary transition-all"
                                             required
@@ -451,7 +462,7 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
                                         <div className="relative h-10 w-full">
                                             <input
                                                 type="text"
-                                                value={item.purchasePrice ? item.purchasePrice.toLocaleString('id-ID') : ""}
+                                                value={item.purchasePrice}
                                                 onChange={e => updateItem(index, 'purchasePrice', e.target.value)}
                                                 className="w-full p-2 bg-white border-2 border-slate-300 rounded-lg text-sm font-black outline-none text-right h-10 focus:border-primary transition-all pr-2"
                                                 required
@@ -475,7 +486,7 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
                                                 <label className="text-[10px] uppercase font-bold text-orange-500 ml-1">Diskon (Rp)</label>
                                                 <input
                                                     type="text"
-                                                    value={item.discount ? item.discount.toLocaleString('id-ID') : ""}
+                                                    value={item.discount}
                                                     onChange={e => updateItem(index, 'discount', e.target.value)}
                                                     className="w-full p-2 bg-orange-50 border-2 border-orange-200 rounded-lg text-sm font-black outline-none text-right text-orange-600 h-10 focus:border-orange-500 transition-all"
                                                     placeholder="0"
@@ -485,8 +496,8 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
                                     )}
                                     <div className="w-full lg:w-36 space-y-1">
                                         <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Net Total</label>
-                                        <div className="w-full p-2 bg-slate-900 border-2 border-slate-800 rounded-lg text-sm font-black text-primary text-right h-10 flex items-center justify-end shadow-inner">
-                                            {formatCurrency(((Number(item.quantity) || 0) * (Number(item.purchasePrice) || 0)) - (Number(item.discount) || 0))}
+                                        <div className="w-full p-2 bg-slate-50 border-2 border-slate-200 rounded-lg text-sm font-black text-slate-900 text-right h-10 flex items-center justify-end shadow-inner">
+                                            {formatCurrency(((Number(String(item.quantity).replace(',', '.')) || 0) * (Number(String(item.purchasePrice).replace(',', '.')) || 0)) - (Number(String(item.discount).replace(',', '.')) || 0))}
                                         </div>
                                     </div>
                                     <button
@@ -530,10 +541,10 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
                                         <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Diskon (Rp)</label>
                                         <input
                                             type="text"
-                                            value={totalDiscount ? totalDiscount.toLocaleString('id-ID') : ""}
+                                            value={totalDiscount}
                                             onChange={e => {
-                                                const val = e.target.value.replace(/\D/g, '');
-                                                setTotalDiscount(val === '' ? '' : Number(val));
+                                                const val = e.target.value.replace(/[^0-9,.]/g, '');
+                                                setTotalDiscount(val);
                                                 setTotalDiscountPercent("");
                                             }}
                                             className="w-full bg-white border-2 border-slate-300 px-3 py-2 rounded-xl text-lg font-black text-primary outline-none focus:border-primary transition-all h-12 shadow-sm"
@@ -586,8 +597,8 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
                             </div>
                             <div className="flex flex-col md:flex-row justify-between items-start md:items-center pt-4 relative z-10 gap-4">
                                 <div>
-                                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Grand Total Akhir</p>
-                                    <h4 className="text-3xl md:text-4xl font-black text-primary tracking-tighter drop-shadow-md">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Grand Total Akhir</p>
+                                    <h4 className="text-3xl md:text-4xl font-black text-emerald-400 tracking-tighter drop-shadow-md">
                                         {formatCurrency(grandTotal)}
                                     </h4>
                                 </div>

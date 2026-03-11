@@ -1,7 +1,7 @@
 import prisma from "@/lib/prisma";
 import { DocumentLayout } from "@/components/print/DocumentLayout";
 import { format } from "date-fns";
-import { formatCurrency, serializeDecimal } from "@/lib/utils";
+import { formatCurrency, formatNumber, serializeDecimal } from "@/lib/utils";
 
 export default async function ReceiptPrintPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
@@ -19,7 +19,7 @@ export default async function ReceiptPrintPage({ params }: { params: Promise<{ i
     const totalDiscount = Number(receipt.totalDiscount || 0);
     const taxAmount = Number(receipt.taxAmount || 0);
     const taxRate = Number(receipt.taxRate || 0);
-    const grandTotal = Number(receipt.grandTotal || 0);
+    const grandTotal = Math.round(subTotal - totalDiscount + taxAmount);
 
     return (
         <DocumentLayout
@@ -61,10 +61,10 @@ export default async function ReceiptPrintPage({ params }: { params: Promise<{ i
                             <td className="border border-slate-900 p-2.5 text-center font-black">{idx + 1}</td>
                             <td className="border border-slate-900 p-2.5 text-left font-mono tracking-tighter text-[9px]">{item.product.barcode || item.product.sku || "-"}</td>
                             <td className="border border-slate-900 p-2.5 uppercase">{item.product.name}</td>
-                            <td className="border border-slate-900 p-2.5 text-center">{item.quantity}</td>
+                            <td className="border border-slate-900 p-2.5 text-center">{formatNumber(item.quantity)}</td>
                             <td className="border border-slate-900 p-2.5 text-center uppercase">{(item.uom || item.product.uom || "-").replace(/KARTOON/gi, 'KARTON')}</td>
                             <td className="border border-slate-900 p-2.5 text-right font-medium">{formatCurrency(Number(item.purchasePrice))}</td>
-                            <td className="border border-slate-900 p-2.5 text-right font-black">{formatCurrency(item.quantity * Number(item.purchasePrice))}</td>
+                            <td className="border border-slate-900 p-2.5 text-right font-black">{formatCurrency(Number(item.quantity) * Number(item.purchasePrice))}</td>
                         </tr>
                     ))}
                     {[...Array(Math.max(0, 5 - receipt.items.length))].map((_, i) => (

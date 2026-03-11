@@ -1,7 +1,7 @@
 import prisma from "@/lib/prisma";
 import { DocumentLayout } from "@/components/print/DocumentLayout";
 import { format } from "date-fns";
-import { formatCurrency, serializeDecimal } from "@/lib/utils";
+import { formatCurrency, formatNumber, serializeDecimal } from "@/lib/utils";
 
 export default async function InvoicePrintPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
@@ -15,12 +15,12 @@ export default async function InvoicePrintPage({ params }: { params: Promise<{ i
 
     if (!delivery) return <div>Data not found</div>;
 
-    const totalQty = delivery.items.reduce((acc: number, item: any) => acc + item.quantity, 0);
+    const totalQty = delivery.items.reduce((acc: number, item: any) => acc + (Number(item.quantity) || 0), 0);
     const subTotal = Number(delivery.subtotal || 0);
     const totalDiscount = Number(delivery.totalDiscount || 0);
     const taxAmount = Number(delivery.taxAmount || 0);
     const taxRate = Number(delivery.taxRate || 0);
-    const grandTotal = Number(delivery.grandTotal || 0);
+    const grandTotal = Math.round(subTotal - totalDiscount + taxAmount);
 
     return (
         <DocumentLayout
@@ -59,10 +59,10 @@ export default async function InvoicePrintPage({ params }: { params: Promise<{ i
                             <td className="border border-slate-900 p-2.5 text-center font-black">{idx + 1}</td>
                             <td className="border border-slate-900 p-2.5 text-left font-mono tracking-tighter text-[9px]">{item.product.barcode || item.product.sku || "-"}</td>
                             <td className="border border-slate-900 p-2.5 uppercase">{item.product.name}</td>
-                            <td className="border border-slate-900 p-2.5 text-center font-black">{item.quantity}</td>
+                            <td className="border border-slate-900 p-2.5 text-center font-black">{formatNumber(item.quantity)}</td>
                             <td className="border border-slate-900 p-2.5 text-center uppercase tracking-tighter">{(item.uom || item.product.uom || "-").replace(/KARTOON/gi, 'KARTON')}</td>
                             <td className="border border-slate-900 p-2.5 text-right font-medium">{formatCurrency(Number(item.salesPrice))}</td>
-                            <td className="border border-slate-900 p-2.5 text-right font-black">{formatCurrency(item.quantity * Number(item.salesPrice))}</td>
+                            <td className="border border-slate-900 p-2.5 text-right font-black">{formatCurrency(Number(item.quantity) * Number(item.salesPrice))}</td>
                         </tr>
                     ))}
                     {[...Array(Math.max(0, 5 - delivery.items.length))].map((_, i) => (
@@ -80,7 +80,7 @@ export default async function InvoicePrintPage({ params }: { params: Promise<{ i
                 <div className="w-80 space-y-2 border border-slate-900 p-3 font-black">
                     <div className="flex justify-between text-xs pb-2 border-b-2 border-slate-200">
                         <span className="text-slate-400 uppercase">JUMLAH QTY</span>
-                        <span className="tabular-nums">{totalQty.toLocaleString()}</span>
+                        <span className="tabular-nums">{formatNumber(totalQty)}</span>
                     </div>
                     <div className="flex justify-between text-xs pt-1">
                         <span className="text-slate-400 uppercase">Total Brutto</span>
@@ -95,7 +95,7 @@ export default async function InvoicePrintPage({ params }: { params: Promise<{ i
                     {taxAmount > 0 && (
                         <div className="flex justify-between text-xs text-indigo-600">
                             <span className="text-slate-400 uppercase">PPN {taxRate}%</span>
-                            <span>{formatCurrency(taxAmount)}</span>
+                            <span>+ {formatCurrency(taxAmount)}</span>
                         </div>
                     )}
                     <div className="border-t-2 border-slate-900 pt-2 flex justify-between text-lg text-primary">

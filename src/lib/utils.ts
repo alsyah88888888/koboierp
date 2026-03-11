@@ -10,7 +10,15 @@ export function formatCurrency(amount: number) {
         style: "currency",
         currency: "IDR",
         minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
     }).format(Math.abs(amount));
+}
+
+export function formatNumber(amount: number) {
+    return new Intl.NumberFormat("id-ID", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+    }).format(amount);
 }
 
 /**

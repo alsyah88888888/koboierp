@@ -355,8 +355,10 @@ model Product {
   brand       String?
   category    String?
   barcode     String?
-  uom         String?   // Unit of Measure
-  lowStockThreshold Int @default(10)
+  uom               String?   // Unit of Measure
+  purchasePrice     Decimal   @default(0)
+  salesPrice        Decimal   @default(0)
+  lowStockThreshold Int       @default(10)
   stocks      Stock[]
   receiptItems GoodsReceiptItem[]
   verifications GoodsReceiptVerification[]
