@@ -587,15 +587,11 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
                                     <span className="font-mono text-white tracking-widest">{totalQty.toLocaleString('id-ID')}</span>
                                 </div>
                                 <div className="flex justify-between items-center text-[10px] md:text-xs font-bold text-slate-400">
-                                    <span>SUBTOTAL ITEM (Bruto)</span>
-                                    <span className="font-mono text-white tracking-widest">{formatCurrency(grossAmount)}</span>
+                                    <span>SUBTOTAL ITEM (Netto)</span>
+                                    <span className="font-mono text-white tracking-widest">{formatCurrency(subtotal)}</span>
                                 </div>
                                 {showDiscount && (
                                     <>
-                                        <div className="flex justify-between items-center text-[10px] md:text-xs font-bold text-orange-400">
-                                            <span>TOTAL POTONGAN ITEM</span>
-                                            <span className="font-mono">- {formatCurrency(grossAmount - subtotal)}</span>
-                                        </div>
                                         <div className="flex justify-between items-center text-[10px] md:text-xs font-bold text-primary">
                                             <span>DISKON FINAL</span>
                                             <span className="font-mono font-black italic">- {formatCurrency(finalDiscountNominal)}</span>
