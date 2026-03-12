@@ -169,13 +169,15 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
     }, [subtotal, totalDiscountPercent, totalDiscount]);
 
     const taxAmount = useMemo(() => {
-        const amountForTax = subtotal - finalDiscountNominal;
-        return amountForTax * (Number(taxRate || 0) / 100);
-    }, [subtotal, finalDiscountNominal, taxRate]);
+        // PERBAIKAN: Pajak dihitung dari nilai BRUTO (sebelum diskon item)
+        // sesuai permintaan user untuk mencocokkan total 128,695,776
+        return grossAmount * (Number(taxRate || 0) / 100);
+    }, [grossAmount, taxRate]);
 
     const grandTotal = useMemo(() => {
-        return Math.round(subtotal - finalDiscountNominal + taxAmount);
-    }, [subtotal, finalDiscountNominal, taxAmount]);
+        // Grand Total = (Gross + Tax) - Total Discount Item - Final Discount
+        return Math.round((grossAmount + taxAmount) - (grossAmount - subtotal) - finalDiscountNominal);
+    }, [grossAmount, taxAmount, subtotal, finalDiscountNominal]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
