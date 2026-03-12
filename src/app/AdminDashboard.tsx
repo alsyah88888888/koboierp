@@ -250,13 +250,27 @@ export function AdminDashboard({ role, stats, salesData, inventoryData, recentAc
                     </div>
 
                     <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                        {[
-                            ...sales.map((s: any) => ({ ...s, activityType: 'SALE' })),
-                            ...purchases.map((p: any) => ({ ...p, activityType: 'PURCHASE' })),
-                            ...operational.map((o: any) => ({ ...o, activityType: 'FINANCE' })),
-                            ...requests.map((r: any) => ({ ...r, activityType: 'REQUEST' }))
-                        ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-                        .map((act: any, idx: number) => (
+                        {(() => {
+                            const activities = [
+                                ...sales.map((s: any) => ({ ...s, activityType: 'SALE' })),
+                                ...purchases.map((p: any) => ({ ...p, activityType: 'PURCHASE' })),
+                                ...operational.map((o: any) => ({ ...o, activityType: 'FINANCE' })),
+                                ...requests.map((r: any) => ({ ...r, activityType: 'REQUEST' }))
+                            ].filter(a => a.createdAt).sort((a, b) => {
+                                try {
+                                    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+                                } catch { return 0; }
+                            });
+
+                            if (activities.length === 0) {
+                                return (
+                                    <div className="text-center py-10">
+                                        <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Belum ada aktivitas input hari ini</p>
+                                    </div>
+                                );
+                            }
+
+                            return activities.map((act: any, idx: number) => (
                             <div key={idx} className="bg-white p-4 rounded-2xl flex items-center justify-between group hover:shadow-md transition-all border border-transparent hover:border-slate-200">
                                 <div className="flex items-center gap-4">
                                     <div className={`p-2.5 rounded-xl ${
@@ -302,12 +316,8 @@ export function AdminDashboard({ role, stats, salesData, inventoryData, recentAc
                                     </div>
                                 </div>
                             </div>
-                        ))}
-                        {sales.length + purchases.length + operational.length + requests.length === 0 && (
-                            <div className="text-center py-10">
-                                <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Belum ada aktivitas input hari ini</p>
-                            </div>
-                        )}
+                        ));
+                    })()}
                     </div>
                 </div>
             </div>

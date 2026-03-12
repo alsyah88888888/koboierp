@@ -20,50 +20,85 @@ export default async function DashboardPage() {
   const isWarehouse = userRole === "WAREHOUSE";
 
   // 2. Fetch Data via Server Action
-  const summary = await getDashboardSummaryAction();
-  const dailyReport = await getDailyReportAction();
-  const products = await prisma.product.findMany({ include: { stocks: true } }).catch(() => []);
+  let summary: any = { totalRevenue: 0, nettMarginSales: 0, nettMarginBC: 0, nettMarginPF: 0, cashBalance: 0, totalHutang: 0, totalPiutang: 0, lowStockCount: 0, activeOrdersToday: 0, weeklyStats: [] };
+  let dailyReport: any = { sales: [], purchases: [], operational: [], requests: [], dailyStats: {} };
+  let products: any[] = [];
+  let recentActivity: any[] = [];
+  let inventoryData: any[] = [];
+
+  try {
+    const [summaryRes, reportRes, productsRes, recentJournal] = await Promise.all([
+      getDashboardSummaryAction().catch(e => { console.error("Summary Error:", e); return summary; }),
+      getDailyReportAction().catch(e => { console.error("Report Error:", e); return dailyReport; }),
+      prisma.product.findMany({ include: { stocks: true } }).catch(() => []),
+      prisma.journalEntry.findMany({ take: 5, orderBy: { date: 'desc' } }).catch(() => [])
+    ]);
+
+    summary = summaryRes || summary;
+    dailyReport = reportRes || dailyReport;
+    products = productsRes || [];
+
+    // 4. Group Inventory by Category
+    const categoryMap: any = {};
+    products.forEach((p: any) => {
+      const cat = p.category || "Uncategorized";
+      const stocks = p.stocks || [];
+      const qty = stocks.reduce((s: number, st: any) => s + (Number(st.quantity) || 0), 0);
+      categoryMap[cat] = (categoryMap[cat] || 0) + qty;
+    });
+    inventoryData = Object.entries(categoryMap).map(([name, value]) => ({ name, value: Number(value) })).slice(0, 5);
+
+    recentActivity = (recentJournal || []).map((j: any) => ({
+      type: j.type === 'CREDIT' ? 'SALE' : 'PURCHASE',
+      description: j.description || "No Description",
+      amount: Number(j.amount || 0),
+      date: j.date ? new Date(j.date).toLocaleDateString('id-ID') : "-",
+      reference: "GL-" + (j.id?.slice(-4).toUpperCase() || "0000")
+    }));
+  } catch (err) {
+    console.error("Dashboard Page Error:", err);
+  }
 
   const stats = [
     {
       name: "Total Revenue",
-      value: formatCurrency(summary.totalRevenue),
+      value: formatCurrency(summary.totalRevenue || 0),
       change: "Berdasarkan Penjualan", trend: 'up',
       iconName: "ShoppingBag", iconBg: "bg-blue-50", iconColor: "text-blue-500"
     },
     {
       name: "Nett Margin Sales",
-      value: formatCurrency(summary.nettMarginSales),
-      change: "Revenue - COGS - Exp", trend: summary.nettMarginSales > 0 ? 'up' : 'down',
+      value: formatCurrency(summary.nettMarginSales || 0),
+      change: "Revenue - COGS - Exp", trend: (summary.nettMarginSales || 0) > 0 ? 'up' : 'down',
       iconName: "TrendingUp", iconBg: "bg-indigo-50", iconColor: "text-indigo-500"
     },
     {
       name: "Margin BC",
-      value: formatCurrency(summary.nettMarginBC),
-      change: "Sales Team BC", trend: summary.nettMarginBC > 0 ? 'up' : 'down',
+      value: formatCurrency(summary.nettMarginBC || 0),
+      change: "Sales Team BC", trend: (summary.nettMarginBC || 0) > 0 ? 'up' : 'down',
       iconName: "TrendingUp", iconBg: "bg-orange-50", iconColor: "text-orange-500"
     },
     {
       name: "Margin PF",
-      value: formatCurrency(summary.nettMarginPF),
-      change: "Sales Team PF", trend: summary.nettMarginPF > 0 ? 'up' : 'down',
+      value: formatCurrency(summary.nettMarginPF || 0),
+      change: "Sales Team PF", trend: (summary.nettMarginPF || 0) > 0 ? 'up' : 'down',
       iconName: "TrendingUp", iconBg: "bg-purple-50", iconColor: "text-purple-500"
     },
     {
       name: "Cash/Bank Balance",
-      value: formatCurrency(summary.cashBalance),
+      value: formatCurrency(summary.cashBalance || 0),
       change: "Saldo Bank BCA", trend: 'up',
       iconName: "Wallet", iconBg: "bg-emerald-50", iconColor: "text-emerald-500"
     },
     {
       name: "Total Hutang (Pending)",
-      value: formatCurrency(summary.totalHutang),
+      value: formatCurrency(summary.totalHutang || 0),
       change: "Belum Dibayar", trend: 'down',
       iconName: "ShoppingCart", iconBg: "bg-amber-50", iconColor: "text-amber-500"
     },
     {
       name: "Total Piutang (Pending)",
-      value: formatCurrency(summary.totalPiutang),
+      value: formatCurrency(summary.totalPiutang || 0),
       change: "Belum Diterima", trend: 'up',
       iconName: "Package", iconBg: "bg-rose-50", iconColor: "text-rose-500"
     },
@@ -76,37 +111,10 @@ export default async function DashboardPage() {
     return true;
   });
 
-  // 3. Prepare Chart Data
-  const salesData = summary.weeklyStats || [];
-
-  // 4. Group Inventory by Category
-  const categoryMap: any = {};
-  products.forEach((p: any) => {
-    const cat = p.category || "Uncategorized";
-    const qty = p.stocks.reduce((s: number, st: any) => s + st.quantity, 0);
-    categoryMap[cat] = (categoryMap[cat] || 0) + qty;
-  });
-
-  const inventoryData = Object.entries(categoryMap).map(([name, value]) => ({ name, value })).slice(0, 5);
-
-  // 5. Fetch Recent Activity
-  const recentJournal = await prisma.journalEntry.findMany({
-    take: 5,
-    orderBy: { date: 'desc' }
-  });
-
-  const recentActivity = recentJournal.map((j: any) => ({
-    type: j.type === 'CREDIT' ? 'SALE' : 'PURCHASE',
-    description: j.description,
-    amount: Number(j.amount),
-    date: new Date(j.date).toLocaleDateString('id-ID'),
-    reference: "GL-" + j.id.slice(-4).toUpperCase()
-  }));
-
   return <AdminDashboard
     role={userRole}
     stats={stats}
-    salesData={salesData}
+    salesData={summary.weeklyStats || []}
     inventoryData={inventoryData}
     recentActivity={recentActivity}
     dailyReport={dailyReport}

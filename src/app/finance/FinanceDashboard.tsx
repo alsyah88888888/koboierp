@@ -90,18 +90,18 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
     };
 
     const filteredLedger = ledger.filter(tx =>
-        tx.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        tx.account?.name.toLowerCase().includes(searchTerm.toLowerCase())
+        (tx.description || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (tx.account?.name || "").toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     const filteredPurchases = pendingPurchases.filter(p =>
-        p.receiptNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.receivedFrom.toLowerCase().includes(searchTerm.toLowerCase())
+        (p.receiptNumber || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (p.receivedFrom || "").toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     const filteredSales = pendingSales.filter(s =>
-        s.deliveryNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        s.buyerName.toLowerCase().includes(searchTerm.toLowerCase())
+        (s.deliveryNumber || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (s.buyerName || "").toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     const filteredReturns = pendingReturns.filter(r =>
@@ -428,7 +428,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                 {filteredLedger.map((tx: any) => (
                                     <tr key={tx.id} className="hover:bg-muted/20 transition-colors">
                                         <td className="px-6 py-4 text-muted-foreground whitespace-nowrap">
-                                            {format(new Date(tx.date), "dd/MM/yyyy")}
+                                            {tx.date ? format(new Date(tx.date), "dd/MM/yyyy") : "-"}
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="font-medium truncate max-w-[400px]" title={tx.description}>{tx.description}</div>
@@ -487,8 +487,8 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                     {filteredPurchases.map((p: any) => (
                                         <tr key={p.id} className="hover:bg-muted/20 transition-colors">
                                             <td className="px-6 py-4">
-                                                <div className="text-xs text-muted-foreground">{format(new Date(p.createdAt), "dd/MM/yy")}</div>
-                                                <div className="font-mono text-[10px] truncate" title={p.receiptNumber}>{p.receiptNumber}</div>
+                                                <div className="text-xs text-muted-foreground">{p.createdAt ? format(new Date(p.createdAt), "dd/MM/yy") : "-"}</div>
+                                                <div className="font-mono text-[10px] truncate" title={p.receiptNumber || ""}>{p.receiptNumber || "-"}</div>
                                             </td>
                                             <td className="px-6 py-4 font-bold">
                                                 <div className="truncate max-w-[250px]" title={p.receivedFrom}>{p.receivedFrom}</div>

@@ -30,7 +30,7 @@ export function DashboardStats() {
     const items = [
         {
             label: "Total Revenue",
-            value: formatCurrency(stats.totalRevenue),
+            value: formatCurrency(Number(stats?.totalRevenue || 0)),
             icon: DollarSign,
             color: "text-emerald-600",
             bg: "bg-emerald-50",
@@ -38,7 +38,7 @@ export function DashboardStats() {
         },
         {
             label: "Asset Value (Stock)",
-            value: formatCurrency(stats.assetValue),
+            value: formatCurrency(Number(stats?.assetValue || 0)),
             icon: Box,
             color: "text-blue-600",
             bg: "bg-blue-50",
@@ -46,7 +46,7 @@ export function DashboardStats() {
         },
         {
             label: "Purchase Volume",
-            value: stats.purchaseVol.toLocaleString(),
+            value: Number(stats?.purchaseVol || 0).toLocaleString(),
             icon: ShoppingCart,
             color: "text-amber-600",
             bg: "bg-amber-50",
@@ -55,7 +55,7 @@ export function DashboardStats() {
         },
         {
             label: "Cash/Bank Balance",
-            value: formatCurrency(stats.cashBalance),
+            value: formatCurrency(Number(stats?.cashBalance || 0)),
             icon: Wallet,
             color: "text-indigo-600",
             bg: "bg-indigo-50",

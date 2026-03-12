@@ -1989,18 +1989,30 @@ export async function getDashboardSummaryAction() {
     const totalPurchaseCost = Number(purchaseAgg._sum.subtotal || 0);
     const totalOperationalExpenses = Number(expenseAgg._sum.amount || 0);
 
-    // 3. Person-Based Logic (Still needs findMany but with select for performance)
-    const [deliveries, receipts, expenses] = await Promise.all([
+    // 3. Person-Based Logic
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    const [deliveries, receipts, expenses, countRequests, countDeliveries, purchaseVolRes] = await Promise.all([
         prisma.salesDelivery.findMany({ select: { subtotal: true, totalDiscount: true, salesPerson: true } }),
-        prisma.goodsReceipt.findMany({ 
+        prisma.goodsReceipt.findMany({
             where: { isVerified: true },
-            select: { subtotal: true, salesPerson: true } 
+            select: { subtotal: true, salesPerson: true }
         }),
         prisma.financeTransaction.findMany({
             where: { journals: { some: { account: { code: { startsWith: '6' } } } } },
             select: { amount: true, transactionType: true, salesPerson: true }
+        }),
+        prisma.purchaseRequest.count({ where: { createdAt: { gte: todayStart } } }),
+        prisma.salesDelivery.count({ where: { createdAt: { gte: todayStart } } }),
+        prisma.goodsReceiptItem.aggregate({
+            _sum: { quantity: true },
+            where: { receipt: { createdAt: { gte: todayStart } } }
         })
     ]);
+
+    const activeOrdersToday = countRequests + countDeliveries;
+    const purchaseVol = Number(purchaseVolRes._sum?.quantity || 0);
 
     let revenueBC = 0, revenuePF = 0;
     deliveries.forEach(d => {
@@ -2027,28 +2039,25 @@ export async function getDashboardSummaryAction() {
     const nettMarginBC = (revenueBC - purchaseBC) - expBC;
     const nettMarginPF = (revenuePF - purchasePF) - expPF;
 
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-    const activeOrdersToday = await prisma.purchaseRequest.count({
-        where: { createdAt: { gte: todayStart } }
-    }) + await prisma.salesDelivery.count({
-        where: { createdAt: { gte: todayStart } }
-    });
-
-    return {
-        totalRevenue: totalRevenue || 0,
-        assetValue: assetValue || 0,
-        cashBalance: cashBalance || 0,
-        totalHutang: totalHutang || 0,
-        totalPiutang: totalPiutang || 0,
-        nettMarginSales: nettMarginSales || 0,
-        nettMarginBC: nettMarginBC || 0,
-        nettMarginPF: nettMarginPF || 0,
-        productCount: inventoryTotals.length,
-        lowStockCount: lowStockCount,
-        activeOrdersToday: activeOrdersToday,
+    const summary = {
+        totalRevenue: Number(totalRevenue || 0),
+        assetValue: Number(assetValue || 0),
+        cashBalance: Number(cashBalance || 0),
+        totalHutang: Number(totalHutang || 0),
+        totalPiutang: Number(totalPiutang || 0),
+        nettMarginSales: Number(nettMarginSales || 0),
+        nettMarginBC: Number(nettMarginBC || 0),
+        nettMarginPF: Number(nettMarginPF || 0),
+        productCount: inventoryTotals?.length || 0,
+        lowStockCount: Number(lowStockCount || 0),
+        activeOrdersToday: Number(activeOrdersToday || 0),
+        purchaseVol: Number(purchaseVol || 0),
         weeklyStats: await getWeeklyStats()
     };
+
+
+    console.log("Dashboard Summary successfully generated");
+    return JSON.parse(JSON.stringify(summary));
 }
 
 async function getWeeklyStats() {
@@ -2960,11 +2969,14 @@ export async function getDailyReportAction() {
         countRequests: requests.length
     };
 
-    return {
-        sales: JSON.parse(JSON.stringify(sales)),
-        purchases: JSON.parse(JSON.stringify(purchases)),
-        operational: JSON.parse(JSON.stringify(operational)),
-        requests: JSON.parse(JSON.stringify(requests)),
-        dailyStats
+    const report = {
+        sales: sales,
+        purchases: purchases,
+        operational: operational,
+        requests: requests,
+        dailyStats: dailyStats
     };
+
+    console.log("Daily Report successfully generated");
+    return JSON.parse(JSON.stringify(report));
 }

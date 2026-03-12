@@ -64,29 +64,29 @@ export default async function FinancePage() {
         orderBy: { createdAt: 'desc' }
     }).catch(() => []);
 
-    const transactions = await getFinanceTransactionsAction().catch(() => []);
+    const transactions = await getFinanceTransactionsAction().catch((e) => { console.error("FT Error:", e); return []; });
 
     // Serialize Decimal objects for Client Component
-    const serializedLedger = serializeDecimal(ledger);
-    const serializedVendors = serializeDecimal(vendors);
-    const serializedCustomers = serializeDecimal(customers);
+    const serializedLedger = serializeDecimal(ledger || []);
+    const serializedVendors = serializeDecimal(vendors || []);
+    const serializedCustomers = serializeDecimal(customers || []);
 
     // Add calculated totals for display
-    const serializedPurchases = serializeDecimal(pendingPurchases).map((p: any) => ({
+    const serializedPurchases = serializeDecimal(pendingPurchases || []).map((p: any) => ({
         ...p,
-        total: p.items.reduce((sum: number, i: any) => sum + (i.quantity * i.purchasePrice), 0)
+        total: (p.items || []).reduce((sum: number, i: any) => sum + (Number(i.quantity || 0) * Number(i.purchasePrice || 0)), 0)
     }));
 
-    const serializedSales = serializeDecimal(pendingSales).map((s: any) => ({
+    const serializedSales = serializeDecimal(pendingSales || []).map((s: any) => ({
         ...s,
-        total: s.items.reduce((sum: number, i: any) => sum + (i.quantity * (Number(i.salesPrice) || 0)), 0)
+        total: (s.items || []).reduce((sum: number, i: any) => sum + (Number(i.quantity || 0) * (Number(i.salesPrice) || 0)), 0)
     }));
 
-    const serializedUnverifiedReceipts = serializeDecimal(unverifiedReceipts);
-    const serializedPendingReturns = serializeDecimal(pendingReturns);
-    const serializedPendingSalesReturns = serializeDecimal(pendingSalesReturns);
-    const serializedPendingPurchaseRequests = serializeDecimal(pendingPurchaseRequests);
-    const serializedTransactions = serializeDecimal(transactions);
+    const serializedUnverifiedReceipts = serializeDecimal(unverifiedReceipts || []);
+    const serializedPendingReturns = serializeDecimal(pendingReturns || []);
+    const serializedPendingSalesReturns = serializeDecimal(pendingSalesReturns || []);
+    const serializedPendingPurchaseRequests = serializeDecimal(pendingPurchaseRequests || []);
+    const serializedTransactions = serializeDecimal(transactions || []);
 
     return (
         <FinanceDashboard
