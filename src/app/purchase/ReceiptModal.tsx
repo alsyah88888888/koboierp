@@ -8,8 +8,9 @@ interface ReceiptItem {
     sku: string;
     quantity: number | string;
     purchasePrice: number | string;
-    discount: number | string; // Manual Nominal Discount per line
-    discountPercent?: number | string; // Percentage discount per line
+    discount: number | string; // Final Nominal Discount used for DB
+    discountPercent?: number | string; // Value entered if using PERCENT mode
+    discountType: 'NOMINAL' | 'PERCENT';
     uom: string;
     barcode: string;
 }
@@ -28,7 +29,7 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
     const [salesPerson, setSalesPerson] = useState(""); // BC or PF
 
     // Body States
-    const [items, setItems] = useState<ReceiptItem[]>([{ productId: "", sku: "", quantity: 1, purchasePrice: 0, discount: 0, discountPercent: "", uom: "", barcode: "" }]);
+    const [items, setItems] = useState<ReceiptItem[]>([{ productId: "", sku: "", quantity: 1, purchasePrice: 0, discount: 0, discountPercent: "", discountType: 'NOMINAL', uom: "", barcode: "" }]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [result, setResult] = useState<{ formNumber: string } | null>(null);
 
@@ -78,7 +79,7 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
         }
     }, [initialData]);
 
-    const addItem = () => setItems([...items, { productId: "", sku: "", quantity: 1, purchasePrice: 0, discount: 0, discountPercent: "", uom: "", barcode: "" }]);
+    const addItem = () => setItems([...items, { productId: "", sku: "", quantity: 1, purchasePrice: 0, discount: 0, discountPercent: "", discountType: 'NOMINAL', uom: "", barcode: "" }]);
     const removeItem = (index: number) => setItems(items.filter((_, i) => i !== index));
 
     const updateItem = (index: number, field: string, value: any) => {
@@ -86,38 +87,31 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
 
         // Handle number inputs to support decimals (comma or dot)
         if (field === 'quantity' || field === 'purchasePrice') {
-            // Replace comma with dot for standard float conversion internally, 
-            // but keep as string to allow user to finish typing
-            const normalizedValue = String(value).replace(',', '.');
-            // Keep only numbers and one dot
-            const filteredValue = normalizedValue.replace(/[^0-9.]/g, '');
-            // Prevent multiple dots
-            const finalValue = filteredValue.includes('.')
-                ? filteredValue.split('.').slice(0, 2).join('.')
-                : filteredValue;
-
-            // Re-convert back to comma for display if that's what user typed, or just keep finalValue
-            // Actually, best is to keep what user typed but filtered
             const userDisplayValue = String(value).replace(/[^0-9,.]/g, '');
             (newItems[index] as any)[field] = userDisplayValue;
 
-            if (newItems[index].discountPercent !== "" && newItems[index].discountPercent !== undefined) {
+            // Recalculate discount if using PERCENT type
+            if (newItems[index].discountType === 'PERCENT' && newItems[index].discountPercent !== "") {
                 const qty = Number(String(newItems[index].quantity).replace(',', '.')) || 0;
                 const price = Number(String(newItems[index].purchasePrice).replace(',', '.')) || 0;
-                const gross = qty * price;
-                newItems[index].discount = Math.round(gross * (Number(newItems[index].discountPercent) / 100));
+                const percent = Number(newItems[index].discountPercent) || 0;
+                newItems[index].discount = Math.round((qty * price) * (percent / 100));
             }
+        } else if (field === 'discountType') {
+            newItems[index].discountType = value;
+            // When switching, it's safer to reset or optionally convert. 
+            // User requested clear logic, so we reset the values to avoid confusion.
+            newItems[index].discount = 0;
+            newItems[index].discountPercent = "";
         } else if (field === 'discountPercent') {
             newItems[index].discountPercent = value;
-            const numVal = Number(value) || 0;
+            const percent = Number(value) || 0;
             const qty = Number(String(newItems[index].quantity).replace(',', '.')) || 0;
             const price = Number(String(newItems[index].purchasePrice).replace(',', '.')) || 0;
-            const gross = qty * price;
-            newItems[index].discount = Math.round(gross * (numVal / 100));
+            newItems[index].discount = Math.round((qty * price) * (percent / 100));
         } else if (field === 'discount') {
             const userDisplayValue = String(value).replace(/[^0-9,.]/g, '');
             newItems[index].discount = userDisplayValue;
-            newItems[index].discountPercent = "";
         } else {
             (newItems[index] as any)[field] = value;
         }
@@ -472,29 +466,45 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
                                         </div>
                                     </div>
                                     {showDiscount && (
-                                        <>
-                                            <div className="w-24 space-y-1 animate-in slide-in-from-right duration-300">
-                                                <label className="text-[10px] uppercase font-bold text-orange-500 ml-1">Diskon (%)</label>
-                                                <input
-                                                    type="number"
-                                                    step="0.01"
-                                                    value={item.discountPercent}
-                                                    onChange={e => updateItem(index, 'discountPercent', e.target.value)}
-                                                    className="w-full p-2 bg-orange-50 border-2 border-orange-200 rounded-lg text-sm font-black outline-none text-right text-orange-600 h-10 focus:border-orange-500 transition-all"
-                                                    placeholder="0"
-                                                />
+                                        <div className="flex items-end gap-1.5 animate-in slide-in-from-right duration-300">
+                                            <div className="w-32 space-y-1">
+                                                <div className="flex justify-between items-center ml-1">
+                                                    <label className="text-[10px] uppercase font-bold text-orange-500">
+                                                        Potongan {item.discountType === 'PERCENT' ? '(%)' : '(Rp)'}
+                                                    </label>
+                                                    <div className="flex bg-orange-100 rounded-md p-0.5 border border-orange-200">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => updateItem(index, 'discountType', 'NOMINAL')}
+                                                            className={`px-1.5 py-0.5 text-[8px] font-black rounded ${item.discountType === 'NOMINAL' ? 'bg-orange-500 text-white' : 'text-orange-500 hover:bg-orange-200'}`}
+                                                        >Rp</button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => updateItem(index, 'discountType', 'PERCENT')}
+                                                            className={`px-1.5 py-0.5 text-[8px] font-black rounded ${item.discountType === 'PERCENT' ? 'bg-orange-500 text-white' : 'text-orange-500 hover:bg-orange-200'}`}
+                                                        >%</button>
+                                                    </div>
+                                                </div>
+                                                {item.discountType === 'PERCENT' ? (
+                                                    <input
+                                                        type="number"
+                                                        step="0.01"
+                                                        value={item.discountPercent}
+                                                        onChange={e => updateItem(index, 'discountPercent', e.target.value)}
+                                                        className="w-full p-2 bg-orange-50 border-2 border-orange-200 rounded-lg text-sm font-black outline-none text-right text-orange-600 h-10 focus:border-orange-500 transition-all shadow-sm"
+                                                        placeholder="0"
+                                                    />
+                                                ) : (
+                                                    <input
+                                                        type="text"
+                                                        value={item.discount}
+                                                        onChange={e => updateItem(index, 'discount', e.target.value)}
+                                                        className="w-full p-2 bg-orange-50 border-2 border-orange-200 rounded-lg text-sm font-black outline-none text-right text-orange-600 h-10 focus:border-orange-500 transition-all shadow-sm"
+                                                        placeholder="0"
+                                                    />
+                                                )}
                                             </div>
-                                            <div className="w-32 space-y-1 animate-in slide-in-from-right duration-300">
-                                                <label className="text-[10px] uppercase font-bold text-orange-500 ml-1">Diskon (Rp)</label>
-                                                <input
-                                                    type="text"
-                                                    value={item.discount}
-                                                    onChange={e => updateItem(index, 'discount', e.target.value)}
-                                                    className="w-full p-2 bg-orange-50 border-2 border-orange-200 rounded-lg text-sm font-black outline-none text-right text-orange-600 h-10 focus:border-orange-500 transition-all"
-                                                    placeholder="0"
-                                                />
-                                            </div>
-                                        </>
+                                        </div>
                                     )}
                                     <div className="w-full lg:w-36 space-y-1">
                                         <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Net Total</label>
