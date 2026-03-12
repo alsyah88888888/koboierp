@@ -1896,92 +1896,137 @@ export async function deleteWarehouseAction(id: string) {
  * DASHBOARD & ANALYTICS: Summary Stats
  */
 export async function getDashboardSummaryAction() {
-    // 1. Total Revenue (Will be calculated in step 6 with more detail)
-    let totalRevenue = 0;
-
-    // 2. Asset Value (Inventory Value: Qty * Average Purchase Price or latest)
-    const stockItems = await prisma.stock.findMany({
-        include: {
-            product: {
-                include: {
-                    receiptItems: {
-                        orderBy: { receipt: { date: 'desc' } },
-                        take: 1
+    // 1. Calculations via Aggregations (Lighter & Faster)
+    const [
+        inventoryTotals,
+        cashBankAgg,
+        debtAgg,
+        receivableAgg,
+        revenueAgg,
+        purchaseAgg,
+        expenseAgg
+    ] = await Promise.all([
+        // Asset Value (Group stocks)
+        prisma.stock.findMany({
+            select: {
+                quantity: true,
+                product: {
+                    select: {
+                        lowStockThreshold: true,
+                        id: true,
+                        receiptItems: {
+                            select: { purchasePrice: true },
+                            orderBy: { receipt: { date: 'desc' } },
+                            take: 1
+                        }
                     }
                 }
             }
-        }
-    });
+        }),
+        // Cash & Bank (Codes 101, 102)
+        prisma.journalEntry.groupBy({
+            by: ['type'],
+            where: {
+                account: { OR: [{ code: { startsWith: '101' } }, { code: { startsWith: '102' } }] }
+            },
+            _sum: { amount: true }
+        }),
+        // Total Hutang (201)
+        prisma.journalEntry.groupBy({
+            by: ['type'],
+            where: { account: { code: '201' } },
+            _sum: { amount: true }
+        }),
+        // Total Piutang (105)
+        prisma.journalEntry.groupBy({
+            by: ['type'],
+            where: { account: { code: '105' } },
+            _sum: { amount: true }
+        }),
+        // Revenue (ALL SalesDelivery)
+        prisma.salesDelivery.aggregate({
+            _sum: { subtotal: true, totalDiscount: true }
+        }),
+        // Purchase Cost (Verified GoodsReceipt)
+        prisma.goodsReceipt.aggregate({
+            where: { isVerified: true },
+            _sum: { subtotal: true }
+        }),
+        // Operational Expenses (Code 6%) - Simplified grouping
+        prisma.financeTransaction.aggregate({
+            where: { 
+                journals: { some: { account: { code: { startsWith: '6' } } } }
+            },
+            _sum: { amount: true }
+        })
+    ]);
 
+    // 2. Process Aggregated Data
     let assetValue = 0;
     let totalStockQty = 0;
-
-    // Group stocks by product for low stock check
     const productStocks: Record<string, { qty: number, threshold: number }> = {};
 
-    stockItems.forEach(s => {
+    inventoryTotals.forEach(s => {
         const latestPrice = Number(s.product.receiptItems[0]?.purchasePrice || 0);
         assetValue += s.quantity * latestPrice;
         totalStockQty += s.quantity;
-
-        if (!productStocks[s.productId]) {
-            productStocks[s.productId] = { qty: 0, threshold: s.product.lowStockThreshold || 10 };
+        if (!productStocks[s.product.id]) {
+            productStocks[s.product.id] = { qty: 0, threshold: s.product.lowStockThreshold || 10 };
         }
-        productStocks[s.productId].qty += s.quantity;
+        productStocks[s.product.id].qty += s.quantity;
     });
 
     const lowStockCount = Object.values(productStocks).filter(p => p.qty < p.threshold).length;
 
-    // 3. Purchase Volume (Sum of Verified Goods Receipt quantity)
-    const rawVerified: any[] = await prisma.$queryRaw`SELECT id FROM GoodsReceipt WHERE isVerified = 1`;
-    const verifiedIds = rawVerified.map(r => r.id);
+    const getSum = (agg: any[], type: "DEBIT" | "CREDIT") => 
+        Number(agg.find(a => a.type === type)?._sum?.amount || 0);
 
-    let purchaseVol = 0;
-    if (verifiedIds.length > 0) {
-        const verifiedItems = await prisma.goodsReceiptItem.findMany({
-            where: { receiptId: { in: verifiedIds } }
-        });
-        verifiedItems.forEach(i => purchaseVol += i.quantity);
-    }
+    const cashBalance = getSum(cashBankAgg, "DEBIT") - getSum(cashBankAgg, "CREDIT");
+    const totalHutang = getSum(debtAgg, "CREDIT") - getSum(debtAgg, "DEBIT");
+    const totalPiutang = getSum(receivableAgg, "DEBIT") - getSum(receivableAgg, "CREDIT");
 
-    // 4. Finance Cash & Bank Balance (Sum of Cash/Bank accounts: codes starting with 101 or 102)
-    const bankEntries = await prisma.journalEntry.findMany({
-        where: {
-            account: {
-                OR: [
-                    { code: { startsWith: '101' } },
-                    { code: { startsWith: '102' } }
-                ]
-            }
-        }
-    });
-    let cashBalance = 0;
-    bankEntries.forEach(e => {
-        if (e.type === "DEBIT") cashBalance += Number(e.amount);
-        else cashBalance -= Number(e.amount);
-    });
+    const totalRevenue = Number(revenueAgg._sum.subtotal || 0) - Number(revenueAgg._sum.totalDiscount || 0);
+    const totalPurchaseCost = Number(purchaseAgg._sum.subtotal || 0);
+    const totalOperationalExpenses = Number(expenseAgg._sum.amount || 0);
 
-    // 5. Total Hutang (Account 201) & Total Piutang (Account 105)
-    const detailEntries = await prisma.journalEntry.findMany({
-        where: { account: { code: { in: ['201', '105'] } } },
-        include: { account: true }
+    // 3. Person-Based Logic (Still needs findMany but with select for performance)
+    const [deliveries, receipts, expenses] = await Promise.all([
+        prisma.salesDelivery.findMany({ select: { subtotal: true, totalDiscount: true, salesPerson: true } }),
+        prisma.goodsReceipt.findMany({ 
+            where: { isVerified: true },
+            select: { subtotal: true, salesPerson: true } 
+        }),
+        prisma.financeTransaction.findMany({
+            where: { journals: { some: { account: { code: { startsWith: '6' } } } } },
+            select: { amount: true, transactionType: true, salesPerson: true }
+        })
+    ]);
+
+    let revenueBC = 0, revenuePF = 0;
+    deliveries.forEach(d => {
+        const net = Number(d.subtotal || 0) - Number(d.totalDiscount || 0);
+        if (d.salesPerson === 'BC') revenueBC += net;
+        else if (d.salesPerson === 'PF') revenuePF += net;
     });
 
-    let totalHutang = 0;
-    let totalPiutang = 0;
-
-    detailEntries.forEach(e => {
-        const amt = Number(e.amount);
-        if (e.account.code === '201') {
-            if (e.type === "CREDIT") totalHutang += amt;
-            else totalHutang -= amt;
-        } else if (e.account.code === '105') {
-            if (e.type === "DEBIT") totalPiutang += amt;
-            else totalPiutang -= amt;
-        }
+    let purchaseBC = 0, purchasePF = 0;
+    receipts.forEach(r => {
+        const cost = Number(r.subtotal || 0);
+        if (r.salesPerson === 'BC') purchaseBC += cost;
+        else if (r.salesPerson === 'PF') purchasePF += cost;
     });
 
-    // 5.1 Active Orders Today (PRs + Sales today)
+    let expBC = 0, expPF = 0;
+    expenses.forEach(t => {
+        const amt = (t.transactionType === "PAYMENT") ? Number(t.amount) : -Number(t.amount);
+        if (t.salesPerson === 'BC') expBC += amt;
+        else if (t.salesPerson === 'PF') expPF += amt;
+    });
+
+    const nettMarginSales = (totalRevenue - totalPurchaseCost) - totalOperationalExpenses;
+    const nettMarginBC = (revenueBC - purchaseBC) - expBC;
+    const nettMarginPF = (revenuePF - purchasePF) - expPF;
+
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
     const activeOrdersToday = await prisma.purchaseRequest.count({
@@ -1990,73 +2035,16 @@ export async function getDashboardSummaryAction() {
         where: { createdAt: { gte: todayStart } }
     });
 
-    // 6. Nett Margin Sales calculation
-    // Calculate Revenue, Purchase Cost (Acquisition), and Expenses per Salesperson
-    let revenueBC = 0;
-    let revenuePF = 0;
-    let purchaseBC = 0;
-    let purchasePF = 0;
-    let expBC = 0;
-    let expPF = 0;
-
-    // A. Revenue from SalesDeliveries (ALL, including PENDING)
-    const allDeliveries: any[] = await prisma.$queryRawUnsafe(`SELECT "subtotal", "totalDiscount", "salesPerson" FROM "SalesDelivery"`);
-    allDeliveries.forEach((d: any) => {
-        const netRev = Number(d.subtotal || 0) - Number(d.totalDiscount || 0);
-        totalRevenue += netRev;
-        if (d.salesPerson === 'BC') revenueBC += netRev;
-        else if (d.salesPerson === 'PF') revenuePF += netRev;
-    });
-
-    // B. Purchase Cost from GoodsReceipts (To match SalesDashboard UI)
-    const allReceipts = await prisma.goodsReceipt.findMany({
-        where: { isVerified: true },
-        include: { items: true }
-    });
-
-    let totalPurchaseCost = 0;
-    allReceipts.forEach(r => {
-        const cost = r.items.reduce((sum, i) => sum + (i.quantity * Number(i.purchasePrice || 0)), 0);
-        totalPurchaseCost += cost;
-        if (r.salesPerson === 'BC') purchaseBC += cost;
-        else if (r.salesPerson === 'PF') purchasePF += cost;
-    });
-
-    // C. Operational Expenses (Account code starts with 6)
-    const allExpensesTransactions: any[] = await prisma.$queryRawUnsafe(`
-        SELECT t.*, a.code as "accountCode" FROM "FinanceTransaction" t
-        JOIN "JournalEntry" j ON t.id = j."transactionId"
-        JOIN "FinanceAccount" a ON j."accountId" = a.id
-        WHERE a.code LIKE '6%'
-        GROUP BY t.id
-    `);
-
-    let totalOperationalExpenses = 0;
-    allExpensesTransactions.forEach((t: any) => {
-        const amt = (t.transactionType === "PAYMENT") ? Number(t.amount) : -Number(t.amount);
-        totalOperationalExpenses += amt;
-        if (t.salesPerson === 'BC') expBC += amt;
-        else if (t.salesPerson === 'PF') expPF += amt;
-    });
-
-    // D. Final Calculations
-    // For Global Nett Margin, we use Revenue - Purchase Cost - All Expenses
-    const nettMarginSales = (totalRevenue - totalPurchaseCost) - totalOperationalExpenses;
-    const nettMarginBC = (revenueBC - purchaseBC) - expBC;
-    const nettMarginPF = (revenuePF - purchasePF) - expPF;
-
     return {
         totalRevenue: totalRevenue || 0,
         assetValue: assetValue || 0,
-        purchaseVol: purchaseVol || 0,
-        totalStockQty: totalStockQty || 0,
         cashBalance: cashBalance || 0,
         totalHutang: totalHutang || 0,
         totalPiutang: totalPiutang || 0,
         nettMarginSales: nettMarginSales || 0,
         nettMarginBC: nettMarginBC || 0,
         nettMarginPF: nettMarginPF || 0,
-        productCount: stockItems.length,
+        productCount: inventoryTotals.length,
         lowStockCount: lowStockCount,
         activeOrdersToday: activeOrdersToday,
         weeklyStats: await getWeeklyStats()
@@ -2072,14 +2060,14 @@ async function getWeeklyStats() {
         last7Days.push(d);
     }
 
-    const sales = (await (prisma.salesDelivery as any).findMany({
+    const sales = await prisma.salesDelivery.findMany({
         where: { date: { gte: last7Days[0] } },
         select: { date: true, grandTotal: true }
-    })) as any[];
+    });
 
     const purchases = await prisma.goodsReceipt.findMany({
         where: { date: { gte: last7Days[0] } },
-        include: { items: true }
+        select: { date: true, subtotal: true }
     });
 
     return last7Days.map(date => {
@@ -2092,9 +2080,7 @@ async function getWeeklyStats() {
 
         const dayPurchases = purchases
             .filter(p => p.date && p.date >= date && p.date < nextDay)
-            .reduce((sum: number, r) => {
-                return sum + r.items.reduce((iSum: number, item: any) => iSum + (item.quantity * Number(item.purchasePrice || 0)), 0);
-            }, 0);
+            .reduce((sum: number, r) => sum + Number(r.subtotal || 0), 0);
 
         return {
             name: date.toLocaleDateString('en-US', { weekday: 'short' }),
@@ -2921,21 +2907,23 @@ export async function getDailyReportAction() {
     tomorrow.setDate(today.getDate() + 1);
 
     const [sales, purchases, operational, requests] = await Promise.all([
-        // Sales INPUTTED today (using createdAt for Real Process Tracking)
+        // Sales INPUTTED today
         prisma.salesDelivery.findMany({
             where: { createdAt: { gte: today, lt: tomorrow } },
-            include: { 
-                items: { include: { product: true } },
+            select: {
+                id: true, deliveryNumber: true, buyerName: true, recipient: true, 
+                grandTotal: true, paymentStatus: true, createdAt: true, date: true,
                 createdBy: { select: { name: true } }
             },
             orderBy: { createdAt: 'desc' }
         }),
-        // Purchases INPUTTED today (using createdAt for Real Process Tracking)
+        // Purchases INPUTTED today
         prisma.goodsReceipt.findMany({
             where: { createdAt: { gte: today, lt: tomorrow } },
-            include: { 
-                items: { include: { product: true } },
-                warehouse: true,
+            select: {
+                id: true, receiptNumber: true, receivedFrom: true, grandTotal: true,
+                paymentStatus: true, createdAt: true, date: true,
+                warehouse: { select: { name: true } },
                 createdBy: { select: { name: true } }
             },
             orderBy: { createdAt: 'desc' }
@@ -2943,15 +2931,19 @@ export async function getDailyReportAction() {
         // Finance Transactions INPUTTED today
         prisma.financeTransaction.findMany({
             where: { createdAt: { gte: today, lt: tomorrow } },
-            include: { createdBy: { select: { name: true } } },
+            select: {
+                id: true, description: true, bank: true, category: true, 
+                amount: true, createdAt: true, date: true, transactionType: true,
+                createdBy: { select: { name: true } }
+            },
             orderBy: { createdAt: 'desc' }
         }),
         // Purchase Requests INPUTTED today
         prisma.purchaseRequest.findMany({
             where: { createdAt: { gte: today, lt: tomorrow } },
-            include: { 
-                requestedBy: { select: { name: true } },
-                items: true 
+            select: {
+                id: true, number: true, status: true, notes: true, createdAt: true,
+                requestedBy: { select: { name: true } }
             },
             orderBy: { createdAt: 'desc' }
         })
