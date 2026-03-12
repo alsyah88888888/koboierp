@@ -291,7 +291,7 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
                                 value={receiptNumber}
                                 onChange={e => setReceiptNumber(e.target.value)}
                                 className="w-full p-2.5 bg-white border-2 border-slate-300 rounded-lg focus:border-primary outline-none transition-all font-medium"
-                                placeholder="Otomatis (Format: KB-LPB-...)"
+                                placeholder="Otomatis (Format: KB-LPB/KB-LPBD-...)"
                             />
                             <p className="text-[10px] text-slate-400 italic mt-0.5">Kosongkan untuk penomoran otomatis</p>
                         </div>

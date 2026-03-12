@@ -188,7 +188,12 @@ export async function createGoodsReceiptAction(data: {
                 const month = String(txDate.getMonth() + 1).padStart(2, '0');
                 const year = txDate.getFullYear();
                 const fullDateStr = `${year}${month}${day}`;
-                const prefix = `KB-LPB-${fullDateStr}-`;
+                
+                // Determine prefix based on discounts
+                const hasItemDiscount = data.items.some(item => (Number(item.discount) || 0) > 0);
+                const hasTotalDiscount = (Number(data.totalDiscount) || 0) > 0;
+                const prefixLabel = (hasItemDiscount || hasTotalDiscount) ? "KB-LPBD" : "KB-LPB";
+                const prefix = `${prefixLabel}-${fullDateStr}-`;
 
                 const latest = await tx.goodsReceipt.findFirst({
                     where: { receiptNumber: { startsWith: prefix } },
@@ -198,7 +203,13 @@ export async function createGoodsReceiptAction(data: {
                 let nextNum = 1;
                 if (latest) {
                     const parts = latest.receiptNumber.split('-');
-                    const lastSeq = parseInt(parts[parts.length - 1]);
+                    // Handle "-P" suffix added for tax invoice receipts (e.g. KB-LPB-20260311-001-P)
+                    // The last part could be "P", so we look backwards for a numeric part
+                    let seqPart = parts[parts.length - 1];
+                    if (seqPart === 'P' && parts.length > 1) {
+                        seqPart = parts[parts.length - 2];
+                    }
+                    const lastSeq = parseInt(seqPart);
                     if (!isNaN(lastSeq)) nextNum = lastSeq + 1;
                 }
                 finalReceiptNumber = `${prefix}${String(nextNum).padStart(3, '0')}`;
@@ -251,7 +262,7 @@ export async function createGoodsReceiptAction(data: {
                     items: {
                         create: data.items.map(item => ({
                             productId: item.productId,
-                            quantity: item.quantity,
+                            quantity: Math.round(item.quantity),
                             purchasePrice: item.purchasePrice as any,
                             discount: item.discount as any,
                             uom: item.uom
@@ -263,6 +274,7 @@ export async function createGoodsReceiptAction(data: {
 
             // --- AUTOMATIC STOCK UPDATE ON CREATE ---
             for (const item of data.items) {
+                const roundedQty = Math.round(item.quantity);
                 await tx.stock.upsert({
                     where: {
                         productId_warehouseId_vendorName: {
@@ -271,12 +283,12 @@ export async function createGoodsReceiptAction(data: {
                             vendorName: data.receivedFrom
                         }
                     },
-                    update: { quantity: { increment: item.quantity } },
+                    update: { quantity: { increment: roundedQty } },
                     create: {
                         productId: item.productId,
                         warehouseId: data.warehouseId,
                         vendorName: data.receivedFrom,
-                        quantity: item.quantity
+                        quantity: roundedQty
                     }
                 });
 
@@ -285,9 +297,9 @@ export async function createGoodsReceiptAction(data: {
                         productId: item.productId,
                         warehouseId: data.warehouseId,
                         vendorName: data.receivedFrom,
-                        quantity: item.quantity,
+                        quantity: roundedQty,
                         type: "GOODS_RECEIPT",
-                        reference: data.receiptNumber
+                        reference: finalReceiptNumber
                     }
                 });
             }
@@ -394,7 +406,7 @@ export async function updateGoodsReceiptAction(id: string, data: {
                     data: data.items.map(item => ({
                         receiptId: id,
                         productId: item.productId,
-                        quantity: item.quantity,
+                        quantity: Math.round(item.quantity),
                         purchasePrice: item.purchasePrice as any,
                         discount: item.discount as any,
                         uom: item.uom
@@ -409,6 +421,7 @@ export async function updateGoodsReceiptAction(id: string, data: {
 
             // --- APPLY NEW STOCK ---
             for (const item of data.items) {
+                const roundedQty = Math.round(item.quantity);
                 await tx.stock.upsert({
                     where: {
                         productId_warehouseId_vendorName: {
@@ -417,12 +430,12 @@ export async function updateGoodsReceiptAction(id: string, data: {
                             vendorName: data.receivedFrom
                         }
                     },
-                    update: { quantity: { increment: item.quantity } },
+                    update: { quantity: { increment: roundedQty } },
                     create: {
                         productId: item.productId,
                         warehouseId: data.warehouseId,
                         vendorName: data.receivedFrom,
-                        quantity: item.quantity
+                        quantity: roundedQty
                     }
                 });
 
@@ -431,9 +444,9 @@ export async function updateGoodsReceiptAction(id: string, data: {
                         productId: item.productId,
                         warehouseId: data.warehouseId,
                         vendorName: data.receivedFrom,
-                        quantity: item.quantity,
+                        quantity: roundedQty,
                         type: "GOODS_RECEIPT_UPDATE",
-                        reference: data.receiptNumber
+                        reference: data.receiptNumber || existing?.receiptNumber
                     }
                 });
             }
