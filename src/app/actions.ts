@@ -2951,9 +2951,9 @@ export async function getDailyReportAction() {
 
     // Calculate Summary Totals
     const dailyStats = {
-        totalSales: sales.reduce((acc, s) => acc + Number(s.grandTotal), 0),
-        totalPurchases: purchases.reduce((acc, p) => acc + Number(p.grandTotal), 0),
-        totalOps: operational.reduce((acc, o) => acc + Number(o.amount), 0),
+        totalSales: sales.reduce((acc, s) => acc + Number(s.grandTotal || 0), 0),
+        totalPurchases: purchases.reduce((acc, p) => acc + Number(p.grandTotal || 0), 0),
+        totalOps: operational.reduce((acc, o) => acc + Number(o.amount || 0), 0),
         countSales: sales.length,
         countPurchases: purchases.length,
         countOps: operational.length,

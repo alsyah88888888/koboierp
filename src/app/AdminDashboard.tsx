@@ -170,7 +170,7 @@ export function AdminDashboard({ role, stats, salesData, inventoryData, recentAc
                                 <div className="p-2 bg-blue-100 text-blue-600 rounded-xl">
                                     <ShoppingBag className="h-5 w-5" />
                                 </div>
-                                <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Penjualan (Input Hoy)</span>
+                                <span className="text-[10px] font-black uppercase tracking-widest">Input Hari Ini</span>
                             </div>
                             <div className="space-y-1">
                                 <h4 className="text-2xl font-black text-slate-900 leading-none">{formatCurrency(dailyStats.totalSales || 0)}</h4>
@@ -189,7 +189,7 @@ export function AdminDashboard({ role, stats, salesData, inventoryData, recentAc
                                 <div className="p-2 bg-emerald-100 text-emerald-600 rounded-xl">
                                     <ShoppingCart className="h-5 w-5" />
                                 </div>
-                                <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Pembelian (Input Hoy)</span>
+                                <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Pembelian (Input Hari Ini)</span>
                             </div>
                             <div className="space-y-1">
                                 <h4 className="text-2xl font-black text-slate-900 leading-none">{formatCurrency(dailyStats.totalPurchases || 0)}</h4>
@@ -208,7 +208,7 @@ export function AdminDashboard({ role, stats, salesData, inventoryData, recentAc
                                 <div className="p-2 bg-amber-100 text-amber-600 rounded-xl">
                                     <Activity className="h-5 w-5" />
                                 </div>
-                                <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest">Ops & Finance (Input Hoy)</span>
+                                <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest">Ops & Finance (Input Hari Ini)</span>
                             </div>
                             <div className="space-y-1">
                                 <h4 className="text-2xl font-black text-slate-900 leading-none">{formatCurrency(dailyStats.totalOps || 0)}</h4>
@@ -227,7 +227,7 @@ export function AdminDashboard({ role, stats, salesData, inventoryData, recentAc
                                 <div className="p-2 bg-purple-100 text-purple-600 rounded-xl">
                                     <Package className="h-5 w-5" />
                                 </div>
-                                <span className="text-[10px] font-black text-purple-600 uppercase tracking-widest">Permintaan (Input Hoy)</span>
+                                <span className="text-[10px] font-black text-purple-600 uppercase tracking-widest">Permintaan (Input Hari Ini)</span>
                             </div>
                             <div className="space-y-1">
                                 <h4 className="text-2xl font-black text-slate-900 leading-none">{dailyStats.countRequests || 0} PR</h4>
@@ -281,8 +281,8 @@ export function AdminDashboard({ role, stats, salesData, inventoryData, recentAc
                                             </span>
                                         </div>
                                         <p className="text-[10px] font-bold text-slate-500">
-                                            {act.activityType === 'SALE' ? `Penjualan ke ${act.buyerName}` :
-                                             act.activityType === 'PURCHASE' ? `Penerimaan dari ${act.receivedFrom}` :
+                                            {act.activityType === 'SALE' ? `Penjualan ke ${act.buyerName || '-'}` :
+                                             act.activityType === 'PURCHASE' ? `Penerimaan dari ${act.receivedFrom || '-'}` :
                                              act.activityType === 'REQUEST' ? `Permintaan: ${act.notes || 'Tanpa Catatan'}` :
                                              `Transaksi ${act.category || 'Lain-lain'}`}
                                         </p>
