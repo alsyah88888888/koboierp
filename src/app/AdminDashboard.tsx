@@ -24,8 +24,13 @@ import {
     ShoppingBag,
     Wallet,
     ArrowUpRight,
-    ArrowDownRight
+    ArrowDownRight,
+    Download,
+    Calendar,
+    Activity,
+    FileSpreadsheet
 } from "lucide-react";
+import * as XLSX from 'xlsx';
 import { formatCurrency, cn } from "@/lib/utils";
 import { RoleGuideline } from "@/components/RoleGuideline";
 
@@ -39,7 +44,67 @@ const IconMap: any = {
     TrendingUp
 };
 
-export function AdminDashboard({ role, stats, salesData, inventoryData, recentActivity, lowStockCount, activeOrdersToday }: any) {
+export function AdminDashboard({ role, stats, salesData, inventoryData, recentActivity, lowStockCount, activeOrdersToday, dailyReport }: any) {
+    const { sales = [], purchases = [], operational = [], requests = [], dailyStats = {} } = dailyReport || {};
+
+    const handleExportExcel = () => {
+        const wb = XLSX.utils.book_new();
+
+        // 1. Sales Tab
+        const salesRows = sales.map((s: any) => ({
+            "No. Transaksi": s.deliveryNumber,
+            "Buyer": s.buyerName,
+            "Penerima": s.recipient,
+            "Total": Number(s.grandTotal),
+            "Status": s.paymentStatus,
+            "Waktu Input": new Date(s.createdAt).toLocaleString('id-ID'),
+            "Operator": s.createdBy?.name || "System",
+            "Tgl Transaksi": new Date(s.date).toLocaleDateString('id-ID')
+        }));
+        const wsSales = XLSX.utils.json_to_sheet(salesRows);
+        XLSX.utils.book_append_sheet(wb, wsSales, "Penjualan");
+
+        // 2. Purchases Tab
+        const purchRows = purchases.map((p: any) => ({
+            "No. Terima": p.receiptNumber,
+            "Supplier": p.receivedFrom,
+            "Gudang": p.warehouse?.name || "-",
+            "Total": Number(p.grandTotal),
+            "Status": p.paymentStatus,
+            "Waktu Input": new Date(p.createdAt).toLocaleString('id-ID'),
+            "Operator": p.createdBy?.name || "System",
+            "Tgl Transaksi": p.date ? new Date(p.date).toLocaleDateString('id-ID') : "-"
+        }));
+        const wsPurch = XLSX.utils.json_to_sheet(purchRows);
+        XLSX.utils.book_append_sheet(wb, wsPurch, "Pembelian");
+
+        // 3. Operational Tab
+        const opsRows = operational.map((o: any) => ({
+            "Keterangan": o.description,
+            "Bank/Metode": o.bank,
+            "Kategori": o.category || "-",
+            "Total": Number(o.amount),
+            "Waktu Input": new Date(o.createdAt).toLocaleString('id-ID'),
+            "Operator": o.createdBy?.name || "System",
+            "Tgl Transaksi": new Date(o.date).toLocaleDateString('id-ID')
+        }));
+        const wsOps = XLSX.utils.json_to_sheet(opsRows);
+        XLSX.utils.book_append_sheet(wb, wsOps, "Operasional");
+
+        // 4. Purchase Requests Tab
+        const reqRows = requests.map((r: any) => ({
+            "No. PR": r.number,
+            "Pemohon": r.requestedBy?.name || "-",
+            "Status": r.status,
+            "Catatan": r.notes || "-",
+            "Waktu Input": new Date(r.createdAt).toLocaleString('id-ID')
+        }));
+        const wsReq = XLSX.utils.json_to_sheet(reqRows);
+        XLSX.utils.book_append_sheet(wb, wsReq, "Permintaan Barang");
+
+        // Save
+        XLSX.writeFile(wb, `Laporan_Kerja_Harian_${new Date().toISOString().split('T')[0]}.xlsx`);
+    };
     const financialStats = stats.filter((s: any) => ['Total Revenue', 'Nett Margin Sales', 'Cash/Bank Balance'].includes(s.name));
     const performanceStats = stats.filter((s: any) => ['Margin BC', 'Margin PF'].includes(s.name));
     const liabilityStats = stats.filter((s: any) => ['Total Hutang (Pending)', 'Total Piutang (Pending)'].includes(s.name));
@@ -74,6 +139,178 @@ export function AdminDashboard({ role, stats, salesData, inventoryData, recentAc
         <div className="space-y-6 md:space-y-10 pb-12 animate-in fade-in duration-700">
             {/* Role-Specific SOP Guideline */}
             <RoleGuideline role={role} />
+
+            {/* Today's High-Level Activity */}
+            <div className="space-y-4">
+                <div className="flex items-center justify-between px-2">
+                    <div className="flex items-center gap-2">
+                        <div className="h-4 w-1.5 bg-primary rounded-full" />
+                        <div>
+                            <h2 className="text-sm font-black text-slate-900 uppercase tracking-[0.2em]">Live Today</h2>
+                            <p className="text-[10px] font-bold text-slate-400 capitalize">Realisasi transaksi hari ini</p>
+                        </div>
+                    </div>
+                    <button 
+                        onClick={handleExportExcel}
+                        className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2.5 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-200 active:scale-95"
+                    >
+                        <FileSpreadsheet className="h-4 w-4" />
+                        Download Report
+                    </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {/* Today's Sales */}
+                    <div className="bg-white border-2 border-blue-100 rounded-[2rem] p-6 shadow-sm relative overflow-hidden group hover:border-blue-500 transition-all">
+                        <div className="absolute right-0 top-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                            <ShoppingBag className="h-20 w-20 text-blue-600" />
+                        </div>
+                        <div className="relative z-10">
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="p-2 bg-blue-100 text-blue-600 rounded-xl">
+                                    <ShoppingBag className="h-5 w-5" />
+                                </div>
+                                <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Penjualan (Input Hoy)</span>
+                            </div>
+                            <div className="space-y-1">
+                                <h4 className="text-2xl font-black text-slate-900 leading-none">{formatCurrency(dailyStats.totalSales || 0)}</h4>
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{dailyStats.countSales || 0} Data Terproses</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Today's Purchases */}
+                    <div className="bg-white border-2 border-emerald-100 rounded-[2rem] p-6 shadow-sm relative overflow-hidden group hover:border-emerald-500 transition-all">
+                        <div className="absolute right-0 top-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                            <ShoppingCart className="h-20 w-20 text-emerald-600" />
+                        </div>
+                        <div className="relative z-10">
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="p-2 bg-emerald-100 text-emerald-600 rounded-xl">
+                                    <ShoppingCart className="h-5 w-5" />
+                                </div>
+                                <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Pembelian (Input Hoy)</span>
+                            </div>
+                            <div className="space-y-1">
+                                <h4 className="text-2xl font-black text-slate-900 leading-none">{formatCurrency(dailyStats.totalPurchases || 0)}</h4>
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{dailyStats.countPurchases || 0} Nota Masuk</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Today's Ops */}
+                    <div className="bg-white border-2 border-amber-100 rounded-[2rem] p-6 shadow-sm relative overflow-hidden group hover:border-amber-500 transition-all">
+                        <div className="absolute right-0 top-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                            <Wallet className="h-20 w-20 text-amber-600" />
+                        </div>
+                        <div className="relative z-10">
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="p-2 bg-amber-100 text-amber-600 rounded-xl">
+                                    <Activity className="h-5 w-5" />
+                                </div>
+                                <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest">Ops & Finance (Input Hoy)</span>
+                            </div>
+                            <div className="space-y-1">
+                                <h4 className="text-2xl font-black text-slate-900 leading-none">{formatCurrency(dailyStats.totalOps || 0)}</h4>
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{dailyStats.countOps || 0} Transaksi Kas</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Today's PR */}
+                    <div className="bg-white border-2 border-purple-100 rounded-[2rem] p-6 shadow-sm relative overflow-hidden group hover:border-purple-500 transition-all">
+                        <div className="absolute right-0 top-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                            <Package className="h-20 w-20 text-purple-600" />
+                        </div>
+                        <div className="relative z-10">
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="p-2 bg-purple-100 text-purple-600 rounded-xl">
+                                    <Package className="h-5 w-5" />
+                                </div>
+                                <span className="text-[10px] font-black text-purple-600 uppercase tracking-widest">Permintaan (Input Hoy)</span>
+                            </div>
+                            <div className="space-y-1">
+                                <h4 className="text-2xl font-black text-slate-900 leading-none">{dailyStats.countRequests || 0} PR</h4>
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pengajuan Barang Baru</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Live Input Diary (Activity Stream) */}
+                <div className="bg-slate-50 border-2 border-slate-100 rounded-[2.5rem] p-8">
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="p-2 bg-white rounded-xl shadow-sm">
+                            <Activity className="h-5 w-5 text-slate-600" />
+                        </div>
+                        <div>
+                            <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">Live Input Diary</h3>
+                            <p className="text-[10px] font-bold text-slate-400 capitalize">Arus aktivitas penginputan data hari ini</p>
+                        </div>
+                    </div>
+
+                    <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                        {[
+                            ...sales.map((s: any) => ({ ...s, activityType: 'SALE' })),
+                            ...purchases.map((p: any) => ({ ...p, activityType: 'PURCHASE' })),
+                            ...operational.map((o: any) => ({ ...o, activityType: 'FINANCE' })),
+                            ...requests.map((r: any) => ({ ...r, activityType: 'REQUEST' }))
+                        ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                        .map((act: any, idx: number) => (
+                            <div key={idx} className="bg-white p-4 rounded-2xl flex items-center justify-between group hover:shadow-md transition-all border border-transparent hover:border-slate-200">
+                                <div className="flex items-center gap-4">
+                                    <div className={`p-2.5 rounded-xl ${
+                                        act.activityType === 'SALE' ? 'bg-blue-50 text-blue-600' :
+                                        act.activityType === 'PURCHASE' ? 'bg-emerald-50 text-emerald-600' :
+                                        act.activityType === 'FINANCE' ? 'bg-amber-50 text-amber-600' :
+                                        'bg-purple-50 text-purple-600'
+                                    }`}>
+                                        {act.activityType === 'SALE' && <ShoppingBag className="h-4 w-4" />}
+                                        {act.activityType === 'PURCHASE' && <ShoppingCart className="h-4 w-4" />}
+                                        {act.activityType === 'FINANCE' && <Wallet className="h-4 w-4" />}
+                                        {act.activityType === 'REQUEST' && <Package className="h-4 w-4" />}
+                                    </div>
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[11px] font-black text-slate-900">
+                                                {act.deliveryNumber || act.receiptNumber || act.number || act.description}
+                                            </span>
+                                            <span className="text-[9px] font-bold text-slate-300">•</span>
+                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">
+                                                {new Date(act.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                                            </span>
+                                        </div>
+                                        <p className="text-[10px] font-bold text-slate-500">
+                                            {act.activityType === 'SALE' ? `Penjualan ke ${act.buyerName}` :
+                                             act.activityType === 'PURCHASE' ? `Penerimaan dari ${act.receivedFrom}` :
+                                             act.activityType === 'REQUEST' ? `Permintaan: ${act.notes || 'Tanpa Catatan'}` :
+                                             `Transaksi ${act.category || 'Lain-lain'}`}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <div className="text-[10px] font-black text-slate-900 uppercase">
+                                        {act.createdBy?.name || act.requestedBy?.name || "System"}
+                                    </div>
+                                    <div className={`text-[9px] font-black uppercase tracking-widest ${
+                                        act.activityType === 'SALE' ? 'text-blue-500' :
+                                        act.activityType === 'PURCHASE' ? 'text-emerald-500' :
+                                        act.activityType === 'FINANCE' ? 'text-amber-500' :
+                                        'text-purple-500'
+                                    }`}>
+                                        {act.activityType}
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                        {sales.length + purchases.length + operational.length + requests.length === 0 && (
+                            <div className="text-center py-10">
+                                <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Belum ada aktivitas input hari ini</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
 
             {/* Financial Health Section */}
             <div className="space-y-4">

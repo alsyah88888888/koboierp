@@ -244,6 +244,7 @@ export async function createGoodsReceiptAction(data: {
             const roundedTaxAmount = Math.round(data.taxAmount || 0);
             const roundedGrandTotal = Math.round(data.grandTotal || 0);
 
+            const session = await getServerSession(authOptions) as any;
             const receipt = await tx.goodsReceipt.create({
                 data: {
                     receiptNumber: finalReceiptNumber,
@@ -259,6 +260,7 @@ export async function createGoodsReceiptAction(data: {
                     taxRate: data.taxRate || 0,
                     taxAmount: roundedTaxAmount,
                     grandTotal: roundedGrandTotal,
+                    createdById: session?.user?.id,
                     items: {
                         create: data.items.map(item => ({
                             productId: item.productId,
@@ -602,6 +604,7 @@ export async function createSalesDeliveryAction(data: {
         }
         const deliveryNumber = `${prefix}${String(nextNum).padStart(3, '0')}`;
 
+        const session = await getServerSession(authOptions) as any;
         // 1. Create Sales Delivery record (Only known fields)
         const delivery = await tx.salesDelivery.create({
             data: {
@@ -611,6 +614,7 @@ export async function createSalesDeliveryAction(data: {
                 warehouseId: data.warehouseId,
                 salesPerson: data.salesPerson,
                 createdAt: txDate,
+                createdById: session?.user?.id,
                 items: {
                     create: data.items.map(item => ({
                         productId: item.productId,
@@ -1136,6 +1140,7 @@ export async function createFinanceTransactionAction(data: {
             txDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds());
         }
 
+        const session = await getServerSession(authOptions) as any;
         const transaction = await tx.financeTransaction.create({
             data: {
                 transactionType: data.transactionType,
@@ -1144,6 +1149,7 @@ export async function createFinanceTransactionAction(data: {
                 referenceNumber: data.referenceNumber,
                 description: data.description,
                 amount: data.amount as any,
+                createdById: session?.user?.id
             }
         });
 
@@ -1993,15 +1999,13 @@ export async function getDashboardSummaryAction() {
     let expBC = 0;
     let expPF = 0;
 
-    // A. Revenue from SalesDeliveries
-    const allDeliveries: any[] = await prisma.$queryRawUnsafe(`SELECT "subtotal", "totalDiscount", "salesPerson", "paymentStatus" FROM "SalesDelivery"`);
+    // A. Revenue from SalesDeliveries (ALL, including PENDING)
+    const allDeliveries: any[] = await prisma.$queryRawUnsafe(`SELECT "subtotal", "totalDiscount", "salesPerson" FROM "SalesDelivery"`);
     allDeliveries.forEach((d: any) => {
-        if (d.paymentStatus === 'PAID') {
-            const netRev = Number(d.subtotal || 0) - Number(d.totalDiscount || 0);
-            totalRevenue += netRev;
-            if (d.salesPerson === 'BC') revenueBC += netRev;
-            else if (d.salesPerson === 'PF') revenuePF += netRev;
-        }
+        const netRev = Number(d.subtotal || 0) - Number(d.totalDiscount || 0);
+        totalRevenue += netRev;
+        if (d.salesPerson === 'BC') revenueBC += netRev;
+        else if (d.salesPerson === 'PF') revenuePF += netRev;
     });
 
     // B. Purchase Cost from GoodsReceipts (To match SalesDashboard UI)
@@ -2069,12 +2073,12 @@ async function getWeeklyStats() {
     }
 
     const sales = (await (prisma.salesDelivery as any).findMany({
-        where: { createdAt: { gte: last7Days[0] } },
-        select: { createdAt: true, grandTotal: true }
+        where: { date: { gte: last7Days[0] } },
+        select: { date: true, grandTotal: true }
     })) as any[];
 
     const purchases = await prisma.goodsReceipt.findMany({
-        where: { createdAt: { gte: last7Days[0] } },
+        where: { date: { gte: last7Days[0] } },
         include: { items: true }
     });
 
@@ -2083,11 +2087,11 @@ async function getWeeklyStats() {
         nextDay.setDate(nextDay.getDate() + 1);
 
         const daySales = sales
-            .filter((s: any) => s.createdAt >= date && s.createdAt < nextDay)
+            .filter((s: any) => s.date >= date && s.date < nextDay)
             .reduce((sum: number, s: any) => sum + Number(s.grandTotal || 0), 0);
 
         const dayPurchases = purchases
-            .filter(p => p.createdAt >= date && p.createdAt < nextDay)
+            .filter(p => p.date && p.date >= date && p.date < nextDay)
             .reduce((sum: number, r) => {
                 return sum + r.items.reduce((iSum: number, item: any) => iSum + (item.quantity * Number(item.purchasePrice || 0)), 0);
             }, 0);
@@ -2903,6 +2907,72 @@ export async function markNotificationAsReadAction(notificationId: string) {
         }
     });
 
-    revalidatePath("/");
+revalidatePath("/");
     return { success: true };
+}
+
+/**
+ * DASHBOARD: Get Daily Report Data (Sales, Purchase, Ops)
+ */
+export async function getDailyReportAction() {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+
+    const [sales, purchases, operational, requests] = await Promise.all([
+        // Sales INPUTTED today (using createdAt for Real Process Tracking)
+        prisma.salesDelivery.findMany({
+            where: { createdAt: { gte: today, lt: tomorrow } },
+            include: { 
+                items: { include: { product: true } },
+                createdBy: { select: { name: true } }
+            },
+            orderBy: { createdAt: 'desc' }
+        }),
+        // Purchases INPUTTED today (using createdAt for Real Process Tracking)
+        prisma.goodsReceipt.findMany({
+            where: { createdAt: { gte: today, lt: tomorrow } },
+            include: { 
+                items: { include: { product: true } },
+                warehouse: true,
+                createdBy: { select: { name: true } }
+            },
+            orderBy: { createdAt: 'desc' }
+        }),
+        // Finance Transactions INPUTTED today
+        prisma.financeTransaction.findMany({
+            where: { createdAt: { gte: today, lt: tomorrow } },
+            include: { createdBy: { select: { name: true } } },
+            orderBy: { createdAt: 'desc' }
+        }),
+        // Purchase Requests INPUTTED today
+        prisma.purchaseRequest.findMany({
+            where: { createdAt: { gte: today, lt: tomorrow } },
+            include: { 
+                requestedBy: { select: { name: true } },
+                items: true 
+            },
+            orderBy: { createdAt: 'desc' }
+        })
+    ]);
+
+    // Calculate Summary Totals
+    const dailyStats = {
+        totalSales: sales.reduce((acc, s) => acc + Number(s.grandTotal), 0),
+        totalPurchases: purchases.reduce((acc, p) => acc + Number(p.grandTotal), 0),
+        totalOps: operational.reduce((acc, o) => acc + Number(o.amount), 0),
+        countSales: sales.length,
+        countPurchases: purchases.length,
+        countOps: operational.length,
+        countRequests: requests.length
+    };
+
+    return {
+        sales: JSON.parse(JSON.stringify(sales)),
+        purchases: JSON.parse(JSON.stringify(purchases)),
+        operational: JSON.parse(JSON.stringify(operational)),
+        requests: JSON.parse(JSON.stringify(requests)),
+        dailyStats
+    };
 }

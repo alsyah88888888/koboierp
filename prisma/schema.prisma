@@ -25,6 +25,12 @@ model User {
   approvedRequests PurchaseRequest[]  @relation("ApprovedBy")
   verifiedRequests PurchaseRequest[]  @relation("VerifiedBy")
   notifications Notification[] @relation("NotificationAuthor")
+
+  // Live Tracking
+  goodsReceipts    GoodsReceipt[]     @relation("GRCreatedBy")
+  salesDeliveries  SalesDelivery[]    @relation("SDCreatedBy")
+  financeTrans     FinanceTransaction[] @relation("FTCreatedBy")
+
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
@@ -90,6 +96,9 @@ model FinanceTransaction {
   journals        JournalEntry[]
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+
+  createdById     String?
+  createdBy       User?    @relation("FTCreatedBy", fields: [createdById], references: [id])
 }
 
 // --- PARTNER MODULE (Suppliers & Buyers) ---
@@ -212,6 +221,9 @@ model GoodsReceipt {
 
   createdAt       DateTime @default(now())
   returns           PurchaseReturn[]
+
+  createdById     String?
+  createdBy       User?    @relation("GRCreatedBy", fields: [createdById], references: [id])
 }
 
 model GoodsReceiptItem {
@@ -292,6 +304,9 @@ model SalesDelivery {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   returns        SalesReturn[]
+
+  createdById     String?
+  createdBy       User?    @relation("SDCreatedBy", fields: [createdById], references: [id])
 }
 
 model SalesDeliveryItem {

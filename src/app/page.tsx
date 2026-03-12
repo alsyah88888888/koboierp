@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 import prisma from "@/lib/prisma";
-import { getDashboardSummaryAction } from "@/app/actions";
+import { getDashboardSummaryAction, getDailyReportAction } from "@/app/actions";
 import { formatCurrency } from "@/lib/utils";
 import { AdminDashboard } from "./AdminDashboard";
 import {
@@ -21,6 +21,7 @@ export default async function DashboardPage() {
 
   // 2. Fetch Data via Server Action
   const summary = await getDashboardSummaryAction();
+  const dailyReport = await getDailyReportAction();
   const products = await prisma.product.findMany({ include: { stocks: true } }).catch(() => []);
 
   const stats = [
@@ -108,6 +109,7 @@ export default async function DashboardPage() {
     salesData={salesData}
     inventoryData={inventoryData}
     recentActivity={recentActivity}
+    dailyReport={dailyReport}
     lowStockCount={summary.lowStockCount || 0}
     activeOrdersToday={summary.activeOrdersToday || 0}
   />;
