@@ -254,11 +254,11 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
                                                     }}
                                                     className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
                                                     title="Edit Data"
-                                                    disabled={r.isVerified && !isAdmin && userRole !== "PURCHASE"}
+                                                    disabled={r.isVerified && !isAdmin && userRole !== "PURCHASE" && userRole !== "SALES"}
                                                 >
                                                     <Edit2 className="h-4 w-4" />
                                                 </button>
-                                                {(isAdmin || userRole === "PURCHASE") && (
+                                                {(isAdmin || userRole === "PURCHASE" || userRole === "SALES") && (
                                                     <button
                                                         onClick={() => handleDelete(r.id)}
                                                         className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
