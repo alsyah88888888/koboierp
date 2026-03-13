@@ -41,6 +41,20 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
 
 
     useEffect(() => {
+        // Dynamic Prefix Logic for Receipt Number
+        if (receiptNumber) {
+            const isLPB = receiptNumber.startsWith("KB-LPB-");
+            const isLPBD = receiptNumber.startsWith("KB-LPBD-");
+            
+            if (showDiscount && isLPB) {
+                setReceiptNumber(receiptNumber.replace("KB-LPB-", "KB-LPBD-"));
+            } else if (!showDiscount && isLPBD) {
+                setReceiptNumber(receiptNumber.replace("KB-LPBD-", "KB-LPB-"));
+            }
+        }
+    }, [showDiscount]);
+
+    useEffect(() => {
         if (initialData) {
             setReceiptNumber(initialData.receiptNumber || "");
             setReceivedFrom(initialData.receivedFrom || "");
@@ -287,9 +301,11 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
                                 value={receiptNumber}
                                 onChange={e => setReceiptNumber(e.target.value)}
                                 className="w-full p-2.5 bg-white border-2 border-slate-300 rounded-lg focus:border-primary outline-none transition-all font-medium"
-                                placeholder="Otomatis (Format: KB-LPB/KB-LPBD-...)"
+                                placeholder={`Otomatis (${showDiscount ? "KB-LPBD" : "KB-LPB"}-...)`}
                             />
-                            <p className="text-[10px] text-slate-400 italic mt-0.5">Kosongkan untuk penomoran otomatis</p>
+                            <p className="text-[10px] text-slate-400 italic mt-0.5">
+                                Format: <span className="font-bold text-primary">{showDiscount ? "KB-LPBD" : "KB-LPB"} (Diskon Aktif)</span>
+                            </p>
                         </div>
                         <div className="space-y-2">
                             <label className="text-xs font-bold uppercase text-slate-600">Tanggal Penerimaan</label>

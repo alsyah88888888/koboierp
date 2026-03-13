@@ -192,7 +192,10 @@ export async function createGoodsReceiptAction(data: {
                 // Determine prefix based on discounts
                 const hasItemDiscount = data.items.some(item => (Number(item.discount) || 0) > 0);
                 const hasTotalDiscount = (Number(data.totalDiscount) || 0) > 0;
-                const prefixLabel = (hasItemDiscount || hasTotalDiscount) ? "KB-LPBD" : "KB-LPB";
+                
+                // If user manually set a number with KB-LPBD but values are 0, we still respect the prefix if it was passed
+                // But if auto-generating, we check the actual values OR the user's intent
+                const prefixLabel = (hasItemDiscount || hasTotalDiscount || (data.receiptNumber?.startsWith("KB-LPBD"))) ? "KB-LPBD" : "KB-LPB";
                 const prefix = `${prefixLabel}-${fullDateStr}-`;
 
                 const latest = await tx.goodsReceipt.findFirst({
