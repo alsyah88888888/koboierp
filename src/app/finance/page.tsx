@@ -74,12 +74,12 @@ export default async function FinancePage() {
     // Add calculated totals for display
     const serializedPurchases = serializeDecimal(pendingPurchases || []).map((p: any) => ({
         ...p,
-        total: (p.items || []).reduce((sum: number, i: any) => sum + (Number(i.quantity || 0) * Number(i.purchasePrice || 0)), 0)
+        total: Number(p.grandTotal) > 0 ? Number(p.grandTotal) : (p.items || []).reduce((sum: number, i: any) => sum + (Number(i.quantity || 0) * Number(i.purchasePrice || 0)) - Number(i.discount || 0), 0)
     }));
 
     const serializedSales = serializeDecimal(pendingSales || []).map((s: any) => ({
         ...s,
-        total: (s.items || []).reduce((sum: number, i: any) => sum + (Number(i.quantity || 0) * (Number(i.salesPrice) || 0)), 0)
+        total: Number(s.grandTotal) > 0 ? Number(s.grandTotal) : (s.items || []).reduce((sum: number, i: any) => sum + (Number(i.quantity || 0) * Number(i.salesPrice || 0)) - Number(i.discount || 0), 0)
     }));
 
     const serializedUnverifiedReceipts = serializeDecimal(unverifiedReceipts || []);
