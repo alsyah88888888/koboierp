@@ -71,7 +71,7 @@ export function TopHeader() {
                     <Menu className="h-6 w-6" />
                 </button>
                 <div className="h-8 w-1 bg-primary rounded-full hidden md:block"></div>
-                <h2 className="text-lg md:text-xl font-black text-slate-800 tracking-tight truncate max-w-[150px] md:max-w-none">{title}</h2>
+                <h2 className="text-lg md:text-xl font-black text-slate-800 tracking-tight truncate max-w-[120px] sm:max-w-[200px] md:max-w-none">{title}</h2>
             </div>
 
             <div className="flex items-center gap-3 md:gap-6">

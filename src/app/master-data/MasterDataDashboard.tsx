@@ -190,8 +190,8 @@ export function MasterDataDashboard() {
                 ))}
             </div>
 
-            <div className="bg-white border-2 border-slate-200 rounded-3xl shadow-sm overflow-hidden min-h-[500px]">
-                <div className="p-6 border-b-2 border-slate-50 flex flex-col md:flex-row gap-4 justify-between bg-slate-50/50">
+            <div className="bg-white border-2 border-slate-200 rounded-2xl md:rounded-3xl shadow-sm overflow-hidden md:min-h-[500px]">
+                <div className="p-4 md:p-6 border-b-2 border-slate-50 flex flex-col md:flex-row gap-4 justify-between bg-slate-50/50">
                     <div className="relative flex-1 max-w-md">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                         <input
@@ -316,77 +316,76 @@ export function MasterDataDashboard() {
                             </table>
                         </div>
 
-                        {/* MOBILE & TABLET CARD VIEW */}
-                        <div className="lg:hidden divide-y divide-slate-100 overflow-y-auto max-h-[60vh] custom-scrollbar">
+                        <div className="lg:hidden divide-y divide-slate-100 overflow-y-auto max-h-[70vh] custom-scrollbar">
                             {filteredData.map((item: any) => (
-                                <div key={item.id} className="p-5 space-y-4 hover:bg-slate-50 transition-colors">
-                                    <div className="flex justify-between items-start gap-4">
+                                <div key={item.id} className="p-4 space-y-3 hover:bg-slate-50 transition-colors">
+                                    <div className="flex justify-between items-start gap-3">
                                         <div className="flex-1 min-w-0">
-                                            <div className="font-black text-slate-900 text-base lg:text-lg truncate">{item.name}</div>
+                                            <div className="font-black text-slate-900 text-sm truncate">{item.name}</div>
                                             {activeTab === "product" && (
-                                                <div className="text-[11px] font-mono text-primary font-black uppercase tracking-wider mt-0.5">{item.sku}</div>
+                                                <div className="text-[10px] font-mono text-primary font-black uppercase tracking-wider">{item.sku}</div>
                                             )}
                                             {(activeTab === "vendor" || activeTab === "customer") && (
-                                                <div className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">ID: #{item.id.slice(-6).toUpperCase()}</div>
+                                                <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">ID: #{item.id.slice(-6).toUpperCase()}</div>
                                             )}
                                         </div>
-                                        <div className="flex gap-2 shrink-0">
+                                        <div className="flex gap-1.5 shrink-0">
                                             <button
                                                 onClick={() => handleEdit(item)}
-                                                className="p-3 text-slate-500 hover:text-primary bg-slate-100 rounded-2xl transition-all active:scale-90"
+                                                className="p-2 text-slate-500 hover:text-primary bg-slate-100 rounded-xl transition-all active:scale-90"
                                             >
-                                                <Pencil className="h-4 w-4" />
+                                                <Pencil className="h-3.5 w-3.5" />
                                             </button>
                                             {isAdmin && (
                                                 <button
                                                     onClick={() => handleDelete(item.id)}
-                                                    className="p-3 text-slate-400 hover:text-red-500 bg-slate-100 rounded-2xl transition-all active:scale-90"
+                                                    className="p-2 text-slate-400 hover:text-red-500 bg-slate-100 rounded-xl transition-all active:scale-90"
                                                 >
-                                                    <Trash2 className="h-4 w-4" />
+                                                    <Trash2 className="h-3.5 w-3.5" />
                                                 </button>
                                             )}
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-4 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+                                    <div className="grid grid-cols-2 gap-3 bg-slate-50/50 p-3 rounded-xl border border-slate-100">
                                         {activeTab === "product" && (
                                             <>
-                                                <div className="space-y-1">
-                                                    <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Kategori</div>
-                                                    <div className="text-xs font-bold text-slate-700 truncate">{item.category || "-"}</div>
+                                                <div className="space-y-0.5">
+                                                    <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Kategori</div>
+                                                    <div className="text-[11px] font-bold text-slate-700 truncate">{item.category || "-"}</div>
                                                 </div>
-                                                <div className="space-y-1">
-                                                    <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest text-right">Unit / UOM</div>
-                                                    <div className="text-xs font-black text-primary uppercase text-right">{item.uom || item.unit || "-"}</div>
+                                                <div className="space-y-0.5">
+                                                    <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest text-right">Unit / UOM</div>
+                                                    <div className="text-[11px] font-black text-primary uppercase text-right">{item.uom || item.unit || "-"}</div>
                                                 </div>
                                             </>
                                         )}
 
                                         {(activeTab === "vendor" || activeTab === "customer") && (
                                             <>
-                                                <div className="space-y-1">
-                                                    <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Phone</div>
-                                                    <div className="text-xs font-bold text-slate-700 truncate">{item.phone || "-"}</div>
+                                                <div className="space-y-0.5">
+                                                    <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Phone</div>
+                                                    <div className="text-[11px] font-bold text-slate-700 truncate">{item.phone || "-"}</div>
                                                 </div>
-                                                <div className="space-y-1">
-                                                    <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest text-right">Email</div>
-                                                    <div className="text-xs font-bold text-slate-700 truncate text-right">{item.email || "-"}</div>
+                                                <div className="space-y-0.5">
+                                                    <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest text-right">Email</div>
+                                                    <div className="text-[11px] font-bold text-slate-700 truncate text-right">{item.email || "-"}</div>
                                                 </div>
                                             </>
                                         )}
 
                                         {activeTab === "warehouse" && (
-                                            <div className="col-span-2 space-y-1">
-                                                <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Lokasi</div>
-                                                <div className="text-xs font-bold text-slate-700">{item.location || "-"}</div>
+                                            <div className="col-span-2 space-y-0.5">
+                                                <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Lokasi</div>
+                                                <div className="text-[11px] font-bold text-slate-700">{item.location || "-"}</div>
                                             </div>
                                         )}
                                     </div>
 
                                     {(activeTab === "vendor" || activeTab === "customer") && item.address && (
                                         <div className="px-1">
-                                            <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Full Address</div>
-                                            <div className="text-xs text-slate-500 leading-relaxed font-medium line-clamp-3">
+                                            <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Full Address</div>
+                                            <div className="text-[10px] text-slate-500 leading-relaxed font-medium line-clamp-2">
                                                 {item.address}
                                             </div>
                                         </div>

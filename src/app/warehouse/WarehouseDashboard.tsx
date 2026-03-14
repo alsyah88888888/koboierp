@@ -240,7 +240,7 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                             </div>
 
                             {/* Inventory List with Search */}
-                            <div className="bg-white border-2 border-slate-100 rounded-3xl shadow-sm overflow-hidden">
+                            <div className="bg-white border-2 border-slate-200 rounded-2xl md:rounded-3xl shadow-sm overflow-hidden md:min-h-[600px]">
                                 <div className="p-4 md:p-6 border-b-2 border-slate-50 flex flex-col md:flex-row gap-4 justify-between bg-slate-50/50">
                                     <div className="flex items-center gap-3">
                                         <div className="p-2 bg-primary/10 rounded-lg">
@@ -356,52 +356,51 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                 </div>
 
                                 {/* MOBILE & TABLET CARD VIEW */}
-                                <div className="lg:hidden divide-y divide-slate-100 overflow-y-auto max-h-[60vh] custom-scrollbar">
+                                <div className="lg:hidden divide-y divide-slate-100 overflow-y-auto max-h-[70vh] custom-scrollbar">
                                     {filteredProducts.flatMap((p: any) => {
                                         if (p.stocks && p.stocks.length > 0) {
                                             return p.stocks.map((s: any) => {
                                                 const whName = warehouses.find(w => w.id === s.warehouseId)?.name || "Unknown";
                                                 const isLow = s.quantity <= p.lowStockThreshold;
                                                 return (
-                                                    <div key={`${p.id}-${s.id}`} className="p-5 space-y-4 hover:bg-slate-50 transition-colors">
-                                                        <div className="flex justify-between items-start gap-4">
+                                                    <div key={`${p.id}-${s.id}`} className="p-4 space-y-3 hover:bg-slate-50 transition-colors">
+                                                        <div className="flex justify-between items-start gap-3">
                                                             <div className="flex-1 min-w-0">
-                                                                <div className="font-black text-slate-900 text-base lg:text-lg truncate">{p.name}</div>
-                                                                <div className="text-[11px] font-mono text-primary font-black uppercase tracking-wider mt-0.5">{p.sku}</div>
+                                                                <div className="font-black text-slate-900 text-sm truncate">{p.name}</div>
+                                                                <div className="text-[10px] font-mono text-primary font-black uppercase tracking-wider">{p.sku}</div>
                                                             </div>
                                                             <span className={cn(
-                                                                "shrink-0 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter shadow-sm",
+                                                                "shrink-0 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter shadow-sm",
                                                                 isLow ? "bg-amber-100 text-amber-700 shadow-amber-100" : "bg-emerald-100 text-emerald-700 shadow-emerald-100"
                                                             )}>
-                                                                {isLow ? "Low Stock" : "In Stock"}
+                                                                {isLow ? "Low Stock" : "Ready"}
                                                             </span>
                                                         </div>
 
-                                                        <div className="grid grid-cols-2 gap-4 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+                                                        <div className="grid grid-cols-2 gap-3 bg-slate-50/50 p-3 rounded-xl border border-slate-100">
                                                             <div>
-                                                                <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Pemasok / Vendor</div>
-                                                                <div className="text-xs font-bold text-slate-700 truncate">{s.vendorName || "UMUM"}</div>
+                                                                <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Vendor</div>
+                                                                <div className="text-[11px] font-bold text-slate-700 truncate">{s.vendorName || "UMUM"}</div>
                                                             </div>
                                                             <div>
-                                                                <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 text-right">Gudang</div>
-                                                                <div className="text-xs font-bold text-slate-700 truncate text-right">{whName}</div>
+                                                                <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1 text-right">Gudang</div>
+                                                                <div className="text-[11px] font-bold text-slate-700 truncate text-right">{whName}</div>
                                                             </div>
                                                         </div>
 
                                                         <div className="flex items-end justify-between pt-1">
                                                             <div>
-                                                                <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Quantity Tersedia</div>
-                                                                <div className="text-2xl font-black text-slate-900 leading-none">
-                                                                    {(s.quantity || 0).toLocaleString()} <span className="text-xs text-slate-400 font-bold uppercase ml-1">{p.uom}</span>
+                                                                <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Qty Available</div>
+                                                                <div className="text-xl font-black text-slate-900 leading-none">
+                                                                    {(s.quantity || 0).toLocaleString()} <span className="text-[10px] text-slate-400 font-bold uppercase ml-1">{p.uom}</span>
                                                                 </div>
                                                             </div>
                                                             {isAdmin && (
                                                                 <button
                                                                     onClick={() => handleDeleteProduct(p.id)}
-                                                                    className="p-3 text-slate-400 hover:text-red-600 bg-slate-100 rounded-2xl transition-all active:scale-90"
-                                                                    title="Hapus Produk"
+                                                                    className="p-2 text-slate-400 hover:text-red-600 bg-slate-100 rounded-xl transition-all active:scale-90"
                                                                 >
-                                                                    <Trash2 className="h-4 w-4" />
+                                                                    <Trash2 className="h-3.5 w-3.5" />
                                                                 </button>
                                                             )}
                                                         </div>
