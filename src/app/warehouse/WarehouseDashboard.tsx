@@ -262,7 +262,7 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                     </div>
                                 </div>
                                 {/* DESKTOP TABLE VIEW */}
-                                <div className="hidden md:block overflow-y-auto max-h-[calc(100vh-450px)] min-h-[400px] custom-scrollbar border-b-2 border-slate-50">
+                                <div className="hidden md:block overflow-auto max-h-[calc(100vh-450px)] min-h-[400px] custom-scrollbar border-b-2 border-slate-50">
                                     <table className="w-full text-sm text-left min-w-[1000px] table-fixed relative">
                                         <thead className="bg-slate-50 text-slate-500 border-b-2 border-slate-100 sticky top-0 z-20 shadow-sm">
                                             <tr>
@@ -356,7 +356,7 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                 </div>
 
                                 {/* MOBILE CARD VIEW */}
-                                <div className="md:hidden divide-y divide-slate-100">
+                                <div className="md:hidden divide-y divide-slate-100 overflow-y-auto max-h-[60vh] custom-scrollbar">
                                     {filteredProducts.flatMap((p: any) => {
                                         if (p.stocks && p.stocks.length > 0) {
                                             return p.stocks.map((s: any) => {

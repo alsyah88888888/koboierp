@@ -218,101 +218,165 @@ export function MasterDataDashboard() {
                         <p className="text-slate-500 font-medium">Try adjusting your search or add a new entry.</p>
                     </div>
                 ) : (
-                    <div className="overflow-y-auto max-h-[calc(100vh-400px)] min-h-[400px] custom-scrollbar">
-                        <table className="w-full table-fixed min-w-[800px] relative">
-                            <thead className="bg-slate-50 text-slate-500 border-b-2 border-slate-100 sticky top-0 z-20">
-                                {activeTab === "product" && (
-                                    <tr>
-                                        <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest w-64">Barang / SKU</th>
-                                        <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest w-40">Kategori</th>
-                                        <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest w-32">UOM</th>
-                                        <th className="px-6 py-4 text-right text-[10px] font-black uppercase tracking-widest w-24">Aksi</th>
-                                    </tr>
-                                )}
-                                {(activeTab === "vendor" || activeTab === "customer") && (
-                                    <tr>
-                                        <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest w-64">Nama / Partner</th>
-                                        <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest w-52">Kontak</th>
-                                        <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest">Alamat</th>
-                                        <th className="px-6 py-4 text-right text-[10px] font-black uppercase tracking-widest w-24">Aksi</th>
-                                    </tr>
-                                )}
-                                {activeTab === "warehouse" && (
-                                    <tr>
-                                        <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest w-72">Nama Gudang</th>
-                                        <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest">Lokasi</th>
-                                        <th className="px-6 py-4 text-right text-[10px] font-black uppercase tracking-widest w-24">Aksi</th>
-                                    </tr>
-                                )}
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                                {filteredData.map((item: any) => (
-                                    <tr key={item.id} className="hover:bg-slate-50/50 transition-colors group">
-                                        {activeTab === "product" && (
-                                            <>
-                                                <td className="px-6 py-4">
-                                                    <div className="font-bold text-slate-800 group-hover:text-primary transition-colors truncate" title={item.name}>{item.name}</div>
-                                                    <div className="text-[10px] font-mono text-slate-400 uppercase tracking-tighter truncate" title={item.sku}>{item.sku}</div>
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <span className="px-2 py-1 bg-slate-100 text-slate-600 text-[10px] font-bold rounded uppercase">
-                                                        {item.category || "Uncategorized"}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 text-sm font-bold text-slate-500 uppercase">
-                                                    {item.uom || item.unit || "-"}
-                                                </td>
-                                            </>
-                                        )}
-                                        {(activeTab === "vendor" || activeTab === "customer") && (
-                                            <>
-                                                <td className="px-6 py-4">
-                                                    <div className="font-bold text-slate-800 truncate" title={item.name}>{item.name}</div>
-                                                    <div className="text-[10px] text-slate-400 font-medium whitespace-nowrap">#{item.id.slice(-6).toUpperCase()}</div>
-                                                </td>
-                                                <td className="px-6 py-4 text-xs font-semibold text-slate-600">
-                                                    {item.phone && <div className="truncate" title={item.phone}>{item.phone}</div>}
-                                                    {item.email && <div className="text-slate-400 truncate" title={item.email}>{item.email}</div>}
-                                                    {!item.phone && !item.email && <span className="text-slate-300 italic">No contact</span>}
-                                                </td>
-                                                <td className="px-6 py-4 text-xs text-slate-500 font-medium truncate" title={item.address || "-"}>
-                                                    {item.address || "-"}
-                                                </td>
-                                            </>
-                                        )}
-                                        {activeTab === "warehouse" && (
-                                            <>
-                                                <td className="px-6 py-4">
-                                                    <div className="font-bold text-slate-800 truncate" title={item.name}>{item.name}</div>
-                                                </td>
-                                                <td className="px-6 py-4 text-sm text-slate-500 font-medium">
-                                                    {item.location || "-"}
-                                                </td>
-                                            </>
-                                        )}
-                                        <td className="px-6 py-4 text-right">
-                                            <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button
-                                                    onClick={() => handleEdit(item)}
-                                                    className="p-2 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-all"
-                                                >
-                                                    <Pencil className="h-4 w-4" />
-                                                </button>
-                                                {isAdmin && (
+                    <>
+                        {/* DESKTOP TABLE VIEW */}
+                        <div className="hidden md:block overflow-auto max-h-[calc(100vh-400px)] min-h-[400px] custom-scrollbar">
+                            <table className="w-full table-fixed min-w-[800px] relative">
+                                <thead className="bg-slate-50 text-slate-500 border-b-2 border-slate-100 sticky top-0 z-20">
+                                    {activeTab === "product" && (
+                                        <tr>
+                                            <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest w-64">Barang / SKU</th>
+                                            <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest w-40">Kategori</th>
+                                            <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest w-32">UOM</th>
+                                            <th className="px-6 py-4 text-right text-[10px] font-black uppercase tracking-widest w-24">Aksi</th>
+                                        </tr>
+                                    )}
+                                    {(activeTab === "vendor" || activeTab === "customer") && (
+                                        <tr>
+                                            <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest w-64">Nama / Partner</th>
+                                            <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest w-52">Kontak</th>
+                                            <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest">Alamat</th>
+                                            <th className="px-6 py-4 text-right text-[10px] font-black uppercase tracking-widest w-24">Aksi</th>
+                                        </tr>
+                                    )}
+                                    {activeTab === "warehouse" && (
+                                        <tr>
+                                            <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest w-72">Nama Gudang</th>
+                                            <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest">Lokasi</th>
+                                            <th className="px-6 py-4 text-right text-[10px] font-black uppercase tracking-widest w-24">Aksi</th>
+                                        </tr>
+                                    )}
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {filteredData.map((item: any) => (
+                                        <tr key={item.id} className="hover:bg-slate-50/50 transition-colors group">
+                                            {activeTab === "product" && (
+                                                <>
+                                                    <td className="px-6 py-4">
+                                                        <div className="font-bold text-slate-800 group-hover:text-primary transition-colors truncate" title={item.name}>{item.name}</div>
+                                                        <div className="text-[10px] font-mono text-slate-400 uppercase tracking-tighter truncate" title={item.sku}>{item.sku}</div>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <span className="px-2 py-1 bg-slate-100 text-slate-600 text-[10px] font-bold rounded uppercase">
+                                                            {item.category || "Uncategorized"}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-sm font-bold text-slate-500 uppercase">
+                                                        {item.uom || item.unit || "-"}
+                                                    </td>
+                                                </>
+                                            )}
+                                            {(activeTab === "vendor" || activeTab === "customer") && (
+                                                <>
+                                                    <td className="px-6 py-4">
+                                                        <div className="font-bold text-slate-800 truncate" title={item.name}>{item.name}</div>
+                                                        <div className="text-[10px] text-slate-400 font-medium whitespace-nowrap">#{item.id.slice(-6).toUpperCase()}</div>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-xs font-semibold text-slate-600">
+                                                        {item.phone && <div className="truncate" title={item.phone}>{item.phone}</div>}
+                                                        {item.email && <div className="text-slate-400 truncate" title={item.email}>{item.email}</div>}
+                                                        {!item.phone && !item.email && <span className="text-slate-300 italic">No contact</span>}
+                                                    </td>
+                                                    <td className="px-6 py-4 text-xs text-slate-500 font-medium truncate" title={item.address || "-"}>
+                                                        {item.address || "-"}
+                                                    </td>
+                                                </>
+                                            )}
+                                            {activeTab === "warehouse" && (
+                                                <>
+                                                    <td className="px-6 py-4">
+                                                        <div className="font-bold text-slate-800 truncate" title={item.name}>{item.name}</div>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-sm text-slate-500 font-medium">
+                                                        {item.location || "-"}
+                                                    </td>
+                                                </>
+                                            )}
+                                            <td className="px-6 py-4 text-right">
+                                                <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                                     <button
-                                                        onClick={() => handleDelete(item.id)}
-                                                        className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                                                        onClick={() => handleEdit(item)}
+                                                        className="p-2 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-all"
                                                     >
-                                                        <Trash2 className="h-4 w-4" />
+                                                        <Pencil className="h-4 w-4" />
                                                     </button>
-                                                )}
+                                                    {isAdmin && (
+                                                        <button
+                                                            onClick={() => handleDelete(item.id)}
+                                                            className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* MOBILE CARD VIEW */}
+                        <div className="md:hidden divide-y divide-slate-100 overflow-y-auto max-h-[60vh] custom-scrollbar">
+                            {filteredData.map((item: any) => (
+                                <div key={item.id} className="p-4 space-y-3">
+                                    <div className="flex justify-between items-start gap-2">
+                                        <div className="flex-1 min-w-0">
+                                            <div className="font-bold text-slate-800 text-sm truncate">{item.name}</div>
+                                            {activeTab === "product" && (
+                                                <div className="text-[10px] font-mono text-slate-400 uppercase">{item.sku}</div>
+                                            )}
+                                            {(activeTab === "vendor" || activeTab === "customer") && (
+                                                <div className="text-[10px] text-slate-400 font-medium">#{item.id.slice(-6).toUpperCase()}</div>
+                                            )}
+                                        </div>
+                                        <div className="flex gap-1 shrink-0">
+                                            <button
+                                                onClick={() => handleEdit(item)}
+                                                className="p-2 text-slate-400 hover:text-primary bg-slate-50 rounded-xl transition-all"
+                                            >
+                                                <Pencil className="h-4 w-4" />
+                                            </button>
+                                            {isAdmin && (
+                                                <button
+                                                    onClick={() => handleDelete(item.id)}
+                                                    className="p-2 text-slate-300 hover:text-red-500 bg-slate-50 rounded-xl transition-all"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {activeTab === "product" && (
+                                        <div className="flex justify-between items-center text-xs">
+                                            <span className="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-bold rounded uppercase">
+                                                {item.category || "Uncategorized"}
+                                            </span>
+                                            <span className="font-bold text-slate-500 uppercase">{item.uom || item.unit || "-"}</span>
+                                        </div>
+                                    )}
+
+                                    {(activeTab === "vendor" || activeTab === "customer") && (
+                                        <div className="space-y-2">
+                                            <div className="flex items-center gap-2 text-xs text-slate-600 font-semibold">
+                                                <div className="truncate">{item.phone || item.email || "No contact info"}</div>
                                             </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                                            <div className="text-[10px] text-slate-500 leading-relaxed line-clamp-2">
+                                                {item.address || "No address provided"}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {activeTab === "warehouse" && (
+                                        <div className="text-xs text-slate-500 font-medium">
+                                            {item.location || "No location provided"}
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </>
                 )}
             </div>
 
