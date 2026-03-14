@@ -262,14 +262,14 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                     </div>
                                 </div>
                                 {/* DESKTOP TABLE VIEW */}
-                                <div className="hidden md:block table-responsive">
-                                    <table className="w-full text-sm text-left min-w-[900px]">
+                                <div className="hidden md:block overflow-x-auto">
+                                    <table className="w-full text-sm text-left min-w-[1000px] table-fixed">
                                         <thead className="bg-slate-50 text-slate-500 border-b-2 border-slate-100 sticky top-0 z-10">
                                             <tr>
-                                                <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest w-64">Barang / SKU</th>
+                                                <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest w-72">Barang / SKU</th>
                                                 <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest text-left w-48">Gudang</th>
                                                 <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest text-left">Vendor / Pemasok</th>
-                                                <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest text-right w-36">Qty</th>
+                                                <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest text-right w-40">Qty Tersedia</th>
                                                 <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest text-right w-32">Status</th>
                                                 {isAdmin && <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest text-center w-20">Aksi</th>}
                                             </tr>
@@ -284,27 +284,27 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                                         rows.push(
                                                             <tr key={`${p.id}-${s.id}`} className="hover:bg-slate-50/50 transition-colors group">
                                                                 <td className="px-6 py-4">
-                                                                    <div className="font-bold text-slate-800 truncate max-w-[200px]" title={p.name}>{p.name}</div>
+                                                                    <div className="font-bold text-slate-800 truncate" title={p.name}>{p.name}</div>
                                                                     <div className="text-[10px] font-mono text-slate-400 uppercase group-hover:text-primary transition-colors truncate" title={p.sku}>{p.sku}</div>
                                                                 </td>
-                                                                <td className="px-6 py-4 text-left font-bold text-slate-600 text-xs">
+                                                                <td className="px-6 py-4 text-left font-bold text-slate-600 text-xs text-nowrap">
                                                                     {whName}
                                                                 </td>
                                                                 <td className="px-6 py-4 text-left">
-                                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 text-[10px] font-bold border border-slate-200 max-w-full">
+                                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 text-xs font-bold border border-slate-200 max-w-full">
                                                                         <WarehouseIcon className="h-3 w-3 text-slate-400 shrink-0" />
-                                                                        <span className="truncate max-w-[120px]" title={s.vendorName || "UMUM"}>{s.vendorName || "UMUM"}</span>
+                                                                        <span className="truncate" title={s.vendorName || "UMUM"}>{s.vendorName || "UMUM"}</span>
                                                                     </span>
                                                                 </td>
                                                                 <td className="px-6 py-4 text-right">
-                                                                    <div className="text-base font-black text-slate-800">{(s.quantity || 0).toLocaleString()} <span className="text-[10px] text-slate-400 font-bold uppercase">{p.uom}</span></div>
+                                                                    <div className="text-lg font-black text-slate-800">{(s.quantity || 0).toLocaleString()} <span className="text-[10px] text-slate-400 font-bold uppercase">{p.uom}</span></div>
                                                                 </td>
                                                                 <td className="px-6 py-4 text-right">
                                                                     <span className={cn(
                                                                         "px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter shadow-sm",
                                                                         isLow ? "bg-amber-100 text-amber-700 shadow-amber-100" : "bg-emerald-100 text-emerald-700 shadow-emerald-100"
                                                                     )}>
-                                                                        {isLow ? "Low" : "Ready"}
+                                                                        {isLow ? "Low Stock" : "In Stock"}
                                                                     </span>
                                                                 </td>
                                                                 {isAdmin && (
