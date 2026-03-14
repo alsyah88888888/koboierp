@@ -220,7 +220,7 @@ export function MasterDataDashboard() {
                 ) : (
                     <>
                         {/* DESKTOP TABLE VIEW */}
-                        <div className="hidden md:block overflow-auto max-h-[calc(100vh-400px)] min-h-[400px] custom-scrollbar">
+                        <div className="hidden lg:block overflow-auto max-h-[calc(100vh-400px)] min-h-[400px] custom-scrollbar">
                             <table className="w-full table-fixed min-w-[800px] relative">
                                 <thead className="bg-slate-50 text-slate-500 border-b-2 border-slate-100 sticky top-0 z-20">
                                     {activeTab === "product" && (
@@ -316,31 +316,31 @@ export function MasterDataDashboard() {
                             </table>
                         </div>
 
-                        {/* MOBILE CARD VIEW */}
-                        <div className="md:hidden divide-y divide-slate-100 overflow-y-auto max-h-[60vh] custom-scrollbar">
+                        {/* MOBILE & TABLET CARD VIEW */}
+                        <div className="lg:hidden divide-y divide-slate-100 overflow-y-auto max-h-[60vh] custom-scrollbar">
                             {filteredData.map((item: any) => (
-                                <div key={item.id} className="p-4 space-y-3">
-                                    <div className="flex justify-between items-start gap-2">
+                                <div key={item.id} className="p-5 space-y-4 hover:bg-slate-50 transition-colors">
+                                    <div className="flex justify-between items-start gap-4">
                                         <div className="flex-1 min-w-0">
-                                            <div className="font-bold text-slate-800 text-sm truncate">{item.name}</div>
+                                            <div className="font-black text-slate-900 text-base lg:text-lg truncate">{item.name}</div>
                                             {activeTab === "product" && (
-                                                <div className="text-[10px] font-mono text-slate-400 uppercase">{item.sku}</div>
+                                                <div className="text-[11px] font-mono text-primary font-black uppercase tracking-wider mt-0.5">{item.sku}</div>
                                             )}
                                             {(activeTab === "vendor" || activeTab === "customer") && (
-                                                <div className="text-[10px] text-slate-400 font-medium">#{item.id.slice(-6).toUpperCase()}</div>
+                                                <div className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">ID: #{item.id.slice(-6).toUpperCase()}</div>
                                             )}
                                         </div>
-                                        <div className="flex gap-1 shrink-0">
+                                        <div className="flex gap-2 shrink-0">
                                             <button
                                                 onClick={() => handleEdit(item)}
-                                                className="p-2 text-slate-400 hover:text-primary bg-slate-50 rounded-xl transition-all"
+                                                className="p-3 text-slate-500 hover:text-primary bg-slate-100 rounded-2xl transition-all active:scale-90"
                                             >
                                                 <Pencil className="h-4 w-4" />
                                             </button>
                                             {isAdmin && (
                                                 <button
                                                     onClick={() => handleDelete(item.id)}
-                                                    className="p-2 text-slate-300 hover:text-red-500 bg-slate-50 rounded-xl transition-all"
+                                                    className="p-3 text-slate-400 hover:text-red-500 bg-slate-100 rounded-2xl transition-all active:scale-90"
                                                 >
                                                     <Trash2 className="h-4 w-4" />
                                                 </button>
@@ -348,29 +348,47 @@ export function MasterDataDashboard() {
                                         </div>
                                     </div>
 
-                                    {activeTab === "product" && (
-                                        <div className="flex justify-between items-center text-xs">
-                                            <span className="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-bold rounded uppercase">
-                                                {item.category || "Uncategorized"}
-                                            </span>
-                                            <span className="font-bold text-slate-500 uppercase">{item.uom || item.unit || "-"}</span>
-                                        </div>
-                                    )}
+                                    <div className="grid grid-cols-2 gap-4 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+                                        {activeTab === "product" && (
+                                            <>
+                                                <div className="space-y-1">
+                                                    <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Kategori</div>
+                                                    <div className="text-xs font-bold text-slate-700 truncate">{item.category || "-"}</div>
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest text-right">Unit / UOM</div>
+                                                    <div className="text-xs font-black text-primary uppercase text-right">{item.uom || item.unit || "-"}</div>
+                                                </div>
+                                            </>
+                                        )}
 
-                                    {(activeTab === "vendor" || activeTab === "customer") && (
-                                        <div className="space-y-2">
-                                            <div className="flex items-center gap-2 text-xs text-slate-600 font-semibold">
-                                                <div className="truncate">{item.phone || item.email || "No contact info"}</div>
-                                            </div>
-                                            <div className="text-[10px] text-slate-500 leading-relaxed line-clamp-2">
-                                                {item.address || "No address provided"}
-                                            </div>
-                                        </div>
-                                    )}
+                                        {(activeTab === "vendor" || activeTab === "customer") && (
+                                            <>
+                                                <div className="space-y-1">
+                                                    <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Phone</div>
+                                                    <div className="text-xs font-bold text-slate-700 truncate">{item.phone || "-"}</div>
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest text-right">Email</div>
+                                                    <div className="text-xs font-bold text-slate-700 truncate text-right">{item.email || "-"}</div>
+                                                </div>
+                                            </>
+                                        )}
 
-                                    {activeTab === "warehouse" && (
-                                        <div className="text-xs text-slate-500 font-medium">
-                                            {item.location || "No location provided"}
+                                        {activeTab === "warehouse" && (
+                                            <div className="col-span-2 space-y-1">
+                                                <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Lokasi</div>
+                                                <div className="text-xs font-bold text-slate-700">{item.location || "-"}</div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {(activeTab === "vendor" || activeTab === "customer") && item.address && (
+                                        <div className="px-1">
+                                            <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Full Address</div>
+                                            <div className="text-xs text-slate-500 leading-relaxed font-medium line-clamp-3">
+                                                {item.address}
+                                            </div>
                                         </div>
                                     )}
                                 </div>

@@ -262,7 +262,7 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                     </div>
                                 </div>
                                 {/* DESKTOP TABLE VIEW */}
-                                <div className="hidden md:block overflow-auto max-h-[calc(100vh-450px)] min-h-[400px] custom-scrollbar border-b-2 border-slate-50">
+                                <div className="hidden lg:block overflow-auto max-h-[calc(100vh-450px)] min-h-[400px] custom-scrollbar border-b-2 border-slate-50">
                                     <table className="w-full text-sm text-left min-w-[1000px] table-fixed relative">
                                         <thead className="bg-slate-50 text-slate-500 border-b-2 border-slate-100 sticky top-0 z-20 shadow-sm">
                                             <tr>
@@ -355,48 +355,51 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                     </table>
                                 </div>
 
-                                {/* MOBILE CARD VIEW */}
-                                <div className="md:hidden divide-y divide-slate-100 overflow-y-auto max-h-[60vh] custom-scrollbar">
+                                {/* MOBILE & TABLET CARD VIEW */}
+                                <div className="lg:hidden divide-y divide-slate-100 overflow-y-auto max-h-[60vh] custom-scrollbar">
                                     {filteredProducts.flatMap((p: any) => {
                                         if (p.stocks && p.stocks.length > 0) {
                                             return p.stocks.map((s: any) => {
                                                 const whName = warehouses.find(w => w.id === s.warehouseId)?.name || "Unknown";
                                                 const isLow = s.quantity <= p.lowStockThreshold;
                                                 return (
-                                                    <div key={`${p.id}-${s.id}`} className="p-4 space-y-4">
-                                                        <div className="flex justify-between items-start gap-2">
+                                                    <div key={`${p.id}-${s.id}`} className="p-5 space-y-4 hover:bg-slate-50 transition-colors">
+                                                        <div className="flex justify-between items-start gap-4">
                                                             <div className="flex-1 min-w-0">
-                                                                <div className="font-bold text-slate-800 text-sm truncate">{p.name}</div>
-                                                                <div className="text-[10px] font-mono text-slate-400 uppercase">{p.sku}</div>
+                                                                <div className="font-black text-slate-900 text-base lg:text-lg truncate">{p.name}</div>
+                                                                <div className="text-[11px] font-mono text-primary font-black uppercase tracking-wider mt-0.5">{p.sku}</div>
                                                             </div>
                                                             <span className={cn(
-                                                                "shrink-0 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-tighter",
-                                                                isLow ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"
+                                                                "shrink-0 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter shadow-sm",
+                                                                isLow ? "bg-amber-100 text-amber-700 shadow-amber-100" : "bg-emerald-100 text-emerald-700 shadow-emerald-100"
                                                             )}>
-                                                                {isLow ? "Low" : "Ready"}
+                                                                {isLow ? "Low Stock" : "In Stock"}
                                                             </span>
                                                         </div>
-                                                        <div className="grid grid-cols-2 gap-4">
+
+                                                        <div className="grid grid-cols-2 gap-4 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
                                                             <div>
-                                                                <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Supplier</div>
-                                                                <div className="text-xs font-bold text-slate-600 truncate">{s.vendorName || "UMUM"}</div>
+                                                                <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Pemasok / Vendor</div>
+                                                                <div className="text-xs font-bold text-slate-700 truncate">{s.vendorName || "UMUM"}</div>
                                                             </div>
                                                             <div>
-                                                                <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Gudang</div>
-                                                                <div className="text-xs font-bold text-slate-600 truncate">{whName}</div>
+                                                                <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 text-right">Gudang</div>
+                                                                <div className="text-xs font-bold text-slate-700 truncate text-right">{whName}</div>
                                                             </div>
                                                         </div>
+
                                                         <div className="flex items-end justify-between pt-1">
                                                             <div>
-                                                                <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Quantity</div>
-                                                                <div className="text-xl font-black text-slate-900 leading-none">
-                                                                    {(s.quantity || 0).toLocaleString()} <span className="text-[10px] text-slate-400 font-bold">{p.uom}</span>
+                                                                <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Quantity Tersedia</div>
+                                                                <div className="text-2xl font-black text-slate-900 leading-none">
+                                                                    {(s.quantity || 0).toLocaleString()} <span className="text-xs text-slate-400 font-bold uppercase ml-1">{p.uom}</span>
                                                                 </div>
                                                             </div>
                                                             {isAdmin && (
                                                                 <button
                                                                     onClick={() => handleDeleteProduct(p.id)}
-                                                                    className="p-2 text-slate-300 hover:text-red-600 bg-slate-50 rounded-xl transition-all"
+                                                                    className="p-3 text-slate-400 hover:text-red-600 bg-slate-100 rounded-2xl transition-all active:scale-90"
+                                                                    title="Hapus Produk"
                                                                 >
                                                                     <Trash2 className="h-4 w-4" />
                                                                 </button>
