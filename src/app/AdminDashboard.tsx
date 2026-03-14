@@ -110,7 +110,7 @@ export function AdminDashboard({ role, stats, salesData, inventoryData, recentAc
     const liabilityStats = stats.filter((s: any) => ['Total Hutang (Pending)', 'Total Piutang (Pending)'].includes(s.name));
 
     const renderStatCard = (stat: any, i: number) => (
-        <div key={i} className="group relative overflow-hidden rounded-[2rem] border border-white/20 bg-white/40 p-6 backdrop-blur-xl transition-all hover:bg-white/60 hover:shadow-2xl hover:shadow-slate-200/50">
+        <div key={i} className="group relative overflow-hidden rounded-[2rem] border border-white/20 bg-white/40 p-5 md:p-6 backdrop-blur-xl transition-all hover:bg-white/60 hover:shadow-2xl hover:shadow-slate-200/50">
             <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-slate-900/5 blur-3xl transition-all group-hover:scale-150 group-hover:bg-primary/10" />
             <div className="relative flex flex-col justify-between h-full">
                 <div className="flex items-center justify-between mb-4">
@@ -142,7 +142,7 @@ export function AdminDashboard({ role, stats, salesData, inventoryData, recentAc
 
             {/* Today's High-Level Activity */}
             <div className="space-y-4">
-                <div className="flex items-center justify-between px-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-2">
                     <div className="flex items-center gap-2">
                         <div className="h-4 w-1.5 bg-primary rounded-full" />
                         <div>
@@ -152,14 +152,14 @@ export function AdminDashboard({ role, stats, salesData, inventoryData, recentAc
                     </div>
                     <button 
                         onClick={handleExportExcel}
-                        className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2.5 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-200 active:scale-95"
+                        className="flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2.5 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-200 active:scale-95 w-full sm:w-auto"
                     >
                         <FileSpreadsheet className="h-4 w-4" />
                         Download Report
                     </button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                     {/* Today's Sales */}
                     <div className="bg-white border-2 border-blue-100 rounded-[2rem] p-6 shadow-sm relative overflow-hidden group hover:border-blue-500 transition-all">
                         <div className="absolute right-0 top-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
@@ -271,9 +271,9 @@ export function AdminDashboard({ role, stats, salesData, inventoryData, recentAc
                             }
 
                             return activities.map((act: any, idx: number) => (
-                            <div key={idx} className="bg-white p-4 rounded-2xl flex items-center justify-between group hover:shadow-md transition-all border border-transparent hover:border-slate-200">
+                            <div key={idx} className="bg-white p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 group hover:shadow-md transition-all border border-transparent hover:border-slate-200">
                                 <div className="flex items-center gap-4">
-                                    <div className={`p-2.5 rounded-xl ${
+                                    <div className={`p-2.5 rounded-xl shrink-0 ${
                                         act.activityType === 'SALE' ? 'bg-blue-50 text-blue-600' :
                                         act.activityType === 'PURCHASE' ? 'bg-emerald-50 text-emerald-600' :
                                         act.activityType === 'FINANCE' ? 'bg-amber-50 text-amber-600' :
@@ -284,9 +284,9 @@ export function AdminDashboard({ role, stats, salesData, inventoryData, recentAc
                                         {act.activityType === 'FINANCE' && <Wallet className="h-4 w-4" />}
                                         {act.activityType === 'REQUEST' && <Package className="h-4 w-4" />}
                                     </div>
-                                    <div>
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-[11px] font-black text-slate-900">
+                                    <div className="min-w-0">
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <span className="text-[11px] font-black text-slate-900 truncate">
                                                 {act.deliveryNumber || act.receiptNumber || act.number || act.description}
                                             </span>
                                             <span className="text-[9px] font-bold text-slate-300">•</span>
@@ -294,7 +294,7 @@ export function AdminDashboard({ role, stats, salesData, inventoryData, recentAc
                                                 {new Date(act.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
                                             </span>
                                         </div>
-                                        <p className="text-[10px] font-bold text-slate-500">
+                                        <p className="text-[10px] font-bold text-slate-500 truncate">
                                             {act.activityType === 'SALE' ? `Penjualan ke ${act.buyerName || '-'}` :
                                              act.activityType === 'PURCHASE' ? `Penerimaan dari ${act.receivedFrom || '-'}` :
                                              act.activityType === 'REQUEST' ? `Permintaan: ${act.notes || 'Tanpa Catatan'}` :
@@ -302,7 +302,7 @@ export function AdminDashboard({ role, stats, salesData, inventoryData, recentAc
                                         </p>
                                     </div>
                                 </div>
-                                <div className="text-right">
+                                <div className="text-left sm:text-right border-t sm:border-0 pt-3 sm:pt-0">
                                     <div className="text-[10px] font-black text-slate-900 uppercase">
                                         {act.createdBy?.name || act.requestedBy?.name || "System"}
                                     </div>

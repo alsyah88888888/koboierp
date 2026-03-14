@@ -116,14 +116,14 @@ export function PurchaseRequestModal({ onClose }: { onClose: () => void }) {
                             </button>
                         </div>
 
-                        <div className="overflow-hidden border-2 border-slate-100 rounded-xl">
-                            <table className="w-full text-sm">
-                                <thead className="bg-slate-50 border-b-2 border-slate-100">
+                        <div className="table-responsive border-2 border-slate-100 rounded-xl">
+                            <table className="w-full text-sm min-w-[600px]">
+                                <thead className="bg-slate-50 border-b-2 border-slate-100 uppercase text-[10px] font-black tracking-widest text-slate-400">
                                     <tr>
-                                        <th className="px-4 py-3 text-left font-bold text-slate-600">Nama Barang (Kebutuhan Office)</th>
-                                        <th className="px-4 py-3 text-right font-bold text-slate-600 w-24">Qty</th>
-                                        <th className="px-4 py-3 text-right font-bold text-slate-600 w-40">Estimasi Harga Satuan</th>
-                                        <th className="px-4 py-3 text-right font-bold text-slate-600 w-40">Total Estimasi</th>
+                                        <th className="px-4 py-4 text-left">Nama Barang</th>
+                                        <th className="px-4 py-4 text-right w-24">Qty</th>
+                                        <th className="px-4 py-4 text-right w-40">Estimasi</th>
+                                        <th className="px-4 py-4 text-right w-40">Total</th>
                                         <th className="w-12"></th>
                                     </tr>
                                 </thead>

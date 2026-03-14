@@ -129,37 +129,37 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 hide-print mb-4">
-                <div className="flex flex-wrap gap-2 justify-center md:justify-start">
+            <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 hide-print mb-4 px-1">
+                <div className="flex flex-col sm:flex-row flex-wrap gap-3 justify-center md:justify-start w-full md:w-auto">
                     <button
                         onClick={handlePreview}
-                        className="bg-white border-2 border-emerald-600 text-emerald-600 px-4 md:px-6 py-2 rounded-xl flex items-center gap-2 hover:bg-emerald-50 transition-all font-bold shadow-sm active:scale-95 text-xs md:text-sm"
+                        className="bg-white border-2 border-emerald-600 text-emerald-600 px-6 py-2.5 rounded-xl flex items-center justify-center gap-2 hover:bg-emerald-50 transition-all font-bold shadow-sm active:scale-95 flex-1 sm:flex-none"
                     >
-                        <Eye className="h-4 w-4 md:h-5 md:w-5" />
+                        <Eye className="h-5 w-5" />
                         <span>Preview</span>
                     </button>
                     <button
                         onClick={handleExport}
-                        className="bg-emerald-600 text-white px-4 md:px-6 py-2 rounded-xl flex items-center gap-2 hover:bg-emerald-700 shadow-lg shadow-emerald-200 transition-all active:scale-95 font-bold text-xs md:text-sm"
+                        className="bg-emerald-600 text-white px-6 py-2.5 rounded-xl flex items-center justify-center gap-2 hover:bg-emerald-700 shadow-lg shadow-emerald-200 transition-all active:scale-95 font-bold flex-1 sm:flex-none"
                     >
-                        <FileText className="h-4 w-4 md:h-5 md:w-5" />
+                        <FileText className="h-5 w-5" />
                         <span>Export</span>
                     </button>
                     <button
                         onClick={() => setShowReturnModal(true)}
-                        className="bg-white border-2 border-blue-600 text-blue-600 px-4 md:px-6 py-2 rounded-xl flex items-center gap-2 hover:bg-blue-50 transition-all font-bold shadow-sm active:scale-95 text-xs md:text-sm"
+                        className="bg-white border-2 border-blue-600 text-blue-600 px-6 py-2.5 rounded-xl flex items-center justify-center gap-2 hover:bg-blue-50 transition-all font-bold shadow-sm active:scale-95 flex-1 sm:flex-none"
                     >
-                        <Undo2 className="h-4 w-4 md:h-5 md:w-5" />
+                        <Undo2 className="h-5 w-5" />
                         <span>Retur</span>
                     </button>
                 </div>
-                <div className="flex justify-center md:justify-end">
+                <div className="w-full md:w-auto">
                     {activeTab === "SJ" ? (
                         <button
                             onClick={() => setShowSalesModal(true)}
-                            className="bg-primary text-white px-4 md:px-6 py-2 rounded-xl flex items-center gap-2 hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all active:scale-95 font-bold text-xs md:text-sm w-full md:w-auto justify-center"
+                            className="bg-primary text-white px-6 py-2.5 rounded-xl flex items-center justify-center gap-2 hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all active:scale-95 font-bold w-full"
                         >
-                            <Plus className="h-4 w-4 md:h-5 md:w-5 text-white" />
+                            <Plus className="h-5 w-5 text-white" />
                             <span className="text-white">Input Penjualan</span>
                         </button>
                     ) : (
@@ -168,9 +168,9 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                                 setEditData(null);
                                 setShowReturnModal(true);
                             }}
-                            className="bg-blue-600 text-white px-4 md:px-6 py-2 rounded-xl flex items-center gap-2 hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all active:scale-95 font-bold text-xs md:text-sm w-full md:w-auto justify-center"
+                            className="bg-blue-600 text-white px-6 py-2.5 rounded-xl flex items-center justify-center gap-2 hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all active:scale-95 font-bold w-full"
                         >
-                            <Plus className="h-4 w-4 md:h-5 md:w-5 text-white" />
+                            <Plus className="h-5 w-5 text-white" />
                             <span className="text-white">Tambah Retur</span>
                         </button>
                     )}
@@ -293,7 +293,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                 </div>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="p-6 rounded-xl border bg-card shadow-sm">
                     <div className="flex justify-between items-start">
                         <p className="text-sm font-medium text-muted-foreground italic uppercase font-bold tracking-tighter">Global Total Penjualan</p>
@@ -314,11 +314,11 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
 
             <div className="rounded-xl border bg-card shadow-sm">
                 <div className="p-6 border-b flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-4 overflow-x-auto whitespace-nowrap w-full md:w-auto custom-scrollbar scrollbar-hide pb-2 md:pb-0">
                         <button
                             onClick={() => setActiveTab("SJ")}
                             className={cn(
-                                "text-lg font-bold transition-all border-b-2 pb-1",
+                                "text-lg font-bold transition-all border-b-2 pb-1 shrink-0",
                                 activeTab === "SJ" ? "text-primary border-primary" : "text-muted-foreground border-transparent hover:text-slate-600"
                             )}
                         >
@@ -327,7 +327,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                         <button
                             onClick={() => setActiveTab("RETURNS")}
                             className={cn(
-                                "text-lg font-bold transition-all border-b-2 pb-1",
+                                "text-lg font-bold transition-all border-b-2 pb-1 shrink-0",
                                 activeTab === "RETURNS" ? "text-blue-600 border-blue-600" : "text-muted-foreground border-transparent hover:text-slate-600"
                             )}
                         >

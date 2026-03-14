@@ -202,16 +202,18 @@ export function SettingsDashboard() {
     ];
 
     return (
-        <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div>
-                <h1 className="text-3xl font-black text-slate-900 tracking-tight">System Settings</h1>
-                <p className="text-slate-500 font-medium">Manage company profile, system preferences, and master data.</p>
+        <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 px-1">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 px-1">
+                <div>
+                    <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight uppercase">System Settings</h1>
+                    <p className="text-slate-500 font-bold text-[10px] md:text-sm uppercase tracking-widest opacity-70">Company profile & system preferences</p>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 space-y-6">
-                    <div className="bg-white border-2 border-slate-200 rounded-3xl p-8 shadow-sm">
-                        <div className="flex items-center gap-3 mb-8 pb-4 border-b-2 border-slate-50">
+                    <div className="bg-white border-2 border-slate-200 rounded-[2rem] p-5 md:p-8 shadow-sm">
+                        <div className="flex items-center gap-3 mb-6 pb-4 border-b-2 border-slate-50">
                             <div className="bg-primary/5 p-2 rounded-xl">
                                 <img src="/logo.png" alt="Logo Kola Borasi" className="h-6 w-auto object-contain" />
                             </div>

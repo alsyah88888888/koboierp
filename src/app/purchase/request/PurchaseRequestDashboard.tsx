@@ -57,32 +57,32 @@ export function PurchaseRequestDashboard({ purchaseRequests }: {
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hide-print">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hide-print px-1">
                 <div>
-                    <h2 className="text-3xl font-bold tracking-tight text-primary">Pengajuan Pembelian (PR)</h2>
-                    <p className="text-muted-foreground tracking-tight">Kelola dan pantau status pengajuan pembelian barang.</p>
+                    <h2 className="text-2xl md:text-3xl font-black tracking-tighter text-primary uppercase">Purchase Request</h2>
+                    <p className="text-muted-foreground text-[10px] md:text-sm font-bold uppercase tracking-widest opacity-70">Internal procurement requests</p>
                 </div>
-                <div className="flex flex-wrap gap-3">
+                <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                     <button
                         onClick={handlePreview}
-                        className="bg-white border-2 border-emerald-600 text-emerald-600 px-6 py-2 rounded-md flex items-center gap-2 hover:bg-emerald-50 transition-all font-bold shadow-sm active:scale-95"
+                        className="w-full sm:w-auto bg-white border-2 border-slate-200 text-slate-600 px-6 py-2 rounded-full flex items-center justify-center gap-2 hover:bg-slate-50 transition-all font-black uppercase text-[10px] tracking-widest active:scale-95 shadow-sm"
                     >
-                        <Eye className="h-5 w-5" />
-                        <span>Preview Laporan</span>
-                    </button>
-                    <button
-                        onClick={handleExport}
-                        className="bg-emerald-600 text-white px-6 py-2 rounded-md flex items-center gap-2 hover:bg-emerald-700 shadow-lg shadow-emerald-200 transition-all active:scale-95 font-bold"
-                    >
-                        <Download className="h-5 w-5" />
-                        <span>Export Excel</span>
+                        <Eye className="h-4 w-4" />
+                        <span>Preview</span>
                     </button>
                     <button
                         onClick={() => setIsModalOpen(true)}
-                        className="bg-primary text-white px-6 py-2 rounded-md flex items-center gap-2 hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all active:scale-95 font-bold"
+                        className="w-full sm:w-auto bg-primary text-white px-6 py-2 rounded-full flex items-center justify-center gap-2 hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all active:scale-95 font-black uppercase text-[10px] tracking-widest"
                     >
-                        <Plus className="h-5 w-5 text-white" />
-                        <span className="text-white">Buat Pengajuan</span>
+                        <Plus className="h-4 w-4 text-white" />
+                        <span>Create PR</span>
+                    </button>
+                    <button
+                        onClick={handleExport}
+                        className="w-full sm:w-auto bg-emerald-600 text-white px-6 py-2 rounded-full flex items-center justify-center gap-2 hover:bg-emerald-700 shadow-lg shadow-emerald-200 transition-all active:scale-95 font-black uppercase text-[10px] tracking-widest"
+                    >
+                        <Download className="h-4 w-4" />
+                        <span>Excel</span>
                     </button>
                 </div>
             </div>

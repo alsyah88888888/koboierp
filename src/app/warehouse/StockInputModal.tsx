@@ -42,7 +42,7 @@ export function StockInputModal({ products, warehouses, onClose }: { products: P
 
     return (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
-            <div className="bg-white border-2 border-white rounded-[2.5rem] shadow-2xl w-full max-w-lg overflow-hidden flex flex-col animate-in zoom-in duration-300 shadow-slate-900/20">
+            <div className="bg-white border-2 border-white rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl w-full max-w-lg overflow-hidden flex flex-col animate-in zoom-in duration-300 shadow-slate-900/20">
                 <div className="px-8 py-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 relative">
                     <div className="absolute top-0 left-8 w-12 h-1 bg-primary rounded-b-full" />
                     <div className="flex items-center gap-4">

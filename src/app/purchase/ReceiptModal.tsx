@@ -269,16 +269,16 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-0 md:p-4 backdrop-blur-sm">
             <div className="bg-white border-2 border-slate-300 rounded-none md:rounded-2xl shadow-2xl w-full max-w-7xl h-full md:max-h-[95vh] overflow-hidden flex flex-col">
                 <div className="p-4 md:p-6 border-b-2 border-slate-100 flex justify-between items-center bg-slate-50">
-                    <div>
-                        <h2 className="text-2xl font-bold text-slate-900">{initialData ? "Edit Pembelian" : "Input Pembelian"}</h2>
-                        <p className="text-sm text-slate-500 font-medium">{initialData ? `Mengedit ${initialData.formNumber}` : "Lengkapi detail faktur, sales, dan rincian barang."}</p>
+                    <div className="pr-4">
+                        <h2 className="text-lg md:text-2xl font-bold text-slate-900 leading-tight">{initialData ? "Edit Pembelian" : "Input Pembelian"}</h2>
+                        <p className="text-[10px] md:text-sm text-slate-500 font-medium mt-0.5">{initialData ? `Mengedit ${initialData.formNumber}` : "Lengkapi detail faktur, sales, dan rincian barang."}</p>
                     </div>
-                    <button onClick={onClose} className="p-2 hover:bg-slate-200 rounded-full transition-colors border border-slate-200 bg-white">
-                        <X className="h-6 w-6 text-slate-600" />
+                    <button onClick={onClose} className="p-2 hover:bg-slate-200 rounded-full transition-colors border border-slate-200 bg-white shrink-0">
+                        <X className="h-5 w-5 md:h-6 md:w-6 text-slate-600" />
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-4 md:p-8 overflow-y-auto space-y-6 md:space-y-8 bg-white">
+                <form onSubmit={handleSubmit} className="p-4 md:p-8 overflow-y-auto space-y-6 md:space-y-8 bg-white custom-scrollbar">
                     {/* Header Section */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 bg-slate-50 p-4 md:p-6 rounded-xl border-2 border-slate-200">
                         <div className="space-y-2">

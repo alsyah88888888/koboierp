@@ -75,3 +75,36 @@ body {
   background: #cbd5e1;
   border-radius: 10px;
 }
+
+/* Responsive Table Wrapper */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 1rem;
+}
+
+.table-responsive table {
+  min-width: 800px; /* Force minimum width to prevent crushing */
+}
+
+@media (max-width: 640px) {
+  .table-responsive table {
+    min-width: 600px;
+  }
+}
+
+/* Glassmorphism utility for cards */
+.glass-panel {
+  @apply bg-white/70 backdrop-blur-xl border border-white/20 shadow-xl shadow-slate-200/50;
+}
+
+/* Animation for mobile sidebar */
+@keyframes slide-in-left {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+.animate-slide-in {
+  animation: slide-in-left 0.3s ease-out forwards;
+}

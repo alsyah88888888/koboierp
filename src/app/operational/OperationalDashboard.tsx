@@ -70,14 +70,14 @@ export function OperationalDashboard({ transactions, coa, initialDeliveries = []
 
     return (
         <div className="space-y-6 flex-1 h-full overflow-hidden flex flex-col">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 px-1">
                 <div>
                     <h1 className="text-2xl font-black text-primary uppercase tracking-tighter">Operasional</h1>
-                    <p className="text-muted-foreground text-xs uppercase font-bold tracking-widest">Manajemen Pengeluaran Operasional</p>
+                    <p className="text-muted-foreground text-[10px] md:text-xs uppercase font-bold tracking-widest">Manajemen Pengeluaran Operasional</p>
                 </div>
                 <button
                     onClick={() => setIsModalOpen(true)}
-                    className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-full font-black text-xs uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-lg shadow-primary/20"
+                    className="flex items-center justify-center gap-2 bg-primary text-primary-foreground px-6 py-2.5 rounded-full font-black text-xs uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-lg shadow-primary/20 w-full sm:w-auto"
                 >
                     <Plus className="w-4 h-4" strokeWidth={3} />
                     Input Operasional
@@ -162,8 +162,8 @@ export function OperationalDashboard({ transactions, coa, initialDeliveries = []
             </div>
 
             <div className="bg-card border-none shadow-sm rounded-3xl overflow-hidden flex flex-col flex-1">
-                <div className="p-4 border-b flex justify-between items-center gap-4">
-                    <div className="relative flex-1 max-w-md">
+                <div className="p-4 border-b flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4">
+                    <div className="relative w-full md:max-w-md">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <input
                             type="text"
@@ -173,10 +173,10 @@ export function OperationalDashboard({ transactions, coa, initialDeliveries = []
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
-                    <div className="flex gap-2 text-xs font-black uppercase tracking-widest">
-                        <button className="px-3 py-1 bg-accent rounded-full">Semua</button>
-                        <button className="px-3 py-1 text-muted-foreground hover:bg-accent rounded-full transition-colors">Expenses</button>
-                        <button className="px-3 py-1 text-muted-foreground hover:bg-accent rounded-full transition-colors">Income</button>
+                    <div className="flex flex-wrap gap-2 text-[10px] md:text-xs font-black uppercase tracking-widest justify-center">
+                        <button className="px-4 py-1.5 bg-accent rounded-full flex-1 md:flex-none">Semua</button>
+                        <button className="px-4 py-1.5 text-muted-foreground hover:bg-accent rounded-full transition-colors flex-1 md:flex-none">Expenses</button>
+                        <button className="px-4 py-1.5 text-muted-foreground hover:bg-accent rounded-full transition-colors flex-1 md:flex-none">Income</button>
                     </div>
                 </div>
 

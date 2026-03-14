@@ -88,7 +88,7 @@ export function TopHeader() {
                         {showNotifications && (
                             <>
                                 <div className="fixed inset-0 z-40" onClick={() => setShowNotifications(false)}></div>
-                                <div className="absolute right-0 mt-3 w-80 bg-white border border-slate-100 rounded-[2rem] shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-300">
+                                <div className="absolute right-0 mt-3 w-[calc(100vw-2rem)] sm:w-80 bg-white border border-slate-100 rounded-[2rem] shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-300">
                                     <div className="p-5 border-b bg-slate-50/50 flex justify-between items-center">
                                         <h3 className="font-black text-slate-800 tracking-tight">NotificationCenter</h3>
                                         <span className="bg-primary/10 text-primary text-[10px] font-black px-2 py-1 rounded-full uppercase">

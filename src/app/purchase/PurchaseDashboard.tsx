@@ -109,53 +109,55 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 hide-print mb-4">
-                <div className="flex flex-wrap gap-2">
-                    <div className="bg-white border rounded-xl p-1 flex flex-wrap gap-1 shadow-sm w-full md:w-auto justify-center md:justify-start">
-                        <button onClick={() => setShowSupplierModal(true)} className="hover:bg-slate-50 px-3 py-1.5 rounded-lg font-bold text-xs transition-colors flex items-center gap-1.5 text-slate-600">
+            <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 hide-print mb-4 px-1">
+                <div className="flex flex-wrap gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
+                    <div className="bg-white border rounded-xl p-1 flex gap-1 shadow-sm shrink-0">
+                        <button onClick={() => setShowSupplierModal(true)} className="hover:bg-slate-50 px-3 py-1.5 rounded-lg font-bold text-[10px] md:text-xs transition-colors flex items-center gap-1.5 text-slate-600 whitespace-nowrap">
                             <Plus className="h-3 w-3" /> Supplier
                         </button>
-                        <button onClick={() => setShowBuyerModal(true)} className="hover:bg-slate-50 px-3 py-1.5 rounded-lg font-bold text-xs transition-colors flex items-center gap-1.5 text-slate-600">
+                        <button onClick={() => setShowBuyerModal(true)} className="hover:bg-slate-50 px-3 py-1.5 rounded-lg font-bold text-[10px] md:text-xs transition-colors flex items-center gap-1.5 text-slate-600 whitespace-nowrap">
                             <Plus className="h-3 w-3" /> Buyer
                         </button>
-                        <button onClick={() => setShowProductModal(true)} className="hover:bg-slate-50 px-3 py-1.5 rounded-lg font-bold text-xs transition-colors flex items-center gap-1.5 text-slate-600">
+                        <button onClick={() => setShowProductModal(true)} className="hover:bg-slate-50 px-3 py-1.5 rounded-lg font-bold text-[10px] md:text-xs transition-colors flex items-center gap-1.5 text-slate-600 whitespace-nowrap">
                             <Plus className="h-3 w-3" /> Barang
                         </button>
                     </div>
                 </div>
-                <div className="flex flex-wrap gap-2 justify-center md:justify-end">
+                <div className="flex flex-col sm:flex-row flex-wrap gap-3 justify-center md:justify-end w-full md:w-auto">
                     <button
                         onClick={handlePreview}
-                        className="bg-white border-2 border-emerald-600 text-emerald-600 px-4 md:px-6 py-2 rounded-xl flex items-center gap-2 hover:bg-emerald-50 transition-all font-bold shadow-sm active:scale-95 text-xs md:text-sm"
+                        className="bg-white border-2 border-emerald-600 text-emerald-600 px-6 py-2.5 rounded-xl flex items-center justify-center gap-2 hover:bg-emerald-50 transition-all font-bold shadow-sm active:scale-95 flex-1 sm:flex-none"
                     >
-                        <Eye className="h-4 w-4 md:h-5 md:w-5" />
+                        <Eye className="h-5 w-5" />
                         <span>Preview</span>
                     </button>
                     <button
                         onClick={handleExport}
-                        className="bg-emerald-600 text-white px-4 md:px-6 py-2 rounded-xl flex items-center gap-2 hover:bg-emerald-700 shadow-lg shadow-emerald-200 transition-all active:scale-95 font-bold text-xs md:text-sm"
+                        className="bg-emerald-600 text-white px-6 py-2.5 rounded-xl flex items-center justify-center gap-2 hover:bg-emerald-700 shadow-lg shadow-emerald-200 transition-all active:scale-95 font-bold flex-1 sm:flex-none"
                     >
-                        <Download className="h-4 w-4 md:h-5 md:w-5" />
+                        <Download className="h-5 w-5" />
                         <span>Export</span>
                     </button>
 
-                    {activeTab === "LPB" ? (
-                        <button
-                            onClick={() => setShowReceiptModal(true)}
-                            className="bg-primary text-white px-4 md:px-6 py-2 rounded-xl flex items-center gap-2 hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all active:scale-95 font-bold text-xs md:text-sm"
-                        >
-                            <Plus className="h-4 w-4 md:h-5 md:w-5 text-white" />
-                            <span className="text-white">Input LPB</span>
-                        </button>
-                    ) : (
-                        <button
-                            onClick={() => setShowReturnModal(true)}
-                            className="bg-rose-600 text-white px-4 md:px-6 py-2 rounded-xl flex items-center gap-2 hover:bg-rose-700 shadow-lg shadow-rose-200 transition-all active:scale-95 font-bold text-xs md:text-sm"
-                        >
-                            <Plus className="h-4 w-4 md:h-5 md:w-5 text-white" />
-                            <span className="text-white">Retur</span>
-                        </button>
-                    )}
+                    <div className="flex-1 sm:flex-none">
+                        {activeTab === "LPB" ? (
+                            <button
+                                onClick={() => setShowReceiptModal(true)}
+                                className="bg-primary text-white px-6 py-2.5 rounded-xl flex items-center justify-center gap-2 hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all active:scale-95 font-bold w-full"
+                            >
+                                <Plus className="h-5 w-5 text-white" />
+                                <span className="text-white">Input LPB</span>
+                            </button>
+                        ) : (
+                            <button
+                                onClick={() => setShowReturnModal(true)}
+                                className="bg-rose-600 text-white px-6 py-2.5 rounded-xl flex items-center justify-center gap-2 hover:bg-rose-700 shadow-lg shadow-rose-200 transition-all active:scale-95 font-bold w-full"
+                            >
+                                <Plus className="h-5 w-5 text-white" />
+                                <span className="text-white">Retur</span>
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
 
@@ -163,11 +165,11 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
                 <DashboardStats />
             </div>
 
-            <div className="flex gap-4 border-b hide-print">
+            <div className="flex overflow-x-auto whitespace-nowrap gap-4 border-b hide-print custom-scrollbar scrollbar-hide">
                 <button
                     onClick={() => setActiveTab("LPB")}
                     className={cn(
-                        "pb-3 px-4 font-bold text-sm transition-colors border-b-2",
+                        "pb-3 px-4 font-bold text-sm transition-colors border-b-2 shrink-0",
                         activeTab === "LPB" ? "border-primary text-primary" : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
                     )}
                 >
@@ -176,7 +178,7 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
                 <button
                     onClick={() => setActiveTab("RETUR")}
                     className={cn(
-                        "pb-3 px-4 font-bold text-sm transition-colors border-b-2",
+                        "pb-3 px-4 font-bold text-sm transition-colors border-b-2 shrink-0",
                         activeTab === "RETUR" ? "border-rose-600 text-rose-600" : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
                     )}
                 >

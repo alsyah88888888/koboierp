@@ -120,39 +120,39 @@ export function AccountingDashboard({ journals, accounts }: { journals: any[], a
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hide-print">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hide-print px-1">
                 <div>
-                    <h2 className="text-3xl font-bold tracking-tight text-primary">Akuntansi & Keuangan</h2>
-                    <p className="text-muted-foreground tracking-tight">Pantau laporan laba rugi, neraca, buku besar, dan jurnal.</p>
+                    <h2 className="text-2xl md:text-3xl font-black tracking-tighter text-primary uppercase">Accounting</h2>
+                    <p className="text-muted-foreground text-[10px] md:text-sm font-bold uppercase tracking-widest opacity-70">Financial Reports & Journal entries</p>
                 </div>
                 <button
                     onClick={handleExport}
-                    className="bg-emerald-600 text-white px-6 py-2 rounded-md flex items-center gap-2 hover:bg-emerald-700 shadow-lg shadow-emerald-200 transition-all active:scale-95 font-bold"
+                    className="w-full sm:w-auto bg-emerald-600 text-white px-6 py-2.5 rounded-full flex items-center justify-center gap-2 hover:bg-emerald-700 shadow-lg shadow-emerald-200 transition-all active:scale-95 font-black uppercase text-[10px] tracking-widest"
                 >
-                    <Download className="h-5 w-5" />
+                    <Download className="h-4 w-4" />
                     <span>Export {activeTab}</span>
                 </button>
             </div>
 
             {/* TABS */}
-            <div className="bg-white rounded-xl shadow-sm border p-2 flex flex-wrap gap-2 hide-print">
+            <div className="bg-white rounded-2xl shadow-sm border p-1.5 flex flex-nowrap overflow-x-auto gap-2 hide-print custom-scrollbar scrollbar-hide">
                 {[
-                    { id: "PNL", label: "Laba Rugi (P&L)", icon: BarChart3 },
-                    { id: "BALANCE", label: "Neraca (Balance Sheet)", icon: Scale },
-                    { id: "LEDGER", label: "Buku Besar (Ledger)", icon: Calculator },
+                    { id: "PNL", label: "Laba Rugi", icon: BarChart3 },
+                    { id: "BALANCE", label: "Neraca", icon: Scale },
+                    { id: "LEDGER", label: "Buku Besar", icon: Calculator },
                     { id: "JOURNAL", label: "Jurnal Umum", icon: FileText },
                 ].map(tab => (
                     <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id as any)}
                         className={cn(
-                            "flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold transition-all",
+                            "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all shrink-0",
                             activeTab === tab.id
                                 ? "bg-primary text-white shadow-md shadow-primary/20"
-                                : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+                                : "text-slate-500 hover:bg-slate-100 hover:text-slate-900 border border-transparent hover:border-slate-200"
                         )}
                     >
-                        <tab.icon className="h-4 w-4" />
+                        <tab.icon className="h-3.5 w-3.5" />
                         {tab.label}
                     </button>
                 ))}
@@ -297,15 +297,15 @@ export function AccountingDashboard({ journals, accounts }: { journals: any[], a
                         </select>
                     </div>
 
-                    <div className="overflow-x-auto">
+                    <div className="table-responsive">
                         <table className="w-full text-sm text-left min-w-[800px] table-fixed">
-                            <thead className="bg-slate-100 text-slate-600 font-bold uppercase tracking-wider text-[10px]">
+                            <thead className="bg-slate-100 text-slate-600 font-bold uppercase tracking-wider text-[10px] sticky top-0 z-10">
                                 <tr>
-                                    <th className="px-6 py-4 w-40">Tanggal</th>
+                                    <th className="px-6 py-4 w-32 md:w-40">Tanggal</th>
                                     <th className="px-6 py-4">Deskripsi</th>
-                                    <th className="px-6 py-4 text-right text-emerald-600 w-44">Debit</th>
-                                    <th className="px-6 py-4 text-right text-rose-600 w-44">Kredit</th>
-                                    <th className="px-6 py-4 text-right w-44">Saldo</th>
+                                    <th className="px-6 py-4 text-right text-emerald-600 w-36 md:w-44">Debit</th>
+                                    <th className="px-6 py-4 text-right text-rose-600 w-36 md:w-44">Kredit</th>
+                                    <th className="px-6 py-4 text-right w-36 md:w-44">Saldo</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y text-slate-700">
@@ -369,7 +369,7 @@ export function AccountingDashboard({ journals, accounts }: { journals: any[], a
                         </div>
                     </div>
 
-                    <div className="overflow-x-auto h-[600px] overflow-y-auto relative">
+                    <div className="table-responsive h-[600px] overflow-y-auto relative">
                         <table className="w-full text-sm text-left relative table-fixed min-w-[1000px]">
                             <thead className="bg-slate-100 text-slate-600 font-bold uppercase tracking-wider text-[10px] sticky top-0 z-10 shadow-sm border-b">
                                 <tr>

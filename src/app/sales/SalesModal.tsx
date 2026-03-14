@@ -568,18 +568,18 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                     )}
                 </form>
 
-                <div className="p-4 md:p-8 border-t-2 border-slate-100 bg-slate-50 flex flex-col md:flex-row justify-end gap-3 md:gap-4">
+                <div className="p-4 md:p-8 border-t-2 border-slate-100 bg-slate-50 flex flex-col sm:flex-row justify-end gap-3 md:gap-4">
                     <button
                         type="button"
                         onClick={onClose}
-                        className="w-full md:w-auto px-8 py-3 md:py-3.5 border-2 border-slate-300 rounded-[1.25rem] hover:bg-white font-black transition-all text-slate-700 shadow-md hover:shadow-lg active:scale-95 order-2 md:order-1"
+                        className="w-full sm:w-auto px-8 py-3.5 border-2 border-slate-300 rounded-xl hover:bg-white font-black transition-all text-slate-700 shadow-md hover:shadow-lg active:scale-95 order-2 sm:order-1"
                     >
                         <span>BATAL</span>
                     </button>
                     <button
                         onClick={handleSubmit}
                         disabled={loading}
-                        className="w-full md:w-auto px-12 py-3 md:py-3.5 bg-primary text-white rounded-[1.25rem] hover:bg-primary/90 font-black shadow-2xl shadow-primary/30 flex items-center justify-center gap-3 transition-all active:scale-95 disabled:opacity-50 border-2 border-primary order-1 md:order-2"
+                        className="w-full sm:w-auto px-12 py-3.5 bg-primary text-white rounded-xl hover:bg-primary/90 font-black shadow-2xl shadow-primary/30 flex items-center justify-center gap-3 transition-all active:scale-95 disabled:opacity-50 border-2 border-primary order-1 sm:order-2"
                     >
                         {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
                         <span>SIMPAN PENJUALAN</span>

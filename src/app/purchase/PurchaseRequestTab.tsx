@@ -53,9 +53,9 @@ export function PurchaseRequestTab({ requests, userRole, userId }: { requests: a
     };
 
     return (
-        <div className="overflow-x-auto">
+        <div className="table-responsive">
             <table className="w-full text-sm text-left">
-                <thead className="bg-muted/30 text-muted-foreground border-b text-xs uppercase tracking-wider">
+                <thead className="bg-slate-50 text-slate-500 border-b-2 border-slate-50 text-[10px] uppercase font-black tracking-widest sticky top-0 z-10">
                     <tr>
                         <th className="px-6 py-4 w-10"></th>
                         <th className="px-6 py-4">No. Pengajuan / Tgl</th>
@@ -166,9 +166,9 @@ export function PurchaseRequestTab({ requests, userRole, userId }: { requests: a
                                 </tr>
                                 {isExpanded && (
                                     <tr className="bg-slate-50/50">
-                                        <td colSpan={6} className="px-12 py-4 border-b">
-                                            <div className="space-y-4">
-                                                <div className="grid md:grid-cols-2 gap-8">
+                                        <td colSpan={7} className="px-4 md:px-12 py-6 border-b">
+                                            <div className="space-y-6">
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                                     <div>
                                                         <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">Item Detail</h4>
                                                         <div className="space-y-2">

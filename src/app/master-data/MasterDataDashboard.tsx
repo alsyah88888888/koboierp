@@ -158,33 +158,33 @@ export function MasterDataDashboard() {
 
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 px-1">
                 <div>
-                    <h1 className="text-3xl font-black text-slate-900 tracking-tight">Master Data Management</h1>
-                    <p className="text-slate-500 font-medium whitespace-nowrap">Centralized management for products, partners, and locations.</p>
+                    <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight uppercase">Master Data</h1>
+                    <p className="text-slate-500 font-bold text-[10px] md:text-sm uppercase tracking-widest opacity-70">Catalog for products & partners</p>
                 </div>
                 <button
                     onClick={() => { setEditId(null); setShowModal(true); setForm({ sku: "", name: "", category: "", uom: "", barcode: "", email: "", phone: "", address: "", location: "" }); }}
-                    className="flex items-center justify-center gap-2 bg-primary text-white px-6 py-3 rounded-2xl font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all active:scale-95"
+                    className="w-full sm:w-auto flex items-center justify-center gap-2 bg-primary text-white px-6 py-2.5 rounded-full font-black uppercase text-[10px] tracking-widest shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all active:scale-95"
                 >
-                    <Plus className="h-5 w-5 text-white" />
-                    <span className="text-white">Add {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}</span>
+                    <Plus className="h-4 w-4 text-white" />
+                    <span>Add {activeTab}</span>
                 </button>
             </div>
 
-            <div className="flex flex-wrap gap-2 p-1 bg-slate-100 rounded-2xl w-fit">
+            <div className="flex flex-nowrap overflow-x-auto gap-2 p-1.5 bg-slate-100/80 rounded-2xl w-full sm:w-fit custom-scrollbar scrollbar-hide">
                 {tabs.map((tab) => (
                     <button
                         key={tab.id}
                         onClick={() => { setActiveTab(tab.id as MDType); setSearchQuery(""); }}
                         className={cn(
-                            "flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all",
+                            "flex items-center gap-2 px-6 py-2 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all shrink-0",
                             activeTab === tab.id
                                 ? "bg-white text-slate-900 shadow-sm"
                                 : "text-slate-500 hover:text-slate-700"
                         )}
                     >
-                        <tab.icon className={cn("h-4 w-4", activeTab === tab.id ? tab.color : "text-slate-400")} />
+                        <tab.icon className={cn("h-3.5 w-3.5", activeTab === tab.id ? tab.color : "text-slate-400")} />
                         {tab.name}
                     </button>
                 ))}
@@ -218,7 +218,7 @@ export function MasterDataDashboard() {
                         <p className="text-slate-500 font-medium">Try adjusting your search or add a new entry.</p>
                     </div>
                 ) : (
-                    <div className="overflow-x-auto custom-scrollbar">
+                    <div className="table-responsive">
                         <table className="w-full table-fixed min-w-[800px]">
                             <thead className="bg-slate-50/80 text-slate-500 border-b-2 border-slate-100">
                                 {activeTab === "product" && (
@@ -318,7 +318,7 @@ export function MasterDataDashboard() {
 
             {showModal && (
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-[2.5rem] p-8 w-full max-w-lg shadow-2xl animate-in zoom-in-95 duration-200 border border-slate-100">
+                    <div className="bg-white rounded-3xl sm:rounded-[2.5rem] p-6 sm:p-8 w-full max-w-lg shadow-2xl animate-in zoom-in-95 duration-200 border border-slate-100">
                         <div className="flex justify-between items-center mb-8">
                             <div className="flex items-center gap-3">
                                 <div className={cn("p-3 rounded-2xl", tabs.find(t => t.id === activeTab)?.bg)}>

@@ -278,18 +278,18 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col md:flex-row justify-between items-stretch md:items-end gap-4 hide-print mb-4">
-                <div className="flex flex-wrap gap-2 justify-center md:justify-end">
+            <div className="flex flex-col md:flex-row justify-between items-stretch md:items-end gap-4 hide-print mb-4 px-1">
+                <div className="flex flex-col sm:flex-row flex-wrap gap-3 justify-center md:justify-end w-full">
                     <button
                         onClick={handlePreview}
-                        className="bg-white border-2 border-emerald-600 text-emerald-600 px-6 py-2 rounded-md flex items-center gap-2 hover:bg-emerald-50 transition-all font-bold shadow-sm active:scale-95"
+                        className="bg-white border-2 border-emerald-600 text-emerald-600 px-6 py-2.5 rounded-xl flex items-center justify-center gap-2 hover:bg-emerald-50 transition-all font-bold shadow-sm active:scale-95 flex-1 sm:flex-none"
                     >
                         <Eye className="h-5 w-5" />
                         <span>Preview Laporan</span>
                     </button>
                     <button
                         onClick={handleExport}
-                        className="bg-emerald-600 text-white px-6 py-2 rounded-md flex items-center gap-2 hover:bg-emerald-700 shadow-lg shadow-emerald-200 transition-all active:scale-95 font-bold"
+                        className="bg-emerald-600 text-white px-6 py-2.5 rounded-xl flex items-center justify-center gap-2 hover:bg-emerald-700 shadow-lg shadow-emerald-200 transition-all active:scale-95 font-bold flex-1 sm:flex-none"
                     >
                         <Download className="h-5 w-5" />
                         <span>Export Excel</span>
@@ -297,15 +297,15 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                     {activeTab === "ar" && (
                         <button
                             onClick={handleExportCortex}
-                            className="bg-orange-600 text-white px-6 py-2 rounded-md flex items-center gap-2 hover:bg-orange-700 shadow-lg shadow-orange-200 transition-all active:scale-95 font-bold animate-in fade-in"
+                            className="bg-orange-600 text-white px-6 py-2.5 rounded-xl flex items-center justify-center gap-2 hover:bg-orange-700 shadow-lg shadow-orange-200 transition-all active:scale-95 font-bold animate-in fade-in flex-1 sm:flex-none"
                         >
                             <FileCode2 className="h-5 w-5" />
-                            <span>Export Cortex (XML)</span>
+                            <span>Export Cortex</span>
                         </button>
                     )}
                     <button
                         onClick={() => setShowModal(true)}
-                        className="bg-primary text-white px-6 py-2 rounded-md flex items-center gap-2 hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all active:scale-95 font-bold"
+                        className="bg-primary text-white px-6 py-2.5 rounded-xl flex items-center justify-center gap-2 hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all active:scale-95 font-bold flex-1 sm:flex-none"
                     >
                         <Plus className="h-5 w-5 text-white" />
                         <span className="text-white">Input Transaksi</span>
@@ -330,11 +330,11 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
             </div>
 
             {/* Tabs */}
-            <div className="flex gap-1 border-b hide-print">
+            <div className="flex overflow-x-auto whitespace-nowrap gap-1 border-b hide-print custom-scrollbar scrollbar-hide">
                 <button
                     onClick={() => setActiveTab("ledger")}
                     className={cn(
-                        "px-6 py-3 text-sm font-bold transition-all border-b-2",
+                        "px-6 py-3 text-sm font-bold transition-all border-b-2 shrink-0",
                         activeTab === "ledger" ? "border-primary text-primary" : "border-transparent text-slate-400 hover:text-slate-600"
                     )}
                 >
@@ -343,7 +343,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                 <button
                     onClick={() => setActiveTab("ap")}
                     className={cn(
-                        "px-6 py-3 text-sm font-bold transition-all border-b-2",
+                        "px-6 py-3 text-sm font-bold transition-all border-b-2 shrink-0",
                         activeTab === "ap" ? "border-primary text-primary" : "border-transparent text-slate-400 hover:text-slate-600"
                     )}
                 >
@@ -352,7 +352,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                 <button
                     onClick={() => setActiveTab("ar")}
                     className={cn(
-                        "px-6 py-3 text-sm font-bold transition-all border-b-2",
+                        "px-6 py-3 text-sm font-bold transition-all border-b-2 shrink-0",
                         activeTab === "ar" ? "border-primary text-primary" : "border-transparent text-slate-400 hover:text-slate-600"
                     )}
                 >
@@ -361,7 +361,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                 <button
                     onClick={() => setActiveTab("checker")}
                     className={cn(
-                        "px-6 py-3 text-sm font-bold transition-all border-b-2 flex items-center gap-2",
+                        "px-6 py-3 text-sm font-bold transition-all border-b-2 flex items-center gap-2 shrink-0",
                         activeTab === "checker" ? "border-primary text-primary" : "border-transparent text-slate-400 hover:text-slate-600"
                     )}
                 >
@@ -371,7 +371,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                 <button
                     onClick={() => setActiveTab("purchase_requests")}
                     className={cn(
-                        "px-6 py-3 text-sm font-bold transition-all border-b-2 flex items-center gap-2",
+                        "px-6 py-3 text-sm font-bold transition-all border-b-2 flex items-center gap-2 shrink-0",
                         activeTab === "purchase_requests" ? "border-primary text-primary" : "border-transparent text-slate-400 hover:text-slate-600"
                     )}
                 >
@@ -381,7 +381,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                 <button
                     onClick={() => setActiveTab("history")}
                     className={cn(
-                        "px-6 py-3 text-sm font-bold transition-all border-b-2",
+                        "px-6 py-3 text-sm font-bold transition-all border-b-2 shrink-0",
                         activeTab === "history" ? "border-primary text-primary" : "border-transparent text-slate-400 hover:text-slate-600"
                     )}
                 >

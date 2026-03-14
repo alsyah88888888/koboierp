@@ -107,24 +107,20 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
     return (
         <div className="space-y-8 pb-10">
             {/* Header Section */}
-            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
-                <div className="space-y-2">
-                    <div className="flex items-center gap-3">
-                        <div className="p-3 bg-primary/10 rounded-2xl shadow-sm border border-primary/10">
-                            <WarehouseIcon className="h-7 w-7 text-primary" />
-                        </div>
-                        <h2 className="text-3xl font-black tracking-tighter text-slate-900">
-                            WarehouseManagement
-                        </h2>
-                    </div>
-                    <p className="text-slate-500 font-bold text-sm tracking-tight ml-1">Monitor stock, distribution, and verification status across all locations.</p>
+            {/* Header Section */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 px-1">
+                <div>
+                    <h2 className="text-2xl md:text-3xl font-black tracking-tighter text-slate-900 uppercase">
+                        Warehouse
+                    </h2>
+                    <p className="text-slate-500 font-bold text-[10px] md:text-sm tracking-tight uppercase tracking-widest opacity-70">Inventory & Stock Distribution</p>
                 </div>
 
                 <button
                     onClick={() => setShowInputModal(true)}
-                    className="w-full lg:w-auto bg-slate-900 text-white px-8 py-3.5 rounded-[1.5rem] flex items-center justify-center gap-3 hover:bg-slate-800 transition-all font-black shadow-xl shadow-slate-200 active:scale-95 border-2 border-slate-900 group"
+                    className="w-full sm:w-auto bg-slate-900 text-white px-8 py-3 rounded-full flex items-center justify-center gap-3 hover:bg-slate-800 transition-all font-black shadow-xl shadow-slate-200 active:scale-95 border-2 border-slate-900 group"
                 >
-                    <Plus className="h-5 w-5 text-primary group-hover:rotate-90 transition-transform" />
+                    <Plus className="h-4 w-4 text-primary group-hover:rotate-90 transition-transform" />
                     <span className="uppercase tracking-widest text-xs">Stock Entry</span>
                 </button>
             </div>
@@ -244,15 +240,15 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                             </div>
 
                             {/* Inventory List with Search */}
-                            <div className="rounded-2xl border-2 border-slate-100 bg-white shadow-sm overflow-hidden">
-                                <div className="p-6 border-b-2 border-slate-50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-50/50">
+                            <div className="bg-white border-2 border-slate-100 rounded-3xl shadow-sm overflow-hidden">
+                                <div className="p-4 md:p-6 border-b-2 border-slate-50 flex flex-col md:flex-row gap-4 justify-between bg-slate-50/50">
                                     <div className="flex items-center gap-3">
                                         <div className="p-2 bg-primary/10 rounded-lg">
                                             <Box className="h-5 w-5 text-primary" />
                                         </div>
                                         <div>
-                                            <h3 className="text-lg font-black text-slate-800">Master Stock Overview</h3>
-                                            <p className="text-xs text-slate-500 font-medium">Data stok real-time seluruh gudang.</p>
+                                            <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight">Master Stock</h3>
+                                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest opacity-70">Real-time inventory overview</p>
                                         </div>
                                     </div>
                                     <div className="relative w-full md:w-80">
@@ -260,21 +256,21 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                         <input
                                             value={searchTerm}
                                             onChange={e => setSearchTerm(e.target.value)}
-                                            placeholder="Cari SKU atau Nama Barang..."
-                                            className="w-full pl-10 pr-4 py-2.5 bg-white border-2 border-slate-200 rounded-xl text-sm focus:outline-none focus:border-primary transition-all font-medium placeholder:text-slate-400 shadow-inner"
+                                            placeholder="Search SKU or Product..."
+                                            className="w-full pl-10 pr-4 py-2.5 bg-white border-2 border-slate-200 rounded-xl text-sm focus:outline-none focus:border-primary transition-all font-medium placeholder:text-slate-400 shadow-sm"
                                         />
                                     </div>
                                 </div>
-                                <div className="overflow-x-auto custom-scrollbar">
-                                    <table className="w-full text-sm text-left min-w-[1000px] table-fixed">
-                                        <thead className="bg-slate-50/50 text-slate-500 border-b-2 border-slate-50">
+                                <div className="table-responsive">
+                                    <table className="w-full text-sm text-left min-w-[900px]">
+                                        <thead className="bg-slate-50 text-slate-500 border-b-2 border-slate-100 sticky top-0 z-10">
                                             <tr>
-                                                <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest w-64">Barang / SKU</th>
-                                                <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest text-left w-48">Gudang</th>
-                                                <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest text-left">Vendor / Pemasok</th>
-                                                <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest text-right w-40">Qty Tersedia</th>
-                                                <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest text-right w-32">Status</th>
-                                                {isAdmin && <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest text-center w-20">Aksi</th>}
+                                                <th className="px-4 md:px-6 py-4 uppercase text-[10px] font-black tracking-widest w-64">Barang / SKU</th>
+                                                <th className="px-4 md:px-6 py-4 uppercase text-[10px] font-black tracking-widest text-left w-48">Gudang</th>
+                                                <th className="px-4 md:px-6 py-4 uppercase text-[10px] font-black tracking-widest text-left">Vendor / Pemasok</th>
+                                                <th className="px-4 md:px-6 py-4 uppercase text-[10px] font-black tracking-widest text-right w-36">Qty</th>
+                                                <th className="px-4 md:px-6 py-4 uppercase text-[10px] font-black tracking-widest text-right w-32">Status</th>
+                                                {isAdmin && <th className="px-4 md:px-6 py-4 uppercase text-[10px] font-black tracking-widest text-center w-20">Aksi</th>}
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-50">
@@ -287,43 +283,43 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                                         const whName = warehouses.find(w => w.id === s.warehouseId)?.name || "Unknown";
                                                         const isLow = s.quantity <= p.lowStockThreshold;
                                                         rows.push(
-                                                            <tr key={`${p.id}-${s.id}`} className="hover:bg-slate-50/50 transition-colors group">
-                                                                <td className="px-6 py-4">
-                                                                    <div className="font-bold text-slate-800 truncate" title={p.name}>{p.name}</div>
-                                                                    <div className="text-[10px] font-mono text-slate-400 uppercase group-hover:text-primary transition-colors truncate" title={p.sku}>{p.sku}</div>
-                                                                </td>
-                                                                <td className="px-6 py-4 text-left font-bold text-slate-600 text-xs">
-                                                                    {whName}
-                                                                </td>
-                                                                <td className="px-6 py-4 text-left">
-                                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 text-xs font-bold border border-slate-200 max-w-full">
-                                                                        <WarehouseIcon className="h-3 w-3 text-slate-400 shrink-0" />
-                                                                        <span className="truncate" title={s.vendorName || "UMUM"}>{s.vendorName || "UMUM"}</span>
-                                                                    </span>
-                                                                </td>
-                                                                <td className="px-6 py-4 text-right">
-                                                                    <div className="text-lg font-black text-slate-800">{(s.quantity || 0).toLocaleString()} <span className="text-[10px] text-slate-400 font-bold uppercase">{p.uom}</span></div>
-                                                                </td>
-                                                                <td className="px-6 py-4 text-right">
-                                                                    <span className={cn(
-                                                                        "px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter shadow-sm",
-                                                                        isLow ? "bg-amber-100 text-amber-700 shadow-amber-100" : "bg-emerald-100 text-emerald-700 shadow-emerald-100"
-                                                                    )}>
-                                                                        {isLow ? "Low Stock" : "In Stock"}
-                                                                    </span>
-                                                                </td>
-                                                                {isAdmin && (
-                                                                    <td className="px-6 py-4 text-center">
-                                                                        <button
-                                                                            onClick={() => handleDeleteProduct(p.id)}
-                                                                            className="p-2 text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                                                                            title="Hapus Produk"
-                                                                        >
-                                                                            <Trash2 className="h-4 w-4" />
-                                                                        </button>
-                                                                    </td>
-                                                                )}
-                                                            </tr>
+                                                                    <tr key={`${p.id}-${s.id}`} className="hover:bg-slate-50/50 transition-colors group">
+                                                                        <td className="px-4 md:px-6 py-4">
+                                                                            <div className="font-bold text-slate-800 truncate max-w-[200px]" title={p.name}>{p.name}</div>
+                                                                            <div className="text-[10px] font-mono text-slate-400 uppercase group-hover:text-primary transition-colors truncate" title={p.sku}>{p.sku}</div>
+                                                                        </td>
+                                                                        <td className="px-4 md:px-6 py-4 text-left font-bold text-slate-600 text-xs">
+                                                                            {whName}
+                                                                        </td>
+                                                                        <td className="px-4 md:px-6 py-4 text-left">
+                                                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 text-[10px] font-bold border border-slate-200 max-w-full">
+                                                                                <WarehouseIcon className="h-3 w-3 text-slate-400 shrink-0" />
+                                                                                <span className="truncate max-w-[120px]" title={s.vendorName || "UMUM"}>{s.vendorName || "UMUM"}</span>
+                                                                            </span>
+                                                                        </td>
+                                                                        <td className="px-4 md:px-6 py-4 text-right">
+                                                                            <div className="text-base font-black text-slate-800">{(s.quantity || 0).toLocaleString()} <span className="text-[10px] text-slate-400 font-bold uppercase">{p.uom}</span></div>
+                                                                        </td>
+                                                                        <td className="px-4 md:px-6 py-4 text-right">
+                                                                            <span className={cn(
+                                                                                "px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter shadow-sm",
+                                                                                isLow ? "bg-amber-100 text-amber-700 shadow-amber-100" : "bg-emerald-100 text-emerald-700 shadow-emerald-100"
+                                                                            )}>
+                                                                                {isLow ? "Low" : "Ready"}
+                                                                            </span>
+                                                                        </td>
+                                                                        {isAdmin && (
+                                                                            <td className="px-4 md:px-6 py-4 text-center">
+                                                                                <button
+                                                                                    onClick={() => handleDeleteProduct(p.id)}
+                                                                                    className="p-2 text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                                                                                    title="Hapus Produk"
+                                                                                >
+                                                                                    <Trash2 className="h-4 w-4" />
+                                                                                </button>
+                                                                            </td>
+                                                                        )}
+                                                                    </tr>
                                                         );
                                                     });
                                                 } else {
