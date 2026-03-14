@@ -218,9 +218,9 @@ export function MasterDataDashboard() {
                         <p className="text-slate-500 font-medium">Try adjusting your search or add a new entry.</p>
                     </div>
                 ) : (
-                    <div className="table-responsive">
-                        <table className="w-full table-fixed min-w-[800px]">
-                            <thead className="bg-slate-50/80 text-slate-500 border-b-2 border-slate-100">
+                    <div className="overflow-y-auto max-h-[calc(100vh-400px)] min-h-[400px] custom-scrollbar">
+                        <table className="w-full table-fixed min-w-[800px] relative">
+                            <thead className="bg-slate-50 text-slate-500 border-b-2 border-slate-100 sticky top-0 z-20">
                                 {activeTab === "product" && (
                                     <tr>
                                         <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest w-64">Barang / SKU</th>

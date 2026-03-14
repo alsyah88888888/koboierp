@@ -262,9 +262,9 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                     </div>
                                 </div>
                                 {/* DESKTOP TABLE VIEW */}
-                                <div className="hidden md:block overflow-x-auto">
-                                    <table className="w-full text-sm text-left min-w-[1000px] table-fixed">
-                                        <thead className="bg-slate-50 text-slate-500 border-b-2 border-slate-100 sticky top-0 z-10">
+                                <div className="hidden md:block overflow-y-auto max-h-[calc(100vh-450px)] min-h-[400px] custom-scrollbar border-b-2 border-slate-50">
+                                    <table className="w-full text-sm text-left min-w-[1000px] table-fixed relative">
+                                        <thead className="bg-slate-50 text-slate-500 border-b-2 border-slate-100 sticky top-0 z-20 shadow-sm">
                                             <tr>
                                                 <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest w-72">Barang / SKU</th>
                                                 <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest text-left w-48">Gudang</th>
