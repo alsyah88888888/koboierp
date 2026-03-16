@@ -1060,8 +1060,8 @@ export async function updatePaymentStatusAction(type: "PURCHASE" | "SALE", id: s
             let totalItemDiscounts = 0;
             delivery.items.forEach((i: any) => {
                 const lineGross = i.quantity * Number(i.salesPrice);
-                // Adjusting discount calculation to be nominal if percentage is used, and then rounding
-                totalItemDiscounts += Math.round(lineGross * ((Number(i.discount) || 0) / 100));
+                // Correcting discount calculation to be nominal (the UI sends nominal discount values)
+                totalItemDiscounts += Math.round(Number(i.discount) || 0);
             });
             const totalAllDiscounts = Math.round(totalItemDiscounts + totalDiscountNominal);
 
