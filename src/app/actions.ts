@@ -54,72 +54,79 @@ export async function createPurchaseRequestAction(data: {
 }
 
 export async function updatePurchaseRequestStatusAction(id: string, status: "APPROVED_BY_ADMIN" | "VERIFIED_BY_FINANCE" | "REJECTED") {
-    const session = await getServerSession(authOptions) as any;
-    if (!session?.user?.id) throw new Error("Unauthorized");
-    const role = session.user.role?.toUpperCase();
+    try {
+        const session = await getServerSession(authOptions) as any;
+        if (!session?.user?.id) throw new Error("Unauthorized: Sesi tidak ditemukan.");
+        const role = session.user.role?.toUpperCase();
 
-    const pr = await prisma.purchaseRequest.findUnique({
-        where: { id },
-        include: { items: true }
-    });
-    if (!pr) throw new Error("Request not found");
-
-    // Logic Check
-    if (status === "APPROVED_BY_ADMIN" && role !== "ADMIN") throw new Error("Hanya Admin Utama yang bisa menyetujui.");
-    if (status === "VERIFIED_BY_FINANCE" && role !== "FINANCE" && role !== "ADMIN") throw new Error("Hanya Finance atau Admin yang bisa memverifikasi.");
-    if (status === "VERIFIED_BY_FINANCE" && pr.status !== "APPROVED_BY_ADMIN") throw new Error("Harus disetujui Admin Utama terlebih dahulu.");
-
-    const updateData: any = { status };
-    if (status === "APPROVED_BY_ADMIN") {
-        updateData.approvedById = session.user.id;
-        updateData.approvedAt = new Date();
-    } else if (status === "VERIFIED_BY_FINANCE") {
-        updateData.verifiedById = session.user.id;
-        updateData.verifiedAt = new Date();
-    }
-
-    await prisma.$transaction(async (tx: any) => {
-        await tx.purchaseRequest.update({
+        const pr = await prisma.purchaseRequest.findUnique({
             where: { id },
-            data: updateData
+            include: { items: true }
+        });
+        if (!pr) throw new Error("Request tidak ditemukan di database.");
+
+        // Logic Check
+        if (status === "APPROVED_BY_ADMIN" && role !== "ADMIN") throw new Error("Hanya Admin Utama yang bisa menyetujui.");
+        if (status === "VERIFIED_BY_FINANCE" && role !== "FINANCE" && role !== "ADMIN") throw new Error("Hanya Finance atau Admin yang bisa memverifikasi.");
+        if (status === "VERIFIED_BY_FINANCE" && pr.status !== "APPROVED_BY_ADMIN") throw new Error("Harus disetujui Admin Utama terlebih dahulu.");
+
+        const updateData: any = { status };
+        if (status === "APPROVED_BY_ADMIN") {
+            updateData.approvedById = session.user.id;
+            updateData.approvedAt = new Date();
+        } else if (status === "VERIFIED_BY_FINANCE") {
+            updateData.verifiedById = session.user.id;
+            updateData.verifiedAt = new Date();
+        }
+
+        await prisma.$transaction(async (tx: any) => {
+            await tx.purchaseRequest.update({
+                where: { id },
+                data: updateData
+            });
+
+            // Create Journal Entries if Verified by Finance
+            if (status === "VERIFIED_BY_FINANCE") {
+                const expenseAccount = await tx.financeAccount.findUnique({ where: { code: '601' } }); // Biaya Operasional
+                const bankAccount = await tx.financeAccount.findUnique({ where: { code: '102' } }); // Bank DCA
+
+                if (expenseAccount && bankAccount) {
+                    const totalAmount = pr.items.reduce((sum: number, item: any) => sum + (item.quantity * Number(item.estimatedPrice)), 0);
+
+                    // Debit Expense
+                    await tx.journalEntry.create({
+                        data: {
+                            description: `Biaya Operasional (PR): ${pr.number}`,
+                            amount: totalAmount as any,
+                            type: "DEBIT",
+                            accountId: expenseAccount.id,
+                            date: new Date()
+                        }
+                    });
+
+                    // Credit Bank
+                    await tx.journalEntry.create({
+                        data: {
+                            description: `Pencairan Dana (PR): ${pr.number}`,
+                            amount: totalAmount as any,
+                            type: "CREDIT",
+                            accountId: bankAccount.id,
+                            date: new Date()
+                        }
+                    });
+                } else if (!expenseAccount || !bankAccount) {
+                    console.warn("Account 601 or 102 not found, skipping journal creation.");
+                }
+            }
         });
 
-        // Create Journal Entries if Verified by Finance
-        if (status === "VERIFIED_BY_FINANCE") {
-            const expenseAccount = await tx.financeAccount.findUnique({ where: { code: '601' } }); // Biaya Operasional
-            const bankAccount = await tx.financeAccount.findUnique({ where: { code: '102' } }); // Bank BCA
-
-            if (expenseAccount && bankAccount) {
-                const totalAmount = pr.items.reduce((sum: number, item: any) => sum + (item.quantity * Number(item.estimatedPrice)), 0);
-
-                // Debit Expense
-                await tx.journalEntry.create({
-                    data: {
-                        description: `Biaya Operasional (PR): ${pr.number}`,
-                        amount: totalAmount as any,
-                        type: "DEBIT",
-                        accountId: expenseAccount.id,
-                        date: new Date()
-                    }
-                });
-
-                // Credit Bank
-                await tx.journalEntry.create({
-                    data: {
-                        description: `Pencairan Dana (PR): ${pr.number}`,
-                        amount: totalAmount as any,
-                        type: "CREDIT",
-                        accountId: bankAccount.id,
-                        date: new Date()
-                    }
-                });
-            }
-        }
-    });
-
-    revalidatePath("/purchase");
-    revalidatePath("/finance");
-    return { success: true };
+        revalidatePath("/purchase");
+        revalidatePath("/finance");
+        return { success: true };
+    } catch (error: any) {
+        console.error("Error in updatePurchaseRequestStatusAction:", error);
+        return { success: false, error: error.message || "Gagal memperbarui status pengajuan." };
+    }
 }
 
 export async function deletePurchaseRequestAction(id: string) {

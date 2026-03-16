@@ -19,6 +19,8 @@ export function PurchaseRequestTab({ requests, userRole, userId }: { requests: a
             const res = await updatePurchaseRequestStatusAction(id, status);
             if (res.success) {
                 alert("Status pengajuan diperbarui.");
+            } else {
+                alert(res.error || "Gagal memperbarui status");
             }
         } catch (error: any) {
             alert(error.message || "Gagal memperbarui status");

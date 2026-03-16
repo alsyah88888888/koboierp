@@ -31,7 +31,6 @@ export function PurchaseRequestModal({ onClose }: { onClose: () => void }) {
             (newItems[index] as any)[field] = value;
         }
 
-        newItems[index][field as keyof RequestItem] = value;
         setItems(newItems);
     };
 
