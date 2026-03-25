@@ -7,13 +7,12 @@ import { formatCurrency, formatNumber, serializeDecimal } from "@/lib/utils";
 
 import { headers } from "next/headers";
 
-export default async function PurchasePrintPage({ params }: { params: { id: string } }) {
+export default async function ReceiptPrintPage({ params }: { params: Promise<{ id: string }> }) {
     // Force dynamic rendering to skip build-time DB check
     await headers();
     
-    // Resolve params await
-    const { id } = params;
-    const purchase = await prisma.purchase.findUnique({
+    const { id } = await params;
+    const receipt = await prisma.goodsReceipt.findUnique({
         where: { id },
         include: {
             items: { include: { product: true } },

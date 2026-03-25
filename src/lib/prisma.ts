@@ -5,8 +5,33 @@ if (!process.env.DATABASE_URL) {
   process.env.DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/postgres";
 }
 
+// Global Prisma instance with a Proxy to bypass DB checks during build
 const prismaClientSingleton = () => {
-  return new PrismaClient();
+    // If DATABASE_URL is missing or we are in build phase, return a Proxy
+    if (!process.env.DATABASE_URL || process.env.NEXT_PHASE === 'phase-production-build') {
+        const dummyHandler = {
+            get: () => async () => [], // Default to array for safety in .map() if possible
+        };
+        const modelProxy = new Proxy({
+            findMany: async () => [],
+            findUnique: async () => null,
+            findFirst: async () => null,
+            count: async () => 0,
+            aggregate: async () => ({}),
+            groupBy: async () => [],
+        }, dummyHandler);
+
+        return new Proxy({} as any, {
+            get: (target, prop) => {
+                const p = prop.toString();
+                if (p === '$queryRawUnsafe' || p === '$queryRaw' || p === '$transaction') {
+                    return async () => [];
+                }
+                return modelProxy;
+            },
+        }) as PrismaClient;
+    }
+    return new PrismaClient();
 };
 
 declare global {
