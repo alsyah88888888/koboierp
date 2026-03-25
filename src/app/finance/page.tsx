@@ -6,7 +6,12 @@ import { FinanceDashboard } from "./FinanceDashboard";
 import { serializeDecimal } from "@/lib/utils";
 import { getFinanceTransactionsAction } from "../actions";
 
+import { headers } from "next/headers";
+
 export default async function FinancePage() {
+    // Force dynamic rendering to skip build-time DB check
+    await headers();
+    
     const accounts = await getBalanceSheet().catch(() => []);
 
     const ledger = await prisma.journalEntry.findMany({

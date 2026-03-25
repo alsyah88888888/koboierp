@@ -4,7 +4,12 @@ import prisma from "@/lib/prisma";
 import { OperationalDashboard } from "./OperationalDashboard";
 import { serializeDecimal } from "@/lib/utils";
 
+import { headers } from "next/headers";
+
 export default async function OperationalPage() {
+    // Force dynamic rendering to skip build-time DB check
+    await headers();
+    
     // Use raw query to bypass client schema validation for salesPerson field
     const transactions: any[] = await prisma.$queryRawUnsafe(`
         SELECT * FROM "FinanceTransaction" ORDER BY "date" DESC

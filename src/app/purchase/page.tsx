@@ -4,7 +4,12 @@ import prisma from "@/lib/prisma";
 import { PurchaseDashboard } from "./PurchaseDashboard";
 import { serializeDecimal } from "@/lib/utils";
 
+import { headers } from "next/headers";
+
 export default async function PurchasePage() {
+    // Force dynamic rendering to skip build-time DB check
+    await headers();
+    
     const products = await prisma.product.findMany({
         select: { id: true, sku: true, name: true, uom: true, barcode: true },
         orderBy: { sku: 'asc' }
