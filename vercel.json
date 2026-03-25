@@ -1,9 +1,0 @@
-{
-  "build": {
-    "env": {
-      "DATABASE_URL": "postgresql://postgres:postgres@localhost:5432/postgres",
-      "NEXTAUTH_SECRET": "dummy-secret-for-build",
-      "NEXTAUTH_URL": "https://koboierp.vercel.app"
-    }
-  }
-}
