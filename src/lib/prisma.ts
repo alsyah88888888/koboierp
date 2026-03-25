@@ -1,16 +1,11 @@
 import { PrismaClient } from "@prisma/client";
 
+// During build phase or if env is missing, set a dummy URL to prevent Prisma crashes
+if (!process.env.DATABASE_URL) {
+  process.env.DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/postgres";
+}
+
 const prismaClientSingleton = () => {
-  // During build phase, provide a dummy URL if DATABASE_URL is missing to avoid crashing static analysis
-  if (process.env.NEXT_PHASE === 'phase-production-build' && !process.env.DATABASE_URL) {
-    return new PrismaClient({
-      datasources: {
-        db: {
-          url: "postgresql://postgres:postgres@localhost:5432/postgres" 
-        }
-      }
-    });
-  }
   return new PrismaClient();
 };
 
