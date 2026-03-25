@@ -13,11 +13,16 @@ export const metadata: Metadata = {
 import { Providers } from "@/components/layout/providers";
 import { TopHeader } from "@/components/layout/TopHeader";
 
-export default function RootLayout({
+import { cookies } from "next/headers";
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Force global dynamic rendering to bypass all build-time DB checks
+  await cookies();
+  
   return (
     <html lang="en" className="dark">
       <body className={`${inter.className} bg-background text-foreground antialiased`}>
