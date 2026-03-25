@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "npm run kill-port && next dev",
-    "build": "prisma generate && next build",
+    "build": "DATABASE_URL=postgresql://postgres:postgres@localhost:5432/postgres prisma generate && next build",
     "start": "next start",
     "prestart": "npm run kill-port",
     "kill-port": "powershell -Command \"Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; exit 0\"",
