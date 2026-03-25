@@ -1,4 +1,4 @@
-import { PrismaClient } from "../generated/client";
+import { PrismaClient } from "@prisma/client";
 
 // During build phase or if env is missing, set a dummy URL to prevent Prisma crashes
 if (!process.env.DATABASE_URL) {
