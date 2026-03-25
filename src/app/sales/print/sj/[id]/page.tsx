@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import prisma from "@/lib/prisma";
 import { DocumentLayout } from "@/components/print/DocumentLayout";
 import { format } from "date-fns";
