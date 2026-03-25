@@ -5,9 +5,15 @@ import { DocumentLayout } from "@/components/print/DocumentLayout";
 import { format } from "date-fns";
 import { formatCurrency, formatNumber, serializeDecimal } from "@/lib/utils";
 
-export default async function ReceiptPrintPage({ params }: { params: Promise<{ id: string }> }) {
-    const { id } = await params;
-    const receipt = await prisma.goodsReceipt.findUnique({
+import { headers } from "next/headers";
+
+export default async function PurchasePrintPage({ params }: { params: { id: string } }) {
+    // Force dynamic rendering to skip build-time DB check
+    await headers();
+    
+    // Resolve params await
+    const { id } = params;
+    const purchase = await prisma.purchase.findUnique({
         where: { id },
         include: {
             items: { include: { product: true } },

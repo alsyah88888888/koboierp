@@ -5,9 +5,16 @@ import { DocumentLayout } from "@/components/print/DocumentLayout";
 import { format } from "date-fns";
 import { formatCurrency, formatNumber, serializeDecimal } from "@/lib/utils";
 
-export default async function InvoicePrintPage({ params }: { params: Promise<{ id: string }> }) {
-    const { id } = await params;
-    const delivery: any = await prisma.salesDelivery.findUnique({
+import { headers } from "next/headers";
+
+export default async function SalesPrintPage({ params }: { params: { id: string } }) {
+    // Force dynamic rendering to skip build-time DB check
+    await headers();
+    
+    // Resolve params await
+    const { id } = params;
+    
+    const sale: any = await prisma.sale.findUnique({
         where: { id },
         include: {
             items: { include: { product: true } },
