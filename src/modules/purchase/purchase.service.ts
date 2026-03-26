@@ -1,5 +1,4 @@
 import { Prisma } from "@prisma/client";
-import { Decimal } from "@prisma/client/runtime/library";
 import prisma from "@/lib/prisma";
 
 export interface CreatePOItem {
@@ -19,7 +18,7 @@ export async function createPurchaseOrder(vendorId: string, items: CreatePOItem[
                 create: items.map(item => ({
                     productId: item.productId,
                     quantity: item.quantity,
-                    price: new Decimal(item.price)
+                    price: new Prisma.Decimal(item.price)
                 }))
             }
         },

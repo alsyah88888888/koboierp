@@ -1,5 +1,4 @@
 import { Prisma } from "@prisma/client";
-import { Decimal } from "@prisma/client/runtime/library";
 import prisma from "@/lib/prisma";
 
 export async function createJournalEntry(data: {
@@ -11,7 +10,7 @@ export async function createJournalEntry(data: {
     return await prisma.journalEntry.create({
         data: {
             description: data.description,
-            amount: new Decimal(data.amount),
+            amount: new Prisma.Decimal(data.amount),
             type: data.type,
             accountId: data.accountId,
         }
@@ -41,9 +40,9 @@ export async function getBalanceSheet() {
                 if (journal.type === "CREDIT") return acc.add(journal.amount);
                 return acc.sub(journal.amount);
             }
-        }, new Decimal(0));
+        }, new Prisma.Decimal(0));
 
-        const { journals, ...accountData } = account;
+        const { journals: _journals, ...accountData } = account;
         return {
             ...accountData,
             balance: balance.toNumber()

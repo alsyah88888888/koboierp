@@ -45,7 +45,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
     };
 
     const handleVerifyPayment = async (type: "PURCHASE" | "SALE", id: string, status: "PAID" | "CREDIT" | "PARTIAL", partialAmount?: number) => {
-        let msg = status === "PAID"
+        const msg = status === "PAID"
             ? "Konfirmasi pelunasan transaksi ini? Saldo Kas/Bank BCA akan otomatis terupdate."
             : status === "PARTIAL"
                 ? `Konfirmasi pembayaran DP / Sebagian sebesar ${formatCurrency(partialAmount || 0)}?`

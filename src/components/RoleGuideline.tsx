@@ -19,6 +19,7 @@ export function RoleGuideline({ role }: RoleGuidelineProps) {
     useEffect(() => {
         const dismissed = localStorage.getItem(storageKey);
         if (dismissed === "true") {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setIsVisible(false);
         }
     }, [storageKey]);
