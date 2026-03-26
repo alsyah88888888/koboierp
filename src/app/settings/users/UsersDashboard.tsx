@@ -328,7 +328,7 @@ export default function UsersDashboard() {
               <button className="w-full bg-slate-900 text-white py-5 rounded-2xl font-black uppercase tracking-widest mt-8 shadow-xl shadow-slate-200 hover:bg-slate-800 transition-all active:scale-95 flex items-center justify-center gap-2">
                 <CheckCircle2 className="h-5 w-5" />
                 <span>
-                  {showModal === 'create' ? 'Daftarkan Pegawai' : showModal === 'edit' ? 'Update Data' : 'Reset Sekarang'}
+                  {showModal === 'create' ? 'Daftarkan Pegawai' : showModal === 'edit' ? 'Update Data' : 'Simpan Password Baru'}
                 </span>
               </button>
             </form>
