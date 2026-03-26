@@ -40,18 +40,17 @@ export const authOptions: AuthOptions = {
                     where: { email: credentials.email }
                 });
 
-                if (user && user.password) {
-                    const isValid = await bcrypt.compare(credentials.password, user.password);
-                    if (isValid) {
-                        return {
-                            id: user.id,
-                            name: user.name,
-                            email: user.email,
-                            role: user.role
-                        };
-                    }
-                }
-                return null;
+                if (!user) throw new Error("User Salah");
+
+                const isValid = await bcrypt.compare(credentials.password, user.password || "");
+                if (!isValid) throw new Error("Password Salah");
+
+                return {
+                    id: user.id,
+                    name: user.name,
+                    email: user.email,
+                    role: user.role
+                };
             }
         })
     ],
