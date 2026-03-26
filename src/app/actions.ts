@@ -1159,18 +1159,10 @@ export async function createFinanceTransactionAction(data: {
                 referenceNumber: data.referenceNumber,
                 description: data.description,
                 amount: data.amount as any,
-                createdById: session?.user?.id
+                createdById: session?.user?.id,
+                salesPerson: data.salesPerson // Included directly
             }
         });
-
-        // 1.1 Update salesPerson via raw SQL to bypass client validation
-        if (data.salesPerson) {
-            await tx.$executeRawUnsafe(
-                `UPDATE "FinanceTransaction" SET "salesPerson" = ? WHERE id = ?`,
-                data.salesPerson,
-                transaction.id
-            );
-        }
 
         // 2. Create Journal Entries (Double Entry)
         // For simplicity, we assume 'accountId' is the "Other" side of the bank transaction.
