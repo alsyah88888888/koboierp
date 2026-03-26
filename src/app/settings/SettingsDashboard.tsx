@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import * as XLSX from "xlsx";
+import Link from "next/link";
 import {
     Building2,
     Globe,
@@ -199,6 +200,7 @@ export function SettingsDashboard() {
         { name: "Vendor / Supplier", icon: Truck, count: `${counts.vendor} Vendors`, href: "/purchase", type: "vendor" },
         { name: "Customer / Buyer", icon: Users, count: `${counts.customer} Customers`, href: "/sales", type: "customer" },
         { name: "Gudang / Cabang", icon: Warehouse, count: `${counts.warehouse} Locations`, href: "/warehouse", type: "warehouse" },
+        { name: "Karyawan & Akses", icon: Users, count: "Kelola User", href: "/settings/users", type: "users" },
     ];
 
     return (
@@ -372,12 +374,13 @@ export function SettingsDashboard() {
                         </div>
                         <div className="grid grid-cols-1 gap-4">
                             {masterData.map((item, i) => (
-                                <div
+                                <Link 
                                     key={i}
-                                    className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 border-2 border-transparent shadow-sm transition-all"
+                                    href={item.href}
+                                    className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 border-2 border-transparent hover:border-primary/20 shadow-sm transition-all group/item"
                                 >
                                     <div className="flex items-center gap-4">
-                                        <div className="bg-white p-3 rounded-xl shadow-sm text-slate-400">
+                                        <div className="bg-white p-3 rounded-xl shadow-sm text-slate-400 group-hover/item:text-primary transition-colors">
                                             <item.icon className="h-5 w-5" />
                                         </div>
                                         <div>
@@ -385,8 +388,8 @@ export function SettingsDashboard() {
                                             <div className="text-xs font-medium text-slate-400">{item.count}</div>
                                         </div>
                                     </div>
-                                    <div className="text-[10px] font-black uppercase text-slate-300 tracking-widest">System Master</div>
-                                </div>
+                                    <div className="text-[10px] font-black uppercase text-slate-300 tracking-widest group-hover/item:text-primary/40">Manage</div>
+                                </Link>
                             ))}
                         </div>
                     </div>
