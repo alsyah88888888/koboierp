@@ -7,10 +7,9 @@
     "build": "prisma generate && next build",
     "postinstall": "prisma generate",
     "start": "next start",
-    "prestart": "npm run kill-port",
     "kill-port": "powershell -Command \"Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; exit 0\"",
     "lint": "eslint",
-    "deploy:vps": "ssh -o StrictHostKeyChecking=no root@76.13.20.44 \"cd ~/erp && git pull && npm run build && pm2 restart erp\""
+    "deploy:vps": "ssh -o StrictHostKeyChecking=no root@76.13.20.44 \"cd ~/erp && git reset --hard HEAD && git pull && npm run build && pm2 restart erp\""
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.1",
