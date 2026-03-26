@@ -113,6 +113,10 @@ export default async function DashboardPage() {
         return false;
       }
     }
+    // Specific filter for 'Bu Cici'
+    if (session?.user?.email === 'cici@kolaborasi.id') {
+      if (stat.name === 'Margin PF') return false;
+    }
     return true;
   });
 
