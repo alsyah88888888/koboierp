@@ -5,14 +5,22 @@ import { OperationalDashboard } from "./OperationalDashboard";
 import { serializeDecimal } from "@/lib/utils";
 
 import { headers } from "next/headers";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 export default async function OperationalPage() {
     // Force dynamic rendering to skip build-time DB check
     await headers();
     
+    const session = await getServerSession(authOptions) as any;
+    let whereClause = "";
+    if (session?.user?.email === 'cici@kolaborasi.id') {
+        whereClause = 'WHERE "salesPerson" = \'BC\'';
+    }
+
     // Use raw query to bypass client schema validation for salesPerson field
     const transactions: any[] = await prisma.$queryRawUnsafe(`
-        SELECT * FROM "FinanceTransaction" ORDER BY "date" DESC
+        SELECT * FROM "FinanceTransaction" ${whereClause} ORDER BY "date" DESC
     `);
 
     // Fetch journals separately and merge to maintain relation data
@@ -52,6 +60,7 @@ export default async function OperationalPage() {
             coa={serializedCoa}
             initialDeliveries={serializedDeliveries}
             initialReceipts={serializedReceipts}
+            userEmail={session?.user?.email || undefined}
         />
     );
 }

@@ -21,9 +21,16 @@ interface OperationalDashboardProps {
     coa: any[];
     initialDeliveries?: any[];
     initialReceipts?: any[];
+    userEmail?: string;
 }
 
-export function OperationalDashboard({ transactions, coa, initialDeliveries = [], initialReceipts = [] }: OperationalDashboardProps) {
+export function OperationalDashboard({ 
+    transactions, 
+    coa, 
+    initialDeliveries = [], 
+    initialReceipts = [],
+    userEmail
+}: OperationalDashboardProps) {
     const [searchTerm, setSearchTerm] = useState("");
     const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -106,25 +113,28 @@ export function OperationalDashboard({ transactions, coa, initialDeliveries = []
                     </div>
                 </div>
 
-                <div className="bg-gradient-to-br from-amber-50 to-white border border-amber-100 shadow-sm p-5 rounded-3xl flex justify-between items-center transition-all hover:shadow-md gap-4">
-                    <div className="min-w-0 flex-1">
-                        <p className="text-[10px] font-black text-amber-400 uppercase tracking-widest mb-1 shadow-sm px-2 py-0.5 rounded-full bg-white w-fit border border-amber-50">Sales PF</p>
-                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mt-2">Nett Margin</p>
-                        <p className={`text-2xl font-black tracking-tighter truncate ${pfStats.margin >= 0 ? 'text-amber-600' : 'text-rose-600'}`} title={`Rp ${pfStats.margin.toLocaleString('id-ID')}`}>
-                            Rp {pfStats.margin.toLocaleString('id-ID')}
-                        </p>
-                    </div>
-                    <div className="text-right flex flex-col items-end gap-1">
-                        <div className="bg-white px-3 py-1.5 rounded-xl border border-amber-50 shadow-sm w-full">
-                            <p className="text-[9px] font-bold text-emerald-500 uppercase">Total Penjualan</p>
-                            <p className="text-xs font-black text-emerald-600 tracking-tighter whitespace-nowrap">Rp {pfStats.salesVal.toLocaleString('id-ID')}</p>
+                {/* Only show Sales PF if not Bu Cici */}
+                {userEmail !== 'cici@kolaborasi.id' && (
+                    <div className="bg-gradient-to-br from-amber-50 to-white border border-amber-100 shadow-sm p-5 rounded-3xl flex justify-between items-center transition-all hover:shadow-md gap-4">
+                        <div className="min-w-0 flex-1">
+                            <p className="text-[10px] font-black text-amber-400 uppercase tracking-widest mb-1 shadow-sm px-2 py-0.5 rounded-full bg-white w-fit border border-amber-50">Sales PF</p>
+                            <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mt-2">Nett Margin</p>
+                            <p className={`text-2xl font-black tracking-tighter truncate ${pfStats.margin >= 0 ? 'text-amber-600' : 'text-rose-600'}`} title={`Rp ${pfStats.margin.toLocaleString('id-ID')}`}>
+                                Rp {pfStats.margin.toLocaleString('id-ID')}
+                            </p>
                         </div>
-                        <div className="bg-white px-3 py-1.5 rounded-xl border border-amber-50 shadow-sm w-full">
-                            <p className="text-[9px] font-bold text-rose-400 uppercase">Total Pembelian & Ops</p>
-                            <p className="text-xs font-black text-rose-500 tracking-tighter whitespace-nowrap">Rp {(pfStats.purchaseVal + pfStats.expenseVal).toLocaleString('id-ID')}</p>
+                        <div className="text-right flex flex-col items-end gap-1">
+                            <div className="bg-white px-3 py-1.5 rounded-xl border border-amber-50 shadow-sm w-full">
+                                <p className="text-[9px] font-bold text-emerald-500 uppercase">Total Penjualan</p>
+                                <p className="text-xs font-black text-emerald-600 tracking-tighter whitespace-nowrap">Rp {pfStats.salesVal.toLocaleString('id-ID')}</p>
+                            </div>
+                            <div className="bg-white px-3 py-1.5 rounded-xl border border-amber-50 shadow-sm w-full">
+                                <p className="text-[9px] font-bold text-rose-400 uppercase">Total Pembelian & Ops</p>
+                                <p className="text-xs font-black text-rose-500 tracking-tighter whitespace-nowrap">Rp {(pfStats.purchaseVal + pfStats.expenseVal).toLocaleString('id-ID')}</p>
+                            </div>
                         </div>
                     </div>
-                </div>
+                )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
