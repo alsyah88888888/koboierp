@@ -500,7 +500,10 @@ export async function verifyGoodsReceiptAction(id: string, verifiedBy: string, c
         if (!receipt) throw new Error("Penerimaan barang tidak ditemukan.");
         if (receipt.isVerified) throw new Error("Penerimaan barang sudah diverifikasi.");
 
-        // Adjust stock if checkedItems are provided (discrepancy handle)
+        // Adjust stock and recalculate totals if checkedItems are provided
+        let currentSubtotal = Number(receipt.subtotal || 0);
+        let hasChanges = false;
+
         if (checkedItems) {
             for (const item of receipt.items) {
                 const actualQty = checkedItems[item.id] !== undefined ? checkedItems[item.id] : item.quantity;
@@ -508,6 +511,15 @@ export async function verifyGoodsReceiptAction(id: string, verifiedBy: string, c
                 const diff = actualQty - expectedQty;
 
                 if (diff !== 0) {
+                    hasChanges = true;
+                    
+                    // 1. Update Item Quantity in Document
+                    await tx.goodsReceiptItem.update({
+                        where: { id: item.id },
+                        data: { quantity: actualQty }
+                    });
+
+                    // 2. Adjust Stock
                     await tx.stock.upsert({
                         where: {
                             productId_warehouseId_vendorName: {
@@ -536,7 +548,7 @@ export async function verifyGoodsReceiptAction(id: string, verifiedBy: string, c
                         }
                     });
 
-                    // Record granular verification log for history
+                    // 3. Record Verification log
                     await tx.goodsReceiptVerification.create({
                         data: {
                             receiptId: id,
@@ -546,20 +558,34 @@ export async function verifyGoodsReceiptAction(id: string, verifiedBy: string, c
                             expectedPrice: item.purchasePrice,
                             actualPrice: item.purchasePrice,
                             verifiedBy: verifiedBy,
-                            notes: "Verified via Checker Board"
+                            notes: "Verified via Checker Board (Adjustment Made)"
                         }
                     });
+
+                    // 4. Update Running Subtotal
+                    const itemPrice = Number(item.purchasePrice || 0);
+                    const itemDiscount = Number(item.discount || 0);
+                    const pricePerUnit = itemPrice - itemDiscount;
+                    currentSubtotal += (diff * pricePerUnit);
                 }
             }
         }
 
-        // Mark as verified
+        // Recalculate and update header
+        const taxRate = Number(receipt.taxRate || 0);
+        const totalDiscountHeader = Number(receipt.totalDiscount || 0);
+        const newTaxAmount = Math.round(currentSubtotal * taxRate);
+        const newGrandTotal = Math.round(currentSubtotal - totalDiscountHeader + newTaxAmount);
+
         await tx.goodsReceipt.update({
             where: { id },
             data: {
                 isVerified: true,
                 verifiedAt: new Date(),
-                verifiedBy: verifiedBy
+                verifiedBy: verifiedBy,
+                subtotal: currentSubtotal,
+                taxAmount: newTaxAmount,
+                grandTotal: newGrandTotal
             }
         });
         
