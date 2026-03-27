@@ -16,6 +16,7 @@ import {
 import Link from "next/link";
 
 export default function SignInPage() {
+    const [failedAttempts, setFailedAttempts] = useState(0);
     const [loading, setLoading] = useState(false);
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -24,21 +25,35 @@ export default function SignInPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        
+        if (failedAttempts >= 3) {
+            setError("Terlalu banyak percobaan. Harap hubungi Admin.");
+            return;
+        }
+
         setLoading(true);
         setError("");
 
         try {
-            // Note: In this simulation, we use credentials provider
-            // The user will need to configure providers in lib/auth.ts for real logic
             const result = await signIn("credentials", {
                 email,
                 password,
-                redirect: true,
+                redirect: false,
                 callbackUrl: "/"
             });
 
             if (result?.error) {
-                setError("Invalid email or password. Please try again.");
+                setFailedAttempts(prev => prev + 1);
+                // Handle specific error messages from lib/auth.ts
+                if (result.error === "User Salah") {
+                    setError("User Salah");
+                } else if (result.error === "Password Salah") {
+                    setError("Password Salah");
+                } else {
+                    setError("Invalid email or password. Please try again.");
+                }
+            } else if (result?.url) {
+                window.location.href = result.url;
             }
         } catch (err) {
             setError("An unexpected error occurred. Please try again later.");
