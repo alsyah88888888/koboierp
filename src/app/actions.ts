@@ -382,6 +382,16 @@ export async function updateGoodsReceiptAction(id: string, data: {
 
             // 2. Update Header
             let finalReceiptNumber = data.receiptNumber || existing.receiptNumber;
+
+            // --- AUTO-SWITCH PREFIX IF DISCOUNT IS ADDED ---
+            const hasItemDiscount = data.items.some(item => (Number(item.discount) || 0) > 0);
+            const hasTotalDiscount = (Number(data.totalDiscount) || 0) > 0;
+            if ((hasItemDiscount || hasTotalDiscount) && finalReceiptNumber.startsWith("KB-LPB-")) {
+                finalReceiptNumber = finalReceiptNumber.replace("KB-LPB-", "KB-LPBD-");
+            } else if (!hasItemDiscount && !hasTotalDiscount && finalReceiptNumber.startsWith("KB-LPBD-")) {
+                finalReceiptNumber = finalReceiptNumber.replace("KB-LPBD-", "KB-LPB-");
+            }
+
             if (data.taxInvoiceNumber && finalReceiptNumber && !finalReceiptNumber.endsWith("-P")) {
                 finalReceiptNumber += "-P";
             }
@@ -668,8 +678,16 @@ export async function deleteGoodsReceiptAction(id: string) {
 
         if (!receipt) throw new Error("Receipt not found");
         
+        // Reverse Vendor Balance if Finance was involved
         if (receipt.paymentStatus !== "PENDING") {
-            throw new Error("Tidak dapat menghapus transaksi penerimaan yang sudah dicatat oleh Keuangan. Harap gunakan fitur Retur Pembelian.");
+            const vendor = await tx.vendor.findFirst({ where: { name: receipt.receivedFrom } });
+            if (vendor) {
+                // If it was partial/paid, they have already added it to balance. We remove it.
+                await tx.vendor.update({
+                    where: { id: vendor.id },
+                    data: { balance: { decrement: Number(receipt.grandTotal || 0) } }
+                });
+            }
         }
 
         // 1. Reverse Stock
