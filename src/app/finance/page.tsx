@@ -34,13 +34,13 @@ export default async function FinancePage() {
     }).catch(() => []);
 
     const pendingPurchases = await (prisma.goodsReceipt as any).findMany({
-        where: { paymentStatus: { in: ['PENDING', 'CREDIT'] } },
+        where: { paymentStatus: { in: ['PENDING', 'CREDIT', 'PARTIAL'] } },
         orderBy: { createdAt: 'desc' },
         include: { items: true }
     }).catch(() => []);
 
     const pendingSales = await (prisma.salesDelivery as any).findMany({
-        where: { paymentStatus: { in: ['PENDING', 'CREDIT'] } },
+        where: { paymentStatus: { in: ['PENDING', 'CREDIT', 'PARTIAL'] } },
         orderBy: { createdAt: 'desc' },
         include: { items: { include: { product: true } } }
     }).catch(() => []);
