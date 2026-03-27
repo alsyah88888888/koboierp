@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Plus, Warehouse as WarehouseIcon, Layers, Trash2, FileText, Search, Activity, Box, ArrowUpRight, ArrowDownLeft, Download, Eye } from "lucide-react";
+import { Plus, Warehouse as WarehouseIcon, Layers, Trash2, FileText, Search, Activity, Box, ArrowUpRight, ArrowDownLeft, Download, Eye, Edit2 } from "lucide-react";
 import { StockInputModal } from "./StockInputModal";
+import { StockAdjustmentModal } from "./StockAdjustmentModal";
 import { CheckerBoard } from "./CheckerBoard";
 import { DashboardStats } from "../components/DashboardStats";
 import { cn, formatCurrency } from "@/lib/utils";
@@ -24,6 +25,7 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
     const [showInputModal, setShowInputModal] = useState(false);
     const [activeTab, setActiveTab] = useState<"inventory" | "checker">("inventory");
     const [searchTerm, setSearchTerm] = useState("");
+    const [selectedStockForAdjustment, setSelectedStockForAdjustment] = useState<{product: any, stock: any} | null>(null);
 
     const [showPreview, setShowPreview] = useState(false);
     const [previewData, setPreviewData] = useState<any[]>([]);
@@ -309,13 +311,22 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                                                 </td>
                                                                 {isAdmin && (
                                                                     <td className="px-6 py-4 text-center">
-                                                                        <button
-                                                                            onClick={() => handleDeleteProduct(p.id)}
-                                                                            className="p-2 text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                                                                            title="Hapus Produk"
-                                                                        >
-                                                                            <Trash2 className="h-4 w-4" />
-                                                                        </button>
+                                                                        <div className="flex items-center justify-center gap-2">
+                                                                            <button
+                                                                                onClick={() => setSelectedStockForAdjustment({ product: p, stock: s })}
+                                                                                className="p-2 text-slate-300 hover:text-primary hover:bg-primary/10 rounded-lg transition-all"
+                                                                                title="Penyesuaian Stok"
+                                                                            >
+                                                                                <Edit2 className="h-4 w-4" />
+                                                                            </button>
+                                                                            <button
+                                                                                onClick={() => handleDeleteProduct(p.id)}
+                                                                                className="p-2 text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                                                                                title="Hapus Produk"
+                                                                            >
+                                                                                <Trash2 className="h-4 w-4" />
+                                                                            </button>
+                                                                        </div>
                                                                     </td>
                                                                 )}
                                                             </tr>
@@ -396,12 +407,20 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                                                 </div>
                                                             </div>
                                                             {isAdmin && (
-                                                                <button
-                                                                    onClick={() => handleDeleteProduct(p.id)}
-                                                                    className="p-2 text-slate-400 hover:text-red-600 bg-slate-100 rounded-xl transition-all active:scale-90"
-                                                                >
-                                                                    <Trash2 className="h-3.5 w-3.5" />
-                                                                </button>
+                                                                <div className="flex items-center gap-2">
+                                                                    <button
+                                                                        onClick={() => setSelectedStockForAdjustment({ product: p, stock: s })}
+                                                                        className="p-2 text-slate-400 hover:text-primary bg-slate-100 rounded-xl transition-all active:scale-90"
+                                                                    >
+                                                                        <Edit2 className="h-3.5 w-3.5" />
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => handleDeleteProduct(p.id)}
+                                                                        className="p-2 text-slate-400 hover:text-red-600 bg-slate-100 rounded-xl transition-all active:scale-90"
+                                                                    >
+                                                                        <Trash2 className="h-3.5 w-3.5" />
+                                                                    </button>
+                                                                </div>
                                                             )}
                                                         </div>
                                                     </div>
@@ -495,6 +514,17 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                         setShowInputModal(false);
                         window.location.reload();
                     }} />}
+
+                    {selectedStockForAdjustment && (
+                        <StockAdjustmentModal
+                            product={selectedStockForAdjustment.product}
+                            stock={selectedStockForAdjustment.stock}
+                            onClose={() => {
+                                setSelectedStockForAdjustment(null);
+                                window.location.reload();
+                            }}
+                        />
+                    )}
                 </>
             )
             }

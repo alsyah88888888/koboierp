@@ -3090,3 +3090,92 @@ export async function getDailyReportAction() {
     console.log("Daily Report successfully generated");
     return JSON.parse(JSON.stringify(report));
 }
+
+/**
+ * WAREHOUSE / ADMIN: Manual Stock Adjustment
+ */
+export async function adjustStockAction({
+    productId,
+    warehouseId,
+    vendorName,
+    type,
+    amount,
+    notes,
+    adjustedBy
+}: {
+    productId: string;
+    warehouseId: string;
+    vendorName: string;
+    type: "ADD" | "SUBTRACT" | "SET";
+    amount: number;
+    notes: string;
+    adjustedBy: string;
+}) {
+    if (amount < 0 && type !== "SET") {
+        throw new Error("Amount must be positive");
+    }
+
+    return await prisma.$transaction(async (tx: any) => {
+        // 1. Get current stock
+        const currentStock = await tx.stock.findUnique({
+            where: {
+                productId_warehouseId_vendorName: {
+                    productId,
+                    warehouseId,
+                    vendorName
+                }
+            }
+        });
+
+        const currentQty = currentStock ? currentStock.quantity : 0;
+        let diff = 0;
+
+        if (type === "ADD") {
+            diff = amount;
+        } else if (type === "SUBTRACT") {
+            diff = -amount;
+            if (currentQty + diff < 0) {
+                throw new Error(`Stok tidak cukup. Stok saat ini: ${currentQty}`);
+            }
+        } else if (type === "SET") {
+            if (amount < 0) throw new Error("Stok akhir tidak boleh negatif");
+            diff = amount - currentQty;
+        }
+
+        if (diff === 0) {
+            return { success: true, message: "Tidak ada perubahan stok." };
+        }
+
+        // 2. Update Stock
+        await tx.stock.upsert({
+            where: {
+                productId_warehouseId_vendorName: {
+                    productId,
+                    warehouseId,
+                    vendorName
+                }
+            },
+            update: { quantity: { increment: diff } },
+            create: {
+                productId,
+                warehouseId,
+                vendorName,
+                quantity: diff
+            }
+        });
+
+        // 3. Create StockMovement
+        await tx.stockMovement.create({
+            data: {
+                productId,
+                warehouseId,
+                vendorName,
+                quantity: diff,
+                type: "ADJUSTMENT",
+                reference: `MANUAL-${adjustedBy.substring(0, 3).toUpperCase()}-${Date.now().toString().slice(-4)}`
+            }
+        });
+
+        return { success: true };
+    });
+}
