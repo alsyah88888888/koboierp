@@ -394,10 +394,10 @@ export async function updateGoodsReceiptAction(id: string, data: {
             await tx.goodsReceipt.update({
                 where: { id },
                 data: {
-                    receiptNumber: data.receiptNumber,
+                    receiptNumber: finalReceiptNumber,
                     receivedFrom: data.receivedFrom,
                     warehouseId: data.warehouseId,
-                    date: data.date, // Changed from txDate to data.date as txDate is not defined here
+                    date: data.date || existing.date,
                     taxInvoiceDate: data.taxInvoiceDate,
                     taxInvoiceNumber: data.taxInvoiceNumber,
                     salesPerson: data.salesPerson,
@@ -458,7 +458,7 @@ export async function updateGoodsReceiptAction(id: string, data: {
                         vendorName: data.receivedFrom,
                         quantity: roundedQty,
                         type: "GOODS_RECEIPT_UPDATE",
-                        reference: data.receiptNumber || existing?.receiptNumber
+                        reference: finalReceiptNumber
                     }
                 });
             }
@@ -490,7 +490,7 @@ export async function updateGoodsReceiptAction(id: string, data: {
 /**
  * ADMIN GUDANG: Verify Goods Receipt (Finalize Stock & Accounting)
  */
-export async function verifyGoodsReceiptAction(id: string, verifiedBy: string) {
+export async function verifyGoodsReceiptAction(id: string, verifiedBy: string, checkedItems?: Record<string, number>) {
     return await prisma.$transaction(async (tx: any) => {
         const receipt = await tx.goodsReceipt.findUnique({
             where: { id },
@@ -500,27 +500,69 @@ export async function verifyGoodsReceiptAction(id: string, verifiedBy: string) {
         if (!receipt) throw new Error("Penerimaan barang tidak ditemukan.");
         if (receipt.isVerified) throw new Error("Penerimaan barang sudah diverifikasi.");
 
-        // Stock is already updated during creation/input as per new requirement
+        // Adjust stock if checkedItems are provided (discrepancy handle)
+        if (checkedItems) {
+            for (const item of receipt.items) {
+                const actualQty = checkedItems[item.id] !== undefined ? checkedItems[item.id] : item.quantity;
+                const expectedQty = item.quantity;
+                const diff = actualQty - expectedQty;
 
-        // Journal entries are now handled during creation (createGoodsReceiptAction)
-        // because stock is also updated during creation. 
-        // This ensures the books and the stock are always in sync.
+                if (diff !== 0) {
+                    await tx.stock.upsert({
+                        where: {
+                            productId_warehouseId_vendorName: {
+                                productId: item.productId,
+                                warehouseId: receipt.warehouseId,
+                                vendorName: receipt.receivedFrom
+                            }
+                        },
+                        update: { quantity: { increment: diff } },
+                        create: {
+                            productId: item.productId,
+                            warehouseId: receipt.warehouseId,
+                            vendorName: receipt.receivedFrom,
+                            quantity: diff
+                        }
+                    });
 
-        // 3. Mark as verified
-        // Using raw execute because of client generation lock
-        try {
-            await tx.goodsReceipt.update({
-                where: { id },
-                data: {
-                    isVerified: true,
-                    verifiedAt: new Date(),
-                    verifiedBy: verifiedBy
+                    await tx.stockMovement.create({
+                        data: {
+                            productId: item.productId,
+                            warehouseId: receipt.warehouseId,
+                            vendorName: receipt.receivedFrom,
+                            quantity: diff,
+                            type: "ADJUSTMENT",
+                            reference: `${receipt.receiptNumber}-CHECKER`
+                        }
+                    });
+
+                    // Record granular verification log for history
+                    await tx.goodsReceiptVerification.create({
+                        data: {
+                            receiptId: id,
+                            productId: item.productId,
+                            expectedQuantity: expectedQty,
+                            actualQuantity: actualQty,
+                            expectedPrice: item.purchasePrice,
+                            actualPrice: item.purchasePrice,
+                            verifiedBy: verifiedBy,
+                            notes: "Verified via Checker Board"
+                        }
+                    });
                 }
-            });
-        } catch (e) {
-            await tx.$executeRaw`UPDATE GoodsReceipt SET isVerified = 1, verifiedAt = CURRENT_TIMESTAMP, verifiedBy = ${verifiedBy} WHERE id = ${id}`;
+            }
         }
 
+        // Mark as verified
+        await tx.goodsReceipt.update({
+            where: { id },
+            data: {
+                isVerified: true,
+                verifiedAt: new Date(),
+                verifiedBy: verifiedBy
+            }
+        });
+        
         revalidatePath("/purchase");
         revalidatePath("/warehouse");
         revalidatePath("/finance");
@@ -2175,7 +2217,10 @@ export async function submitGoodsReceiptVerificationAction(data: {
     }[];
 }) {
     return await prisma.$transaction(async (tx: any) => {
-        // Create verification records
+        const receipt = await tx.goodsReceipt.findUnique({ where: { id: data.receiptId } });
+        if (!receipt) throw new Error("Receipt not found");
+
+        // Create verification records and adjust stock for discrepancies
         for (const item of data.items) {
             await tx.goodsReceiptVerification.create({
                 data: {
@@ -2189,6 +2234,39 @@ export async function submitGoodsReceiptVerificationAction(data: {
                     verifiedBy: data.verifiedBy
                 }
             });
+
+            const diff = item.actualQuantity - item.expectedQuantity;
+            if (diff !== 0) {
+                // Adjust Stock
+                await tx.stock.upsert({
+                    where: {
+                        productId_warehouseId_vendorName: {
+                            productId: item.productId,
+                            warehouseId: receipt.warehouseId,
+                            vendorName: receipt.receivedFrom
+                        }
+                    },
+                    update: { quantity: { increment: diff } },
+                    create: {
+                        productId: item.productId,
+                        warehouseId: receipt.warehouseId,
+                        vendorName: receipt.receivedFrom,
+                        quantity: diff
+                    }
+                });
+
+                // Record Adjustment Movement
+                await tx.stockMovement.create({
+                    data: {
+                        productId: item.productId,
+                        warehouseId: receipt.warehouseId,
+                        vendorName: receipt.receivedFrom,
+                        quantity: diff,
+                        type: "ADJUSTMENT",
+                        reference: `${receipt.receiptNumber}-VERIFY`
+                    }
+                });
+            }
         }
 
         const allMatch = data.items.every(
@@ -2196,19 +2274,15 @@ export async function submitGoodsReceiptVerificationAction(data: {
                 Number(item.expectedPrice) === Number(item.actualPrice)
         );
 
-        if (allMatch) {
-            await tx.goodsReceipt.update({
-                where: { id: data.receiptId },
-                data: {
-                    isVerified: true,
-                    verifiedAt: new Date(),
-                    verifiedBy: data.verifiedBy
-                }
-            });
-
-            // Stock is already updated at create/input as per new requirement. 
-            // Removed double-counting logic that was here.
-        }
+        // Mark as verified regardless of perfect match, because discrepancies are adjusted above
+        await tx.goodsReceipt.update({
+            where: { id: data.receiptId },
+            data: {
+                isVerified: true,
+                verifiedAt: new Date(),
+                verifiedBy: data.verifiedBy
+            }
+        });
 
         revalidatePath("/warehouse");
         revalidatePath("/purchase");

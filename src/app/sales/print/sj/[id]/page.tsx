@@ -38,6 +38,12 @@ export default async function SJPrintPage({ params }: { params: Promise<{ id: st
                         <span className="text-[9px] text-slate-400 tracking-widest not-italic block mb-1">ALAMAT PENGIRIMAN</span>
                         <div className="text-slate-500 leading-relaxed font-medium normal-case italic">{delivery.recipient}</div>
                     </div>
+                    {delivery.salesPerson && (
+                        <div className="flex-none space-y-1 border-l-2 border-slate-200 pl-8 text-center min-w-[60px]">
+                            <span className="text-[9px] text-slate-400 tracking-widest not-italic block mb-1">SALES</span>
+                            <div className="text-primary text-sm font-black italic">{delivery.salesPerson}</div>
+                        </div>
+                    )}
                 </div>
             }
         >

@@ -56,7 +56,7 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
 
         setIsVerifying(true);
         try {
-            const res = await verifyGoodsReceiptAction(selectedReceipt.id, session?.user?.name || "Warehouse Admin");
+            const res = await verifyGoodsReceiptAction(selectedReceipt.id, session?.user?.name || "Warehouse Admin", checkedItems);
             if (res.success) {
                 alert("Penerimaan barang berhasil diverifikasi. Stok telah diperbarui.");
                 setSelectedReceipt(null);
