@@ -572,11 +572,11 @@ export async function verifyGoodsReceiptAction(id: string, verifiedBy: string, c
         }
 
         // Recalculate and update header
-        const taxRate = Number(receipt.taxRate || 0);
+        const taxRateData = Number(receipt.taxRate || 0);
         const oldTotalDiscount = Number(receipt.totalDiscount || 0);
         // We assume the discount is nominal, so we must be careful. If total qty dropped, we don't automatically drop nominal discount unless it's per-item. 
         // We'll keep the overall manual discount intact.
-        const newTaxAmount = Math.round(currentSubtotal * taxRate);
+        const newTaxAmount = Math.round((currentSubtotal * taxRateData) / 100);
         const newGrandTotal = Math.round(currentSubtotal - oldTotalDiscount + newTaxAmount);
 
         const oldGrandTotal = Number(receipt.grandTotal || 0);
@@ -599,7 +599,7 @@ export async function verifyGoodsReceiptAction(id: string, verifiedBy: string, c
             
             if (invAccount && apAccount) {
                 const subTDiff = Number(receipt.subtotal || 0) - currentSubtotal;
-                const taxDiff = Number(receipt.taxAmount || 0) - newTaxAmount;
+                const taxDiff = Math.abs(Number(receipt.taxAmount || 0) - newTaxAmount);
                 
                 // Reversing entry (DEBIT Hutang, CREDIT Persediaan & PPN)
                 await tx.journalEntry.create({
@@ -626,7 +626,7 @@ export async function verifyGoodsReceiptAction(id: string, verifiedBy: string, c
                         data: {
                             description: `Koreksi Discrepancy PPN: ${receipt.receiptNumber}`,
                             amount: taxDiff,
-                            type: "CREDIT",
+                            type: difference > 0 ? "CREDIT" : "DEBIT",
                             accountId: taxAccount.id,
                             date: new Date()
                         }

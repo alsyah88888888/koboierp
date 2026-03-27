@@ -137,11 +137,23 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
                                             <td className="px-6 py-4 text-right font-black text-slate-400">
                                                 {item.quantity}
                                             </td>
-                                            <td className={cn(
-                                                "px-6 py-4 text-right font-black text-lg",
-                                                scanned === item.quantity ? "text-emerald-600" : scanned > item.quantity ? "text-rose-600" : "text-primary"
-                                            )}>
-                                                {scanned}
+                                            <td className="px-6 py-4 text-right">
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    value={scanned}
+                                                    onChange={(e) => {
+                                                        const val = Math.max(0, parseInt(e.target.value) || 0);
+                                                        setCheckedItems(prev => ({
+                                                            ...prev,
+                                                            [item.id]: val
+                                                        }));
+                                                    }}
+                                                    className={cn(
+                                                        "w-24 text-right font-black text-lg bg-slate-50 border-2 rounded-xl px-3 py-1 outline-none transition-all focus:border-primary",
+                                                        scanned === item.quantity ? "text-emerald-600 border-emerald-100" : scanned > item.quantity ? "text-rose-600 border-rose-100" : "text-primary border-primary/10"
+                                                    )}
+                                                />
                                             </td>
                                             <td className="px-6 py-4 text-center">
                                                 <div className="flex justify-center">
