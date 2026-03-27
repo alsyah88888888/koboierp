@@ -44,17 +44,17 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
         window.print();
     };
 
-    const handleVerifyPayment = async (type: "PURCHASE" | "SALE", id: string, status: "PAID" | "CREDIT" | "PARTIAL", partialAmount?: number) => {
+    const handleVerifyPayment = async (type: "PURCHASE" | "SALE", id: string, status: "PAID" | "CREDIT" | "PENDING" | "PARTIAL", partialAmount?: number, pDate?: Date) => {
         const msg = status === "PAID"
-            ? "Konfirmasi pelunasan transaksi ini? Saldo Kas/Bank BCA akan otomatis terupdate."
+            ? `Konfirmasi pelunasan transaksi ini? ${pDate ? "Tanggal: " + format(pDate, "dd/MM/yyyy") : "Saldo Kas/Bank BCA akan otomatis terupdate."}`
             : status === "PARTIAL"
-                ? `Konfirmasi pembayaran DP / Sebagian sebesar ${formatCurrency(partialAmount || 0)}?`
+                ? `Konfirmasi pembayaran DP / Sebagian sebesar ${formatCurrency(partialAmount || 0)}? ${pDate ? "Tanggal: " + format(pDate, "dd/MM/yyyy") : ""}`
                 : `Konfirmasi pencatatan sebagai ${type === "PURCHASE" ? "Hutang" : "Piutang"}?`;
 
         if (!confirm(msg)) return;
         setLoading(id);
         try {
-            await updatePaymentStatusAction(type, id, status, partialAmount);
+            await updatePaymentStatusAction(type, id, status, partialAmount, pDate);
             alert("Verifikasi berhasil.");
             router.refresh();
         } catch (e) {
@@ -66,14 +66,18 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
 
     const handlePartialPayment = (type: "PURCHASE" | "SALE", id: string, total: number, alreadyPaid: number) => {
         const remaining = total - alreadyPaid;
-        const input = prompt(`Masukkan jumlah pembayaran (Sisa: ${formatCurrency(remaining)}):`, remaining.toString());
-        if (!input) return;
-        const amount = Number(input);
+        const amountInput = prompt(`Masukkan jumlah pembayaran (Sisa: ${formatCurrency(remaining)}):`, remaining.toString());
+        if (!amountInput) return;
+        const amount = Number(amountInput);
         if (isNaN(amount) || amount <= 0 || amount > remaining) {
             alert("Jumlah tidak valid atau melebihi sisa pembayaran.");
             return;
         }
-        handleVerifyPayment(type, id, amount === remaining ? "PAID" : "PARTIAL", amount);
+
+        const dateInput = prompt(`Masukkan tanggal pembayaran (YYYY-MM-DD):`, format(new Date(), "yyyy-MM-dd"));
+        const pDate = dateInput ? new Date(dateInput) : new Date();
+
+        handleVerifyPayment(type, id, amount === remaining ? "PAID" : "PARTIAL", amount, pDate);
     };
 
     const handleDelete = async (id: string, isManual: boolean) => {
