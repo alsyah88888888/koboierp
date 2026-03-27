@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Search, CheckCircle, AlertCircle, Barcode, Printer, Package, ChevronRight, X } from "lucide-react";
+import { Search, CheckCircle, AlertCircle, Barcode, Printer, Package, ChevronRight, X, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 import { verifyGoodsReceiptAction } from "@/app/actions";
 import { useSession } from "next-auth/react";
@@ -13,6 +13,7 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
     const [scanBuffer, setScanBuffer] = useState("");
     const [checkedItems, setCheckedItems] = useState<Record<string, number>>({});
     const [isVerifying, setIsVerifying] = useState(false);
+    const [showDiscrepancyModal, setShowDiscrepancyModal] = useState(false);
     const scanInputRef = useRef<HTMLInputElement>(null);
 
     // Auto-focus barcode input
@@ -50,8 +51,9 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
             (checkedItems[item.id] || 0) === item.quantity
         );
 
-        if (!allMatched) {
-            if (!confirm("Jumlah barang yang di-scan tidak sama dengan surat jalan. Tetap verifikasi?")) return;
+        if (!allMatched && !showDiscrepancyModal) {
+            setShowDiscrepancyModal(true);
+            return;
         }
 
         setIsVerifying(true);
@@ -175,6 +177,88 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
                         </button>
                     </div>
                 </div>
+
+                {/* Discrepancy Modal */}
+                {showDiscrepancyModal && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+                        <div className="bg-white rounded-[2.5rem] w-full max-w-2xl shadow-2xl border-2 border-slate-100 overflow-hidden animate-in zoom-in duration-300">
+                            <div className="p-8 border-b border-slate-100 bg-rose-50/50 flex items-center gap-4">
+                                <div className="p-3 bg-rose-100 rounded-2xl text-rose-600">
+                                    <AlertTriangle className="h-6 w-6" />
+                                </div>
+                                <div className="flex-1">
+                                    <h3 className="text-xl font-black text-slate-900 tracking-tight">Konfirmasi Selisih Barang</h3>
+                                    <p className="text-[10px] font-black text-rose-500 uppercase tracking-widest mt-1">
+                                        Ditemukan ketidaksesuaian antara fisik dan dokumen
+                                    </p>
+                                </div>
+                                <button onClick={() => setShowDiscrepancyModal(false)} className="p-2 hover:bg-white rounded-xl transition-all">
+                                    <X className="h-5 w-5 text-slate-400" />
+                                </button>
+                            </div>
+
+                            <div className="p-8 space-y-6">
+                                <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
+                                    <p className="text-sm font-bold text-slate-600 mb-4">Berikut adalah daftar barang dengan selisih:</p>
+                                    <div className="space-y-3">
+                                        {selectedReceipt.items
+                                            .filter((item: any) => (checkedItems[item.id] || 0) !== item.quantity)
+                                            .map((item: any) => {
+                                                const scanned = checkedItems[item.id] || 0;
+                                                const diff = scanned - item.quantity;
+                                                return (
+                                                    <div key={item.id} className="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                                                        <div>
+                                                            <div className="font-black text-slate-800 text-sm">{item.product?.name}</div>
+                                                            <div className="text-[10px] font-mono text-slate-400 mt-1 uppercase tracking-widest">{item.product?.sku}</div>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-[10px] font-black text-slate-400 uppercase">Target: {item.quantity}</span>
+                                                                <ChevronRight className="h-3 w-3 text-slate-300" />
+                                                                <span className="text-sm font-black text-rose-600">Fisik: {scanned}</span>
+                                                            </div>
+                                                            <div className={cn(
+                                                                "text-[10px] font-black mt-1",
+                                                                diff > 0 ? "text-emerald-600" : "text-rose-500"
+                                                            )}>
+                                                                {diff > 0 ? `+${diff}` : diff} KARTON
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                    </div>
+                                </div>
+
+                                <div className="bg-amber-50 p-6 rounded-3xl border border-amber-100">
+                                    <div className="flex gap-4">
+                                        <AlertCircle className="h-5 w-5 text-amber-600 shrink-0" />
+                                        <p className="text-xs font-bold text-amber-800 leading-relaxed">
+                                            Melanjutkan verifikasi ini akan memperbarui jumlah stok di gudang dan menyesuaikan saldo hutang/piutang sesuai dengan fisik yang diterima.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={() => setShowDiscrepancyModal(false)}
+                                        className="flex-1 py-4 bg-slate-100 text-slate-600 font-black rounded-2xl hover:bg-slate-200 transition-all active:scale-95 text-sm uppercase tracking-widest"
+                                    >
+                                        Cek Kembali
+                                    </button>
+                                    <button
+                                        disabled={isVerifying}
+                                        onClick={handleVerifySubmit}
+                                        className="flex-[2] py-4 bg-rose-600 text-white font-black rounded-2xl hover:bg-rose-700 transition-all active:scale-95 text-sm uppercase tracking-widest shadow-xl shadow-rose-200 flex items-center justify-center gap-2"
+                                    >
+                                        {isVerifying ? "Memproses..." : "Konfirmasi & Update Stok"}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         );
     }
