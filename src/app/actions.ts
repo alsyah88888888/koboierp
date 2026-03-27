@@ -573,9 +573,67 @@ export async function verifyGoodsReceiptAction(id: string, verifiedBy: string, c
 
         // Recalculate and update header
         const taxRate = Number(receipt.taxRate || 0);
-        const totalDiscountHeader = Number(receipt.totalDiscount || 0);
+        const oldTotalDiscount = Number(receipt.totalDiscount || 0);
+        // We assume the discount is nominal, so we must be careful. If total qty dropped, we don't automatically drop nominal discount unless it's per-item. 
+        // We'll keep the overall manual discount intact.
         const newTaxAmount = Math.round(currentSubtotal * taxRate);
-        const newGrandTotal = Math.round(currentSubtotal - totalDiscountHeader + newTaxAmount);
+        const newGrandTotal = Math.round(currentSubtotal - oldTotalDiscount + newTaxAmount);
+
+        const oldGrandTotal = Number(receipt.grandTotal || 0);
+        const difference = oldGrandTotal - newGrandTotal;
+
+        if (difference !== 0 && receipt.paymentStatus !== "PENDING") {
+            // Finance has already recognized the debt, so we must correct the Vendor balance and Accounts
+            const vendor = await tx.vendor.findFirst({ where: { name: receipt.receivedFrom } });
+            if (vendor) {
+                // If new total is less than old total, we decrement the debt.
+                await tx.vendor.update({
+                    where: { id: vendor.id },
+                    data: { balance: { decrement: difference } }
+                });
+            }
+
+            const invAccount = await tx.financeAccount.findUnique({ where: { code: '104' } }); // Persediaan
+            const apAccount = await tx.financeAccount.findUnique({ where: { code: '201' } }); // Hutang
+            const taxAccount = await tx.financeAccount.findUnique({ where: { code: '106' } }); // PPN
+            
+            if (invAccount && apAccount) {
+                const subTDiff = Number(receipt.subtotal || 0) - currentSubtotal;
+                const taxDiff = Number(receipt.taxAmount || 0) - newTaxAmount;
+                
+                // Reversing entry (DEBIT Hutang, CREDIT Persediaan & PPN)
+                await tx.journalEntry.create({
+                    data: {
+                        description: `Koreksi Discrepancy Hutang: ${receipt.receiptNumber}`,
+                        amount: difference,
+                        type: "DEBIT",
+                        accountId: apAccount.id,
+                        date: new Date()
+                    }
+                });
+                await tx.journalEntry.create({
+                    data: {
+                        description: `Koreksi Discrepancy Persediaan: ${receipt.receiptNumber}`,
+                        amount: subTDiff,
+                        type: "CREDIT",
+                        accountId: invAccount.id,
+                        date: new Date()
+                    }
+                });
+                
+                if (taxAccount && taxDiff > 0) {
+                    await tx.journalEntry.create({
+                        data: {
+                            description: `Koreksi Discrepancy PPN: ${receipt.receiptNumber}`,
+                            amount: taxDiff,
+                            type: "CREDIT",
+                            accountId: taxAccount.id,
+                            date: new Date()
+                        }
+                    });
+                }
+            }
+        }
 
         await tx.goodsReceipt.update({
             where: { id },
@@ -609,6 +667,10 @@ export async function deleteGoodsReceiptAction(id: string) {
         });
 
         if (!receipt) throw new Error("Receipt not found");
+        
+        if (receipt.paymentStatus !== "PENDING") {
+            throw new Error("Tidak dapat menghapus transaksi penerimaan yang sudah dicatat oleh Keuangan. Harap gunakan fitur Retur Pembelian.");
+        }
 
         // 1. Reverse Stock
         for (const item of receipt.items) {
