@@ -197,7 +197,7 @@ export async function createGoodsReceiptAction(data: {
                 const fullDateStr = `${year}${month}${day}`;
                 
                 // Determine prefix based on discounts
-                const hasItemDiscount = data.items.some(item => (Number(item.discount) || 0) > 0);
+                const hasItemDiscount = data.items.some((item: any) => (Number(item.discount) || 0) > 0);
                 const hasTotalDiscount = (Number(data.totalDiscount) || 0) > 0;
                 
                 // If user manually set a number with KB-LPBD but values are 0, we still respect the prefix if it was passed
@@ -226,14 +226,12 @@ export async function createGoodsReceiptAction(data: {
             }
 
             // --- AUTO-SWITCH PREFIX IF DISCOUNT IS DETECTED (EVEN IF PROVIDED BY CLIENT) ---
-            const hasItemDiscount = data.items.some(item => (Number(item.discount) || 0) > 0);
+            const hasItemDiscount = data.items.some((item: any) => (Number(item.discount) || 0) > 0);
             const hasTotalDiscount = (Number(data.totalDiscount) || 0) > 0;
             if (finalReceiptNumber) {
-                if ((hasItemDiscount || hasTotalDiscount) && finalReceiptNumber.startsWith("KB-LPB-")) {
+                if ((hasItemDiscount || hasTotalDiscount) && finalReceiptNumber.includes("KB-LPB-")) {
                     finalReceiptNumber = finalReceiptNumber.replace("KB-LPB-", "KB-LPBD-");
-                } else if (!hasItemDiscount && !hasTotalDiscount && finalReceiptNumber.startsWith("KB-LPBD-")) {
-                    finalReceiptNumber = finalReceiptNumber.replace("KB-LPBD-", "KB-LPB-");
-                }
+                } 
             }
 
             if (data.taxInvoiceNumber && finalReceiptNumber && !finalReceiptNumber.endsWith("-P")) {
@@ -283,7 +281,7 @@ export async function createGoodsReceiptAction(data: {
                     grandTotal: roundedGrandTotal,
                     createdById: session?.user?.id,
                     items: {
-                        create: data.items.map(item => ({
+                        create: data.items.map((item: any) => ({
                             productId: item.productId,
                             quantity: Math.round(item.quantity),
                             purchasePrice: item.purchasePrice as any,
@@ -395,12 +393,11 @@ export async function updateGoodsReceiptAction(id: string, data: {
             let finalReceiptNumber = data.receiptNumber || existing.receiptNumber;
 
             // --- AUTO-SWITCH PREFIX IF DISCOUNT IS ADDED ---
-            const hasItemDiscount = data.items.some(item => (Number(item.discount) || 0) > 0);
+            const hasItemDiscount = data.items.some((item: any) => (Number(item.discount) || 0) > 0);
             const hasTotalDiscount = (Number(data.totalDiscount) || 0) > 0;
-            if ((hasItemDiscount || hasTotalDiscount) && finalReceiptNumber.startsWith("KB-LPB-")) {
+            if ((hasItemDiscount || hasTotalDiscount) && finalReceiptNumber.includes("KB-LPB-")) {
                 finalReceiptNumber = finalReceiptNumber.replace("KB-LPB-", "KB-LPBD-");
             }
-            // Removed the part that forced it back to KB-LPB to respect manual edits.
 
             if (data.taxInvoiceNumber && finalReceiptNumber && !finalReceiptNumber.endsWith("-P")) {
                 finalReceiptNumber += "-P";
@@ -435,7 +432,7 @@ export async function updateGoodsReceiptAction(id: string, data: {
             try {
                 await tx.goodsReceiptItem.deleteMany({ where: { receiptId: id } });
                 await tx.goodsReceiptItem.createMany({
-                    data: data.items.map(item => ({
+                    data: data.items.map((item: any) => ({
                         receiptId: id,
                         productId: item.productId,
                         quantity: Math.round(item.quantity),
@@ -591,8 +588,17 @@ export async function verifyGoodsReceiptAction(id: string, verifiedBy: string, c
         // --- CALC RECALCULATED TOTALS ---
         const taxRateData = Number(receipt.taxRate || 0);
         const oldTotalDiscount = Number(receipt.totalDiscount || 0);
+        
+        // Sum line discounts (scaled by any quantity adjustments)
+        let totalItemDiscounts = 0;
+        for (const item of receipt.items) {
+             const actualQty = itemsToProcess[item.id] !== undefined ? itemsToProcess[item.id] : item.quantity;
+             const unitDiscount = Number(item.discount || 0) / (Number(item.quantity) || 1);
+             totalItemDiscounts += (actualQty * unitDiscount);
+        }
+
         const newTaxAmount = Math.round((currentSubtotal * taxRateData) / 100);
-        const newGrandTotal = Math.round(currentSubtotal - oldTotalDiscount + newTaxAmount);
+        const newGrandTotal = Math.round(currentSubtotal - totalItemDiscounts - oldTotalDiscount + newTaxAmount);
 
         const oldGrandTotal = Number(receipt.grandTotal || 0);
         const difference = oldGrandTotal - newGrandTotal;
@@ -1472,7 +1478,7 @@ export async function createPurchaseOrderAction(data: {
             number: data.number,
             vendorId: data.vendorId,
             items: {
-                create: data.items.map(item => ({
+                create: data.items.map((item: any) => ({
                     productId: item.productId,
                     quantity: item.quantity,
                     price: item.price as any
@@ -2160,10 +2166,10 @@ export async function getDashboardSummaryAction() {
         productStocks[s.product.id].qty += s.quantity;
     });
 
-    const lowStockCount = Object.values(productStocks).filter(p => p.qty < p.threshold).length;
+    const lowStockCount = Object.values(productStocks).filter((p: any) => p.qty < p.threshold).length;
 
     const getSum = (agg: any[], type: "DEBIT" | "CREDIT") => 
-        Number(agg.find(a => a.type === type)?._sum?.amount || 0);
+        Number(agg.find((a: any) => a.type === type)?._sum?.amount || 0);
 
     const cashBalance = getSum(cashBankAgg, "DEBIT") - getSum(cashBankAgg, "CREDIT");
     const totalHutang = getSum(debtAgg, "CREDIT") - getSum(debtAgg, "DEBIT");
@@ -2272,8 +2278,8 @@ async function getWeeklyStats() {
             .reduce((sum: number, s: any) => sum + Number(s.grandTotal || 0), 0);
 
         const dayPurchases = purchases
-            .filter(p => p.date && p.date >= date && p.date < nextDay)
-            .reduce((sum: number, r) => sum + Number(r.subtotal || 0), 0);
+            .filter((p: any) => p.date && p.date >= date && p.date < nextDay)
+            .reduce((sum: number, r: any) => sum + Number(r.subtotal || 0), 0);
 
         return {
             name: date.toLocaleDateString('en-US', { weekday: 'short' }),
