@@ -6,19 +6,19 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatCurrency(amount: number) {
-    return new Intl.NumberFormat("id-ID", {
-        style: "currency",
-        currency: "IDR",
+    // Manually handle hydration-safe currency formatting
+    const formatted = new Intl.NumberFormat("id-ID", {
         minimumFractionDigits: 0,
         maximumFractionDigits: 2,
     }).format(Math.abs(amount));
+    return `Rp ${formatted}`;
 }
 
 export function formatNumber(amount: number) {
     return new Intl.NumberFormat("id-ID", {
         minimumFractionDigits: 0,
         maximumFractionDigits: 2,
-    }).format(amount);
+    }).format(amount).replace(/\u00A0/g, " ");
 }
 
 /**

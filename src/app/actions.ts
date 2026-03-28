@@ -399,9 +399,8 @@ export async function updateGoodsReceiptAction(id: string, data: {
             const hasTotalDiscount = (Number(data.totalDiscount) || 0) > 0;
             if ((hasItemDiscount || hasTotalDiscount) && finalReceiptNumber.startsWith("KB-LPB-")) {
                 finalReceiptNumber = finalReceiptNumber.replace("KB-LPB-", "KB-LPBD-");
-            } else if (!hasItemDiscount && !hasTotalDiscount && finalReceiptNumber.startsWith("KB-LPBD-")) {
-                finalReceiptNumber = finalReceiptNumber.replace("KB-LPBD-", "KB-LPB-");
             }
+            // Removed the part that forced it back to KB-LPB to respect manual edits.
 
             if (data.taxInvoiceNumber && finalReceiptNumber && !finalReceiptNumber.endsWith("-P")) {
                 finalReceiptNumber += "-P";
@@ -600,13 +599,11 @@ export async function verifyGoodsReceiptAction(id: string, verifiedBy: string, c
 
         // --- UPDATE RECEIPT HEADER WITH CURATED VALUES ---
         let updatedReceiptNumber = receipt.receiptNumber;
-        // Prefix logic: LPBD for discounts, LPB for no discounts
-        const hasD = oldTotalDiscount > 0 || receipt.items.some(i => (Number(i.discount) || 0) > 0);
+        const hasD = oldTotalDiscount > 0 || receipt.items.some((i: any) => (Number(i.discount) || 0) > 0);
         if (hasD && updatedReceiptNumber.startsWith("KB-LPB-")) {
             updatedReceiptNumber = updatedReceiptNumber.replace("KB-LPB-", "KB-LPBD-");
-        } else if (!hasD && updatedReceiptNumber.startsWith("KB-LPBD-")) {
-            updatedReceiptNumber = updatedReceiptNumber.replace("KB-LPBD-", "KB-LPB-");
         }
+        // Removed the part that forced it back to KB-LPB to respect user manual changes.
 
         await tx.goodsReceipt.update({
             where: { id: receipt.id },
