@@ -524,29 +524,17 @@ export async function verifyGoodsReceiptAction(id: string, verifiedBy: string, c
         if (!receipt) throw new Error("Penerimaan barang tidak ditemukan.");
         if (receipt.isVerified) throw new Error("Penerimaan barang sudah diverifikasi.");
 
-        // Adjust stock and recalculate totals if checkedItems are provided
-        let currentSubtotal = 0;
-        
-        // Use either checkedItems (newly scanned) or original quantities if not adjusted
-        const itemsToProcess = checkedItems || {};
+        // --- GUDANG: HANYA MENGURUS STOK FISIK ---
+        // Dokumen (harga, subtotal, grandTotal, hutang) TIDAK BERUBAH.
+        // Verifikasi gudang hanya mencatat berapa qty yang benar-benar masuk gudang.
 
         for (const item of receipt.items) {
-            const actualQty = itemsToProcess[item.id] !== undefined ? itemsToProcess[item.id] : item.quantity;
+            // Qty fisik yang benar-benar diterima di gudang
+            const actualQty = checkedItems?.[item.id] !== undefined ? checkedItems[item.id] : item.quantity;
             const expectedQty = item.quantity;
-            const diff = actualQty - expectedQty;
-            const itemPrice = Number(item.purchasePrice || 0);
 
-            // Accumulate new subtotal
-            currentSubtotal += (actualQty * itemPrice);
-
-            if (diff !== 0) {
-                // 1. Update Item Quantity in Document
-                await tx.goodsReceiptItem.update({
-                    where: { id: item.id },
-                    data: { quantity: actualQty }
-                });
-
-                // 2. Adjust Stock
+            // 1. Tambah stok sesuai qty FISIK yang diterima (bukan qty dokumen)
+            if (actualQty > 0) {
                 await tx.stock.upsert({
                     where: {
                         productId_warehouseId_vendorName: {
@@ -555,12 +543,12 @@ export async function verifyGoodsReceiptAction(id: string, verifiedBy: string, c
                             vendorName: receipt.receivedFrom
                         }
                     },
-                    update: { quantity: { increment: diff } },
+                    update: { quantity: { increment: actualQty } },
                     create: {
                         productId: item.productId,
                         warehouseId: receipt.warehouseId,
                         vendorName: receipt.receivedFrom,
-                        quantity: diff
+                        quantity: actualQty
                     }
                 });
 
@@ -569,129 +557,37 @@ export async function verifyGoodsReceiptAction(id: string, verifiedBy: string, c
                         productId: item.productId,
                         warehouseId: receipt.warehouseId,
                         vendorName: receipt.receivedFrom,
-                        quantity: diff,
-                        type: "ADJUSTMENT",
-                        reference: `${receipt.receiptNumber}-CHECKER`
-                    }
-                });
-
-                // 3. Record Verification log
-                await tx.goodsReceiptVerification.create({
-                    data: {
-                        receiptId: id,
-                        productId: item.productId,
-                        expectedQuantity: expectedQty,
-                        actualQuantity: actualQty,
-                        expectedPrice: item.purchasePrice,
-                        actualPrice: item.purchasePrice,
-                        verifiedBy: session?.user?.name || verifiedBy || "System",
-                        notes: "Verified via Checker Board (Adjustment Made)"
+                        quantity: actualQty,
+                        type: "GOODS_RECEIPT",
+                        reference: receipt.receiptNumber
                     }
                 });
             }
-        }
 
-        // --- CALC RECALCULATED TOTALS ---
-        const taxRateData = Number(receipt.taxRate || 0);
-        const oldTotalDiscount = Number(receipt.totalDiscount || 0);
-        
-        // Sum line discounts (scaled by any quantity adjustments)
-        let totalItemDiscounts = 0;
-        for (const item of receipt.items) {
-             const actualQty = itemsToProcess[item.id] !== undefined ? itemsToProcess[item.id] : item.quantity;
-             const unitDiscount = Number(item.discount || 0) / (Number(item.quantity) || 1);
-             totalItemDiscounts += (actualQty * unitDiscount);
-        }
-
-        const newTaxAmount = Math.round((currentSubtotal * taxRateData) / 100);
-        const newGrandTotal = Math.round(currentSubtotal - totalItemDiscounts - oldTotalDiscount + newTaxAmount);
-
-        const oldGrandTotal = Number(receipt.grandTotal || 0);
-        const difference = oldGrandTotal - newGrandTotal;
-
-        // --- UPDATE RECEIPT HEADER WITH CURATED VALUES ---
-        let updatedReceiptNumber = receipt.receiptNumber;
-        const hasD = oldTotalDiscount > 0 || receipt.items.some((i: any) => (Number(i.discount) || 0) > 0);
-        if (hasD && updatedReceiptNumber.startsWith("KB-LPB-")) {
-            updatedReceiptNumber = updatedReceiptNumber.replace("KB-LPB-", "KB-LPBD-");
-        }
-        // Removed the part that forced it back to KB-LPB to respect user manual changes.
-
-        await tx.goodsReceipt.update({
-            where: { id: receipt.id },
-            data: {
-                receiptNumber: updatedReceiptNumber,
-                subtotal: currentSubtotal,
-                taxAmount: newTaxAmount,
-                grandTotal: newGrandTotal,
-                isVerified: true,
-                verifiedAt: new Date(),
-                verifiedBy: session?.user?.name || verifiedBy || "System"
-            }
-        });
-
-        if (difference !== 0 && receipt.paymentStatus !== "PENDING") {
-            // Finance has already recognized the debt, so we must correct the Vendor balance and Accounts
-            const vendor = await tx.vendor.findFirst({ where: { name: receipt.receivedFrom } });
-            if (vendor) {
-                // If new total is less than old total, we decrement the debt.
-                await tx.vendor.update({
-                    where: { id: vendor.id },
-                    data: { balance: { decrement: difference } }
-                });
-            }
-
-            const invAccount = await tx.financeAccount.findUnique({ where: { code: '104' } }); // Persediaan
-            const apAccount = await tx.financeAccount.findUnique({ where: { code: '201' } }); // Hutang
-            const taxAccount = await tx.financeAccount.findUnique({ where: { code: '106' } }); // PPN
-            
-            if (invAccount && apAccount) {
-                const subTDiff = Number(receipt.subtotal || 0) - currentSubtotal;
-                const taxDiff = Math.abs(Number(receipt.taxAmount || 0) - newTaxAmount);
-                
-                // Reversing entry (DEBIT Hutang, CREDIT Persediaan & PPN)
-                await tx.journalEntry.create({
-                    data: {
-                        description: `Koreksi Discrepancy Hutang: ${receipt.receiptNumber}`,
-                        amount: difference,
-                        type: "DEBIT",
-                        accountId: apAccount.id,
-                        date: new Date()
-                    }
-                });
-                await tx.journalEntry.create({
-                    data: {
-                        description: `Koreksi Discrepancy Persediaan: ${receipt.receiptNumber}`,
-                        amount: subTDiff,
-                        type: "CREDIT",
-                        accountId: invAccount.id,
-                        date: new Date()
-                    }
-                });
-                
-                if (taxAccount && taxDiff > 0) {
-                    await tx.journalEntry.create({
-                        data: {
-                            description: `Koreksi Discrepancy PPN: ${receipt.receiptNumber}`,
-                            amount: taxDiff,
-                            type: difference > 0 ? "CREDIT" : "DEBIT",
-                            accountId: taxAccount.id,
-                            date: new Date()
-                        }
-                    });
+            // 2. Catat log verifikasi (informasi saja, tidak mengubah dokumen)
+            await tx.goodsReceiptVerification.create({
+                data: {
+                    receiptId: id,
+                    productId: item.productId,
+                    expectedQuantity: expectedQty,
+                    actualQuantity: actualQty,
+                    expectedPrice: item.purchasePrice,
+                    actualPrice: item.purchasePrice, // Harga tidak berubah
+                    verifiedBy: session?.user?.name || verifiedBy || "System",
+                    notes: actualQty === expectedQty 
+                        ? "Sesuai dokumen" 
+                        : `Selisih: ${actualQty - expectedQty} (Dokumen: ${expectedQty}, Fisik: ${actualQty})`
                 }
-            }
+            });
         }
 
+        // 3. Tandai receipt sebagai verified (tanpa mengubah nilai finansial)
         await tx.goodsReceipt.update({
             where: { id },
             data: {
                 isVerified: true,
                 verifiedAt: new Date(),
-                verifiedBy: verifiedBy,
-                subtotal: currentSubtotal,
-                taxAmount: newTaxAmount,
-                grandTotal: newGrandTotal
+                verifiedBy: session?.user?.name || verifiedBy || "System"
             }
         });
         

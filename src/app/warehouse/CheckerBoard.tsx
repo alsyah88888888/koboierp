@@ -56,10 +56,16 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
         try {
             const res = await verifyGoodsReceiptAction(selectedReceipt.id, session?.user?.name || "Warehouse Admin", checkedItems);
             if (res.success) {
-                alert("Penerimaan barang berhasil diverifikasi. Stok telah diperbarui.");
+                // Build summary of what was received
+                const lines = selectedReceipt.items.map((item: any) => {
+                    const actual = checkedItems[item.id] ?? 0;
+                    const remaining = item.quantity - actual;
+                    return `• ${item.product?.name}: Diterima ${actual}/${item.quantity}${remaining > 0 ? ` (sisa ${remaining} belum datang)` : ' ✓'}`;
+                });
+                alert(`Verifikasi berhasil! Stok gudang telah diperbarui.\n\nRingkasan:\n${lines.join('\n')}\n\nCatatan: Harga & hutang di dokumen TIDAK berubah.`);
                 setSelectedReceipt(null);
                 setCheckedItems({});
-                window.location.reload(); // Refresh to update list
+                window.location.reload();
             }
         } catch (e: any) {
             alert(e.message || "Gagal verifikasi");
