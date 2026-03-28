@@ -11,7 +11,12 @@ export default async function PurchasePage() {
     await headers();
     
     const products = await prisma.product.findMany({
-        select: { id: true, sku: true, name: true, uom: true, barcode: true },
+        select: { 
+            id: true, sku: true, name: true, uom: true, barcode: true,
+            stocks: {
+                select: { quantity: true, warehouseId: true, vendorName: true }
+            }
+        },
         orderBy: { sku: 'asc' }
     }).catch(() => []);
 

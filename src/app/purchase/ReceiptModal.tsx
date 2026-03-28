@@ -480,6 +480,32 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
                                         <datalist id={`product-list-${index}`}>
                                             {products.map(p => <option key={p.id} value={p.sku}>{p.name}</option>)}
                                         </datalist>
+                                        {/* Stock Info Badge */}
+                                        {item.productId && (() => {
+                                            const product = products.find(p => p.id === item.productId);
+                                            if (!product) return null;
+                                            const totalStock = (product.stocks || []).reduce((sum: number, s: any) => sum + (Number(s.quantity) || 0), 0);
+                                            const stockByWarehouse = (product.stocks || []).reduce((acc: Record<string, number>, s: any) => {
+                                                const wId = s.warehouseId || 'unknown';
+                                                acc[wId] = (acc[wId] || 0) + (Number(s.quantity) || 0);
+                                                return acc;
+                                            }, {} as Record<string, number>);
+                                            const selectedWarehouse = warehouses.find((w: any) => w.id === warehouseId);
+                                            const warehouseStock = warehouseId ? (stockByWarehouse[warehouseId] || 0) : null;
+                                            return (
+                                                <div className="flex flex-wrap items-center gap-1.5 mt-0.5 ml-1">
+                                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-black ${totalStock > 0 ? (totalStock < 10 ? "bg-amber-50 text-amber-700 border border-amber-200" : "bg-emerald-50 text-emerald-700 border border-emerald-200") : "bg-rose-50 text-rose-600 border border-rose-200"}`}>
+                                                        📦 Total: {totalStock} {product.uom || "pcs"}
+                                                    </span>
+                                                    {warehouseStock !== null && selectedWarehouse && (
+                                                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-black ${warehouseStock > 0 ? "bg-blue-50 text-blue-700 border border-blue-200" : "bg-slate-50 text-slate-500 border border-slate-200"}`}>
+                                                            🏭 {selectedWarehouse.name}: {warehouseStock}
+                                                        </span>
+                                                    )}
+                                                    <span className="text-[9px] text-slate-400 italic">{product.name}</span>
+                                                </div>
+                                            );
+                                        })()}
                                     </div>
                                     <div className="w-20 space-y-1">
                                         <label htmlFor={`item-${index}-qty`} className="text-[10px] uppercase font-bold text-slate-500 ml-1 cursor-pointer">Qty</label>
