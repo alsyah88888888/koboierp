@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Clock, FileText, Search, Truck, Trash2, Eye, Edit2, BarChart3, TrendingUp, TrendingDown, Users } from "lucide-react";
 import { format } from "date-fns";
 import SalesModal from "@/app/sales/SalesModal";
@@ -33,6 +33,11 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
     const [searchTerm, setSearchTerm] = useState("");
     const [editData, setEditData] = useState<any>(null);
     const [activeTab, setActiveTab] = useState<"SJ" | "RETURNS">("SJ");
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
 
     // Calculate Performance for BC & PF
     const getStats = (id: string) => {
@@ -225,7 +230,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                                             <p className="text-[10px] text-slate-500 truncate max-w-[120px]">{delivery.buyerName}</p>
                                         </div>
                                         <div className="text-right">
-                                            <p className="font-medium text-slate-600">{format(new Date(delivery.createdAt), "dd MMM yy")}</p>
+                                            <p className="font-medium text-slate-600">{isClient ? format(new Date(delivery.createdAt), "dd MMM yy") : "..."}</p>
                                             <p className="text-[10px] font-black text-indigo-600">{delivery.items.reduce((s: number, i: any) => s + i.quantity, 0)} Pcs</p>
                                         </div>
                                     </div>
@@ -280,7 +285,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                                             <p className="text-[10px] text-slate-500 truncate max-w-[120px]">{delivery.buyerName}</p>
                                         </div>
                                         <div className="text-right">
-                                            <p className="font-medium text-slate-600">{format(new Date(delivery.createdAt), "dd MMM yy")}</p>
+                                            <p className="font-medium text-slate-600">{isClient ? format(new Date(delivery.createdAt), "dd MMM yy") : "..."}</p>
                                             <p className="text-[10px] font-black text-amber-600">{delivery.items.reduce((s: number, i: any) => s + i.quantity, 0)} Pcs</p>
                                         </div>
                                     </div>
@@ -382,7 +387,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                                             {d.items.reduce((acc: number, i: any) => acc + i.quantity, 0)} {d.items[0]?.uom || ""}
                                         </td>
                                         <td className="px-6 py-4 text-right text-muted-foreground">
-                                            {format(new Date(d.createdAt), "dd/MM/yyyy HH:mm")}
+                                            {isClient ? format(new Date(d.createdAt), "dd/MM/yyyy HH:mm") : "..."}
                                         </td>
                                         <td className="px-6 py-4 text-center">
                                             <div className="flex items-center justify-center gap-2">

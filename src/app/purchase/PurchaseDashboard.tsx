@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Search, Trash2, Edit2, Eye, Download, FileText } from "lucide-react";
 import { ReportPreviewModal } from "@/components/ReportPreviewModal";
 import { format } from "date-fns";
@@ -37,6 +37,11 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
 
     const [activeTab, setActiveTab] = useState<"LPB" | "RETUR">("LPB");
     const [showReturnModal, setShowReturnModal] = useState(false);
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
 
     // Quick Add Modals States
     const [showSupplierModal, setShowSupplierModal] = useState(false);
@@ -229,7 +234,7 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
                                             {r.items.reduce((acc: number, i: any) => acc + i.quantity, 0)}
                                         </td>
                                         <td className="px-6 py-4 text-right text-muted-foreground">
-                                            {format(new Date(r.date || r.createdAt), "dd/MM/yyyy")}
+                                            {isClient ? format(new Date(r.date || r.createdAt), "dd/MM/yyyy") : "..."}
                                         </td>
                                         <td className="px-6 py-4 text-center">
                                             <div className="flex items-center justify-center gap-1">
@@ -317,7 +322,7 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
                                 {filteredReturns.map((r: any) => (
                                     <tr key={r.id} className="hover:bg-rose-50/50 transition-colors">
                                         <td className="px-6 py-4 font-mono font-bold text-rose-600 truncate" title={r.returnNumber}>{r.returnNumber}</td>
-                                        <td className="px-6 py-4 text-slate-500 whitespace-nowrap">{format(new Date(r.date || r.createdAt), "dd/MM/yyyy")}</td>
+                                        <td className="px-6 py-4 text-slate-500 whitespace-nowrap">{isClient ? format(new Date(r.date || r.createdAt), "dd/MM/yyyy") : "..."}</td>
                                         <td className="px-6 py-4 text-slate-600 truncate" title={r.receipt?.receiptNumber}>{r.receipt?.receiptNumber}</td>
                                         <td className="px-6 py-4 font-medium text-slate-700">
                                             <div className="truncate max-w-[250px]" title={r.receipt?.receivedFrom}>{r.receipt?.receivedFrom}</div>

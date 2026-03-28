@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Search, Wallet, ArrowUpCircle, ArrowDownCircle, FileText, Trash2, Download, Eye, FileCode2 } from "lucide-react";
 import { ReportPreviewModal } from "@/components/ReportPreviewModal";
 import { formatCurrency, cn } from "@/lib/utils";
@@ -34,6 +34,12 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
     const [searchTerm, setSearchTerm] = useState("");
     const [activeTab, setActiveTab] = useState<"ledger" | "ap" | "ar" | "checker" | "purchase_requests" | "history">("ledger");
     const [loading, setLoading] = useState<string | null>(null);
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
+
     const router = useRouter();
 
     const [showPreview, setShowPreview] = useState(false);
@@ -432,7 +438,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                 {filteredLedger.map((tx: any) => (
                                     <tr key={tx.id} className="hover:bg-muted/20 transition-colors">
                                         <td className="px-6 py-4 text-muted-foreground whitespace-nowrap">
-                                            {tx.date ? format(new Date(tx.date), "dd/MM/yyyy") : "-"}
+                                            {isClient && tx.date ? format(new Date(tx.date), "dd/MM/yyyy") : "..."}
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="font-medium truncate max-w-[400px]" title={tx.description}>{tx.description}</div>
@@ -491,7 +497,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                     {filteredPurchases.map((p: any) => (
                                         <tr key={p.id} className="hover:bg-muted/20 transition-colors">
                                             <td className="px-6 py-4">
-                                                <div className="text-xs text-muted-foreground">{p.createdAt ? format(new Date(p.createdAt), "dd/MM/yy") : "-"}</div>
+                                                <div className="text-xs text-muted-foreground">{isClient && p.createdAt ? format(new Date(p.createdAt), "dd/MM/yy") : "..."}</div>
                                                 <div className="font-mono text-[10px] truncate" title={p.receiptNumber || ""}>{p.receiptNumber || "-"}</div>
                                             </td>
                                             <td className="px-6 py-4 font-bold">
@@ -639,7 +645,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                     {filteredSales.map((s: any) => (
                                         <tr key={s.id} className="hover:bg-muted/20 transition-colors">
                                             <td className="px-6 py-4">
-                                                <div className="text-xs text-muted-foreground">{format(new Date(s.createdAt), "dd/MM/yy")}</div>
+                                                <div className="text-xs text-muted-foreground">{isClient ? format(new Date(s.createdAt), "dd/MM/yy") : "..."}</div>
                                                 <div className="font-mono text-[10px] truncate" title={s.deliveryNumber}>{s.deliveryNumber}</div>
                                             </td>
                                             <td className="px-6 py-4 font-bold">
@@ -830,7 +836,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                     return (
                                         <tr key={r.id} className="hover:bg-muted/20 transition-colors">
                                             <td className="px-6 py-4">
-                                                <div className="text-xs text-muted-foreground">{format(new Date(r.createdAt), "dd/MM/yy")}</div>
+                                                <div className="text-xs text-muted-foreground">{isClient ? format(new Date(r.createdAt), "dd/MM/yy") : "..."}</div>
                                                 <div className="font-mono text-[10px] font-bold text-orange-600 truncate" title={r.number}>{r.number}</div>
                                             </td>
                                             <td className="px-6 py-4 font-bold">
@@ -886,8 +892,8 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                 {transactions.map((tx: any) => (
                                     <tr key={tx.id} className="hover:bg-muted/20 transition-colors text-xs">
                                         <td className="px-6 py-4 whitespace-nowrap text-muted-foreground">
-                                            <div className="font-bold text-slate-900">{format(new Date(tx.date), "dd/MM/yyyy")}</div>
-                                            <div className="text-[10px] text-muted-foreground">{format(new Date(tx.date), "HH:mm:ss")}</div>
+                                            <div className="font-bold text-slate-900">{isClient ? format(new Date(tx.date), "dd/MM/yyyy") : "..."}</div>
+                                            <div className="text-[10px] text-muted-foreground">{isClient ? format(new Date(tx.date), "HH:mm:ss") : "..."}</div>
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${tx.transactionType === "PAYMENT" ? "bg-red-500/10 text-red-600" : "bg-emerald-500/10 text-emerald-600"}`}>
