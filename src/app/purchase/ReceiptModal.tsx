@@ -45,8 +45,7 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
         if (receiptNumber) {
             const hasItemDiscount = items.some(i => (Number(i.discount) || 0) > 0);
             const hasHeaderDiscount = (Number(totalDiscount) || 0) > 0 || (Number(totalDiscountPercent) || 0) > 0;
-            const hasTax = (Number(taxRate) || 0) > 0;
-            const needsLPBD = showDiscount || hasItemDiscount || hasHeaderDiscount || hasTax;
+            const needsLPBD = showDiscount || hasItemDiscount || hasHeaderDiscount;
 
             const isLPB = receiptNumber.startsWith("KB-LPB-");
             const isLPBD = receiptNumber.startsWith("KB-LPBD-");
@@ -57,7 +56,7 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
                 setReceiptNumber(receiptNumber.replace("KB-LPBD-", "KB-LPB-"));
             }
         }
-    }, [showDiscount, items, totalDiscount, totalDiscountPercent, taxRate]);
+    }, [showDiscount, items, totalDiscount, totalDiscountPercent]);
 
     useEffect(() => {
         if (initialData) {
@@ -310,10 +309,10 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
                                 value={receiptNumber}
                                 onChange={e => setReceiptNumber(e.target.value)}
                                 className="w-full p-2.5 bg-white border-2 border-slate-300 rounded-lg focus:border-primary outline-none transition-all font-medium"
-                                placeholder={`Otomatis (${(showDiscount || Number(taxRate) > 0) ? "KB-LPBD" : "KB-LPB"}-...)`}
+                                placeholder={`Otomatis (${showDiscount ? "KB-LPBD" : "KB-LPB"}-...)`}
                             />
                             <p className="text-[10px] text-slate-400 italic mt-0.5">
-                                Format: <span className="font-bold text-primary">{(showDiscount || Number(taxRate) > 0) ? "KB-LPBD" : "KB-LPB"} ({(showDiscount || Number(taxRate) > 0) ? "Diskon/PPN Aktif" : "Tanpa Diskon/PPN"})</span>
+                                Format: <span className="font-bold text-primary">{showDiscount ? "KB-LPBD" : "KB-LPB"} (Diskon Aktif)</span>
                             </p>
                         </div>
                         <div className="space-y-2">
