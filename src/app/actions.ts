@@ -196,13 +196,13 @@ export async function createGoodsReceiptAction(data: {
                 const year = txDate.getFullYear();
                 const fullDateStr = `${year}${month}${day}`;
                 
-                // Determine prefix based on discounts
+                // Determine prefix based on discounts OR tax (PPN)
                 const hasItemDiscount = data.items.some((item: any) => (Number(item.discount) || 0) > 0);
                 const hasTotalDiscount = (Number(data.totalDiscount) || 0) > 0;
+                const hasTax = (Number(data.taxRate) || 0) > 0;
                 
-                // If user manually set a number with KB-LPBD but values are 0, we still respect the prefix if it was passed
-                // But if auto-generating, we check the actual values OR the user's intent
-                const prefixLabel = (hasItemDiscount || hasTotalDiscount || (data.receiptNumber?.startsWith("KB-LPBD"))) ? "KB-LPBD" : "KB-LPB";
+                // KB-LPBD is used when: discount exists, tax (PPN) is active, or user manually chose LPBD
+                const prefixLabel = (hasItemDiscount || hasTotalDiscount || hasTax || (data.receiptNumber?.startsWith("KB-LPBD"))) ? "KB-LPBD" : "KB-LPB";
                 const prefix = `${prefixLabel}-${fullDateStr}-`;
 
                 const latest = await tx.goodsReceipt.findFirst({
@@ -225,13 +225,16 @@ export async function createGoodsReceiptAction(data: {
                 finalReceiptNumber = `${prefix}${String(nextNum).padStart(3, '0')}`;
             }
 
-            // --- AUTO-SWITCH PREFIX IF DISCOUNT IS DETECTED (EVEN IF PROVIDED BY CLIENT) ---
+            // --- AUTO-SWITCH PREFIX IF DISCOUNT OR TAX IS DETECTED (EVEN IF PROVIDED BY CLIENT) ---
             const hasItemDiscount = data.items.some((item: any) => (Number(item.discount) || 0) > 0);
             const hasTotalDiscount = (Number(data.totalDiscount) || 0) > 0;
+            const hasTax = (Number(data.taxRate) || 0) > 0;
             if (finalReceiptNumber) {
-                if ((hasItemDiscount || hasTotalDiscount) && finalReceiptNumber.includes("KB-LPB-")) {
+                if ((hasItemDiscount || hasTotalDiscount || hasTax) && finalReceiptNumber.includes("KB-LPB-")) {
                     finalReceiptNumber = finalReceiptNumber.replace("KB-LPB-", "KB-LPBD-");
-                } 
+                } else if (!hasItemDiscount && !hasTotalDiscount && !hasTax && finalReceiptNumber.includes("KB-LPBD-")) {
+                    finalReceiptNumber = finalReceiptNumber.replace("KB-LPBD-", "KB-LPB-");
+                }
             }
 
             if (data.taxInvoiceNumber && finalReceiptNumber && !finalReceiptNumber.endsWith("-P")) {
@@ -392,11 +395,14 @@ export async function updateGoodsReceiptAction(id: string, data: {
             // 2. Update Header
             let finalReceiptNumber = data.receiptNumber || existing.receiptNumber;
 
-            // --- AUTO-SWITCH PREFIX IF DISCOUNT IS ADDED ---
+            // --- AUTO-SWITCH PREFIX IF DISCOUNT OR TAX IS ADDED ---
             const hasItemDiscount = data.items.some((item: any) => (Number(item.discount) || 0) > 0);
             const hasTotalDiscount = (Number(data.totalDiscount) || 0) > 0;
-            if ((hasItemDiscount || hasTotalDiscount) && finalReceiptNumber.includes("KB-LPB-")) {
+            const hasTax = (Number(data.taxRate) || 0) > 0;
+            if ((hasItemDiscount || hasTotalDiscount || hasTax) && finalReceiptNumber.includes("KB-LPB-")) {
                 finalReceiptNumber = finalReceiptNumber.replace("KB-LPB-", "KB-LPBD-");
+            } else if (!hasItemDiscount && !hasTotalDiscount && !hasTax && finalReceiptNumber.includes("KB-LPBD-")) {
+                finalReceiptNumber = finalReceiptNumber.replace("KB-LPBD-", "KB-LPB-");
             }
 
             if (data.taxInvoiceNumber && finalReceiptNumber && !finalReceiptNumber.endsWith("-P")) {
@@ -3290,4 +3296,62 @@ export async function adjustStockAction({
 
         return { success: true };
     });
+}
+
+// --- ONE-TIME MIGRATION: Fix existing KB-LPB records that should be KB-LPBD ---
+export async function fixReceiptPrefixMigrationAction() {
+    "use server";
+    
+    try {
+        const allReceipts = await prisma.goodsReceipt.findMany({
+            where: {
+                receiptNumber: { contains: "KB-LPB-" }
+            },
+            include: { items: true }
+        });
+
+        let fixedCount = 0;
+        const fixedRecords: string[] = [];
+
+        for (const receipt of allReceipts) {
+            const hasTax = (Number(receipt.taxRate) || 0) > 0;
+            const hasItemDiscount = receipt.items.some((item: any) => (Number(item.discount) || 0) > 0);
+            const hasTotalDiscount = (Number(receipt.totalDiscount) || 0) > 0;
+
+            if (hasTax || hasItemDiscount || hasTotalDiscount) {
+                const newNumber = receipt.receiptNumber.replace("KB-LPB-", "KB-LPBD-");
+                
+                // Check for collision before updating
+                const existing = await prisma.goodsReceipt.findFirst({
+                    where: { receiptNumber: newNumber }
+                });
+                
+                if (!existing) {
+                    await prisma.goodsReceipt.update({
+                        where: { id: receipt.id },
+                        data: { receiptNumber: newNumber }
+                    });
+                    fixedRecords.push(`${receipt.receiptNumber} → ${newNumber}`);
+                    fixedCount++;
+                } else {
+                    fixedRecords.push(`SKIPPED (collision): ${receipt.receiptNumber} → ${newNumber}`);
+                }
+            }
+        }
+
+        revalidatePath("/purchase");
+        revalidatePath("/warehouse");
+        revalidatePath("/finance");
+        revalidatePath("/");
+
+        return { 
+            success: true, 
+            fixedCount, 
+            total: allReceipts.length,
+            details: fixedRecords 
+        };
+    } catch (error: any) {
+        console.error("Migration Error:", error);
+        throw new Error("Gagal menjalankan migrasi prefix: " + error.message);
+    }
 }
