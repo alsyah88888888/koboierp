@@ -83,10 +83,12 @@ export default function SignInPage() {
 
                         <form onSubmit={handleSubmit} className="space-y-5">
                             <div className="space-y-2">
-                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Email Address</label>
+                                <label htmlFor="signin-email" className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1 cursor-pointer">Email Address</label>
                                 <div className="relative group">
                                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-primary transition-colors" />
                                     <input
+                                        id="signin-email"
+                                        name="email"
                                         type="email"
                                         required
                                         value={email}
@@ -99,12 +101,14 @@ export default function SignInPage() {
 
                             <div className="space-y-2">
                                 <div className="flex justify-between items-center ml-1">
-                                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Password</label>
+                                    <label htmlFor="signin-password" className="text-[10px] font-bold text-slate-500 uppercase tracking-widest cursor-pointer">Password</label>
                                     <Link href="#" className="text-[10px] font-bold text-primary hover:underline">Forgot Password?</Link>
                                 </div>
                                 <div className="relative group">
                                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-primary transition-colors" />
                                     <input
+                                        id="signin-password"
+                                        name="password"
                                         type={showPassword ? "text" : "password"}
                                         required
                                         value={password}

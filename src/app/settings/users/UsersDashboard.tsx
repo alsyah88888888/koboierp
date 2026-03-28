@@ -144,7 +144,10 @@ export default function UsersDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="md:col-span-3 relative">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+          <label htmlFor="user-search" className="sr-only">Cari Pegawai</label>
           <input 
+            id="user-search"
+            name="search"
             type="text"
             placeholder="Cari berdasarkan nama atau email..."
             value={searchTerm}
@@ -268,8 +271,10 @@ export default function UsersDashboard() {
               {(showModal === 'create' || showModal === 'edit') && (
                 <>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Nama Lengkap</label>
+                    <label htmlFor="user-full-name" className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1 cursor-pointer">Nama Lengkap</label>
                     <input 
+                      id="user-full-name"
+                      name="name"
                       value={form.name}
                       onChange={e => setForm({...form, name: e.target.value})}
                       className="w-full bg-slate-50 border-2 border-slate-100 px-5 py-4 rounded-2xl outline-none focus:border-primary font-bold text-slate-800 transition-all"
@@ -278,8 +283,10 @@ export default function UsersDashboard() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Email (Login ID)</label>
+                    <label htmlFor="user-email-id" className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1 cursor-pointer">Email (Login ID)</label>
                     <input 
+                      id="user-email-id"
+                      name="email"
                       type="email"
                       value={form.email}
                       onChange={e => setForm({...form, email: e.target.value})}
@@ -289,10 +296,12 @@ export default function UsersDashboard() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Hak Akses (Role)</label>
+                    <label htmlFor="user-role-select" className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1 cursor-pointer">Hak Akses (Role)</label>
                     <div className="relative">
                       <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300" />
                       <select 
+                        id="user-role-select"
+                        name="role"
                         value={form.role}
                         onChange={e => setForm({...form, role: e.target.value})}
                         className="w-full bg-slate-50 border-2 border-slate-100 pl-12 pr-5 py-4 rounded-2xl outline-none focus:border-primary font-bold text-slate-800 transition-all appearance-none"
@@ -312,8 +321,10 @@ export default function UsersDashboard() {
 
               {(showModal === 'create' || showModal === 'reset') && (
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Password</label>
+                  <label htmlFor="user-password-input" className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1 cursor-pointer">Password</label>
                   <input 
+                    id="user-password-input"
+                    name="password"
                     type="text"
                     value={form.password}
                     onChange={e => setForm({...form, password: e.target.value})}
