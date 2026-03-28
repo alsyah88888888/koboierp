@@ -41,18 +41,22 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
 
 
     useEffect(() => {
-        // Dynamic Prefix Logic for Receipt Number
+        // Dynamic Prefix Logic for Receipt Number (Real-time)
         if (receiptNumber) {
+            const hasItemDiscount = items.some(i => (Number(i.discount) || 0) > 0);
+            const hasHeaderDiscount = (Number(totalDiscount) || 0) > 0 || (Number(totalDiscountPercent) || 0) > 0;
+            const needsLPBD = showDiscount || hasItemDiscount || hasHeaderDiscount;
+
             const isLPB = receiptNumber.startsWith("KB-LPB-");
             const isLPBD = receiptNumber.startsWith("KB-LPBD-");
             
-            if (showDiscount && isLPB) {
+            if (needsLPBD && isLPB) {
                 setReceiptNumber(receiptNumber.replace("KB-LPB-", "KB-LPBD-"));
-            } else if (!showDiscount && isLPBD) {
+            } else if (!needsLPBD && isLPBD) {
                 setReceiptNumber(receiptNumber.replace("KB-LPBD-", "KB-LPB-"));
             }
         }
-    }, [showDiscount]);
+    }, [showDiscount, items, totalDiscount, totalDiscountPercent]);
 
     useEffect(() => {
         if (initialData) {

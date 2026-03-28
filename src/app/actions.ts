@@ -225,6 +225,17 @@ export async function createGoodsReceiptAction(data: {
                 finalReceiptNumber = `${prefix}${String(nextNum).padStart(3, '0')}`;
             }
 
+            // --- AUTO-SWITCH PREFIX IF DISCOUNT IS DETECTED (EVEN IF PROVIDED BY CLIENT) ---
+            const hasItemDiscount = data.items.some(item => (Number(item.discount) || 0) > 0);
+            const hasTotalDiscount = (Number(data.totalDiscount) || 0) > 0;
+            if (finalReceiptNumber) {
+                if ((hasItemDiscount || hasTotalDiscount) && finalReceiptNumber.startsWith("KB-LPB-")) {
+                    finalReceiptNumber = finalReceiptNumber.replace("KB-LPB-", "KB-LPBD-");
+                } else if (!hasItemDiscount && !hasTotalDiscount && finalReceiptNumber.startsWith("KB-LPBD-")) {
+                    finalReceiptNumber = finalReceiptNumber.replace("KB-LPBD-", "KB-LPB-");
+                }
+            }
+
             if (data.taxInvoiceNumber && finalReceiptNumber && !finalReceiptNumber.endsWith("-P")) {
                 finalReceiptNumber += "-P";
             }
