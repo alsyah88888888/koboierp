@@ -46,12 +46,8 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
     const handleVerifySubmit = async () => {
         if (!selectedReceipt) return;
 
-        // Check if all items matched
-        const allMatched = selectedReceipt.items.every((item: any) =>
-            (checkedItems[item.id] || 0) === item.quantity
-        );
-
-        if (!allMatched && !showDiscrepancyModal) {
+        // Always show modal first for manual verification
+        if (!showDiscrepancyModal) {
             setShowDiscrepancyModal(true);
             return;
         }
@@ -196,83 +192,166 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
                     </div>
                 </div>
 
-                {/* Discrepancy Modal */}
+                {/* Verifikasi Manual Modal */}
                 {showDiscrepancyModal && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
-                        <div className="bg-white rounded-[2.5rem] w-full max-w-2xl shadow-2xl border-2 border-slate-100 overflow-hidden animate-in zoom-in duration-300">
-                            <div className="p-8 border-b border-slate-100 bg-rose-50/50 flex items-center gap-4">
-                                <div className="p-3 bg-rose-100 rounded-2xl text-rose-600">
-                                    <AlertTriangle className="h-6 w-6" />
+                        <div className="bg-white rounded-[2.5rem] w-full max-w-3xl shadow-2xl border-2 border-slate-100 overflow-hidden animate-in zoom-in duration-300 max-h-[90vh] flex flex-col">
+                            <div className="p-6 md:p-8 border-b border-slate-100 bg-gradient-to-r from-primary/5 to-blue-50/50 flex items-center gap-4 shrink-0">
+                                <div className="p-3 bg-primary/10 rounded-2xl text-primary">
+                                    <Package className="h-6 w-6" />
                                 </div>
                                 <div className="flex-1">
-                                    <h3 className="text-xl font-black text-slate-900 tracking-tight">Konfirmasi Selisih Barang</h3>
-                                    <p className="text-[10px] font-black text-rose-500 uppercase tracking-widest mt-1">
-                                        Ditemukan ketidaksesuaian antara fisik dan dokumen
+                                    <h3 className="text-lg md:text-xl font-black text-slate-900 tracking-tight">Verifikasi Jumlah Barang</h3>
+                                    <p className="text-[10px] font-black text-primary uppercase tracking-widest mt-1">
+                                        {selectedReceipt.receiptNumber} • Koreksi jumlah fisik sebelum konfirmasi
                                     </p>
                                 </div>
-                                <button onClick={() => setShowDiscrepancyModal(false)} className="p-2 hover:bg-white rounded-xl transition-all">
-                                    <X className="h-5 w-5 text-slate-400" />
+                                <button onClick={() => setShowDiscrepancyModal(false)} className="p-2.5 hover:bg-white hover:shadow-md rounded-2xl transition-all border border-slate-200 bg-white/50 text-slate-400 hover:text-red-500 active:scale-95">
+                                    <X className="h-5 w-5" />
                                 </button>
                             </div>
 
-                            <div className="p-8 space-y-6">
-                                <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
-                                    <p className="text-sm font-bold text-slate-600 mb-4">Berikut adalah daftar barang dengan selisih:</p>
-                                    <div className="space-y-3">
-                                        {selectedReceipt.items
-                                            .filter((item: any) => (checkedItems[item.id] || 0) !== item.quantity)
-                                            .map((item: any) => {
-                                                const scanned = checkedItems[item.id] || 0;
-                                                const diff = scanned - item.quantity;
-                                                return (
-                                                    <div key={item.id} className="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
-                                                        <div>
-                                                            <div className="font-black text-slate-800 text-sm">{item.product?.name}</div>
-                                                            <div className="text-[10px] font-mono text-slate-400 mt-1 uppercase tracking-widest">{item.product?.sku}</div>
+                            <div className="p-6 md:p-8 space-y-5 overflow-y-auto flex-1">
+                                {/* Quick Action */}
+                                <div className="flex flex-wrap gap-2">
+                                    <button
+                                        onClick={() => {
+                                            const allSet: Record<string, number> = {};
+                                            selectedReceipt.items.forEach((item: any) => { allSet[item.id] = item.quantity; });
+                                            setCheckedItems(allSet);
+                                        }}
+                                        className="px-4 py-2 bg-emerald-50 text-emerald-700 text-xs font-black rounded-xl hover:bg-emerald-100 transition-all active:scale-95 border border-emerald-200"
+                                    >
+                                        ✓ Set Semua Sesuai
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            const allZero: Record<string, number> = {};
+                                            selectedReceipt.items.forEach((item: any) => { allZero[item.id] = 0; });
+                                            setCheckedItems(allZero);
+                                        }}
+                                        className="px-4 py-2 bg-slate-50 text-slate-500 text-xs font-black rounded-xl hover:bg-slate-100 transition-all active:scale-95 border border-slate-200"
+                                    >
+                                        Reset Semua ke 0
+                                    </button>
+                                </div>
+
+                                {/* Items List - Editable */}
+                                <div className="space-y-3">
+                                    {selectedReceipt.items.map((item: any, idx: number) => {
+                                        const actualQty = checkedItems[item.id] ?? 0;
+                                        const diff = actualQty - item.quantity;
+                                        const isMatch = diff === 0;
+                                        return (
+                                            <div key={item.id} className={cn(
+                                                "p-4 rounded-2xl border-2 transition-all",
+                                                isMatch ? "bg-emerald-50/30 border-emerald-100" : diff < 0 ? "bg-rose-50/30 border-rose-100" : "bg-amber-50/30 border-amber-100"
+                                            )}>
+                                                <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-4">
+                                                    {/* Item Info */}
+                                                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                                                        <div className={cn(
+                                                            "w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black shrink-0",
+                                                            isMatch ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"
+                                                        )}>
+                                                            {isMatch ? "✓" : idx + 1}
                                                         </div>
-                                                        <div className="text-right">
-                                                            <div className="flex items-center gap-2">
-                                                                <span className="text-[10px] font-black text-slate-400 uppercase">Target: {item.quantity}</span>
-                                                                <ChevronRight className="h-3 w-3 text-slate-300" />
-                                                                <span className="text-sm font-black text-rose-600">Fisik: {scanned}</span>
-                                                            </div>
-                                                            <div className={cn(
-                                                                "text-[10px] font-black mt-1",
-                                                                diff > 0 ? "text-emerald-600" : "text-rose-500"
-                                                            )}>
-                                                                {diff > 0 ? `+${diff}` : diff} KARTON
-                                                            </div>
+                                                        <div className="min-w-0">
+                                                            <div className="font-black text-slate-800 text-sm truncate">{item.product?.name || "Unknown"}</div>
+                                                            <div className="text-[10px] font-mono text-slate-400 uppercase tracking-widest">{item.product?.sku || "-"}</div>
                                                         </div>
                                                     </div>
-                                                );
-                                            })}
-                                    </div>
+
+                                                    {/* Target & Input */}
+                                                    <div className="flex items-center gap-3 shrink-0">
+                                                        <div className="text-center">
+                                                            <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Dokumen</div>
+                                                            <div className="text-lg font-black text-slate-700">{item.quantity}</div>
+                                                        </div>
+
+                                                        <ChevronRight className="h-4 w-4 text-slate-300 shrink-0" />
+
+                                                        <div className="text-center">
+                                                            <label htmlFor={`modal-qty-${item.id}`} className="text-[9px] font-black text-primary uppercase tracking-widest block">Fisik</label>
+                                                            <input
+                                                                id={`modal-qty-${item.id}`}
+                                                                name={`modalQty[${item.id}]`}
+                                                                type="number"
+                                                                min="0"
+                                                                value={actualQty}
+                                                                onChange={(e) => {
+                                                                    const val = Math.max(0, parseInt(e.target.value) || 0);
+                                                                    setCheckedItems(prev => ({ ...prev, [item.id]: val }));
+                                                                }}
+                                                                className={cn(
+                                                                    "w-20 text-center font-black text-lg border-2 rounded-xl px-2 py-1.5 outline-none transition-all focus:ring-2 focus:ring-primary/20",
+                                                                    isMatch ? "bg-emerald-50 border-emerald-200 text-emerald-700" : diff < 0 ? "bg-rose-50 border-rose-200 text-rose-600" : "bg-amber-50 border-amber-200 text-amber-700"
+                                                                )}
+                                                            />
+                                                        </div>
+
+                                                        {/* Difference Badge */}
+                                                        <div className={cn(
+                                                            "px-2.5 py-1 rounded-lg text-[10px] font-black min-w-[60px] text-center",
+                                                            isMatch ? "bg-emerald-100 text-emerald-700" : diff < 0 ? "bg-rose-100 text-rose-600" : "bg-amber-100 text-amber-700"
+                                                        )}>
+                                                            {isMatch ? "SESUAI" : diff > 0 ? `+${diff}` : `${diff}`}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
 
-                                <div className="bg-amber-50 p-6 rounded-3xl border border-amber-100">
-                                    <div className="flex gap-4">
-                                        <AlertCircle className="h-5 w-5 text-amber-600 shrink-0" />
-                                        <p className="text-xs font-bold text-amber-800 leading-relaxed">
-                                            Melanjutkan verifikasi ini akan memperbarui jumlah stok di gudang dan menyesuaikan saldo hutang/piutang sesuai dengan fisik yang diterima.
-                                        </p>
-                                    </div>
-                                </div>
+                                {/* Summary */}
+                                {(() => {
+                                    const totalItems = selectedReceipt.items.length;
+                                    const matchedItems = selectedReceipt.items.filter((item: any) => (checkedItems[item.id] ?? 0) === item.quantity).length;
+                                    const hasDiff = matchedItems < totalItems;
+                                    return (
+                                        <div className={cn(
+                                            "p-4 rounded-2xl border flex items-center gap-4",
+                                            hasDiff ? "bg-amber-50 border-amber-200" : "bg-emerald-50 border-emerald-200"
+                                        )}>
+                                            {hasDiff ? (
+                                                <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" />
+                                            ) : (
+                                                <CheckCircle className="h-5 w-5 text-emerald-600 shrink-0" />
+                                            )}
+                                            <div>
+                                                <p className={cn("text-xs font-black", hasDiff ? "text-amber-800" : "text-emerald-800")}>
+                                                    {matchedItems}/{totalItems} barang sesuai dokumen.
+                                                </p>
+                                                <p className="text-[10px] text-slate-500 mt-0.5">
+                                                    {hasDiff
+                                                        ? "Stok akan diperbarui sesuai jumlah fisik yang diinput di atas."
+                                                        : "Semua jumlah barang sesuai dengan dokumen."}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
+                            </div>
 
-                                <div className="flex gap-3">
-                                    <button
-                                        onClick={() => setShowDiscrepancyModal(false)}
-                                        className="flex-1 py-4 bg-slate-100 text-slate-600 font-black rounded-2xl hover:bg-slate-200 transition-all active:scale-95 text-sm uppercase tracking-widest"
-                                    >
-                                        Cek Kembali
-                                    </button>
-                                    <button
-                                        disabled={isVerifying}
-                                        onClick={handleVerifySubmit}
-                                        className="flex-[2] py-4 bg-rose-600 text-white font-black rounded-2xl hover:bg-rose-700 transition-all active:scale-95 text-sm uppercase tracking-widest shadow-xl shadow-rose-200 flex items-center justify-center gap-2"
-                                    >
-                                        {isVerifying ? "Memproses..." : "Konfirmasi & Update Stok"}
-                                    </button>
-                                </div>
+                            {/* Footer Buttons - Fixed at bottom */}
+                            <div className="p-6 md:p-8 border-t border-slate-100 bg-slate-50/50 flex gap-3 shrink-0">
+                                <button
+                                    onClick={() => setShowDiscrepancyModal(false)}
+                                    className="flex-1 py-3.5 bg-white text-slate-600 font-black rounded-2xl hover:bg-slate-100 transition-all active:scale-95 text-sm uppercase tracking-widest border-2 border-slate-200"
+                                >
+                                    Kembali
+                                </button>
+                                <button
+                                    disabled={isVerifying}
+                                    onClick={handleVerifySubmit}
+                                    className={cn(
+                                        "flex-[2] py-3.5 text-white font-black rounded-2xl transition-all active:scale-95 text-sm uppercase tracking-widest shadow-xl flex items-center justify-center gap-2",
+                                        isVerifying ? "bg-slate-400 cursor-not-allowed" : "bg-primary hover:bg-primary/90 shadow-primary/20"
+                                    )}
+                                >
+                                    {isVerifying ? "Memproses..." : "✓ Konfirmasi & Update Stok"}
+                                </button>
                             </div>
                         </div>
                     </div>
