@@ -512,6 +512,7 @@ export async function updateGoodsReceiptAction(id: string, data: {
  * ADMIN GUDANG: Verify Goods Receipt (Finalize Stock & Accounting)
  */
 export async function verifyGoodsReceiptAction(id: string, verifiedBy: string, checkedItems?: Record<string, number>) {
+    const session = await getServerSession(authOptions) as any;
     return await prisma.$transaction(async (tx: any) => {
         const receipt = await tx.goodsReceipt.findUnique({
             where: { id },
@@ -522,86 +523,103 @@ export async function verifyGoodsReceiptAction(id: string, verifiedBy: string, c
         if (receipt.isVerified) throw new Error("Penerimaan barang sudah diverifikasi.");
 
         // Adjust stock and recalculate totals if checkedItems are provided
-        let currentSubtotal = Number(receipt.subtotal || 0);
-        let hasChanges = false;
+        let currentSubtotal = 0;
+        
+        // Use either checkedItems (newly scanned) or original quantities if not adjusted
+        const itemsToProcess = checkedItems || {};
 
-        if (checkedItems) {
-            for (const item of receipt.items) {
-                const actualQty = checkedItems[item.id] !== undefined ? checkedItems[item.id] : item.quantity;
-                const expectedQty = item.quantity;
-                const diff = actualQty - expectedQty;
+        for (const item of receipt.items) {
+            const actualQty = itemsToProcess[item.id] !== undefined ? itemsToProcess[item.id] : item.quantity;
+            const expectedQty = item.quantity;
+            const diff = actualQty - expectedQty;
+            const itemPrice = Number(item.purchasePrice || 0);
 
-                if (diff !== 0) {
-                    hasChanges = true;
-                    
-                    // 1. Update Item Quantity in Document
-                    await tx.goodsReceiptItem.update({
-                        where: { id: item.id },
-                        data: { quantity: actualQty }
-                    });
+            // Accumulate new subtotal
+            currentSubtotal += (actualQty * itemPrice);
 
-                    // 2. Adjust Stock
-                    await tx.stock.upsert({
-                        where: {
-                            productId_warehouseId_vendorName: {
-                                productId: item.productId,
-                                warehouseId: receipt.warehouseId,
-                                vendorName: receipt.receivedFrom
-                            }
-                        },
-                        update: { quantity: { increment: diff } },
-                        create: {
+            if (diff !== 0) {
+                // 1. Update Item Quantity in Document
+                await tx.goodsReceiptItem.update({
+                    where: { id: item.id },
+                    data: { quantity: actualQty }
+                });
+
+                // 2. Adjust Stock
+                await tx.stock.upsert({
+                    where: {
+                        productId_warehouseId_vendorName: {
                             productId: item.productId,
                             warehouseId: receipt.warehouseId,
-                            vendorName: receipt.receivedFrom,
-                            quantity: diff
+                            vendorName: receipt.receivedFrom
                         }
-                    });
+                    },
+                    update: { quantity: { increment: diff } },
+                    create: {
+                        productId: item.productId,
+                        warehouseId: receipt.warehouseId,
+                        vendorName: receipt.receivedFrom,
+                        quantity: diff
+                    }
+                });
 
-                    await tx.stockMovement.create({
-                        data: {
-                            productId: item.productId,
-                            warehouseId: receipt.warehouseId,
-                            vendorName: receipt.receivedFrom,
-                            quantity: diff,
-                            type: "ADJUSTMENT",
-                            reference: `${receipt.receiptNumber}-CHECKER`
-                        }
-                    });
+                await tx.stockMovement.create({
+                    data: {
+                        productId: item.productId,
+                        warehouseId: receipt.warehouseId,
+                        vendorName: receipt.receivedFrom,
+                        quantity: diff,
+                        type: "ADJUSTMENT",
+                        reference: `${receipt.receiptNumber}-CHECKER`
+                    }
+                });
 
-                    // 3. Record Verification log
-                    await tx.goodsReceiptVerification.create({
-                        data: {
-                            receiptId: id,
-                            productId: item.productId,
-                            expectedQuantity: expectedQty,
-                            actualQuantity: actualQty,
-                            expectedPrice: item.purchasePrice,
-                            actualPrice: item.purchasePrice,
-                            verifiedBy: verifiedBy,
-                            notes: "Verified via Checker Board (Adjustment Made)"
-                        }
-                    });
-
-                    // 4. Update Running Subtotal
-                    const itemPrice = Number(item.purchasePrice || 0);
-                    const itemDiscount = Number(item.discount || 0);
-                    const pricePerUnit = itemPrice - itemDiscount;
-                    currentSubtotal += (diff * pricePerUnit);
-                }
+                // 3. Record Verification log
+                await tx.goodsReceiptVerification.create({
+                    data: {
+                        receiptId: id,
+                        productId: item.productId,
+                        expectedQuantity: expectedQty,
+                        actualQuantity: actualQty,
+                        expectedPrice: item.purchasePrice,
+                        actualPrice: item.purchasePrice,
+                        verifiedBy: session?.user?.name || verifiedBy || "System",
+                        notes: "Verified via Checker Board (Adjustment Made)"
+                    }
+                });
             }
         }
 
-        // Recalculate and update header
+        // --- CALC RECALCULATED TOTALS ---
         const taxRateData = Number(receipt.taxRate || 0);
         const oldTotalDiscount = Number(receipt.totalDiscount || 0);
-        // We assume the discount is nominal, so we must be careful. If total qty dropped, we don't automatically drop nominal discount unless it's per-item. 
-        // We'll keep the overall manual discount intact.
         const newTaxAmount = Math.round((currentSubtotal * taxRateData) / 100);
         const newGrandTotal = Math.round(currentSubtotal - oldTotalDiscount + newTaxAmount);
 
         const oldGrandTotal = Number(receipt.grandTotal || 0);
         const difference = oldGrandTotal - newGrandTotal;
+
+        // --- UPDATE RECEIPT HEADER WITH CURATED VALUES ---
+        let updatedReceiptNumber = receipt.receiptNumber;
+        // Prefix logic: LPBD for discounts, LPB for no discounts
+        const hasD = oldTotalDiscount > 0 || receipt.items.some(i => (Number(i.discount) || 0) > 0);
+        if (hasD && updatedReceiptNumber.startsWith("KB-LPB-")) {
+            updatedReceiptNumber = updatedReceiptNumber.replace("KB-LPB-", "KB-LPBD-");
+        } else if (!hasD && updatedReceiptNumber.startsWith("KB-LPBD-")) {
+            updatedReceiptNumber = updatedReceiptNumber.replace("KB-LPBD-", "KB-LPB-");
+        }
+
+        await tx.goodsReceipt.update({
+            where: { id: receipt.id },
+            data: {
+                receiptNumber: updatedReceiptNumber,
+                subtotal: currentSubtotal,
+                taxAmount: newTaxAmount,
+                grandTotal: newGrandTotal,
+                isVerified: true,
+                verifiedAt: new Date(),
+                verifiedBy: session?.user?.name || verifiedBy || "System"
+            }
+        });
 
         if (difference !== 0 && receipt.paymentStatus !== "PENDING") {
             // Finance has already recognized the debt, so we must correct the Vendor balance and Accounts
