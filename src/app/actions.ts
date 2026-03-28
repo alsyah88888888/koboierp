@@ -711,7 +711,11 @@ export async function deleteGoodsReceiptAction(id: string) {
     return await prisma.$transaction(async (tx: any) => {
         const receipt = await tx.goodsReceipt.findUnique({
             where: { id },
-            include: { items: true }
+            include: { 
+                items: true,
+                returns: { include: { items: true } },
+                verifications: true
+            }
         });
 
         if (!receipt) throw new Error("Receipt not found");
@@ -720,7 +724,6 @@ export async function deleteGoodsReceiptAction(id: string) {
         if (receipt.paymentStatus !== "PENDING") {
             const vendor = await tx.vendor.findFirst({ where: { name: receipt.receivedFrom } });
             if (vendor) {
-                // If it was partial/paid, they have already added it to balance. We remove it.
                 await tx.vendor.update({
                     where: { id: vendor.id },
                     data: { balance: { decrement: Number(receipt.grandTotal || 0) } }
@@ -728,32 +731,50 @@ export async function deleteGoodsReceiptAction(id: string) {
             }
         }
 
-        // 1. Reverse Stock
-        for (const item of receipt.items) {
-            await tx.stock.update({
-                where: {
-                    productId_warehouseId_vendorName: {
+        // 1. Reverse Stock (only if receipt was verified = stock was added)
+        if (receipt.isVerified) {
+            for (const item of receipt.items) {
+                try {
+                    await tx.stock.update({
+                        where: {
+                            productId_warehouseId_vendorName: {
+                                productId: item.productId,
+                                warehouseId: receipt.warehouseId,
+                                vendorName: receipt.receivedFrom
+                            }
+                        },
+                        data: { quantity: { decrement: item.quantity } }
+                    });
+                } catch (_) {
+                    // Stock record may not exist if already manually adjusted - skip
+                }
+
+                await tx.stockMovement.create({
+                    data: {
                         productId: item.productId,
                         warehouseId: receipt.warehouseId,
-                        vendorName: receipt.receivedFrom
+                        vendorName: receipt.receivedFrom,
+                        quantity: -item.quantity,
+                        type: "GOODS_RECEIPT_CANCEL",
+                        reference: receipt.receiptNumber
                     }
-                },
-                data: { quantity: { decrement: item.quantity } }
-            });
-
-            await tx.stockMovement.create({
-                data: {
-                    productId: item.productId,
-                    warehouseId: receipt.warehouseId,
-                    vendorName: receipt.receivedFrom,
-                    quantity: -item.quantity,
-                    type: "GOODS_RECEIPT_CANCEL",
-                    reference: receipt.receiptNumber
-                }
-            });
+                });
+            }
         }
 
+        // 2. Delete related Purchase Returns and their items
+        for (const ret of (receipt.returns || [])) {
+            await tx.purchaseReturnItem.deleteMany({ where: { purchaseReturnId: ret.id } });
+            await tx.purchaseReturn.delete({ where: { id: ret.id } });
+        }
+
+        // 3. Delete related Verifications
+        await tx.goodsReceiptVerification.deleteMany({ where: { receiptId: id } });
+
+        // 4. Delete Receipt Items
         await tx.goodsReceiptItem.deleteMany({ where: { receiptId: id } });
+
+        // 5. Delete the Receipt itself
         await tx.goodsReceipt.delete({ where: { id } });
 
         revalidatePath("/purchase");
