@@ -97,10 +97,12 @@ export function FinanceModal({ accounts, onClose }: { accounts: any[], onClose: 
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                            <label htmlFor="source-account" className="text-[10px] font-bold uppercase tracking-wider text-slate-500 cursor-pointer">
                                 {type === "PAYMENT" ? "1. Sumber Dana (Kas/Bank Keluar)" : type === "RECEIPT" ? "1. Masuk ke Kas/Bank" : "1. Dari Rekening / Kas Asal"}
                             </label>
                             <select
+                                id="source-account"
+                                name="bankAccountId"
                                 value={bankAccountId}
                                 onChange={e => { setBankAccountId(e.target.value); if (type === "MUTATION" && targetAccountId === e.target.value) setTargetAccountId(""); }}
                                 className="w-full bg-white border-2 border-slate-300 px-3 py-2.5 rounded-lg outline-none focus:border-primary transition-all font-medium"
@@ -111,10 +113,12 @@ export function FinanceModal({ accounts, onClose }: { accounts: any[], onClose: 
                             </select>
                         </div>
                         <div className="space-y-2">
-                            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                            <label htmlFor="target-account" className="text-[10px] font-bold uppercase tracking-wider text-slate-500 cursor-pointer">
                                 {type === "PAYMENT" ? "2. Alokasi Biaya / Beban" : type === "RECEIPT" ? "2. Sumber Dana Terim / Pendapatan" : "2. Ke Rekening / Kas Tujuan"}
                             </label>
                             <select
+                                id="target-account"
+                                name="accountId"
                                 value={targetAccountId}
                                 onChange={e => setTargetAccountId(e.target.value)}
                                 className="w-full bg-white border-2 border-slate-300 px-3 py-2.5 rounded-lg outline-none focus:border-primary transition-all font-medium"
@@ -125,8 +129,10 @@ export function FinanceModal({ accounts, onClose }: { accounts: any[], onClose: 
                             </select>
                         </div>
                         <div className="space-y-2">
-                            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Tanggal Payment</label>
+                            <label htmlFor="transaction-date" className="text-[10px] font-bold uppercase tracking-wider text-slate-500 cursor-pointer">Tanggal Payment</label>
                             <input
+                                id="transaction-date"
+                                name="date"
                                 type="date"
                                 value={date}
                                 onChange={e => setDate(e.target.value)}
@@ -135,8 +141,10 @@ export function FinanceModal({ accounts, onClose }: { accounts: any[], onClose: 
                             />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">No. Bukti Transfer / Ref</label>
+                            <label htmlFor="reference-number" className="text-[10px] font-bold uppercase tracking-wider text-slate-500 cursor-pointer">No. Bukti Transfer / Ref</label>
                             <input
+                                id="reference-number"
+                                name="referenceNumber"
                                 value={refNo}
                                 onChange={e => setRefNo(e.target.value)}
                                 className="w-full bg-white border-2 border-slate-300 px-3 py-2.5 rounded-lg outline-none focus:border-primary transition-all font-medium"
@@ -147,10 +155,12 @@ export function FinanceModal({ accounts, onClose }: { accounts: any[], onClose: 
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Nominal (Amount)</label>
+                            <label htmlFor="transaction-amount" className="text-[10px] font-bold uppercase tracking-wider text-slate-500 cursor-pointer">Nominal (Amount)</label>
                             <div className="relative">
                                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-bold">Rp</span>
                                 <input
+                                    id="transaction-amount"
+                                    name="amount"
                                     type="text"
                                     value={amount ? amount.toLocaleString('id-ID') : ""}
                                     onChange={e => {
@@ -163,8 +173,10 @@ export function FinanceModal({ accounts, onClose }: { accounts: any[], onClose: 
                             </div>
                         </div>
                         <div className="space-y-2">
-                            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Catatan/Keterangan</label>
+                            <label htmlFor="transaction-description" className="text-[10px] font-bold uppercase tracking-wider text-slate-500 cursor-pointer">Catatan/Keterangan</label>
                             <textarea
+                                id="transaction-description"
+                                name="description"
                                 value={description}
                                 onChange={e => setDescription(e.target.value)}
                                 className="w-full bg-white border-2 border-slate-300 px-3 py-2.5 rounded-lg outline-none focus:border-primary transition-all font-medium min-h-[44px]"

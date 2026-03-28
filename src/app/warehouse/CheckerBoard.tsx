@@ -100,8 +100,11 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
                             <p className="text-[11px] font-bold text-slate-400 uppercase tracking-tight mt-1">Sistem akan otomatis menghitung jumlah barang yang masuk.</p>
                         </div>
                         <div className="relative w-full md:w-80">
+                            <label htmlFor="barcode-checker-input" className="sr-only">Scan SKU / Barcode</label>
                             <Barcode className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary" />
                             <input
+                                id="barcode-checker-input"
+                                name="barcodeCheck"
                                 ref={scanInputRef}
                                 value={scanBuffer}
                                 onChange={(e) => setScanBuffer(e.target.value)}
@@ -138,7 +141,10 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
                                                 {item.quantity}
                                             </td>
                                             <td className="px-6 py-4 text-right">
+                                                <label htmlFor={`check-qty-${item.id}`} className="sr-only">Jumlah Barang Terhitung untuk {item.product?.name}</label>
                                                 <input
+                                                    id={`check-qty-${item.id}`}
+                                                    name={`check[${item.id}]`}
                                                     type="number"
                                                     min="0"
                                                     value={scanned}

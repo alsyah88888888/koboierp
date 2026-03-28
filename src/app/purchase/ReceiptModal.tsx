@@ -286,8 +286,10 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
                     {/* Header Section */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 bg-slate-50 p-4 md:p-6 rounded-xl border-2 border-slate-200">
                         <div className="space-y-2">
-                            <label className="text-xs font-bold uppercase text-slate-600">Terima Dari (Supplier)</label>
+                            <label htmlFor="vendor-input" className="text-xs font-bold uppercase text-slate-600 cursor-pointer">Terima Dari (Supplier)</label>
                             <input
+                                id="vendor-input"
+                                name="vendor"
                                 list="supplier-list"
                                 value={receivedFrom}
                                 onChange={e => setReceivedFrom(e.target.value)}
@@ -300,8 +302,10 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
                             </datalist>
                         </div>
                         <div className="space-y-2">
-                            <label className="text-xs font-bold uppercase text-slate-600">No. Surat Jalan / Terima</label>
+                            <label htmlFor="receipt-num" className="text-xs font-bold uppercase text-slate-600 cursor-pointer">No. Surat Jalan / Terima</label>
                             <input
+                                id="receipt-num"
+                                name="receiptNumber"
                                 value={receiptNumber}
                                 onChange={e => setReceiptNumber(e.target.value)}
                                 className="w-full p-2.5 bg-white border-2 border-slate-300 rounded-lg focus:border-primary outline-none transition-all font-medium"
@@ -312,8 +316,10 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
                             </p>
                         </div>
                         <div className="space-y-2">
-                            <label className="text-xs font-bold uppercase text-slate-600">Tanggal Penerimaan</label>
+                            <label htmlFor="receipt-date" className="text-xs font-bold uppercase text-slate-600 cursor-pointer">Tanggal Penerimaan</label>
                             <input
+                                id="receipt-date"
+                                name="date"
                                 type="date"
                                 value={date}
                                 onChange={e => setDate(e.target.value)}
@@ -324,9 +330,10 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
 
                         <div className="space-y-4 md:col-span-2 bg-white p-4 rounded-xl border-2 border-slate-200">
                             <div className="flex items-center justify-between">
-                                <label className="text-sm font-bold text-slate-700">Gunakan Faktur Pajak?</label>
+                                <label htmlFor="tax-toggle" className="text-sm font-bold text-slate-700 cursor-pointer">Gunakan Faktur Pajak?</label>
                                 <label className="relative inline-flex items-center cursor-pointer">
                                     <input
+                                        id="tax-toggle"
                                         type="checkbox"
                                         className="sr-only peer"
                                         checked={hasTaxInvoice}
@@ -344,8 +351,10 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
 
                             <div className={`grid grid-cols-1 sm:grid-cols-2 gap-4 transition-all duration-300 overflow-hidden ${hasTaxInvoice ? 'h-auto opacity-100 mt-4' : 'h-0 opacity-0 m-0'}`}>
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold uppercase text-slate-600">Nomor Faktur Pajak</label>
+                                    <label htmlFor="tax-inv-num" className="text-xs font-bold uppercase text-slate-600 cursor-pointer">Nomor Faktur Pajak</label>
                                     <input
+                                        id="tax-inv-num"
+                                        name="taxInvoiceNumber"
                                         value={taxInvoiceNumber}
                                         onChange={e => setTaxInvoiceNumber(e.target.value)}
                                         className="w-full p-2.5 bg-slate-50 border-2 border-slate-300 rounded-lg focus:border-primary outline-none transition-all font-medium"
@@ -354,8 +363,10 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold uppercase text-slate-600">Tgl Faktur Pajak</label>
+                                    <label htmlFor="tax-inv-date" className="text-xs font-bold uppercase text-slate-600 cursor-pointer">Tgl Faktur Pajak</label>
                                     <input
+                                        id="tax-inv-date"
+                                        name="taxInvoiceDate"
                                         type="date"
                                         value={taxInvoiceDate}
                                         onChange={e => setTaxInvoiceDate(e.target.value)}
@@ -366,8 +377,10 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
                             </div>
                         </div>
                         <div className="space-y-2">
-                            <label className="text-xs font-bold uppercase text-slate-600">Sales / PIC</label>
+                            <label htmlFor="sales-pic" className="text-xs font-bold uppercase text-slate-600 cursor-pointer">Sales / PIC</label>
                             <select
+                                id="sales-pic"
+                                name="salesPerson"
                                 value={salesPerson}
                                 onChange={e => setSalesPerson(e.target.value)}
                                 className="w-full p-2.5 bg-white border-2 border-slate-300 rounded-lg focus:border-primary outline-none transition-all font-medium"
@@ -379,8 +392,10 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
                         </div>
 
                         <div className="space-y-2 md:col-span-3 border-t pt-4">
-                            <label className="text-xs font-bold uppercase text-slate-600">Gudang Tujuan</label>
+                            <label htmlFor="target-warehouse" className="text-xs font-bold uppercase text-slate-600 cursor-pointer">Gudang Tujuan</label>
                             <select
+                                id="target-warehouse"
+                                name="warehouseId"
                                 value={warehouseId}
                                 onChange={e => setWarehouseId(e.target.value)}
                                 className="w-full p-2.5 bg-white border-2 border-slate-300 rounded-lg focus:border-primary outline-none transition-all font-medium"
@@ -450,8 +465,10 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
                                         </div>
                                     </div>
                                     <div className="flex-1 space-y-1">
-                                        <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Barang</label>
+                                        <label htmlFor={`item-${index}-sku`} className="text-[10px] uppercase font-bold text-slate-500 ml-1 cursor-pointer">Barang</label>
                                         <input
+                                            id={`item-${index}-sku`}
+                                            name={`items[${index}][sku]`}
                                             list={`product-list-${index}`}
                                             value={item.sku}
                                             onChange={e => updateItem(index, 'sku', e.target.value)}
@@ -464,8 +481,10 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
                                         </datalist>
                                     </div>
                                     <div className="w-20 space-y-1">
-                                        <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Qty</label>
+                                        <label htmlFor={`item-${index}-qty`} className="text-[10px] uppercase font-bold text-slate-500 ml-1 cursor-pointer">Qty</label>
                                         <input
+                                            id={`item-${index}-qty`}
+                                            name={`items[${index}][quantity]`}
                                             type="text"
                                             value={item.quantity}
                                             onChange={e => updateItem(index, 'quantity', e.target.value)}
@@ -474,9 +493,11 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
                                         />
                                     </div>
                                     <div className="w-32 space-y-1 relative">
-                                        <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Harga Beli</label>
+                                        <label htmlFor={`item-${index}-price`} className="text-[10px] uppercase font-bold text-slate-500 ml-1 cursor-pointer">Harga Beli</label>
                                         <div className="relative h-10 w-full">
                                             <input
+                                                id={`item-${index}-price`}
+                                                name={`items[${index}][purchasePrice]`}
                                                 type="text"
                                                 value={item.purchasePrice}
                                                 onChange={e => updateItem(index, 'purchasePrice', e.target.value)}
@@ -489,7 +510,7 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
                                         <div className="flex items-end gap-1.5 animate-in slide-in-from-right duration-300">
                                             <div className="w-32 space-y-1">
                                                 <div className="flex justify-between items-center ml-1">
-                                                    <label className="text-[10px] uppercase font-bold text-orange-500">
+                                                    <label htmlFor={`item-${index}-disc`} className="text-[10px] uppercase font-bold text-orange-500 cursor-pointer">
                                                         Potongan {item.discountType === 'PERCENT' ? '(%)' : '(Rp)'}
                                                     </label>
                                                     <div className="flex bg-orange-100 rounded-md p-0.5 border border-orange-200">
@@ -507,6 +528,8 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
                                                 </div>
                                                 {item.discountType === 'PERCENT' ? (
                                                     <input
+                                                        id={`item-${index}-disc`}
+                                                        name={`items[${index}][discountPercent]`}
                                                         type="number"
                                                         step="0.01"
                                                         value={item.discountPercent}
@@ -516,6 +539,8 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
                                                     />
                                                 ) : (
                                                     <input
+                                                        id={`item-${index}-disc`}
+                                                        name={`items[${index}][discount]`}
                                                         type="text"
                                                         value={item.discount}
                                                         onChange={e => updateItem(index, 'discount', e.target.value)}
@@ -555,8 +580,10 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1 flex gap-2 col-span-2 md:col-span-1 border-r border-slate-200 pr-4">
                                     <div className="flex-1">
-                                        <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Diskon (%)</label>
+                                        <label htmlFor="total-disc-percent" className="text-[10px] font-bold text-slate-500 uppercase ml-1 cursor-pointer">Diskon (%)</label>
                                         <input
+                                            id="total-disc-percent"
+                                            name="totalDiscountPercent"
                                             type="number"
                                             step="0.01"
                                             value={totalDiscountPercent}
@@ -570,8 +597,10 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
                                         />
                                     </div>
                                     <div className="flex-1">
-                                        <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Diskon (Rp)</label>
+                                        <label htmlFor="total-disc-rp" className="text-[10px] font-bold text-slate-500 uppercase ml-1 cursor-pointer">Diskon (Rp)</label>
                                         <input
+                                            id="total-disc-rp"
+                                            name="totalDiscount"
                                             type="text"
                                             value={totalDiscount}
                                             onChange={e => {
@@ -585,8 +614,10 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
                                     </div>
                                 </div>
                                 <div className="space-y-1 col-span-2 md:col-span-1 pl-0 md:pl-2">
-                                    <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Pajak PPN (%)</label>
+                                    <label htmlFor="tax-rate-select" className="text-[10px] font-bold text-slate-500 uppercase ml-1 cursor-pointer">Pajak PPN (%)</label>
                                     <select
+                                        id="tax-rate-select"
+                                        name="taxRate"
                                         value={taxRate}
                                         onChange={e => setTaxRate(Number(e.target.value))}
                                         className="w-full bg-white border-2 border-slate-300 px-3 py-2 rounded-xl text-lg font-black text-indigo-600 outline-none focus:border-indigo-500 transition-all h-12 shadow-sm"

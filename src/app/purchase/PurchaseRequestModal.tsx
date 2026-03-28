@@ -93,8 +93,10 @@ export function PurchaseRequestModal({ onClose }: { onClose: () => void }) {
                 <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
                     {/* Notes Area */}
                     <div className="space-y-2">
-                        <label className="text-xs font-black uppercase tracking-widest text-slate-400">Keterangan / Alasan Pengajuan</label>
+                        <label htmlFor="pr-notes" className="text-xs font-black uppercase tracking-widest text-slate-400 cursor-pointer">Keterangan / Alasan Pengajuan</label>
                         <textarea
+                            id="pr-notes"
+                            name="notes"
                             value={notes}
                             onChange={e => setNotes(e.target.value)}
                             placeholder="Contoh: Stok barang sisa sedikit, kebutuhan proyek X..."
@@ -130,7 +132,10 @@ export function PurchaseRequestModal({ onClose }: { onClose: () => void }) {
                                     {items.map((item, index) => (
                                         <tr key={index} className="hover:bg-slate-50/50 transition-colors">
                                             <td className="px-4 py-2">
+                                                <label htmlFor={`pr-item-name-${index}`} className="sr-only">Nama Barang Baris {index + 1}</label>
                                                 <input
+                                                    id={`pr-item-name-${index}`}
+                                                    name={`items[${index}][itemName]`}
                                                     placeholder="Contoh: Kertas A4, CCTV, Komputer..."
                                                     className="w-full p-2 bg-transparent border-none focus:ring-0 text-sm font-medium"
                                                     value={item.itemName}
@@ -138,7 +143,10 @@ export function PurchaseRequestModal({ onClose }: { onClose: () => void }) {
                                                 />
                                             </td>
                                             <td className="px-4 py-2">
+                                                <label htmlFor={`pr-item-qty-${index}`} className="sr-only">Kuantitas Baris {index + 1}</label>
                                                 <input
+                                                    id={`pr-item-qty-${index}`}
+                                                    name={`items[${index}][quantity]`}
                                                     type="text"
                                                     value={item.quantity ? item.quantity.toLocaleString('id-ID') : ""}
                                                     onChange={e => updateItem(index, 'quantity', e.target.value)}
@@ -146,7 +154,10 @@ export function PurchaseRequestModal({ onClose }: { onClose: () => void }) {
                                                 />
                                             </td>
                                             <td className="px-4 py-2">
+                                                <label htmlFor={`pr-item-price-${index}`} className="sr-only">Harga Estimasi Baris {index + 1}</label>
                                                 <input
+                                                    id={`pr-item-price-${index}`}
+                                                    name={`items[${index}][estimatedPrice]`}
                                                     type="text"
                                                     value={item.estimatedPrice ? item.estimatedPrice.toLocaleString('id-ID') : ""}
                                                     onChange={e => updateItem(index, 'estimatedPrice', e.target.value)}

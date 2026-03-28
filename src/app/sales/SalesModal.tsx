@@ -220,9 +220,10 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 md:gap-6 bg-slate-50 p-4 md:p-6 rounded-xl border-2 border-slate-200 shadow-sm transition-all duration-300">
                         <div className="lg:col-span-6 flex items-center justify-between pb-2 border-b border-slate-200 mb-2">
                             <div className="flex items-center gap-2">
-                                <label className="text-sm font-bold text-slate-700">Input Buyer Manual?</label>
+                                <label htmlFor="manual-buyer-toggle" className="text-sm font-bold text-slate-700 cursor-pointer">Input Buyer Manual?</label>
                                 <label className="relative inline-flex items-center cursor-pointer">
                                     <input
+                                        id="manual-buyer-toggle"
                                         type="checkbox"
                                         className="sr-only peer"
                                         checked={isManualBuyer}
@@ -238,9 +239,11 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                             <label className="text-xs font-black uppercase tracking-widest text-primary mb-1 block">Informasi Buyer / Penerima</label>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-1">
-                                    <label className="text-[10px] font-bold text-slate-400 uppercase">{isManualBuyer ? "Nama Buyer (Manual)" : "Pilih Buyer Existing"}</label>
+                                    <label htmlFor="buyer-name-input" className="text-[10px] font-bold text-slate-400 uppercase cursor-pointer">{isManualBuyer ? "Nama Buyer (Manual)" : "Pilih Buyer Existing"}</label>
                                     {isManualBuyer ? (
                                         <input
+                                            id="buyer-name-input"
+                                            name="buyerName"
                                             value={buyerName}
                                             onChange={e => setBuyerName(e.target.value)}
                                             className="w-full bg-white border-2 border-slate-300 px-3 py-2.5 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-bold text-slate-700"
@@ -250,6 +253,8 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                     ) : (
                                         <>
                                             <input
+                                                id="buyer-name-input"
+                                                name="buyerName"
                                                 list="buyer-list"
                                                 value={buyerName}
                                                 onChange={e => {
@@ -271,8 +276,10 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                     )}
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-[10px] font-bold text-slate-400 uppercase">Kirim Ke (Alamat Tujuan)</label>
+                                    <label htmlFor="recipient-address" className="text-[10px] font-bold text-slate-400 uppercase cursor-pointer">Kirim Ke (Alamat Tujuan)</label>
                                     <input
+                                        id="recipient-address"
+                                        name="recipient"
                                         value={recipient}
                                         onChange={e => setRecipient(e.target.value)}
                                         className="w-full bg-white border-2 border-slate-300 px-3 py-2.5 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-medium text-slate-600"
@@ -283,8 +290,10 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                             </div>
                         </div>
                         <div className="space-y-2">
-                            <label className="text-xs font-bold uppercase tracking-wider text-slate-600 mb-1 block">Tanggal</label>
+                            <label htmlFor="sales-date" className="text-xs font-bold uppercase tracking-wider text-slate-600 mb-1 block cursor-pointer">Tanggal</label>
                             <input
+                                id="sales-date"
+                                name="date"
                                 type="date"
                                 value={date}
                                 onChange={e => setDate(e.target.value)}
@@ -293,8 +302,10 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                             />
                         </div>
                         <div className="space-y-2 lg:col-span-1">
-                            <label className="text-xs font-bold uppercase tracking-wider text-slate-600 mb-1 block">Sales Person</label>
+                            <label htmlFor="sales-pic" className="text-xs font-bold uppercase tracking-wider text-slate-600 mb-1 block cursor-pointer">Sales Person</label>
                             <select
+                                id="sales-pic"
+                                name="salesPerson"
                                 value={salesPerson}
                                 onChange={e => setSalesPerson(e.target.value)}
                                 className="w-full bg-slate-100 border-2 border-slate-300 px-3 py-2.5 rounded-lg focus:border-primary outline-none transition-all font-bold text-primary"
@@ -356,8 +367,10 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                         </button>
                                     </div>
                                     <div className="flex-1 space-y-1">
-                                        <label className="text-[10px] font-bold text-slate-500 uppercase ml-1 tracking-widest">Nama Barang / SKU</label>
+                                        <label htmlFor={`sale-item-sku-${index}`} className="text-[10px] font-bold text-slate-500 uppercase ml-1 tracking-widest cursor-pointer">Nama Barang / SKU</label>
                                         <input
+                                            id={`sale-item-sku-${index}`}
+                                            name={`items[${index}][sku]`}
                                             list={`product-list-sale-${index}`}
                                             value={item.sku}
                                             onChange={e => updateItem(index, 'sku', e.target.value)}
@@ -370,8 +383,10 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                         </datalist>
                                     </div>
                                     <div className="flex-1 space-y-1">
-                                        <label className="text-[10px] font-bold text-slate-500 uppercase ml-1 tracking-widest">Pilih Stok (Vendor)</label>
+                                        <label htmlFor={`sale-item-vendor-${index}`} className="text-[10px] font-bold text-slate-500 uppercase ml-1 tracking-widest cursor-pointer">Pilih Stok (Vendor)</label>
                                         <select
+                                            id={`sale-item-vendor-${index}`}
+                                            name={`items[${index}][vendorName]`}
                                             value={item.vendorName}
                                             onChange={e => updateItem(index, 'vendorName', e.target.value)}
                                             className="w-full bg-slate-50 border-2 border-slate-200 px-3 py-2 rounded-lg text-sm font-bold outline-none focus:border-primary transition-all h-11"
@@ -387,8 +402,10 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                         </select>
                                     </div>
                                     <div className="w-20 space-y-1">
-                                        <label className="text-[10px] font-bold text-slate-500 uppercase ml-1 tracking-widest">Qty</label>
+                                        <label htmlFor={`sale-item-qty-${index}`} className="text-[10px] font-bold text-slate-500 uppercase ml-1 tracking-widest cursor-pointer">Qty</label>
                                         <input
+                                            id={`sale-item-qty-${index}`}
+                                            name={`items[${index}][quantity]`}
                                             type="text"
                                             value={item.quantity}
                                             onChange={e => updateItem(index, "quantity", e.target.value)}
@@ -397,8 +414,10 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                         />
                                     </div>
                                     <div className="w-32 space-y-1">
-                                        <label className="text-[10px] font-bold text-slate-500 uppercase ml-1 tracking-widest">Harga (@)</label>
+                                        <label htmlFor={`sale-item-price-${index}`} className="text-[10px] font-bold text-slate-500 uppercase ml-1 tracking-widest cursor-pointer">Harga (@)</label>
                                         <input
+                                            id={`sale-item-price-${index}`}
+                                            name={`items[${index}][salesPrice]`}
                                             type="text"
                                             value={item.salesPrice}
                                             onChange={e => updateItem(index, "salesPrice", e.target.value)}
@@ -409,9 +428,11 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                     {showDiscount && (
                                         <>
                                             <div className="w-28 space-y-1">
-                                                <label className="text-[10px] font-bold text-orange-500 uppercase ml-1 tracking-widest">Diskon (%)</label>
+                                                <label htmlFor={`sale-item-disc-percent-${index}`} className="text-[10px] font-bold text-orange-500 uppercase ml-1 tracking-widest cursor-pointer">Diskon (%)</label>
                                                 <div className="relative h-11">
                                                     <input
+                                                        id={`sale-item-disc-percent-${index}`}
+                                                        name={`items[${index}][discountPercent]`}
                                                         type="text"
                                                         value={item.discountPercent}
                                                         onChange={e => updateItem(index, "discountPercent", e.target.value)}
@@ -422,8 +443,10 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                                 </div>
                                             </div>
                                             <div className="w-32 space-y-1">
-                                                <label className="text-[10px] font-bold text-orange-500 uppercase ml-1 tracking-widest">Diskon (Rp)</label>
+                                                <label htmlFor={`sale-item-disc-rp-${index}`} className="text-[10px] font-bold text-orange-500 uppercase ml-1 tracking-widest cursor-pointer">Diskon (Rp)</label>
                                                 <input
+                                                    id={`sale-item-disc-rp-${index}`}
+                                                    name={`items[${index}][discount]`}
                                                     type="text"
                                                     value={item.discount}
                                                     onChange={e => updateItem(index, "discount", e.target.value)}
@@ -462,9 +485,11 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                     {showDiscount && (
                                         <>
                                             <div className="space-y-2">
-                                                <label className="text-xs font-bold text-orange-500 uppercase ml-1 tracking-wider">Diskon Final (%)</label>
+                                                <label htmlFor="final-disc-percent" className="text-xs font-bold text-orange-500 uppercase ml-1 tracking-wider cursor-pointer">Diskon Final (%)</label>
                                                 <div className="relative h-12">
                                                     <input
+                                                        id="final-disc-percent"
+                                                        name="totalDiscountPercent"
                                                         type="text"
                                                         value={totalDiscountPercent}
                                                         onChange={e => {
@@ -478,9 +503,11 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                                 </div>
                                             </div>
                                             <div className="space-y-2">
-                                                <label className="text-xs font-bold text-orange-500 uppercase ml-1 tracking-wider">Diskon Final (Rp)</label>
+                                                <label htmlFor="final-disc-rp" className="text-xs font-bold text-orange-500 uppercase ml-1 tracking-wider cursor-pointer">Diskon Final (Rp)</label>
                                                 <div className="relative h-12">
                                                     <input
+                                                        id="final-disc-rp"
+                                                        name="totalDiscount"
                                                         type="text"
                                                         value={totalDiscount}
                                                         onChange={e => {
@@ -497,9 +524,11 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                     )}
                                     {showDiscount && (
                                         <div className="space-y-2 animate-in fade-in slide-in-from-left duration-300">
-                                            <label className="text-xs font-bold text-slate-500 uppercase ml-1 tracking-wider">PPN (%)</label>
+                                            <label htmlFor="tax-rate-input" className="text-xs font-bold text-slate-500 uppercase ml-1 tracking-wider cursor-pointer">PPN (%)</label>
                                             <div className="relative h-12">
                                                 <input
+                                                    id="tax-rate-input"
+                                                    name="taxRate"
                                                     type="text"
                                                     value={taxRate}
                                                     onChange={e => {
