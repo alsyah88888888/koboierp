@@ -62,7 +62,7 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
                     const remaining = item.quantity - actual;
                     return `• ${item.product?.name}: Diterima ${actual}/${item.quantity}${remaining > 0 ? ` (sisa ${remaining} belum datang)` : ' ✓'}`;
                 });
-                alert(`Verifikasi berhasil! Stok gudang telah diperbarui.\n\nRingkasan:\n${lines.join('\n')}\n\nCatatan: Harga & hutang di dokumen TIDAK berubah.`);
+                alert(`Verifikasi berhasil! Stok gudang telah diperbarui.\n\nRingkasan:\n${lines.join('\n')}`);
                 setSelectedReceipt(null);
                 setCheckedItems({});
                 window.location.reload();
