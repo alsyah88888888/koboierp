@@ -205,22 +205,35 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
     };
 
     return (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-0 md:p-4">
-            <div className="bg-white border-2 border-slate-300 shadow-2xl rounded-none md:rounded-2xl w-full max-w-7xl h-full md:max-h-[95vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
-                <div className="p-4 md:p-6 border-b-2 border-slate-100 flex justify-between items-center bg-slate-50">
-                    <div>
-                        <h2 className="text-xl font-bold text-slate-900">{initialData ? "Edit Penjualan" : "Input Penjualan Baru"}</h2>
-                        <p className="text-sm text-slate-500 mt-1 font-medium">{initialData ? `Mengedit ${initialData.deliveryNumber}` : "Isi detail pengiriman dan barang yang akan dikirim."}</p>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-0 md:p-4">
+            <div className="bg-white border border-slate-200 shadow-2xl rounded-none md:rounded-[2rem] w-full max-w-7xl h-full md:max-h-[95vh] overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-300">
+                {/* Premium Header */}
+                <div className="p-6 md:p-8 border-b border-slate-100 flex justify-between items-center bg-gradient-to-r from-primary/5 to-blue-50/30 shrink-0">
+                    <div className="flex items-center gap-4">
+                        <div className="p-3 bg-primary/10 rounded-2xl text-primary shrink-0">
+                            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-black text-slate-900 tracking-tight">{initialData ? "Edit Penjualan" : "Input Penjualan Baru"}</h2>
+                            <p className="text-xs text-slate-400 mt-0.5 font-medium">{initialData ? `Mengedit ${initialData.deliveryNumber}` : "Isi detail pengiriman dan barang yang akan dikirim."}</p>
+                        </div>
                     </div>
-                    <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors border border-slate-200 bg-white"><X className="h-6 w-6 text-slate-600" /></button>
+                    <button onClick={onClose} className="p-2.5 hover:bg-white hover:shadow-md rounded-2xl transition-all border border-slate-200 bg-white/50 text-slate-400 hover:text-red-500 active:scale-95">
+                        <X className="h-5 w-5" />
+                    </button>
                 </div>
 
                 <form onSubmit={handleSubmit} className="overflow-y-auto flex-1 p-4 md:p-8 space-y-6 md:space-y-8 bg-white">
                     {/* Header Section */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 md:gap-6 bg-slate-50 p-4 md:p-6 rounded-xl border-2 border-slate-200 shadow-sm transition-all duration-300">
-                        <div className="lg:col-span-6 flex items-center justify-between pb-2 border-b border-slate-200 mb-2">
+                    <div className="bg-white rounded-[1.5rem] border-2 border-slate-100 shadow-sm overflow-hidden">
+                        {/* Card Header Bar */}
+                        <div className="px-6 py-3 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                                <label htmlFor="manual-buyer-toggle" className="text-sm font-bold text-slate-700 cursor-pointer">Input Buyer Manual?</label>
+                                <div className="w-1 h-4 bg-primary rounded-full" />
+                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Informasi Pengiriman</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <label htmlFor="manual-buyer-toggle" className="text-[11px] font-bold text-slate-500 cursor-pointer">Input Buyer Manual?</label>
                                 <label className="relative inline-flex items-center cursor-pointer">
                                     <input
                                         id="manual-buyer-toggle"
@@ -229,16 +242,20 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                         checked={isManualBuyer}
                                         onChange={(e) => setIsManualBuyer(e.target.checked)}
                                     />
-                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                                    <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
                                 </label>
+                                <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md ${isManualBuyer ? "bg-amber-50 text-amber-600 border border-amber-200" : "bg-emerald-50 text-emerald-600 border border-emerald-200"}`}>
+                                    {isManualBuyer ? "Manual" : "Auto"}
+                                </span>
                             </div>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{isManualBuyer ? "Mode: Manual Typing" : "Mode: Selection List"}</p>
                         </div>
 
+                        {/* Card Body */}
+                        <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-5">
                         <div className="space-y-2 lg:col-span-3">
-                            <label className="text-xs font-black uppercase tracking-widest text-primary mb-1 block">Informasi Buyer / Penerima</label>
+                            <label className="text-[10px] font-black uppercase tracking-widest text-primary block">Informasi Buyer / Penerima</label>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-1">
+                                <div className="space-y-1.5">
                                     <label htmlFor="buyer-name-input" className="text-[10px] font-bold text-slate-400 uppercase cursor-pointer">{isManualBuyer ? "Nama Buyer (Manual)" : "Pilih Buyer Existing"}</label>
                                     {isManualBuyer ? (
                                         <input
@@ -246,7 +263,7 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                             name="buyerName"
                                             value={buyerName}
                                             onChange={e => setBuyerName(e.target.value)}
-                                            className="w-full bg-white border-2 border-slate-300 px-3 py-2.5 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-bold text-slate-700"
+                                            className="w-full bg-white border-2 border-slate-200 px-3 py-2.5 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-bold text-slate-700 text-sm"
                                             placeholder="Ketik Nama Buyer..."
                                             required
                                         />
@@ -265,7 +282,7 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                                         setRecipient(customer.address);
                                                     }
                                                 }}
-                                                className="w-full bg-white border-2 border-slate-300 px-3 py-2.5 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-bold text-slate-700"
+                                                className="w-full bg-white border-2 border-slate-200 px-3 py-2.5 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-bold text-slate-700 text-sm"
                                                 placeholder="Cari Buyer..."
                                                 required
                                             />
@@ -275,34 +292,34 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                         </>
                                     )}
                                 </div>
-                                <div className="space-y-1">
+                                <div className="space-y-1.5">
                                     <label htmlFor="recipient-address" className="text-[10px] font-bold text-slate-400 uppercase cursor-pointer">Kirim Ke (Alamat Tujuan)</label>
                                     <input
                                         id="recipient-address"
                                         name="recipient"
                                         value={recipient}
                                         onChange={e => setRecipient(e.target.value)}
-                                        className="w-full bg-white border-2 border-slate-300 px-3 py-2.5 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-medium text-slate-600"
+                                        className="w-full bg-white border-2 border-slate-200 px-3 py-2.5 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-medium text-slate-600 text-sm"
                                         placeholder="Alamat Lengkap Pengiriman"
                                         required
                                     />
                                 </div>
                             </div>
                         </div>
-                        <div className="space-y-2">
-                            <label htmlFor="sales-date" className="text-xs font-bold uppercase tracking-wider text-slate-600 mb-1 block cursor-pointer">Tanggal</label>
+                        <div className="space-y-1.5">
+                            <label htmlFor="sales-date" className="text-[10px] font-black uppercase tracking-widest text-slate-400 block cursor-pointer">Tanggal</label>
                             <input
                                 id="sales-date"
                                 name="date"
                                 type="date"
                                 value={date}
                                 onChange={e => setDate(e.target.value)}
-                                className="w-full bg-white border-2 border-slate-300 px-3 py-2.5 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-medium"
+                                className="w-full bg-white border-2 border-slate-200 px-3 py-2.5 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-medium text-sm"
                                 required
                             />
                         </div>
-                        <div className="space-y-2 lg:col-span-1">
-                            <label htmlFor="sales-pic" className="text-xs font-bold uppercase tracking-wider text-slate-600 mb-1 block cursor-pointer">Sales Person</label>
+                        <div className="space-y-1.5 lg:col-span-1">
+                            <label htmlFor="sales-pic" className="text-[10px] font-black uppercase tracking-widest text-slate-400 block cursor-pointer">Sales Person</label>
                             <select
                                 id="sales-pic"
                                 name="salesPerson"
@@ -316,7 +333,8 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                 <option value="PF">PF (ID: PF)</option>
                             </select>
                         </div>
-                    </div>
+                        </div>{/* end card body grid */}
+                    </div>{/* end card wrapper */}
 
                     {/* Body Section (Items) */}
                     <div className="space-y-4">

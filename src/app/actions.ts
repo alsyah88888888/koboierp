@@ -1013,6 +1013,26 @@ export async function deleteSalesDeliveryAction(id: string) {
 }
 
 /**
+ * Helper: Recalculate vendor balance from actual receipt data (avoid drift)
+ */
+async function syncVendorBalanceAfterPayment(tx: any, vendorName: string) {
+    const receipts = await tx.goodsReceipt.findMany({
+        where: { receivedFrom: vendorName },
+        select: { grandTotal: true, paidAmount: true, paymentStatus: true }
+    });
+    const correctBalance = receipts.reduce((sum: number, r: any) => {
+        if (r.paymentStatus !== "PAID") {
+            return sum + Math.max(0, Number(r.grandTotal || 0) - Number(r.paidAmount || 0));
+        }
+        return sum;
+    }, 0);
+    const vendor = await tx.vendor.findFirst({ where: { name: vendorName } });
+    if (vendor) {
+        await tx.vendor.update({ where: { id: vendor.id }, data: { balance: correctBalance } });
+    }
+}
+
+/**
  * Finance Actions
  */
 /**
@@ -1081,20 +1101,16 @@ export async function updatePaymentStatusAction(type: "PURCHASE" | "SALE", id: s
                         await tx.journalEntry.create({ data: { description: `Potongan Pembelian: ${reference}`, amount: totalDiscount as any, type: "CREDIT", accountId: discAccount.id, date: txPaymentDate } });
                     }
                 }
-                const vendor = await tx.vendor.findFirst({ where: { name: party } });
-                if (vendor) {
-                    await tx.vendor.update({ where: { id: vendor.id }, data: { balance: { increment: amount } } });
-                }
+                // Sync vendor balance accurately from all receipts
+                await syncVendorBalanceAfterPayment(tx, party);
 
                 // If it's a DP (PARTIAL), also record the payment
                 if (status === "PARTIAL" && toPay > 0 && apAccount && bankAccount) {
                     const dpDate = paymentDate || new Date();
                     await tx.journalEntry.create({ data: { description: `Pembayaran DP Hutang: ${reference} (${party})`, amount: toPay as any, type: "DEBIT", accountId: apAccount.id, date: dpDate } });
                     await tx.journalEntry.create({ data: { description: `Kas Bank (Keluar DP): ${reference} (${party})`, amount: toPay as any, type: "CREDIT", accountId: bankAccount.id, date: dpDate } });
-                    const vendorAgain = await tx.vendor.findFirst({ where: { name: party } });
-                    if (vendorAgain) {
-                        await tx.vendor.update({ where: { id: vendorAgain.id }, data: { balance: { decrement: toPay } } });
-                    }
+                    // Re-sync after DP is recorded (paidAmount updated)
+                    await syncVendorBalanceAfterPayment(tx, party);
                 }
             } else if (previousStatus === "PENDING" && status === "PAID") {
                 // Full immediate payment
@@ -1122,10 +1138,8 @@ export async function updatePaymentStatusAction(type: "PURCHASE" | "SALE", id: s
                     await tx.journalEntry.create({ data: { description: `Pembayaran ${status === "PARTIAL" ? "DP/Sebagian" : "Pelunasan"} Hutang: ${reference} (${party})`, amount: toPay as any, type: "DEBIT", accountId: apAccount.id, date: activePayDate } });
                     await tx.journalEntry.create({ data: { description: `Kas Bank (Keluar): ${reference} (${party})`, amount: toPay as any, type: "CREDIT", accountId: bankAccount.id, date: activePayDate } });
                 }
-                const vendor = await tx.vendor.findFirst({ where: { name: party } });
-                if (vendor && toPay > 0) {
-                    await tx.vendor.update({ where: { id: vendor.id }, data: { balance: { decrement: toPay } } });
-                }
+                // Sync vendor balance accurately from all receipts
+                await syncVendorBalanceAfterPayment(tx, party);
             }
 
         } else {
