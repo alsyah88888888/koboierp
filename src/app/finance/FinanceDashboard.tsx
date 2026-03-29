@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Plus, Search, Wallet, ArrowUpCircle, ArrowDownCircle, FileText, Trash2, Download, Eye, FileCode2 } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Plus, Search, Wallet, ArrowUpCircle, ArrowDownCircle, FileText, Trash2, Download, Eye, FileCode2, X, Banknote, Calendar } from "lucide-react";
 import { ReportPreviewModal } from "@/components/ReportPreviewModal";
 import { formatCurrency, cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -35,6 +35,19 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
     const [activeTab, setActiveTab] = useState<"ledger" | "ap" | "ar" | "checker" | "purchase_requests" | "history">("ledger");
     const [loading, setLoading] = useState<string | null>(null);
     const [isClient, setIsClient] = useState(false);
+
+    // Payment Modal State
+    const [paymentModal, setPaymentModal] = useState<{
+        open: boolean;
+        type: "PURCHASE" | "SALE";
+        id: string;
+        total: number;
+        alreadyPaid: number;
+        supplierName: string;
+    } | null>(null);
+    const [paymentAmount, setPaymentAmount] = useState("");
+    const [paymentDate, setPaymentDate] = useState(format(new Date(), "yyyy-MM-dd"));
+    const paymentInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         setIsClient(true);
@@ -70,20 +83,24 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
         }
     };
 
-    const handlePartialPayment = (type: "PURCHASE" | "SALE", id: string, total: number, alreadyPaid: number) => {
-        const remaining = total - alreadyPaid;
-        const amountInput = prompt(`Masukkan jumlah pembayaran (Sisa: ${formatCurrency(remaining)}):`, remaining.toString());
-        if (!amountInput) return;
-        const amount = Number(amountInput);
+    const handlePartialPayment = (type: "PURCHASE" | "SALE", id: string, total: number, alreadyPaid: number, supplierName?: string) => {
+        setPaymentAmount("");
+        setPaymentDate(format(new Date(), "yyyy-MM-dd"));
+        setPaymentModal({ open: true, type, id, total, alreadyPaid, supplierName: supplierName || "" });
+        setTimeout(() => paymentInputRef.current?.focus(), 200);
+    };
+
+    const handlePaymentModalSubmit = () => {
+        if (!paymentModal) return;
+        const remaining = paymentModal.total - paymentModal.alreadyPaid;
+        const amount = Number(paymentAmount);
         if (isNaN(amount) || amount <= 0 || amount > remaining) {
             alert("Jumlah tidak valid atau melebihi sisa pembayaran.");
             return;
         }
-
-        const dateInput = prompt(`Masukkan tanggal pembayaran (YYYY-MM-DD):`, format(new Date(), "yyyy-MM-dd"));
-        const pDate = dateInput ? new Date(dateInput) : new Date();
-
-        handleVerifyPayment(type, id, amount === remaining ? "PAID" : "PARTIAL", amount, pDate);
+        const pDate = paymentDate ? new Date(paymentDate) : new Date();
+        setPaymentModal(null);
+        handleVerifyPayment(paymentModal.type, paymentModal.id, amount === remaining ? "PAID" : "PARTIAL", amount, pDate);
     };
 
     const handleDelete = async (id: string, isManual: boolean) => {
@@ -538,7 +555,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                                             </button>
                                                             <button
                                                                 disabled={loading === p.id || (!p.isVerified && !isAdmin)}
-                                                                onClick={() => handlePartialPayment("PURCHASE", p.id, Number(p.total), 0)}
+                                                                onClick={() => handlePartialPayment("PURCHASE", p.id, Number(p.total), 0, p.receivedFrom)}
                                                                 className="bg-blue-100 text-blue-700 hover:bg-blue-200 w-full px-3 py-1 rounded text-[10px] font-bold transition-all disabled:opacity-50"
                                                                 title="Catat Hutang Sambil Bayar DP"
                                                             >
@@ -549,7 +566,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                                     {(p.paymentStatus === 'CREDIT' || p.paymentStatus === 'PARTIAL') && (
                                                         <button
                                                             disabled={loading === p.id}
-                                                            onClick={() => handlePartialPayment("PURCHASE", p.id, Number(p.total), Number(p.paidAmount || 0))}
+                                                            onClick={() => handlePartialPayment("PURCHASE", p.id, Number(p.total), Number(p.paidAmount || 0), p.receivedFrom)}
                                                             className="bg-blue-100 text-blue-700 hover:bg-blue-200 w-full px-3 py-1 rounded text-[10px] font-bold transition-all disabled:opacity-50"
                                                         >
                                                             DP / SEBAGIAN
@@ -681,7 +698,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                                             </button>
                                                             <button
                                                                 disabled={loading === s.id}
-                                                                onClick={() => handlePartialPayment("SALE", s.id, Number(s.total), 0)}
+                                                                onClick={() => handlePartialPayment("SALE", s.id, Number(s.total), 0, s.buyerName)}
                                                                 className="bg-emerald-100 text-emerald-700 hover:bg-emerald-50 w-full px-3 py-1 rounded text-[10px] font-bold transition-all disabled:opacity-50"
                                                                 title="Catat Piutang Sambil Terima DP"
                                                             >
@@ -692,7 +709,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                                     {(s.paymentStatus === 'CREDIT' || s.paymentStatus === 'PARTIAL') && (
                                                         <button
                                                             disabled={loading === s.id}
-                                                            onClick={() => handlePartialPayment("SALE", s.id, Number(s.total), Number(s.paidAmount || 0))}
+                                                            onClick={() => handlePartialPayment("SALE", s.id, Number(s.total), Number(s.paidAmount || 0), s.buyerName)}
                                                             className="bg-blue-100 text-blue-700 hover:bg-blue-200 w-full px-3 py-1 rounded text-[10px] font-bold transition-all disabled:opacity-50"
                                                         >
                                                             DP / SEBAGIAN
@@ -1005,6 +1022,148 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                     />
                 )
             }
+
+            {/* Professional Payment Modal */}
+            {paymentModal && (() => {
+                const remaining = paymentModal.total - paymentModal.alreadyPaid;
+                const progress = paymentModal.total > 0 ? Math.round((paymentModal.alreadyPaid / paymentModal.total) * 100) : 0;
+                const currentAmount = Number(paymentAmount) || 0;
+                const isLunas = currentAmount === remaining;
+                const isValid = currentAmount > 0 && currentAmount <= remaining;
+                return (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+                        <div className="bg-white rounded-[2rem] w-full max-w-lg shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-300">
+                            {/* Header */}
+                            <div className="p-6 border-b border-slate-100 bg-gradient-to-r from-primary/5 to-emerald-50/50 flex items-center gap-4">
+                                <div className="p-3 bg-primary/10 rounded-2xl text-primary">
+                                    <Banknote className="h-6 w-6" />
+                                </div>
+                                <div className="flex-1">
+                                    <h3 className="text-lg font-black text-slate-900">Input Pembayaran</h3>
+                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">
+                                        {paymentModal.type === "PURCHASE" ? "Hutang (AP)" : "Piutang (AR)"} • {paymentModal.supplierName}
+                                    </p>
+                                </div>
+                                <button onClick={() => setPaymentModal(null)} className="p-2 hover:bg-white hover:shadow-md rounded-xl transition-all text-slate-400 hover:text-red-500 active:scale-95 border border-slate-200">
+                                    <X className="h-5 w-5" />
+                                </button>
+                            </div>
+
+                            <div className="p-6 space-y-5">
+                                {/* Balance Info */}
+                                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-3">
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-slate-500 font-bold">Total Tagihan</span>
+                                        <span className="font-black text-slate-800">{formatCurrency(paymentModal.total)}</span>
+                                    </div>
+                                    {paymentModal.alreadyPaid > 0 && (
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-slate-500 font-bold">Sudah Dibayar</span>
+                                            <span className="font-black text-emerald-600">{formatCurrency(paymentModal.alreadyPaid)}</span>
+                                        </div>
+                                    )}
+                                    <div className="h-px bg-slate-200" />
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-primary font-black">Sisa Pembayaran</span>
+                                        <span className="font-black text-primary text-lg">{formatCurrency(remaining)}</span>
+                                    </div>
+                                    {/* Progress Bar */}
+                                    <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                                        <div className="h-full bg-emerald-500 rounded-full transition-all duration-500" style={{ width: `${progress}%` }} />
+                                    </div>
+                                    <p className="text-[10px] font-bold text-slate-400 text-right">{progress}% terbayar</p>
+                                </div>
+
+                                {/* Amount Input */}
+                                <div className="space-y-2">
+                                    <label htmlFor="payment-amount-input" className="text-xs font-black text-slate-700 uppercase tracking-widest">Jumlah Pembayaran</label>
+                                    <div className="relative">
+                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">Rp</span>
+                                        <input
+                                            ref={paymentInputRef}
+                                            id="payment-amount-input"
+                                            name="paymentAmount"
+                                            type="number"
+                                            min="0"
+                                            max={remaining}
+                                            value={paymentAmount}
+                                            onChange={(e) => setPaymentAmount(e.target.value)}
+                                            onKeyDown={(e) => { if (e.key === 'Enter' && isValid) handlePaymentModalSubmit(); }}
+                                            placeholder="0"
+                                            className={cn(
+                                                "w-full pl-12 pr-4 py-3.5 border-2 rounded-2xl text-lg font-black outline-none transition-all",
+                                                isValid ? "border-emerald-300 bg-emerald-50/30 text-emerald-800 focus:ring-2 focus:ring-emerald-200" : "border-slate-300 bg-white text-slate-800 focus:border-primary focus:ring-2 focus:ring-primary/20"
+                                            )}
+                                        />
+                                    </div>
+                                    {currentAmount > 0 && (
+                                        <p className={cn("text-[11px] font-bold", isLunas ? "text-emerald-600" : "text-blue-600")}>
+                                            {isLunas ? "✓ Pelunasan penuh" : `Sisa setelah bayar: ${formatCurrency(remaining - currentAmount)}`}
+                                        </p>
+                                    )}
+                                </div>
+
+                                {/* Quick Fill Buttons */}
+                                <div className="flex flex-wrap gap-2">
+                                    {[25, 50, 75].map(pct => (
+                                        <button
+                                            key={pct}
+                                            type="button"
+                                            onClick={() => setPaymentAmount(String(Math.round(remaining * pct / 100)))}
+                                            className="px-3 py-1.5 bg-slate-100 text-slate-600 text-xs font-black rounded-xl hover:bg-slate-200 transition-all active:scale-95 border border-slate-200"
+                                        >
+                                            {pct}%
+                                        </button>
+                                    ))}
+                                    <button
+                                        type="button"
+                                        onClick={() => setPaymentAmount(String(remaining))}
+                                        className="px-3 py-1.5 bg-emerald-50 text-emerald-700 text-xs font-black rounded-xl hover:bg-emerald-100 transition-all active:scale-95 border border-emerald-200"
+                                    >
+                                        Lunas
+                                    </button>
+                                </div>
+
+                                {/* Date Input */}
+                                <div className="space-y-2">
+                                    <label htmlFor="payment-date-input" className="text-xs font-black text-slate-700 uppercase tracking-widest flex items-center gap-1.5">
+                                        <Calendar className="h-3.5 w-3.5" /> Tanggal Pembayaran
+                                    </label>
+                                    <input
+                                        id="payment-date-input"
+                                        name="paymentDate"
+                                        type="date"
+                                        value={paymentDate}
+                                        onChange={(e) => setPaymentDate(e.target.value)}
+                                        className="w-full px-4 py-3 border-2 border-slate-300 rounded-2xl font-bold text-sm outline-none focus:border-primary transition-all focus:ring-2 focus:ring-primary/20"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Footer */}
+                            <div className="p-6 border-t border-slate-100 bg-slate-50/50 flex gap-3">
+                                <button
+                                    onClick={() => setPaymentModal(null)}
+                                    className="flex-1 py-3 bg-white text-slate-600 font-black rounded-2xl hover:bg-slate-100 transition-all active:scale-95 text-sm border-2 border-slate-200"
+                                >
+                                    Batal
+                                </button>
+                                <button
+                                    disabled={!isValid}
+                                    onClick={handlePaymentModalSubmit}
+                                    className={cn(
+                                        "flex-[2] py-3 text-white font-black rounded-2xl transition-all active:scale-95 text-sm shadow-xl flex items-center justify-center gap-2",
+                                        isValid ? "bg-primary hover:bg-primary/90 shadow-primary/20" : "bg-slate-300 cursor-not-allowed shadow-none"
+                                    )}
+                                >
+                                    <Banknote className="h-4 w-4" />
+                                    {isLunas ? "Bayar Lunas" : "Bayar Sebagian"}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            })()}
         </div >
     );
 }
