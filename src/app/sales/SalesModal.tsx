@@ -251,7 +251,7 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                         </div>
 
                         {/* Card Body */}
-                        <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-5">
+                        <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-5 items-end">
                         <div className="space-y-2 lg:col-span-3">
                             <label className="text-[10px] font-black uppercase tracking-widest text-primary block">Informasi Buyer / Penerima</label>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
