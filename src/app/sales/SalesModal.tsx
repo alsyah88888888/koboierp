@@ -85,16 +85,16 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
 
             // Sync discount if percent exists
             if (newItems[index].discountPercent !== "" && newItems[index].discountPercent !== undefined) {
-                const qty = Number(String(newItems[index].quantity).replace(',', '.')) || 0;
-                const price = Number(String(newItems[index].salesPrice).replace(',', '.')) || 0;
+                const qty = Number(String(newItems[index].quantity).replace(/\./g, '').replace(',', '.')) || 0;
+                const price = Number(String(newItems[index].salesPrice).replace(/\./g, '').replace(',', '.')) || 0;
                 const gross = qty * price;
                 newItems[index].discount = Math.round(gross * (Number(newItems[index].discountPercent) / 100));
             }
         } else if (field === 'discountPercent') {
             newItems[index].discountPercent = value;
             const numVal = Number(value) || 0;
-            const qty = Number(String(newItems[index].quantity).replace(',', '.')) || 0;
-            const price = Number(String(newItems[index].salesPrice).replace(',', '.')) || 0;
+            const qty = Number(String(newItems[index].quantity).replace(/\./g, '').replace(',', '.')) || 0;
+            const price = Number(String(newItems[index].salesPrice).replace(/\./g, '').replace(',', '.')) || 0;
             const gross = qty * price;
             newItems[index].discount = Math.round(gross * (numVal / 100));
         } else if (field === 'discount') {
@@ -140,13 +140,13 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
 
     // Totals Calculation
     const grossAmount = items.reduce((sum, item) => {
-        const q = Number(String(item.quantity).replace(',', '.')) || 0;
-        const p = Number(String(item.salesPrice).replace(',', '.')) || 0;
+        const q = Number(String(item.quantity).replace(/\./g, '').replace(',', '.')) || 0;
+        const p = Number(String(item.salesPrice).replace(/\./g, '').replace(',', '.')) || 0;
         return sum + (q * p);
     }, 0);
 
     const itemDiscounts = items.reduce((sum, item) => {
-        return sum + (Number(String(item.discount).replace(',', '.')) || 0);
+        return sum + (Number(String(item.discount).replace(/\./g, '').replace(',', '.')) || 0);
     }, 0);
 
     const subtotal = grossAmount - itemDiscounts;
@@ -155,7 +155,7 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
         if (totalDiscountPercent !== "" && Number(totalDiscountPercent) > 0) {
             return Math.round(subtotal * (Number(totalDiscountPercent) / 100));
         }
-        return Number(String(totalDiscount).replace(',', '.')) || 0;
+        return Number(String(totalDiscount).replace(/\./g, '').replace(',', '.')) || 0;
     }, [subtotal, totalDiscountPercent, totalDiscount]);
 
     const taxAmount = (subtotal - finalDiscountNominal) * (Number(taxRate) / 100);
@@ -183,9 +183,9 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                 createdAt: new Date(date),
                 items: items.map(i => ({
                     productId: i.productId,
-                    quantity: Number(String(i.quantity).replace(',', '.')),
-                    salesPrice: Number(String(i.salesPrice).replace(',', '.')),
-                    discount: Number(String(i.discount || 0).replace(',', '.')),
+                    quantity: Number(String(i.quantity).replace(/\./g, '').replace(',', '.')),
+                    salesPrice: Number(String(i.salesPrice).replace(/\./g, '').replace(',', '.')),
+                    discount: Number(String(i.discount || 0).replace(/\./g, '').replace(',', '.')),
                     uom: i.uom,
                     vendorName: i.vendorName
                 }))
@@ -477,7 +477,7 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                     <div className="w-full xl:w-36 space-y-1">
                                         <label className="text-[10px] font-bold text-slate-500 uppercase ml-1 tracking-widest">Total Harga</label>
                                         <div className="w-full bg-slate-50 border-2 border-slate-200 px-3 py-2 rounded-lg text-sm font-black text-right text-slate-900 h-11 flex items-center justify-end shadow-inner">
-                                            {((Number(String(item.quantity).replace(',', '.')) || 0) * (Number(String(item.salesPrice).replace(',', '.')) || 0) - (Number(String(item.discount || 0).replace(',', '.')))).toLocaleString('id-ID')}
+                                            {((Number(String(item.quantity).replace(/\./g, '').replace(',', '.')) || 0) * (Number(String(item.salesPrice).replace(/\./g, '').replace(',', '.')) || 0) - (Number(String(item.discount || 0).replace(/\./g, '').replace(',', '.')) || 0)).toLocaleString('id-ID')}
                                         </div>
                                     </div>
                                     <button
