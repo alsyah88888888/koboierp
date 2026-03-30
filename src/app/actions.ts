@@ -759,7 +759,7 @@ export async function createSalesDeliveryAction(data: {
 
         // 1.2 Update new fields via raw SQL (Safety for out-of-sync client)
         await tx.$executeRawUnsafe(
-            `UPDATE "SalesDelivery" SET "subtotal" = ?, "totalDiscount" = ?, "taxRate" = ?, "taxAmount" = ?, "grandTotal" = ? WHERE id = ?`,
+            `UPDATE "SalesDelivery" SET "subtotal" = $1, "totalDiscount" = $2, "taxRate" = $3, "taxAmount" = $4, "grandTotal" = $5 WHERE id = $6`,
             subtotal, totalDiscountNominal, taxRatePercent, taxAmount, grandTotal, delivery.id
         );
 
@@ -768,7 +768,7 @@ export async function createSalesDeliveryAction(data: {
         for (const inputItem of data.items) {
             if (inputItem.discount && inputItem.discount > 0) {
                 await tx.$executeRawUnsafe(
-                    `UPDATE "SalesDeliveryItem" SET "discount" = ? WHERE "deliveryId" = ? AND "productId" = ?`,
+                    `UPDATE "SalesDeliveryItem" SET "discount" = $1 WHERE "deliveryId" = $2 AND "productId" = $3`,
                     inputItem.discount, delivery.id, inputItem.productId
                 );
             }
@@ -862,7 +862,7 @@ export async function updateSalesDeliveryAction(id: string, data: {
         }
 
         // 2. Clear old items and journal entries
-        const oldGrandTotalRaw: any[] = await tx.$queryRawUnsafe(`SELECT "grandTotal" FROM "SalesDelivery" WHERE id = ?`, id);
+        const oldGrandTotalRaw: any[] = await tx.$queryRawUnsafe(`SELECT "grandTotal" FROM "SalesDelivery" WHERE id = $1`, id);
         const oldGrandTotal = Number(oldGrandTotalRaw[0]?.grandTotal || 0);
 
         await tx.salesDeliveryItem.deleteMany({ where: { deliveryId: id } });
@@ -935,7 +935,7 @@ export async function updateSalesDeliveryAction(id: string, data: {
         const grandTotal = Math.round(subtotal - totalDiscountNominal + taxAmount);
 
         await tx.$executeRawUnsafe(
-            `UPDATE "SalesDelivery" SET "subtotal" = ?, "totalDiscount" = ?, "taxRate" = ?, "taxAmount" = ?, "grandTotal" = ? WHERE id = ?`,
+            `UPDATE "SalesDelivery" SET "subtotal" = $1, "totalDiscount" = $2, "taxRate" = $3, "taxAmount" = $4, "grandTotal" = $5 WHERE id = $6`,
             subtotal, totalDiscountNominal, taxRatePercent, taxAmount, grandTotal, id
         );
 
@@ -943,7 +943,7 @@ export async function updateSalesDeliveryAction(id: string, data: {
         for (const inputItem of data.items) {
             if (inputItem.discount && inputItem.discount > 0) {
                 await tx.$executeRawUnsafe(
-                    `UPDATE "SalesDeliveryItem" SET "discount" = ? WHERE "deliveryId" = ? AND "productId" = ?`,
+                    `UPDATE "SalesDeliveryItem" SET "discount" = $1 WHERE "deliveryId" = $2 AND "productId" = $3`,
                     inputItem.discount, id, inputItem.productId
                 );
             }
@@ -1155,7 +1155,7 @@ export async function updatePaymentStatusAction(type: "PURCHASE" | "SALE", id: s
             reference = delivery.deliveryNumber;
             party = delivery.buyerName;
 
-            const deliveryRaw: any[] = await tx.$queryRawUnsafe(`SELECT "grandTotal", "taxAmount", "totalDiscount", "paidAmount" FROM "SalesDelivery" WHERE id = ?`, id);
+            const deliveryRaw: any[] = await tx.$queryRawUnsafe(`SELECT "grandTotal", "taxAmount", "totalDiscount", "paidAmount" FROM "SalesDelivery" WHERE id = $1`, id);
             amount = Math.round(Number(deliveryRaw[0]?.grandTotal || 0));
             const currentPaid = Math.round(Number(deliveryRaw[0]?.paidAmount || 0));
             const toReceive = partialAmount ? Math.round(Number(partialAmount)) : (status === "PAID" ? amount - currentPaid : 0);

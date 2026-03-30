@@ -33,11 +33,11 @@ export default async function SalesPage() {
     }).catch(() => []));
 
     const salesExpenses = serializeDecimal(await prisma.$queryRawUnsafe(`
-        SELECT t.*, a.code as "accountCode" FROM "FinanceTransaction" t
+        SELECT DISTINCT ON (t.id) t.*, a.code as "accountCode" FROM "FinanceTransaction" t
         JOIN "JournalEntry" j ON t.id = j."transactionId"
         JOIN "FinanceAccount" a ON j."accountId" = a.id
         WHERE a.code LIKE '6%'
-        GROUP BY t.id
+        ORDER BY t.id
     `).catch(() => [])) as any[];
 
     const salesReturns = serializeDecimal(await prisma.salesReturn.findMany({
