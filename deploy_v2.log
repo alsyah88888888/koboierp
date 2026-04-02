@@ -1,0 +1,71 @@
+spawn ssh -o StrictHostKeyChecking=no root@76.13.20.44
+root@76.13.20.44's password: 
+Welcome to Ubuntu 24.04.4 LTS (GNU/Linux 6.8.0-106-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/pro
+
+ System information as of Thu Apr  2 18:37:59 UTC 2026
+
+  System load:  0.0               Processes:             112
+  Usage of /:   7.7% of 47.39GB   Users logged in:       1
+  Memory usage: 13%               IPv4 address for eth0: 76.13.20.44
+  Swap usage:   0%                IPv6 address for eth0: 2a02:4780:59:daf6::1
+
+ * Strictly confined Kubernetes makes edge and IoT secure. Learn how MicroK8s
+   just raised the bar for easy, resilient and secure K8s cluster deployment.
+
+   https://ubuntu.com/engage/secure-kubernetes-at-the-edge
+
+Expanded Security Maintenance for Applications is not enabled.
+
+22 updates can be applied immediately.
+1 of these updates is a standard security update.
+To see these additional updates run: apt list --upgradable
+
+Enable ESM Apps to receive additional future security updates.
+See https://ubuntu.com/esm or run: sudo pro status
+
+
+1 updates could not be installed automatically. For more details,
+see /var/log/unattended-upgrades/unattended-upgrades.log
+
+Last login: Thu Apr  2 18:38:42 2026 from 202.51.197.74
+[?2004h]0;root@srv1530496: ~root@srv1530496:~# cd ~/erp && git pull origin main && npx prisma db push && npm run build && pm2 restart all --update-env
+[?2004lFrom https://github.com/alsyah88888888/koboierp
+ * branch            main       -> FETCH_HEAD
+Already up to date.
+[1G[0K⠙[1G[0K[2mLoaded Prisma config from prisma.config.ts.
+[22m
+Prisma config detected, skipping environment variable loading.
+[2mPrisma schema loaded from prisma/schema.prisma[22m
+[2mDatasource "db": PostgreSQL database "postgres", schema "public" at "aws-1-ap-southeast-1.pooler.supabase.com:5432"[22m
+
+The database is already in sync with the Prisma schema.
+
+[?25lRunning generate... [2m(Use --skip-generate t[22m
+[2mo skip the generators)[22m
+[?25l[2K[1A[2K[1A[2K[GRunning generate... - Prisma Client
+[?25l[2K[1A[2K[G✔ Generated [1mPrisma Client[22m (v6.19.2)[2m to ./[22m
+[2mnode_modules/@prisma/client[22m in 489ms
+
+[?25h[1G[0K⠙[1G[0K
+> erp@0.1.0 build
+> prisma generate && next build
+
+[1G[0K[2mLoaded Prisma config from prisma.config.ts.
+[22m
+Prisma config detected, skipping environment variable loading.
+[2mPrisma schema loaded from prisma/schema.prisma[22m
+
+✔ Generated [1mPrisma Client[22m (v6.19.2)[2m to ./node_modules/@prisma/client[22m in 465ms
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+Tip: Need your database queries to be 1000x faster? Accelerate offers you that and more: https://pris.ly/tip-2-accelerate
+
+[1m[38;2;173;127;168m▲ Next.js 16.2.1[39m[22m (Turbopack)
+- Environments: .env
+
+[37m[1m [22m[39m Creating an optimized production build ...

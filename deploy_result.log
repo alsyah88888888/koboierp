@@ -1,0 +1,44 @@
+spawn ssh -o StrictHostKeyChecking=no root@76.13.20.44
+root@76.13.20.44's password: 
+Welcome to Ubuntu 24.04.4 LTS (GNU/Linux 6.8.0-106-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/pro
+
+ System information as of Thu Apr  2 18:37:59 UTC 2026
+
+  System load:  0.0               Processes:             112
+  Usage of /:   7.7% of 47.39GB   Users logged in:       1
+  Memory usage: 13%               IPv4 address for eth0: 76.13.20.44
+  Swap usage:   0%                IPv6 address for eth0: 2a02:4780:59:daf6::1
+
+ * Strictly confined Kubernetes makes edge and IoT secure. Learn how MicroK8s
+   just raised the bar for easy, resilient and secure K8s cluster deployment.
+
+   https://ubuntu.com/engage/secure-kubernetes-at-the-edge
+
+Expanded Security Maintenance for Applications is not enabled.
+
+22 updates can be applied immediately.
+1 of these updates is a standard security update.
+To see these additional updates run: apt list --upgradable
+
+Enable ESM Apps to receive additional future security updates.
+See https://ubuntu.com/esm or run: sudo pro status
+
+
+1 updates could not be installed automatically. For more details,
+see /var/log/unattended-upgrades/unattended-upgrades.log
+
+Last login: Thu Apr  2 18:38:25 2026 from 202.51.197.74
+[?2004h]0;root@srv1530496: ~root@srv1530496:~# cd ~/erp && git log -1 --oneline && pm2 status
+[?2004l[?1h=[33m7c667fc[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin[m [33m[m[33m[m[1;36m[m[33m[m[1;32m[m[33m[m[1;31m[m[33m[m[1;31m/HEAD[m[33m)[m Fix Admin role checks in purchase p[m [33m[m[33m[m[1;36m[m[33m[m[1;32m[m[33m[m[1;31m[m[33m[m[1;31m[m[33m[mage[m
+[K[?1l>[90m┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐[39m
+[90m│[39m[1m[36m id [39m[22m[90m│[39m[1m[36m name               [39m[22m[90m│[39m[1m[36m mode     [39m[22m[90m│[39m[1m[36m ↺    [39m[22m[90m│[39m[1m[36m status    [39m[22m[90m│[39m[1m[36m cpu      [39m[22m[90m│[39m[1m[36m memory   [39m[22m[90m│[39m
+[90m├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤[39m
+[90m│[39m[1m[36m [1m[36m0[39m[36m[22m[1m  [39m[22m[90m│[39m erp                [90m│[39m [7m[1mfork[22m[27m     [90m│[39m 96   [90m│[39m [32m[1monline[22m[39m    [90m│[39m 0%       [90m│[39m 56.9mb   [90m│[39m
+[90m└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘[39m
+[?2004h]0;root@srv1530496: ~/erproot@srv1530496:~/erp# exit
+[?2004llogout
+Connection to 76.13.20.44 closed.

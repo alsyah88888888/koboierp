@@ -1,0 +1,14 @@
+#!/usr/bin/expect -f
+set timeout 30
+set password [lindex $argv 0]
+spawn ssh -o StrictHostKeyChecking=no root@76.13.20.44
+expect "*?assword:*" {
+    send "$password\r"
+}
+expect -re "(#|\\$)" {
+    send "cd ~/erp && git log -5 --oneline\r"
+}
+expect -re "(#|\\$)" {
+    send "exit\r"
+}
+expect eof
