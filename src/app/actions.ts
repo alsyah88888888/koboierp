@@ -2126,9 +2126,9 @@ export async function getDashboardSummaryAction() {
         fetchJournals({
             account: { code: '105' }
         }),
-        // Revenue (ALL SalesDelivery)
+        // Revenue (SalesDelivery filtered by sales code for non-admins)
         prisma.salesDelivery.aggregate({
-            where: userFilter,
+            where: isAdmin ? {} : { salesPerson: "BC" },
             _sum: { subtotal: true, totalDiscount: true }
         }),
         // Purchase Cost (Verified GoodsReceipt)
