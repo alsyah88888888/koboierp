@@ -5,10 +5,16 @@ import SalesDashboard from "@/app/sales/SalesDashboard";
 import { serializeDecimal } from "@/lib/utils";
 
 import { headers } from "next/headers";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
 
 export default async function SalesPage() {
     // Force dynamic rendering to skip build-time DB check
     await headers();
+    
+    const session = await getServerSession(authOptions) as any;
+    const isAdmin = session?.user?.role === "ADMIN";
+    const userFilter = isAdmin ? {} : { createdById: session?.user?.id };
     
     const products = serializeDecimal(await prisma.product.findMany({
         include: { stocks: true },
@@ -18,6 +24,7 @@ export default async function SalesPage() {
     const warehouses = serializeDecimal(await prisma.warehouse.findMany().catch(() => []));
 
     const deliveries = serializeDecimal(await prisma.salesDelivery.findMany({
+        where: userFilter,
         include: { warehouse: true, items: { include: { product: true } } },
         orderBy: { createdAt: 'desc' }
     }).catch(() => []));
@@ -41,6 +48,7 @@ export default async function SalesPage() {
     `).catch(() => [])) as any[];
 
     const salesReturns = serializeDecimal(await prisma.salesReturn.findMany({
+        where: userFilter,
         include: {
             delivery: { include: { items: { include: { product: true } } } },
             items: { include: { product: true } }

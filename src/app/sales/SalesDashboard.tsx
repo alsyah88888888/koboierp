@@ -188,114 +188,118 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
 
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
                 {/* BC Performance Card */}
-                <div className="bg-gradient-to-br from-indigo-50 to-white border-2 border-indigo-100 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all">
-                    <div className="flex justify-between items-center mb-4">
-                        <div className="flex items-center gap-3">
-                            <div className="bg-indigo-600 text-white p-2 rounded-xl shadow-lg shadow-indigo-200">
-                                <Users className="h-6 w-6" />
+                {(isAdmin || bcStats.sjCount > 0) && (
+                    <div className="bg-gradient-to-br from-indigo-50 to-white border-2 border-indigo-100 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all">
+                        <div className="flex justify-between items-center mb-4">
+                            <div className="flex items-center gap-3">
+                                <div className="bg-indigo-600 text-white p-2 rounded-xl shadow-lg shadow-indigo-200">
+                                    <Users className="h-6 w-6" />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-bold text-slate-900">Performance ID: BC</h3>
+                                    <p className="text-xs text-slate-500 font-medium tracking-wide font-mono uppercase">Salesperson Overview</p>
+                                </div>
                             </div>
-                            <div>
-                                <h3 className="text-lg font-bold text-slate-900">Performance ID: BC</h3>
-                                <p className="text-xs text-slate-500 font-medium tracking-wide font-mono uppercase">Salesperson Overview</p>
-                            </div>
+                            <div className="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-indigo-200">Active</div>
                         </div>
-                        <div className="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-indigo-200">Active</div>
-                    </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm">
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter mb-1 flex items-center gap-1">
-                                <FileText className="h-3 w-3 text-indigo-500" /> Total SJ Diterbitkan
-                            </p>
-                            <p className="text-2xl font-black text-indigo-600">{bcStats.sjCount}</p>
-                            <p className="text-[10px] text-slate-500 mt-0.5">Surat Jalan</p>
-                        </div>
-                        <div className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm">
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter mb-1 flex items-center gap-1">
-                                <Truck className="h-3 w-3 text-indigo-500" /> Total Qty Dikirim
-                            </p>
-                            <p className="text-2xl font-black text-indigo-600">{bcStats.totalQty}</p>
-                            <p className="text-[10px] text-slate-500 mt-0.5">Pcs / Item</p>
-                        </div>
-                    </div>
-
-                    <div className="mt-4 pt-4 border-t border-slate-100">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase mb-2 block tracking-widest">Riwayat Pengiriman Terbaru</span>
-                        {bcStats.recentDeliveries.length > 0 ? (
-                            <div className="space-y-2">
-                                {bcStats.recentDeliveries.map((delivery, idx) => (
-                                    <div key={idx} className="flex justify-between items-center text-xs p-2 bg-slate-50 rounded border border-slate-100">
-                                        <div>
-                                            <p className="font-bold text-slate-700">{delivery.deliveryNumber}</p>
-                                            <p className="text-[10px] text-slate-500 truncate max-w-[120px]">{delivery.buyerName}</p>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="font-medium text-slate-600">{isClient ? format(new Date(delivery.createdAt), "dd MMM yy") : "..."}</p>
-                                            <p className="text-[10px] font-black text-indigo-600">{delivery.items.reduce((s: number, i: any) => s + i.quantity, 0)} Pcs</p>
-                                        </div>
-                                    </div>
-                                ))}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm">
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter mb-1 flex items-center gap-1">
+                                    <FileText className="h-3 w-3 text-indigo-500" /> Total SJ Diterbitkan
+                                </p>
+                                <p className="text-2xl font-black text-indigo-600">{bcStats.sjCount}</p>
+                                <p className="text-[10px] text-slate-500 mt-0.5">Surat Jalan</p>
                             </div>
-                        ) : (
-                            <p className="text-xs text-muted-foreground italic text-center py-2">Belum ada pengiriman</p>
-                        )}
+                            <div className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm">
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter mb-1 flex items-center gap-1">
+                                    <Truck className="h-3 w-3 text-indigo-500" /> Total Qty Dikirim
+                                </p>
+                                <p className="text-2xl font-black text-indigo-600">{bcStats.totalQty}</p>
+                                <p className="text-[10px] text-slate-500 mt-0.5">Pcs / Item</p>
+                            </div>
+                        </div>
+
+                        <div className="mt-4 pt-4 border-t border-slate-100">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase mb-2 block tracking-widest">Riwayat Pengiriman Terbaru</span>
+                            {bcStats.recentDeliveries.length > 0 ? (
+                                <div className="space-y-2">
+                                    {bcStats.recentDeliveries.map((delivery, idx) => (
+                                        <div key={idx} className="flex justify-between items-center text-xs p-2 bg-slate-50 rounded border border-slate-100">
+                                            <div>
+                                                <p className="font-bold text-slate-700">{delivery.deliveryNumber}</p>
+                                                <p className="text-[10px] text-slate-500 truncate max-w-[120px]">{delivery.buyerName}</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="font-medium text-slate-600">{isClient ? format(new Date(delivery.createdAt), "dd MMM yy") : "..."}</p>
+                                                <p className="text-[10px] font-black text-indigo-600">{delivery.items.reduce((s: number, i: any) => s + i.quantity, 0)} Pcs</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-xs text-muted-foreground italic text-center py-2">Belum ada pengiriman</p>
+                            )}
+                        </div>
                     </div>
-                </div>
+                )}
 
                 {/* PF Performance Card */}
-                <div className="bg-gradient-to-br from-amber-50 to-white border-2 border-amber-100 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all">
-                    <div className="flex justify-between items-center mb-4">
-                        <div className="flex items-center gap-3">
-                            <div className="bg-amber-600 text-white p-2 rounded-xl shadow-lg shadow-amber-200">
-                                <Users className="h-6 w-6" />
+                {(isAdmin || pfStats.sjCount > 0) && (
+                    <div className="bg-gradient-to-br from-amber-50 to-white border-2 border-amber-100 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all">
+                        <div className="flex justify-between items-center mb-4">
+                            <div className="flex items-center gap-3">
+                                <div className="bg-amber-600 text-white p-2 rounded-xl shadow-lg shadow-amber-200">
+                                    <Users className="h-6 w-6" />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-bold text-slate-900">Performance ID: PF</h3>
+                                    <p className="text-xs text-slate-500 font-medium tracking-wide font-mono uppercase">Salesperson Overview</p>
+                                </div>
                             </div>
-                            <div>
-                                <h3 className="text-lg font-bold text-slate-900">Performance ID: PF</h3>
-                                <p className="text-xs text-slate-500 font-medium tracking-wide font-mono uppercase">Salesperson Overview</p>
-                            </div>
+                            <div className="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-amber-200">Active</div>
                         </div>
-                        <div className="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-amber-200">Active</div>
-                    </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm">
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter mb-1 flex items-center gap-1">
-                                <FileText className="h-3 w-3 text-amber-500" /> Total SJ Diterbitkan
-                            </p>
-                            <p className="text-2xl font-black text-amber-600">{pfStats.sjCount}</p>
-                            <p className="text-[10px] text-slate-500 mt-0.5">Surat Jalan</p>
-                        </div>
-                        <div className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm">
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter mb-1 flex items-center gap-1">
-                                <Truck className="h-3 w-3 text-amber-500" /> Total Qty Dikirim
-                            </p>
-                            <p className="text-2xl font-black text-amber-600">{pfStats.totalQty}</p>
-                            <p className="text-[10px] text-slate-500 mt-0.5">Pcs / Item</p>
-                        </div>
-                    </div>
-
-                    <div className="mt-4 pt-4 border-t border-slate-100">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase mb-2 block tracking-widest">Riwayat Pengiriman Terbaru</span>
-                        {pfStats.recentDeliveries.length > 0 ? (
-                            <div className="space-y-2">
-                                {pfStats.recentDeliveries.map((delivery, idx) => (
-                                    <div key={idx} className="flex justify-between items-center text-xs p-2 bg-slate-50 rounded border border-slate-100">
-                                        <div>
-                                            <p className="font-bold text-slate-700">{delivery.deliveryNumber}</p>
-                                            <p className="text-[10px] text-slate-500 truncate max-w-[120px]">{delivery.buyerName}</p>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="font-medium text-slate-600">{isClient ? format(new Date(delivery.createdAt), "dd MMM yy") : "..."}</p>
-                                            <p className="text-[10px] font-black text-amber-600">{delivery.items.reduce((s: number, i: any) => s + i.quantity, 0)} Pcs</p>
-                                        </div>
-                                    </div>
-                                ))}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm">
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter mb-1 flex items-center gap-1">
+                                    <FileText className="h-3 w-3 text-amber-500" /> Total SJ Diterbitkan
+                                </p>
+                                <p className="text-2xl font-black text-amber-600">{pfStats.sjCount}</p>
+                                <p className="text-[10px] text-slate-500 mt-0.5">Surat Jalan</p>
                             </div>
-                        ) : (
-                            <p className="text-xs text-muted-foreground italic text-center py-2">Belum ada pengiriman</p>
-                        )}
+                            <div className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm">
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter mb-1 flex items-center gap-1">
+                                    <Truck className="h-3 w-3 text-amber-500" /> Total Qty Dikirim
+                                </p>
+                                <p className="text-2xl font-black text-amber-600">{pfStats.totalQty}</p>
+                                <p className="text-[10px] text-slate-500 mt-0.5">Pcs / Item</p>
+                            </div>
+                        </div>
+
+                        <div className="mt-4 pt-4 border-t border-slate-100">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase mb-2 block tracking-widest">Riwayat Pengiriman Terbaru</span>
+                            {pfStats.recentDeliveries.length > 0 ? (
+                                <div className="space-y-2">
+                                    {pfStats.recentDeliveries.map((delivery, idx) => (
+                                        <div key={idx} className="flex justify-between items-center text-xs p-2 bg-slate-50 rounded border border-slate-100">
+                                            <div>
+                                                <p className="font-bold text-slate-700">{delivery.deliveryNumber}</p>
+                                                <p className="text-[10px] text-slate-500 truncate max-w-[120px]">{delivery.buyerName}</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="font-medium text-slate-600">{isClient ? format(new Date(delivery.createdAt), "dd MMM yy") : "..."}</p>
+                                                <p className="text-[10px] font-black text-amber-600">{delivery.items.reduce((s: number, i: any) => s + i.quantity, 0)} Pcs</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-xs text-muted-foreground italic text-center py-2">Belum ada pengiriman</p>
+                            )}
+                        </div>
                     </div>
-                </div>
+                )}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
