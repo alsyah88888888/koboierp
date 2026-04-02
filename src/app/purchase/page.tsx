@@ -15,12 +15,18 @@ export default async function PurchasePage() {
     const session = await getServerSession(authOptions) as any;
     const isAdmin = session?.user?.role === "ADMIN";
     
-    // For non-admins, show their own records OR records created by an ADMIN (historical/shared)
-    const userFilter = isAdmin ? {} : { 
+    // Strict filters for non-admins to exclude "PF" and focus on "BC"
+    const receiptFilter = isAdmin ? {} : { 
+        OR: [{ salesPerson: "BC" }, { createdById: session?.user?.id }],
+        NOT: { salesPerson: "PF" }
+    };
+    
+    const returnFilter = isAdmin ? {} : {
         OR: [
-            { createdById: session?.user?.id },
-            { createdBy: { role: "ADMIN" } }
-        ] 
+            { receipt: { salesPerson: "BC" } },
+            { createdById: session?.user?.id }
+        ],
+        NOT: { receipt: { salesPerson: "PF" } }
     };
     
     const products = serializeDecimal(await prisma.product.findMany({
@@ -40,7 +46,7 @@ export default async function PurchasePage() {
     }).catch(() => []));
 
     const receipts = serializeDecimal(await prisma.goodsReceipt.findMany({
-        where: userFilter,
+        where: receiptFilter,
         include: {
             warehouse: true,
             items: {
@@ -51,7 +57,7 @@ export default async function PurchasePage() {
     }).catch(() => []));
 
     const returns = serializeDecimal(await prisma.purchaseReturn.findMany({
-        where: userFilter,
+        where: returnFilter,
         include: { receipt: true, items: { include: { product: true } } },
         orderBy: { createdAt: 'desc' }
     }).catch(() => []));
