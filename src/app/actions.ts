@@ -2062,6 +2062,20 @@ export async function getDashboardSummaryAction() {
     const isAdmin = session.user.role === "ADMIN";
     const userFilter = isAdmin ? {} : { createdById: session.user.id };
 
+    // Helper for journal aggregation (Prisma groupBy does not support relation filters in where clause)
+    const fetchJournals = async (where: any) => {
+        const journals = await prisma.journalEntry.findMany({ where, select: { type: true, amount: true } });
+        const agg: any[] = [];
+        const groups: Record<string, number> = {};
+        journals.forEach((j: any) => {
+            groups[j.type] = (groups[j.type] || 0) + Number(j.amount);
+        });
+        Object.entries(groups).forEach(([type, amount]) => {
+            agg.push({ type, _sum: { amount } });
+        });
+        return agg;
+    };
+
     // 1. Calculations via Aggregations (Lighter & Faster)
     const [
         inventoryTotals,
@@ -2074,7 +2088,7 @@ export async function getDashboardSummaryAction() {
     ] = await Promise.all([
         // Asset Value (Group stocks)
         prisma.stock.findMany({
-            where: isAdmin ? {} : { product: { createdById: session.user.id } },
+            where: isAdmin ? {} : { product: { is: { createdById: session.user.id } } },
             select: {
                 quantity: true,
                 product: {
@@ -2091,49 +2105,37 @@ export async function getDashboardSummaryAction() {
             }
         }),
         // Cash & Bank (Codes 101, 102)
-        prisma.journalEntry.groupBy({
-            by: ['type'],
-            where: {
-                ...(isAdmin ? {} : {
-                    OR: [
-                        { goodsReceipt: { createdById: session.user.id } },
-                        { salesDelivery: { createdById: session.user.id } },
-                        { financeTransaction: { createdById: session.user.id } }
-                    ]
-                }),
-                account: { OR: [{ code: { startsWith: '101' } }, { code: { startsWith: '102' } }] }
-            },
-            _sum: { amount: true }
+        fetchJournals({
+            ...(isAdmin ? {} : {
+                OR: [
+                    { goodsReceipt: { createdById: session.user.id } },
+                    { salesDelivery: { createdById: session.user.id } },
+                    { financeTransaction: { createdById: session.user.id } }
+                ]
+            }),
+            account: { OR: [{ code: { startsWith: '101' } }, { code: { startsWith: '102' } }] }
         }),
         // Total Hutang (201)
-        prisma.journalEntry.groupBy({
-            by: ['type'],
-            where: { 
-                ...(isAdmin ? {} : {
-                    OR: [
-                        { goodsReceipt: { createdById: session.user.id } },
-                        { salesDelivery: { createdById: session.user.id } },
-                        { financeTransaction: { createdById: session.user.id } }
-                    ]
-                }),
-                account: { code: '201' } 
-            },
-            _sum: { amount: true }
+        fetchJournals({
+            ...(isAdmin ? {} : {
+                OR: [
+                    { goodsReceipt: { createdById: session.user.id } },
+                    { salesDelivery: { createdById: session.user.id } },
+                    { financeTransaction: { createdById: session.user.id } }
+                ]
+            }),
+            account: { code: '201' } 
         }),
         // Total Piutang (105)
-        prisma.journalEntry.groupBy({
-            by: ['type'],
-            where: { 
-                ...(isAdmin ? {} : {
-                    OR: [
-                        { goodsReceipt: { createdById: session.user.id } },
-                        { salesDelivery: { createdById: session.user.id } },
-                        { financeTransaction: { createdById: session.user.id } }
-                    ]
-                }),
-                account: { code: '105' } 
-            },
-            _sum: { amount: true }
+        fetchJournals({
+            ...(isAdmin ? {} : {
+                OR: [
+                    { goodsReceipt: { createdById: session.user.id } },
+                    { salesDelivery: { createdById: session.user.id } },
+                    { financeTransaction: { createdById: session.user.id } }
+                ]
+            }),
+            account: { code: '105' } 
         }),
         // Revenue (ALL SalesDelivery)
         prisma.salesDelivery.aggregate({
