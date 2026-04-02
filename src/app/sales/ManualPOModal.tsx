@@ -18,6 +18,7 @@ export function ManualPOModal({ products, warehouses, onClose }: ManualPOModalPr
         buyerName: "",
         recipient: "",
         warehouseId: warehouses[0]?.id || "",
+        salesPerson: "BC",
         items: [{ productId: "", quantity: 0, price: 0 }]
     });
 
@@ -121,17 +122,31 @@ export function ManualPOModal({ products, warehouses, onClose }: ManualPOModalPr
                                 placeholder="Alamat pengiriman..."
                             />
                         </div>
-                        <div className="md:col-span-2 space-y-2">
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Gudang Pengeluaran</label>
-                            <select
-                                value={formData.warehouseId}
-                                onChange={e => setFormData(p => ({ ...p, warehouseId: e.target.value }))}
-                                className="w-full px-5 py-3.5 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:outline-none focus:border-primary focus:bg-white transition-all font-bold text-slate-800 shadow-sm appearance-none"
-                            >
-                                {warehouses.map(w => (
-                                    <option key={w.id} value={w.id}>{w.name}</option>
-                                ))}
-                            </select>
+                        {/* Data Type & Warehouse */}
+                        <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Kategori (Prefix)</label>
+                                <select
+                                    value={formData.salesPerson}
+                                    onChange={e => setFormData(p => ({ ...p, salesPerson: e.target.value }))}
+                                    className="w-full px-5 py-3.5 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:outline-none focus:border-primary focus:bg-white transition-all font-bold text-slate-800 shadow-sm appearance-none"
+                                >
+                                    <option value="BC">BC (Regular / Sales)</option>
+                                    <option value="PF">PF (Project Finance)</option>
+                                </select>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Gudang Pengeluaran</label>
+                                <select
+                                    value={formData.warehouseId}
+                                    onChange={e => setFormData(p => ({ ...p, warehouseId: e.target.value }))}
+                                    className="w-full px-5 py-3.5 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:outline-none focus:border-primary focus:bg-white transition-all font-bold text-slate-800 shadow-sm appearance-none"
+                                >
+                                    {warehouses.map(w => (
+                                        <option key={w.id} value={w.id}>{w.name}</option>
+                                    ))}
+                                </select>
+                            </div>
                         </div>
                     </div>
 

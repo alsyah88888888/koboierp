@@ -137,7 +137,9 @@ export function AdminDashboard({ role, stats, salesData, inventoryData, recentAc
                 </div>
                 <div>
                     <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-1">{stat.name}</p>
-                    <h3 className="text-2xl font-black text-slate-900 tracking-tight leading-none">{stat.value}</h3>
+                    <h3 className="text-2xl font-black text-slate-900 tracking-tight leading-none">
+                        {isClient ? stat.value : "Rp ---"}
+                    </h3>
                 </div>
             </div>
         </div>
@@ -180,7 +182,9 @@ export function AdminDashboard({ role, stats, salesData, inventoryData, recentAc
                                 <span className="text-[10px] font-black uppercase tracking-widest">Input Hari Ini</span>
                             </div>
                             <div className="space-y-1">
-                                <h4 className="text-2xl font-black text-slate-900 leading-none">{formatCurrency(dailyStats.totalSales || 0)}</h4>
+                                <h4 className="text-2xl font-black text-slate-900 leading-none">
+                                    {isClient ? formatCurrency(dailyStats.totalSales || 0) : "Rp ---"}
+                                </h4>
                                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{dailyStats.countSales || 0} Data Terproses</p>
                             </div>
                         </div>
@@ -199,7 +203,9 @@ export function AdminDashboard({ role, stats, salesData, inventoryData, recentAc
                                 <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Pembelian (Input Hari Ini)</span>
                             </div>
                             <div className="space-y-1">
-                                <h4 className="text-2xl font-black text-slate-900 leading-none">{formatCurrency(dailyStats.totalPurchases || 0)}</h4>
+                                <h4 className="text-2xl font-black text-slate-900 leading-none">
+                                    {isClient ? formatCurrency(dailyStats.totalPurchases || 0) : "Rp ---"}
+                                </h4>
                                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{dailyStats.countPurchases || 0} Nota Masuk</p>
                             </div>
                         </div>
@@ -218,7 +224,9 @@ export function AdminDashboard({ role, stats, salesData, inventoryData, recentAc
                                 <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest">Ops & Finance (Input Hari Ini)</span>
                             </div>
                             <div className="space-y-1">
-                                <h4 className="text-2xl font-black text-slate-900 leading-none">{formatCurrency(dailyStats.totalOps || 0)}</h4>
+                                <h4 className="text-2xl font-black text-slate-900 leading-none">
+                                    {isClient ? formatCurrency(dailyStats.totalOps || 0) : "Rp ---"}
+                                </h4>
                                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{dailyStats.countOps || 0} Transaksi Kas</p>
                             </div>
                         </div>
@@ -437,7 +445,7 @@ export function AdminDashboard({ role, stats, salesData, inventoryData, recentAc
                         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                             <span className="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em]">Total</span>
                             <span className="text-3xl font-black text-slate-900 leading-none">
-                                {isClient ? inventoryData.reduce((a: number, b: any) => a + b.value, 0).toLocaleString() : "..."}
+                                {isClient ? inventoryData.reduce((a: number, b: any) => a + b.value, 0).toLocaleString('id-ID') : "..."}
                             </span>
                         </div>
                     </div>
@@ -488,7 +496,7 @@ export function AdminDashboard({ role, stats, salesData, inventoryData, recentAc
                                         "text-sm font-black tracking-tight",
                                         act.type === 'SALE' ? 'text-emerald-500' : 'text-slate-900'
                                     )}>
-                                        {act.type === 'SALE' ? '+' : '-'}{formatCurrency(act.amount)}
+                                        {isClient ? (act.type === 'SALE' ? '+' : '-') + formatCurrency(act.amount) : "Rp ---"}
                                     </div>
                                     <div className="text-[9px] font-black text-slate-300 uppercase tracking-widest mt-0.5">Verified</div>
                                 </div>

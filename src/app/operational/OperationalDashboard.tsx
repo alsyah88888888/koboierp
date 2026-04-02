@@ -102,18 +102,18 @@ export function OperationalDashboard({
                     <div className="min-w-0 flex-1">
                         <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1 shadow-sm px-2 py-0.5 rounded-full bg-white w-fit border border-indigo-50">Sales BC</p>
                         <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mt-2">Nett Margin</p>
-                        <p className={`text-2xl font-black tracking-tighter truncate ${bcStats.margin >= 0 ? 'text-indigo-600' : 'text-rose-600'}`} title={`Rp ${bcStats.margin.toLocaleString('id-ID')}`}>
-                            Rp {bcStats.margin.toLocaleString('id-ID')}
+                        <p className={`text-2xl font-black tracking-tighter truncate ${bcStats.margin >= 0 ? 'text-indigo-600' : 'text-rose-600'}`} title={isClient ? `Rp ${bcStats.margin.toLocaleString('id-ID')}` : ""}>
+                            Rp {isClient ? bcStats.margin.toLocaleString('id-ID') : "---"}
                         </p>
                     </div>
                     <div className="text-right flex flex-col items-end gap-1">
                         <div className="bg-white px-3 py-1.5 rounded-xl border border-indigo-50 shadow-sm w-full">
                             <p className="text-[9px] font-bold text-emerald-500 uppercase">Total Penjualan</p>
-                            <p className="text-xs font-black text-emerald-600 tracking-tighter whitespace-nowrap">Rp {bcStats.salesVal.toLocaleString('id-ID')}</p>
+                            <p className="text-xs font-black text-emerald-600 tracking-tighter whitespace-nowrap">Rp {isClient ? bcStats.salesVal.toLocaleString('id-ID') : "---"}</p>
                         </div>
                         <div className="bg-white px-3 py-1.5 rounded-xl border border-indigo-50 shadow-sm w-full">
                             <p className="text-[9px] font-bold text-rose-400 uppercase">Total Pembelian & Ops</p>
-                            <p className="text-xs font-black text-rose-500 tracking-tighter whitespace-nowrap">Rp {(bcStats.purchaseVal + bcStats.expenseVal).toLocaleString('id-ID')}</p>
+                            <p className="text-xs font-black text-rose-500 tracking-tighter whitespace-nowrap">Rp {isClient ? (bcStats.purchaseVal + bcStats.expenseVal).toLocaleString('id-ID') : "---"}</p>
                         </div>
                     </div>
                 </div>
@@ -124,18 +124,18 @@ export function OperationalDashboard({
                         <div className="min-w-0 flex-1">
                             <p className="text-[10px] font-black text-amber-400 uppercase tracking-widest mb-1 shadow-sm px-2 py-0.5 rounded-full bg-white w-fit border border-amber-50">Sales PF</p>
                             <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mt-2">Nett Margin</p>
-                            <p className={`text-2xl font-black tracking-tighter truncate ${pfStats.margin >= 0 ? 'text-amber-600' : 'text-rose-600'}`} title={`Rp ${pfStats.margin.toLocaleString('id-ID')}`}>
-                                Rp {pfStats.margin.toLocaleString('id-ID')}
+                            <p className={`text-2xl font-black tracking-tighter truncate ${pfStats.margin >= 0 ? 'text-amber-600' : 'text-rose-600'}`} title={isClient ? `Rp ${pfStats.margin.toLocaleString('id-ID')}` : ""}>
+                                Rp {isClient ? pfStats.margin.toLocaleString('id-ID') : "---"}
                             </p>
                         </div>
                         <div className="text-right flex flex-col items-end gap-1">
                             <div className="bg-white px-3 py-1.5 rounded-xl border border-amber-50 shadow-sm w-full">
                                 <p className="text-[9px] font-bold text-emerald-500 uppercase">Total Penjualan</p>
-                                <p className="text-xs font-black text-emerald-600 tracking-tighter whitespace-nowrap">Rp {pfStats.salesVal.toLocaleString('id-ID')}</p>
+                                <p className="text-xs font-black text-emerald-600 tracking-tighter whitespace-nowrap">Rp {isClient ? pfStats.salesVal.toLocaleString('id-ID') : "---"}</p>
                             </div>
                             <div className="bg-white px-3 py-1.5 rounded-xl border border-amber-50 shadow-sm w-full">
                                 <p className="text-[9px] font-bold text-rose-400 uppercase">Total Pembelian & Ops</p>
-                                <p className="text-xs font-black text-rose-500 tracking-tighter whitespace-nowrap">Rp {(pfStats.purchaseVal + pfStats.expenseVal).toLocaleString('id-ID')}</p>
+                                <p className="text-xs font-black text-rose-500 tracking-tighter whitespace-nowrap">Rp {isClient ? (pfStats.purchaseVal + pfStats.expenseVal).toLocaleString('id-ID') : "---"}</p>
                             </div>
                         </div>
                     </div>
@@ -150,7 +150,7 @@ export function OperationalDashboard({
                     <div>
                         <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Total Pengeluaran</p>
                         <p className="text-xl font-black tracking-tighter">
-                            {formatCurrency(transactions.filter(t => t.transactionType === "PAYMENT").reduce((sum, t) => sum + Number(t.amount), 0))}
+                            {isClient ? formatCurrency(transactions.filter(t => t.transactionType === "PAYMENT").reduce((sum, t) => sum + Number(t.amount), 0)) : "Rp ---"}
                         </p>
                     </div>
                 </div>
@@ -161,7 +161,7 @@ export function OperationalDashboard({
                     <div>
                         <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Total Pemasukan</p>
                         <p className="text-xl font-black tracking-tighter">
-                            {formatCurrency(transactions.filter(t => t.transactionType === "RECEIPT").reduce((sum, t) => sum + Number(t.amount), 0))}
+                            {isClient ? formatCurrency(transactions.filter(t => t.transactionType === "RECEIPT").reduce((sum, t) => sum + Number(t.amount), 0)) : "Rp ---"}
                         </p>
                     </div>
                 </div>
@@ -237,7 +237,7 @@ export function OperationalDashboard({
                                         </span>
                                     </td>
                                     <td className={`px-6 py-4 text-right font-black tracking-tighter ${t.transactionType === 'PAYMENT' ? 'text-red-500' : 'text-emerald-500'}`}>
-                                        {t.transactionType === 'PAYMENT' ? '-' : '+'} {formatCurrency(Number(t.amount))}
+                                        {isClient ? (t.transactionType === 'PAYMENT' ? '-' : '+') + " " + formatCurrency(Number(t.amount)) : "Rp ---"}
                                     </td>
                                     <td className="px-6 py-4 font-bold text-xs uppercase opacity-70">
                                         <div className="flex items-center gap-2">

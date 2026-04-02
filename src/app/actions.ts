@@ -3538,6 +3538,7 @@ export async function createManualSalesAction(data: {
     buyerName: string;
     recipient: string;
     warehouseId: string;
+    salesPerson: string;
     items: { productId: string; quantity: number }[];
 }) {
     const session = await getServerSession(authOptions) as any;
@@ -3551,6 +3552,7 @@ export async function createManualSalesAction(data: {
                 buyerName: data.buyerName,
                 recipient: data.recipient,
                 warehouseId: data.warehouseId,
+                salesPerson: data.salesPerson,
                 createdById: session.user.id,
                 items: {
                     create: data.items.map(item => ({
