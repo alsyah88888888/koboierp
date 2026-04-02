@@ -771,19 +771,26 @@ export async function createSalesDeliveryAction(data: {
         const grandTotal = Math.round(subtotal - totalDiscountNominal + taxAmount);
 
         // 1.2 Update new fields via raw SQL (Safety for out-of-sync client)
-        await tx.$executeRawUnsafe(
-            `UPDATE "SalesDelivery" SET "subtotal" = $1, "totalDiscount" = $2, "taxRate" = $3, "taxAmount" = $4, "grandTotal" = $5 WHERE id = $6`,
-            subtotal, totalDiscountNominal, taxRatePercent, taxAmount, grandTotal, delivery.id
-        );
+        // 1.2 Update new fields (Safety for out-of-sync client)
+        await tx.salesDelivery.update({
+            where: { id: delivery.id },
+            data: {
+                subtotal: subtotal,
+                totalDiscount: totalDiscountNominal,
+                taxRate: taxRatePercent,
+                taxAmount: taxAmount,
+                grandTotal: grandTotal
+            }
+        });
 
         // 1.3 Update item discounts via raw SQL
         // We match by productId since we just created them in the same transaction
         for (const inputItem of data.items) {
             if (inputItem.discount && inputItem.discount > 0) {
-                await tx.$executeRawUnsafe(
-                    `UPDATE "SalesDeliveryItem" SET "discount" = $1 WHERE "deliveryId" = $2 AND "productId" = $3`,
-                    inputItem.discount, delivery.id, inputItem.productId
-                );
+                await tx.salesDeliveryItem.updateMany({
+                    where: { deliveryId: delivery.id, productId: inputItem.productId },
+                    data: { discount: inputItem.discount }
+                });
             }
         }
 
@@ -875,8 +882,11 @@ export async function updateSalesDeliveryAction(id: string, data: {
         }
 
         // 2. Clear old items and journal entries
-        const oldGrandTotalRaw: any[] = await tx.$queryRawUnsafe(`SELECT "grandTotal" FROM "SalesDelivery" WHERE id = $1`, id);
-        const oldGrandTotal = Number(oldGrandTotalRaw[0]?.grandTotal || 0);
+        const oldGrandTotalRecord = await tx.salesDelivery.findUnique({
+            where: { id },
+            select: { grandTotal: true }
+        });
+        const oldGrandTotal = Number(oldGrandTotalRecord?.grandTotal || 0);
 
         await tx.salesDeliveryItem.deleteMany({ where: { deliveryId: id } });
 
@@ -948,18 +958,23 @@ export async function updateSalesDeliveryAction(id: string, data: {
         const taxAmount = Math.round((subtotal - totalDiscountNominal) * (taxRatePercent / 100));
         const grandTotal = Math.round(subtotal - totalDiscountNominal + taxAmount);
 
-        await tx.$executeRawUnsafe(
-            `UPDATE "SalesDelivery" SET "subtotal" = $1, "totalDiscount" = $2, "taxRate" = $3, "taxAmount" = $4, "grandTotal" = $5 WHERE id = $6`,
-            subtotal, totalDiscountNominal, taxRatePercent, taxAmount, grandTotal, id
-        );
+        await tx.salesDelivery.update({
+            where: { id },
+            data: {
+                subtotal: subtotal,
+                totalDiscount: totalDiscountNominal,
+                taxRate: taxRatePercent,
+                taxAmount: taxAmount,
+                grandTotal: grandTotal
+            }
+        });
 
-        // Update item discounts
         for (const inputItem of data.items) {
             if (inputItem.discount && inputItem.discount > 0) {
-                await tx.$executeRawUnsafe(
-                    `UPDATE "SalesDeliveryItem" SET "discount" = $1 WHERE "deliveryId" = $2 AND "productId" = $3`,
-                    inputItem.discount, id, inputItem.productId
-                );
+                await tx.salesDeliveryItem.updateMany({
+                    where: { deliveryId: id, productId: inputItem.productId },
+                    data: { discount: inputItem.discount }
+                });
             }
         }
 

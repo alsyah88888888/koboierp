@@ -13,24 +13,19 @@ export default async function OperationalPage() {
     await headers();
     
     const session = await getServerSession(authOptions) as any;
-    let whereClause = "";
-    if (session?.user?.email === 'cici@kolaborasi.id') {
-        whereClause = 'WHERE "salesPerson" = \'BC\'';
-    }
-
-    // Use raw query to bypass client schema validation for salesPerson field
-    const transactions: any[] = await prisma.$queryRawUnsafe(`
-        SELECT * FROM "FinanceTransaction" ${whereClause} ORDER BY "date" DESC
-    `);
+    const transactions = await prisma.financeTransaction.findMany({
+        where: session?.user?.email === 'cici@kolaborasi.id' ? { salesPerson: 'BC' } : {},
+        orderBy: { date: 'desc' }
+    });
 
     // Fetch journals separately and merge to maintain relation data
-    const transactionIds = transactions.map(t => t.id);
+    const transactionIds = transactions.map((t: any) => t.id);
     const journals = await prisma.journalEntry.findMany({
         where: { transactionId: { in: transactionIds } },
         include: { account: true }
     });
 
-    const transactionsWithJournals = transactions.map(t => ({
+    const transactionsWithJournals = transactions.map((t: any) => ({
         ...t,
         journals: journals.filter((j: any) => j.transactionId === t.id)
     }));

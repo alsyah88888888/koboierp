@@ -48,18 +48,34 @@ export default async function SalesPage() {
         orderBy: { name: 'asc' }
     }).catch(() => []));
 
-    let expenseWhere = 'a.code LIKE \'6%\'';
-    if (!isAdmin) {
-        expenseWhere += ` AND (t."salesPerson" = 'BC' OR t."createdById" = '${session?.user?.id}') AND t."salesPerson" != 'PF'`;
-    }
+    const salesExpensesRaw = await prisma.financeTransaction.findMany({
+        where: {
+            journals: {
+                some: {
+                    account: { code: { startsWith: '6' } }
+                }
+            },
+            ...(isAdmin ? {} : {
+                OR: [
+                    { salesPerson: 'BC' },
+                    { createdById: session?.user?.id }
+                ],
+                NOT: { salesPerson: 'PF' }
+            })
+        },
+        include: {
+            journals: {
+                where: { account: { code: { startsWith: '6' } } },
+                include: { account: true }
+            }
+        },
+        orderBy: { date: 'desc' }
+    });
 
-    const salesExpenses = serializeDecimal(await prisma.$queryRawUnsafe(`
-        SELECT DISTINCT ON (t.id) t.*, a.code as "accountCode" FROM "FinanceTransaction" t
-        JOIN "JournalEntry" j ON t.id = j."transactionId"
-        JOIN "FinanceAccount" a ON j."accountId" = a.id
-        WHERE ${expenseWhere}
-        ORDER BY t.id
-    `).catch(() => [])) as any[];
+    const salesExpenses = serializeDecimal(salesExpensesRaw.map((t: any) => ({
+        ...t,
+        accountCode: t.journals[0]?.account?.code
+    })));
 
     const salesReturns = serializeDecimal(await prisma.salesReturn.findMany({
         where: userFilter,
