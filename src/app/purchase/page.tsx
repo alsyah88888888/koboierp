@@ -13,7 +13,7 @@ export default async function PurchasePage() {
     await headers();
     
     const session = await getServerSession(authOptions) as any;
-    const isAdmin = session?.user?.role === "ADMIN";
+    const isAdmin = session?.user?.role?.toUpperCase() === "ADMIN";
     
     // Strict filters for non-admins to exclude "PF" and focus on "BC"
     const receiptFilter = isAdmin ? {} : { 
