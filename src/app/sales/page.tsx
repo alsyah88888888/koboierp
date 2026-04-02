@@ -10,12 +10,12 @@ export default async function SalesPage() {
     // Force dynamic rendering to skip build-time DB check
     await headers();
     
-    const products = await prisma.product.findMany({
+    const products = serializeDecimal(await prisma.product.findMany({
         include: { stocks: true },
         orderBy: { sku: 'asc' }
-    }).catch(() => []);
+    }).catch(() => []));
 
-    const warehouses = await prisma.warehouse.findMany().catch(() => []);
+    const warehouses = serializeDecimal(await prisma.warehouse.findMany().catch(() => []));
 
     const deliveries = serializeDecimal(await prisma.salesDelivery.findMany({
         include: { warehouse: true, items: { include: { product: true } } },

@@ -34,21 +34,26 @@ export function serializeDecimal(obj: any): any {
 
     // Handle objects
     if (typeof obj === 'object') {
-        // Handle Date objects - RSC usually handles this but sometimes they can be tricky
-        // Keeping as is unless it's a known issue, but let's focus on Decimal
+        // Skip Date objects
         if (obj instanceof Date) return obj;
 
-        // More robust Decimal check (decimal.js pattern used by Prisma)
-        // obj.e can be 0, so we must check for existence/type, not truthiness
-        if (
-            (obj.d && Array.isArray(obj.d) && typeof obj.s === 'number' && typeof obj.e === 'number') ||
-            (obj.constructor && (obj.constructor.name === 'Decimal' || obj.constructor.name === 'i')) ||
-            (typeof obj.toNumber === 'function')
-        ) {
-            return Number(obj);
+        // Check for Decimal-like structures/classes
+        const isDecimal = 
+            (obj.constructor && (obj.constructor.name === 'Decimal' || obj.constructor.name === 'i')) || 
+            (typeof obj.toNumber === 'function') ||
+            (obj.d && Array.isArray(obj.d) && typeof obj.s === 'number' && typeof obj.e === 'number');
+
+        if (isDecimal) {
+            try {
+                const val = Number(obj);
+                // Ensure it's effectively a finite number
+                return isFinite(val) ? val : String(obj);
+            } catch (e) {
+                return String(obj);
+            }
         }
 
-        // Handle nested objects
+        // Handle normal objects (and class instances not identified as Decimal)
         const newObj: any = {};
         for (const [key, value] of Object.entries(obj)) {
             newObj[key] = serializeDecimal(value);

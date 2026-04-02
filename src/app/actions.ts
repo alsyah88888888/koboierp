@@ -5,6 +5,7 @@ import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { generateCortexXml } from "@/lib/cortex";
+import { serializeDecimal } from "@/lib/utils";
 /**
  * Purchase Request Actions (Pengajuan Pembelian)
  */
@@ -155,7 +156,14 @@ export async function deletePurchaseRequestAction(id: string) {
 }
 
 export async function getPurchaseRequestsAction() {
+    const session = await getServerSession(authOptions) as any;
+    if (!session?.user?.id) throw new Error("Unauthorized");
+
+    const isAdmin = session.user.role === "ADMIN";
+    const userFilter = isAdmin ? {} : { requestedById: session.user.id };
+
     return await prisma.purchaseRequest.findMany({
+        where: userFilter,
         include: {
             items: true,
             requestedBy: { select: { name: true } },
@@ -184,6 +192,9 @@ export async function createGoodsReceiptAction(data: {
     grandTotal?: number;
     items: { productId: string; quantity: number; purchasePrice: number; discount: number; uom?: string }[];
 }) {
+    const session = await getServerSession(authOptions) as any;
+    if (!session?.user?.id) throw new Error("Unauthorized");
+
     const txDate = data.date || new Date();
 
     try {
@@ -1343,8 +1354,20 @@ export async function getAccountingDataAction() {
 
     if (!session?.user) throw new Error("Unauthorized");
 
+    const isAdmin = session.user.role === "ADMIN";
+    const userFilter = isAdmin ? {} : {
+        OR: [
+            { goodsReceipt: { createdById: session.user.id } },
+            { salesDelivery: { createdById: session.user.id } },
+            { financeTransaction: { createdById: session.user.id } },
+            { purchaseReturn: { createdById: session.user.id } },
+            { salesReturn: { createdById: session.user.id } }
+        ]
+    };
+
     const [journals, accounts] = await Promise.all([
         prisma.journalEntry.findMany({
+            where: userFilter,
             orderBy: { date: 'desc' },
             include: {
                 account: true,
@@ -1360,7 +1383,14 @@ export async function getAccountingDataAction() {
 }
 
 export async function getFinanceTransactionsAction() {
+    const session = await getServerSession(authOptions) as any;
+    if (!session?.user?.id) throw new Error("Unauthorized");
+
+    const isAdmin = session.user.role === "ADMIN";
+    const userFilter = isAdmin ? {} : { createdById: session.user.id };
+
     return await prisma.financeTransaction.findMany({
+        where: userFilter,
         orderBy: { date: 'desc' },
         take: 200 // Show more for history
     });
@@ -1616,6 +1646,7 @@ export async function createProductAction(data: {
                 purchasePrice: data.purchasePrice || 0,
                 salesPrice: data.salesPrice || 0,
                 lowStockThreshold: data.lowStockThreshold || 10,
+                createdById: session.user.id,
             }
         });
         revalidatePath("/settings");
@@ -1833,6 +1864,7 @@ export async function createVendorAction(data: { name: string; email?: string; p
                 email: data.email || null,
                 phone: data.phone || null,
                 address: data.address || null,
+                createdById: session.user.id,
             }
         });
         revalidatePath("/settings");
@@ -1902,6 +1934,7 @@ export async function createCustomerAction(data: { name: string; email?: string;
                 email: data.email || null,
                 phone: data.phone || null,
                 address: data.address || null,
+                createdById: session.user.id,
             }
         });
         revalidatePath("/settings");
@@ -2023,6 +2056,12 @@ export async function deleteWarehouseAction(id: string) {
  * DASHBOARD & ANALYTICS: Summary Stats
  */
 export async function getDashboardSummaryAction() {
+    const session = await getServerSession(authOptions) as any;
+    if (!session?.user?.id) throw new Error("Unauthorized");
+
+    const isAdmin = session.user.role === "ADMIN";
+    const userFilter = isAdmin ? {} : { createdById: session.user.id };
+
     // 1. Calculations via Aggregations (Lighter & Faster)
     const [
         inventoryTotals,
@@ -2035,6 +2074,7 @@ export async function getDashboardSummaryAction() {
     ] = await Promise.all([
         // Asset Value (Group stocks)
         prisma.stock.findMany({
+            where: isAdmin ? {} : { product: { createdById: session.user.id } },
             select: {
                 quantity: true,
                 product: {
@@ -2054,6 +2094,13 @@ export async function getDashboardSummaryAction() {
         prisma.journalEntry.groupBy({
             by: ['type'],
             where: {
+                ...(isAdmin ? {} : {
+                    OR: [
+                        { goodsReceipt: { createdById: session.user.id } },
+                        { salesDelivery: { createdById: session.user.id } },
+                        { financeTransaction: { createdById: session.user.id } }
+                    ]
+                }),
                 account: { OR: [{ code: { startsWith: '101' } }, { code: { startsWith: '102' } }] }
             },
             _sum: { amount: true }
@@ -2061,27 +2108,47 @@ export async function getDashboardSummaryAction() {
         // Total Hutang (201)
         prisma.journalEntry.groupBy({
             by: ['type'],
-            where: { account: { code: '201' } },
+            where: { 
+                ...(isAdmin ? {} : {
+                    OR: [
+                        { goodsReceipt: { createdById: session.user.id } },
+                        { salesDelivery: { createdById: session.user.id } },
+                        { financeTransaction: { createdById: session.user.id } }
+                    ]
+                }),
+                account: { code: '201' } 
+            },
             _sum: { amount: true }
         }),
         // Total Piutang (105)
         prisma.journalEntry.groupBy({
             by: ['type'],
-            where: { account: { code: '105' } },
+            where: { 
+                ...(isAdmin ? {} : {
+                    OR: [
+                        { goodsReceipt: { createdById: session.user.id } },
+                        { salesDelivery: { createdById: session.user.id } },
+                        { financeTransaction: { createdById: session.user.id } }
+                    ]
+                }),
+                account: { code: '105' } 
+            },
             _sum: { amount: true }
         }),
         // Revenue (ALL SalesDelivery)
         prisma.salesDelivery.aggregate({
+            where: userFilter,
             _sum: { subtotal: true, totalDiscount: true }
         }),
         // Purchase Cost (Verified GoodsReceipt)
         prisma.goodsReceipt.aggregate({
-            where: { isVerified: true },
+            where: { ...userFilter, isVerified: true },
             _sum: { subtotal: true }
         }),
         // Operational Expenses (Code 6%) - Simplified grouping
         prisma.financeTransaction.aggregate({
             where: { 
+                ...userFilter,
                 journals: { some: { account: { code: { startsWith: '6' } } } }
             },
             _sum: { amount: true }
@@ -2093,7 +2160,7 @@ export async function getDashboardSummaryAction() {
     let totalStockQty = 0;
     const productStocks: Record<string, { qty: number, threshold: number }> = {};
 
-    inventoryTotals.forEach(s => {
+    inventoryTotals.forEach((s: any) => {
         const latestPrice = Number(s.product.receiptItems[0]?.purchasePrice || 0);
         assetValue += s.quantity * latestPrice;
         totalStockQty += s.quantity;
@@ -2121,20 +2188,28 @@ export async function getDashboardSummaryAction() {
     todayStart.setHours(0, 0, 0, 0);
 
     const [deliveries, receipts, expenses, countRequests, countDeliveries, purchaseVolRes] = await Promise.all([
-        prisma.salesDelivery.findMany({ select: { subtotal: true, totalDiscount: true, salesPerson: true } }),
+        prisma.salesDelivery.findMany({ 
+            where: userFilter,
+            select: { subtotal: true, totalDiscount: true, salesPerson: true } 
+        }),
         prisma.goodsReceipt.findMany({
-            where: { isVerified: true },
+            where: { ...userFilter, isVerified: true },
             select: { subtotal: true, salesPerson: true }
         }),
         prisma.financeTransaction.findMany({
-            where: { journals: { some: { account: { code: { startsWith: '6' } } } } },
+            where: { ...userFilter, journals: { some: { account: { code: { startsWith: '6' } } } } },
             select: { amount: true, transactionType: true, salesPerson: true }
         }),
-        prisma.purchaseRequest.count({ where: { createdAt: { gte: todayStart } } }),
-        prisma.salesDelivery.count({ where: { createdAt: { gte: todayStart } } }),
+        prisma.purchaseRequest.count({ 
+            where: { 
+                ...(isAdmin ? {} : { requestedById: session.user.id }), 
+                createdAt: { gte: todayStart } 
+            } 
+        }),
+        prisma.salesDelivery.count({ where: { ...userFilter, createdAt: { gte: todayStart } } }),
         prisma.goodsReceiptItem.aggregate({
             _sum: { quantity: true },
-            where: { receipt: { createdAt: { gte: todayStart } } }
+            where: { receipt: { ...userFilter, createdAt: { gte: todayStart } } }
         })
     ]);
 
@@ -2142,21 +2217,21 @@ export async function getDashboardSummaryAction() {
     const purchaseVol = Number(purchaseVolRes._sum?.quantity || 0);
 
     let revenueBC = 0, revenuePF = 0;
-    deliveries.forEach(d => {
+    deliveries.forEach((d: any) => {
         const net = Number(d.subtotal || 0) - Number(d.totalDiscount || 0);
         if (d.salesPerson === 'BC') revenueBC += net;
         else if (d.salesPerson === 'PF') revenuePF += net;
     });
 
     let purchaseBC = 0, purchasePF = 0;
-    receipts.forEach(r => {
+    receipts.forEach((r: any) => {
         const cost = Number(r.subtotal || 0);
         if (r.salesPerson === 'BC') purchaseBC += cost;
         else if (r.salesPerson === 'PF') purchasePF += cost;
     });
 
     let expBC = 0, expPF = 0;
-    expenses.forEach(t => {
+    expenses.forEach((t: any) => {
         const amt = (t.transactionType === "PAYMENT") ? Number(t.amount) : -Number(t.amount);
         if (t.salesPerson === 'BC') expBC += amt;
         else if (t.salesPerson === 'PF') expPF += amt;
@@ -2179,15 +2254,15 @@ export async function getDashboardSummaryAction() {
         lowStockCount: Number(lowStockCount || 0),
         activeOrdersToday: Number(activeOrdersToday || 0),
         purchaseVol: Number(purchaseVol || 0),
-        weeklyStats: await getWeeklyStats()
+        weeklyStats: await getWeeklyStats(userFilter)
     };
 
 
     console.log("Dashboard Summary successfully generated");
-    return JSON.parse(JSON.stringify(summary));
+    return serializeDecimal(summary);
 }
 
-async function getWeeklyStats() {
+async function getWeeklyStats(userFilter: any = {}) {
     const last7Days = [];
     for (let i = 6; i >= 0; i--) {
         const d = new Date();
@@ -2197,12 +2272,12 @@ async function getWeeklyStats() {
     }
 
     const sales = await prisma.salesDelivery.findMany({
-        where: { date: { gte: last7Days[0] } },
+        where: { ...userFilter, date: { gte: last7Days[0] } },
         select: { date: true, grandTotal: true }
     });
 
     const purchases = await prisma.goodsReceipt.findMany({
-        where: { date: { gte: last7Days[0] } },
+        where: { ...userFilter, date: { gte: last7Days[0] } },
         select: { date: true, subtotal: true }
     });
 
@@ -2230,7 +2305,13 @@ async function getWeeklyStats() {
  * WAREHOUSE CHECKER: Fetch Pending Verifications
  */
 export async function getUnverifiedReceiptsAction() {
-    const rawUnverified: any[] = await prisma.$queryRaw`SELECT id FROM GoodsReceipt WHERE isVerified = 0 ORDER BY createdAt DESC`;
+    const session = await getServerSession(authOptions) as any;
+    if (!session?.user?.id) throw new Error("Unauthorized");
+
+    const isAdmin = session.user.role === "ADMIN";
+    const userFilter = isAdmin ? "" : ` AND createdById = '${session.user.id}'`;
+
+    const rawUnverified: any[] = await prisma.$queryRawUnsafe(`SELECT id FROM GoodsReceipt WHERE isVerified = 0${userFilter} ORDER BY createdAt DESC`);
     const ids = rawUnverified.map(r => r.id);
 
     if (ids.length === 0) return [];
@@ -2248,12 +2329,18 @@ export async function getUnverifiedReceiptsAction() {
  * SETTINGS: Fetch All Master Data for management
  */
 export async function getMDAction() {
+    const session = await getServerSession(authOptions) as any;
+    if (!session?.user?.id) throw new Error("Unauthorized");
+
+    const isAdmin = session.user.role === "ADMIN";
+    const userFilter = isAdmin ? {} : { createdById: session.user.id };
+
     const [vendors, customers, warehouses, coa, products] = await Promise.all([
-        prisma.vendor.findMany({ orderBy: { name: 'asc' } }),
-        prisma.customer.findMany({ orderBy: { name: 'asc' } }),
-        prisma.warehouse.findMany({ orderBy: { name: 'asc' } }),
-        prisma.financeAccount.findMany({ orderBy: { code: 'asc' } }),
-        prisma.product.findMany({ orderBy: { name: 'asc' } }),
+        prisma.vendor.findMany({ where: userFilter, orderBy: { name: 'asc' } }),
+        prisma.customer.findMany({ where: userFilter, orderBy: { name: 'asc' } }),
+        prisma.warehouse.findMany({ orderBy: { name: 'asc' } }), // Warehouses usually shared
+        prisma.financeAccount.findMany({ orderBy: { code: 'asc' } }), // COA usually shared
+        prisma.product.findMany({ where: userFilter, orderBy: { name: 'asc' } }),
     ]);
 
     // Serialize balances for client components
@@ -2267,13 +2354,19 @@ export async function getMDAction() {
         balance: Number(c.balance)
     }));
 
-    return {
+    const serializedProducts = (products || []).map((p: any) => ({
+        ...p,
+        purchasePrice: Number(p.purchasePrice || 0),
+        salesPrice: Number(p.salesPrice || 0)
+    }));
+
+    return serializeDecimal({
         vendors: serializedVendors,
         customers: serializedCustomers,
         warehouses: warehouses || [],
         coa: coa || [],
-        products: products || []
-    };
+        products: serializedProducts
+    });
 }
 
 /**
@@ -2370,7 +2463,14 @@ export async function submitGoodsReceiptVerificationAction(data: {
  * WAREHOUSE CHECKER: Get all receipts for verification list
  */
 export async function getGoodsReceiptsAction() {
+    const session = await getServerSession(authOptions) as any;
+    if (!session?.user?.id) throw new Error("Unauthorized");
+
+    const isAdmin = session.user.role === "ADMIN";
+    const userFilter = isAdmin ? {} : { createdById: session.user.id };
+
     return await prisma.goodsReceipt.findMany({
+        where: userFilter,
         include: {
             items: {
                 include: {
@@ -2390,7 +2490,11 @@ export async function getPurchaseRequestSummaryAction() {
     const session = await getServerSession(authOptions) as any;
     if (!session?.user?.id) throw new Error("Unauthorized");
 
+    const isAdmin = session.user.role === "ADMIN";
+    const userFilter = isAdmin ? {} : { requestedById: session.user.id };
+
     const allRequests = await prisma.purchaseRequest.findMany({
+        where: userFilter,
         include: { items: true }
     });
 
@@ -2414,7 +2518,14 @@ export async function getPurchaseRequestSummaryAction() {
  */
 
 export async function getCortexXmlContentAction() {
+    const session = await getServerSession(authOptions) as any;
+    if (!session?.user?.id) throw new Error("Unauthorized");
+
+    const isAdmin = session.user.role === "ADMIN";
+    const userFilter = isAdmin ? {} : { createdById: session.user.id };
+
     const allSales = await (prisma.salesDelivery as any).findMany({
+        where: userFilter,
         include: { items: { include: { product: true } } },
         orderBy: { createdAt: 'desc' }
     });
@@ -2447,11 +2558,13 @@ export async function createPurchaseReturnAction(data: {
         }
         const returnNumber = `${prefix}${String(nextNum).padStart(3, '0')}`;
 
+        const session = await getServerSession(authOptions) as any;
         const ret = await tx.purchaseReturn.create({
             data: {
                 returnNumber,
                 receiptId: data.receiptId,
                 notes: data.notes,
+                createdById: session?.user?.id,
                 items: {
                     create: data.items.map(i => ({
                         productId: i.productId,
@@ -2572,11 +2685,13 @@ export async function createSalesReturnAction(data: {
         }
         const returnNumber = `${prefix}${String(nextNum).padStart(3, '0')}`;
 
+        const session = await getServerSession(authOptions) as any;
         const ret = await tx.salesReturn.create({
             data: {
                 returnNumber,
                 deliveryId: data.deliveryId,
                 notes: data.notes,
+                createdById: session?.user?.id,
                 items: {
                     create: data.items.map(i => ({
                         productId: i.productId,
@@ -2998,6 +3113,11 @@ export async function getNotificationsAction() {
     const session = await getServerSession(authOptions) as any;
     if (!session?.user?.id) return [];
 
+    const isAdmin = session.user.role === "ADMIN";
+    // Notifications are broadcast to all, but only filtered for users who have read them.
+    // However, if we want to isolate "system" notifications, we could.
+    // For now, let's keep notifications global as they are "broadcast".
+
     return await (prisma as any).notification.findMany({
         where: {
             NOT: {
@@ -3069,6 +3189,12 @@ revalidatePath("/");
  * DASHBOARD: Get Daily Report Data (Sales, Purchase, Ops)
  */
 export async function getDailyReportAction() {
+    const session = await getServerSession(authOptions) as any;
+    if (!session?.user?.id) throw new Error("Unauthorized");
+
+    const isAdmin = session.user.role === "ADMIN";
+    const userFilter = isAdmin ? {} : { createdById: session.user.id };
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
@@ -3077,7 +3203,7 @@ export async function getDailyReportAction() {
     const [sales, purchases, operational, requests] = await Promise.all([
         // Sales INPUTTED today
         prisma.salesDelivery.findMany({
-            where: { createdAt: { gte: today, lt: tomorrow } },
+            where: { ...userFilter, createdAt: { gte: today, lt: tomorrow } },
             select: {
                 id: true, deliveryNumber: true, buyerName: true, recipient: true, 
                 grandTotal: true, paymentStatus: true, createdAt: true, date: true,
@@ -3087,7 +3213,7 @@ export async function getDailyReportAction() {
         }),
         // Purchases INPUTTED today
         prisma.goodsReceipt.findMany({
-            where: { createdAt: { gte: today, lt: tomorrow } },
+            where: { ...userFilter, createdAt: { gte: today, lt: tomorrow } },
             select: {
                 id: true, receiptNumber: true, receivedFrom: true, grandTotal: true,
                 paymentStatus: true, createdAt: true, date: true,
@@ -3098,7 +3224,7 @@ export async function getDailyReportAction() {
         }),
         // Finance Transactions INPUTTED today
         prisma.financeTransaction.findMany({
-            where: { createdAt: { gte: today, lt: tomorrow } },
+            where: { ...userFilter, createdAt: { gte: today, lt: tomorrow } },
             select: {
                 id: true, description: true, bank: true, category: true, 
                 amount: true, createdAt: true, date: true, transactionType: true,
@@ -3108,7 +3234,10 @@ export async function getDailyReportAction() {
         }),
         // Purchase Requests INPUTTED today
         prisma.purchaseRequest.findMany({
-            where: { createdAt: { gte: today, lt: tomorrow } },
+            where: { 
+                ...(isAdmin ? {} : { requestedById: session.user.id }), 
+                createdAt: { gte: today, lt: tomorrow } 
+            },
             select: {
                 id: true, number: true, status: true, notes: true, createdAt: true,
                 requestedBy: { select: { name: true } }
@@ -3119,9 +3248,9 @@ export async function getDailyReportAction() {
 
     // Calculate Summary Totals
     const dailyStats = {
-        totalSales: sales.reduce((acc, s) => acc + Number(s.grandTotal || 0), 0),
-        totalPurchases: purchases.reduce((acc, p) => acc + Number(p.grandTotal || 0), 0),
-        totalOps: operational.reduce((acc, o) => acc + Number(o.amount || 0), 0),
+        totalSales: sales.reduce((acc: number, s: any) => acc + Number(s.grandTotal || 0), 0),
+        totalPurchases: purchases.reduce((acc: number, p: any) => acc + Number(p.grandTotal || 0), 0),
+        totalOps: operational.reduce((acc: number, o: any) => acc + Number(o.amount || 0), 0),
         countSales: sales.length,
         countPurchases: purchases.length,
         countOps: operational.length,
@@ -3137,7 +3266,7 @@ export async function getDailyReportAction() {
     };
 
     console.log("Daily Report successfully generated");
-    return JSON.parse(JSON.stringify(report));
+    return serializeDecimal(report);
 }
 
 /**

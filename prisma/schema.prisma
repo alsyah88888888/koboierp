@@ -30,6 +30,11 @@ model User {
   goodsReceipts    GoodsReceipt[]     @relation("GRCreatedBy")
   salesDeliveries  SalesDelivery[]    @relation("SDCreatedBy")
   financeTrans     FinanceTransaction[] @relation("FTCreatedBy")
+  products         Product[]          @relation("ProductCreatedBy")
+  vendors          Vendor[]           @relation("VendorCreatedBy")
+  customers        Customer[]         @relation("CustomerCreatedBy")
+  salesReturns     SalesReturn[]      @relation("SRCreatedBy")
+  purchaseReturns  PurchaseReturn[]   @relation("PRCreatedBy")
 
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -125,6 +130,9 @@ model Vendor {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   purchaseOrders PurchaseOrder[]
+
+  createdById     String?
+  createdBy       User?    @relation("VendorCreatedBy", fields: [createdById], references: [id])
 }
 
 model Customer {
@@ -142,6 +150,9 @@ model Customer {
   balance   Decimal  @default(0) // Piutang dari Customer
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  createdById     String?
+  createdBy       User?    @relation("CustomerCreatedBy", fields: [createdById], references: [id])
 }
 
 // --- PURCHASE MODULE ---
@@ -286,6 +297,9 @@ model PurchaseReturn {
   
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+
+  createdById     String?
+  createdBy       User?    @relation("PRCreatedBy", fields: [createdById], references: [id])
 }
 
 model PurchaseReturnItem {
@@ -361,6 +375,9 @@ model SalesReturn {
   
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+
+  createdById     String?
+  createdBy       User?    @relation("SRCreatedBy", fields: [createdById], references: [id])
 }
 
 model SalesReturnItem {
@@ -405,6 +422,9 @@ model Product {
   purchaseReturnItems PurchaseReturnItem[]
   salesReturnItems    SalesReturnItem[]
   movements StockMovement[]
+
+  createdById     String?
+  createdBy       User?    @relation("ProductCreatedBy", fields: [createdById], references: [id])
 }
 
 model Stock {

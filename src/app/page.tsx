@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import prisma from "@/lib/prisma";
 import { getDashboardSummaryAction, getDailyReportAction } from "@/app/actions";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, serializeDecimal } from "@/lib/utils";
 import { AdminDashboard } from "./AdminDashboard";
 import {
   Wallet,
@@ -33,10 +33,10 @@ export default async function DashboardPage() {
 
   try {
     const [summaryRes, reportRes, productsRes, recentJournal] = await Promise.all([
-      getDashboardSummaryAction().catch(e => { console.error("Summary Error:", e); return summary; }),
-      getDailyReportAction().catch(e => { console.error("Report Error:", e); return dailyReport; }),
-      prisma.product.findMany({ include: { stocks: true } }).catch(() => []),
-      prisma.journalEntry.findMany({ take: 5, orderBy: { date: 'desc' } }).catch(() => [])
+      getDashboardSummaryAction().then((res: any) => serializeDecimal(res)).catch((e: any) => { console.error("Summary Error:", e); return summary; }),
+      getDailyReportAction().then((res: any) => serializeDecimal(res)).catch((e: any) => { console.error("Report Error:", e); return dailyReport; }),
+      prisma.product.findMany({ include: { stocks: true } }).then((res: any) => serializeDecimal(res)).catch(() => []),
+      prisma.journalEntry.findMany({ take: 5, orderBy: { date: 'desc' } }).then((res: any) => serializeDecimal(res)).catch(() => [])
     ]);
 
     summary = summaryRes || summary;
