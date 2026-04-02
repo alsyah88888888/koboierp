@@ -1,0 +1,109 @@
+spawn ssh -o StrictHostKeyChecking=no root@76.13.20.44
+root@76.13.20.44's password: 
+Welcome to Ubuntu 24.04.4 LTS (GNU/Linux 6.8.0-106-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/pro
+
+ System information as of Thu Apr  2 18:56:19 UTC 2026
+
+  System load:  0.0               Processes:             107
+  Usage of /:   7.6% of 47.39GB   Users logged in:       1
+  Memory usage: 13%               IPv4 address for eth0: 76.13.20.44
+  Swap usage:   0%                IPv6 address for eth0: 2a02:4780:59:daf6::1
+
+ * Strictly confined Kubernetes makes edge and IoT secure. Learn how MicroK8s
+   just raised the bar for easy, resilient and secure K8s cluster deployment.
+
+   https://ubuntu.com/engage/secure-kubernetes-at-the-edge
+
+Expanded Security Maintenance for Applications is not enabled.
+
+22 updates can be applied immediately.
+1 of these updates is a standard security update.
+To see these additional updates run: apt list --upgradable
+
+Enable ESM Apps to receive additional future security updates.
+See https://ubuntu.com/esm or run: sudo pro status
+
+
+1 updates could not be installed automatically. For more details,
+see /var/log/unattended-upgrades/unattended-upgrades.log
+
+Last login: Thu Apr  2 18:38:52 2026 from 202.51.197.74
+[?2004h]0;root@srv1530496: ~root@srv1530496:~# cd ~/erp && git pull origin main && rm -rf .next && npm run build && pm2 restart all --update-env
+[?2004lremote: Enumerating objects: 35, done.[K
+remote: Counting objects:   2% (1/35)[Kremote: Counting objects:   5% (2/35)[Kremote: Counting objects:   8% (3/35)[Kremote: Counting objects:  11% (4/35)[Kremote: Counting objects:  14% (5/35)[Kremote: Counting objects:  17% (6/35)[Kremote: Counting objects:  20% (7/35)[Kremote: Counting objects:  22% (8/35)[Kremote: Counting objects:  25% (9/35)[Kremote: Counting objects:  28% (10/35)[Kremote: Counting objects:  31% (11/35)[Kremote: Counting objects:  34% (12/35)[Kremote: Counting objects:  37% (13/35)[Kremote: Counting objects:  40% (14/35)[Kremote: Counting objects:  42% (15/35)[Kremote: Counting objects:  45% (16/35)[Kremote: Counting objects:  48% (17/35)[Kremote: Counting objects:  51% (18/35)[Kremote: Counting objects:  54% (19/35)[Kremote: Counting objects:  57% (20/35)[Kremote: Counting objects:  60% (21/35)[Kremote: Counting objects:  62% (22/35)[Kremote: Counting objects:  65% (23/35)[Kremote: Counting objects:  68% (24/35)[Kremote: Counting objects:  71% (25/35)[Kremote: Counting objects:  74% (26/35)[Kremote: Counting objects:  77% (27/35)[Kremote: Counting objects:  80% (28/35)[Kremote: Counting objects:  82% (29/35)[Kremote: Counting objects:  85% (30/35)[Kremote: Counting objects:  88% (31/35)[Kremote: Counting objects:  91% (32/35)[Kremote: Counting objects:  94% (33/35)[Kremote: Counting objects:  97% (34/35)[Kremote: Counting objects: 100% (35/35)[Kremote: Counting objects: 100% (35/35), done.[K
+remote: Compressing objects:  14% (1/7)[Kremote: Compressing objects:  28% (2/7)[Kremote: Compressing objects:  42% (3/7)[Kremote: Compressing objects:  57% (4/7)[Kremote: Compressing objects:  71% (5/7)[Kremote: Compressing objects:  85% (6/7)[Kremote: Compressing objects: 100% (7/7)[Kremote: Compressing objects: 100% (7/7), done.[K
+remote: Total 29 (delta 22), reused 29 (delta 22), pack-reused 0 (from 0)[K
+Unpacking objects:   3% (1/29)Unpacking objects:   6% (2/29)Unpacking objects:  10% (3/29)Unpacking objects:  13% (4/29)Unpacking objects:  17% (5/29)Unpacking objects:  20% (6/29)Unpacking objects:  24% (7/29)Unpacking objects:  27% (8/29)Unpacking objects:  31% (9/29)Unpacking objects:  34% (10/29)Unpacking objects:  37% (11/29)Unpacking objects:  41% (12/29)Unpacking objects:  44% (13/29)Unpacking objects:  48% (14/29)Unpacking objects:  51% (15/29)Unpacking objects:  55% (16/29)Unpacking objects:  58% (17/29)Unpacking objects:  62% (18/29)Unpacking objects:  65% (19/29)Unpacking objects:  68% (20/29)Unpacking objects:  72% (21/29)Unpacking objects:  75% (22/29)Unpacking objects:  79% (23/29)Unpacking objects:  82% (24/29)Unpacking objects:  86% (25/29)Unpacking objects:  89% (26/29)Unpacking objects:  93% (27/29)Unpacking objects:  96% (28/29)Unpacking objects: 100% (29/29)Unpacking objects: 100% (29/29), 7.01 KiB | 512.00 KiB/s, done.
+From https://github.com/alsyah88888888/koboierp
+ * branch            main       -> FETCH_HEAD
+   7c667fc..9b13b1d  main       -> origin/main
+Updating 7c667fc..9b13b1d
+Fast-forward
+ check_deploy.exp          | 14 [32m++[m
+ check_git_log.exp         | 14 [32m++[m
+ check_sales_logs.exp      |  8 [32m+[m
+ deploy_fix.exp            | 14 [32m++[m
+ deploy_fix_v2.exp         | 14 [32m++[m
+ deploy_result.log         | 44 [32m++++[m
+ deploy_v2.log             | 71 [32m+++++++[m
+ get_error_logs.exp        |  8 [32m+[m
+ get_more_logs.exp         |  8 [32m+[m
+ run_remote.exp            | 17 [32m++[m
+ run_remote2.exp           | 17 [32m++[m
+ run_remote3.exp           |  8 [32m+[m
+ run_remote4.exp           | 11 [32m+[m
+ run_remote5.exp           | 11 [32m+[m
+ run_remote6.exp           | 11 [32m+[m
+ run_remote7.exp           | 33 [32m+++[m
+ .../SalesDashboard.tsx    |  4 [32m+[m[31m-[m
+ .../sales/SalesModal.tsx  | 12 [32m+[m[31m-[m
+ ssh.log                   |  3 [32m+[m
+ ssh2.log                  | 12 [32m++[m
+ ssh3.log                  | 10 [32m+[m
+ ssh_full.log              | 51 [32m+++++[m
+ 22 files changed, 387 insertions(+), 8 deletions(-)
+ create mode 100644 check_deploy.exp
+ create mode 100644 check_git_log.exp
+ create mode 100644 check_sales_logs.exp
+ create mode 100644 deploy_fix.exp
+ create mode 100644 deploy_fix_v2.exp
+ create mode 100644 deploy_result.log
+ create mode 100644 deploy_v2.log
+ create mode 100644 get_error_logs.exp
+ create mode 100644 get_more_logs.exp
+ create mode 100644 run_remote.exp
+ create mode 100644 run_remote2.exp
+ create mode 100644 run_remote3.exp
+ create mode 100644 run_remote4.exp
+ create mode 100644 run_remote5.exp
+ create mode 100644 run_remote6.exp
+ create mode 100644 run_remote7.exp
+ create mode 100644 ssh.log
+ create mode 100644 ssh2.log
+ create mode 100644 ssh3.log
+ create mode 100644 ssh_full.log
+
+> erp@0.1.0 build
+> prisma generate && next build
+
+[1G[0K[2mLoaded Prisma config from prisma.config.ts.
+[22m
+Prisma config detected, skipping environment variable loading.
+[2mPrisma schema loaded from prisma/schema.prisma[22m
+
+✔ Generated [1mPrisma Client[22m (v6.19.2)[2m to ./node_modules/@prisma/client[22m in 456ms
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+Tip: Need your database queries to be 1000x faster? Accelerate offers you that and more: https://pris.ly/tip-2-accelerate
+
+[1m[38;2;173;127;168m▲ Next.js 16.2.1[39m[22m (Turbopack)
+- Environments: .env
+
+[37m[1m [22m[39m Creating an optimized production build ...
+[32m[1m✓[22m[39m Compiled successfully in 20.4s
+[?25l[37m[1m [22m[39m Running TypeScript  [36m.[39m[2K[1G[37m[1m [22m[39m Running TypeScript  [36m..[39m[2K[1G[37m[1m [22m[39m Running TypeScript  [36m...[39m[2K[1G[37m[1m [22m[39m Running TypeScript  [36m.[39m[2K[1G[37m[1m [22m[39m Running TypeScript  [36m..[39m[2K[1G[37m[1m [22m[39m Running TypeScript  [36m...[39m[2K[1G[37m[1m [22m[39m Running TypeScript  [36m.[39m[2K[1G[37m[1m [22m[39m Running TypeScript  [36m..[39m[2K[1G[37m[1m [22m[39m Running TypeScript  [36m...[39m[2K[1G[37m[1m [22m[39m Running TypeScript  [36m.[39m[2K[1G[37m[1m [22m[39m Running TypeScript  [36m..[39m[2K[1G[37m[1m [22m[39m Running TypeScript  [36m...[39m[2K[1G[37m[1m [22m[39m Running TypeScript  [36m.[39m[2K[1G[37m[1m [22m[39m Running TypeScript  [36m..[39m[2K[1G[37m[1m [22m[39m Running TypeScript  [36m...[39m[2K[1G[37m[1m [22m[39m Running TypeScript  [36m.[39m[2K[1G[37m[1m [22m[39m Running TypeScript  [36m..[39m[2K[1G[37m[1m [22m[39m Running TypeScript  [36m...[39m[2K[1G[37m[1m [22m[39m Running TypeScript  [36m.[39m[2K[1G[37m[1m [22m[39m Running TypeScript  [36m..[39m[2K[1G[37m[1m [22m[39m Running TypeScript  [36m...[39m[2K[1G[37m[1m [22m[39m Running TypeScript  [36m.[39m[2K[1G[37m[1m [22m[39m Running TypeScript  [36m..[39m[2K[1G[37m[1m [22m[39m Running TypeScript  [36m...[39m[2K[1G[37m[1m [22m[39m Running TypeScript  [36m.[39m[2K[1G[37m[1m [22m[39m Running TypeScript  [36m..[39m[2K[1G[37m[1m [22m[39m Running TypeScript  [36m...[39m[2K[1G[37m[1m [22m[39m Running TypeScript  [36m.[39m[2K[1G[37m[1m [22m[39m Running TypeScript  [36m..[39m[2K[1G[37m[1m [22m[39m Running TypeScript  [36m...[39m[2K[1G[37m[1m [22m[39m Running TypeScript  [36m.[39m[2K[1G[37m[1m [22m[39m Running TypeScript  [36m..[39m[2K[1G[37m[1m [22m[39m Running TypeScript  [36m...[39m[2K[1G[37m[1m [22m[39m Running TypeScript  [36m.[39m[2K[1G[37m[1m [22m[39m Running TypeScript  [36m..[39m[2K[1G[37m[1m [22m[39m Running TypeScript  [36m...[39m[2K[1G[37m[1m [22m[39m Running TypeScript  [36m.[39m[2K[1G[37m[1m [22m[39m Running TypeScript  [36m..[39m[2K[1G[37m[1m [22m[39m Running TypeScript  [36m...[39m[2K[1G[37m[1m [22m[39m Running TypeScript  [36m.[39m
