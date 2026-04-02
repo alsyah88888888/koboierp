@@ -48,11 +48,16 @@ export default async function SalesPage() {
         orderBy: { name: 'asc' }
     }).catch(() => []));
 
+    let expenseWhere = 'a.code LIKE \'6%\'';
+    if (!isAdmin) {
+        expenseWhere += ` AND (t."salesPerson" = 'BC' OR t."createdById" = '${session?.user?.id}') AND t."salesPerson" != 'PF'`;
+    }
+
     const salesExpenses = serializeDecimal(await prisma.$queryRawUnsafe(`
         SELECT DISTINCT ON (t.id) t.*, a.code as "accountCode" FROM "FinanceTransaction" t
         JOIN "JournalEntry" j ON t.id = j."transactionId"
         JOIN "FinanceAccount" a ON j."accountId" = a.id
-        WHERE a.code LIKE '6%'
+        WHERE ${expenseWhere}
         ORDER BY t.id
     `).catch(() => [])) as any[];
 
