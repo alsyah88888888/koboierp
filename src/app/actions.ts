@@ -2130,7 +2130,12 @@ export async function getDashboardSummaryAction() {
         }),
         // Revenue (SalesDelivery filtered by sales code for non-admins)
         prisma.salesDelivery.aggregate({
-            where: isAdmin ? {} : { salesPerson: "BC" },
+            where: isAdmin ? {} : { 
+                OR: [
+                    { salesPerson: session.user.prefix || null },
+                    { salesPerson: null }
+                ]
+            },
             _sum: { subtotal: true, totalDiscount: true }
         }),
         // Purchase Cost (Verified GoodsReceipt)
