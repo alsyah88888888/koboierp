@@ -1,5 +1,5 @@
 import type { PrismaClient as PrismaClientType } from "@prisma/client";
-const { PrismaClient } = process.env.DATABASE_URL?.startsWith("file:")
+const { PrismaClient } = (process.env.DATABASE_URL?.startsWith("file:") && !process.env.NEXT_PHASE)
   ? require("@prisma/client-sqlite")
   : require("@prisma/client");
 
