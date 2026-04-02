@@ -304,186 +304,206 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
     const totalPiutang = Math.abs(arAccount ? arAccount.balance : 0);
 
     return (
-        <div className="space-y-6">
-            <div className="flex flex-col md:flex-row justify-between items-stretch md:items-end gap-4 hide-print mb-4 px-1">
-                <div className="flex flex-col sm:flex-row flex-wrap gap-3 justify-center md:justify-end w-full">
+        <div className="space-y-8 pb-16 animate-fade-up">
+            {/* Header Actions */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 px-1">
+                <div>
+                    <h1 className="text-2xl font-black text-slate-900 tracking-tight uppercase">Capital & Treasury</h1>
+                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-1">Financial oversight and ledger control</p>
+                </div>
+                <div className="flex flex-wrap gap-3 w-full md:w-auto">
                     <button
                         onClick={handlePreview}
-                        className="bg-white border-2 border-emerald-600 text-emerald-600 px-6 py-2.5 rounded-xl flex items-center justify-center gap-2 hover:bg-emerald-50 transition-all font-bold shadow-sm active:scale-95 flex-1 sm:flex-none"
+                        className="erp-btn-secondary !bg-white/80 backdrop-blur-md flex-1 md:flex-none"
                     >
-                        <Eye className="h-5 w-5" />
-                        <span>Preview Laporan</span>
+                        <Eye className="h-4 w-4" />
+                        <span>Preview</span>
                     </button>
                     <button
                         onClick={handleExport}
-                        className="bg-emerald-600 text-white px-6 py-2.5 rounded-xl flex items-center justify-center gap-2 hover:bg-emerald-700 shadow-lg shadow-emerald-200 transition-all active:scale-95 font-bold flex-1 sm:flex-none"
+                        className="erp-btn-primary !bg-emerald-600 hover:!bg-emerald-700 shadow-emerald-200 flex-1 md:flex-none"
                     >
-                        <Download className="h-5 w-5" />
-                        <span>Export Excel</span>
+                        <Download className="h-4 w-4" />
+                        <span>Export</span>
                     </button>
                     {activeTab === "ar" && (
                         <button
                             onClick={handleExportCortex}
-                            className="bg-orange-600 text-white px-6 py-2.5 rounded-xl flex items-center justify-center gap-2 hover:bg-orange-700 shadow-lg shadow-orange-200 transition-all active:scale-95 font-bold animate-in fade-in flex-1 sm:flex-none"
+                            className="erp-btn-primary !bg-orange-600 hover:!bg-orange-700 shadow-orange-200 flex-1 md:flex-none"
                         >
-                            <FileCode2 className="h-5 w-5" />
-                            <span>Export Cortex</span>
+                            <FileCode2 className="h-4 w-4" />
+                            <span>Cortex CSV</span>
                         </button>
                     )}
                     <button
                         onClick={() => setShowModal(true)}
-                        className="bg-primary text-white px-6 py-2.5 rounded-xl flex items-center justify-center gap-2 hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all active:scale-95 font-bold flex-1 sm:flex-none"
+                        className="erp-btn-primary flex-1 md:flex-none"
                     >
-                        <Plus className="h-5 w-5 text-white" />
-                        <span className="text-white">Input Transaksi</span>
+                        <Plus className="h-4 w-4" />
+                        <span>New Entry</span>
                     </button>
                 </div>
             </div>
 
-            <div className="hide-print">
-                <DashboardStats />
-            </div>
-
-            {/* Quick Stats Hutang/Piutang */}
-            <div className="grid gap-4 md:grid-cols-2 hide-print">
-                <div className="p-6 rounded-xl border bg-card shadow-sm border-l-4 border-l-red-500">
-                    <p className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">Total Hutang (AP)</p>
-                    <p className="text-2xl font-black mt-1 text-red-600">{formatCurrency(totalHutang)}</p>
-                </div>
-                <div className="p-6 rounded-xl border bg-card shadow-sm border-l-4 border-l-emerald-500">
-                    <p className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">Total Piutang (AR)</p>
-                    <p className="text-2xl font-black mt-1 text-emerald-600">{formatCurrency(totalPiutang)}</p>
-                </div>
-            </div>
-
-            {/* Tabs */}
-            <div className="flex overflow-x-auto whitespace-nowrap gap-1 border-b hide-print custom-scrollbar scrollbar-hide">
-                <button
-                    onClick={() => setActiveTab("ledger")}
-                    className={cn(
-                        "px-6 py-3 text-sm font-bold transition-all border-b-2 shrink-0",
-                        activeTab === "ledger" ? "border-primary text-primary" : "border-transparent text-slate-400 hover:text-slate-600"
-                    )}
-                >
-                    Jurnal & Ledger
-                </button>
-                <button
-                    onClick={() => setActiveTab("ap")}
-                    className={cn(
-                        "px-6 py-3 text-sm font-bold transition-all border-b-2 shrink-0",
-                        activeTab === "ap" ? "border-primary text-primary" : "border-transparent text-slate-400 hover:text-slate-600"
-                    )}
-                >
-                    Hutang & Verifikasi (AP)
-                </button>
-                <button
-                    onClick={() => setActiveTab("ar")}
-                    className={cn(
-                        "px-6 py-3 text-sm font-bold transition-all border-b-2 shrink-0",
-                        activeTab === "ar" ? "border-primary text-primary" : "border-transparent text-slate-400 hover:text-slate-600"
-                    )}
-                >
-                    Piutang & Verifikasi (AR)
-                </button>
-                <button
-                    onClick={() => setActiveTab("checker")}
-                    className={cn(
-                        "px-6 py-3 text-sm font-bold transition-all border-b-2 flex items-center gap-2 shrink-0",
-                        activeTab === "checker" ? "border-primary text-primary" : "border-transparent text-slate-400 hover:text-slate-600"
-                    )}
-                >
-                    Penerimaan (Gudang)
-                    {unverifiedReceipts.length > 0 && <span className="bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center">{unverifiedReceipts.length}</span>}
-                </button>
-                <button
-                    onClick={() => setActiveTab("purchase_requests")}
-                    className={cn(
-                        "px-6 py-3 text-sm font-bold transition-all border-b-2 flex items-center gap-2 shrink-0",
-                        activeTab === "purchase_requests" ? "border-primary text-primary" : "border-transparent text-slate-400 hover:text-slate-600"
-                    )}
-                >
-                    Pengajuan Pembelian
-                    {pendingPurchaseRequests.length > 0 && <span className="bg-orange-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center">{pendingPurchaseRequests.length}</span>}
-                </button>
-                <button
-                    onClick={() => setActiveTab("history")}
-                    className={cn(
-                        "px-6 py-3 text-sm font-bold transition-all border-b-2 shrink-0",
-                        activeTab === "history" ? "border-primary text-primary" : "border-transparent text-slate-400 hover:text-slate-600"
-                    )}
-                >
-                    Riwayat Transaksi
-                </button>
-            </div>
-
-            {/* Tab Content */}
-            <div className="rounded-xl border bg-card shadow-sm">
-                <div className="p-6 border-b flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <h3 className="text-lg font-semibold text-primary capitalize">
-                        {activeTab === "ledger" ? "Data Jurnal & Ledger" :
-                            activeTab === "ap" ? "Buku Pembantu Hutang & Pelunasan" :
-                                activeTab === "ar" ? "Buku Pembantu Piutang & Pelunasan" :
-                                    activeTab === "checker" ? "Penerimaan Menunggu Checker" :
-                                        activeTab === "purchase_requests" ? "Pengajuan Pembelian (Menunggu Finance)" :
-                                            "Riwayat Input Transaksi Keuangan"}
-                    </h3>
-                    <div className="relative w-full md:w-80">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <input
-                            value={searchTerm}
-                            onChange={e => setSearchTerm(e.target.value)}
-                            placeholder="Cari..."
-                            className="w-full pl-10 pr-4 py-2 bg-muted/50 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-                        />
+            {/* Quick Stats Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="erp-card p-6 border-l-4 border-l-rose-500 bg-white/50">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Liabilities (AP)</p>
+                    <h3 className="text-2xl font-black text-rose-600 tracking-tighter">{formatCurrency(totalHutang)}</h3>
+                    <div className="mt-3 flex items-center gap-2">
+                        <span className="h-1.5 w-1.5 bg-rose-500 rounded-full animate-pulse" />
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{pendingPurchases.length} Unpaid Invoices</span>
                     </div>
                 </div>
+                <div className="erp-card p-6 border-l-4 border-l-emerald-500 bg-white/50">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Receivables (AR)</p>
+                    <h3 className="text-2xl font-black text-emerald-600 tracking-tighter">{formatCurrency(totalPiutang)}</h3>
+                    <div className="mt-3 flex items-center gap-2">
+                        <span className="h-1.5 w-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{pendingSales.length} Active Credits</span>
+                    </div>
+                </div>
+                <div className="erp-card p-6 border-l-4 border-l-blue-500 bg-white/50">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Logistics Pendings</p>
+                    <h3 className="text-2xl font-black text-blue-600 tracking-tighter">{unverifiedReceipts.length} <span className="text-xs text-slate-400 font-bold ml-1">Receipts</span></h3>
+                    <div className="mt-3 flex items-center gap-2 underline underline-offset-4 decoration-blue-100 cursor-pointer" onClick={() => setActiveTab("checker")}>
+                        <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Verify Goods Receipt</span>
+                    </div>
+                </div>
+                <div className="erp-card p-6 border-l-4 border-l-amber-500 bg-white/50">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Purchase Requests</p>
+                    <h3 className="text-2xl font-black text-amber-600 tracking-tighter">{pendingPurchaseRequests.length} <span className="text-xs text-slate-400 font-bold ml-1">Requests</span></h3>
+                    <div className="mt-3 flex items-center gap-2 underline underline-offset-4 decoration-amber-100 cursor-pointer" onClick={() => setActiveTab("purchase_requests")}>
+                        <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest">Open Approvals</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Main Content Area */}
+            <div className="space-y-6">
+                {/* Navigation Tabs */}
+                <div className="flex overflow-x-auto whitespace-nowrap gap-2 bg-slate-100/50 p-1.5 rounded-2xl border border-slate-200/50 hide-print custom-scrollbar scrollbar-hide">
+                    {[
+                        { id: "ledger", label: "Ledger", icon: FileText, count: 0 },
+                        { id: "ap", label: "AP (Hutang)", icon: ArrowDownCircle, count: pendingPurchases.length + pendingReturns.length },
+                        { id: "ar", label: "AR (Piutang)", icon: ArrowUpCircle, count: pendingSales.length + pendingSalesReturns.length },
+                        { id: "checker", label: "Checker", icon: CheckCircle2, count: unverifiedReceipts.length },
+                        { id: "purchase_requests", label: "PR Approvals", icon: Wallet, count: pendingPurchaseRequests.length },
+                        { id: "history", label: "History", icon: Clock, count: 0 },
+                    ].map((tab) => (
+                        <button
+                            key={tab.id}
+                            onClick={() => setActiveTab(tab.id as any)}
+                            className={cn(
+                                "flex items-center gap-2.5 px-6 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all duration-300",
+                                activeTab === tab.id 
+                                    ? "bg-white text-primary shadow-sm border border-slate-200/50 scale-100" 
+                                    : "text-slate-500 hover:text-slate-900 hover:bg-white/50"
+                            )}
+                        >
+                            <tab.icon className={cn("h-4 w-4", activeTab === tab.id ? "text-primary" : "text-slate-400")} />
+                            {tab.label}
+                            {tab.count > 0 && (
+                                <span className={cn(
+                                    "px-1.5 py-0.5 rounded-md text-[9px]",
+                                    activeTab === tab.id ? "bg-primary/10 text-primary" : "bg-slate-200 text-slate-500"
+                                )}>
+                                    {tab.count}
+                                </span>
+                            )}
+                        </button>
+                    ))}
+                </div>
+
+                {/* Search & Results Panel */}
+                <div className="erp-card overflow-hidden border-slate-200/40">
+                    <div className="p-6 md:p-8 border-b border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-white/50">
+                        <div>
+                            <h3 className="text-lg font-black text-slate-900 tracking-tight uppercase">
+                                {activeTab === "ledger" ? "General Ledger Feed" :
+                                 activeTab === "ap" ? "Accounts Payable Control" :
+                                 activeTab === "ar" ? "Accounts Receivable Control" :
+                                 activeTab === "checker" ? "Logistics Verification Gate" :
+                                 activeTab === "purchase_requests" ? "PR Approval Queue" :
+                                 "Master Transaction History"}
+                            </h3>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Filtering {
+                                activeTab === "ledger" ? filteredLedger.length :
+                                activeTab === "ap" ? filteredPurchases.length :
+                                activeTab === "ar" ? filteredSales.length :
+                                activeTab === "checker" ? unverifiedReceipts.length :
+                                activeTab === "purchase_requests" ? filteredPurchaseRequests.length :
+                                0
+                            } records</p>
+                        </div>
+                        <div className="relative w-full md:w-96 group">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
+                            <input
+                                value={searchTerm}
+                                onChange={e => setSearchTerm(e.target.value)}
+                                placeholder="Search by description, ref, or entity..."
+                                className="w-full pl-12 pr-6 py-3.5 bg-slate-50 border-2 border-slate-100 rounded-2xl text-xs font-bold text-slate-600 uppercase tracking-widest outline-none focus:border-primary/50 focus:bg-white transition-all shadow-inner"
+                            />
+                        </div>
+                    </div>
 
                 {activeTab === "ledger" && (
                     <div className="overflow-x-auto custom-scrollbar">
-                        <table className="w-full text-sm text-left min-w-[1000px] table-fixed">
-                            <thead className="bg-muted/30 text-muted-foreground border-b text-xs uppercase tracking-wider">
+                        {/* Desktop Table View */}
+                        <table className="w-full text-sm text-left min-w-[1000px] table-fixed hidden md:table">
+                            <thead className="bg-slate-50/50 text-slate-400 border-b border-slate-100 text-[10px] uppercase tracking-[0.2em] font-black">
                                 <tr>
-                                    <th className="px-6 py-4 w-32">Tanggal</th>
-                                    <th className="px-6 py-4">Deskripsi / Ref</th>
-                                    <th className="px-6 py-4 w-48">Akun</th>
-                                    <th className="px-6 py-4 w-28">Tipe</th>
-                                    <th className="px-6 py-4 text-right w-40">Nominal</th>
-                                    {isAdminOrFinance && <th className="px-6 py-4 text-center w-20">Aksi</th>}
+                                    <th className="px-8 py-5 w-32 tracking-[0.3em]">Date</th>
+                                    <th className="px-8 py-5">Description / Ledger Ref</th>
+                                    <th className="px-8 py-5 w-60">Account</th>
+                                    <th className="px-8 py-5 w-28 text-center">Flow</th>
+                                    <th className="px-8 py-5 text-right w-44">Magnitude</th>
+                                    {isAdminOrFinance && <th className="px-8 py-5 text-center w-24">Actions</th>}
                                 </tr>
                             </thead>
-                            <tbody className="divide-y text-slate-700">
+                            <tbody className="divide-y divide-slate-50 text-slate-700">
                                 {filteredLedger.map((tx: any) => (
-                                    <tr key={tx.id} className="hover:bg-muted/20 transition-colors">
-                                        <td className="px-6 py-4 text-muted-foreground whitespace-nowrap">
-                                            {isClient && tx.date ? format(new Date(tx.date), "dd/MM/yyyy") : "..."}
+                                    <tr key={tx.id} className="hover:bg-slate-50/80 transition-all group/row">
+                                        <td className="px-8 py-5 text-slate-400 font-bold tabular-nums">
+                                            {isClient && tx.date ? format(new Date(tx.date), "dd/MM/yy") : "..."}
                                         </td>
-                                        <td className="px-6 py-4">
-                                            <div className="font-medium truncate max-w-[400px]" title={tx.description}>{tx.description}</div>
+                                        <td className="px-8 py-5">
+                                            <div className="font-black text-slate-900 tracking-tight leading-none mb-1.5 truncate max-w-[400px]" title={tx.description}>{tx.description}</div>
                                             {tx.transaction && (
-                                                <div className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1 font-mono uppercase">
-                                                    <FileText className="h-3 w-3" /> {tx.transaction.bank} | {tx.transaction.referenceNumber || 'Cash'}
+                                                <div className="text-[9px] text-slate-400 font-black uppercase tracking-widest flex items-center gap-2">
+                                                    <div className="h-1 w-1 bg-slate-300 rounded-full" />
+                                                    {tx.transaction.bank} <span className="text-slate-300">/</span> {tx.transaction.referenceNumber || 'CASH'}
                                                 </div>
                                             )}
                                         </td>
-                                        <td className="px-6 py-4 text-xs">
-                                            <span className="bg-muted px-2 py-0.5 rounded uppercase font-bold text-[10px]">
-                                                {tx.account?.name}
-                                            </span>
+                                        <td className="px-8 py-5">
+                                            <div className="inline-flex items-center gap-2 px-3 py-1 bg-slate-100/50 rounded-lg border border-slate-200/40">
+                                                <div className="h-1.5 w-1.5 rounded-full bg-primary/40" />
+                                                <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">
+                                                    {tx.account?.name}
+                                                </span>
+                                            </div>
                                         </td>
-                                        <td className="px-6 py-4">
-                                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${tx.type === "DEBIT" ? "bg-emerald-500/10 text-emerald-600" : "bg-blue-500/10 text-blue-600"}`}>
+                                        <td className="px-8 py-5 text-center">
+                                            <span className={cn(
+                                                "px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border",
+                                                tx.type === "DEBIT" ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-blue-50 text-blue-600 border-blue-100"
+                                            )}>
                                                 {tx.type}
                                             </span>
                                         </td>
-                                        <td className={`px-6 py-4 text-right font-bold ${tx.type === "DEBIT" ? "text-emerald-600" : "text-blue-600"}`}>
+                                        <td className={cn(
+                                            "px-8 py-5 text-right font-black tabular-nums tracking-tighter text-base",
+                                            tx.type === "DEBIT" ? "text-emerald-500" : "text-slate-900"
+                                        )}>
                                             {formatCurrency(Number(tx.amount))}
                                         </td>
                                         {isAdminOrFinance && (
-                                            <td className="px-6 py-4 text-center">
+                                            <td className="px-8 py-5 text-center">
                                                 <button
                                                     onClick={() => handleDelete(tx.transactionId || tx.id, !tx.transactionId)}
-                                                    className="p-1.5 text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                                    title={tx.transactionId ? "Hapus Transaksi" : "Hapus Entry Jurnal"}
+                                                    className="p-2.5 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
+                                                    title={tx.transactionId ? "De-authorize Transaction" : "Prune Ledger Entry"}
                                                 >
                                                     <Trash2 className="h-4 w-4" />
                                                 </button>
@@ -493,73 +513,124 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                 ))}
                             </tbody>
                         </table>
+
+                        {/* Mobile Card View */}
+                        <div className="md:hidden p-4 space-y-4">
+                            {filteredLedger.map((tx: any) => (
+                                <div key={tx.id} className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm active:scale-[0.98] transition-transform">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div className="flex flex-col gap-1">
+                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                                                {isClient && tx.date ? format(new Date(tx.date), "dd MMM yyyy") : "..."}
+                                            </span>
+                                            <span className={cn(
+                                                "px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest border w-fit",
+                                                tx.type === "DEBIT" ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-blue-50 text-blue-600 border-blue-100"
+                                            )}>
+                                                {tx.type}
+                                            </span>
+                                        </div>
+                                        <div className="text-right">
+                                            <div className={cn(
+                                                "text-lg font-black tracking-tighter tabular-nums",
+                                                tx.type === "DEBIT" ? "text-emerald-500" : "text-slate-900"
+                                            )}>
+                                                {formatCurrency(Number(tx.amount))}
+                                            </div>
+                                            <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest">{tx.account?.name}</span>
+                                        </div>
+                                    </div>
+                                    <div className="mb-4">
+                                        <div className="font-bold text-slate-900 text-sm leading-tight mb-2">{tx.description}</div>
+                                        {tx.transaction && (
+                                            <div className="text-[10px] text-slate-400 font-bold bg-slate-50 p-2 rounded-lg border border-slate-100/50">
+                                                Ref: {tx.transaction.bank} / {tx.transaction.referenceNumber || 'CASH'}
+                                            </div>
+                                        )}
+                                    </div>
+                                    {isAdminOrFinance && (
+                                        <button
+                                            onClick={() => handleDelete(tx.transactionId || tx.id, !tx.transactionId)}
+                                            className="w-full flex items-center justify-center gap-2 py-2.5 text-rose-600 bg-rose-50 rounded-xl text-[10px] font-black uppercase tracking-widest active:bg-rose-100"
+                                        >
+                                            <Trash2 className="h-3 w-3" /> Remove Record
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 )}
 
                 {activeTab === "ap" && (
                     <>
                         <div className="overflow-x-auto custom-scrollbar">
-                            <table className="w-full text-sm text-left min-w-[900px] table-fixed">
-                                <thead className="bg-muted/30 text-muted-foreground border-b text-xs uppercase tracking-wider">
+                            {/* Desktop Table */}
+                            <table className="w-full text-sm text-left min-w-[900px] table-fixed hidden md:table">
+                                <thead className="bg-slate-50/50 text-slate-400 border-b border-slate-100 text-[10px] uppercase tracking-[0.2em] font-black">
                                     <tr>
-                                        <th className="px-6 py-4 w-40">Tgl / Ref</th>
-                                        <th className="px-6 py-4">Supplier</th>
-                                        <th className="px-6 py-4 w-32">Status</th>
-                                        <th className="px-6 py-4 text-right w-36">Total</th>
-                                        <th className="px-6 py-4 text-right w-36">Sisa Bayar</th>
-                                        <th className="px-6 py-4 text-center w-40">Aksi</th>
+                                        <th className="px-8 py-5 w-44">Timeline / Ref</th>
+                                        <th className="px-8 py-5">Creditor Entity</th>
+                                        <th className="px-8 py-5 w-40">Payment State</th>
+                                        <th className="px-8 py-5 text-right w-44">Gross Value</th>
+                                        <th className="px-8 py-5 text-right w-44">Due Balance</th>
+                                        <th className="px-8 py-5 text-center w-48 tracking-[0.3em]">Validation</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y text-slate-700">
+                                <tbody className="divide-y divide-slate-50 text-slate-700">
                                     {filteredPurchases.map((p: any) => (
-                                        <tr key={p.id} className="hover:bg-muted/20 transition-colors">
-                                            <td className="px-6 py-4">
-                                                <div className="text-xs text-muted-foreground">{isClient && p.createdAt ? format(new Date(p.createdAt), "dd/MM/yy") : "..."}</div>
-                                                <div className="font-mono text-[10px] truncate" title={p.receiptNumber || ""}>{p.receiptNumber || "-"}</div>
+                                        <tr key={p.id} className="hover:bg-slate-50/80 transition-all group/row">
+                                            <td className="px-8 py-5">
+                                                <div className="text-[11px] font-black text-slate-400 uppercase tracking-widest leading-none mb-2">{isClient && p.createdAt ? format(new Date(p.createdAt), "dd/MM/yy") : "..."}</div>
+                                                <div className="font-mono text-[9px] font-black text-slate-300 uppercase tracking-tighter truncate" title={p.receiptNumber || ""}>{p.receiptNumber || "-"}</div>
                                             </td>
-                                            <td className="px-6 py-4 font-bold">
-                                                <div className="truncate max-w-[250px]" title={p.receivedFrom}>{p.receivedFrom}</div>
+                                            <td className="px-8 py-5">
+                                                <div className="font-black text-slate-900 tracking-tight mb-1 truncate max-w-[250px]" title={p.receivedFrom}>{p.receivedFrom}</div>
+                                                <div className={cn(
+                                                    "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-[0.2em] border",
+                                                    p.isVerified ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-amber-50 text-amber-600 border-amber-100"
+                                                )}>
+                                                    {p.isVerified ? "Warehouse Verified" : "Awaiting Warehouse"}
+                                                </div>
                                             </td>
-                                            <td className="px-6 py-4">
+                                            <td className="px-8 py-5">
                                                 <div className="flex flex-col gap-1">
-                                                    <span className="flex items-center gap-1.5 text-amber-600 font-bold text-xs uppercase">
-                                                        <Clock className="h-3 w-3" /> {p.paymentStatus}
-                                                    </span>
-                                                    <span className={`text-[9px] font-black px-1.5 py-0.5 rounded w-fit uppercase ${p.isVerified ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
-                                                        {p.isVerified ? "Gudang: Check OK" : "Gudang: Pending"}
+                                                    <span className={cn(
+                                                        "flex items-center gap-1.5 font-black text-[10px] uppercase tracking-widest",
+                                                        p.paymentStatus === 'PAID' ? 'text-emerald-500' : 'text-amber-500'
+                                                    )}>
+                                                        <Clock className={cn("h-3 w-3", p.paymentStatus === 'PAID' ? 'hidden' : '')} /> {p.paymentStatus}
                                                     </span>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4 text-right">
-                                                <div className="font-bold text-slate-900">{formatCurrency(p.total)}</div>
+                                            <td className="px-8 py-5 text-right">
+                                                <div className="font-black text-slate-900 tabular-nums tracking-tighter text-base">{formatCurrency(p.total)}</div>
                                                 {Number(p.paidAmount || 0) > 0 && (
-                                                    <div className="text-[10px] text-emerald-600 font-bold mt-1">
-                                                        Terbayar: {formatCurrency(Number(p.paidAmount))}
+                                                    <div className="text-[9px] text-emerald-500 font-black uppercase tracking-widest mt-1">
+                                                        Settled: {formatCurrency(Number(p.paidAmount))}
                                                     </div>
                                                 )}
                                             </td>
-                                            <td className="px-6 py-4 text-right">
-                                                <div className="font-black text-red-600">{formatCurrency(Number(p.total) - Number(p.paidAmount || 0))}</div>
+                                            <td className="px-8 py-5 text-right">
+                                                <div className="font-black text-rose-500 tabular-nums tracking-tighter text-base">{formatCurrency(Number(p.total) - Number(p.paidAmount || 0))}</div>
                                             </td>
-                                            <td className="px-6 py-4 text-center">
-                                                <div className="flex flex-col gap-2 items-center justify-center">
+                                            <td className="px-8 py-5">
+                                                <div className="flex flex-col gap-2 scale-90 origin-right">
                                                     {p.paymentStatus === 'PENDING' && (
                                                         <>
                                                             <button
                                                                 disabled={loading === p.id || (!p.isVerified && !isAdmin)}
                                                                 onClick={() => handleVerifyPayment("PURCHASE", p.id, "CREDIT")}
-                                                                className="bg-amber-100 text-amber-700 hover:bg-amber-200 w-full px-3 py-1 rounded text-[10px] font-bold transition-all disabled:opacity-50"
-                                                                title={!p.isVerified ? (isAdmin ? "Bypass verifikasi gudang (Admin)" : "Mohon tunggu verifikasi stok gudang") : "Catat sebagai Hutang Tempo"}
+                                                                className="erp-btn-secondary !py-2 !text-[9px] !rounded-lg"
                                                             >
-                                                                {loading === p.id ? "..." : "SET HUTANG"}
+                                                                {loading === p.id ? "..." : "RECORD DEBT"}
                                                             </button>
                                                             <button
                                                                 disabled={loading === p.id || (!p.isVerified && !isAdmin)}
                                                                 onClick={() => handlePartialPayment("PURCHASE", p.id, Number(p.total), 0, p.receivedFrom)}
-                                                                className="bg-blue-100 text-blue-700 hover:bg-blue-200 w-full px-3 py-1 rounded text-[10px] font-bold transition-all disabled:opacity-50"
-                                                                title="Catat Hutang Sambil Bayar DP"
+                                                                className="erp-btn-secondary !py-2 !text-[9px] !rounded-lg !bg-blue-50 !text-blue-600 !border-blue-100"
                                                             >
-                                                                {loading === p.id ? "..." : "HUTANG + DP"}
+                                                                {loading === p.id ? "..." : "DEBT + DP"}
                                                             </button>
                                                         </>
                                                     )}
@@ -567,33 +638,77 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                                         <button
                                                             disabled={loading === p.id}
                                                             onClick={() => handlePartialPayment("PURCHASE", p.id, Number(p.total), Number(p.paidAmount || 0), p.receivedFrom)}
-                                                            className="bg-blue-100 text-blue-700 hover:bg-blue-200 w-full px-3 py-1 rounded text-[10px] font-bold transition-all disabled:opacity-50"
+                                                            className="erp-btn-secondary !py-2 !text-[9px] !rounded-lg !bg-blue-50 !text-blue-600 !border-blue-100"
                                                         >
-                                                            DP / SEBAGIAN
+                                                            PARTIAL PAY
                                                         </button>
                                                     )}
                                                     <button
                                                         disabled={loading === p.id || (!p.isVerified && !isAdmin)}
                                                         onClick={() => handleVerifyPayment("PURCHASE", p.id, "PAID")}
-                                                        className="bg-emerald-500 w-full text-white px-3 py-1 rounded text-[10px] font-bold hover:bg-emerald-600 transition-all disabled:opacity-50 shadow-sm"
-                                                        title={!p.isVerified ? (isAdmin ? "Bypass verifikasi gudang (Admin)" : "Mohon tunggu verifikasi stok gudang") : "Lunas Kas/Bank"}
+                                                        className="erp-btn-primary !py-2 !text-[9px] !rounded-lg"
                                                     >
-                                                        {loading === p.id ? "..." : (p.paymentStatus === 'PENDING' ? "LUNAS TUNAI" : "PELUNASAN")}
+                                                        {loading === p.id ? "..." : (p.paymentStatus === 'PENDING' ? "FULL CASH" : "SETTLE BALANCE")}
                                                     </button>
                                                 </div>
                                             </td>
                                         </tr>
                                     ))}
-                                    {filteredPurchases.length === 0 && (
-                                        <tr>
-                                            <td colSpan={5} className="px-6 py-12 text-center text-muted-foreground italic">
-                                                Tidak ada pembelian yang butuh verifikasi (Lunas).
-                                            </td>
-                                        </tr>
-                                    )}
                                 </tbody>
                             </table>
+
+                            {/* Mobile Card View */}
+                            <div className="md:hidden p-4 space-y-4">
+                                {filteredPurchases.map((p: any) => (
+                                    <div key={p.id} className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm">
+                                        <div className="flex justify-between items-start mb-4">
+                                            <div className="flex flex-col gap-1">
+                                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{isClient && p.createdAt ? format(new Date(p.createdAt), "dd MMM yyyy") : "..."}</span>
+                                                <div className="font-mono text-[9px] text-slate-300 uppercase tracking-tighter truncate w-32">{p.receiptNumber || "-"}</div>
+                                            </div>
+                                            <div className={cn(
+                                                "px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest border",
+                                                p.isVerified ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-amber-50 text-amber-600 border-amber-100"
+                                            )}>
+                                                {p.isVerified ? "Stock Verified" : "Stock Pending"}
+                                            </div>
+                                        </div>
+                                        <div className="mb-4">
+                                            <div className="font-black text-slate-900 text-sm leading-tight mb-2">{p.receivedFrom}</div>
+                                            <div className="flex justify-between items-center bg-slate-50/50 p-3 rounded-xl border border-slate-100/50">
+                                                <div className="flex flex-col">
+                                                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Due Balance</span>
+                                                    <span className="text-sm font-black text-rose-500 tabular-nums">{formatCurrency(Number(p.total) - Number(p.paidAmount || 0))}</span>
+                                                </div>
+                                                <div className="text-right">
+                                                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">State</span>
+                                                    <div className="text-[10px] font-black text-amber-500 uppercase tracking-widest">{p.paymentStatus}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {p.paymentStatus === 'PENDING' && (
+                                                <button
+                                                    disabled={loading === p.id || (!p.isVerified && !isAdmin)}
+                                                    onClick={() => handleVerifyPayment("PURCHASE", p.id, "CREDIT")}
+                                                    className="erp-btn-secondary !py-2 !text-[9px] !rounded-lg"
+                                                >
+                                                    DEBT
+                                                </button>
+                                            )}
+                                            <button
+                                                disabled={loading === p.id || (!p.isVerified && !isAdmin)}
+                                                onClick={() => handleVerifyPayment("PURCHASE", p.id, "PAID")}
+                                                className="erp-btn-primary !py-2 !text-[9px] !rounded-lg col-span-1"
+                                            >
+                                                SETTLE
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
+
 
                         <div className="mt-8 border-t pt-6">
                             <h3 className="text-lg font-bold text-rose-800 mb-4 capitalize">Pengajuan Retur Pembelian (Pending)</h3>
@@ -647,62 +762,67 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                 {activeTab === "ar" && (
                     <>
                         <div className="overflow-x-auto custom-scrollbar">
-                            <table className="w-full text-sm text-left min-w-[900px] table-fixed">
-                                <thead className="bg-muted/30 text-muted-foreground border-b text-xs uppercase tracking-wider">
+                            {/* Desktop Table */}
+                            <table className="w-full text-sm text-left min-w-[900px] table-fixed hidden md:table">
+                                <thead className="bg-slate-50/50 text-slate-400 border-b border-slate-100 text-[10px] uppercase tracking-[0.2em] font-black">
                                     <tr>
-                                        <th className="px-6 py-4 w-40">Tgl / Ref</th>
-                                        <th className="px-6 py-4">Pelanggan</th>
-                                        <th className="px-6 py-4 w-32">Status</th>
-                                        <th className="px-6 py-4 text-right w-36">Total</th>
-                                        <th className="px-6 py-4 text-right w-36">Sisa Bayar</th>
-                                        <th className="px-6 py-4 text-center w-40">Aksi</th>
+                                        <th className="px-8 py-5 w-44">Timeline / Ref</th>
+                                        <th className="px-8 py-5">Customer Profile</th>
+                                        <th className="px-8 py-5 w-40">Credit State</th>
+                                        <th className="px-8 py-5 text-right w-44">Gross Value</th>
+                                        <th className="px-8 py-5 text-right w-44">Current Unpaid</th>
+                                        <th className="px-8 py-5 text-center w-48 tracking-[0.3em]">Validation</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y text-slate-700">
+                                <tbody className="divide-y divide-slate-50 text-slate-700">
                                     {filteredSales.map((s: any) => (
-                                        <tr key={s.id} className="hover:bg-muted/20 transition-colors">
-                                            <td className="px-6 py-4">
-                                                <div className="text-xs text-muted-foreground">{isClient ? format(new Date(s.createdAt), "dd/MM/yy") : "..."}</div>
-                                                <div className="font-mono text-[10px] truncate" title={s.deliveryNumber}>{s.deliveryNumber}</div>
+                                        <tr key={s.id} className="hover:bg-slate-50/80 transition-all group/row">
+                                            <td className="px-8 py-5">
+                                                <div className="text-[11px] font-black text-slate-400 uppercase tracking-widest leading-none mb-2">{isClient ? format(new Date(s.createdAt), "dd/MM/yy") : "..."}</div>
+                                                <div className="font-mono text-[9px] font-black text-slate-300 uppercase tracking-tighter truncate" title={s.deliveryNumber}>{s.deliveryNumber}</div>
                                             </td>
-                                            <td className="px-6 py-4 font-bold">
-                                                <div className="truncate max-w-[250px]" title={s.buyerName}>{s.buyerName}</div>
+                                            <td className="px-8 py-5">
+                                                <div className="font-black text-slate-900 tracking-tight truncate max-w-[250px]" title={s.buyerName}>{s.buyerName}</div>
                                             </td>
-                                            <td className="px-6 py-4">
-                                                <span className="flex items-center gap-1.5 text-blue-600 font-bold text-xs">
-                                                    <Clock className="h-3 w-3" /> {s.paymentStatus}
-                                                </span>
+                                            <td className="px-8 py-5">
+                                                <div className="flex items-center gap-2">
+                                                    <div className={cn(
+                                                        "h-1.5 w-1.5 rounded-full animate-pulse",
+                                                        s.paymentStatus === 'PAID' ? 'bg-emerald-500 !animate-none' : 'bg-blue-500'
+                                                    )} />
+                                                    <span className={cn(
+                                                        "font-black text-[10px] uppercase tracking-widest",
+                                                        s.paymentStatus === 'PAID' ? 'text-emerald-500' : 'text-blue-500'
+                                                    )}>
+                                                        {s.paymentStatus}
+                                                    </span>
+                                                </div>
                                             </td>
-                                            <td className="px-6 py-4 text-right">
-                                                <div className="font-bold text-slate-900">{formatCurrency(s.total)}</div>
-                                                {Number(s.paidAmount || 0) > 0 && (
-                                                    <div className="text-[10px] text-blue-600 font-bold mt-1">
-                                                        Terbayar: {formatCurrency(Number(s.paidAmount))}
-                                                    </div>
-                                                )}
+                                            <td className="px-8 py-5 text-right">
+                                                <div className="font-black text-slate-900 tabular-nums tracking-tighter text-base">{formatCurrency(s.total)}</div>
                                             </td>
-                                            <td className="px-6 py-4 text-right">
-                                                <div className="font-black text-emerald-600">{formatCurrency(Number(s.total) - Number(s.paidAmount || 0))}</div>
+                                            <td className="px-8 py-5 text-right">
+                                                <div className="font-black text-emerald-600 tabular-nums tracking-tighter text-base">
+                                                    {formatCurrency(Number(s.total) - Number(s.paidAmount || 0))}
+                                                </div>
                                             </td>
-                                            <td className="px-6 py-4 text-center">
-                                                <div className="flex flex-col gap-2 items-center justify-center">
+                                            <td className="px-8 py-5">
+                                                <div className="flex flex-col gap-2 scale-90 origin-right">
                                                     {s.paymentStatus === 'PENDING' && (
                                                         <>
                                                             <button
                                                                 disabled={loading === s.id}
                                                                 onClick={() => handleVerifyPayment("SALE", s.id, "CREDIT")}
-                                                                className="bg-blue-100 text-blue-700 hover:bg-blue-200 w-full px-3 py-1 rounded text-[10px] font-bold transition-all disabled:opacity-50"
-                                                                title="Catat sebagai Piutang Tempo"
+                                                                className="erp-btn-secondary !py-2 !text-[9px] !rounded-lg"
                                                             >
-                                                                {loading === s.id ? "..." : "SET PIUTANG"}
+                                                                RECORD CREDIT
                                                             </button>
                                                             <button
                                                                 disabled={loading === s.id}
                                                                 onClick={() => handlePartialPayment("SALE", s.id, Number(s.total), 0, s.buyerName)}
-                                                                className="bg-emerald-100 text-emerald-700 hover:bg-emerald-50 w-full px-3 py-1 rounded text-[10px] font-bold transition-all disabled:opacity-50"
-                                                                title="Catat Piutang Sambil Terima DP"
+                                                                className="erp-btn-secondary !py-2 !text-[9px] !rounded-lg !bg-emerald-50 !text-emerald-600 !border-emerald-100"
                                                             >
-                                                                {loading === s.id ? "..." : "PIUTANG + DP"}
+                                                                CREDIT + DP
                                                             </button>
                                                         </>
                                                     )}
@@ -710,77 +830,108 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                                         <button
                                                             disabled={loading === s.id}
                                                             onClick={() => handlePartialPayment("SALE", s.id, Number(s.total), Number(s.paidAmount || 0), s.buyerName)}
-                                                            className="bg-blue-100 text-blue-700 hover:bg-blue-200 w-full px-3 py-1 rounded text-[10px] font-bold transition-all disabled:opacity-50"
+                                                            className="erp-btn-secondary !py-2 !text-[9px] !rounded-lg !bg-blue-50 !text-blue-600 !border-blue-100"
                                                         >
-                                                            DP / SEBAGIAN
+                                                            PARTIAL PAY
                                                         </button>
                                                     )}
                                                     <button
                                                         disabled={loading === s.id}
                                                         onClick={() => handleVerifyPayment("SALE", s.id, "PAID")}
-                                                        className="bg-emerald-500 w-full text-white px-3 py-1 rounded text-[10px] font-bold hover:bg-emerald-600 transition-all disabled:opacity-50 shadow-sm"
-                                                        title="Lunas Kas/Bank"
+                                                        className="erp-btn-primary !py-2 !text-[9px] !rounded-lg"
                                                     >
-                                                        {loading === s.id ? "..." : (s.paymentStatus === 'PENDING' ? "LUNAS TUNAI" : "PELUNASAN")}
+                                                        {loading === s.id ? "..." : (s.paymentStatus === 'PENDING' ? "FULL CASH" : "SETTLE BALANCE")}
                                                     </button>
                                                 </div>
                                             </td>
                                         </tr>
                                     ))}
-                                    {filteredSales.length === 0 && (
-                                        <tr>
-                                            <td colSpan={5} className="px-6 py-12 text-center text-muted-foreground italic">
-                                                Tidak ada penjualan yang butuh verifikasi (Lunas).
-                                            </td>
-                                        </tr>
-                                    )}
                                 </tbody>
                             </table>
+
+                            {/* Mobile Card View */}
+                            <div className="md:hidden p-4 space-y-4">
+                                {filteredSales.map((s: any) => (
+                                    <div key={s.id} className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm">
+                                        <div className="flex justify-between items-start mb-4">
+                                            <div className="flex flex-col gap-1">
+                                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{isClient ? format(new Date(s.createdAt), "dd MMM yyyy") : "..."}</span>
+                                                <div className="font-mono text-[9px] text-slate-300 uppercase tracking-tighter truncate w-32">{s.deliveryNumber}</div>
+                                            </div>
+                                            <div className={cn(
+                                                "px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border",
+                                                s.paymentStatus === 'PAID' ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-blue-50 text-blue-600 border-blue-100"
+                                            )}>
+                                                {s.paymentStatus}
+                                            </div>
+                                        </div>
+                                        <div className="mb-4">
+                                            <div className="font-black text-slate-900 text-sm leading-tight mb-2">{s.buyerName}</div>
+                                            <div className="flex justify-between items-center bg-slate-50/50 p-3 rounded-xl border border-slate-100/50">
+                                                <div className="flex flex-col">
+                                                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Value</span>
+                                                    <span className="text-sm font-black text-slate-900 tabular-nums">{formatCurrency(s.total)}</span>
+                                                </div>
+                                                <div className="text-right">
+                                                    <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest mb-1">Unpaid</span>
+                                                    <div className="text-sm font-black text-emerald-600 tabular-nums">{formatCurrency(Number(s.total) - Number(s.paidAmount || 0))}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <button
+                                                disabled={loading === s.id}
+                                                onClick={() => handleVerifyPayment("SALE", s.id, "PAID")}
+                                                className="erp-btn-primary !py-2.5 !text-[10px] !rounded-xl col-span-2"
+                                            >
+                                                SETTLE PAYMENT
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
 
-                        <div className="mt-8 border-t pt-6">
-                            <h3 className="text-lg font-bold text-blue-800 mb-4 capitalize">Pengajuan Retur Penjualan (Pending)</h3>
+                        {/* Returns Panel (Refined) */}
+                        <div className="mx-6 md:mx-4 mb-8 mt-12 bg-blue-50/30 rounded-[2rem] border border-blue-100 p-8">
+                            <h3 className="text-xl font-black text-blue-900 tracking-tight uppercase flex items-center gap-3 mb-8">
+                                <div className="h-2 w-4 bg-blue-600 rounded-full" />
+                                Pending Sales Returns
+                            </h3>
                             <div className="overflow-x-auto custom-scrollbar">
-                                <table className="w-full text-sm text-left min-w-[800px] table-fixed">
-                                    <thead className="bg-blue-50 border-b border-blue-100 text-blue-800 text-xs uppercase tracking-wider">
+                                <table className="w-full text-sm text-left hidden md:table">
+                                    <thead className="text-[10px] uppercase font-black tracking-widest text-blue-400">
                                         <tr>
-                                            <th className="px-6 py-4 w-52">No. Retur</th>
-                                            <th className="px-6 py-4 w-40">Tanggal Pengajuan</th>
-                                            <th className="px-6 py-4 w-40">Ref. SJ</th>
-                                            <th className="px-6 py-4 text-right">Qty Diretur</th>
-                                            <th className="px-6 py-4 text-center w-40">Aksi</th>
+                                            <th className="pb-6">Return Number</th>
+                                            <th className="pb-6">Log Date</th>
+                                            <th className="pb-6">SJ Reference</th>
+                                            <th className="pb-6 text-right">Items Retured</th>
+                                            <th className="pb-6 text-center">Authorization</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-blue-50 text-slate-700">
+                                    <tbody className="divide-y divide-blue-100/50">
                                         {filteredSalesReturns.map((r: any) => (
-                                            <tr key={r.id} className="hover:bg-blue-50/50 transition-colors">
-                                                <td className="px-6 py-4 font-mono font-bold text-blue-600">
+                                            <tr key={r.id} className="group/ret">
+                                                <td className="py-4 font-black text-blue-600">
                                                     <div>{r.returnNumber}</div>
-                                                    <div className="text-[10px] text-slate-500 font-normal">{r.delivery?.buyerName}</div>
+                                                    <div className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">{r.delivery?.buyerName}</div>
                                                 </td>
-                                                <td className="px-6 py-4 text-slate-500">{format(new Date(r.date || r.createdAt), "dd/MM/yyyy")}</td>
-                                                <td className="px-6 py-4 text-slate-600">{r.delivery?.deliveryNumber}</td>
-                                                <td className="px-6 py-4 text-right font-bold text-blue-600">
-                                                    {r.items?.reduce((acc: number, i: any) => acc + i.quantity, 0)} Items
+                                                <td className="py-4 text-slate-500 font-bold">{format(new Date(r.date || r.createdAt), "dd/MM/yyyy")}</td>
+                                                <td className="py-4 text-slate-600 font-mono text-[10px]">{r.delivery?.deliveryNumber}</td>
+                                                <td className="py-4 text-right font-black text-blue-500 text-base tabular-nums">
+                                                    {r.items?.reduce((acc: number, i: any) => acc + i.quantity, 0)} <span className="text-[9px] tracking-widest">PCS</span>
                                                 </td>
-                                                <td className="px-6 py-4 text-center">
+                                                <td className="py-4 text-center">
                                                     <button
                                                         disabled={loading === r.id}
                                                         onClick={() => handleVerifySalesReturn(r.id, r.delivery?.buyerName)}
-                                                        className="bg-blue-600 text-white px-4 py-1.5 rounded text-xs font-bold hover:bg-blue-700 shadow-sm transition-all disabled:opacity-50"
+                                                        className="erp-btn-primary !bg-blue-600 hover:!bg-blue-700 !py-2 !px-6 !text-[10px] !rounded-xl"
                                                     >
-                                                        {loading === r.id ? "..." : "Verifikasi Retur"}
+                                                        {loading === r.id ? "..." : "APPROVE RETURN"}
                                                     </button>
                                                 </td>
                                             </tr>
                                         ))}
-                                        {filteredSalesReturns.length === 0 && (
-                                            <tr>
-                                                <td colSpan={5} className="px-6 py-12 text-center text-blue-400 italic">
-                                                    Tidak ada pengajuan retur penjualan yang pending.
-                                                </td>
-                                            </tr>
-                                        )}
                                     </tbody>
                                 </table>
                             </div>
@@ -789,190 +940,232 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                 )}
 
                 {activeTab === "checker" && (
-                    <div className="overflow-x-auto custom-scrollbar">
-                        <table className="w-full text-sm text-left min-w-[900px] table-fixed">
-                            <thead className="bg-muted/30 text-muted-foreground border-b text-xs uppercase tracking-wider">
+                    <div className="overflow-x-auto custom-scrollbar p-0">
+                         {/* Desktop Layout */}
+                        <table className="w-full text-sm text-left min-w-[900px] table-fixed hidden md:table">
+                            <thead className="bg-slate-50/50 text-slate-400 border-b border-slate-100 text-[10px] uppercase tracking-[0.2em] font-black">
                                 <tr>
-                                    <th className="px-6 py-4 w-40">Tgl / No. Terima</th>
-                                    <th className="px-6 py-4">Supplier</th>
-                                    <th className="px-6 py-4 w-32">Barang</th>
-                                    <th className="px-6 py-4 w-48">Gudang</th>
-                                    <th className="px-6 py-4 text-center w-40">Status Gudang</th>
+                                    <th className="px-8 py-5 w-44">Log Date / LPB Ref</th>
+                                    <th className="px-8 py-5">Vendor Entity</th>
+                                    <th className="px-8 py-5 w-32 text-center">SKU Count</th>
+                                    <th className="px-8 py-5 w-48">Storage Target</th>
+                                    <th className="px-8 py-5 text-center w-40 tracking-[0.2em]">Flow State</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y text-slate-700">
+                            <tbody className="divide-y divide-slate-50 text-slate-700">
                                 {unverifiedReceipts.map((r: any) => (
-                                    <tr key={r.id} className="hover:bg-muted/20 transition-colors">
-                                        <td className="px-6 py-4">
-                                            <div className="text-xs text-muted-foreground">{format(new Date(r.createdAt), "dd/MM/yy")}</div>
-                                            <div className="font-mono text-[10px] truncate" title={r.receiptNumber}>{r.receiptNumber}</div>
+                                    <tr key={r.id} className="hover:bg-slate-50/80 transition-all">
+                                        <td className="px-8 py-5">
+                                            <div className="text-[11px] font-black text-slate-400 uppercase tracking-widest leading-none mb-2">{isClient ? format(new Date(r.createdAt), "dd/MM/yy") : "..."}</div>
+                                            <div className="font-mono text-[9px] font-black text-slate-300 uppercase tracking-tighter truncate">{r.receiptNumber}</div>
                                         </td>
-                                        <td className="px-6 py-4 font-bold">
-                                            <div className="truncate max-w-[250px]" title={r.receivedFrom}>{r.receivedFrom}</div>
+                                        <td className="px-8 py-5 font-black text-slate-900 tracking-tight">{r.receivedFrom}</td>
+                                        <td className="px-8 py-5 text-center font-black tabular-nums">{r.items.length}</td>
+                                        <td className="px-8 py-5">
+                                            <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest bg-slate-100/50 px-3 py-1.5 rounded-lg border border-slate-100 inline-block">
+                                                {r.warehouse?.name}
+                                            </div>
                                         </td>
-                                        <td className="px-6 py-4 text-xs">
-                                            {r.items.length} Item
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span className="bg-slate-100 px-2 py-0.5 rounded text-[10px] font-bold uppercase">{r.warehouse?.name}</span>
-                                        </td>
-                                        <td className="px-6 py-4 text-center">
-                                            <span className="bg-amber-100 text-amber-700 px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter">
-                                                Menunggu Cek
+                                        <td className="px-8 py-5 text-center">
+                                            <span className="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest bg-amber-50 text-amber-600 border border-amber-100 flex items-center justify-center gap-2">
+                                                <Clock className="h-3 w-3" /> PENDING CHECK
                                             </span>
                                         </td>
                                     </tr>
                                 ))}
-                                {unverifiedReceipts.length === 0 && (
-                                    <tr>
-                                        <td colSpan={5} className="px-6 py-12 text-center text-muted-foreground italic">
-                                            Semua penerimaan barang telah dicek fisik oleh gudang.
-                                        </td>
-                                    </tr>
-                                )}
                             </tbody>
                         </table>
+
+                        {/* Mobile Cards for Checker */}
+                        <div className="md:hidden p-4 space-y-4">
+                            {unverifiedReceipts.map((r: any) => (
+                                <div key={r.id} className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm border-l-4 border-l-amber-400">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div className="flex flex-col gap-1">
+                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{isClient ? format(new Date(r.createdAt), "dd MMM yyyy") : "..."}</span>
+                                            <div className="font-mono text-[9px] text-slate-300 uppercase tracking-tighter truncate w-32">{r.receiptNumber}</div>
+                                        </div>
+                                        <div className="px-2 py-1 bg-amber-50 rounded-lg text-[9px] font-black text-amber-600 uppercase border border-amber-100">
+                                            Awaiting Gudang
+                                        </div>
+                                    </div>
+                                    <div className="mb-0">
+                                        <div className="font-black text-slate-900 text-sm leading-tight mb-2">{r.receivedFrom}</div>
+                                        <div className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Destination: {r.warehouse?.name}</div>
+                                        <div className="text-[10px] font-black text-primary uppercase tracking-widest mt-2">{r.items.length} Product SKU in shipment</div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 )}
 
                 {activeTab === "purchase_requests" && (
-                    <div className="overflow-x-auto custom-scrollbar">
-                        <table className="w-full text-sm text-left min-w-[900px] table-fixed">
-                            <thead className="bg-muted/30 text-muted-foreground border-b text-xs uppercase tracking-wider">
+                     <div className="overflow-x-auto custom-scrollbar p-0">
+                        {/* Desktop View */}
+                        <table className="w-full text-sm text-left min-w-[900px] table-fixed hidden md:table">
+                            <thead className="bg-slate-50/50 text-slate-400 border-b border-slate-100 text-[10px] uppercase tracking-[0.2em] font-black">
                                 <tr>
-                                    <th className="px-6 py-4 w-48">Tgl / No. Pengajuan</th>
-                                    <th className="px-6 py-4 font-bold">Pemohon</th>
-                                    <th className="px-6 py-4 w-48">Status</th>
-                                    <th className="px-6 py-4 text-right w-44">Estimasi Biaya</th>
-                                    <th className="px-6 py-4 text-center w-40">Aksi</th>
+                                    <th className="px-8 py-5 w-44">Doc Date / PR Ref</th>
+                                    <th className="px-8 py-5">Requested By</th>
+                                    <th className="px-8 py-5">Allocated Warehouse</th>
+                                    <th className="px-8 py-5 text-right w-40">Load (Items)</th>
+                                    <th className="px-8 py-5 text-center w-48 tracking-[0.3em]">Decision</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y text-slate-700">
-                                {filteredPurchaseRequests.map((r: any) => {
-                                    const totalEst = r.items.reduce((acc: number, item: any) => acc + (item.quantity * Number(item.estimatedPrice)), 0);
-                                    return (
-                                        <tr key={r.id} className="hover:bg-muted/20 transition-colors">
-                                            <td className="px-6 py-4">
-                                                <div className="text-xs text-muted-foreground">{isClient ? format(new Date(r.createdAt), "dd/MM/yy") : "..."}</div>
-                                                <div className="font-mono text-[10px] font-bold text-orange-600 truncate" title={r.number}>{r.number}</div>
-                                            </td>
-                                            <td className="px-6 py-4 font-bold">
-                                                <div className="truncate max-w-[200px]" title={r.requestedBy?.name}>{r.requestedBy?.name}</div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <span className="flex items-center gap-1.5 text-orange-600 font-bold text-xs uppercase">
-                                                    <Clock className="h-3 w-3" /> {r.status === "APPROVED_BY_ADMIN" ? "MENUNGGU FINANCE" : r.status}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 text-right font-black text-rose-600">
-                                                {formatCurrency(totalEst)}
-                                            </td>
-                                            <td className="px-6 py-4 text-center">
-                                                <button
-                                                    disabled={loading === r.id}
-                                                    onClick={() => handleVerifyPurchaseRequest(r.id, r.number)}
-                                                    className="bg-orange-500 w-full text-white px-3 py-1.5 rounded text-[10px] font-bold hover:bg-orange-600 transition-all disabled:opacity-50 uppercase shadow-sm"
-                                                    title="Verifikasi dan Catat Pengeluaran Bank"
-                                                >
-                                                    {loading === r.id ? "..." : "Selesai / Lunas"}
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                                {filteredPurchaseRequests.length === 0 && (
-                                    <tr>
-                                        <td colSpan={5} className="px-6 py-12 text-center text-muted-foreground italic">
-                                            Tidak ada pengajuan pembelian yang menunggu verifikasi Finance.
+                            <tbody className="divide-y divide-slate-50 text-slate-700">
+                                {filteredPurchaseRequests.map((r: any) => (
+                                    <tr key={r.id} className="hover:bg-slate-50/80 transition-all">
+                                        <td className="px-8 py-5">
+                                            <div className="text-[11px] font-black text-slate-400 uppercase tracking-widest leading-none mb-2">{isClient ? format(new Date(r.createdAt), "dd/MM/yy") : "..."}</div>
+                                            <div className="font-mono text-[9px] font-black text-slate-300 uppercase tracking-tighter truncate">{r.number}</div>
+                                        </td>
+                                        <td className="px-8 py-5 font-black text-slate-900 tracking-tight">{r.requestedBy?.name}</td>
+                                        <td className="px-8 py-5">
+                                            <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest bg-slate-100/50 px-3 py-1.5 rounded-lg border border-slate-100 inline-block font-mono">
+                                                ID: {r.warehouse?.name}
+                                            </div>
+                                        </td>
+                                        <td className="px-8 py-5 text-right font-black tabular-nums">{r.items.length} Items</td>
+                                        <td className="px-8 py-5 text-center">
+                                            <button
+                                                disabled={loading === r.id}
+                                                onClick={() => handleVerifyPurchaseRequest(r.id, r.number)}
+                                                className="erp-btn-primary !bg-amber-500 hover:!bg-amber-600 !py-2 !px-6 !text-[10px] !rounded-xl shadow-lg shadow-amber-100 w-full"
+                                            >
+                                                {loading === r.id ? "..." : "FINALIZE PR"}
+                                            </button>
                                         </td>
                                     </tr>
-                                )}
+                                ))}
                             </tbody>
                         </table>
+
+                        {/* Mobile Cards for PR */}
+                        <div className="md:hidden p-4 space-y-4">
+                             {filteredPurchaseRequests.map((r: any) => (
+                                <div key={r.id} className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm border-l-4 border-l-amber-500">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div className="flex flex-col gap-1">
+                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{isClient ? format(new Date(r.createdAt), "dd MMM yyyy") : "..."}</span>
+                                            <div className="font-mono text-[9px] text-slate-300 uppercase tracking-tighter truncate w-32">{r.number}</div>
+                                        </div>
+                                        <div className="px-2 py-1 bg-amber-50 rounded-lg text-[9px] font-black text-amber-600 uppercase border border-amber-100">
+                                            Finance Queue
+                                        </div>
+                                    </div>
+                                    <div className="mb-4">
+                                        <div className="font-black text-slate-900 text-sm leading-tight mb-2">Requester: {r.requestedBy?.name}</div>
+                                        <div className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Warehouse: {r.warehouse?.name}</div>
+                                        <p className="text-[10px] font-black text-primary uppercase tracking-widest mt-2">{r.items.length} Requested SKU Line Items</p>
+                                    </div>
+                                    <button
+                                        disabled={loading === r.id}
+                                        onClick={() => handleVerifyPurchaseRequest(r.id, r.number)}
+                                        className="w-full erp-btn-primary !bg-amber-500 hover:!bg-amber-600 !py-3 !rounded-xl"
+                                    >
+                                        APPROVE & REALIZE
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 )}
 
                 {activeTab === "history" && (
                     <div className="overflow-x-auto custom-scrollbar">
-                        <table className="w-full text-sm text-left min-w-[1000px] table-fixed">
-                            <thead className="bg-muted/30 text-muted-foreground border-b text-xs uppercase tracking-wider">
+                        {/* Desktop View */}
+                        <table className="w-full text-sm text-left min-w-[1000px] table-fixed hidden md:table">
+                            <thead className="bg-slate-50/50 text-slate-400 border-b border-slate-100 text-[10px] uppercase tracking-[0.2em] font-black">
                                 <tr>
-                                    <th className="px-6 py-4 w-40">Waktu Input</th>
-                                    <th className="px-6 py-4 w-32">Tipe</th>
-                                    <th className="px-6 py-4 w-40">Bank / Metode</th>
-                                    <th className="px-6 py-4">Deskripsi</th>
-                                    <th className="px-6 py-4 text-right w-40">Nominal</th>
-                                    {isAdminOrFinance && <th className="px-6 py-4 text-center w-20">Aksi</th>}
+                                    <th className="px-8 py-5 w-32 tracking-[0.3em]">Tgl Log</th>
+                                    <th className="px-8 py-5">Main Description</th>
+                                    <th className="px-8 py-5 w-40">Entry Type</th>
+                                    <th className="px-8 py-5 w-40 text-right">Magnitude</th>
+                                    <th className="px-8 py-5 w-48">Logged By</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y text-slate-700">
+                            <tbody className="divide-y divide-slate-50 text-slate-700">
                                 {transactions.map((tx: any) => (
-                                    <tr key={tx.id} className="hover:bg-muted/20 transition-colors text-xs">
-                                        <td className="px-6 py-4 whitespace-nowrap text-muted-foreground">
-                                            <div className="font-bold text-slate-900">{isClient ? format(new Date(tx.date), "dd/MM/yyyy") : "..."}</div>
-                                            <div className="text-[10px] text-muted-foreground">{isClient ? format(new Date(tx.date), "HH:mm:ss") : "..."}</div>
+                                    <tr key={tx.id} className="hover:bg-slate-50/80 transition-all">
+                                        <td className="px-8 py-5 text-slate-400 font-bold tabular-nums">
+                                            {isClient && tx.date ? format(new Date(tx.date), "dd/MM/yy") : "..."}
                                         </td>
-                                        <td className="px-6 py-4">
-                                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${tx.transactionType === "PAYMENT" ? "bg-red-500/10 text-red-600" : "bg-emerald-500/10 text-emerald-600"}`}>
-                                                {tx.transactionType === "PAYMENT" ? "KELUAR" : "MASUK"}
+                                        <td className="px-8 py-5">
+                                            <div className="font-black text-slate-900 tracking-tight leading-none mb-1.5 truncate max-w-[400px]">{tx.description}</div>
+                                            <div className="text-[9px] text-slate-400 font-black uppercase tracking-widest">REF: {tx.referenceNumber || 'INTERNAL'}</div>
+                                        </td>
+                                        <td className="px-8 py-5">
+                                            <span className={cn(
+                                                "px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border",
+                                                tx.amount >= 0 ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-blue-50 text-blue-600 border-blue-100"
+                                            )}>
+                                                {tx.type || (tx.amount >= 0 ? 'CR' : 'DR')}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 font-medium uppercase tracking-tighter">{tx.bank}</td>
-                                        <td className="px-6 py-4">
-                                            <div className="font-medium line-clamp-1" title={tx.description}>{tx.description}</div>
-                                            {tx.referenceNumber && <div className="text-[10px] text-muted-foreground">Ref: {tx.referenceNumber}</div>}
+                                        <td className={cn(
+                                            "px-8 py-5 text-right font-black tabular-nums tracking-tighter text-base",
+                                            tx.amount >= 0 ? "text-slate-900" : "text-rose-500"
+                                        )}>
+                                            {formatCurrency(Math.abs(Number(tx.amount)))}
                                         </td>
-                                        <td className={`px-6 py-4 text-right font-black ${tx.transactionType === "PAYMENT" ? "text-red-600" : "text-emerald-600"}`}>
-                                            {formatCurrency(Number(tx.amount))}
+                                        <td className="px-8 py-5">
+                                            <div className="text-[10px] font-black text-slate-600 uppercase tracking-widest">{tx.createdBy?.name || 'Authorized'}</div>
                                         </td>
-                                        {isAdminOrFinance && (
-                                            <td className="px-6 py-4 text-center">
-                                                <button
-                                                    onClick={() => handleDelete(tx.id, false)}
-                                                    className="p-1.5 text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </button>
-                                            </td>
-                                        )}
                                     </tr>
                                 ))}
-                                {transactions.length === 0 && (
-                                    <tr>
-                                        <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground italic">
-                                            Belum ada riwayat transaksi.
-                                        </td>
-                                    </tr>
-                                )}
                             </tbody>
                         </table>
+
+                        {/* Mobile view for history */}
+                        <div className="md:hidden p-4 space-y-4">
+                             {transactions.map((tx: any) => (
+                                <div key={tx.id} className="bg-white border border-slate-50 rounded-2xl p-5 shadow-sm">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{isClient && tx.date ? format(new Date(tx.date), "dd MMM yyyy") : "..."}</span>
+                                        <div className={cn(
+                                            "text-base font-black tracking-tighter tabular-nums",
+                                            tx.amount >= 0 ? "text-slate-900" : "text-rose-500"
+                                        )}>
+                                            {formatCurrency(Math.abs(Number(tx.amount)))}
+                                        </div>
+                                    </div>
+                                    <div className="font-bold text-slate-900 text-sm leading-tight mb-2">{tx.description}</div>
+                                    <div className="text-[9px] text-slate-400 font-black uppercase tracking-widest">Entry: {tx.createdBy?.name || 'Verified System'}</div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 )}
             </div>
 
-            {/* Partner Summaries (Only shown when relevant) */}
-            {
-                (activeTab === "ap" || activeTab === "ar") && (
-                    <div className="rounded-xl border bg-card shadow-sm mt-6">
-                        <div className="p-6 border-b">
-                            <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-widest">
-                                {activeTab === "ap" ? "Ringkasan Saldo Hutang Supplier" : "Ringkasan Saldo Piutang Buyer"}
+            {/* Partner Summaries & Insights */}
+            {(activeTab === "ap" || activeTab === "ar") && (
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div className="lg:col-span-2 erp-card overflow-hidden bg-white/40">
+                        <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+                            <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">
+                                {activeTab === "ap" ? "Top Creditor Entities" : "Top Debtors / Active Accounts"}
                             </h3>
+                            <button className="text-[10px] font-black text-primary uppercase tracking-widest hover:underline">View All Balances</button>
                         </div>
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm text-left">
-                                <thead className="bg-muted/10 text-muted-foreground border-b text-[10px] uppercase tracking-wider">
+                                <thead className="bg-slate-50/50 text-[9px] font-black uppercase tracking-widest text-slate-400">
                                     <tr>
-                                        <th className="px-6 py-4">Nama</th>
-                                        <th className="px-6 py-4 text-right">Total Saldo</th>
+                                        <th className="px-8 py-4">Counterparty</th>
+                                        <th className="px-8 py-4 text-right">Commitment Value</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y">
-                                    {(activeTab === "ap" ? vendors : customers).map((v: any) => (
-                                        <tr key={v.id}>
-                                            <td className="px-6 py-3 font-medium">{v.name}</td>
-                                            <td className={`px-6 py-3 text-right font-bold ${activeTab === "ap" ? "text-red-600" : "text-emerald-600"}`}>
-                                                {formatCurrency(v.balance)}
+                                <tbody className="divide-y divide-slate-50">
+                                    {(activeTab === "ap" ? vendors : customers).slice(0, 8).map((v: any) => (
+                                        <tr key={v.id} className="hover:bg-white/60 transition-colors">
+                                            <td className="px-8 py-4 font-bold text-slate-700">{v.name}</td>
+                                            <td className={cn(
+                                                "px-8 py-4 text-right font-black tabular-nums tracking-tighter",
+                                                activeTab === "ap" ? "text-rose-500" : "text-emerald-500"
+                                            )}>
+                                                {formatCurrency(v.balance || 0)}
                                             </td>
                                         </tr>
                                     ))}
@@ -980,190 +1173,204 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                             </table>
                         </div>
                     </div>
-                )
-            }
-
-            {/* Account Summary Cards */}
-            {
-                activeTab === "ledger" && (
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 hide-print">
-                        {accounts.map((account: any) => (
-                            <div key={account.id} className="p-6 rounded-xl border bg-card hover:border-primary/50 transition-colors shadow-sm">
-                                <div className="flex justify-between items-start">
-                                    <div>
-                                        <p className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">{account.code}</p>
-                                        <h3 className="text-sm font-bold mt-1 leading-tight">{account.name}</h3>
-                                    </div>
-                                    <Wallet className="h-4 w-4 text-muted-foreground" />
-                                </div>
-                                <p className="text-xl font-bold mt-4 tracking-tight">{formatCurrency(account.balance)}</p>
+                    
+                    {/* Visual Insight Card (placeholder for future charts) */}
+                    <div className="erp-card p-8 bg-slate-900 text-white relative overflow-hidden flex flex-col justify-between">
+                        <div className="absolute top-0 right-0 p-8 opacity-10">
+                            <Banknote className="h-40 w-40" />
+                        </div>
+                        <div className="relative z-10">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Liquidity Snapshot</p>
+                            <h4 className="text-2xl font-black tracking-tight">{activeTab === "ap" ? 'Liability Portfolio' : 'Receivable Health'}</h4>
+                        </div>
+                        <div className="relative z-10 mt-12 space-y-6">
+                            <div className="flex justify-between items-end border-b border-white/10 pb-4">
+                                <span className="text-xs font-bold text-slate-400">Aging {">"} 30 Days</span>
+                                <span className="text-xl font-black tabular-nums">{formatCurrency(0)}</span>
                             </div>
-                        ))}
+                            <div className="flex justify-between items-end border-b border-white/10 pb-4">
+                                <span className="text-xs font-bold text-slate-400">Due This Week</span>
+                                <span className="text-xl font-black tabular-nums">{formatCurrency(activeTab === "ap" ? totalHutang : totalPiutang)}</span>
+                            </div>
+                        </div>
                     </div>
-                )
-            }
+                </div>
+            )}
 
-            {
-                showModal && (
-                    <FinanceModal
-                        accounts={accounts}
-                        onClose={() => setShowModal(false)}
-                    />
-                )
-            }
+            {/* Account Matrix for Ledger */}
+            {activeTab === "ledger" && (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 px-1">
+                    {accounts.map((account: any) => (
+                        <div key={account.id} className="erp-card p-5 bg-white/60 hover:border-primary/40 transition-all group cursor-pointer border-slate-200/50">
+                            <div className="flex justify-between items-start mb-4">
+                                <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest bg-slate-100 px-1.5 py-0.5 rounded-md group-hover:bg-primary group-hover:text-white transition-colors">{account.code}</div>
+                                <Wallet className="h-3.5 w-3.5 text-slate-300 group-hover:text-primary transition-colors" />
+                            </div>
+                            <h3 className="text-[11px] font-black text-slate-800 leading-tight mb-2 uppercase tracking-tight line-clamp-1">{account.name}</h3>
+                            <p className="text-sm font-black text-slate-900 tracking-tighter tabular-nums">{formatCurrency(account.balance || 0)}</p>
+                        </div>
+                    ))}
+                </div>
+            )}
+            </div>
 
-            {
-                showPreview && (
-                    <ReportPreviewModal
-                        title={previewTitle}
-                        data={previewData}
-                        onClose={() => setShowPreview(false)}
-                        onExport={handleExport}
-                    />
-                )
-            }
+            {/* Premium Modals Handling */}
+            {showModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowModal(false)} />
+                    <div className="relative w-full max-w-4xl bg-white rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+                        <FinanceModal
+                            accounts={accounts}
+                            onClose={() => setShowModal(false)}
+                        />
+                    </div>
+                </div>
+            )}
 
-            {/* Professional Payment Modal */}
+            {showPreview && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowPreview(false)} />
+                    <div className="relative w-full max-w-6xl bg-white rounded-[3rem] shadow-2xl overflow-hidden h-[90vh] flex flex-col animate-in zoom-in-95 duration-300">
+                        <div className="p-8 border-b border-slate-100 flex items-center justify-between bg-slate-50 flex-shrink-0">
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 bg-white rounded-2xl shadow-sm border border-slate-100 text-primary">
+                                    <Eye className="h-5 w-5" />
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">{previewTitle}</h3>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Internal Verification Engine</p>
+                                </div>
+                            </div>
+                            <button onClick={() => setShowPreview(false)} className="p-3 hover:bg-white hover:text-rose-500 rounded-2xl transition-all"><X className="h-6 w-6" /></button>
+                        </div>
+                        <div className="flex-1 overflow-auto p-12 custom-scrollbar">
+                            <ReportPreviewModal
+                                title={previewTitle}
+                                data={previewData}
+                                onClose={() => setShowPreview(false)}
+                                onExport={handleExport}
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Unified Professional Payment Modal */}
             {paymentModal && (() => {
-                const remaining = paymentModal.total - paymentModal.alreadyPaid;
-                const progress = paymentModal.total > 0 ? Math.round((paymentModal.alreadyPaid / paymentModal.total) * 100) : 0;
+                const remaining = paymentModal.total - (paymentModal.alreadyPaid || 0);
+                const progress = paymentModal.total > 0 ? Math.round(((paymentModal.alreadyPaid || 0) / paymentModal.total) * 100) : 0;
                 const currentAmount = Number(paymentAmount) || 0;
-                const isLunas = currentAmount === remaining;
-                const isValid = currentAmount > 0 && currentAmount <= remaining;
+                const isLunas = currentAmount >= remaining;
+                const isValid = currentAmount > 0 && currentAmount <= (remaining + 1); // Allow small rounding margin
+
                 return (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-                        <div className="bg-white rounded-[2rem] w-full max-w-lg shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-300">
-                            {/* Header */}
-                            <div className="p-6 border-b border-slate-100 bg-gradient-to-r from-primary/5 to-emerald-50/50 flex items-center gap-4">
-                                <div className="p-3 bg-primary/10 rounded-2xl text-primary">
-                                    <Banknote className="h-6 w-6" />
+                    <div className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+                        <div className="absolute inset-0" onClick={() => setPaymentModal(null)} />
+                        <div className="relative w-full max-w-lg bg-white rounded-[2.5rem] shadow-2xl overflow-hidden animate-in slide-in-from-bottom-10 sm:zoom-in-95 duration-300">
+                            {/* Visual Header */}
+                            <div className="p-8 bg-slate-900 text-white relative">
+                                <div className="absolute top-0 right-0 p-8 opacity-10">
+                                    <Banknote className="h-24 w-24" />
                                 </div>
-                                <div className="flex-1">
-                                    <h3 className="text-lg font-black text-slate-900">Input Pembayaran</h3>
-                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">
-                                        {paymentModal.type === "PURCHASE" ? "Hutang (AP)" : "Piutang (AR)"} • {paymentModal.supplierName}
-                                    </p>
+                                <div className="relative z-10">
+                                    <h3 className="text-2xl font-black tracking-tight uppercase">Payment Allocation</h3>
+                                    <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mt-1">{paymentModal.type === "PURCHASE" ? "Accounts Payable" : "Accounts Receivable"} Verification</p>
                                 </div>
-                                <button onClick={() => setPaymentModal(null)} className="p-2 hover:bg-white hover:shadow-md rounded-xl transition-all text-slate-400 hover:text-red-500 active:scale-95 border border-slate-200">
-                                    <X className="h-5 w-5" />
-                                </button>
                             </div>
 
-                            <div className="p-6 space-y-5">
-                                {/* Balance Info */}
-                                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-3">
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-slate-500 font-bold">Total Tagihan</span>
-                                        <span className="font-black text-slate-800">{formatCurrency(paymentModal.total)}</span>
+                            <div className="p-8 space-y-8">
+                                {/* Account Context Cards */}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex flex-col justify-between h-24">
+                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Entry Ref</span>
+                                        <span className="text-[11px] font-black text-slate-900 leading-tight">{paymentModal.supplierName || 'System Ref'}</span>
                                     </div>
-                                    {paymentModal.alreadyPaid > 0 && (
-                                        <div className="flex justify-between text-sm">
-                                            <span className="text-slate-500 font-bold">Sudah Dibayar</span>
-                                            <span className="font-black text-emerald-600">{formatCurrency(paymentModal.alreadyPaid)}</span>
+                                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex flex-col justify-between h-24">
+                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest text-right">Progress</span>
+                                        <div className="flex items-center gap-2 justify-end">
+                                            <div className="w-16 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                                                <div className="h-full bg-emerald-500" style={{ width: `${progress}%` }} />
+                                            </div>
+                                            <span className="text-[11px] font-black text-slate-900 tabular-nums">{progress}%</span>
                                         </div>
-                                    )}
-                                    <div className="h-px bg-slate-200" />
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-primary font-black">Sisa Pembayaran</span>
-                                        <span className="font-black text-primary text-lg">{formatCurrency(remaining)}</span>
                                     </div>
-                                    {/* Progress Bar */}
-                                    <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
-                                        <div className="h-full bg-emerald-500 rounded-full transition-all duration-500" style={{ width: `${progress}%` }} />
-                                    </div>
-                                    <p className="text-[10px] font-bold text-slate-400 text-right">{progress}% terbayar</p>
                                 </div>
 
-                                {/* Amount Input */}
-                                <div className="space-y-2">
-                                    <label htmlFor="payment-amount-input" className="text-xs font-black text-slate-700 uppercase tracking-widest">Jumlah Pembayaran</label>
-                                    <div className="relative">
-                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">Rp</span>
-                                        <input
-                                            ref={paymentInputRef}
-                                            id="payment-amount-input"
-                                            name="paymentAmount"
-                                            type="number"
-                                            min="0"
-                                            max={remaining}
-                                            value={paymentAmount}
-                                            onChange={(e) => setPaymentAmount(e.target.value)}
-                                            onKeyDown={(e) => { if (e.key === 'Enter' && isValid) handlePaymentModalSubmit(); }}
-                                            placeholder="0"
-                                            className={cn(
-                                                "w-full pl-12 pr-4 py-3.5 border-2 rounded-2xl text-lg font-black outline-none transition-all",
-                                                isValid ? "border-emerald-300 bg-emerald-50/30 text-emerald-800 focus:ring-2 focus:ring-emerald-200" : "border-slate-300 bg-white text-slate-800 focus:border-primary focus:ring-2 focus:ring-primary/20"
-                                            )}
-                                        />
+                                {/* Financial Detail */}
+                                <div className="space-y-4">
+                                     <div className="flex justify-between items-center bg-rose-50/50 p-6 rounded-[2rem] border border-rose-100 border-dashed">
+                                        <span className="text-[11px] font-black text-rose-500 uppercase tracking-widest">Outstanding Due</span>
+                                        <span className="text-2xl font-black text-rose-600 tabular-nums tracking-tighter">{formatCurrency(remaining)}</span>
                                     </div>
-                                    {currentAmount > 0 && (
-                                        <p className={cn("text-[11px] font-bold", isLunas ? "text-emerald-600" : "text-blue-600")}>
-                                            {isLunas ? "✓ Pelunasan penuh" : `Sisa setelah bayar: ${formatCurrency(remaining - currentAmount)}`}
-                                        </p>
-                                    )}
+
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Allocation Amount</label>
+                                        <div className="relative">
+                                            <span className="absolute left-6 top-1/2 -translate-y-1/2 text-lg font-black text-slate-300">Rp</span>
+                                            <input
+                                                ref={paymentInputRef}
+                                                type="number"
+                                                value={paymentAmount}
+                                                onChange={e => setPaymentAmount(e.target.value)}
+                                                className="w-full bg-slate-50 border-2 border-slate-100 rounded-[2rem] p-6 pl-14 text-2xl font-black text-slate-900 outline-none focus:border-primary transition-all shadow-inner"
+                                                placeholder="0.00"
+                                            />
+                                        </div>
+                                        {currentAmount > 0 && (
+                                            <div className="px-4">
+                                                <p className={cn("text-[10px] font-black uppercase tracking-widest", isLunas ? "text-emerald-500" : "text-blue-500")}>
+                                                    {isLunas ? "✓ Authorized for full settlement" : `Remaining post-allocation: ${formatCurrency(remaining - currentAmount)}`}
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="flex gap-2">
+                                        {[0.25, 0.5, 0.75, 1].map((pct) => (
+                                            <button
+                                                key={pct}
+                                                onClick={() => setPaymentAmount(String(Math.round(remaining * pct)))}
+                                                className="px-3 py-2 bg-slate-100 text-slate-500 text-[10px] font-black rounded-xl hover:bg-slate-200 transition-colors uppercase tracking-[0.1em]"
+                                            >
+                                                {pct === 1 ? 'MAX' : `${pct * 100}%`}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Posting Date</label>
+                                        <div className="relative">
+                                            <Calendar className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                                            <input
+                                                type="date"
+                                                value={paymentDate}
+                                                onChange={e => setPaymentDate(e.target.value)}
+                                                className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 pl-12 text-[11px] font-black text-slate-600 uppercase tracking-[0.2em] outline-none focus:border-primary transition-all"
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
 
-                                {/* Quick Fill Buttons */}
-                                <div className="flex flex-wrap gap-2">
-                                    {[25, 50, 75].map(pct => (
-                                        <button
-                                            key={pct}
-                                            type="button"
-                                            onClick={() => setPaymentAmount(String(Math.round(remaining * pct / 100)))}
-                                            className="px-3 py-1.5 bg-slate-100 text-slate-600 text-xs font-black rounded-xl hover:bg-slate-200 transition-all active:scale-95 border border-slate-200"
-                                        >
-                                            {pct}%
-                                        </button>
-                                    ))}
+                                <div className="flex gap-4 pt-4">
                                     <button
-                                        type="button"
-                                        onClick={() => setPaymentAmount(String(remaining))}
-                                        className="px-3 py-1.5 bg-emerald-50 text-emerald-700 text-xs font-black rounded-xl hover:bg-emerald-100 transition-all active:scale-95 border border-emerald-200"
+                                        onClick={() => setPaymentModal(null)}
+                                        className="flex-1 py-4 text-[11px] font-black text-slate-400 uppercase tracking-widest hover:bg-slate-50 rounded-2xl transition-all"
                                     >
-                                        Lunas
+                                        Cancel
+                                    </button>
+                                    <button
+                                        disabled={!isValid}
+                                        onClick={handlePaymentModalSubmit}
+                                        className="flex-1 erp-btn-primary !py-4 shadow-xl shadow-primary/20 disabled:opacity-50"
+                                    >
+                                        {isLunas ? 'Authorize Settlement' : 'Verify Allocation'}
                                     </button>
                                 </div>
-
-                                {/* Date Input */}
-                                <div className="space-y-2">
-                                    <label htmlFor="payment-date-input" className="text-xs font-black text-slate-700 uppercase tracking-widest flex items-center gap-1.5">
-                                        <Calendar className="h-3.5 w-3.5" /> Tanggal Pembayaran
-                                    </label>
-                                    <input
-                                        id="payment-date-input"
-                                        name="paymentDate"
-                                        type="date"
-                                        value={paymentDate}
-                                        onChange={(e) => setPaymentDate(e.target.value)}
-                                        className="w-full px-4 py-3 border-2 border-slate-300 rounded-2xl font-bold text-sm outline-none focus:border-primary transition-all focus:ring-2 focus:ring-primary/20"
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Footer */}
-                            <div className="p-6 border-t border-slate-100 bg-slate-50/50 flex gap-3">
-                                <button
-                                    onClick={() => setPaymentModal(null)}
-                                    className="flex-1 py-3 bg-white text-slate-600 font-black rounded-2xl hover:bg-slate-100 transition-all active:scale-95 text-sm border-2 border-slate-200"
-                                >
-                                    Batal
-                                </button>
-                                <button
-                                    disabled={!isValid}
-                                    onClick={handlePaymentModalSubmit}
-                                    className={cn(
-                                        "flex-[2] py-3 text-white font-black rounded-2xl transition-all active:scale-95 text-sm shadow-xl flex items-center justify-center gap-2",
-                                        isValid ? "bg-primary hover:bg-primary/90 shadow-primary/20" : "bg-slate-300 cursor-not-allowed shadow-none"
-                                    )}
-                                >
-                                    <Banknote className="h-4 w-4" />
-                                    {isLunas ? "Bayar Lunas" : "Bayar Sebagian"}
-                                </button>
                             </div>
                         </div>
                     </div>
                 );
             })()}
-        </div >
+        </div>
     );
 }

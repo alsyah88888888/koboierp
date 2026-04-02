@@ -321,13 +321,13 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
             </div>
 
             <div className="table-container">
-                <div className="p-6 border-b flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white">
-                    <div className="flex items-center gap-6 overflow-x-auto whitespace-nowrap w-full md:w-auto custom-scrollbar pb-2 md:pb-0">
+                <div className="p-6 border-b flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-white">
+                    <div className="flex items-center gap-8 overflow-x-auto whitespace-nowrap w-full md:w-auto custom-scrollbar pb-2 md:pb-0">
                         <button
                             onClick={() => setActiveTab("SJ")}
                             className={cn(
-                                "text-sm font-black uppercase tracking-widest transition-all border-b-4 pb-2 shrink-0",
-                                activeTab === "SJ" ? "text-primary border-primary" : "text-slate-300 border-transparent hover:text-slate-500"
+                                "text-sm font-black uppercase tracking-widest transition-all border-b-4 pb-3 shrink-0",
+                                activeTab === "SJ" ? "text-primary border-primary" : "text-slate-300 border-transparent hover:text-slate-400"
                             )}
                         >
                             Riwayat Pengiriman
@@ -335,32 +335,32 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                         <button
                             onClick={() => setActiveTab("RETURNS")}
                             className={cn(
-                                "text-sm font-black uppercase tracking-widest transition-all border-b-4 pb-2 shrink-0",
-                                activeTab === "RETURNS" ? "text-blue-600 border-blue-600" : "text-slate-300 border-transparent hover:text-slate-500"
+                                "text-sm font-black uppercase tracking-widest transition-all border-b-4 pb-3 shrink-0",
+                                activeTab === "RETURNS" ? "text-blue-600 border-blue-600" : "text-slate-300 border-transparent hover:text-slate-400"
                             )}
                         >
                             Retur Penjualan
                         </button>
                     </div>
-                    <div className="relative w-full md:w-80">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <div className="relative w-full md:w-96 group">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
                         <input
                             value={searchTerm}
                             onChange={e => setSearchTerm(e.target.value)}
-                            placeholder="Cari No. SJ / Buyer..."
-                            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border-2 border-slate-100 rounded-xl text-sm font-bold focus:outline-none focus:border-primary transition-all"
+                            placeholder="Cari No. SJ / Buyer / Penerima..."
+                            className="w-full pl-11 pr-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-2xl text-sm font-bold focus:outline-none focus:border-primary focus:bg-white transition-all ring-primary/5 focus:ring-4"
                         />
                     </div>
                 </div>
                 
                 <div className="table-responsive">
                     {activeTab === "SJ" ? (
-                        <table className="table-erp min-w-[1000px]">
-                            <thead>
+                        <table className="table-erp table-to-cards min-w-full md:min-w-[1000px]">
+                            <thead className="hidden md:table-header-group">
                                 <tr>
-                                    <th className="w-48">No. Pengiriman (SJ)</th>
+                                    <th className="w-48">No. Pengiriman</th>
                                     <th className="w-60">Buyer / Penerima</th>
-                                    <th>Alamat Kirim</th>
+                                    <th>Alamat</th>
                                     <th className="w-40">Gudang</th>
                                     <th className="text-right w-40">Qty</th>
                                     <th className="text-right w-40">Tanggal</th>
@@ -369,43 +369,43 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                             </thead>
                             <tbody>
                                 {filteredDeliveries.map((d: any) => (
-                                    <tr key={d.id}>
-                                        <td className="font-mono text-primary font-bold">
+                                    <tr key={d.id} className="hover:bg-slate-50/50 transition-colors">
+                                        <td data-label="No. SJ" className="font-mono text-primary font-bold md:pl-6">
                                             {d.deliveryNumber}
                                         </td>
-                                        <td>
+                                        <td data-label="Buyer">
                                             <div className="font-black text-slate-900">{d.buyerName}</div>
                                             <div className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter truncate max-w-[200px]">
                                                 {d.recipient?.split(',')[0]}
                                             </div>
                                         </td>
-                                        <td className="text-xs text-slate-500 leading-relaxed max-w-xs truncate">
+                                        <td data-label="Alamat" className="text-xs text-slate-500 leading-relaxed max-w-xs md:truncate">
                                             {d.recipient}
                                         </td>
-                                        <td>
+                                        <td data-label="Gudang">
                                             <span className="bg-slate-100 px-2 py-1 rounded text-[10px] font-black uppercase text-slate-600">
                                                 {d.warehouse.name}
                                             </span>
                                         </td>
-                                        <td className="text-right font-bold text-slate-900">
+                                        <td data-label="Qty" className="text-right font-bold text-slate-900 md:pr-6">
                                             {d.items.reduce((acc: number, i: any) => acc + i.quantity, 0)} <span className="text-[10px] text-slate-400">Pcs</span>
                                         </td>
-                                        <td className="text-right text-xs text-slate-500">
+                                        <td data-label="Tanggal" className="text-right text-xs text-slate-500 md:pr-6">
                                             {isClient ? format(new Date(d.createdAt), "dd/MM/yyyy HH:mm") : "..."}
                                         </td>
-                                        <td>
-                                            <div className="flex items-center justify-center gap-1">
-                                                <Link href={`/sales/print/sj/${d.id}`} className="p-2 text-slate-400 hover:text-primary hover:bg-slate-100 rounded-xl transition-all">
+                                        <td data-label="Aksi" className="md:pr-6">
+                                            <div className="flex items-center justify-end md:justify-center gap-1">
+                                                <Link href={`/sales/print/sj/${d.id}`} className="p-2.5 text-slate-400 hover:text-primary hover:bg-slate-100 rounded-xl transition-all">
                                                     <Eye className="h-4 w-4" />
                                                 </Link>
-                                                <Link href={`/sales/print/${d.id}`} className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all">
+                                                <Link href={`/sales/print/${d.id}`} className="p-2.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all">
                                                     <FileText className="h-4 w-4" />
                                                 </Link>
-                                                <button onClick={() => { setEditData(d); setShowSalesModal(true); }} className="p-2 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-all">
+                                                <button onClick={() => { setEditData(d); setShowSalesModal(true); }} className="p-2.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-all">
                                                     <Edit2 className="h-4 w-4" />
                                                 </button>
                                                 {(isAdmin || userRole === "SALES") && (
-                                                    <button onClick={() => handleDelete(d.id)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all">
+                                                    <button onClick={() => handleDelete(d.id)} className="p-2.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all">
                                                         <Trash2 className="h-4 w-4" />
                                                     </button>
                                                 )}
@@ -416,8 +416,8 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                             </tbody>
                         </table>
                     ) : (
-                        <table className="table-erp min-w-[1000px]">
-                            <thead className="bg-blue-50/50">
+                        <table className="table-erp table-to-cards min-w-full md:min-w-[1000px]">
+                            <thead className="hidden md:table-header-group">
                                 <tr>
                                     <th className="w-40">No. Retur</th>
                                     <th className="w-48">No. SJ Terkait</th>
@@ -430,25 +430,25 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                             <tbody>
                                 {filteredReturns.map((r: any) => (
                                     <tr key={r.id}>
-                                        <td className="font-mono text-blue-700 font-bold">{r.returnNumber}</td>
-                                        <td className="font-mono text-slate-500">{r.delivery.deliveryNumber}</td>
-                                        <td className="font-bold">{r.delivery.buyerName}</td>
-                                        <td className="text-right font-black text-blue-600">
+                                        <td data-label="No. Retur" className="font-mono text-blue-700 font-bold md:pl-6">{r.returnNumber}</td>
+                                        <td data-label="No. SJ" className="font-mono text-slate-500">{r.delivery.deliveryNumber}</td>
+                                        <td data-label="Buyer" className="font-bold">{r.delivery.buyerName}</td>
+                                        <td data-label="Total" className="text-right font-black text-blue-600 md:pr-6">
                                             {r.items.reduce((acc: number, item: any) => acc + item.quantity, 0)} <span className="text-[10px] text-slate-400">Pcs</span>
                                         </td>
-                                        <td className="text-center">
+                                        <td data-label="Status" className="text-center">
                                             {r.status === "PENDING" ? (
                                                 <span className="px-3 py-1 bg-amber-100 text-amber-700 text-[10px] font-black rounded-full border border-amber-200">PENDING</span>
                                             ) : (
                                                 <span className="px-3 py-1 bg-emerald-100 text-emerald-700 text-[10px] font-black rounded-full border border-emerald-200">VERIFIED</span>
                                             )}
                                         </td>
-                                        <td>
-                                            <div className="flex items-center justify-center gap-1">
-                                                <button onClick={() => { setEditData(r); setShowReturnModal(true); }} className="p-2 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-all" disabled={r.status !== "PENDING"}>
+                                        <td data-label="Aksi" className="md:pr-6">
+                                            <div className="flex items-center justify-end md:justify-center gap-1">
+                                                <button onClick={() => { setEditData(r); setShowReturnModal(true); }} className="p-2.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-all" disabled={r.status !== "PENDING"}>
                                                     <Edit2 className="h-4 w-4" />
                                                 </button>
-                                                <button onClick={() => handleDeleteReturn(r.id)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all">
+                                                <button onClick={() => handleDeleteReturn(r.id)} className="p-2.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all">
                                                     <Trash2 className="h-4 w-4" />
                                                 </button>
                                             </div>

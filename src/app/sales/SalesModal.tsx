@@ -208,36 +208,43 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
     };
 
     return (
-        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[9999] flex items-center justify-center p-0 md:p-4 opacity-100">
-            <div className="bg-slate-50 border border-slate-200 shadow-2xl rounded-none md:rounded-[2rem] w-full max-w-7xl h-full md:max-h-[95vh] overflow-hidden flex flex-col">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-0 md:p-6 animate-fade-up">
+            <div className="bg-white shadow-2xl rounded-none md:rounded-[2.5rem] w-full max-w-7xl h-full md:max-h-[92vh] overflow-hidden flex flex-col border border-slate-200/50">
                 {/* Header */}
-                <div className="p-6 md:px-8 md:py-6 border-b border-slate-200 flex justify-between items-center bg-white shrink-0">
-                    <div className="flex items-center gap-4">
-                        <div className="p-3 bg-primary text-white rounded-2xl shadow-lg shadow-primary/20">
+                <div className="px-8 py-6 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
+                    <div className="flex items-center gap-5">
+                        <div className="p-3.5 bg-primary text-white rounded-2xl shadow-xl shadow-primary/20">
                             <ShoppingCart className="h-6 w-6" />
                         </div>
                         <div>
-                            <h2 className="text-xl font-black text-slate-900 tracking-tight">
+                            <h2 className="text-2xl font-black text-slate-900 tracking-tight">
                                 {initialData ? "Update Penjualan" : "Input Penjualan Baru"}
                             </h2>
-                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Surat Jalan & Invoice</p>
+                            <div className="flex items-center gap-2 mt-1">
+                                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Surat Jalan & Invoice</span>
+                                <span className="h-1 w-1 bg-slate-300 rounded-full"></span>
+                                <span className="text-[10px] text-primary font-black uppercase tracking-widest">Premium ERP v2.0</span>
+                            </div>
                         </div>
                     </div>
-                    <button onClick={onClose} className="p-2.5 hover:bg-slate-100 rounded-xl transition-all text-slate-400 hover:text-slate-900">
-                        <X className="h-6 w-6" />
+                    <button onClick={onClose} className="p-3 hover:bg-slate-50 rounded-2xl transition-all text-slate-400 hover:text-slate-900 group">
+                        <X className="h-6 w-6 group-hover:rotate-90 transition-transform duration-300" />
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="overflow-y-auto flex-1 p-4 md:p-8 space-y-8 bg-slate-50 custom-scrollbar">
+                <form onSubmit={handleSubmit} className="overflow-y-auto flex-1 p-6 md:p-10 space-y-10 bg-slate-50/30 custom-scrollbar">
                     {/* Step 1: Logistics */}
-                    <div className="erp-card bg-white p-6">
-                        <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-50">
-                            <div className="flex items-center gap-3">
-                                <span className="bg-primary text-white h-7 w-7 rounded-full flex items-center justify-center text-[10px] font-black shadow-md">1</span>
-                                <h3 className="font-black text-slate-800 tracking-tight uppercase text-sm">Informasi Pengiriman</h3>
+                    <div className="erp-card bg-white p-8">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
+                            <div className="flex items-center gap-4">
+                                <span className="bg-primary/5 text-primary h-10 w-10 rounded-2xl flex items-center justify-center text-sm font-black border border-primary/10">01</span>
+                                <div>
+                                    <h3 className="font-black text-slate-800 tracking-tight uppercase text-sm">Informasi Pengiriman</h3>
+                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Logistics & Customer Details</p>
+                                </div>
                             </div>
-                            <div className="flex items-center gap-3 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100 shadow-sm">
-                                <label htmlFor="manual-buyer-toggle" className="text-[10px] font-black text-slate-500 cursor-pointer uppercase tracking-tighter">Buyer Manual?</label>
+                            <div className="flex items-center gap-4 bg-slate-50 px-4 py-2 rounded-2xl border border-slate-100 shadow-sm self-stretch sm:self-auto justify-center">
+                                <label htmlFor="manual-buyer-toggle" className="text-[11px] font-bold text-slate-500 cursor-pointer uppercase tracking-tight">Buyer Manual?</label>
                                 <label className="relative inline-flex items-center cursor-pointer">
                                     <input
                                         id="manual-buyer-toggle"
@@ -246,14 +253,13 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                         checked={isManualBuyer}
                                         onChange={(e) => setIsManualBuyer(e.target.checked)}
                                     />
-                                    <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+                                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                                 </label>
                             </div>
                         </div>
 
-                        {/* Card Body */}
-                        <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            <div className="space-y-1">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                            <div className="space-y-2">
                                 <label className="erp-label">Buyer / Customer</label>
                                 <input
                                     list={isManualBuyer ? undefined : "customer-list-2"}
@@ -263,13 +269,11 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                         setBuyerName(val);
                                         if (!isManualBuyer) {
                                             const customer = customers.find(c => c.name === val);
-                                            if (customer && customer.address) {
-                                                setRecipient(customer.address);
-                                            }
+                                            if (customer && customer.address) setRecipient(customer.address);
                                         }
                                     }}
-                                    className="erp-input"
-                                    placeholder={isManualBuyer ? "Ketik nama buyer (Manual)..." : "Cari nama customer..."}
+                                    className="erp-input px-5 h-12 focus:bg-white"
+                                    placeholder={isManualBuyer ? "Nama buyer (Manual)..." : "Cari nama customer..."}
                                     required
                                 />
                                 {!isManualBuyer && (
@@ -279,22 +283,22 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                 )}
                             </div>
 
-                            <div className="space-y-1">
+                            <div className="space-y-2">
                                 <label className="erp-label">Nomor PO Buyer</label>
                                 <input
                                     value={poNumber}
                                     onChange={e => setPoNumber(e.target.value)}
-                                    placeholder="Isi manual jika ada..."
-                                    className="erp-input"
+                                    placeholder="Input PO ID jika ada..."
+                                    className="erp-input px-5 h-12 focus:bg-white"
                                 />
                             </div>
 
-                            <div className="space-y-1">
+                            <div className="space-y-2">
                                 <label className="erp-label">Sales Person</label>
                                 <select 
                                     value={salesPerson} 
                                     onChange={e => setSalesPerson(e.target.value)} 
-                                    className="erp-input font-bold"
+                                    className="erp-input px-5 h-12 font-bold cursor-pointer"
                                 >
                                     <option value="">(None)</option>
                                     <option value="BC">BC (Cici)</option>
@@ -302,31 +306,31 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                 </select>
                             </div>
 
-                            <div className="space-y-1">
+                            <div className="space-y-2">
                                 <label className="erp-label">Tanggal Transaksi</label>
                                 <input
                                     type="date"
                                     value={date}
                                     onChange={e => setDate(e.target.value)}
-                                    className="erp-input font-bold"
+                                    className="erp-input px-5 h-12 font-bold cursor-pointer"
                                     required
                                 />
                             </div>
 
-                            <div className="space-y-1">
+                            <div className="space-y-2">
                                 <label className="erp-label">Gudang Pengirim</label>
-                                <select value={warehouseId} onChange={e => setWarehouseId(e.target.value)} className="erp-input font-bold" required>
+                                <select value={warehouseId} onChange={e => setWarehouseId(e.target.value)} className="erp-input px-5 h-12 font-bold cursor-pointer" required>
                                     {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
                                 </select>
                             </div>
 
-                            <div className="space-y-1">
+                            <div className="space-y-2">
                                 <label className="erp-label">Penerima & Alamat Kirim</label>
                                 <input
                                     value={recipient}
                                     onChange={e => setRecipient(e.target.value)}
-                                    placeholder="Nama, Kota, Alamat Lengkap..."
-                                    className="erp-input"
+                                    placeholder="Alamat lengkap tujuan..."
+                                    className="erp-input px-5 h-12 focus:bg-white"
                                     required
                                 />
                             </div>
@@ -334,40 +338,43 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                     </div>
 
                     {/* Step 2: Items */}
-                    <div className="space-y-4">
-                        <div className="flex justify-between items-center px-1">
-                            <div className="flex items-center gap-3">
-                                <span className="bg-primary text-white h-7 w-7 rounded-full flex items-center justify-center text-[10px] font-black shadow-md">2</span>
-                                <h3 className="font-black text-slate-800 tracking-tight uppercase text-sm">Rincian Barang</h3>
+                    <div className="space-y-6">
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center px-2 gap-4">
+                            <div className="flex items-center gap-4">
+                                <span className="bg-primary/5 text-primary h-10 w-10 rounded-2xl flex items-center justify-center text-sm font-black border border-primary/10">02</span>
+                                <div>
+                                    <h3 className="font-black text-slate-800 tracking-tight uppercase text-sm">Daftar Barang</h3>
+                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Product Selection & Inventory</p>
+                                </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <button type="button" onClick={addItem} className="erp-btn-primary !px-4 !py-2 !text-[10px] uppercase tracking-widest">
+                            <div className="flex items-center gap-3 w-full sm:w-auto">
+                                <button type="button" onClick={addItem} className="erp-btn-primary !px-5 !py-2.5 !text-[11px] uppercase tracking-wider flex-1 sm:flex-none">
                                     <Plus className="h-4 w-4" /> Item Baru
                                 </button>
                                 <button 
                                     type="button" 
                                     onClick={() => setShowDiscount(!showDiscount)} 
                                     className={cn(
-                                        "px-4 py-2 rounded-xl text-[10px] uppercase tracking-widest font-black transition-all border-2",
-                                        showDiscount ? "bg-orange-600 border-orange-600 text-white shadow-lg shadow-orange-100" : "bg-white border-slate-200 text-slate-400 hover:border-orange-500 hover:text-orange-500"
+                                        "px-5 py-2.5 rounded-xl text-[11px] uppercase tracking-wider font-bold transition-all border-2 flex-1 sm:flex-none flex items-center justify-center gap-2",
+                                        showDiscount ? "bg-orange-600 border-orange-600 text-white shadow-xl shadow-orange-200" : "bg-white border-slate-200 text-slate-500 hover:border-orange-400 hover:text-orange-500"
                                     )}
                                 >
-                                    <Tag className="h-4 w-4 inline mr-1" /> Diskon
+                                    <Tag className="h-4 w-4" /> Diskon
                                 </button>
                             </div>
                         </div>
 
-                        <div className="space-y-3">
+                        <div className="space-y-4">
                             {items.map((item, index) => (
-                                <div key={index} className="erp-card bg-white p-4 flex flex-col xl:flex-row gap-4 items-stretch xl:items-end group relative transition-all hover:border-primary/30">
-                                    <div className="flex-1 space-y-1">
-                                        <label className="erp-label text-slate-400">SKU / Nama Barang</label>
+                                <div key={index} className="erp-card bg-white p-6 flex flex-col xl:flex-row gap-6 items-stretch xl:items-end group relative transition-all animate-fade-up">
+                                    <div className="flex-1 space-y-2">
+                                        <label className="erp-label !text-slate-400">SKU / Nama Barang</label>
                                         <input
                                             list={`product-list-2-${index}`}
                                             value={item.sku}
                                             onChange={e => updateItem(index, 'sku', e.target.value)}
-                                            className="erp-input"
-                                            placeholder="Ketik SKU..."
+                                            className="erp-input px-4 h-12 bg-slate-50/50 border-slate-100 hover:border-slate-200 focus:bg-white"
+                                            placeholder="Ketik SKU atau scan barcode..."
                                             required
                                         />
                                         <datalist id={`product-list-2-${index}`}>
@@ -375,72 +382,72 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                         </datalist>
                                     </div>
 
-                                    <div className="flex-1 space-y-1">
-                                        <label className="erp-label text-slate-400">Stok (Vendor)</label>
+                                    <div className="flex-1 space-y-2">
+                                        <label className="erp-label !text-slate-400">Pilih Stok</label>
                                         <select
                                             value={item.vendorName}
                                             onChange={e => updateItem(index, 'vendorName', e.target.value)}
-                                            className="erp-input bg-slate-50 font-bold"
+                                            className="erp-input px-4 h-12 bg-slate-50 border-slate-100 font-bold cursor-pointer"
                                             required
                                         >
-                                            <option value="">Pilih Stok...</option>
+                                            <option value="">- Sumber Stok -</option>
                                             {item.productId && Array.isArray(products) && products.find(p => p.id === item.productId)?.stocks?.map((s: any) => (
                                                 <option key={s.id} value={s.vendorName}>
-                                                    {s.vendorName} (Sisa: {s.quantity})
+                                                    {s.vendorName} ({s.quantity} pcs)
                                                 </option>
                                             ))}
                                             {!item.productId && <option value="UMUM">UMUM</option>}
                                         </select>
                                     </div>
 
-                                    <div className="w-full xl:w-20 space-y-1">
-                                        <label className="erp-label text-slate-400">Qty</label>
+                                    <div className="w-full xl:w-24 space-y-2">
+                                        <label className="erp-label !text-slate-400">Qty</label>
                                         <input
                                             type="text"
                                             value={item.quantity}
                                             onChange={e => updateItem(index, "quantity", e.target.value)}
-                                            className="erp-input text-center font-black"
+                                            className="erp-input text-center font-black h-12"
                                             required
                                         />
                                     </div>
 
-                                    <div className="w-full xl:w-32 space-y-1">
-                                        <label className="erp-label text-slate-400">Harga</label>
+                                    <div className="w-full xl:w-36 space-y-2">
+                                        <label className="erp-label !text-slate-400">Harga Satuan</label>
                                         <input
                                             type="text"
                                             value={item.salesPrice}
                                             onChange={e => updateItem(index, "salesPrice", e.target.value)}
-                                            className="erp-input text-right font-black"
+                                            className="erp-input text-right font-black h-12"
                                             required
                                         />
                                     </div>
 
                                     {showDiscount && (
                                         <>
-                                            <div className="w-full xl:w-20 space-y-1">
-                                                <label className="erp-label text-orange-500">Disc %</label>
+                                            <div className="w-full xl:w-24 space-y-2">
+                                                <label className="erp-label !text-orange-500">Disc %</label>
                                                 <input
                                                     type="text"
                                                     value={item.discountPercent}
                                                     onChange={e => updateItem(index, "discountPercent", e.target.value)}
-                                                    className="erp-input bg-orange-50 text-right font-black text-orange-600 border-orange-100"
+                                                    className="erp-input bg-orange-50/30 text-right font-black text-orange-600 border-orange-100 h-12"
                                                 />
                                             </div>
-                                            <div className="w-full xl:w-28 space-y-1">
-                                                <label className="erp-label text-orange-500">Disc Rp</label>
+                                            <div className="w-full xl:w-32 space-y-2">
+                                                <label className="erp-label !text-orange-500">Disc Nominal</label>
                                                 <input
                                                     type="text"
                                                     value={item.discount}
                                                     onChange={e => updateItem(index, "discount", e.target.value)}
-                                                    className="erp-input bg-orange-50 text-right font-black text-orange-600 border-orange-100"
+                                                    className="erp-input bg-orange-50/30 text-right font-black text-orange-600 border-orange-100 h-12"
                                                 />
                                             </div>
                                         </>
                                     )}
 
-                                    <div className="w-full xl:w-36 space-y-1">
-                                        <label className="erp-label text-slate-400">Total Harga</label>
-                                        <div className="erp-input h-11 bg-slate-50 flex items-center justify-end font-black text-slate-900 border-slate-100 shadow-inner">
+                                    <div className="w-full xl:w-44 space-y-2">
+                                        <label className="erp-label !text-slate-400">Subtotal</label>
+                                        <div className="erp-input h-12 bg-slate-900 text-white flex items-center justify-end px-5 font-black border-none shadow-xl shadow-slate-100">
                                             {((Number(String(item.quantity).replace(/\./g, '').replace(',', '.')) || 0) * (Number(String(item.salesPrice).replace(/\./g, '').replace(',', '.')) || 0) - (Number(String(item.discount || 0).replace(/\./g, '').replace(',', '.')) || 0)).toLocaleString('id-ID')}
                                         </div>
                                     </div>
@@ -448,7 +455,7 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                     <button
                                         type="button"
                                         onClick={() => removeItem(index)}
-                                        className="p-2 text-rose-300 hover:text-rose-600 rounded-xl transition-all"
+                                        className="p-3 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-2xl transition-all self-center xl:self-end mb-1"
                                         disabled={items.length === 1}
                                     >
                                         <Trash2 className="h-6 w-6" />
@@ -458,74 +465,95 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                         </div>
                     </div>
 
-                    {/* Financial Footer */}
-                    <div className="erp-card bg-slate-900 p-8 text-white shadow-2xl relative overflow-hidden mt-6">
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-                        <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 items-end">
-                            <div className="space-y-1">
-                                <label className="erp-label !text-slate-500">Total Kotor</label>
-                                <p className="text-xl font-black">Rp {grossAmount.toLocaleString('id-ID')}</p>
+                    {/* Financial Summary */}
+                    <div className="erp-card bg-slate-900 p-10 text-white shadow-2xl relative overflow-hidden mt-10">
+                        <div className="absolute top-0 right-0 w-80 h-80 bg-primary/20 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2"></div>
+                        <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-[80px] translate-y-1/2 -translate-x-1/2"></div>
+                        
+                        <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 items-end">
+                            <div className="space-y-2">
+                                <label className="text-[11px] font-bold uppercase tracking-widest text-slate-500">Gross Total</label>
+                                <p className="text-2xl font-black tracking-tight">Rp {grossAmount.toLocaleString('id-ID')}</p>
                             </div>
-                            <div className="space-y-1">
-                                <label className="erp-label !text-orange-400">Diskon Global (Rp)</label>
-                                <input
-                                    type="text"
-                                    value={totalDiscount}
-                                    onChange={e => setTotalDiscount(e.target.value)}
-                                    className="w-full bg-white/5 border border-white/10 px-4 py-2 rounded-xl text-lg font-black text-white outline-none focus:border-orange-500 transition-all"
-                                    placeholder="Rp 0"
-                                />
+                            <div className="space-y-2">
+                                <label className="text-[11px] font-bold uppercase tracking-widest text-orange-400">Global Discount</label>
+                                <div className="flex items-center bg-white/5 border border-white/10 rounded-2xl px-4 focus-within:border-orange-500/50 transition-all">
+                                    <span className="text-slate-500 font-bold mr-2">Rp</span>
+                                    <input
+                                        type="text"
+                                        value={totalDiscount}
+                                        onChange={e => setTotalDiscount(e.target.value)}
+                                        className="w-full bg-transparent py-3 text-xl font-black text-white outline-none"
+                                        placeholder="0"
+                                    />
+                                </div>
                             </div>
-                            <div className="space-y-1">
-                                <label className="erp-label !text-blue-400">PPN (%)</label>
-                                <input
-                                    type="number"
-                                    value={taxRate}
-                                    onChange={e => setTaxRate(Number(e.target.value))}
-                                    className="w-full bg-white/5 border border-white/10 px-4 py-2 rounded-xl text-lg font-black text-white outline-none focus:border-blue-500 transition-all"
-                                />
+                            <div className="space-y-2">
+                                <label className="text-[11px] font-bold uppercase tracking-widest text-blue-400">Tax Rate (PPN)</label>
+                                <div className="flex items-center bg-white/5 border border-white/10 rounded-2xl px-4 focus-within:border-blue-500/50 transition-all">
+                                    <input
+                                        type="number"
+                                        value={taxRate}
+                                        onChange={e => setTaxRate(Number(e.target.value))}
+                                        className="w-full bg-transparent py-3 text-xl font-black text-white outline-none text-right"
+                                    />
+                                    <span className="text-slate-500 font-bold ml-2">%</span>
+                                </div>
                             </div>
                             <div className="text-right">
-                                <label className="erp-label !text-emerald-400">Grand Total Akhir</label>
-                                <p className="text-4xl font-black text-emerald-400">Rp {grandTotal.toLocaleString('id-ID')}</p>
+                                <label className="text-[11px] font-bold uppercase tracking-widest text-emerald-400">Grand Total</label>
+                                <p className="text-5xl font-black text-emerald-400 tracking-tighter mt-1">Rp {grandTotal.toLocaleString('id-ID')}</p>
                             </div>
                         </div>
                     </div>
 
                     {error && (
-                        <div className="p-4 bg-rose-50 border-2 border-rose-100 rounded-2xl text-rose-700 text-sm font-bold flex items-center gap-3 mt-4">
-                            <div className="h-2 w-2 bg-rose-600 rounded-full animate-pulse"></div>
+                        <div className="p-5 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-rose-600 text-sm font-bold flex items-center gap-4 animate-fade-up">
+                            <div className="h-2 w-2 bg-rose-500 rounded-full animate-ping"></div>
                             {error}
                         </div>
                     )}
                 </form>
 
-                {/* Submit Logic */}
-                <div className="p-6 md:px-8 border-t border-slate-200 flex justify-end gap-3 bg-white shrink-0">
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="px-6 py-2.5 text-sm font-bold text-slate-500 hover:text-slate-800 transition-all"
-                    >
-                        Batal
-                    </button>
-                    <button
-                        onClick={handleSubmit}
-                        disabled={loading}
-                        className="erp-btn-primary min-w-[200px]"
-                    >
-                        {loading ? (
-                            <>
-                                <Loader2 className="h-5 w-5 animate-spin" />
-                                <span>Memproses...</span>
-                            </>
-                        ) : (
-                            <>
-                                <Save className="h-5 w-5" />
-                                <span>{initialData ? "Simpan Perbaikan" : "Proses Penjualan"}</span>
-                            </>
-                        )}
-                    </button>
+                {/* Footer Actions */}
+                <div className="px-8 py-6 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center bg-white shrink-0 gap-4">
+                    <div className="flex items-center gap-6 text-slate-400">
+                         <div className="flex flex-col">
+                            <span className="text-[10px] font-bold uppercase tracking-widest">Total Qty</span>
+                            <span className="text-lg font-black text-slate-700">{totalQty} Pcs</span>
+                         </div>
+                         <div className="h-8 w-px bg-slate-100"></div>
+                         <div className="flex flex-col">
+                            <span className="text-[10px] font-bold uppercase tracking-widest">Items</span>
+                            <span className="text-lg font-black text-slate-700">{items.length} Line</span>
+                         </div>
+                    </div>
+                    <div className="flex items-center gap-4 w-full sm:w-auto">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="px-8 py-3 text-sm font-black text-slate-400 hover:text-slate-600 transition-all uppercase tracking-widest"
+                        >
+                            Batal
+                        </button>
+                        <button
+                            onClick={handleSubmit}
+                            disabled={loading}
+                            className="erp-btn-primary min-w-[240px] h-14 !text-base shadow-2xl shadow-primary/30"
+                        >
+                            {loading ? (
+                                <>
+                                    <Loader2 className="h-5 w-5 animate-spin" />
+                                    <span>Memproses...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <Save className="h-5 w-5" />
+                                    <span>{initialData ? "Simpan Perubahan" : "Konfirmasi & Proses"}</span>
+                                </>
+                            )}
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
