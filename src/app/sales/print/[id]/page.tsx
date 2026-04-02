@@ -19,7 +19,7 @@ export default async function InvoicePrintPage({ params }: { params: Promise<{ i
             items: { include: { product: true } },
             warehouse: true
         }
-    }).then(res => serializeDecimal(res));
+    }).then((res: any) => serializeDecimal(res));
 
     if (!delivery) return <div>Data not found</div>;
 

@@ -133,39 +133,39 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
     };
 
     return (
-        <div className="space-y-6">
-            <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 hide-print mb-4 px-1">
-                <div className="flex flex-col sm:flex-row flex-wrap gap-3 justify-center md:justify-start w-full md:w-auto">
+        <div className="space-y-6 animate-fade-up">
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm hide-print">
+                <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
                     <button
                         onClick={handlePreview}
-                        className="bg-white border-2 border-emerald-600 text-emerald-600 px-6 py-2.5 rounded-xl flex items-center justify-center gap-2 hover:bg-emerald-50 transition-all font-bold shadow-sm active:scale-95 flex-1 sm:flex-none"
+                        className="bg-white border-2 border-slate-200 text-slate-600 px-4 py-2 rounded-xl flex items-center justify-center gap-2 hover:border-emerald-500 hover:text-emerald-600 transition-all font-bold active:scale-95 flex-1 sm:flex-none"
                     >
-                        <Eye className="h-5 w-5" />
+                        <Eye className="h-4 w-4" />
                         <span>Preview</span>
                     </button>
                     <button
                         onClick={handleExport}
-                        className="bg-emerald-600 text-white px-6 py-2.5 rounded-xl flex items-center justify-center gap-2 hover:bg-emerald-700 shadow-lg shadow-emerald-200 transition-all active:scale-95 font-bold flex-1 sm:flex-none"
+                        className="bg-emerald-600 text-white px-4 py-2 rounded-xl flex items-center justify-center gap-2 hover:bg-emerald-700 shadow-lg shadow-emerald-200 transition-all active:scale-95 font-bold flex-1 sm:flex-none"
                     >
-                        <FileText className="h-5 w-5" />
+                        <FileText className="h-4 w-4" />
                         <span>Export</span>
                     </button>
                     <button
                         onClick={() => setShowReturnModal(true)}
-                        className="bg-white border-2 border-blue-600 text-blue-600 px-6 py-2.5 rounded-xl flex items-center justify-center gap-2 hover:bg-blue-50 transition-all font-bold shadow-sm active:scale-95 flex-1 sm:flex-none"
+                        className="bg-white border-2 border-slate-200 text-slate-600 px-4 py-2 rounded-xl flex items-center justify-center gap-2 hover:border-blue-500 hover:text-blue-600 transition-all font-bold active:scale-95 flex-1 sm:flex-none"
                     >
-                        <Undo2 className="h-5 w-5" />
+                        <Undo2 className="h-4 w-4" />
                         <span>Retur</span>
                     </button>
                 </div>
-                <div className="w-full md:w-auto">
+                <div className="w-full lg:w-auto">
                     {activeTab === "SJ" ? (
                         <button
                             onClick={() => setShowSalesModal(true)}
-                            className="bg-primary text-white px-6 py-2.5 rounded-xl flex items-center justify-center gap-2 hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all active:scale-95 font-bold w-full"
+                            className="erp-btn-primary w-full lg:w-auto"
                         >
-                            <Plus className="h-5 w-5 text-white" />
-                            <span className="text-white">Input Penjualan</span>
+                            <Plus className="h-5 w-5" />
+                            <span>Input Penjualan</span>
                         </button>
                     ) : (
                         <button
@@ -173,10 +173,10 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                                 setEditData(null);
                                 setShowReturnModal(true);
                             }}
-                            className="bg-blue-600 text-white px-6 py-2.5 rounded-xl flex items-center justify-center gap-2 hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all active:scale-95 font-bold w-full"
+                            className="bg-blue-600 text-white px-6 py-2.5 rounded-xl flex items-center justify-center gap-2 hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all active:scale-95 font-bold w-full lg:w-auto"
                         >
-                            <Plus className="h-5 w-5 text-white" />
-                            <span className="text-white">Tambah Retur</span>
+                            <Plus className="h-5 w-5" />
+                            <span>Tambah Retur</span>
                         </button>
                     )}
                 </div>
@@ -186,59 +186,53 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                 <DashboardStats />
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
+            <div className="grid gap-4 md:gap-6 md:grid-cols-2">
                 {/* BC Performance Card */}
                 {(isAdmin || bcStats.sjCount > 0) && (
-                    <div className="bg-gradient-to-br from-indigo-50 to-white border-2 border-indigo-100 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all">
-                        <div className="flex justify-between items-center mb-4">
-                            <div className="flex items-center gap-3">
-                                <div className="bg-indigo-600 text-white p-2 rounded-xl shadow-lg shadow-indigo-200">
+                    <div className="erp-card p-6 bg-gradient-to-br from-indigo-50/50 to-white">
+                        <div className="flex justify-between items-center mb-6">
+                            <div className="flex items-center gap-4">
+                                <div className="bg-indigo-600 text-white p-3 rounded-2xl shadow-lg shadow-indigo-200">
                                     <Users className="h-6 w-6" />
                                 </div>
                                 <div>
-                                    <h3 className="text-lg font-bold text-slate-900">Performance ID: BC</h3>
-                                    <p className="text-xs text-slate-500 font-medium tracking-wide font-mono uppercase">Salesperson Overview</p>
+                                    <h3 className="text-lg font-black text-slate-900 tracking-tight">Performance: BC</h3>
+                                    <p className="erp-label !mb-0">Salesperson Overview</p>
                                 </div>
                             </div>
                             <div className="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-indigo-200">Active</div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
-                            <div className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm">
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter mb-1 flex items-center gap-1">
-                                    <FileText className="h-3 w-3 text-indigo-500" /> Total SJ Diterbitkan
-                                </p>
+                            <div className="p-4 bg-white border border-slate-100 rounded-2xl shadow-sm">
+                                <p className="erp-label">Total SJ</p>
                                 <p className="text-2xl font-black text-indigo-600">{bcStats.sjCount}</p>
-                                <p className="text-[10px] text-slate-500 mt-0.5">Surat Jalan</p>
                             </div>
-                            <div className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm">
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter mb-1 flex items-center gap-1">
-                                    <Truck className="h-3 w-3 text-indigo-500" /> Total Qty Dikirim
-                                </p>
+                            <div className="p-4 bg-white border border-slate-100 rounded-2xl shadow-sm">
+                                <p className="erp-label">Total Qty</p>
                                 <p className="text-2xl font-black text-indigo-600">{bcStats.totalQty}</p>
-                                <p className="text-[10px] text-slate-500 mt-0.5">Pcs / Item</p>
                             </div>
                         </div>
 
-                        <div className="mt-4 pt-4 border-t border-slate-100">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase mb-2 block tracking-widest">Riwayat Pengiriman Terbaru</span>
+                        <div className="mt-6 pt-6 border-t border-slate-100">
+                            <span className="erp-label">Riwayat Pengiriman Terbaru</span>
                             {bcStats.recentDeliveries.length > 0 ? (
                                 <div className="space-y-2">
                                     {bcStats.recentDeliveries.map((delivery, idx) => (
-                                        <div key={idx} className="flex justify-between items-center text-xs p-2 bg-slate-50 rounded border border-slate-100">
-                                            <div>
-                                                <p className="font-bold text-slate-700">{delivery.deliveryNumber}</p>
-                                                <p className="text-[10px] text-slate-500 truncate max-w-[120px]">{delivery.buyerName}</p>
+                                        <div key={idx} className="flex justify-between items-center text-xs p-3 bg-slate-50 border border-slate-100 rounded-xl">
+                                            <div className="min-w-0">
+                                                <p className="font-black text-slate-800 truncate">{delivery.deliveryNumber}</p>
+                                                <p className="text-[10px] text-slate-500 truncate">{delivery.buyerName}</p>
                                             </div>
-                                            <div className="text-right">
-                                                <p className="font-medium text-slate-600">{isClient ? format(new Date(delivery.createdAt), "dd MMM yy") : "..."}</p>
+                                            <div className="text-right shrink-0 ml-4">
+                                                <p className="font-bold text-slate-600">{isClient ? format(new Date(delivery.createdAt), "dd MMM") : "..."}</p>
                                                 <p className="text-[10px] font-black text-indigo-600">{delivery.items.reduce((s: number, i: any) => s + i.quantity, 0)} Pcs</p>
                                             </div>
                                         </div>
                                     ))}
                                 </div>
                             ) : (
-                                <p className="text-xs text-muted-foreground italic text-center py-2">Belum ada pengiriman</p>
+                                <p className="text-xs text-muted-foreground italic text-center py-4">Belum ada pengiriman</p>
                             )}
                         </div>
                     </div>
@@ -246,89 +240,83 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
 
                 {/* PF Performance Card */}
                 {(isAdmin || pfStats.sjCount > 0) && (
-                    <div className="bg-gradient-to-br from-amber-50 to-white border-2 border-amber-100 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all">
-                        <div className="flex justify-between items-center mb-4">
-                            <div className="flex items-center gap-3">
-                                <div className="bg-amber-600 text-white p-2 rounded-xl shadow-lg shadow-amber-200">
+                    <div className="erp-card p-6 bg-gradient-to-br from-amber-50/50 to-white">
+                        <div className="flex justify-between items-center mb-6">
+                            <div className="flex items-center gap-4">
+                                <div className="bg-amber-600 text-white p-3 rounded-2xl shadow-lg shadow-amber-200">
                                     <Users className="h-6 w-6" />
                                 </div>
                                 <div>
-                                    <h3 className="text-lg font-bold text-slate-900">Performance ID: PF</h3>
-                                    <p className="text-xs text-slate-500 font-medium tracking-wide font-mono uppercase">Salesperson Overview</p>
+                                    <h3 className="text-lg font-black text-slate-900 tracking-tight">Performance: PF</h3>
+                                    <p className="erp-label !mb-0">Salesperson Overview</p>
                                 </div>
                             </div>
                             <div className="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-amber-200">Active</div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
-                            <div className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm">
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter mb-1 flex items-center gap-1">
-                                    <FileText className="h-3 w-3 text-amber-500" /> Total SJ Diterbitkan
-                                </p>
+                            <div className="p-4 bg-white border border-slate-100 rounded-2xl shadow-sm">
+                                <p className="erp-label">Total SJ</p>
                                 <p className="text-2xl font-black text-amber-600">{pfStats.sjCount}</p>
-                                <p className="text-[10px] text-slate-500 mt-0.5">Surat Jalan</p>
                             </div>
-                            <div className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm">
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter mb-1 flex items-center gap-1">
-                                    <Truck className="h-3 w-3 text-amber-500" /> Total Qty Dikirim
-                                </p>
+                            <div className="p-4 bg-white border border-slate-100 rounded-2xl shadow-sm">
+                                <p className="erp-label">Total Qty</p>
                                 <p className="text-2xl font-black text-amber-600">{pfStats.totalQty}</p>
-                                <p className="text-[10px] text-slate-500 mt-0.5">Pcs / Item</p>
                             </div>
                         </div>
 
-                        <div className="mt-4 pt-4 border-t border-slate-100">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase mb-2 block tracking-widest">Riwayat Pengiriman Terbaru</span>
+                        <div className="mt-6 pt-6 border-t border-slate-100">
+                            <span className="erp-label">Riwayat Pengiriman Terbaru</span>
                             {pfStats.recentDeliveries.length > 0 ? (
                                 <div className="space-y-2">
                                     {pfStats.recentDeliveries.map((delivery, idx) => (
-                                        <div key={idx} className="flex justify-between items-center text-xs p-2 bg-slate-50 rounded border border-slate-100">
-                                            <div>
-                                                <p className="font-bold text-slate-700">{delivery.deliveryNumber}</p>
-                                                <p className="text-[10px] text-slate-500 truncate max-w-[120px]">{delivery.buyerName}</p>
+                                        <div key={idx} className="flex justify-between items-center text-xs p-3 bg-slate-50 border border-slate-100 rounded-xl">
+                                            <div className="min-w-0">
+                                                <p className="font-black text-slate-800 truncate">{delivery.deliveryNumber}</p>
+                                                <p className="text-[10px] text-slate-500 truncate">{delivery.buyerName}</p>
                                             </div>
-                                            <div className="text-right">
-                                                <p className="font-medium text-slate-600">{isClient ? format(new Date(delivery.createdAt), "dd MMM yy") : "..."}</p>
+                                            <div className="text-right shrink-0 ml-4">
+                                                <p className="font-bold text-slate-600">{isClient ? format(new Date(delivery.createdAt), "dd MMM") : "..."}</p>
                                                 <p className="text-[10px] font-black text-amber-600">{delivery.items.reduce((s: number, i: any) => s + i.quantity, 0)} Pcs</p>
                                             </div>
                                         </div>
                                     ))}
                                 </div>
                             ) : (
-                                <p className="text-xs text-muted-foreground italic text-center py-2">Belum ada pengiriman</p>
+                                <p className="text-xs text-muted-foreground italic text-center py-4">Belum ada pengiriman</p>
                             )}
                         </div>
                     </div>
                 )}
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="p-6 rounded-xl border bg-card shadow-sm">
-                    <div className="flex justify-between items-start">
-                        <p className="text-sm font-medium text-muted-foreground italic uppercase font-bold tracking-tighter">Global Total Penjualan</p>
-                        <BarChart3 className="h-4 w-4 text-primary" />
+            <div className="stats-grid">
+                <div className="erp-card p-5">
+                    <div className="flex justify-between items-center">
+                        <p className="erp-label">Total Penjualan</p>
+                        <BarChart3 className="h-4 w-4 text-primary opacity-20" />
                     </div>
-                    <h3 className="text-2xl font-black mt-2 text-primary">{initialDeliveries.length}</h3>
+                    <h3 className="text-3xl font-black mt-1 text-primary">{initialDeliveries.length}</h3>
                 </div>
-                <div className="p-6 rounded-xl border bg-card shadow-sm">
-                    <div className="flex justify-between items-start">
-                        <p className="text-sm font-medium text-muted-foreground">Hari Ini</p>
-                        <Clock className="h-4 w-4 text-muted-foreground" />
+                <div className="erp-card p-5">
+                    <div className="flex justify-between items-center">
+                        <p className="erp-label">Terbit Hari Ini</p>
+                        <Clock className="h-4 w-4 text-primary opacity-20" />
                     </div>
-                    <h3 className="text-2xl font-bold mt-2">
+                    <h3 className="text-3xl font-black mt-1 text-emerald-600">
                         {initialDeliveries.filter(d => new Date(d.createdAt).toDateString() === new Date().toDateString()).length}
                     </h3>
                 </div>
             </div>
 
-            <div className="rounded-xl border bg-card shadow-sm">
-                <div className="p-6 border-b flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <div className="flex items-center gap-4 overflow-x-auto whitespace-nowrap w-full md:w-auto custom-scrollbar scrollbar-hide pb-2 md:pb-0">
+            <div className="table-container">
+                <div className="p-6 border-b flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white">
+                    <div className="flex items-center gap-6 overflow-x-auto whitespace-nowrap w-full md:w-auto custom-scrollbar pb-2 md:pb-0">
                         <button
                             onClick={() => setActiveTab("SJ")}
                             className={cn(
-                                "text-lg font-bold transition-all border-b-2 pb-1 shrink-0",
-                                activeTab === "SJ" ? "text-primary border-primary" : "text-muted-foreground border-transparent hover:text-slate-600"
+                                "text-sm font-black uppercase tracking-widest transition-all border-b-4 pb-2 shrink-0",
+                                activeTab === "SJ" ? "text-primary border-primary" : "text-slate-300 border-transparent hover:text-slate-500"
                             )}
                         >
                             Riwayat Pengiriman
@@ -336,95 +324,77 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                         <button
                             onClick={() => setActiveTab("RETURNS")}
                             className={cn(
-                                "text-lg font-bold transition-all border-b-2 pb-1 shrink-0",
-                                activeTab === "RETURNS" ? "text-blue-600 border-blue-600" : "text-muted-foreground border-transparent hover:text-slate-600"
+                                "text-sm font-black uppercase tracking-widest transition-all border-b-4 pb-2 shrink-0",
+                                activeTab === "RETURNS" ? "text-blue-600 border-blue-600" : "text-slate-300 border-transparent hover:text-slate-500"
                             )}
                         >
                             Retur Penjualan
                         </button>
                     </div>
                     <div className="relative w-full md:w-80">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                         <input
                             value={searchTerm}
                             onChange={e => setSearchTerm(e.target.value)}
                             placeholder="Cari No. SJ / Buyer..."
-                            className="w-full pl-10 pr-4 py-2 bg-muted/50 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border-2 border-slate-100 rounded-xl text-sm font-bold focus:outline-none focus:border-primary transition-all"
                         />
                     </div>
                 </div>
-                <div className="overflow-x-auto custom-scrollbar">
+                
+                <div className="table-responsive">
                     {activeTab === "SJ" ? (
-                        <table className="w-full text-sm text-left min-w-[1000px] table-fixed">
-                            <thead className="bg-muted/30 text-muted-foreground border-b text-xs uppercase tracking-wider">
+                        <table className="table-erp min-w-[1000px]">
+                            <thead>
                                 <tr>
-                                    <th className="px-6 py-4 w-48">No. Pengiriman (SJ)</th>
-                                    <th className="px-6 py-4 w-60">Buyer / Penerima</th>
-                                    <th className="px-6 py-4">Alamat Kirim</th>
-                                    <th className="px-6 py-4 w-40">Gudang</th>
-                                    <th className="px-6 py-4 text-right w-40">Total Qty (Jumlah)</th>
-                                    <th className="px-6 py-4 text-right w-40">Tanggal</th>
-                                    {(isAdmin || userRole === "SALES") && <th className="px-6 py-4 text-center w-32">Aksi</th>}
+                                    <th className="w-48">No. Pengiriman (SJ)</th>
+                                    <th className="w-60">Buyer / Penerima</th>
+                                    <th>Alamat Kirim</th>
+                                    <th className="w-40">Gudang</th>
+                                    <th className="text-right w-40">Qty</th>
+                                    <th className="text-right w-40">Tanggal</th>
+                                    {(isAdmin || userRole === "SALES") && <th className="text-center w-32">Aksi</th>}
                                 </tr>
                             </thead>
-                            <tbody className="divide-y text-slate-700">
+                            <tbody>
                                 {filteredDeliveries.map((d: any) => (
-                                    <tr key={d.id} className="hover:bg-muted/20 transition-colors">
-                                        <td className="px-6 py-4 font-mono text-primary font-medium truncate" title={d.deliveryNumber}>
-                                            {d.deliveryNumber && d.deliveryNumber.startsWith('KB-') ? d.deliveryNumber : (
-                                                <span className="text-red-500 text-[10px] italic">ID: {d.id.substring(0, 8)}...</span>
-                                            )}
+                                    <tr key={d.id}>
+                                        <td className="font-mono text-primary font-bold">
+                                            {d.deliveryNumber}
                                         </td>
-                                        <td className="px-6 py-4 font-bold text-slate-900 truncate" title={d.buyerName}>
-                                            <div className="truncate">{d.buyerName}</div>
-                                            <div className="text-[10px] text-slate-400 font-normal truncate uppercase tracking-tighter">{d.recipient?.split(',')[0]}</div>
+                                        <td>
+                                            <div className="font-black text-slate-900">{d.buyerName}</div>
+                                            <div className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter truncate max-w-[200px]">
+                                                {d.recipient?.split(',')[0]}
+                                            </div>
                                         </td>
-                                        <td className="px-6 py-4 text-xs font-medium text-slate-500 line-clamp-2 leading-tight" title={d.recipient}>
+                                        <td className="text-xs text-slate-500 leading-relaxed max-w-xs truncate">
                                             {d.recipient}
                                         </td>
-                                        <td className="px-6 py-4 text-xs">
-                                            <span className="bg-muted px-2 py-0.5 rounded uppercase font-bold text-[10px]">
+                                        <td>
+                                            <span className="bg-slate-100 px-2 py-1 rounded text-[10px] font-black uppercase text-slate-600">
                                                 {d.warehouse.name}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 text-right">
-                                            {d.items.reduce((acc: number, i: any) => acc + i.quantity, 0)} {d.items[0]?.uom || ""}
+                                        <td className="text-right font-bold text-slate-900">
+                                            {d.items.reduce((acc: number, i: any) => acc + i.quantity, 0)} <span className="text-[10px] text-slate-400">Pcs</span>
                                         </td>
-                                        <td className="px-6 py-4 text-right text-muted-foreground">
+                                        <td className="text-right text-xs text-slate-500">
                                             {isClient ? format(new Date(d.createdAt), "dd/MM/yyyy HH:mm") : "..."}
                                         </td>
-                                        <td className="px-6 py-4 text-center">
-                                            <div className="flex items-center justify-center gap-2">
-                                                <Link
-                                                    href={`/sales/print/sj/${d.id}`}
-                                                    className="p-1.5 text-slate-400 hover:text-primary hover:bg-slate-50 rounded-lg transition-colors"
-                                                    title="Lihat Surat Jalan"
-                                                >
+                                        <td>
+                                            <div className="flex items-center justify-center gap-1">
+                                                <Link href={`/sales/print/sj/${d.id}`} className="p-2 text-slate-400 hover:text-primary hover:bg-slate-100 rounded-xl transition-all">
                                                     <Eye className="h-4 w-4" />
                                                 </Link>
-                                                <Link
-                                                    href={`/sales/print/${d.id}`}
-                                                    className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
-                                                    title="Lihat Invoice"
-                                                >
+                                                <Link href={`/sales/print/${d.id}`} className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all">
                                                     <FileText className="h-4 w-4" />
                                                 </Link>
-                                                <button
-                                                    onClick={() => {
-                                                        setEditData(d);
-                                                        setShowSalesModal(true);
-                                                    }}
-                                                    className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
-                                                    title="Edit Data"
-                                                >
+                                                <button onClick={() => { setEditData(d); setShowSalesModal(true); }} className="p-2 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-all">
                                                     <Edit2 className="h-4 w-4" />
                                                 </button>
                                                 {(isAdmin || userRole === "SALES") && (
-                                                    <button
-                                                        onClick={() => handleDelete(d.id)}
-                                                        className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                                        title="Hapus Penjualan"
-                                                    >
+                                                    <button onClick={() => handleDelete(d.id)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all">
                                                         <Trash2 className="h-4 w-4" />
                                                     </button>
                                                 )}
@@ -432,74 +402,48 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                                         </td>
                                     </tr>
                                 ))}
-                                {filteredDeliveries.length === 0 && (
-                                    <tr>
-                                        <td colSpan={7} className="px-6 py-12 text-center text-muted-foreground italic">
-                                            Belum ada data penjualan.
-                                        </td>
-                                    </tr>
-                                )}
                             </tbody>
                         </table>
                     ) : (
-                        <table className="w-full text-sm text-left min-w-[1000px] table-fixed">
-                            <thead className="bg-blue-50/50 text-blue-900 border-b text-xs uppercase tracking-wider">
+                        <table className="table-erp min-w-[1000px]">
+                            <thead className="bg-blue-50/50">
                                 <tr>
-                                    <th className="px-6 py-4 w-40">No. Retur</th>
-                                    <th className="px-6 py-4 w-48">No. SJ Terkait</th>
-                                    <th className="px-6 py-4">Buyer</th>
-                                    <th className="px-6 py-4 text-right w-40">Total Qty Retur</th>
-                                    <th className="px-6 py-4 text-center w-32">Status</th>
-                                    <th className="px-6 py-4 text-center w-24">Aksi</th>
+                                    <th className="w-40">No. Retur</th>
+                                    <th className="w-48">No. SJ Terkait</th>
+                                    <th>Buyer</th>
+                                    <th className="text-right w-40">Total Retur</th>
+                                    <th className="text-center w-32">Status</th>
+                                    <th className="text-center w-24">Aksi</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-blue-50 text-slate-700">
+                            <tbody>
                                 {filteredReturns.map((r: any) => (
-                                    <tr key={r.id} className="hover:bg-blue-50/20 transition-colors">
-                                        <td className="px-6 py-4 font-mono text-blue-700 font-bold truncate" title={r.returnNumber}>{r.returnNumber}</td>
-                                        <td className="px-6 py-4 font-mono text-slate-500 truncate" title={r.delivery.deliveryNumber}>{r.delivery.deliveryNumber}</td>
-                                        <td className="px-6 py-4 font-medium truncate" title={r.delivery.buyerName}>{r.delivery.buyerName}</td>
-                                        <td className="px-6 py-4 text-right font-bold text-blue-600">
-                                            {r.items.reduce((acc: number, item: any) => acc + item.quantity, 0)} {r.items[0]?.product?.uom || ""}
+                                    <tr key={r.id}>
+                                        <td className="font-mono text-blue-700 font-bold">{r.returnNumber}</td>
+                                        <td className="font-mono text-slate-500">{r.delivery.deliveryNumber}</td>
+                                        <td className="font-bold">{r.delivery.buyerName}</td>
+                                        <td className="text-right font-black text-blue-600">
+                                            {r.items.reduce((acc: number, item: any) => acc + item.quantity, 0)} <span className="text-[10px] text-slate-400">Pcs</span>
                                         </td>
-                                        <td className="px-6 py-4 text-center">
+                                        <td className="text-center">
                                             {r.status === "PENDING" ? (
-                                                <span className="px-3 py-1 bg-amber-100 text-amber-700 text-xs font-bold rounded-full border border-amber-200">PENDING</span>
+                                                <span className="px-3 py-1 bg-amber-100 text-amber-700 text-[10px] font-black rounded-full border border-amber-200">PENDING</span>
                                             ) : (
-                                                <span className="px-3 py-1 bg-emerald-100 text-emerald-700 text-xs font-bold rounded-full border border-emerald-200">VERIFIED</span>
+                                                <span className="px-3 py-1 bg-emerald-100 text-emerald-700 text-[10px] font-black rounded-full border border-emerald-200">VERIFIED</span>
                                             )}
                                         </td>
-                                        <td className="px-6 py-4 text-center">
-                                            <div className="flex items-center justify-center gap-2">
-                                                <button
-                                                    onClick={() => {
-                                                        setEditData(r);
-                                                        setShowReturnModal(true);
-                                                    }}
-                                                    className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
-                                                    title="Edit Retur"
-                                                    disabled={r.status !== "PENDING"}
-                                                >
+                                        <td>
+                                            <div className="flex items-center justify-center gap-1">
+                                                <button onClick={() => { setEditData(r); setShowReturnModal(true); }} className="p-2 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-all" disabled={r.status !== "PENDING"}>
                                                     <Edit2 className="h-4 w-4" />
                                                 </button>
-                                                <button
-                                                    onClick={() => handleDeleteReturn(r.id)}
-                                                    className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                                    title="Hapus Retur"
-                                                >
+                                                <button onClick={() => handleDeleteReturn(r.id)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all">
                                                     <Trash2 className="h-4 w-4" />
                                                 </button>
                                             </div>
                                         </td>
                                     </tr>
                                 ))}
-                                {filteredReturns.length === 0 && (
-                                    <tr>
-                                        <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground italic">
-                                            Belum ada data retur penjualan.
-                                        </td>
-                                    </tr>
-                                )}
                             </tbody>
                         </table>
                     )}

@@ -20,7 +20,7 @@ export default async function PurchaseRequestPrintPage({ params }: { params: Pro
             approvedBy: true,
             verifiedBy: true
         }
-    }).then(res => serializeDecimal(res));
+    }).then((res: any) => serializeDecimal(res));
 
     if (!request) return <div>Data not found</div>;
 

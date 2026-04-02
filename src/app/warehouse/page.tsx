@@ -34,18 +34,18 @@ export default async function WarehousePage() {
         orderBy: { createdAt: 'desc' },
     }).catch(() => []);
 
-    const productIds = Array.from(new Set(rawMovements.map(m => m.productId)));
-    const warehouseIds = Array.from(new Set(rawMovements.map(m => m.warehouseId)));
+    const productIds = Array.from(new Set(rawMovements.map((m: any) => m.productId)));
+    const warehouseIds = Array.from(new Set(rawMovements.map((m: any) => m.warehouseId)));
 
     const [movementProducts, movementWarehouses] = await Promise.all([
         prisma.product.findMany({ where: { id: { in: productIds } } }),
         prisma.warehouse.findMany({ where: { id: { in: warehouseIds } } })
     ]);
 
-    const movements = rawMovements.map(m => ({
+    const movements = rawMovements.map((m: any) => ({
         ...m,
-        product: movementProducts.find(p => p.id === m.productId),
-        warehouse: movementWarehouses.find(w => w.id === m.warehouseId)
+        product: movementProducts.find((p: any) => p.id === m.productId),
+        warehouse: movementWarehouses.find((w: any) => w.id === m.warehouseId)
     }));
 
     return <WarehouseDashboard

@@ -18,7 +18,7 @@ export default async function SJPrintPage({ params }: { params: Promise<{ id: st
             items: { include: { product: true } },
             warehouse: true
         }
-    }).then(res => serializeDecimal(res));
+    }).then((res: any) => serializeDecimal(res));
 
     if (!delivery) return <div>Data not found</div>;
 

@@ -18,7 +18,7 @@ export default async function PurchaseInvoicePrintPage({ params }: { params: Pro
             items: { include: { product: true } },
             warehouse: true
         }
-    }).then(res => serializeDecimal(res));
+    }).then((res: any) => serializeDecimal(res));
 
     if (!receipt) return <div>Data not found</div>;
 

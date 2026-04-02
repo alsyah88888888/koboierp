@@ -32,7 +32,7 @@ export default async function OperationalPage() {
 
     const transactionsWithJournals = transactions.map(t => ({
         ...t,
-        journals: journals.filter(j => j.transactionId === t.id)
+        journals: journals.filter((j: any) => j.transactionId === t.id)
     }));
 
     const coa = await prisma.financeAccount.findMany({

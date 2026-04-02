@@ -18,7 +18,7 @@ async function main() {
     });
     console.log("SUCCESS: back-relation to journals is recognized.");
     
-  } catch (err) {
+  } catch (err: any) {
     console.error("FAILURE:", err.message);
     process.exit(1);
   } finally {
