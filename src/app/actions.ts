@@ -698,7 +698,7 @@ export async function deleteGoodsReceiptAction(id: string) {
  */
 export async function createSalesDeliveryAction(data: {
     recipient: string;
-    buyerName: string;
+    buyerName: string; poNumber?: string;
     warehouseId: string;
     salesPerson?: string;
     totalDiscount?: number;
@@ -735,6 +735,7 @@ export async function createSalesDeliveryAction(data: {
                 deliveryNumber: deliveryNumber,
                 recipient: data.recipient,
                 buyerName: data.buyerName,
+                poNumber: data.poNumber,
                 warehouseId: data.warehouseId,
                 salesPerson: data.salesPerson,
                 createdAt: txDate,
@@ -842,7 +843,7 @@ export async function createSalesDeliveryAction(data: {
 
 export async function updateSalesDeliveryAction(id: string, data: {
     recipient: string;
-    buyerName: string;
+    buyerName: string; poNumber?: string;
     warehouseId: string;
     salesPerson?: string;
     totalDiscount?: number;
@@ -885,6 +886,7 @@ export async function updateSalesDeliveryAction(id: string, data: {
             data: {
                 recipient: data.recipient,
                 buyerName: data.buyerName,
+                poNumber: data.poNumber,
                 warehouseId: data.warehouseId,
                 salesPerson: data.salesPerson,
                 createdAt: txDate

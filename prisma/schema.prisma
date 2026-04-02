@@ -321,6 +321,7 @@ model PurchaseReturnItem {
 model SalesDelivery {
   id             String   @id @default(cuid())
   deliveryNumber String   @unique // No. Pengiriman (SJ-YYYYMMDD-XXX)
+  poNumber       String?  // No. PO Buyer (Manual)
   recipient      String   // Kirim Ke
   buyerName      String   // Pengiriman ke Buyer
   salesPerson    String?  // BC or PF

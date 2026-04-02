@@ -292,6 +292,7 @@ model PurchaseReturnItem {
 model SalesDelivery {
   id             String              @id @default(cuid())
   deliveryNumber String              @unique
+  poNumber       String?             // No. PO Buyer (Manual)
   recipient      String
   buyerName      String
   salesPerson    String?

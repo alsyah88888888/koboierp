@@ -25,6 +25,7 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
     const [warehouseId, setWarehouseId] = useState(warehouses[0]?.id || "");
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
     const [salesPerson, setSalesPerson] = useState("");
+    const [poNumber, setPoNumber] = useState("");
     const [isManualBuyer, setIsManualBuyer] = useState(false);
 
     // Body (Items)
@@ -43,6 +44,7 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
             setWarehouseId(initialData.warehouseId || "");
             setSalesPerson(initialData.salesPerson || "");
             setDate(new Date(initialData.createdAt).toISOString().split('T')[0]);
+            setPoNumber(initialData.poNumber || "");
             setTotalDiscount(Number(initialData.totalDiscount || 0));
             setTaxRate(Number(initialData.taxRate || 0));
 
@@ -176,6 +178,7 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
             const data = {
                 recipient,
                 buyerName,
+                poNumber,
                 warehouseId,
                 salesPerson,
                 totalDiscount: Number(finalDiscountNominal) || 0,
@@ -306,6 +309,19 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                 </div>
                             </div>
                         </div>
+
+                        <div className="space-y-1.5 lg:col-span-1">
+                            <label htmlFor="po-number" className="text-[10px] font-black uppercase tracking-widest text-slate-400 block cursor-pointer">Nomor PO Buyer</label>
+                            <input
+                                id="po-number"
+                                name="poNumber"
+                                value={poNumber}
+                                onChange={e => setPoNumber(e.target.value)}
+                                className="w-full bg-white border-2 border-slate-200 px-3 py-2.5 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-bold text-sm text-primary"
+                                placeholder="Nomor PO..."
+                            />
+                        </div>
+
                         <div className="space-y-1.5">
                             <label htmlFor="sales-date" className="text-[10px] font-black uppercase tracking-widest text-slate-400 block cursor-pointer">Tanggal</label>
                             <input
