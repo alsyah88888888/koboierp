@@ -1,6 +1,6 @@
 import type { PrismaClient as PrismaClientType } from "@prisma/client";
 const { PrismaClient } = (process.env.DATABASE_URL?.startsWith("file:") && !process.env.NEXT_PHASE)
-  ? require("@prisma/client-sqlite")
+  ? eval("require")("@prisma/client-sqlite")
   : require("@prisma/client");
 
 // During build phase or if env is missing, set a dummy URL to prevent Prisma crashes
