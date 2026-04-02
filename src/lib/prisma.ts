@@ -1,4 +1,7 @@
-import { PrismaClient } from "@prisma/client";
+import type { PrismaClient as PrismaClientType } from "@prisma/client";
+const { PrismaClient } = process.env.DATABASE_URL?.startsWith("file:")
+  ? require("@prisma/client-sqlite")
+  : require("@prisma/client");
 
 // During build phase or if env is missing, set a dummy URL to prevent Prisma crashes
 if (!process.env.DATABASE_URL) {
@@ -29,7 +32,7 @@ const prismaClientSingleton = () => {
                 }
                 return modelProxy;
             },
-        }) as PrismaClient;
+        }) as PrismaClientType;
     }
     return new PrismaClient();
 };

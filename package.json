@@ -7,7 +7,7 @@
     "build": "prisma generate && next build",
     "postinstall": "prisma generate",
     "start": "next start",
-    "kill-port": "powershell -Command \"Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; exit 0\"",
+    "kill-port": "node -e \"const port = 3000; const { execSync } = require('child_process'); const cmd = process.platform === 'win32' ? 'powershell -Command \\\"Get-NetTCPConnection -LocalPort ' + port + ' -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }\\\"' : 'lsof -t -i:' + port + ' | xargs kill -9 2>/dev/null || true'; try { execSync(cmd); } catch (e) {}\"",
     "lint": "eslint",
     "deploy:vps": "ssh -o StrictHostKeyChecking=no root@76.13.20.44 \"cd ~/erp && git reset --hard HEAD && git pull && npm run build && pm2 restart erp\""
   },

@@ -1,8 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["@prisma/client"],
-  // @ts-ignore - Some keys might not be matched in the current Next.js version types
+  serverExternalPackages: ["@prisma/client", "@prisma/client-sqlite"],
+  // @ts-ignore
+  allowedDevOrigins: ["192.168.1.30", "localhost:3000"],
+  // @ts-ignore
   eslint: {
     ignoreDuringBuilds: true,
   },
