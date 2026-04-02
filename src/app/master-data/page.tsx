@@ -17,7 +17,7 @@ export default async function MasterDataPage() {
         redirect("/auth/signin");
     }
 
-    if (!["ADMIN", "PURCHASE"].includes(session.user.role)) {
+    if (!["ADMIN", "PURCHASE"].includes(session.user.role?.toUpperCase())) {
         redirect("/");
     }
 

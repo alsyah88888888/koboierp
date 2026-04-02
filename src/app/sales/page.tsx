@@ -13,7 +13,7 @@ export default async function SalesPage() {
     await headers();
     
     const session = await getServerSession(authOptions) as any;
-    const isAdmin = session?.user?.role === "ADMIN";
+    const isAdmin = session?.user?.role?.toUpperCase() === "ADMIN";
     
     // Strict filter for Sales: must be "BC" or owned by her (if no salesperson code is set)
     // and explicitly NOT "PF" if she is the one seeing it.
