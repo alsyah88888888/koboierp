@@ -62,8 +62,8 @@ export function ManualPOModal({ products, warehouses, onClose }: ManualPOModalPr
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-in fade-in duration-300">
-            <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-300 border border-white/20">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-md p-4 opacity-100">
+            <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-2xl overflow-hidden border border-white/20">
                 {/* Header */}
                 <div className="p-8 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center relative">
                     <div className="absolute top-0 left-8 w-20 h-1.5 bg-primary rounded-b-full shadow-[0_2px_10px_rgba(var(--primary-rgb),0.3)]" />
