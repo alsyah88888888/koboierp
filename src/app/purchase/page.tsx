@@ -14,7 +14,14 @@ export default async function PurchasePage() {
     
     const session = await getServerSession(authOptions) as any;
     const isAdmin = session?.user?.role === "ADMIN";
-    const userFilter = isAdmin ? {} : { createdById: session?.user?.id };
+    
+    // For non-admins, show their own records OR records created by an ADMIN (historical/shared)
+    const userFilter = isAdmin ? {} : { 
+        OR: [
+            { createdById: session?.user?.id },
+            { createdBy: { role: "ADMIN" } }
+        ] 
+    };
     
     const products = serializeDecimal(await prisma.product.findMany({
         select: { 

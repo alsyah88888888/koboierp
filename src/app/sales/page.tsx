@@ -15,8 +15,15 @@ export default async function SalesPage() {
     const session = await getServerSession(authOptions) as any;
     const isAdmin = session?.user?.role === "ADMIN";
     
-    // Strict filter for Bu Cici (BC) to exclude PF transactions
-    const userFilter = isAdmin ? {} : { salesPerson: "BC" };
+    // Strict filter for Sales: must be "BC" or owned by her (if no salesperson code is set)
+    // and explicitly NOT "PF" if she is the one seeing it.
+    const userFilter = isAdmin ? {} : { 
+        OR: [
+            { salesPerson: "BC" },
+            { createdById: session?.user?.id }
+        ],
+        NOT: { salesPerson: "PF" } // Redundant but safe
+    };
     
     const products = serializeDecimal(await prisma.product.findMany({
         include: { stocks: true },
