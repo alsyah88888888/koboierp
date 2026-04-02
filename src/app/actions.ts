@@ -3444,7 +3444,7 @@ export async function getProductTrackingAction(productId: string) {
                 productId,
                 delivery: salesFilter
             },
-            include: { delivery: { include: { customer: true } } }
+            include: { delivery: true }
         }),
         // Purchase Returns
         prisma.purchaseReturnItem.findMany({
@@ -3492,7 +3492,7 @@ export async function getProductTrackingAction(productId: string) {
             date: item.delivery.date || item.delivery.createdAt,
             type: "SALE",
             ref: item.delivery.deliveryNumber,
-            partner: item.delivery.customer?.name || "Unknown Customer",
+            partner: item.delivery.buyerName || item.delivery.recipient || "Unknown Customer",
             qtyIn: 0,
             qtyOut: item.quantity
         });
@@ -3516,7 +3516,7 @@ export async function getProductTrackingAction(productId: string) {
             date: item.salesReturn.date || item.salesReturn.createdAt,
             type: "SALES_RETURN",
             ref: item.salesReturn.returnNumber,
-            partner: item.salesReturn.delivery.customerName || "Customer",
+            partner: item.salesReturn.delivery.buyerName || "Customer",
             qtyIn: item.quantity,
             qtyOut: 0
         });
