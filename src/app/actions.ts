@@ -159,7 +159,8 @@ export async function getPurchaseRequestsAction() {
     const session = await getServerSession(authOptions) as any;
     if (!session?.user?.id) throw new Error("Unauthorized");
 
-    const isAdmin = session.user.role === "ADMIN";
+    const isAdmin = session.user.role?.toUpperCase() === "ADMIN";
+    const prefix = session.user.prefix || null;
     const userFilter = isAdmin ? {} : { requestedById: session.user.id };
 
     return await prisma.purchaseRequest.findMany({
@@ -1359,7 +1360,8 @@ export async function getAccountingDataAction() {
 
     if (!session?.user) throw new Error("Unauthorized");
 
-    const isAdmin = session.user.role === "ADMIN";
+    const isAdmin = session.user.role?.toUpperCase() === "ADMIN";
+    const prefix = session.user.prefix || null;
     const userFilter = isAdmin ? {} : {
         OR: [
             { goodsReceipt: { createdById: session.user.id } },
@@ -1391,7 +1393,8 @@ export async function getFinanceTransactionsAction() {
     const session = await getServerSession(authOptions) as any;
     if (!session?.user?.id) throw new Error("Unauthorized");
 
-    const isAdmin = session.user.role === "ADMIN";
+    const isAdmin = session.user.role?.toUpperCase() === "ADMIN";
+    const prefix = session.user.prefix || null;
     const userFilter = isAdmin ? {} : { createdById: session.user.id };
 
     return await prisma.financeTransaction.findMany({
@@ -2101,7 +2104,12 @@ export async function getDashboardSummaryAction() {
     ] = await Promise.all([
         // Asset Value (Group stocks)
         prisma.stock.findMany({
-            where: isAdmin ? {} : { product: { is: { createdById: session.user.id } } },
+            where: isAdmin ? {} : { 
+                OR: [
+                    { product: { is: { createdById: session.user.id } } },
+                    { product: { is: { createdById: null } } }
+                ]
+            },
             select: {
                 quantity: true,
                 product: {
@@ -2307,7 +2315,8 @@ export async function getUnverifiedReceiptsAction() {
     const session = await getServerSession(authOptions) as any;
     if (!session?.user?.id) throw new Error("Unauthorized");
 
-    const isAdmin = session.user.role === "ADMIN";
+    const isAdmin = session.user.role?.toUpperCase() === "ADMIN";
+    const prefix = session.user.prefix || null;
     const userFilter = isAdmin ? "" : ` AND createdById = '${session.user.id}'`;
 
     const rawUnverified: any[] = await prisma.$queryRawUnsafe(`SELECT id FROM GoodsReceipt WHERE isVerified = 0${userFilter} ORDER BY createdAt DESC`);
@@ -2331,7 +2340,8 @@ export async function getMDAction() {
     const session = await getServerSession(authOptions) as any;
     if (!session?.user?.id) throw new Error("Unauthorized");
 
-    const isAdmin = session.user.role === "ADMIN";
+    const isAdmin = session.user.role?.toUpperCase() === "ADMIN";
+    const prefix = session.user.prefix || null;
     const userFilter = isAdmin ? {} : { createdById: session.user.id };
 
     const [vendors, customers, warehouses, coa, products] = await Promise.all([
@@ -2465,7 +2475,8 @@ export async function getGoodsReceiptsAction() {
     const session = await getServerSession(authOptions) as any;
     if (!session?.user?.id) throw new Error("Unauthorized");
 
-    const isAdmin = session.user.role === "ADMIN";
+    const isAdmin = session.user.role?.toUpperCase() === "ADMIN";
+    const prefix = session.user.prefix || null;
     const userFilter = isAdmin ? {} : { createdById: session.user.id };
 
     return await prisma.goodsReceipt.findMany({
@@ -2489,7 +2500,8 @@ export async function getPurchaseRequestSummaryAction() {
     const session = await getServerSession(authOptions) as any;
     if (!session?.user?.id) throw new Error("Unauthorized");
 
-    const isAdmin = session.user.role === "ADMIN";
+    const isAdmin = session.user.role?.toUpperCase() === "ADMIN";
+    const prefix = session.user.prefix || null;
     const userFilter = isAdmin ? {} : { requestedById: session.user.id };
 
     const allRequests = await prisma.purchaseRequest.findMany({
@@ -2520,7 +2532,8 @@ export async function getCortexXmlContentAction() {
     const session = await getServerSession(authOptions) as any;
     if (!session?.user?.id) throw new Error("Unauthorized");
 
-    const isAdmin = session.user.role === "ADMIN";
+    const isAdmin = session.user.role?.toUpperCase() === "ADMIN";
+    const prefix = session.user.prefix || null;
     const userFilter = isAdmin ? {} : { createdById: session.user.id };
 
     const allSales = await (prisma.salesDelivery as any).findMany({
@@ -3114,7 +3127,8 @@ export async function getNotificationsAction() {
     const session = await getServerSession(authOptions) as any;
     if (!session?.user?.id) return [];
 
-    const isAdmin = session.user.role === "ADMIN";
+    const isAdmin = session.user.role?.toUpperCase() === "ADMIN";
+    const prefix = session.user.prefix || null;
     // Notifications are broadcast to all, but only filtered for users who have read them.
     // However, if we want to isolate "system" notifications, we could.
     // For now, let's keep notifications global as they are "broadcast".
@@ -3193,7 +3207,8 @@ export async function getDailyReportAction() {
     const session = await getServerSession(authOptions) as any;
     if (!session?.user?.id) throw new Error("Unauthorized");
 
-    const isAdmin = session.user.role === "ADMIN";
+    const isAdmin = session.user.role?.toUpperCase() === "ADMIN";
+    const prefix = session.user.prefix || null;
     const userFilter = isAdmin ? {} : { createdById: session.user.id };
 
     const today = new Date();
@@ -3424,11 +3439,17 @@ export async function getProductTrackingAction(productId: string) {
     const session = await getServerSession(authOptions) as any;
     if (!session?.user?.id) throw new Error("Unauthorized");
 
-    const isAdmin = session.user.role === "ADMIN";
+    const isAdmin = session.user.role?.toUpperCase() === "ADMIN";
+    const prefix = session.user.prefix || null;
     const userId = session.user.id;
 
     // Filters for non-admin isolation
-    const salesFilter = isAdmin ? {} : { salesPerson: "BC" };
+    const salesFilter = isAdmin ? {} : { 
+        OR: [
+            { salesPerson: prefix },
+            { salesPerson: null }
+        ]
+    };
     const purchaseFilter = isAdmin ? {} : { 
         OR: [
             { createdById: userId },
