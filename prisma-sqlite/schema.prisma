@@ -19,6 +19,7 @@ model User {
   emailVerified DateTime?
   image         String?
   role          String    @default("USER") // ADMIN, FINANCE, PURCHASE, WAREHOUSE
+  journals      JournalEntry[] @relation("JournalCreatedBy")
   password      String?
   accounts      Account[]
   sessions      Session[]
@@ -87,9 +88,12 @@ model JournalEntry {
   account     FinanceAccount  @relation(fields: [accountId], references: [id])
   transactionId String?
   transaction   FinanceTransaction? @relation(fields: [transactionId], references: [id])
+  createdById     String?
+  createdBy       User?    @relation("JournalCreatedBy", fields: [createdById], references: [id])
 
   @@index([date])
   @@index([accountId])
+  @@index([createdById])
 }
 
 model FinanceTransaction {
