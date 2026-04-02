@@ -14,8 +14,10 @@ import {
     ChevronRight,
     Filter,
     ArrowUpDown,
-    CheckCircle2
+    CheckCircle2,
+    History
 } from "lucide-react";
+import { ItemTrackingModal } from "./ItemTrackingModal";
 import {
     createProductAction,
     updateProductAction,
@@ -52,6 +54,7 @@ export function MasterDataDashboard() {
     });
 
     const [showModal, setShowModal] = useState(false);
+    const [historyId, setHistoryId] = useState<string | null>(null);
     const [editId, setEditId] = useState<string | null>(null);
     const [form, setForm] = useState({
         sku: "", name: "", category: "", uom: "", barcode: "",
@@ -294,6 +297,15 @@ export function MasterDataDashboard() {
                                             )}
                                             <td className="px-6 py-4 text-right">
                                                 <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    {activeTab === "product" && (
+                                                        <button
+                                                            onClick={() => setHistoryId(item.id)}
+                                                            className="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-all"
+                                                            title="Transaction History"
+                                                        >
+                                                            <History className="h-4 w-4" />
+                                                        </button>
+                                                    )}
                                                     <button
                                                         onClick={() => handleEdit(item)}
                                                         className="p-2 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-all"
@@ -330,6 +342,14 @@ export function MasterDataDashboard() {
                                             )}
                                         </div>
                                         <div className="flex gap-1.5 shrink-0">
+                                            {activeTab === "product" && (
+                                                <button
+                                                    onClick={() => setHistoryId(item.id)}
+                                                    className="p-2 text-slate-500 hover:text-blue-500 bg-slate-100 rounded-xl transition-all active:scale-90"
+                                                >
+                                                    <History className="h-3.5 w-3.5" />
+                                                </button>
+                                            )}
                                             <button
                                                 onClick={() => handleEdit(item)}
                                                 className="p-2 text-slate-500 hover:text-primary bg-slate-100 rounded-xl transition-all active:scale-90"
@@ -537,6 +557,12 @@ export function MasterDataDashboard() {
                         </form>
                     </div>
                 </div>
+            )}
+            {historyId && (
+                <ItemTrackingModal
+                    productId={historyId}
+                    onClose={() => setHistoryId(null)}
+                />
             )}
         </div>
     );

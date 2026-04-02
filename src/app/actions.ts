@@ -3408,3 +3408,125 @@ export async function fixReceiptPrefixMigrationAction() {
         throw new Error("Gagal menjalankan migrasi prefix: " + error.message);
     }
 }
+
+/**
+ * ITEM TRACKING: Product Ledger
+ */
+export async function getProductTrackingAction(productId: string) {
+    const session = await getServerSession(authOptions) as any;
+    if (!session?.user?.id) throw new Error("Unauthorized");
+
+    const isAdmin = session.user.role === "ADMIN";
+    const userId = session.user.id;
+
+    // Filters for non-admin isolation
+    const salesFilter = isAdmin ? {} : { salesPerson: "BC" };
+    const purchaseFilter = isAdmin ? {} : { 
+        OR: [
+            { createdById: userId },
+            { createdBy: { role: "ADMIN" } }
+        ],
+        NOT: { salesPerson: "PF" }
+    };
+
+    const [receipts, deliveries, pReturns, sReturns, product] = await Promise.all([
+        // Purchases (Receipts)
+        prisma.goodsReceiptItem.findMany({
+            where: {
+                productId,
+                receipt: purchaseFilter
+            },
+            include: { receipt: true }
+        }),
+        // Sales (Deliveries)
+        prisma.salesDeliveryItem.findMany({
+            where: {
+                productId,
+                delivery: salesFilter
+            },
+            include: { delivery: { include: { customer: true } } }
+        }),
+        // Purchase Returns
+        prisma.purchaseReturnItem.findMany({
+            where: {
+                productId,
+                purchaseReturn: { receipt: purchaseFilter }
+            },
+            include: { purchaseReturn: { include: { receipt: true } } }
+        }),
+        // Sales Returns
+        prisma.salesReturnItem.findMany({
+            where: {
+                productId,
+                salesReturn: { delivery: salesFilter }
+            },
+            include: { salesReturn: { include: { delivery: true } } }
+        }),
+        // Product Info
+        prisma.product.findUnique({
+            where: { id: productId },
+            select: { name: true, sku: true, uom: true }
+        })
+    ]);
+
+    if (!product) throw new Error("Produk tidak ditemukan");
+
+    // Unified History
+    const history: any[] = [];
+
+    receipts.forEach((item: any) => {
+        history.push({
+            id: item.id,
+            date: item.receipt.date || item.receipt.createdAt,
+            type: "PURCHASE",
+            ref: item.receipt.receiptNumber,
+            partner: item.receipt.receivedFrom,
+            qtyIn: item.quantity,
+            qtyOut: 0
+        });
+    });
+
+    deliveries.forEach((item: any) => {
+        history.push({
+            id: item.id,
+            date: item.delivery.date || item.delivery.createdAt,
+            type: "SALE",
+            ref: item.delivery.deliveryNumber,
+            partner: item.delivery.customer?.name || "Unknown Customer",
+            qtyIn: 0,
+            qtyOut: item.quantity
+        });
+    });
+
+    pReturns.forEach((item: any) => {
+        history.push({
+            id: item.id,
+            date: item.purchaseReturn.date || item.purchaseReturn.createdAt,
+            type: "PURCHASE_RETURN",
+            ref: item.purchaseReturn.returnNumber,
+            partner: item.purchaseReturn.receipt.receivedFrom,
+            qtyIn: 0,
+            qtyOut: item.quantity
+        });
+    });
+
+    sReturns.forEach((item: any) => {
+        history.push({
+            id: item.id,
+            date: item.salesReturn.date || item.salesReturn.createdAt,
+            type: "SALES_RETURN",
+            ref: item.salesReturn.returnNumber,
+            partner: item.salesReturn.delivery.customerName || "Customer",
+            qtyIn: item.quantity,
+            qtyOut: 0
+        });
+    });
+
+    // Sort by date desc
+    history.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    return serializeDecimal({
+        product,
+        history
+    });
+}
