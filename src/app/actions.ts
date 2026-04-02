@@ -2066,7 +2066,8 @@ export async function getDashboardSummaryAction() {
     const session = await getServerSession(authOptions) as any;
     if (!session?.user?.id) throw new Error("Unauthorized");
 
-    const isAdmin = session.user.role === "ADMIN";
+    const isAdmin = session.user.role?.toUpperCase() === "ADMIN";
+    const prefix = session.user.prefix || null;
     const userFilter = isAdmin ? {} : { createdById: session.user.id };
 
     const fetchJournals = async (criteria: any) => {
