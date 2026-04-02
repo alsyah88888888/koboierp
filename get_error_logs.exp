@@ -1,0 +1,8 @@
+#!/usr/bin/expect -f
+set timeout -1
+set password [lindex $argv 0]
+spawn ssh -o StrictHostKeyChecking=no root@76.13.20.44 "tail -n 100 /root/.pm2/logs/erp-error.log"
+expect "*?assword:*" {
+    send "$password\r"
+}
+expect eof

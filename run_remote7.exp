@@ -1,0 +1,33 @@
+#!/usr/bin/expect -f
+match_max 100000
+set timeout -1
+set password [lindex $argv 0]
+spawn ssh -o StrictHostKeyChecking=no root@76.13.20.44
+expect {
+    "*assword:*" {
+        send "$password\r"
+        exp_continue
+    }
+    "*# *" {
+        send "cd ~/erp\r"
+    }
+}
+expect "*# *"
+send "pm2 stop all\r"
+expect "*# *"
+send "rm -rf node_modules package-lock.json .next\r"
+expect "*# *"
+send "git fetch origin main\r"
+expect "*# *"
+send "git reset --hard origin/main\r"
+expect "*# *"
+send "npm install\r"
+expect "*# *"
+send "npx prisma generate\r"
+expect "*# *"
+send "npm run build\r"
+expect "*# *"
+send "pm2 restart all --update-env\r"
+expect "*# *"
+send "exit\r"
+expect eof

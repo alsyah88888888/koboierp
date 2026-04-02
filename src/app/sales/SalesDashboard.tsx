@@ -27,8 +27,8 @@ interface SalesDashboardProps {
 
 export default function SalesDashboard({ initialDeliveries, initialReceipts = [], initialReturns = [], products, warehouses, customers, salesExpenses = [] }: SalesDashboardProps) {
     const { data: session } = useSession() as any;
-    const isAdmin = session?.user?.role === "ADMIN";
-    const userRole = session?.user?.role || "";
+    const isAdmin = session?.user?.role?.toUpperCase() === "ADMIN";
+    const userRole = session?.user?.role?.toUpperCase() || "";
     const [showSalesModal, setShowSalesModal] = useState(false);
     const [showReturnModal, setShowReturnModal] = useState(false);
     const [showManualModal, setShowManualModal] = useState(false);

@@ -1,0 +1,10 @@
+spawn ssh -o StrictHostKeyChecking=no root@76.13.20.44 cd ~/erp && pm2 stop all && rm -rf node_modules package-lock.json && git fetch origin main && git reset --hard origin/main && npm i && rm -rf .next && npx prisma generate && npm run build && pm2 start all --update-env
+root@76.13.20.44's password: 
+[PM2] Applying action stopProcessId on app [all](ids: [ 0 ])
+[PM2] [erp](0) ✓
+┌────┬────────┬─────────────┬─────────┬─────────┬──────────┬────────┬──────┬───────────┬──────────┬──────────┬──────────┬──────────┐
+│ id │ name   │ namespace   │ version │ mode    │ pid      │ uptime │ ↺    │ status    │ cpu      │ mem      │ user     │ watching │
+├────┼────────┼─────────────┼─────────┼─────────┼──────────┼────────┼──────┼───────────┼──────────┼──────────┼──────────┼──────────┤
+│ 0  │ erp    │ default     │ N/A     │ fork    │ 0        │ 0      │ 96   │ stopped   │ 0%       │ 0b       │ root     │ disabled │
+└────┴────────┴─────────────┴─────────┴─────────┴──────────┴────────┴──────┴───────────┴──────────┴──────────┴──────────┴──────────┘
+rm: cannot remove 'node_modules': Directory not empty

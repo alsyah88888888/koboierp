@@ -22,7 +22,7 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
     // Header
     const [recipient, setRecipient] = useState("");
     const [buyerName, setBuyerName] = useState("");
-    const [warehouseId, setWarehouseId] = useState(warehouses[0]?.id || "");
+    const [warehouseId, setWarehouseId] = useState(Array.isArray(warehouses) && warehouses.length > 0 ? warehouses[0]?.id : "");
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
     const [salesPerson, setSalesPerson] = useState("");
     const [poNumber, setPoNumber] = useState("");
@@ -110,10 +110,10 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
         // Auto-fill UOM and Vendor if product selected via SKU typing
         if (field === "sku") {
             const valStr = String(value).trim().toLowerCase();
-            const product = products.find(p =>
+            const product = Array.isArray(products) ? products.find(p =>
                 (p.sku && p.sku.toLowerCase() === valStr) ||
                 (p.barcode && p.barcode.toLowerCase() === valStr)
-            );
+            ) : null;
             if (product) {
                 newItems[index].productId = product.id;
                 newItems[index].sku = product.sku;
@@ -274,7 +274,7 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                 />
                                 {!isManualBuyer && (
                                     <datalist id="customer-list-2">
-                                        {customers.map(c => <option key={c.id} value={c.name} />)}
+                                        {Array.isArray(customers) && customers.map(c => <option key={c.id} value={c.name} />)}
                                     </datalist>
                                 )}
                             </div>
@@ -371,7 +371,7 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                             required
                                         />
                                         <datalist id={`product-list-2-${index}`}>
-                                            {products.map(p => <option key={p.id} value={p.sku}>{p.name}</option>)}
+                                            {Array.isArray(products) && products.map(p => <option key={p.id} value={p.sku}>{p.name}</option>)}
                                         </datalist>
                                     </div>
 
@@ -384,7 +384,7 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                             required
                                         >
                                             <option value="">Pilih Stok...</option>
-                                            {item.productId && products.find(p => p.id === item.productId)?.stocks?.map((s: any) => (
+                                            {item.productId && Array.isArray(products) && products.find(p => p.id === item.productId)?.stocks?.map((s: any) => (
                                                 <option key={s.id} value={s.vendorName}>
                                                     {s.vendorName} (Sisa: {s.quantity})
                                                 </option>

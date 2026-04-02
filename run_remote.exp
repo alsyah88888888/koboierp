@@ -1,0 +1,17 @@
+#!/usr/bin/expect -f
+set password [lindex $argv 0]
+set prompt "# "
+spawn ssh -o StrictHostKeyChecking=no root@76.13.20.44 "cd ~/erp && git fetch origin main && git reset --hard origin/main && npm ci && npx prisma generate && npm run build && pm2 restart all --update-env"
+expect {
+    "assword:" {
+        send "$password\r"
+        exp_continue
+    }
+    timeout {
+        puts "Timeout waiting for password prompt"
+        exit 1
+    }
+    eof {
+        puts "SSH command finished"
+    }
+}

@@ -1,0 +1,3 @@
+spawn ssh -o StrictHostKeyChecking=no root@76.13.20.44 cd ~/erp && rm -rf node_modules package-lock.json && git fetch origin main && git reset --hard origin/main && npm install && npx prisma generate && npm run build && pm2 restart all --update-env
+root@76.13.20.44's password: 
+rm: cannot remove 'node_modules/next/dist/server': Directory not empty

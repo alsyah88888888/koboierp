@@ -1,0 +1,8 @@
+#!/usr/bin/expect -f
+set timeout -1
+set password [lindex $argv 0]
+spawn ssh -o StrictHostKeyChecking=no root@76.13.20.44 "cd ~/erp && rm -rf node_modules package-lock.json && git reset --hard origin/main && npm install && npx prisma generate && npm run build && pm2 restart all --update-env"
+expect "*?assword:*" {
+    send "$password\r"
+}
+expect eof
