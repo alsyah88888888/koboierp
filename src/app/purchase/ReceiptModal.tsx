@@ -1,3 +1,4 @@
+"use client";
 import { useState, useMemo, useEffect } from "react";
 import { createGoodsReceiptAction, updateGoodsReceiptAction } from "@/app/actions";
 import { Plus, Trash2, X, FileCheck, Calculator, Tag } from "lucide-react";
@@ -299,7 +300,7 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
                                 required
                             />
                             <datalist id="supplier-list">
-                                {vendors.map(v => <option key={v.id} value={v.name} />)}
+                                {Array.isArray(vendors) && vendors.map(v => <option key={v.id} value={v.name} />)}
                             </datalist>
                         </div>
                         <div className="space-y-2">

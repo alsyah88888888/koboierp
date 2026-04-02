@@ -1,3 +1,4 @@
+"use client";
 import { useState, useEffect } from "react";
 import { X, Plus, Trash2, Loader2, Save, Tag, ShoppingCart } from "lucide-react";
 import { createSalesDeliveryAction, updateSalesDeliveryAction } from "../actions";
@@ -320,7 +321,7 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                             <div className="space-y-2">
                                 <label className="erp-label">Gudang Pengirim</label>
                                 <select value={warehouseId} onChange={e => setWarehouseId(e.target.value)} className="erp-input px-5 h-12 font-bold cursor-pointer" required>
-                                    {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+                                    {Array.isArray(warehouses) && warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
                                 </select>
                             </div>
 
