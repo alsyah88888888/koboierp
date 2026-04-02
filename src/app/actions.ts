@@ -3532,3 +3532,66 @@ export async function getProductTrackingAction(productId: string) {
         history
     });
 }
+
+export async function createManualSalesAction(data: {
+    deliveryNumber: string;
+    buyerName: string;
+    recipient: string;
+    warehouseId: string;
+    items: { productId: string; quantity: number }[];
+}) {
+    const session = await getServerSession(authOptions) as any;
+    if (!session) throw new Error("Unauthorized");
+
+    const result = await prisma.$transaction(async (tx: any) => {
+        // 1. Create Delivery
+        const delivery = await tx.salesDelivery.create({
+            data: {
+                deliveryNumber: data.deliveryNumber,
+                buyerName: data.buyerName,
+                recipient: data.recipient,
+                warehouseId: data.warehouseId,
+                createdById: session.user.id,
+                items: {
+                    create: data.items.map(item => ({
+                        productId: item.productId,
+                        quantity: item.quantity
+                    }))
+                }
+            }
+        });
+
+        // 2. Update Stock and create Movements
+        for (const item of data.items) {
+            // Update stock
+            await tx.stock.updateMany({
+                where: {
+                    productId: item.productId,
+                    warehouseId: data.warehouseId,
+                    vendorName: "UMUM" // Default for manual
+                },
+                data: {
+                    quantity: { decrement: item.quantity }
+                }
+            });
+
+            // Create movement
+            await tx.stockMovement.create({
+                data: {
+                    productId: item.productId,
+                    warehouseId: data.warehouseId,
+                    quantity: -item.quantity,
+                    type: "SALE",
+                    referenceId: delivery.id,
+                    notes: `Penjualan manual ke ${data.buyerName} (SJ: ${data.deliveryNumber})`
+                }
+            });
+        }
+
+        return delivery;
+    });
+
+    revalidatePath("/sales");
+    revalidatePath("/warehouse");
+    return serializeDecimal(result);
+}

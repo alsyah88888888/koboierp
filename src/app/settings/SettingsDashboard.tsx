@@ -91,8 +91,11 @@ export function SettingsDashboard() {
         setCoa(md.coa);
     };
 
+    const [mounted, setMounted] = useState(false);
+
     useEffect(() => {
         loadData();
+        setMounted(true);
     }, []);
 
     const handleMDSubmit = async (e: React.FormEvent) => {
@@ -407,7 +410,7 @@ export function SettingsDashboard() {
                             </div>
                             <div className="flex justify-between text-sm">
                                 <span className="text-slate-500 font-medium">Latest Sync</span>
-                                <span className="text-slate-800 font-bold">{new Date().toLocaleTimeString()}</span>
+                                <span className="text-slate-800 font-bold">{mounted ? new Date().toLocaleTimeString() : "--:--:--"}</span>
                             </div>
                         </div>
                     </div>

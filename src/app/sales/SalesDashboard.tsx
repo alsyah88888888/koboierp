@@ -12,6 +12,7 @@ import Link from "next/link";
 import { ReportPreviewModal } from "@/components/ReportPreviewModal";
 import { exportToExcel } from "@/lib/excel";
 import { SalesReturnModal } from "./SalesReturnModal";
+import { ManualPOModal } from "./ManualPOModal";
 import { Undo2 } from "lucide-react";
 
 interface SalesDashboardProps {
@@ -30,6 +31,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
     const userRole = session?.user?.role || "";
     const [showSalesModal, setShowSalesModal] = useState(false);
     const [showReturnModal, setShowReturnModal] = useState(false);
+    const [showManualModal, setShowManualModal] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [editData, setEditData] = useState<any>(null);
     const [activeTab, setActiveTab] = useState<"SJ" | "RETURNS">("SJ");
@@ -160,13 +162,22 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                 </div>
                 <div className="w-full lg:w-auto">
                     {activeTab === "SJ" ? (
-                        <button
-                            onClick={() => setShowSalesModal(true)}
-                            className="erp-btn-primary w-full lg:w-auto"
-                        >
-                            <Plus className="h-5 w-5" />
-                            <span>Input Penjualan</span>
-                        </button>
+                        <div className="flex flex-wrap lg:flex-nowrap items-center gap-2 w-full lg:w-auto">
+                            <button
+                                onClick={() => setShowSalesModal(true)}
+                                className="erp-btn-primary flex-1 lg:flex-none"
+                            >
+                                <Plus className="h-5 w-5" />
+                                <span>Input Penjualan (Barcode)</span>
+                            </button>
+                            <button
+                                onClick={() => setShowManualModal(true)}
+                                className="bg-white border-2 border-slate-200 text-slate-600 px-6 py-2.5 rounded-xl flex items-center justify-center gap-2 hover:border-slate-900 hover:text-slate-900 transition-all font-black active:scale-95 flex-1 lg:flex-none"
+                            >
+                                <FileText className="h-4 w-4" />
+                                <span>Manual SJ/PO</span>
+                            </button>
+                        </div>
                     ) : (
                         <button
                             onClick={() => {
@@ -304,7 +315,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                         <Clock className="h-4 w-4 text-primary opacity-20" />
                     </div>
                     <h3 className="text-3xl font-black mt-1 text-emerald-600">
-                        {initialDeliveries.filter(d => new Date(d.createdAt).toDateString() === new Date().toDateString()).length}
+                        {isClient ? initialDeliveries.filter(d => new Date(d.createdAt).toDateString() === new Date().toDateString()).length : "0"}
                     </h3>
                 </div>
             </div>
@@ -470,6 +481,17 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                     onClose={() => {
                         setShowReturnModal(false);
                         setEditData(null);
+                    }}
+                />
+            )}
+
+            {showManualModal && (
+                <ManualPOModal
+                    products={products}
+                    warehouses={warehouses}
+                    onClose={() => {
+                        setShowManualModal(false);
+                        window.location.reload();
                     }}
                 />
             )}

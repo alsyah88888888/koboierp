@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X, Save, AlertCircle, Plus, Minus, ArrowRightLeft } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { adjustStockAction } from "@/app/actions";
@@ -18,6 +18,11 @@ export function StockAdjustmentModal({ product, stock, onClose }: StockAdjustmen
     const [amount, setAmount] = useState<number | "">("");
     const [notes, setNotes] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -83,7 +88,7 @@ export function StockAdjustmentModal({ product, stock, onClose }: StockAdjustmen
                         </div>
                         <div className="text-right">
                             <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1">Stok Saat Ini</p>
-                            <p className="text-2xl font-black text-slate-900 leading-none">{currentQty.toLocaleString()}</p>
+                            <p className="text-2xl font-black text-slate-900 leading-none">{isClient ? currentQty.toLocaleString() : "..."}</p>
                         </div>
                     </div>
 
@@ -177,7 +182,7 @@ export function StockAdjustmentModal({ product, stock, onClose }: StockAdjustmen
                                 "text-lg font-black",
                                 simulatedResult < 0 ? "text-red-700" : "text-emerald-700"
                             )}>
-                                {simulatedResult.toLocaleString()}
+                                {isClient ? simulatedResult.toLocaleString() : "..."}
                             </span>
                         </div>
                     )}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Plus, Warehouse as WarehouseIcon, Layers, Trash2, FileText, Search, Activity, Box, ArrowUpRight, ArrowDownLeft, Download, Eye, Edit2 } from "lucide-react";
 import { StockInputModal } from "./StockInputModal";
 import { StockAdjustmentModal } from "./StockAdjustmentModal";
@@ -26,6 +26,11 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
     const [activeTab, setActiveTab] = useState<"inventory" | "checker">("inventory");
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedStockForAdjustment, setSelectedStockForAdjustment] = useState<{product: any, stock: any} | null>(null);
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
 
     const [showPreview, setShowPreview] = useState(false);
     const [previewData, setPreviewData] = useState<any[]>([]);
@@ -223,7 +228,7 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
 
                                             <div className="space-y-2">
                                                 <div className="flex justify-between items-end">
-                                                    <span className="text-lg font-black text-slate-900">{totalStock.toLocaleString()}</span>
+                                                    <span className="text-lg font-black text-slate-900">{isClient ? totalStock.toLocaleString() : "..."}</span>
                                                     <span className="text-[10px] font-black text-slate-400">{percentage}% Full</span>
                                                 </div>
                                                 <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
@@ -299,7 +304,7 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                                                     </span>
                                                                 </td>
                                                                 <td className="px-6 py-4 text-right">
-                                                                    <div className="text-lg font-black text-slate-800">{(s.quantity || 0).toLocaleString()} <span className="text-[10px] text-slate-400 font-bold uppercase">{p.uom}</span></div>
+                                                                    <div className="text-lg font-black text-slate-800">{isClient ? (s.quantity || 0).toLocaleString() : "..."} <span className="text-[10px] text-slate-400 font-bold uppercase">{p.uom}</span></div>
                                                                 </td>
                                                                 <td className="px-6 py-4 text-right">
                                                                     <span className={cn(
@@ -403,7 +408,7 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                                             <div>
                                                                 <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Qty Available</div>
                                                                 <div className="text-xl font-black text-slate-900 leading-none">
-                                                                    {(s.quantity || 0).toLocaleString()} <span className="text-[10px] text-slate-400 font-bold uppercase ml-1">{p.uom}</span>
+                                                                    {isClient ? (s.quantity || 0).toLocaleString() : "..."} <span className="text-[10px] text-slate-400 font-bold uppercase ml-1">{p.uom}</span>
                                                                 </div>
                                                             </div>
                                                             {isAdmin && (
@@ -502,7 +507,7 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                     <h4 className="font-black text-lg mb-1 leading-tight">Warehouse Insight</h4>
                                     <p className="text-xs text-white/80 font-medium mb-4">Total Stock di seluruh gudang saat ini:</p>
                                     <div className="text-4xl font-black mb-1">
-                                        {initialProducts.reduce((acc: number, p: any) => acc + p.stocks.reduce((sacc: number, s: any) => sacc + s.quantity, 0), 0).toLocaleString()}
+                                        {isClient ? initialProducts.reduce((acc: number, p: any) => acc + p.stocks.reduce((sacc: number, s: any) => sacc + s.quantity, 0), 0).toLocaleString() : "..."}
                                     </div>
                                     <p className="text-[10px] font-black uppercase tracking-widest text-primary-foreground/60">Items Handled</p>
                                 </div>

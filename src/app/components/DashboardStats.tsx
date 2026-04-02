@@ -8,10 +8,12 @@ import { useSession } from "next-auth/react";
 
 export function DashboardStats() {
     const [stats, setStats] = useState<any>(null);
+    const [isClient, setIsClient] = useState(false);
     const { data: session } = useSession();
     const userRole = (session?.user as any)?.role || "USER";
 
     useEffect(() => {
+        setIsClient(true);
         const loadStats = async () => {
             const data = await getDashboardSummaryAction();
             setStats(data);
@@ -46,7 +48,7 @@ export function DashboardStats() {
         },
         {
             label: "Purchase Volume",
-            value: Number(stats?.purchaseVol || 0).toLocaleString(),
+            value: isClient ? Number(stats?.purchaseVol || 0).toLocaleString() : "...",
             icon: ShoppingCart,
             color: "text-amber-600",
             bg: "bg-amber-50",
@@ -75,7 +77,7 @@ export function DashboardStats() {
                     <div>
                         <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">{item.label}</p>
                         <h3 className={`text-xl font-black ${item.color}`}>
-                            {item.value}{item.suffix}
+                            {isClient ? item.value : "..."}{item.suffix}
                         </h3>
                     </div>
                     <div className={`${item.bg} p-2 rounded-lg border ${item.border}`}>

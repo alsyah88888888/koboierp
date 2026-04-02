@@ -57,7 +57,7 @@ export default async function DashboardPage() {
       type: j.type === 'CREDIT' ? 'SALE' : 'PURCHASE',
       description: j.description || "No Description",
       amount: Number(j.amount || 0),
-      date: j.date ? new Date(j.date).toLocaleDateString('id-ID') : "-",
+      date: j.date,
       reference: "GL-" + (j.id?.slice(-4).toUpperCase() || "0000")
     }));
   } catch (err) {

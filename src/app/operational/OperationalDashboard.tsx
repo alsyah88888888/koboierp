@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
     Plus,
     Search,
@@ -33,6 +33,11 @@ export function OperationalDashboard({
 }: OperationalDashboardProps) {
     const [searchTerm, setSearchTerm] = useState("");
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
 
     // Calculate Performance for BC & PF
     const getStats = (id: string) => {
@@ -208,7 +213,7 @@ export function OperationalDashboard({
                                     <td className="px-6 py-4 font-bold text-muted-foreground">
                                         <div className="flex items-center gap-2">
                                             <Calendar className="w-3.5 h-3.5 text-primary/40" />
-                                            {new Date(t.date).toLocaleDateString('id-ID')}
+                                            {isClient ? new Date(t.date).toLocaleDateString('id-ID') : "--/--/----"}
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">

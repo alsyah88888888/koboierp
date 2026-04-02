@@ -437,7 +437,7 @@ export function AdminDashboard({ role, stats, salesData, inventoryData, recentAc
                         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                             <span className="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em]">Total</span>
                             <span className="text-3xl font-black text-slate-900 leading-none">
-                                {inventoryData.reduce((a: number, b: any) => a + b.value, 0).toLocaleString()}
+                                {isClient ? inventoryData.reduce((a: number, b: any) => a + b.value, 0).toLocaleString() : "..."}
                             </span>
                         </div>
                     </div>
@@ -448,7 +448,7 @@ export function AdminDashboard({ role, stats, salesData, inventoryData, recentAc
                                     <div className="h-2 w-6 rounded-full transition-all group-hover/item:w-8" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
                                     <span className="text-[11px] font-black text-slate-500 uppercase tracking-tighter">{item.name}</span>
                                 </div>
-                                <span className="text-xs font-black text-slate-900">{item.value.toLocaleString()}</span>
+                                <span className="text-xs font-black text-slate-900">{isClient ? item.value.toLocaleString() : "..."}</span>
                             </div>
                         ))}
                     </div>
@@ -478,7 +478,7 @@ export function AdminDashboard({ role, stats, salesData, inventoryData, recentAc
                                 <div className="flex-1 min-w-0">
                                     <div className="text-xs font-black text-slate-900 uppercase tracking-tight truncate mb-0.5">{act.description}</div>
                                     <div className="flex items-center gap-2 text-[10px] font-black text-slate-300 uppercase tracking-widest">
-                                        <span>{act.date}</span>
+                                        <span>{isClient && act.date ? new Date(act.date).toLocaleDateString('id-ID') : "-"}</span>
                                         <span className="h-1 w-1 rounded-full bg-slate-200" />
                                         <span>{act.reference}</span>
                                     </div>
