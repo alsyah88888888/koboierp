@@ -235,11 +235,16 @@ export function TrackingDashboard({ initialProducts, userEmail, userRole }: Trac
                                             <div className="flex items-center justify-end gap-3 text-right">
                                                 <span className={cn(
                                                     "text-xl font-black font-mono tracking-tighter",
-                                                    p.totalStock > 0 ? "text-emerald-500" : "text-slate-300"
+                                                    p.totalStock <= (p.lowStockThreshold || 10) ? "text-rose-500" : (p.totalStock > 0 ? "text-emerald-500" : "text-slate-300")
                                                 )}>
                                                     {p.totalStock.toLocaleString('id-ID')}
                                                 </span>
-                                                {p.totalStock > 0 ? (
+                                                {p.totalStock <= (p.lowStockThreshold || 10) ? (
+                                                    <div className="flex flex-col items-end">
+                                                        <div className="h-2 w-2 bg-rose-500 rounded-full animate-ping shadow-[0_0_8px_rgba(244,63,94,0.5)]"></div>
+                                                        <span className="text-[7px] font-black text-rose-500 uppercase tracking-tighter mt-1">Low Stock</span>
+                                                    </div>
+                                                ) : p.totalStock > 0 ? (
                                                     <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
                                                 ) : (
                                                     <div className="h-2 w-2 bg-slate-200 rounded-full"></div>
@@ -279,10 +284,16 @@ export function TrackingDashboard({ initialProducts, userEmail, userRole }: Trac
                                 <div className="flex items-center gap-2">
                                     <span className={cn(
                                         "text-2xl font-black font-mono",
-                                        p.totalStock > 0 ? "text-primary" : "text-slate-200"
+                                        p.totalStock <= (p.lowStockThreshold || 10) ? "text-rose-600" : (p.totalStock > 0 ? "text-primary" : "text-slate-200")
                                     )}>
                                         {p.totalStock}
                                     </span>
+                                    {p.totalStock <= (p.lowStockThreshold || 10) && p.totalStock > 0 && (
+                                        <span className="absolute top-6 right-6 flex h-3 w-3">
+                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                                            <span className="relative inline-flex rounded-full h-3 w-3 bg-rose-500"></span>
+                                        </span>
+                                    )}
                                 </div>
                             </div>
                         </div>

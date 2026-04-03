@@ -49,7 +49,7 @@ const IconMap: any = {
     TrendingUp
 };
 
-export function AdminDashboard({ role, stats, salesData, inventoryData, recentActivity, lowStockCount, activeOrdersToday, dailyReport }: any) {
+export function AdminDashboard({ role, stats, salesData, inventoryData, recentActivity, lowStockCount, lowStockProducts = [], activeOrdersToday, dailyReport }: any) {
     const [isClient, setIsClient] = useState(false);
 
     useEffect(() => {
@@ -438,6 +438,72 @@ export function AdminDashboard({ role, stats, salesData, inventoryData, recentAc
                     </div>
                 </div>
 
+                {/* Team Intelligence Insight */}
+                <div className="erp-card p-10 flex flex-col group border-slate-200/40 bg-slate-900 text-white overflow-hidden relative">
+                     <div className="absolute top-0 right-0 p-10 opacity-5 group-hover:scale-110 transition-transform">
+                        <TrendingUp className="h-32 w-32" />
+                    </div>
+                    <div className="relative z-10">
+                        <div className="mb-10">
+                            <h3 className="text-xl font-black tracking-tight">Team Profitability</h3>
+                            <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] mt-1">Gross Margin Breakdown (BC vs PF)</p>
+                        </div>
+                        
+                        <div className="space-y-10">
+                            {/* BC Team */}
+                            <div className="space-y-3 font-black">
+                                <div className="flex justify-between items-end">
+                                    <span className="text-[11px] font-black uppercase tracking-widest text-slate-400">Team BC (Biru)</span>
+                                    <span className="text-lg font-black text-white">{isClient ? stats.find((s: any) => s.name === 'Margin BC')?.value : "..."}</span>
+                                </div>
+                                <div className="h-3 w-full bg-white/5 rounded-full overflow-hidden">
+                                    {(() => {
+                                        const val = Number((stats.find((s: any) => s.name === 'Margin BC')?.value || "0").toString().replace(/[^0-9,-]+/g, "").replace(",", "."));
+                                        const total = Number((stats.find((s: any) => s.name === 'Total Revenue')?.value || "1").toString().replace(/[^0-9,-]+/g, "").replace(",", "."));
+                                        const pct = Math.min(100, (val / Math.max(1, total)) * 100);
+                                        return (
+                                            <div 
+                                                className="h-full bg-blue-500 rounded-full transition-all duration-1000" 
+                                                style={{ width: `${isClient ? pct : 0}%` }}
+                                            />
+                                        );
+                                    })()}
+                                </div>
+                            </div>
+
+                            {/* PF Team */}
+                            <div className="space-y-3 font-black">
+                                <div className="flex justify-between items-end">
+                                    <span className="text-[11px] font-black uppercase tracking-widest text-slate-400">Team PF (Ungu)</span>
+                                    <span className="text-lg font-black text-white">{isClient ? stats.find((s: any) => s.name === 'Margin PF')?.value : "..."}</span>
+                                </div>
+                                <div className="h-3 w-full bg-white/5 rounded-full overflow-hidden">
+                                    {(() => {
+                                        const val = Number((stats.find((s: any) => s.name === 'Margin PF')?.value || "0").toString().replace(/[^0-9,-]+/g, "").replace(",", "."));
+                                        const total = Number((stats.find((s: any) => s.name === 'Total Revenue')?.value || "1").toString().replace(/[^0-9,-]+/g, "").replace(",", "."));
+                                        const pct = Math.min(100, (val / Math.max(1, total)) * 100);
+                                        return (
+                                            <div 
+                                                className="h-full bg-purple-500 rounded-full transition-all duration-1000" 
+                                                style={{ width: `${isClient ? pct : 0}%` }}
+                                            />
+                                        );
+                                    })()}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="mt-12 p-6 bg-white/5 rounded-2xl border border-white/5 backdrop-blur-sm">
+                            <div className="flex gap-4">
+                                <Activity className="h-5 w-5 text-primary shrink-0" />
+                                <p className="text-[10px] font-bold text-slate-400 leading-relaxed uppercase tracking-tight">
+                                    Analitik margin tim membantu memantau kontribusi profitabilitas setiap divisi secara real-time terhadap total Nett Margin perusahaan.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 {/* Inventory Pie Chart */}
                 <div className="erp-card p-10 flex flex-col group border-slate-200/50 bg-gradient-to-b from-white to-slate-50/30">
                     <div className="mb-10">
@@ -553,13 +619,32 @@ export function AdminDashboard({ role, stats, salesData, inventoryData, recentAc
                                     <TrendingUp className="h-3 w-3" /> Growth Detected
                                 </div>
                             </div>
-                            <div className="bg-white/5 border border-white/10 p-8 rounded-[2.5rem] transition-all hover:bg-white/[0.08] hover:border-white/20 hover:-translate-y-1">
-                                <span className="text-[11px] font-black text-rose-500 uppercase tracking-[0.3em] block mb-4">Risk Factors</span>
-                                <div className="text-5xl font-black tracking-tighter text-rose-500 tabular-nums mb-4">{lowStockCount}</div>
-                                <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                                     <div className="h-2 w-2 bg-rose-500 rounded-full animate-ping" />
-                                     Refill Required
+                            <div className="bg-white/5 border border-white/10 p-8 rounded-[2.5rem] transition-all hover:bg-white/[0.08] hover:border-white/20 hover:-translate-y-1 flex flex-col justify-between">
+                                <div>
+                                    <span className="text-[11px] font-black text-rose-500 uppercase tracking-[0.3em] block mb-4">Risk Factors</span>
+                                    <div className="text-5xl font-black tracking-tighter text-rose-500 tabular-nums mb-4">{lowStockCount}</div>
+                                    <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2 mb-6">
+                                        <div className="h-2 w-2 bg-rose-500 rounded-full animate-ping" />
+                                        Refill Required
+                                    </div>
                                 </div>
+                                
+                                {lowStockProducts.length > 0 && (
+                                    <div className="space-y-2 mt-auto">
+                                        {lowStockProducts.slice(0, 3).map((p: any) => (
+                                            <div key={p.id} className="flex items-center justify-between bg-white/5 p-2 rounded-xl border border-white/5">
+                                                <div className="min-w-0">
+                                                    <p className="text-[9px] font-black text-slate-500 truncate uppercase">{p.name}</p>
+                                                    <p className="text-[8px] font-bold text-rose-400/60 uppercase tracking-tighter">Stock: {p.stock} / {p.threshold}</p>
+                                                </div>
+                                                <div className="h-1.5 w-1.5 bg-rose-500 rounded-full shrink-0 shadow-[0_0_5px_rgba(244,63,94,0.3)]" />
+                                            </div>
+                                        ))}
+                                        {lowStockProducts.length > 3 && (
+                                            <Link href="/tracking" className="text-[9px] font-black text-primary uppercase tracking-widest hover:underline block text-center pt-1">+ {lowStockProducts.length - 3} More Items</Link>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         </div>
 

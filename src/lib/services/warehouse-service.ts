@@ -246,3 +246,64 @@ export async function verifyGoodsReceiptService(receiptId: string, verifiedBy: s
         return { success: true };
     });
 }
+
+export async function voidGoodsReceiptService(id: string, reason: string) {
+    const { getPrisma } = require("@/lib/prisma");
+    const prisma = getPrisma();
+
+    return await prisma.$transaction(async (tx: any) => {
+        const receipt = await tx.goodsReceipt.findUnique({
+            where: { id },
+            include: { items: true }
+        });
+
+        if (!receipt) throw new Error("Penerimaan tidak ditemukan.");
+        if (receipt.isVoid) throw new Error("Penerimaan sudah dibatalkan.");
+
+        if (receipt.isVerified) {
+            // Revert Stock
+            for (const item of receipt.items) {
+                const vendorName = item.vendorName || "UMUM";
+                
+                await tx.stock.update({
+                    where: {
+                        productId_warehouseId_vendorName: {
+                            productId: item.productId,
+                            warehouseId: receipt.warehouseId,
+                            vendorName: vendorName
+                        }
+                    },
+                    data: { quantity: { decrement: item.quantity } }
+                });
+
+                // Create Reversing Movement
+                await tx.stockMovement.create({
+                    data: {
+                        productId: item.productId,
+                        warehouseId: receipt.warehouseId,
+                        vendorName: vendorName,
+                        quantity: -item.quantity,
+                        type: "PURCHASE_VOID",
+                        reference: receipt.receiptNumber
+                    }
+                });
+            }
+        }
+
+        // Mark as Voided
+        await tx.goodsReceipt.update({
+            where: { id },
+            data: {
+                isVoid: true,
+                voidReason: reason
+            }
+        });
+
+        revalidatePath("/warehouse");
+        revalidatePath("/purchase");
+        revalidatePath("/tracking");
+        revalidatePath("/");
+
+        return { success: true };
+    });
+}

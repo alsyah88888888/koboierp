@@ -14,7 +14,8 @@ import { ReportPreviewModal } from "@/components/ReportPreviewModal";
 import { exportToExcel } from "@/lib/excel";
 import { SalesReturnModal } from "./SalesReturnModal";
 import { ManualPOModal } from "./ManualPOModal";
-import { Undo2 } from "lucide-react";
+import { Undo2, XCircle } from "lucide-react";
+import { VoidReasonModal } from "@/components/VoidReasonModal";
 
 interface SalesDashboardProps {
     initialDeliveries: any[];
@@ -38,6 +39,8 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
     const [editData, setEditData] = useState<any>(null);
     const [activeTab, setActiveTab] = useState<"SJ" | "RETURNS">("SJ");
     const [isClient, setIsClient] = useState(false);
+    const [showVoidModal, setShowVoidModal] = useState(false);
+    const [voidId, setVoidId] = useState<string | null>(null);
 
     useEffect(() => {
         setIsClient(true);
@@ -70,28 +73,27 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
     const handlePrint = () => {
         window.print();
     };
-    const handleDelete = async (id: string) => {
-        const ok = await confirm({
-            title: "Hapus Penjualan?",
-            message: "Hapus pengiriman ini? Stok akan otomatis ditambahkan kembali dan jurnal akan dihapus secara permanen.",
-            confirmText: "Hapus Sekarang",
-            type: "danger",
-            hasCountdown: true
-        });
-        if (!ok) return;
+    const handleVoid = async (id: string) => {
+        setVoidId(id);
+        setShowVoidModal(true);
+    };
 
+    const onVoidConfirm = async (reason: string) => {
+        if (!voidId) return;
         try {
-            await callAction("deleteSalesDelivery", id);
+            await callAction("voidSalesDelivery", voidId, reason);
+            setShowVoidModal(false);
+            setVoidId(null);
             await alert({
-                title: "Berhasil",
-                message: "Data penjualan telah dihapus dan stok telah diperbarui.",
+                title: "Berhasil Dibatalkan",
+                message: "Transaksi telah dibatalkan (VOID) dan stok telah dikembalikan.",
                 type: "success"
             });
             window.location.reload();
         } catch (e: any) {
             await alert({
-                title: "Gagal Menghapus",
-                message: e.message || "Gagal menghapus pengiriman. Silakan hubungi admin.",
+                title: "Gagal Membatalkan",
+                message: e.message || "Terjadi kesalahan saat membatalkan transaksi.",
                 type: "danger"
             });
         }
@@ -405,9 +407,20 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                             </thead>
                             <tbody>
                                 {Array.isArray(filteredDeliveries) && filteredDeliveries.map((d: any) => (
-                                    <tr key={d.id} className="hover:bg-slate-50/50 transition-colors">
+                                    <tr 
+                                        key={d.id} 
+                                        className={cn(
+                                            "hover:bg-slate-50/50 transition-colors",
+                                            d.isVoid && "bg-slate-50/80 opacity-60"
+                                        )}
+                                    >
                                         <td data-label="No. SJ" className="font-mono text-primary font-bold md:pl-6">
-                                            {d.deliveryNumber}
+                                            <div className="flex items-center gap-2">
+                                                <span className={cn(d.isVoid && "line-through text-slate-400")}>{d.deliveryNumber}</span>
+                                                {d.isVoid && (
+                                                    <span className="bg-rose-100 text-rose-600 text-[8px] px-1.5 py-0.5 rounded-md font-black uppercase tracking-tighter">BATAL</span>
+                                                )}
+                                            </div>
                                         </td>
                                         <td data-label="Buyer">
                                             <div className="font-black text-slate-900">{d.buyerName}</div>
@@ -440,10 +453,15 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                                                 <button onClick={() => { setEditData(d); setShowSalesModal(true); }} className="p-2.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-all">
                                                     <Edit2 className="h-4 w-4" />
                                                 </button>
-                                                {(isAdmin || userRole === "SALES") && (
-                                                    <button onClick={() => handleDelete(d.id)} className="p-2.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all">
-                                                        <Trash2 className="h-4 w-4" />
+                                                {(isAdmin || userRole === "SALES") && !d.isVoid && (
+                                                    <button onClick={() => handleVoid(d.id)} className="p-2.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all" title="Void Transaction">
+                                                        <XCircle className="h-4 w-4" />
                                                     </button>
+                                                )}
+                                                {d.isVoid && (
+                                                    <div className="px-3 py-1 bg-slate-100 text-slate-400 text-[8px] font-black italic rounded-lg" title={d.voidReason}>
+                                                        VOIDED: {d.voidReason}
+                                                    </div>
                                                 )}
                                             </div>
                                         </td>
@@ -540,6 +558,17 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                     onExport={handleExport}
                 />
             )}
+
+            <VoidReasonModal 
+                isOpen={showVoidModal}
+                onClose={() => {
+                    setShowVoidModal(false);
+                    setVoidId(null);
+                }}
+                onConfirm={onVoidConfirm}
+                title="Batalkan Penjualan (VOID)"
+                message="Membatalkan pengiriman ini akan mengembalikan stok barang ke gudang secara otomatis. Tindakan ini tidak dapat dibatalkan."
+            />
         </div>
     );
 }

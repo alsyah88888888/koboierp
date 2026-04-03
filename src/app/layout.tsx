@@ -12,6 +12,7 @@ export const metadata: Metadata = {
 
 import { Providers } from "@/components/layout/providers";
 import { TopHeader } from "@/components/layout/TopHeader";
+import { CommandPalette } from "@/components/CommandPalette";
 import { getServerSession } from "next-auth";
 import { getAuthOptions } from "@/lib/auth";
 
@@ -39,6 +40,7 @@ export default async function RootLayout({
                   {children}
                 </div>
               </main>
+              <CommandPalette />
             </div>
           </div>
         </Providers>

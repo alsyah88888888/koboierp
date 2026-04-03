@@ -337,3 +337,61 @@ export async function deleteSalesDeliveryService(id: string) {
         return { success: true };
     });
 }
+
+export async function voidSalesDeliveryService(id: string, reason: string) {
+    const { getPrisma } = require("@/lib/prisma");
+    const prisma = getPrisma();
+
+    return await prisma.$transaction(async (tx: any) => {
+        const delivery = await tx.salesDelivery.findUnique({
+            where: { id },
+            include: { items: true }
+        });
+
+        if (!delivery) throw new Error("Delivery not found");
+        if (delivery.isVoid) throw new Error("Delivery is already voided");
+
+        for (const item of delivery.items) {
+            // Restore Stock
+            await tx.stock.update({
+                where: {
+                    productId_warehouseId_vendorName: {
+                        productId: item.productId,
+                        warehouseId: delivery.warehouseId,
+                        vendorName: item.vendorName
+                    }
+                },
+                data: { quantity: { increment: item.quantity } }
+            });
+
+            // Create Reversing Movement
+            await tx.stockMovement.create({
+                data: {
+                    productId: item.productId,
+                    warehouseId: delivery.warehouseId,
+                    vendorName: item.vendorName,
+                    quantity: item.quantity,
+                    type: "SALE_VOID",
+                    reference: delivery.deliveryNumber
+                }
+            });
+        }
+
+        // Mark as Voided
+        await tx.salesDelivery.update({
+            where: { id },
+            data: {
+                isVoid: true,
+                voidReason: reason
+            }
+        });
+
+        revalidatePath("/sales");
+        revalidatePath("/warehouse");
+        revalidatePath("/finance");
+        revalidatePath("/tracking");
+        revalidatePath("/");
+
+        return { success: true };
+    });
+}

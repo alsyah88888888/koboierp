@@ -37,6 +37,7 @@ export default async function DashboardPage() {
   let products: any[] = [];
   let recentActivity: any[] = [];
   let inventoryData: any[] = [];
+  let lowStockProducts: any[] = [];
 
   try {
     const [summaryRes, reportRes, productsRes, recentJournal] = await Promise.all([
@@ -50,13 +51,23 @@ export default async function DashboardPage() {
     dailyReport = reportRes || dailyReport;
     products = productsRes || [];
 
-    // 4. Group Inventory by Category
+    // 4. Group Inventory by Category & Check Low Stock
     const categoryMap: any = {};
     products.forEach((p: any) => {
       const cat = p.category || "Uncategorized";
       const stocks = p.stocks || [];
-      const qty = stocks.reduce((s: number, st: any) => s + (Number(st.quantity) || 0), 0);
-      categoryMap[cat] = (categoryMap[cat] || 0) + qty;
+      const totalQty = stocks.reduce((s: number, st: any) => s + (Number(st.quantity) || 0), 0);
+      categoryMap[cat] = (categoryMap[cat] || 0) + totalQty;
+
+      if (totalQty <= (p.lowStockThreshold || 10) && totalQty > 0) {
+        lowStockProducts.push({
+          id: p.id,
+          sku: p.sku,
+          name: p.name,
+          stock: totalQty,
+          threshold: p.lowStockThreshold || 10
+        });
+      }
     });
     inventoryData = Object.entries(categoryMap).map(([name, value]) => ({ name, value: Number(value) })).slice(0, 5);
 
@@ -135,6 +146,7 @@ export default async function DashboardPage() {
     recentActivity={recentActivity}
     dailyReport={dailyReport}
     lowStockCount={summary.lowStockCount || 0}
+    lowStockProducts={lowStockProducts}
     activeOrdersToday={summary.activeOrdersToday || 0}
   />;
 }

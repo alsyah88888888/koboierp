@@ -239,6 +239,10 @@ model GoodsReceipt {
   verifiedAt        DateTime?
   verifiedBy        String?
   paymentStatus     String   @default("PENDING") // PENDING, PAID
+
+  // Voiding system
+  isVoid           Boolean  @default(false)
+  voidReason       String?
   
   // New financial fields
   subtotal       Decimal  @default(0)
@@ -297,6 +301,10 @@ model PurchaseReturn {
   
   status          String   @default("PENDING") // PENDING, APPROVED_BY_FINANCE
   notes           String?
+
+  // Voiding system
+  isVoid           Boolean  @default(false)
+  voidReason       String?
   
   items           PurchaseReturnItem[]
   
@@ -331,6 +339,10 @@ model SalesDelivery {
   warehouse      Warehouse @relation(fields: [warehouseId], references: [id])
   paymentStatus  String   @default("PENDING") // PENDING, PAID
   
+  // Voiding system
+  isVoid           Boolean  @default(false)
+  voidReason       String?
+
   // New financial fields
   subtotal       Decimal  @default(0)
   totalDiscount  Decimal  @default(0)
@@ -376,6 +388,10 @@ model SalesReturn {
   
   status          String   @default("PENDING") // PENDING, VERIFIED_BY_FINANCE
   notes           String?
+
+  // Voiding system
+  isVoid           Boolean  @default(false)
+  voidReason       String?
   
   items           SalesReturnItem[]
   

@@ -12,6 +12,8 @@ import { useDialog } from "@/components/ui/DialogProvider";
 
 import { DashboardStats } from "../components/DashboardStats";
 import Link from "next/link";
+import { XCircle } from "lucide-react";
+import { VoidReasonModal } from "@/components/VoidReasonModal";
 import { exportToExcel } from "@/lib/excel";
 import { ReturnModal } from "./ReturnModal";
 import { SupplierModal } from "@/components/modals/SupplierModal";
@@ -41,6 +43,8 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
     const [activeTab, setActiveTab] = useState<"LPB" | "RETUR">("LPB");
     const [showReturnModal, setShowReturnModal] = useState(false);
     const [isClient, setIsClient] = useState(false);
+    const [showVoidModal, setShowVoidModal] = useState(false);
+    const [voidId, setVoidId] = useState<string | null>(null);
 
     useEffect(() => {
         setIsClient(true);
@@ -51,27 +55,27 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
     const [showBuyerModal, setShowBuyerModal] = useState(false);
     const [showProductModal, setShowProductModal] = useState(false);
 
-    const handleDelete = async (id: string) => {
-        const ok = await confirm({
-            title: "Hapus Penerimaan?",
-            message: "Hapus penerimaan ini? Stok akan otomatis dikurangi kembali dan jurnal akan dihapus secara permanen.",
-            confirmText: "Hapus Sekarang",
-            type: "danger",
-            hasCountdown: true
-        });
-        if (!ok) return;
+    const handleVoid = async (id: string) => {
+        setVoidId(id);
+        setShowVoidModal(true);
+    };
 
+    const onVoidConfirm = async (reason: string) => {
+        if (!voidId) return;
         try {
-            await callAction("deleteGoodsReceipt", id);
+            await callAction("voidGoodsReceipt", voidId, reason);
+            setShowVoidModal(false);
+            setVoidId(null);
             await alert({
-                title: "Berhasil",
-                message: "Penerimaan barang telah dihapus dari sistem.",
+                title: "Berhasil Dibatalkan",
+                message: "Penerimaan barang telah dibatalkan (VOID) dan stok telah disesuaikan.",
                 type: "success"
             });
+            window.location.reload();
         } catch (e: any) {
             await alert({
-                title: "Gagal Menghapus",
-                message: e.message || "Gagal menghapus penerimaan. Silakan cek koneksi atau hubungi admin.",
+                title: "Gagal Membatalkan",
+                message: e.message || "Gagal membatalkan penerimaan barang.",
                 type: "danger"
             });
         }
@@ -295,9 +299,19 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
                                     </tr>
                                 ) : (
                                     Array.isArray(filteredReceipts) && filteredReceipts.map((r: any, idx: number) => (
-                                        <tr key={r.id}>
+                                        <tr 
+                                            key={r.id}
+                                            className={cn(r.isVoid && "bg-slate-50/80 opacity-60")}
+                                        >
                                             <td className="text-center text-slate-400">{idx + 1}</td>
-                                            <td className="font-mono text-primary font-black text-xs uppercase tracking-tight">{r.formNumber}</td>
+                                            <td className="font-mono text-primary font-black text-xs uppercase tracking-tight">
+                                                <div className="flex items-center gap-2">
+                                                    <span className={cn(r.isVoid && "line-through text-slate-400")}>{r.formNumber}</span>
+                                                    {r.isVoid && (
+                                                        <span className="bg-rose-100 text-rose-600 text-[8px] px-1.5 py-0.5 rounded-md font-black uppercase tracking-tighter">BATAL</span>
+                                                    )}
+                                                </div>
+                                            </td>
                                             <td>
                                                 <div className="font-black text-slate-800 uppercase tracking-tight truncate max-w-[200px]" title={r.receivedFrom}>{r.receivedFrom}</div>
                                             </td>
@@ -339,13 +353,19 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
                                                     >
                                                         <Edit2 className="h-4 w-4" />
                                                     </button>
-                                                    {(isAdmin || userRole === "PURCHASE") && (
+                                                    {(isAdmin || userRole === "PURCHASE") && !r.isVoid && (
                                                         <button
-                                                            onClick={() => handleDelete(r.id)}
+                                                            onClick={() => handleVoid(r.id)}
                                                             className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl"
+                                                            title="Void Receipt"
                                                         >
-                                                            <Trash2 className="h-4 w-4" />
+                                                            <XCircle className="h-4 w-4" />
                                                         </button>
+                                                    )}
+                                                    {r.isVoid && (
+                                                        <div className="px-3 py-1 bg-slate-100 text-slate-400 text-[8px] font-black italic rounded-lg" title={r.voidReason}>
+                                                            VOIDED: {r.voidReason}
+                                                        </div>
                                                     )}
                                                 </div>
                                             </td>
@@ -470,6 +490,17 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
                     }}
                 />
             )}
+
+            <VoidReasonModal 
+                isOpen={showVoidModal}
+                onClose={() => {
+                    setShowVoidModal(false);
+                    setVoidId(null);
+                }}
+                onConfirm={onVoidConfirm}
+                title="Batalkan Penerimaan (VOID)"
+                message="Membatalkan penerimaan barang ini akan mengurangi stok barang secara otomatis. Tindakan ini tidak dapat dibatalkan."
+            />
         </div>
     );
 }

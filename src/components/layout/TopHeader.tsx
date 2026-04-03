@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { Bell, Menu, User, Info, AlertTriangle, CheckCircle2, Megaphone, X, Calendar, Trash2 } from "lucide-react";
+import { Bell, Menu, User, Info, AlertTriangle, CheckCircle2, Megaphone, X, Calendar, Trash2, Command } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useSidebar } from "./SidebarContext";
 import { useState, useEffect } from "react";
@@ -170,6 +170,11 @@ export function TopHeader() {
                                 </div>
                             </>
                         )}
+                    </div>
+
+                    <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-xl text-slate-300 group hover:border-primary/20 hover:bg-primary/[0.02] transition-all cursor-help" title="Quick Navigation (Cmd+K)">
+                        <Command className="h-3 w-3 group-hover:text-primary transition-colors" />
+                        <span className="text-[10px] font-black uppercase tracking-widest group-hover:text-primary transition-colors">K</span>
                     </div>
 
                     <div className="h-8 w-px bg-slate-200 mx-2"></div>
