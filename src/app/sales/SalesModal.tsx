@@ -211,10 +211,10 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
     };
 
     return (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md z-[9999] flex items-center justify-center p-0 md:p-6">
-            <div className="bg-white shadow-2xl rounded-none md:rounded-[2.5rem] w-full max-w-5xl h-full md:max-h-[88vh] overflow-hidden flex flex-col border border-slate-200/50 animate-fade-up">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xl z-[9999] flex items-center justify-center p-0 md:p-4 lg:p-8">
+            <div className="bg-white shadow-2xl rounded-none md:rounded-[2rem] w-full max-w-7xl h-full md:h-auto md:max-h-[92vh] overflow-hidden flex flex-col border border-slate-200/50 animate-fade-up">
                 {/* Header */}
-                <div className="px-8 py-6 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
+                <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
                     <div className="flex items-center gap-5">
                         <div className="p-3.5 bg-primary text-white rounded-2xl shadow-xl shadow-primary/20">
                             <ShoppingCart className="h-6 w-6" />
@@ -235,10 +235,10 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="overflow-y-auto flex-1 p-6 md:p-10 space-y-10 bg-slate-50/30 custom-scrollbar">
+                <form onSubmit={handleSubmit} className="overflow-y-auto flex-1 p-4 md:p-6 lg:p-8 space-y-6 bg-slate-50/30 custom-scrollbar">
                     {/* Step 1: Logistics */}
-                    <div className="erp-card bg-white p-8">
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
+                    <div className="erp-card bg-white p-6">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
                             <div className="flex items-center gap-4">
                                 <span className="bg-primary/5 text-primary h-10 w-10 rounded-2xl flex items-center justify-center text-sm font-black border border-primary/10">01</span>
                                 <div>
@@ -473,11 +473,11 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                     </div>
 
                     {/* Financial Summary */}
-                    <div className="erp-card bg-slate-900 p-10 text-white shadow-2xl relative overflow-hidden mt-10">
+                    <div className="erp-card bg-slate-900 p-6 md:p-8 text-white shadow-2xl relative overflow-hidden mt-6">
                         <div className="absolute top-0 right-0 w-80 h-80 bg-primary/20 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2"></div>
                         <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-[80px] translate-y-1/2 -translate-x-1/2"></div>
                         
-                        <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 items-end">
+                        <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 items-end">
                             <div className="space-y-2">
                                 <label className="text-[11px] font-bold uppercase tracking-widest text-slate-500">Gross Total</label>
                                 <p className="text-2xl font-black tracking-tight">Rp {grossAmount.toLocaleString('id-ID')}</p>
@@ -523,7 +523,7 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                 </form>
 
                 {/* Footer Actions */}
-                <div className="px-8 py-6 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center bg-white shrink-0 gap-4">
+                <div className="px-6 py-4 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center bg-white shrink-0 gap-4">
                     <div className="flex items-center gap-6 text-slate-400">
                          <div className="flex flex-col">
                             <span className="text-[10px] font-bold uppercase tracking-widest">Total Qty</span>
