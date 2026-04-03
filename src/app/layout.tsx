@@ -12,6 +12,8 @@ export const metadata: Metadata = {
 
 import { Providers } from "@/components/layout/providers";
 import { TopHeader } from "@/components/layout/TopHeader";
+import { getServerSession } from "next-auth";
+import { getAuthOptions } from "@/lib/auth";
 
 import { cookies } from "next/headers";
 
@@ -22,11 +24,12 @@ export default async function RootLayout({
 }>) {
   // Force global dynamic rendering to bypass all build-time DB checks
   await cookies();
+  const session = await getServerSession(getAuthOptions());
   
   return (
     <html lang="en" className="dark">
       <body className={`${inter.className} bg-background text-foreground antialiased`}>
-        <Providers>
+        <Providers session={session}>
           <div className="flex min-h-screen bg-slate-50/50">
             <Sidebar />
             <div className="flex-1 flex flex-col min-w-0">
