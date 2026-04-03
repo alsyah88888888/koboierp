@@ -5,18 +5,22 @@ import { serializeDecimal } from "@/lib/utils";
 import { getPrisma } from "@/lib/prisma";
 import { getAuthOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
+import { getDashboardSummaryService } from "@/lib/services/system-service";
 
 /**
  * DASHBOARD & ANALYTICS: Summary Stats
  */
 export async function getDashboardSummaryAction() {
-    const { getDashboardSummaryService } = require("@/lib/services/system-service");
-
     const session = (await getServerSession(getAuthOptions())) as any;
     if (!session?.user?.id) throw new Error("Unauthorized");
 
     const isAdmin = session.user.role?.toUpperCase() === "ADMIN";
-    return await getDashboardSummaryService(session.user.id, session.user.prefix || "", isAdmin);
+    try {
+        return await getDashboardSummaryService(session.user.id, session.user.prefix || "", isAdmin);
+    } catch (e) {
+        console.error("Dashboard Service Error:", e);
+        return { totalRevenue: 0, nettMarginSales: 0, nettMarginBC: 0, nettMarginPF: 0, cashBalance: 0, totalHutang: 0, totalPiutang: 0, lowStockCount: 0, activeOrdersToday: 0, weeklyStats: [] };
+    }
 }
 
 async function getWeeklyStats(userFilter: any = {}) {
