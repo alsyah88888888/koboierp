@@ -79,6 +79,7 @@ export async function createGoodsReceiptService(data: any, userId: string) {
         const receipt = await tx.goodsReceipt.create({
             data: {
                 receiptNumber,
+                formNumber: data.formNumber,
                 receivedFrom: data.receivedFrom,
                 purchaseOrderId: data.purchaseOrderId,
                 warehouseId: data.warehouseId,
@@ -199,6 +200,7 @@ export async function updateGoodsReceiptService(id: string, data: any, userId: s
         await tx.goodsReceipt.update({
             where: { id },
             data: {
+                formNumber: data.formNumber,
                 receivedFrom: data.receivedFrom,
                 purchaseOrderId: data.purchaseOrderId,
                 warehouseId: data.warehouseId,

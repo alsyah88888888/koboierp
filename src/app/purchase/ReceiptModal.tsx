@@ -15,7 +15,7 @@ const formatCurrency = (amount: number) => {
 
 export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors, products }: any) {
     const [receivedFrom, setReceivedFrom] = useState(initialData?.receivedFrom || "");
-    const [receiptNumber, setReceiptNumber] = useState(initialData?.receiptNumber || "");
+    const [formNumber, setFormNumber] = useState(initialData?.formNumber || "");
     const [date, setDate] = useState(initialData?.date ? new Date(initialData.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
     const [warehouseId, setWarehouseId] = useState(initialData?.warehouseId || (Array.isArray(warehouses) && warehouses.length > 0 ? warehouses[0].id : ""));
     const [salesPerson, setSalesPerson] = useState(initialData?.salesPerson || "");
@@ -95,7 +95,7 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
         try {
             const data = {
                 receivedFrom,
-                receiptNumber,
+                formNumber,
                 date: new Date(date),
                 warehouseId,
                 salesPerson,
@@ -198,8 +198,8 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
                                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">No. SJ / Tgl Terima</label>
                                     <div className="flex gap-1">
                                         <input
-                                            value={receiptNumber}
-                                            onChange={e => setReceiptNumber(e.target.value)}
+                                            value={formNumber}
+                                            onChange={e => setFormNumber(e.target.value)}
                                             placeholder="No. SJ"
                                             className="w-full bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg text-sm font-bold focus:border-primary outline-none transition-all"
                                         />
