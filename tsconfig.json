@@ -19,17 +19,15 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"],
-      "@prisma/client-sqlite": ["./node_modules/@prisma/client-sqlite"]
+      "@/*": ["./src/*"]
     }
   },
   "include": [
     "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
+    "src/**/*.ts",
+    "src/**/*.tsx",
     ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts",
-    "**/*.mts"
+    ".next/dev/types/**/*.ts"
   ],
-  "exclude": ["node_modules", "inspect_receipt.ts"]
+  "exclude": ["node_modules"]
 }
