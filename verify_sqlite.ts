@@ -1,4 +1,4 @@
-import { PrismaClient } from "./node_modules/@prisma/client-sqlite";
+import { PrismaClient } from "@prisma/client-sqlite";
 
 async function main() {
   const prisma = new PrismaClient();

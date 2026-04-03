@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { createPurchaseOrderAction } from "@/actions/purchase";
+import { callAction } from "@/proxy";
+
 import { Plus, Trash2, X } from "lucide-react";
 
 interface Product {
@@ -34,7 +35,8 @@ export function CreatePOModal({ vendors, products, onClose }: { vendors: Vendor[
         e.preventDefault();
         if (!vendorId || items.some(i => !i.productId)) return;
 
-        await createPurchaseOrderAction({ number, vendorId, items });
+        await callAction("createPurchaseOrder", { number, vendorId, items });
+
         onClose();
     };
 

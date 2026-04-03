@@ -280,9 +280,11 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                     required
                                 />
                                 {!isManualBuyer && (
-                                {Array.isArray(customers) && customers.map(c => <option key={c.id} value={c.name} />)}
-                            </datalist>
-                        )}
+                                    <datalist id="customer-list-2">
+                                        {Array.isArray(customers) && customers.map(c => <option key={c.id} value={c.name} />)}
+                                    </datalist>
+                                )}
+
                     </div>
 
 

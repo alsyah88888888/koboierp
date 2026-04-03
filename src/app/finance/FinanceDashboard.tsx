@@ -7,10 +7,9 @@ import { formatCurrency, cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { FinanceModal } from "./FinanceModal";
 import { useSession } from "next-auth/react";
-import { updatePaymentStatusAction, deleteFinanceTransactionAction, deleteJournalEntryAction } from "@/actions/finance";
-import { verifyPurchaseReturnAction, updatePurchaseRequestStatusAction } from "@/actions/purchase";
-import { verifySalesReturnAction, getCortexXmlContentAction } from "@/actions/sales";
+import { callAction } from "@/proxy";
 import { DashboardStats } from "../components/DashboardStats";
+
 import { CheckCircle2, Clock } from "lucide-react";
 import { exportToExcel } from "@/lib/excel";
 import { useRouter } from "next/navigation";
@@ -75,7 +74,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
         if (!confirm(msg)) return;
         setLoading(id);
         try {
-            await updatePaymentStatusAction(type, id, status, partialAmount, pDate);
+            await callAction("updatePaymentStatus", type, id, status, partialAmount, pDate);
             alert("Verifikasi berhasil.");
             router.refresh();
         } catch (e) {
@@ -83,6 +82,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
         } finally {
             setLoading(null);
         }
+
     };
 
     const handlePartialPayment = (type: "PURCHASE" | "SALE", id: string, total: number, alreadyPaid: number, supplierName?: string) => {
@@ -109,13 +109,14 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
         const msg = isManual ? "Hapus entry jurnal manual ini?" : "Hapus transaksi ini? Seluruh jurnal terkait akan dihapus.";
         if (!confirm(msg)) return;
         try {
-            if (isManual) await deleteJournalEntryAction(id);
-            else await deleteFinanceTransactionAction(id);
+            if (isManual) await callAction("deleteJournalEntry", id);
+            else await callAction("deleteFinanceTransaction", id);
             alert("Berhasil dihapus");
             router.refresh();
         } catch (e) {
             alert("Gagal menghapus.");
         }
+
     };
 
     const filteredLedger = ledger.filter(tx =>
@@ -188,8 +189,9 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
     const handleExportCortex = async () => {
         if (activeTab !== "ar") return;
         try {
-            const xml = await getCortexXmlContentAction();
+            const xml = await callAction("getCortexXmlContent");
             const blob = new Blob([xml], { type: "application/xml" });
+
             const url = URL.createObjectURL(blob);
             const a = document.createElement("a");
             a.href = url;
@@ -208,12 +210,13 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
         if (!confirm(`Verifikasi retur ini? Saldo Hutang (AP) ke ${vendorName} akan otomatis dikurangi!`)) return;
         setLoading(id);
         try {
-            await verifyPurchaseReturnAction(id);
+            await callAction("verifyPurchaseReturn", id);
             alert("Retur berhasil diverifikasi, hutang vendor berkurang.");
             router.refresh();
         } catch (e: any) {
             alert(e.message || "Gagal memverifikasi retur.");
         } finally {
+
             setLoading(null);
         }
     };
@@ -222,12 +225,13 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
         if (!confirm(`Verifikasi retur penjualan ini? Saldo Piutang (AR) dari ${buyerName} akan otomatis dikurangi!`)) return;
         setLoading(id);
         try {
-            await verifySalesReturnAction(id);
+            await callAction("verifySalesReturn", id);
             alert("Retur berhasil diverifikasi, piutang buyer berkurang.");
             router.refresh();
         } catch (e: any) {
             alert(e.message || "Gagal memverifikasi retur penjualan.");
         } finally {
+
             setLoading(null);
         }
     };
@@ -236,12 +240,13 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
         if (!confirm(`Verifikasi pengajuan ${reqNumber}? Saldo Kas/Bank BCA dan Biaya Operasional akan dicatat otomatis.`)) return;
         setLoading(id);
         try {
-            await updatePurchaseRequestStatusAction(id, "VERIFIED_BY_FINANCE");
+            await callAction("updatePurchaseRequestStatus", id, "VERIFIED_BY_FINANCE");
             alert("Pengajuan berhasil diverifikasi.");
             router.refresh();
         } catch (e: any) {
             alert(e.message || "Gagal memverifikasi pengajuan.");
         } finally {
+
             setLoading(null);
         }
     };
@@ -729,6 +734,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                     <tbody className="divide-y divide-rose-50">
                                         {Array.isArray(filteredReturns) && filteredReturns.map((r: any) => (
                                             <tr key={r.id} className="hover:bg-rose-50/50 transition-colors">
+
                                                 <td className="px-6 py-4 font-mono font-bold text-rose-600">{r.returnNumber}</td>
                                                 <td className="px-6 py-4 text-slate-500">{format(new Date(r.date || r.createdAt), "dd/MM/yyyy")}</td>
                                                 <td className="px-6 py-4 text-slate-600">{r.receipt?.receiptNumber}</td>

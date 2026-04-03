@@ -19,7 +19,8 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@prisma/client-sqlite": ["./node_modules/@prisma/client-sqlite"]
     }
   },
   "include": [
@@ -30,5 +31,5 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules", "verify_sqlite.ts", "inspect_receipt.ts"]
+  "exclude": ["node_modules", "inspect_receipt.ts"]
 }

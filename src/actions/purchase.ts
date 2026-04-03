@@ -135,3 +135,57 @@ export async function deletePurchaseRequestAction(id: string) {
     revalidatePath("/purchase");
     return { success: true };
 }
+
+export async function updateGoodsReceiptAction(id: string, data: any) {
+    const { getAuthOptions } = require("@/lib/auth");
+    const { getServerSession } = require("next-auth");
+    const { updateGoodsReceiptService } = require("@/lib/services/purchase-service");
+
+    const session = (await getServerSession(getAuthOptions())) as any;
+    if (!session?.user?.id) throw new Error("Unauthorized");
+
+    return await updateGoodsReceiptService(id, data, session.user.id);
+}
+
+export async function createPurchaseReturnAction(data: any) {
+    const { getAuthOptions } = require("@/lib/auth");
+    const { getServerSession } = require("next-auth");
+    const { createPurchaseReturnService } = require("@/lib/services/purchase-service");
+
+    const session = (await getServerSession(getAuthOptions())) as any;
+    if (!session?.user?.id) throw new Error("Unauthorized");
+
+    return await createPurchaseReturnService(data, session.user.id);
+}
+
+export async function deletePurchaseReturnAction(id: string) {
+    const { deletePurchaseReturnService } = require("@/lib/services/purchase-service");
+    return await deletePurchaseReturnService(id);
+}
+
+export async function updatePurchaseRequestStatusAction(id: string, status: string) {
+    const { getAuthOptions } = require("@/lib/auth");
+    const { getServerSession } = require("next-auth");
+    const { updatePurchaseRequestStatusService } = require("@/lib/services/purchase-service");
+
+    const session = (await getServerSession(getAuthOptions())) as any;
+    if (!session?.user?.id) throw new Error("Unauthorized");
+
+    return await updatePurchaseRequestStatusService(id, status, session.user.id);
+}
+
+export async function getPurchaseRequestSummaryAction() {
+    const { getPurchaseRequestSummaryService } = require("@/lib/services/purchase-service");
+    return await getPurchaseRequestSummaryService();
+}
+
+export async function getPurchaseRequestsAction() {
+    const { getPrisma } = require("@/lib/prisma");
+    const prisma = getPrisma();
+    return await prisma.purchaseRequest.findMany({
+        include: { items: { include: { product: true } } },
+        orderBy: { createdAt: 'desc' }
+    });
+}
+
+

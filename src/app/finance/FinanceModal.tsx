@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { X, Loader2, Save, ArrowDownLeft, ArrowUpRight } from "lucide-react";
-import { createFinanceTransactionAction } from "../actions/finance";
+import { callAction } from "@/proxy";
+
 import { formatCurrency } from "@/lib/utils";
 
 export function FinanceModal({ accounts, onClose }: { accounts: any[], onClose: () => void }) {
@@ -31,12 +32,12 @@ export function FinanceModal({ accounts, onClose }: { accounts: any[], onClose: 
             setError("Mohon lengkapi data: Akun Kas, Lawan/Tujuan, dan Nominal.");
             return;
         }
-
         setLoading(true);
         setError("");
 
         try {
-            const result = await createFinanceTransactionAction({
+
+            const result = await callAction("createFinanceTransaction", {
                 transactionType: type,
                 bank: bankAccounts.find(a => a.id === bankAccountId)?.name || "Kas/Bank",
                 date: new Date(date),
@@ -46,6 +47,7 @@ export function FinanceModal({ accounts, onClose }: { accounts: any[], onClose: 
                 accountId: targetAccountId,
                 bankAccountId: bankAccountId
             });
+
 
             if (result.success) {
                 onClose();

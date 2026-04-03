@@ -1,18 +1,22 @@
-export const dynamic = 'force-dynamic';
-
-import prisma from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma";
 import { getBalanceSheet } from "@/modules/finance/finance.service";
 import { FinanceDashboard } from "./FinanceDashboard";
 import { serializeDecimal } from "@/lib/utils";
-import { getFinanceTransactionsAction } from "../actions/finance";
+import { getFinanceTransactionsAction } from "@/actions/finance";
+
 
 import { headers } from "next/headers";
+import { getServerSession } from "next-auth/next";
+import { getAuthOptions } from "@/lib/auth";
 
 export default async function FinancePage() {
     // Force dynamic rendering to skip build-time DB check
     await headers();
     
+    const prisma = getPrisma();
+    const session = await getServerSession(getAuthOptions()) as any;
     const accounts = await getBalanceSheet().catch(() => []);
+
 
     const ledger = await prisma.journalEntry.findMany({
         include: {

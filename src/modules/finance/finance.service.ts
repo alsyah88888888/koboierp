@@ -1,5 +1,5 @@
 import { Prisma } from "@prisma/client";
-import prisma from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma";
 
 export async function createJournalEntry(data: {
     description: string;
@@ -7,6 +7,7 @@ export async function createJournalEntry(data: {
     type: "DEBIT" | "CREDIT";
     accountId: string;
 }) {
+    const prisma = getPrisma();
     return await prisma.journalEntry.create({
         data: {
             description: data.description,
@@ -18,6 +19,7 @@ export async function createJournalEntry(data: {
 }
 
 export async function getLedger(accountId: string) {
+    const prisma = getPrisma();
     return await prisma.journalEntry.findMany({
         where: { accountId },
         orderBy: { date: 'desc' }
@@ -25,6 +27,7 @@ export async function getLedger(accountId: string) {
 }
 
 export async function getBalanceSheet() {
+    const prisma = getPrisma();
     const accounts = await prisma.financeAccount.findMany({
         include: { journals: true }
     });
@@ -49,3 +52,4 @@ export async function getBalanceSheet() {
         };
     });
 }
+

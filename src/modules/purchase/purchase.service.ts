@@ -1,5 +1,5 @@
 import { Prisma } from "@prisma/client";
-import prisma from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma";
 
 export interface CreatePOItem {
     productId: string;
@@ -8,6 +8,7 @@ export interface CreatePOItem {
 }
 
 export async function createPurchaseOrder(vendorId: string, items: CreatePOItem[]) {
+    const prisma = getPrisma();
     const poNumber = `PO-${Date.now()}`;
 
     return await prisma.purchaseOrder.create({
@@ -33,6 +34,7 @@ export async function createPurchaseOrder(vendorId: string, items: CreatePOItem[
  * When goods are received, stock is updated and a movement record is created.
  */
 export async function receivePurchaseOrder(poId: string, warehouseId: string) {
+    const prisma = getPrisma();
     return await prisma.$transaction(async (tx: any) => {
         // 1. Get PO items
         const po = await tx.purchaseOrder.findUnique({
@@ -89,3 +91,4 @@ export async function receivePurchaseOrder(poId: string, warehouseId: string) {
         });
     });
 }
+

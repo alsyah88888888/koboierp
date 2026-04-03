@@ -2,13 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { serializeDecimal } from "@/lib/utils";
+import { getPrisma } from "@/lib/prisma";
+import { getAuthOptions } from "@/lib/auth";
+import { getServerSession } from "next-auth";
 
 /**
  * DASHBOARD & ANALYTICS: Summary Stats
  */
 export async function getDashboardSummaryAction() {
-    const { getAuthOptions } = require("@/lib/auth");
-    const { getServerSession } = require("next-auth");
     const { getDashboardSummaryService } = require("@/lib/services/system-service");
 
     const session = (await getServerSession(getAuthOptions())) as any;
@@ -19,6 +20,7 @@ export async function getDashboardSummaryAction() {
 }
 
 async function getWeeklyStats(userFilter: any = {}) {
+    const prisma = getPrisma();
     const last7Days = [];
     for (let i = 6; i >= 0; i--) {
         const d = new Date();
@@ -27,12 +29,12 @@ async function getWeeklyStats(userFilter: any = {}) {
         last7Days.push(d);
     }
 
-    const sales = await (require("@/lib/prisma").default()).salesDelivery.findMany({
+    const sales = await prisma.salesDelivery.findMany({
         where: { ...userFilter, date: { gte: last7Days[0] } },
         select: { date: true, grandTotal: true }
     });
 
-    const purchases = await (require("@/lib/prisma").default()).goodsReceipt.findMany({
+    const purchases = await prisma.goodsReceipt.findMany({
         where: { ...userFilter, date: { gte: last7Days[0] } },
         select: { date: true, subtotal: true }
     });
@@ -61,8 +63,8 @@ async function getWeeklyStats(userFilter: any = {}) {
  * SYSTEM: Settings
  */
 export async function getSystemSettingsAction() {
-    const { getPrisma } = require("@/lib/prisma");
     const prisma = getPrisma();
+    let settings;
     try {
         settings = await prisma.systemSetting.findUnique({ where: { id: "global" } });
     } catch (e) {
@@ -70,12 +72,11 @@ export async function getSystemSettingsAction() {
         if (results && results.length > 0) settings = results[0];
     }
 
-
     const [productCount, vendorCount, customerCount, warehouseCount] = await Promise.all([
-        (require("@/lib/prisma").default()).product.count(),
-        (require("@/lib/prisma").default()).vendor.count(),
-        (require("@/lib/prisma").default()).customer.count(),
-        (require("@/lib/prisma").default()).warehouse.count(),
+        prisma.product.count(),
+        prisma.vendor.count(),
+        prisma.customer.count(),
+        prisma.warehouse.count(),
     ]);
 
     return {
@@ -88,8 +89,7 @@ export async function getSystemSettingsAction() {
         counts: { product: productCount, vendor: vendorCount, customer: customerCount, warehouse: warehouseCount }
     };
 }
-
-    const { getPrisma } = require("@/lib/prisma");
+export async function updateSystemSettingsAction(data: any) {
     const prisma = getPrisma();
     try {
         await prisma.systemSetting.upsert({
@@ -113,7 +113,8 @@ export async function getSystemSettingsAction() {
  * SYSTEM: Database Wipe
  */
 export async function wipeDatabaseAction() {
-    return await (require("@/lib/prisma").default()).$transaction(async (tx: any) => {
+    const prisma = getPrisma();
+    return await prisma.$transaction(async (tx: any) => {
         await tx.notificationRead.deleteMany();
         await tx.notification.deleteMany();
         await tx.journalEntry.deleteMany();
@@ -144,9 +145,6 @@ export async function wipeDatabaseAction() {
  * SYSTEM: Notifications
  */
 export async function createNotificationAction(data: { title: string; message: string; type?: string }) {
-    const { getAuthOptions } = require("@/lib/auth");
-    const { getServerSession } = require("next-auth");
-    const { getPrisma } = require("@/lib/prisma");
     const prisma = getPrisma();
 
     const session = (await getServerSession(getAuthOptions())) as any;
@@ -157,11 +155,7 @@ export async function createNotificationAction(data: { title: string; message: s
     return { success: true, notification };
 }
 
-
 export async function getNotificationsAction() {
-    const { getAuthOptions } = require("@/lib/auth");
-    const { getServerSession } = require("next-auth");
-    const { getPrisma } = require("@/lib/prisma");
     const prisma = getPrisma();
 
     const session = (await getServerSession(getAuthOptions())) as any;
@@ -173,10 +167,11 @@ export async function getNotificationsAction() {
     });
 }
 
-
 export async function markNotificationAsReadAction(notificationId: string) {
-    const session = (await (require("next-auth").getServerSession)(require("@/lib/auth").getAuthOptions())) as any;
-    await (require("@/lib/prisma").default()).$transaction(async (tx: any) => {
+    const prisma = getPrisma();
+    const session = (await getServerSession(getAuthOptions())) as any;
+    
+    await prisma.$transaction(async (tx: any) => {
         await tx.notificationRead.upsert({
             where: { notificationId_userId: { notificationId, userId: session.user.id } },
             update: {},
@@ -191,7 +186,8 @@ export async function markNotificationAsReadAction(notificationId: string) {
  * SYSTEM: Reports
  */
 export async function getDailyReportAction() {
-    const session = (await (require("next-auth").getServerSession)(require("@/lib/auth").getAuthOptions())) as any;
+    const prisma = getPrisma();
+    const session = (await getServerSession(getAuthOptions())) as any;
     const isAdmin = session?.user?.role?.toUpperCase() === "ADMIN";
     const userFilter = isAdmin ? {} : { createdById: session?.user?.id };
     const today = new Date();
@@ -200,11 +196,11 @@ export async function getDailyReportAction() {
     tomorrow.setDate(today.getDate() + 1);
 
     const [sales, purchases] = await Promise.all([
-        (require("@/lib/prisma").default()).salesDelivery.findMany({
+        prisma.salesDelivery.findMany({
             where: { ...userFilter, createdAt: { gte: today, lt: tomorrow } },
             include: { createdBy: { select: { name: true } } }
         }),
-        (require("@/lib/prisma").default()).goodsReceipt.findMany({
+        prisma.goodsReceipt.findMany({
             where: { ...userFilter, createdAt: { gte: today, lt: tomorrow } },
             include: { createdBy: { select: { name: true } } }
         })
@@ -217,8 +213,9 @@ export async function getDailyReportAction() {
  * MIGRATION: Fix Receipt Prefix
  */
 export async function fixReceiptPrefixMigrationAction() {
+    const prisma = getPrisma();
     try {
-        const allReceipts = await (require("@/lib/prisma").default()).goodsReceipt.findMany({
+        const allReceipts = await prisma.goodsReceipt.findMany({
             where: { receiptNumber: { contains: "KB-LPB-" } },
             include: { items: true }
         });
@@ -231,9 +228,9 @@ export async function fixReceiptPrefixMigrationAction() {
 
             if (hasTax || hasItemDiscount || hasTotalDiscount) {
                 const newNumber = receipt.receiptNumber.replace("KB-LPB-", "KB-LPBD-");
-                const existing = await (require("@/lib/prisma").default()).goodsReceipt.findFirst({ where: { receiptNumber: newNumber } });
+                const existing = await prisma.goodsReceipt.findFirst({ where: { receiptNumber: newNumber } });
                 if (!existing) {
-                    await (require("@/lib/prisma").default()).goodsReceipt.update({ where: { id: receipt.id }, data: { receiptNumber: newNumber } });
+                    await prisma.goodsReceipt.update({ where: { id: receipt.id }, data: { receiptNumber: newNumber } });
                     fixedCount++;
                 }
             }
@@ -244,3 +241,4 @@ export async function fixReceiptPrefixMigrationAction() {
         throw new Error("Gagal menjalankan migrasi prefix: " + error.message);
     }
 }
+

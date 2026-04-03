@@ -24,25 +24,8 @@ import {
     Megaphone
 } from "lucide-react";
 import BroadcastModal from "./BroadcastModal";
-import {
-    wipeDatabaseAction,
-    importProductsAction,
-    createProductAction,
-    updateProductAction,
-    getSystemSettingsAction,
-    updateSystemSettingsAction,
-    createVendorAction,
-    updateVendorAction,
-    deleteVendorAction,
-    createCustomerAction,
-    updateCustomerAction,
-    deleteCustomerAction,
-    createWarehouseAction,
-    updateWarehouseAction,
-    deleteWarehouseAction,
-    setOpeningBalanceAction,
-    getMDAction
-} from "@/actions/system";
+import { callAction } from "@/proxy";
+
 
 export function SettingsDashboard() {
     const [saved, setSaved] = useState(false);
@@ -78,7 +61,7 @@ export function SettingsDashboard() {
     });
 
     const loadData = async () => {
-        const settingsData = await getSystemSettingsAction();
+        const settingsData = await callAction("getSystemSettings");
         setCompany({
             name: settingsData.settings.companyName,
             address: settingsData.settings.address,
@@ -87,8 +70,10 @@ export function SettingsDashboard() {
         });
         setCounts(settingsData.counts);
 
-        const md = await getMDAction();
+
+        const md = await callAction("getMD");
         setCoa(md.coa);
+
     };
 
     const [mounted, setMounted] = useState(false);
@@ -101,7 +86,8 @@ export function SettingsDashboard() {
     const handleMDSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            if (showMDModal === "opening") await setOpeningBalanceAction({ accountId: mdForm.accountId, amount: mdForm.amount });
+            if (showMDModal === "opening") await callAction("setOpeningBalance", { accountId: mdForm.accountId, amount: mdForm.amount });
+
 
             alert("Data berhasil disimpan.");
             setShowMDModal(null);
@@ -115,10 +101,11 @@ export function SettingsDashboard() {
     const handleDeleteMD = async (type: string, id: string) => {
         if (!confirm("Hapus data ini?")) return;
         try {
-            if (type === "vendor") await deleteVendorAction(id);
-            else if (type === "customer") await deleteCustomerAction(id);
-            else if (type === "warehouse") await deleteWarehouseAction(id);
+            if (type === "vendor") await callAction("deleteVendor", id);
+            else if (type === "customer") await callAction("deleteCustomer", id);
+            else if (type === "warehouse") await callAction("deleteWarehouse", id);
             loadData();
+
         } catch (e: any) {
             alert(e.message || "Gagal menghapus data.");
         }
@@ -127,13 +114,14 @@ export function SettingsDashboard() {
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            await updateSystemSettingsAction({
+            await callAction("updateSystemSettings", {
                 companyName: company.name,
                 address: company.address,
                 taxId: company.taxId,
                 website: company.website
             });
             setSaved(true);
+
             setTimeout(() => setSaved(false), 3000);
         } catch (error) {
             alert("Gagal menyimpan pengaturan.");
@@ -145,11 +133,12 @@ export function SettingsDashboard() {
 
         setIsWiping(true);
         try {
-            await wipeDatabaseAction();
+            await callAction("wipeDatabase");
             alert("Database berhasil dibersihkan!");
             // Refresh counts
-            const data = await getSystemSettingsAction();
+            const data = await callAction("getSystemSettings");
             setCounts(data.counts);
+
         } catch (error) {
             alert("Gagal menghapus database.");
         } finally {
@@ -183,13 +172,14 @@ export function SettingsDashboard() {
                     lowStockThreshold: Number(row["Stok Minimum"] || row.lowStockThreshold || 10)
                 })).filter((p: any) => p.sku && p.name);
 
-                const result = await importProductsAction(products);
+                const result = await callAction("importProducts", products);
                 if (result.success) {
                     setImportStatus(`Berhasil! ${result.count} produk diimport.`);
                     // Refresh counts
-                    const updateData = await getSystemSettingsAction();
+                    const updateData = await callAction("getSystemSettings");
                     setCounts(updateData.counts);
                 }
+
             } catch (error) {
                 console.error(error);
                 setImportStatus("Gagal mengimport file. Pastikan format kolom benar.");

@@ -16,13 +16,8 @@ import {
   ShieldCheck
 } from "lucide-react";
 import Link from "next/link";
-import { 
-  getUsersAction, 
-  createUserAction, 
-  updateUserAction, 
-  deleteUserAction, 
-  resetPasswordAction 
-} from "./actions";
+import { callAction } from "@/proxy";
+
 
 export default function UsersDashboard() {
   const [users, setUsers] = useState<any[]>([]);
@@ -44,8 +39,9 @@ export default function UsersDashboard() {
   const loadUsers = async () => {
     try {
       setLoading(true);
-      const data = await getUsersAction();
+      const data = await callAction("getUsers");
       setUsers(data);
+
     } catch (err: any) {
       alert(err.message);
     } finally {
@@ -60,8 +56,9 @@ export default function UsersDashboard() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await createUserAction(form);
+      await callAction("createUser", form);
       alert("Pengguna berhasil dibuat!");
+
       setShowModal(null);
       setForm({ name: "", email: "", role: "USER", password: "" });
       loadUsers();
@@ -73,11 +70,12 @@ export default function UsersDashboard() {
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await updateUserAction(currentUser.id, {
+      await callAction("updateUser", currentUser.id, {
         name: form.name,
         email: form.email,
         role: form.role,
       });
+
       alert("Data berhasil diperbarui!");
       setShowModal(null);
       loadUsers();
@@ -89,8 +87,9 @@ export default function UsersDashboard() {
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await resetPasswordAction(currentUser.id, form.password);
+      await callAction("resetPassword", currentUser.id, form.password);
       alert(`Password untuk ${currentUser.name} berhasil direset!`);
+
       setShowModal(null);
       setForm({ ...form, password: "" });
     } catch (err: any) {
@@ -101,8 +100,9 @@ export default function UsersDashboard() {
   const handleDelete = async (id: string, name: string) => {
     if (!confirm(`Hapus pengguna ${name}? Tindakan ini permanen.`)) return;
     try {
-      await deleteUserAction(id);
+      await callAction("deleteUser", id);
       alert("Pengguna berhasil dihapus.");
+
       loadUsers();
     } catch (err: any) {
       alert(err.message);

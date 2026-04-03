@@ -1,6 +1,7 @@
 "use client";
 import { useState, useMemo, useEffect } from "react";
-import { createGoodsReceiptAction, updateGoodsReceiptAction } from "@/actions/purchase";
+import { callAction } from "@/proxy";
+
 import { Plus, Trash2, X, FileCheck, Calculator, Tag } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 
@@ -234,10 +235,12 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
             };
 
             if (initialData) {
-                await updateGoodsReceiptAction(initialData.id, data as any);
+                await callAction("updateGoodsReceipt", initialData.id, data as any);
+
                 onClose();
             } else {
-                const res = await createGoodsReceiptAction(data as any);
+                const res = await callAction("createGoodsReceipt", data as any);
+
                 setResult({ formNumber: res.formNumber });
             }
         } catch (error: any) {

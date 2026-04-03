@@ -4,7 +4,8 @@ import React, { useState } from "react";
 import { format } from "date-fns";
 import { Clock, CheckCircle2, XCircle, ShieldCheck, Trash2, Eye, ChevronDown, ChevronUp, Printer } from "lucide-react";
 import { formatCurrency, cn } from "@/lib/utils";
-import { updatePurchaseRequestStatusAction, deletePurchaseRequestAction } from "@/actions/purchase";
+import { callAction } from "@/proxy";
+
 
 export function PurchaseRequestTab({ requests, userRole, userId }: { requests: any[], userRole: string, userId: string }) {
     const [loading, setLoading] = useState<string | null>(null);
@@ -16,7 +17,8 @@ export function PurchaseRequestTab({ requests, userRole, userId }: { requests: a
 
         setLoading(id);
         try {
-            const res = await updatePurchaseRequestStatusAction(id, status);
+            const res = await callAction("updatePurchaseRequestStatus", id, status);
+
             if (res.success) {
                 alert("Status pengajuan diperbarui.");
             } else {
@@ -32,7 +34,8 @@ export function PurchaseRequestTab({ requests, userRole, userId }: { requests: a
     const handleDelete = async (id: string) => {
         if (!confirm("Hapus pengajuan ini secara permanen?")) return;
         try {
-            await deletePurchaseRequestAction(id);
+            await callAction("deletePurchaseRequest", id);
+
             alert("Pengajuan dihapus.");
         } catch (error: any) {
             alert(error.message || "Gagal menghapus");

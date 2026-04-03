@@ -1,6 +1,5 @@
-export const dynamic = "force-dynamic";
+import { getPrisma } from "@/lib/prisma";
 
-import prisma from "@/lib/prisma";
 import { DocumentLayout } from "@/components/print/DocumentLayout";
 import { format } from "date-fns";
 import { formatNumber, serializeDecimal } from "@/lib/utils";
@@ -11,7 +10,9 @@ export default async function SJPrintPage({ params }: { params: Promise<{ id: st
     // Force dynamic rendering to skip build-time DB check
     await headers();
     
+    const prisma = getPrisma();
     const { id } = await params;
+
     const delivery: any = await prisma.salesDelivery.findUnique({
         where: { id },
         include: {

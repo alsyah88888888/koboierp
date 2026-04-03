@@ -1,19 +1,19 @@
-export const dynamic = 'force-dynamic';
-
-import prisma from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma";
 import SalesDashboard from "@/app/sales/SalesDashboard";
 import { serializeDecimal } from "@/lib/utils";
 
 import { headers } from "next/headers";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
+import { getAuthOptions } from "@/lib/auth";
 
 export default async function SalesPage() {
     // Force dynamic rendering to skip build-time DB check
     await headers();
     
-    const session = await getServerSession(authOptions) as any;
+    const prisma = getPrisma();
+    const session = await getServerSession(getAuthOptions()) as any;
     const isAdmin = session?.user?.role?.toUpperCase() === "ADMIN";
+
     
     // Strict filter for Sales: must be "BC" or owned by her (if no salesperson code is set)
     // and explicitly NOT "PF" if she is the one seeing it.

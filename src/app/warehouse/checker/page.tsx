@@ -11,10 +11,8 @@ import {
     Camera
 } from "lucide-react";
 import { useSession } from "next-auth/react";
-import {
-    getGoodsReceiptsAction,
-    submitGoodsReceiptVerificationAction
-} from "@/actions/warehouse";
+import { callAction } from "@/proxy";
+
 
 export default function WarehouseCheckerPage() {
     const { data: session } = useSession();
@@ -28,9 +26,10 @@ export default function WarehouseCheckerPage() {
 
     useEffect(() => {
         async function load() {
-            const data = await getGoodsReceiptsAction();
+            const data = await callAction("getGoodsReceipts");
             setReceipts(data.filter((r: any) => !r.isVerified));
         }
+
         load();
     }, []);
 
@@ -66,7 +65,7 @@ export default function WarehouseCheckerPage() {
     const handleSubmitVerification = async () => {
         if (!selectedReceipt) return;
         try {
-            const result = await submitGoodsReceiptVerificationAction({
+            const result = await callAction("submitGoodsReceiptVerification", {
                 receiptId: selectedReceipt.id,
                 verifiedBy: session?.user?.name || "Warehouse Staff",
                 items: items.map(i => ({
@@ -79,12 +78,14 @@ export default function WarehouseCheckerPage() {
                 }))
             });
 
+
             if (result.success) {
                 alert(result.allMatch ? "Verification successful! All items match." : "Verification submitted with discrepancies.");
                 setSelectedReceipt(null);
                 setItems([]);
-                const data = await getGoodsReceiptsAction();
+                const data = await callAction("getGoodsReceipts");
                 setReceipts(data.filter((r: any) => !r.isVerified));
+
             }
         } catch (e: any) {
             alert(e.message || "Failed to submit verification");

@@ -7,7 +7,8 @@ import { format } from "date-fns";
 import { ReceiptModal } from "./ReceiptModal";
 import { cn } from "@/lib/utils";
 import { useSession } from "next-auth/react";
-import { deleteGoodsReceiptAction, deletePurchaseReturnAction } from "@/actions/purchase";
+import { callAction } from "@/proxy";
+
 import { DashboardStats } from "../components/DashboardStats";
 import Link from "next/link";
 import { exportToExcel } from "@/lib/excel";
@@ -51,9 +52,10 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
     const handleDelete = async (id: string) => {
         if (!confirm("Hapus penerimaan ini? Stok akan otomatis dikurangi kembali dan jurnal akan dihapus.")) return;
         try {
-            await deleteGoodsReceiptAction(id);
+            await callAction("deleteGoodsReceipt", id);
             alert("Penerimaan berhasil dihapus");
         } catch (e) {
+
             alert("Gagal menghapus penerimaan");
         }
     };
@@ -61,9 +63,10 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
     const handleDeleteReturn = async (id: string) => {
         if (!confirm("Hapus retur ini? Stok akan dikembalikan (revert) dan dampak finansial akan dibatalkan.")) return;
         try {
-            await deletePurchaseReturnAction(id);
+            await callAction("deletePurchaseReturn", id);
             alert("Retur berhasil dihapus");
         } catch (e: any) {
+
             alert(e.message || "Gagal menghapus retur");
         }
     };
@@ -75,30 +78,31 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
     );
 
     const handleExport = () => {
-        const data = Array.isArray(filteredReceipts) && filteredReceipts.map(r => ({
+        const data = (Array.isArray(filteredReceipts) ? filteredReceipts : []).map(r => ({
             'No. Form': r.formNumber,
             'Tanggal': format(new Date(r.date || r.createdAt), "dd/MM/yyyy"),
             'Terima Dari': r.receivedFrom,
             'No. Terima': r.receiptNumber,
-            'Gudang': r.warehouse.name,
+            'Gudang': r.warehouse?.name,
             'Sales Person': r.salesPerson,
-            'Total Qty': r.items.reduce((acc: number, i: any) => acc + i.quantity, 0),
-            'Total Harga': r.items.reduce((acc: number, i: any) => acc + (i.quantity * Number(i.purchasePrice || 0)), 0),
+            'Total Qty': r.items?.reduce((acc: number, i: any) => acc + (Number(i.quantity) || 0), 0) || 0,
+            'Total Harga': r.items?.reduce((acc: number, i: any) => acc + (Number(i.quantity) * Number(i.purchasePrice || 0)), 0) || 0,
             'Status': r.isVerified ? 'VERIFIED' : 'PENDING'
         }));
         exportToExcel(data, 'Laporan_Penerimaan_Barang', 'Penerimaan');
     };
 
+
     const handlePreview = () => {
-        const data = Array.isArray(filteredReceipts) && filteredReceipts.map(r => ({
+        const data = (Array.isArray(filteredReceipts) ? filteredReceipts : []).map(r => ({
             'No. Form': r.formNumber,
             'Tanggal': format(new Date(r.date || r.createdAt), "dd/MM/yyyy"),
             'Terima Dari': r.receivedFrom,
             'No. Terima': r.receiptNumber,
-            'Gudang': r.warehouse.name,
+            'Gudang': r.warehouse?.name || "-",
             'Sales Person': r.salesPerson,
-            'Qty': r.items.reduce((acc: number, i: any) => acc + i.quantity, 0),
-            'Total Harga': Number(r.items.reduce((acc: number, i: any) => acc + (i.quantity * Number(i.purchasePrice || 0)), 0)),
+            'Qty': r.items?.reduce((acc: number, i: any) => acc + (Number(i.quantity) || 0), 0) || 0,
+            'Total Harga': Number(r.items?.reduce((acc: number, i: any) => acc + (Number(i.quantity) * Number(i.purchasePrice || 0)), 0) || 0),
             'Status': r.isVerified ? 'VERIFIED' : 'PENDING'
         }));
         setPreviewData(data);

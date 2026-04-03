@@ -14,7 +14,8 @@ import {
 import { formatCurrency } from "@/lib/utils";
 import { OperationalModal } from "./OperationalModal";
 import { toast } from "react-hot-toast";
-import { deleteFinanceTransactionAction } from "@/actions/finance";
+import { callAction } from "@/proxy";
+
 
 interface OperationalDashboardProps {
     transactions: any[];
@@ -71,7 +72,8 @@ export function OperationalDashboard({
     const handleDelete = async (id: string) => {
         if (!confirm("Are you sure you want to delete this transaction?")) return;
         try {
-            const res = await deleteFinanceTransactionAction(id);
+            const res = await callAction("deleteFinanceTransaction", id);
+
             if (res.success) {
                 toast.success("Transaction deleted");
             }

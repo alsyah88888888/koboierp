@@ -1,18 +1,19 @@
-export const dynamic = 'force-dynamic';
-
-import prisma from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma";
 import { OperationalDashboard } from "./OperationalDashboard";
 import { serializeDecimal } from "@/lib/utils";
 
 import { headers } from "next/headers";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getAuthOptions } from "@/lib/auth";
 
 export default async function OperationalPage() {
     // Force dynamic rendering to skip build-time DB check
     await headers();
     
-    const session = await getServerSession(authOptions) as any;
+    const prisma = getPrisma();
+    const session = await getServerSession(getAuthOptions()) as any;
+
+
     const transactions = await prisma.financeTransaction.findMany({
         where: session?.user?.email === 'cici@kolaborasi.id' ? { salesPerson: 'BC' } : {},
         orderBy: { date: 'desc' }

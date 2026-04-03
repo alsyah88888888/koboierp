@@ -1,6 +1,7 @@
-import prisma from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma";
 
 export async function getStockStatus(warehouseId: string) {
+    const prisma = getPrisma();
     return await prisma.stock.findMany({
         where: { warehouseId },
         include: {
@@ -10,6 +11,7 @@ export async function getStockStatus(warehouseId: string) {
 }
 
 export async function getLowStockProducts() {
+    const prisma = getPrisma();
     // Simplistic check: total quantity across all warehouses below threshold
     const products = await prisma.product.findMany({
         include: { stocks: true }
@@ -22,8 +24,10 @@ export async function getLowStockProducts() {
 }
 
 export async function getStockCard(productId: string, warehouseId: string) {
+    const prisma = getPrisma();
     return await prisma.stockMovement.findMany({
         where: { productId, warehouseId },
         orderBy: { createdAt: 'desc' }
     });
 }
+

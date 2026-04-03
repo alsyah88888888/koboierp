@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { X, Search, FileText, AlertCircle, Save, CheckCircle2 } from "lucide-react";
-import { createPurchaseReturnAction, updatePurchaseReturnAction } from "@/actions/purchase";
+import { callAction } from "@/proxy";
+
 import { formatCurrency } from "@/lib/utils";
 import toast from "react-hot-toast";
 
@@ -69,17 +70,19 @@ export function ReturnModal({ receipts, initialData, onClose }: { receipts: any[
         setIsSubmitting(true);
         try {
             if (initialData) {
-                await updatePurchaseReturnAction(initialData.id, {
+                await callAction("updatePurchaseReturn", initialData.id, {
                     items: itemsToReturn,
                     notes
                 });
+
                 toast.success("Retur berhasil diperbarui!");
             } else {
-                await createPurchaseReturnAction({
+                await callAction("createPurchaseReturn", {
                     receiptId: selectedReceipt.id,
                     items: itemsToReturn,
                     notes
                 });
+
                 toast.success("Retur berhasil diajukan!");
             }
             onClose();

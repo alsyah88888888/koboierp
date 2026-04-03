@@ -1,7 +1,5 @@
-export const dynamic = "force-dynamic";
-
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getAuthOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { MasterDataDashboard } from "./MasterDataDashboard";
 
@@ -11,7 +9,8 @@ export default async function MasterDataPage() {
     // Force dynamic rendering to skip build-time DB check
     await headers();
     
-    const session = await getServerSession(authOptions) as any;
+    const session = await getServerSession(getAuthOptions()) as any;
+
 
     if (!session?.user) {
         redirect("/auth/signin");

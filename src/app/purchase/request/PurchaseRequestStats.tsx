@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { Clock, CheckCircle2, ShieldCheck, Calculator } from "lucide-react";
-import { getPurchaseRequestSummaryAction } from "@/actions/purchase";
+import { callAction } from "@/proxy";
+
 import { formatCurrency } from "@/lib/utils";
 
 export function PurchaseRequestStats() {
@@ -10,9 +11,10 @@ export function PurchaseRequestStats() {
 
     useEffect(() => {
         const loadStats = async () => {
-            const data = await getPurchaseRequestSummaryAction();
+            const data = await callAction("getPurchaseRequestSummary");
             setStats(data);
         };
+
         loadStats();
     }, []);
 

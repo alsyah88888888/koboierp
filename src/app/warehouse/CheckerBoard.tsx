@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import { Search, CheckCircle, AlertCircle, Barcode, Printer, Package, ChevronRight, X, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
-import { verifyGoodsReceiptAction } from "@/actions/warehouse";
+import { callAction } from "@/proxy";
+
 import { useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 
@@ -54,8 +55,9 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
 
         setIsVerifying(true);
         try {
-            const res = await verifyGoodsReceiptAction(selectedReceipt.id, session?.user?.name || "Warehouse Admin", checkedItems);
+            const res = await callAction("verifyGoodsReceipt", selectedReceipt.id, session?.user?.name || "Warehouse Admin", checkedItems);
             if (res.success) {
+
                 // Build summary of what was received
                 const lines = selectedReceipt.items.map((item: any) => {
                     const actual = checkedItems[item.id] ?? 0;

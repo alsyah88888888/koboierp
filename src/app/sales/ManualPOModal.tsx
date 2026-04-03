@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { X, Save, ShoppingBag, User, Package, Hash, Calendar } from "lucide-react";
-import { createManualSalesAction } from "@/actions/sales";
+import { callAction } from "@/proxy";
+
 import { cn } from "@/lib/utils";
 
 interface ManualPOModalProps {
@@ -51,7 +52,8 @@ export function ManualPOModal({ products, warehouses, onClose }: ManualPOModalPr
 
         setIsLoading(true);
         try {
-            await createManualSalesAction(formData);
+            await callAction("createManualSales", formData);
+
             alert("Data penjualan manual berhasil disimpan.");
             onClose();
         } catch (error: any) {

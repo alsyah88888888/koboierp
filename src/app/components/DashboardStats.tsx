@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { DollarSign, Package, ShoppingCart, Wallet, TrendingUp, Box } from "lucide-react";
-import { getDashboardSummaryAction } from "@/actions/system";
+import { callAction } from "@/proxy";
+
 import { formatCurrency } from "@/lib/utils";
 import { useSession } from "next-auth/react";
 
@@ -15,9 +16,10 @@ export function DashboardStats() {
     useEffect(() => {
         setIsClient(true);
         const loadStats = async () => {
-            const data = await getDashboardSummaryAction();
+            const data = await callAction("getDashboardSummary");
             setStats(data);
         };
+
         loadStats();
     }, []);
 

@@ -5,7 +5,8 @@ import { Plus, Clock, FileText, Search, Truck, Trash2, Eye, Edit2, BarChart3, Tr
 import { format } from "date-fns";
 import SalesModal from "@/app/sales/SalesModal";
 import { useSession } from "next-auth/react";
-import { deleteSalesDeliveryAction, deleteSalesReturnAction } from "@/actions/sales";
+import { callAction } from "@/proxy";
+
 import { cn } from "@/lib/utils";
 import { DashboardStats } from "../components/DashboardStats";
 import Link from "next/link";
@@ -68,12 +69,12 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
     const handlePrint = () => {
         window.print();
     };
-
     const handleDelete = async (id: string) => {
         if (!confirm("Hapus pengiriman ini? Stok akan otomatis ditambahkan kembali dan jurnal akan dihapus.")) return;
         try {
-            await deleteSalesDeliveryAction(id);
+            await callAction("deleteSalesDelivery", id);
             alert("Pengiriman berhasil dihapus");
+            window.location.reload();
         } catch (e) {
             alert("Gagal menghapus pengiriman");
         }
@@ -82,12 +83,14 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
     const handleDeleteReturn = async (id: string) => {
         if (!confirm("Hapus retur ini? Stok akan dikurangi kembali (revert).")) return;
         try {
-            await deleteSalesReturnAction(id);
+            await callAction("deleteSalesReturn", id);
             alert("Retur berhasil dihapus");
+            window.location.reload();
         } catch (e: any) {
             alert(e.message || "Gagal menghapus retur");
         }
     };
+
 
     const filteredDeliveries = initialDeliveries.filter(d =>
         d.deliveryNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -106,12 +109,12 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
             'Tanggal': format(new Date(d.createdAt), "dd/MM/yyyy HH:mm"),
             'Kirim Ke': d.recipient,
             'Buyer': d.buyerName,
-            'Gudang': d.warehouse.name,
+            'Gudang': d.warehouse?.name || "-",
             'Sales Person': d.salesPerson,
-            'Total Qty': d.items.reduce((acc: number, i: any) => acc + i.quantity, 0),
-            'Subtotal': Number(d.subtotal),
-            'Discount': Number(d.totalDiscount),
-            'Total': Number(d.subtotal) - Number(d.totalDiscount)
+            'Total Qty': d.items?.reduce((acc: number, i: any) => acc + (Number(i.quantity) || 0), 0) || 0,
+            'Subtotal': Number(d.subtotal || 0),
+            'Discount': Number(d.totalDiscount || 0),
+            'Total': Number(d.subtotal || 0) - Number(d.totalDiscount || 0)
         }));
         exportToExcel(data, 'Laporan_Penjualan', 'Penjualan');
     };

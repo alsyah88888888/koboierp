@@ -1,18 +1,18 @@
-export const dynamic = 'force-dynamic';
-
-import prisma from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma";
 import { PurchaseDashboard } from "./PurchaseDashboard";
 import { serializeDecimal } from "@/lib/utils";
 
 import { headers } from "next/headers";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
+import { getAuthOptions } from "@/lib/auth";
 
 export default async function PurchasePage() {
     // Force dynamic rendering to skip build-time DB check
     await headers();
     
-    const session = await getServerSession(authOptions) as any;
+    const prisma = getPrisma();
+    const session = await getServerSession(getAuthOptions()) as any;
+
     const isAdmin = session?.user?.role?.toUpperCase() === "ADMIN";
     
     // Strict filters for non-admins to exclude "PF" and focus on "BC"

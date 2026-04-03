@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { updateStockAction } from "@/actions/warehouse";
+import { callAction } from "@/proxy";
+
 import { X, Box, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -31,8 +32,9 @@ export function StockInputModal({ products, warehouses, onClose }: { products: P
 
         setIsLoading(true);
         try {
-            await updateStockAction({ productId, warehouseId, quantity, vendorName, type, reference });
+            await callAction("updateStock", { productId, warehouseId, quantity, vendorName, type, reference });
             onClose();
+
         } catch (error) {
             alert("Gagal memperbarui stok");
         } finally {

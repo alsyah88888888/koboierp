@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { X, History, ArrowDownLeft, ArrowUpRight, RotateCcw, Box, Info, Filter, TrendingDown, TrendingUp } from "lucide-react";
-import { getProductTrackingAction } from "@/actions/warehouse";
+import { callAction } from "@/proxy";
+
 import { cn, formatCurrency } from "@/lib/utils";
 import { format } from "date-fns";
 
@@ -22,8 +23,9 @@ export function ItemTrackingModal({ productId, onClose }: ItemTrackingModalProps
         const load = async () => {
             setLoading(true);
             try {
-                const res = await getProductTrackingAction(productId);
+                const res = await callAction("getProductTracking", productId);
                 setData(res);
+
             } catch (e: any) {
                 setError(e.message || "Gagal memuat riwayat produk.");
             } finally {

@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { X, Building2 } from "lucide-react";
-import { createVendorAction } from "@/actions/master";
+import { callAction } from "@/proxy";
+
 
 export function SupplierModal({ onClose, onSuccess }: { onClose: () => void, onSuccess?: (vendor: any) => void }) {
     const [isLoading, setIsLoading] = useState(false);
@@ -17,7 +18,8 @@ export function SupplierModal({ onClose, onSuccess }: { onClose: () => void, onS
         e.preventDefault();
         setIsLoading(true);
         try {
-            const vendor = await createVendorAction(formData);
+            const vendor = await callAction("createVendor", formData);
+
             alert("Supplier berhasil ditambahkan!");
             if (onSuccess) onSuccess(vendor);
             onClose();

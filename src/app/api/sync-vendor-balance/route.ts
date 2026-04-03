@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma";
+
 
 /**
  * GET /api/sync-vendor-balance
@@ -7,7 +8,9 @@ import prisma from "@/lib/prisma";
  * vendor.balance should = SUM(grandTotal - paidAmount) where paymentStatus != 'PAID'
  */
 export async function GET() {
+    const prisma = getPrisma();
     try {
+
         // 1. Get all receipts grouped by vendor name
         const receipts = await prisma.goodsReceipt.findMany({
             select: {

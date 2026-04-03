@@ -8,7 +8,8 @@ import { CheckerBoard } from "./CheckerBoard";
 import { DashboardStats } from "../components/DashboardStats";
 import { cn, formatCurrency } from "@/lib/utils";
 import { useSession } from "next-auth/react";
-import { deleteProductAction } from "@/actions/master";
+import { callAction } from "@/proxy";
+
 import { format } from "date-fns";
 import { exportToExcel } from "@/lib/excel";
 import { ReportPreviewModal } from "@/components/ReportPreviewModal";
@@ -46,8 +47,9 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
     const handleDeleteProduct = async (id: string) => {
         if (!confirm("Hapus produk ini? Semua data stok terkait juga akan dihapus.")) return;
         try {
-            await deleteProductAction(id);
+            await callAction("deleteProduct", id);
             alert("Produk berhasil dihapus");
+
             window.location.reload();
         } catch (e: any) {
             alert(e.message || "Gagal menghapus produk");

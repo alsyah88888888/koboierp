@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { X, Box } from "lucide-react";
-import { createProductAction } from "@/actions/master";
+import { callAction } from "@/proxy";
+
 import { getSuggestedCategory } from "@/lib/categorization";
 
 export function ProductModal({ onClose, onSuccess }: { onClose: () => void, onSuccess?: (product: any) => void }) {
@@ -34,7 +35,8 @@ export function ProductModal({ onClose, onSuccess }: { onClose: () => void, onSu
                 purchasePrice: Number(String(formData.purchasePrice).replace(',', '.')) || 0,
                 salesPrice: Number(String(formData.salesPrice).replace(',', '.')) || 0,
             };
-            const product = await createProductAction(data);
+            const product = await callAction("createProduct", data);
+
             alert("Produk berhasil ditambahkan!");
             if (onSuccess) onSuccess(product);
             onClose();

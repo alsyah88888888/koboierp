@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { createPurchaseRequestAction } from "@/actions/purchase";
+import { callAction } from "@/proxy";
+
 import { Plus, Trash2, X, ClipboardList, Calculator } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 
@@ -52,7 +53,7 @@ export function PurchaseRequestModal({ onClose }: { onClose: () => void }) {
 
         setIsSubmitting(true);
         try {
-            const res = await createPurchaseRequestAction({
+            const res = await callAction("createPurchaseRequest", {
                 notes,
                 items: items.map(i => ({
                     itemName: i.itemName,
@@ -60,6 +61,7 @@ export function PurchaseRequestModal({ onClose }: { onClose: () => void }) {
                     estimatedPrice: Number(i.estimatedPrice)
                 }))
             });
+
             if (res.success) {
                 alert(`Pengajuan berhasil dibuat: ${res.prNumber}`);
                 onClose();

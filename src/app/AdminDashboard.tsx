@@ -29,11 +29,15 @@ import {
     Download,
     Calendar,
     Activity,
-    FileSpreadsheet
+    FileSpreadsheet,
+    ChevronRight
 } from "lucide-react";
+
 import * as XLSX from 'xlsx';
 import { formatCurrency, cn } from "@/lib/utils";
 import { RoleGuideline } from "@/components/RoleGuideline";
+import Link from "next/link";
+
 
 const COLORS = ['#0f172a', '#3b82f6', '#10b981', '#f59e0b', '#ef4444'];
 
@@ -419,8 +423,9 @@ export function AdminDashboard({ role, stats, salesData, inventoryData, recentAc
                                         </linearGradient>
                                     </defs>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 800, textTransform: 'uppercase' }} dy={20} />
+                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 800 }} dy={20} />
                                     <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 800 }} />
+
                                     <Tooltip
                                         contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15)', padding: '16px 20px', backgroundColor: '#fff' }}
                                         itemStyle={{ fontWeight: '900', fontSize: '12px' }}

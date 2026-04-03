@@ -1,6 +1,4 @@
-export const dynamic = 'force-dynamic';
-
-import prisma from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma";
 import { getDashboardSummaryAction, getDailyReportAction } from "@/actions/system";
 import { formatCurrency, serializeDecimal } from "@/lib/utils";
 import { AdminDashboard } from "./AdminDashboard";
@@ -12,7 +10,7 @@ import {
 } from "lucide-react";
 
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getAuthOptions } from "@/lib/auth";
 
 import { headers } from "next/headers";
 
@@ -20,7 +18,11 @@ export default async function DashboardPage() {
   // Force dynamic rendering to avoid build-time DB check
   await headers();
   
-  const session = await getServerSession(authOptions) as any;
+  const prisma = getPrisma();
+  const session = await getServerSession(getAuthOptions()) as any;
+
+
+
   const userRole = session?.user?.role || "USER";
   const isWarehouse = userRole === "WAREHOUSE";
 

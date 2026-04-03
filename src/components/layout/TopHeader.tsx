@@ -6,7 +6,8 @@ import { useSession } from "next-auth/react";
 import { useSidebar } from "./SidebarContext";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { getNotificationsAction, deleteNotificationAction, markNotificationAsReadAction } from "@/actions/system";
+import { callAction } from "@/proxy";
+
 
 export function TopHeader() {
     const pathname = usePathname();
@@ -20,8 +21,9 @@ export function TopHeader() {
 
     const loadNotifications = async () => {
         try {
-            const data = await getNotificationsAction();
+            const data = await callAction("getNotifications");
             setNotifications(data);
+
         } catch (error) {
             console.error("Failed to load notifications:", error);
         } finally {
@@ -105,9 +107,10 @@ export function TopHeader() {
                                                     onClick={async () => {
                                                         setSelectedNotification(n);
                                                         setShowNotifications(false);
-                                                        await markNotificationAsReadAction(n.id);
+                                                        await callAction("markNotificationAsRead", n.id);
                                                         loadNotifications();
                                                     }}
+
                                                     className="p-4 flex gap-3"
                                                 >
                                                     <div className={`mt-0.5 h-8 w-8 rounded-xl flex items-center justify-center shrink-0 ${n.type === 'alert' ? 'bg-rose-100 text-rose-600' :
@@ -135,10 +138,11 @@ export function TopHeader() {
                                                         onClick={async (e) => {
                                                             e.stopPropagation();
                                                             if (confirm("Hapus notifikasi ini?")) {
-                                                                await deleteNotificationAction(n.id);
+                                                                await callAction("deleteNotification", n.id);
                                                                 loadNotifications();
                                                             }
                                                         }}
+
                                                         className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
                                                     >
                                                         <Trash2 className="h-4 w-4" />

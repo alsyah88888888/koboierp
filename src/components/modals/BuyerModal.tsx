@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { X, Users } from "lucide-react";
-import { createCustomerAction } from "@/actions/master";
+import { callAction } from "@/proxy";
+
 
 export function BuyerModal({ onClose, onSuccess }: { onClose: () => void, onSuccess?: (buyer: any) => void }) {
     const [isLoading, setIsLoading] = useState(false);
@@ -17,7 +18,8 @@ export function BuyerModal({ onClose, onSuccess }: { onClose: () => void, onSucc
         e.preventDefault();
         setIsLoading(true);
         try {
-            const customer = await createCustomerAction(formData);
+            const customer = await callAction("createCustomer", formData);
+
             alert("Buyer / Customer berhasil ditambahkan!");
             if (onSuccess) onSuccess(customer);
             onClose();

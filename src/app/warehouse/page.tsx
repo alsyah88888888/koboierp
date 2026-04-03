@@ -1,6 +1,4 @@
-export const dynamic = 'force-dynamic';
-
-import prisma from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma";
 import { WarehouseDashboard } from "./WarehouseDashboard";
 import { serializeDecimal } from "@/lib/utils";
 
@@ -10,7 +8,9 @@ export default async function WarehousePage() {
     // Force dynamic rendering to skip build-time DB check
     await headers();
     
+    const prisma = getPrisma();
     const products = await prisma.product.findMany({
+
         include: { stocks: true },
         orderBy: { sku: 'asc' }
     }).catch(() => []);

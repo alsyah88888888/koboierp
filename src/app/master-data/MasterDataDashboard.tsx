@@ -18,21 +18,8 @@ import {
     History
 } from "lucide-react";
 import { ItemTrackingModal } from "./ItemTrackingModal";
-import {
-    createProductAction,
-    updateProductAction,
-    deleteProductAction,
-    createVendorAction,
-    updateVendorAction,
-    deleteVendorAction,
-    createCustomerAction,
-    updateCustomerAction,
-    deleteCustomerAction,
-    createWarehouseAction,
-    updateWarehouseAction,
-    deleteWarehouseAction,
-    getMDAction
-} from "@/actions/master";
+import { callAction } from "@/proxy";
+
 import { cn } from "@/lib/utils";
 import { useSession } from "next-auth/react";
 
@@ -65,7 +52,8 @@ export function MasterDataDashboard() {
     const loadData = async () => {
         setLoading(true);
         try {
-            const res = await getMDAction();
+            const res = await callAction("getMD");
+
             setData({
                 products: res.products || [],
                 vendors: res.vendors || [],
@@ -99,18 +87,19 @@ export function MasterDataDashboard() {
         e.preventDefault();
         try {
             if (activeTab === "product") {
-                if (editId) await updateProductAction(editId, { sku: form.sku, name: form.name, category: form.category, uom: form.uom, barcode: form.barcode });
-                else await createProductAction({ sku: form.sku, name: form.name, category: form.category, uom: form.uom, barcode: form.barcode });
+                if (editId) await callAction("updateProduct", editId, { sku: form.sku, name: form.name, category: form.category, uom: form.uom, barcode: form.barcode });
+                else await callAction("createProduct", { sku: form.sku, name: form.name, category: form.category, uom: form.uom, barcode: form.barcode });
             } else if (activeTab === "vendor") {
-                if (editId) await updateVendorAction(editId, { name: form.name, email: form.email, phone: form.phone, address: form.address });
-                else await createVendorAction({ name: form.name, email: form.email, phone: form.phone, address: form.address });
+                if (editId) await callAction("updateVendor", editId, { name: form.name, email: form.email, phone: form.phone, address: form.address });
+                else await callAction("createVendor", { name: form.name, email: form.email, phone: form.phone, address: form.address });
             } else if (activeTab === "customer") {
-                if (editId) await updateCustomerAction(editId, { name: form.name, email: form.email, phone: form.phone, address: form.address });
-                else await createCustomerAction({ name: form.name, email: form.email, phone: form.phone, address: form.address });
+                if (editId) await callAction("updateCustomer", editId, { name: form.name, email: form.email, phone: form.phone, address: form.address });
+                else await callAction("createCustomer", { name: form.name, email: form.email, phone: form.phone, address: form.address });
             } else if (activeTab === "warehouse") {
-                if (editId) await updateWarehouseAction(editId, { name: form.name, location: form.location });
-                else await createWarehouseAction({ name: form.name, location: form.location });
+                if (editId) await callAction("updateWarehouse", editId, { name: form.name, location: form.location });
+                else await callAction("createWarehouse", { name: form.name, location: form.location });
             }
+
 
             setShowModal(false);
             setEditId(null);
@@ -142,11 +131,12 @@ export function MasterDataDashboard() {
         if (!confirm("Hapus data ini?")) return;
 
         try {
-            if (activeTab === "product") await deleteProductAction(id);
-            else if (activeTab === "vendor") await deleteVendorAction(id);
-            else if (activeTab === "customer") await deleteCustomerAction(id);
-            else if (activeTab === "warehouse") await deleteWarehouseAction(id);
+            if (activeTab === "product") await callAction("deleteProduct", id);
+            else if (activeTab === "vendor") await callAction("deleteVendor", id);
+            else if (activeTab === "customer") await callAction("deleteCustomer", id);
+            else if (activeTab === "warehouse") await callAction("deleteWarehouse", id);
             loadData();
+
         } catch (e: any) {
             alert(e.message || "Gagal menghapus data.");
         }

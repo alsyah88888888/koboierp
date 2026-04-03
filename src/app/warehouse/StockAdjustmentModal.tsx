@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import { X, Save, AlertCircle, Plus, Minus, ArrowRightLeft } from "lucide-react";
 import { useSession } from "next-auth/react";
-import { adjustStockAction } from "@/actions/warehouse";
+import { callAction } from "@/proxy";
+
 import { cn } from "@/lib/utils";
 
 interface StockAdjustmentModalProps {
@@ -33,7 +34,7 @@ export function StockAdjustmentModal({ product, stock, onClose }: StockAdjustmen
 
         setIsLoading(true);
         try {
-            await adjustStockAction({
+            await callAction("adjustStock", {
                 productId: product.id,
                 warehouseId: stock.warehouseId,
                 vendorName: stock.vendorName,
@@ -45,6 +46,7 @@ export function StockAdjustmentModal({ product, stock, onClose }: StockAdjustmen
             alert("Stok berhasil diperbarui.");
             onClose();
         } catch (error: any) {
+
             alert(error.message || "Gagal memperbarui stok.");
         } finally {
             setIsLoading(false);

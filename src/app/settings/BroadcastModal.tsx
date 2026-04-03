@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { X, Megaphone, Send, Info, AlertTriangle, CheckCircle2 } from "lucide-react";
-import { createNotificationAction } from "@/actions/system";
+import { callAction } from "@/proxy";
+
 import { toast } from "react-hot-toast";
 
 interface BroadcastModalProps {
@@ -27,7 +28,8 @@ export default function BroadcastModal({ isOpen, onClose }: BroadcastModalProps)
 
         setIsLoading(true);
         try {
-            const res = await createNotificationAction({ title, message, type });
+            const res = await callAction("createNotification", { title, message, type });
+
             if (res.success) {
                 toast.success("Siaran berhasil dikirim ke semua pengguna");
                 setTitle("");

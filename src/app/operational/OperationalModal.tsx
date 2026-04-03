@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { X, Save, AlertCircle } from "lucide-react";
-import { createFinanceTransactionAction } from "@/actions/finance";
+import { callAction } from "@/proxy";
+
 import { toast } from "react-hot-toast";
 import { formatCurrency } from "@/lib/utils";
 
@@ -41,11 +42,12 @@ export function OperationalModal({ isOpen, onClose, coa }: OperationalModalProps
 
         setLoading(true);
         try {
-            const res = await createFinanceTransactionAction({
+            const res = await callAction("createFinanceTransaction", {
                 ...formData,
                 amount: parseFloat(formData.amount),
                 date: new Date(formData.date),
             });
+
             if (res.success) {
                 toast.success("Transaction recorded");
                 onClose();

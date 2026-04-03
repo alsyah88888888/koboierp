@@ -170,3 +170,75 @@ export async function getProductTrackingService(productId: string, userId: strin
     const { serializeDecimal } = require("@/lib/utils");
     return serializeDecimal({ product, history });
 }
+export async function verifyGoodsReceiptService(receiptId: string, verifiedBy: string, checkedItems: Record<string, number>) {
+    const { getPrisma } = require("@/lib/prisma");
+    const prisma = getPrisma();
+
+    return await prisma.$transaction(async (tx: any) => {
+        const receipt = await tx.goodsReceipt.findUnique({
+            where: { id: receiptId },
+            include: { items: { include: { product: true } } }
+        });
+
+        if (!receipt) throw new Error("Penerimaan tidak ditemukan.");
+        if (receipt.isVerified) throw new Error("Penerimaan sudah diverifikasi sebelumnya.");
+
+        // 1. Mark as verified
+        await tx.goodsReceipt.update({
+            where: { id: receiptId },
+            data: {
+                isVerified: true,
+                verifiedBy,
+                verifiedAt: new Date()
+            }
+        });
+
+        // 2. Clear previous stock from this receipt if any (idempotency)
+        await tx.stockMovement.deleteMany({
+            where: { reference: receipt.receiptNumber }
+        });
+
+        // 3. Update stock and create movements for each item
+        for (const item of receipt.items) {
+            const actualQty = checkedItems[item.id] ?? 0;
+            if (actualQty <= 0) continue;
+
+            const vendorName = item.vendorName || "UMUM";
+
+            // Update Stock
+            await tx.stock.upsert({
+                where: {
+                    productId_warehouseId_vendorName: {
+                        productId: item.productId,
+                        warehouseId: receipt.warehouseId,
+                        vendorName: vendorName
+                    }
+                },
+                update: { quantity: { increment: actualQty } },
+                create: {
+                    productId: item.productId,
+                    warehouseId: receipt.warehouseId,
+                    vendorName: vendorName,
+                    quantity: actualQty
+                }
+            });
+
+            // Create Movement
+            await tx.stockMovement.create({
+                data: {
+                    productId: item.productId,
+                    warehouseId: receipt.warehouseId,
+                    vendorName: vendorName,
+                    quantity: actualQty,
+                    type: "GOODS_RECEIPT",
+                    reference: receipt.receiptNumber
+                }
+            });
+        }
+
+        revalidatePath("/warehouse");
+        revalidatePath("/purchase");
+        revalidatePath("/");
+        return { success: true };
+    });
+}

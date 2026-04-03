@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { createVendorAction, createCustomerAction } from "@/actions/master";
+import { callAction } from "@/proxy";
+
 import { X } from "lucide-react";
 
 export function PartnerModal({ type, onClose }: { type: 'VENDOR' | 'CUSTOMER', onClose: () => void }) {
@@ -15,10 +16,11 @@ export function PartnerModal({ type, onClose }: { type: 'VENDOR' | 'CUSTOMER', o
         if (!name) return;
 
         if (type === 'VENDOR') {
-            await createVendorAction({ name, email, phone, address });
+            await callAction("createVendor", { name, email, phone, address });
         } else {
-            await createCustomerAction({ name, email, phone, address });
+            await callAction("createCustomer", { name, email, phone, address });
         }
+
         onClose();
     };
 

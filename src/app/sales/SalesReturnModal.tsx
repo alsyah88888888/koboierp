@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
-import { createSalesReturnAction, updateSalesReturnAction } from "@/actions/sales";
+import { callAction } from "@/proxy";
+
 import { formatCurrency } from "@/lib/utils";
 
 export function SalesReturnModal({ deliveries, initialData, onClose }: { deliveries: any[], initialData?: any, onClose: () => void }) {
@@ -64,19 +65,20 @@ export function SalesReturnModal({ deliveries, initialData, onClose }: { deliver
         setIsSubmitting(true);
         try {
             if (initialData) {
-                await updateSalesReturnAction(initialData.id, {
+                await callAction("updateSalesReturn", initialData.id, {
                     items: itemsToReturn,
                     notes
                 });
                 alert("Retur penjualan berhasil diperbarui!");
             } else {
-                await createSalesReturnAction({
+                await callAction("createSalesReturn", {
                     deliveryId: selectedDelivery.id,
                     items: itemsToReturn,
                     notes
                 });
                 alert("Retur penjualan berhasil diajukan!");
             }
+
             onClose();
         } catch (e: any) {
             alert(e.message || "Gagal memproses retur.");
