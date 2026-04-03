@@ -204,9 +204,9 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="flex-1 overflow-hidden flex flex-col lg:flex-row bg-slate-50/30">
-                    {/* Left Side: Inputs & Items */}
-                    <div className="flex-1 overflow-y-auto p-4 lg:p-6 custom-scrollbar space-y-4">
+                <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto bg-slate-50/30 custom-scrollbar">
+                    {/* Main Content: Headers then Items then Totals */}
+                    <div className="p-4 lg:p-6 space-y-6">
                         {/* Compact Logistics Header */}
                         <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -422,85 +422,92 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
                                 {error}
                             </div>
                         )}
-                    </div>
 
-                    {/* Right Side: Financial Summary (Desktop Sidebar) */}
-                    <div className="w-full lg:w-80 p-4 lg:p-6 bg-slate-900 text-white flex flex-col justify-between relative overflow-hidden shrink-0 shadow-2xl">
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2"></div>
-                        
-                        <div className="relative z-10 space-y-6">
-                            <div className="space-y-4">
-                                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-500 border-b border-white/5 pb-2">Purchase Summary</h3>
-                                
-                                <div className="flex justify-between items-center">
-                                    <span className="text-[10px] font-bold text-slate-400 uppercase">Gross Subtotal</span>
-                                    <span className="text-sm font-bold">Rp {subtotal.toLocaleString('id-ID')}</span>
-                                </div>
-
-                                <div className="space-y-1">
-                                    <label className="text-[10px] font-bold text-orange-400 uppercase tracking-widest flex justify-between">
-                                        Total Discount
-                                        <span className="text-[9px] lowercase opacity-50 cursor-pointer" onClick={() => {
-                                            const p = prompt("Percentage %?");
-                                            if(p) setTotalDiscountPercent(p);
-                                        }}>
-                                            {totalDiscountPercent ? `${totalDiscountPercent}%` : "set %"}
-                                        </span>
-                                    </label>
-                                    <div className="flex items-center bg-white/5 border border-white/10 rounded-xl px-3 focus-within:border-orange-500/50 transition-all">
-                                        <span className="text-slate-500 font-bold mr-2 text-xs">Rp</span>
-                                        <input
-                                            type="text"
-                                            value={totalDiscount}
-                                            onChange={e => {
-                                                setTotalDiscount(e.target.value);
-                                                setTotalDiscountPercent("");
-                                            }}
-                                            className="w-full bg-transparent py-2 text-sm font-black text-white outline-none"
-                                            placeholder="0"
-                                        />
+                        {/* Financial Summary & Footer (V.1 Vertical Style) */}
+                        <div className="mt-8 border-t-2 border-slate-200 pt-8">
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                                {/* Left/Center column: Empty or notes in future */}
+                                <div className="lg:col-span-2 hidden lg:block">
+                                    <div className="bg-white border border-slate-200 rounded-2xl p-6 h-full flex flex-col justify-center items-center text-slate-400">
+                                        <ShoppingCart className="h-12 w-12 mb-2 opacity-20" />
+                                        <p className="text-[10px] font-black uppercase tracking-widest">Pemeriksaan Barang Masuk Selesai</p>
                                     </div>
                                 </div>
 
-                                <div className="space-y-1">
-                                    <label className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">Pajak PPN (%)</label>
-                                    <select 
-                                        value={taxRate} 
-                                        onChange={e => setTaxRate(Number(e.target.value))}
-                                        className="w-full bg-white/5 border border-white/10 rounded-xl p-2 text-sm font-black focus:border-blue-500/50 outline-none"
-                                    >
-                                        <option value={0} className="text-slate-900">Non PPN (0%)</option>
-                                        <option value={11} className="text-slate-900">PPN 11%</option>
-                                        <option value={12} className="text-slate-900">PPN 12%</option>
-                                    </select>
+                                {/* Right column: Totals */}
+                                <div className="bg-slate-900 text-white p-6 rounded-3xl shadow-2xl relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-full blur-[40px] -translate-y-1/2 translate-x-1/2"></div>
+                                    <div className="relative z-10 space-y-4">
+                                        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 border-b border-white/5 pb-2">Ringkasan Pembelian</h3>
+                                        
+                                        <div className="flex justify-between items-center px-1">
+                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Subtotal Kotor</span>
+                                            <span className="text-sm font-bold">Rp {subtotal.toLocaleString('id-ID')}</span>
+                                        </div>
+
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-bold text-orange-400 uppercase tracking-widest flex justify-between ml-1">
+                                                Diskon Akhir
+                                                <span className="text-[9px] lowercase opacity-50 cursor-pointer" onClick={() => {
+                                                    const p = prompt("Percentage %?");
+                                                    if(p) setTotalDiscountPercent(p);
+                                                }}>
+                                                    {totalDiscountPercent ? `${totalDiscountPercent}%` : "set %"}
+                                                </span>
+                                            </label>
+                                            <div className="flex items-center bg-white/5 border border-white/10 rounded-xl px-3 focus-within:border-orange-500/50 transition-all">
+                                                <span className="text-slate-500 font-bold mr-2 text-xs">Rp</span>
+                                                <input
+                                                    type="text"
+                                                    value={totalDiscount}
+                                                    onChange={e => {
+                                                        setTotalDiscount(e.target.value);
+                                                        setTotalDiscountPercent("");
+                                                    }}
+                                                    className="w-full bg-transparent py-2 text-sm font-black text-white outline-none"
+                                                    placeholder="0"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-bold text-blue-400 uppercase tracking-widest ml-1">Pajak PPN (%)</label>
+                                            <select 
+                                                value={taxRate} 
+                                                onChange={e => setTaxRate(Number(e.target.value))}
+                                                className="w-full bg-white/5 border border-white/10 rounded-xl p-2.5 text-sm font-black focus:border-blue-500/50 outline-none"
+                                            >
+                                                <option value={0} className="text-slate-900">Non PPN (0%)</option>
+                                                <option value={11} className="text-slate-900">PPN 11%</option>
+                                                <option value={12} className="text-slate-900">PPN 12%</option>
+                                            </select>
+                                        </div>
+
+                                        <div className="pt-4 mt-2 border-t border-white/10">
+                                            <div className="flex justify-between items-end mb-1">
+                                                <label className="text-[10px] font-bold uppercase tracking-widest text-emerald-400">Total Akhir</label>
+                                                <span className="text-[9px] text-slate-500 font-bold uppercase tracking-widest mb-1">{totalQty} Items</span>
+                                            </div>
+                                            <p className="text-3xl font-black text-emerald-400 tracking-tighter leading-none mb-4">{formatCurrency(grandTotal)}</p>
+                                            
+                                            <button
+                                                type="submit"
+                                                disabled={isSubmitting}
+                                                className="w-full bg-primary text-white py-4 rounded-2xl font-black shadow-2xl shadow-primary/20 hover:bg-slate-800 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-3 group"
+                                            >
+                                                {isSubmitting ? (
+                                                    <Loader2 className="h-5 w-5 animate-spin" />
+                                                ) : (
+                                                    <>
+                                                        <Save className="h-5 w-5 group-hover:scale-110 transition-transform" />
+                                                        <span className="text-xs tracking-widest">SIMPAN TRANSAKSI</span>
+                                                    </>
+                                                )}
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-
-                            <div className="pt-6 border-t border-white/10">
-                                <label className="text-[10px] font-bold uppercase tracking-widest text-emerald-400">Total Pembayaran</label>
-                                <p className="text-3xl font-black text-emerald-400 tracking-tighter mt-1">{formatCurrency(grandTotal)}</p>
-                                <div className="flex items-center gap-2 mt-4 text-slate-500 text-[10px] font-bold uppercase">
-                                    <Check className="h-3 w-3" />
-                                    <span>{totalQty} Items being received</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="relative z-10 pt-8 mt-auto">
-                            <button
-                                onClick={handleSubmit}
-                                disabled={isSubmitting}
-                                className="w-full bg-primary text-white py-4 rounded-2xl font-black shadow-2xl shadow-primary/20 hover:bg-slate-800 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-3 group"
-                            >
-                                {isSubmitting ? (
-                                    <Loader2 className="h-5 w-5 animate-spin" />
-                                ) : (
-                                    <>
-                                        <Save className="h-5 w-5 group-hover:scale-110 transition-transform" />
-                                        <span className="text-sm">SIMPAN TRANSAKSI</span>
-                                    </>
-                                )}
-                            </button>
                         </div>
                     </div>
                 </form>
