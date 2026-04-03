@@ -344,19 +344,20 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
 
                         {/* Sticky Items Header (Desktop Only) */}
                         <div className="hidden lg:grid grid-cols-12 gap-3 px-4 py-2 bg-slate-200/50 rounded-xl text-[10px] font-black uppercase text-slate-500 tracking-widest border border-slate-200">
-                            <div className="col-span-4">Product / SKU</div>
+                            <div className="col-span-3">Product / SKU</div>
                             <div className="col-span-2">Source / Vendor</div>
                             <div className="col-span-1 text-center">Qty</div>
                             <div className="col-span-2 text-right">Price</div>
-                            {showDiscount && <div className="col-span-2 text-right">Disc</div>}
-                            <div className={cn(showDiscount ? "col-span-1" : "col-span-3", "text-right")}>Subtotal</div>
+                            {showDiscount && <div className="col-span-1 text-right">Disc</div>}
+                            <div className={cn(showDiscount ? "col-span-2" : "col-span-3", "text-right")}>Subtotal</div>
+                            <div className="col-span-1 text-center">Del</div>
                         </div>
 
                         {/* Item Rows */}
                         <div className="space-y-2 lg:space-y-1">
                             {items.map((item, index) => (
                                 <div key={index} className="grid grid-cols-1 lg:grid-cols-12 gap-2 lg:gap-3 p-3 lg:p-2 bg-white lg:bg-transparent lg:border-b border-slate-100 rounded-xl lg:rounded-none items-center group relative animate-fade-up">
-                                    <div className="col-span-full lg:col-span-4 lg:flex lg:items-center">
+                                    <div className="col-span-full lg:col-span-3 lg:flex lg:items-center">
                                         <label className="lg:hidden text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Product</label>
                                         <input
                                             list={`product-list-2-${index}`}
@@ -413,7 +414,7 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                         </div>
 
                                         {showDiscount && (
-                                            <div className="lg:col-span-2">
+                                            <div className="lg:col-span-1">
                                                 <label className="lg:hidden text-[9px] font-black text-orange-400 uppercase tracking-widest mb-1 block text-right">Disc</label>
                                                 <input
                                                     type="text"
@@ -424,7 +425,7 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                             </div>
                                         )}
 
-                                        <div className={cn("lg:flex lg:items-center lg:justify-end", showDiscount ? "lg:col-span-1" : "lg:col-span-3")}>
+                                        <div className={cn("lg:flex lg:items-center lg:justify-end", showDiscount ? "lg:col-span-2" : "lg:col-span-3")}>
                                             <label className="lg:hidden text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 block text-right">Subtotal</label>
                                             <div className="w-full lg:w-auto text-[13px] font-black text-slate-800 text-right lg:pr-2">
                                                 {((Number(String(item.quantity).replace(/\./g, '').replace(',', '.')) || 0) * (Number(String(item.salesPrice).replace(/\./g, '').replace(',', '.')) || 0) - (Number(String(item.discount || 0).replace(/\./g, '').replace(',', '.')) || 0)).toLocaleString('id-ID')}
@@ -433,14 +434,16 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                     </div>
 
                                     {/* Action Button */}
-                                    <button
-                                        type="button"
-                                        onClick={() => removeItem(index)}
-                                        className="absolute -top-1 -right-1 lg:static lg:col-span-1 p-2 bg-white lg:bg-transparent border border-rose-100 lg:border-none rounded-full text-rose-300 hover:text-rose-600 hover:bg-rose-50 transition-all opacity-0 group-hover:opacity-100"
-                                        disabled={items.length === 1}
-                                    >
-                                        <Trash2 className="h-4 w-4" />
-                                    </button>
+                                    <div className="lg:col-span-1 flex justify-center">
+                                        <button
+                                            type="button"
+                                            onClick={() => removeItem(index)}
+                                            className="p-2 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-full transition-all"
+                                            disabled={items.length === 1}
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </button>
+                                    </div>
                                 </div>
                             ))}
                         </div>
