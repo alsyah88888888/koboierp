@@ -61,13 +61,15 @@ async function getWeeklyStats(userFilter: any = {}) {
  * SYSTEM: Settings
  */
 export async function getSystemSettingsAction() {
-    let settings;
+    const { getPrisma } = require("@/lib/prisma");
+    const prisma = getPrisma();
     try {
-        settings = await (prisma as any).systemSetting.findUnique({ where: { id: "global" } });
+        settings = await prisma.systemSetting.findUnique({ where: { id: "global" } });
     } catch (e) {
-        const results = await (require("@/lib/prisma").default()).$queryRaw<any[]>`SELECT * FROM SystemSetting WHERE id = 'global' LIMIT 1`;
+        const results = await prisma.$queryRaw<any[]>`SELECT * FROM SystemSetting WHERE id = 'global' LIMIT 1`;
         if (results && results.length > 0) settings = results[0];
     }
+
 
     const [productCount, vendorCount, customerCount, warehouseCount] = await Promise.all([
         (require("@/lib/prisma").default()).product.count(),
@@ -87,20 +89,22 @@ export async function getSystemSettingsAction() {
     };
 }
 
-export async function updateSystemSettingsAction(data: any) {
+    const { getPrisma } = require("@/lib/prisma");
+    const prisma = getPrisma();
     try {
-        await (prisma as any).systemSetting.upsert({
+        await prisma.systemSetting.upsert({
             where: { id: "global" },
             update: data,
             create: { id: "global", ...data }
         });
     } catch (e) {
-        await (require("@/lib/prisma").default()).$executeRaw`
+        await prisma.$executeRaw`
             INSERT INTO SystemSetting (id, companyName, address, taxId, website, updatedAt)
             VALUES ('global', ${data.companyName}, ${data.address}, ${data.taxId}, ${data.website}, CURRENT_TIMESTAMP)
             ON CONFLICT(id) DO UPDATE SET companyName = excluded.companyName, address = excluded.address, taxId = excluded.taxId, website = excluded.website, updatedAt = CURRENT_TIMESTAMP
         `;
     }
+
     revalidatePath("/settings");
     return { success: true };
 }
@@ -140,23 +144,35 @@ export async function wipeDatabaseAction() {
  * SYSTEM: Notifications
  */
 export async function createNotificationAction(data: { title: string; message: string; type?: string }) {
-    const session = (await (require("next-auth").getServerSession)(require("@/lib/auth").getAuthOptions())) as any;
-    const notification = await (prisma as any).notification.create({
+    const { getAuthOptions } = require("@/lib/auth");
+    const { getServerSession } = require("next-auth");
+    const { getPrisma } = require("@/lib/prisma");
+    const prisma = getPrisma();
+
+    const session = (await getServerSession(getAuthOptions())) as any;
+    const notification = await prisma.notification.create({
         data: { ...data, type: data.type || "broadcast", authorId: session.user.id }
     });
     revalidatePath("/");
     return { success: true, notification };
 }
 
+
 export async function getNotificationsAction() {
-    const session = (await (require("next-auth").getServerSession)(require("@/lib/auth").getAuthOptions())) as any;
+    const { getAuthOptions } = require("@/lib/auth");
+    const { getServerSession } = require("next-auth");
+    const { getPrisma } = require("@/lib/prisma");
+    const prisma = getPrisma();
+
+    const session = (await getServerSession(getAuthOptions())) as any;
     if (!session?.user?.id) return [];
-    return await (prisma as any).notification.findMany({
+    return await prisma.notification.findMany({
         where: { NOT: { reads: { some: { userId: session.user.id } } } },
         orderBy: { createdAt: 'desc' },
         take: 20
     });
 }
+
 
 export async function markNotificationAsReadAction(notificationId: string) {
     const session = (await (require("next-auth").getServerSession)(require("@/lib/auth").getAuthOptions())) as any;
