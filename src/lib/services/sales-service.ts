@@ -17,7 +17,12 @@ export async function createSalesDeliveryService(data: any, userId: string) {
     const dateStr = `${day}${month}${year}`;
 
     return await prisma.$transaction(async (tx: any) => {
-        const prefix = `KB-TRN-${dateStr}-`;
+        const hasTaxOrDisc = typeof data.hasTaxOrDisc === 'boolean' 
+            ? data.hasTaxOrDisc 
+            : ((Number(data.taxRate) || 0) > 0 || (Number(data.totalDiscount) || 0) > 0 || data.items.some((i: any) => (Number(i.discount) || 0) > 0));
+
+        const prefix = hasTaxOrDisc ? `KB-SJD-${dateStr}-` : `KB-SJ-${dateStr}-`;
+
         const latest = await tx.salesDelivery.findFirst({
             where: { deliveryNumber: { startsWith: prefix } },
             orderBy: { deliveryNumber: 'desc' }
@@ -166,9 +171,28 @@ export async function updateSalesDeliveryService(id: string, data: any) {
         await tx.salesDeliveryItem.deleteMany({ where: { deliveryId: id } });
 
         const txDate = data.createdAt || new Date();
+
+        // Prefix switching logic
+        const hasTaxOrDisc = typeof data.hasTaxOrDisc === 'boolean' 
+            ? data.hasTaxOrDisc 
+            : ((Number(data.taxRate) || 0) > 0 || (Number(data.totalDiscount) || 0) > 0 || data.items.some((i: any) => (Number(i.discount) || 0) > 0));
+
+        let currentDeliveryNumber = oldDelivery.deliveryNumber;
+        const isCurrentlyDiscounted = currentDeliveryNumber.startsWith("KB-SJD-");
+        const currentIsTRN = currentDeliveryNumber.startsWith("KB-TRN-");
+
+        if (hasTaxOrDisc && (!isCurrentlyDiscounted || currentIsTRN)) {
+            // Update to SJD (handle migration from TRN too)
+            currentDeliveryNumber = currentDeliveryNumber.replace("KB-SJ-", "KB-SJD-").replace("KB-TRN-", "KB-SJD-");
+        } else if (!hasTaxOrDisc && (isCurrentlyDiscounted || currentIsTRN)) {
+            // Update to SJ (handle migration from TRN too)
+            currentDeliveryNumber = currentDeliveryNumber.replace("KB-SJD-", "KB-SJ-").replace("KB-TRN-", "KB-SJ-");
+        }
+
         await tx.salesDelivery.update({
             where: { id },
             data: {
+                deliveryNumber: currentDeliveryNumber,
                 recipient: data.recipient,
                 buyerName: data.buyerName,
                 poNumber: data.poNumber,
@@ -177,6 +201,14 @@ export async function updateSalesDeliveryService(id: string, data: any) {
                 createdAt: txDate
             }
         });
+
+        // Sync references if changed
+        if (currentDeliveryNumber !== oldDelivery.deliveryNumber) {
+            await tx.stockMovement.updateMany({
+                where: { reference: oldDelivery.deliveryNumber },
+                data: { reference: currentDeliveryNumber }
+            });
+        }
 
         for (const item of data.items) {
             const vendorName = item.vendorName || "UMUM";
@@ -209,7 +241,7 @@ export async function updateSalesDeliveryService(id: string, data: any) {
                     vendorName: vendorName,
                     quantity: -item.quantity,
                     type: "SALE_UPDATE",
-                    reference: oldDelivery.deliveryNumber
+                    reference: currentDeliveryNumber
                 }
             });
         }
@@ -254,7 +286,7 @@ export async function updateSalesDeliveryService(id: string, data: any) {
         revalidatePath("/finance");
         revalidatePath("/");
 
-        return { success: true };
+        return { success: true, deliveryNumber: currentDeliveryNumber };
     });
 }
 

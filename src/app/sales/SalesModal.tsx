@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { X, Plus, Trash2, Loader2, Save, Tag, ShoppingCart } from "lucide-react";
+import { X, Plus, Trash2, Loader2, Save, Tag, ShoppingCart, Wand2, FileCheck, Search } from "lucide-react";
 import { callAction } from "@/proxy";
 
 import { formatCurrency, cn } from "@/lib/utils";
@@ -40,6 +40,21 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
     const [totalDiscount, setTotalDiscount] = useState<number | string>(0);
     const [totalDiscountPercent, setTotalDiscountPercent] = useState<number | string>("");
     const [taxRate, setTaxRate] = useState<number | "">(0); // 0 or 0.11
+    const [result, setResult] = useState<any>(null);
+
+    // Helper to parse Indonesian numbers (remove dots, replace comma with dot)
+    const parseIndoNumber = (val: string | number): number => {
+        if (typeof val === 'number') return val;
+        if (!val) return 0;
+        return Number(String(val).replace(/\./g, "").replace(",", ".")) || 0;
+    };
+
+    const generatePoNumber = () => {
+        const now = new Date();
+        const dateStr = now.toISOString().slice(2, 10).replace(/-/g, ''); // YYMMDD
+        const randomStr = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+        setPoNumber(`PO-${dateStr}-${randomStr}`);
+    };
 
     useEffect(() => {
         if (initialData) {
@@ -84,45 +99,47 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
     const updateItem = (index: number, field: string, value: any) => {
         const newItems = [...items];
 
-        // Handle number inputs to support decimals (comma or dot)
-        if (field === 'quantity' || field === 'salesPrice') {
+        // Handle numeric inputs with formatting preservation
+        if (field === 'quantity' || field === 'salesPrice' || field === 'discount') {
             const userDisplayValue = String(value).replace(/[^0-9,.]/g, '');
             (newItems[index] as any)[field] = userDisplayValue;
 
             // Sync discount if percent exists
-            if (newItems[index].discountPercent !== "" && newItems[index].discountPercent !== undefined) {
-                const qty = Number(String(newItems[index].quantity).replace(/\./g, '').replace(',', '.')) || 0;
-                const price = Number(String(newItems[index].salesPrice).replace(/\./g, '').replace(',', '.')) || 0;
+            if (field !== 'discount' && newItems[index].discountPercent !== "" && newItems[index].discountPercent !== undefined) {
+                const qty = parseIndoNumber(newItems[index].quantity);
+                const price = parseIndoNumber(newItems[index].salesPrice);
                 const gross = qty * price;
                 newItems[index].discount = Math.round(gross * (Number(newItems[index].discountPercent) / 100));
+            }
+
+            if (field === 'discount') {
+                newItems[index].discountPercent = ""; // Clear percent when manual nominal entered
             }
         } else if (field === 'discountPercent') {
             newItems[index].discountPercent = value;
             const numVal = Number(value) || 0;
-            const qty = Number(String(newItems[index].quantity).replace(/\./g, '').replace(',', '.')) || 0;
-            const price = Number(String(newItems[index].salesPrice).replace(/\./g, '').replace(',', '.')) || 0;
+            const qty = parseIndoNumber(newItems[index].quantity);
+            const price = parseIndoNumber(newItems[index].salesPrice);
             const gross = qty * price;
             newItems[index].discount = Math.round(gross * (numVal / 100));
-        } else if (field === 'discount') {
-            const userDisplayValue = String(value).replace(/[^0-9,.]/g, '');
-            newItems[index].discount = userDisplayValue;
-            newItems[index].discountPercent = ""; // Clear percent when manual nominal entered
         } else {
             (newItems[index] as any)[field] = value;
         }
 
-        // Auto-fill UOM and Vendor if product selected via SKU typing
+        // Auto-fill UOM and Price if product selected via SKU typing (Case-Insensitive)
         if (field === "sku") {
             const valStr = String(value).trim().toLowerCase();
             const product = Array.isArray(products) ? products.find(p =>
                 (p.sku && p.sku.toLowerCase() === valStr) ||
-                (p.barcode && p.barcode.toLowerCase() === valStr)
+                (p.barcode && p.barcode.toLowerCase() === valStr) ||
+                (p.name && p.name.toLowerCase() === valStr)
             ) : null;
+            
             if (product) {
                 newItems[index].productId = product.id;
                 newItems[index].sku = product.sku;
                 newItems[index].uom = product.uom || "";
-                if (newItems[index].salesPrice === 0 || newItems[index].salesPrice === "") {
+                if (parseIndoNumber(newItems[index].salesPrice) === 0) {
                     newItems[index].salesPrice = Number(product.price || 0);
                 }
                 // Pre-select first vendor with stock if available
@@ -141,18 +158,18 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
     };
 
     const totalQty = useMemo(() => {
-        return items.reduce((acc, item) => acc + (Number(item.quantity) || 0), 0);
+        return items.reduce((acc, item) => acc + parseIndoNumber(item.quantity), 0);
     }, [items]);
 
     // Totals Calculation
     const grossAmount = items.reduce((sum, item) => {
-        const q = Number(String(item.quantity).replace(/\./g, '').replace(',', '.')) || 0;
-        const p = Number(String(item.salesPrice).replace(/\./g, '').replace(',', '.')) || 0;
+        const q = parseIndoNumber(item.quantity);
+        const p = parseIndoNumber(item.salesPrice);
         return sum + (q * p);
     }, 0);
 
     const itemDiscounts = items.reduce((sum, item) => {
-        return sum + (Number(String(item.discount).replace(/\./g, '').replace(',', '.')) || 0);
+        return sum + parseIndoNumber(item.discount);
     }, 0);
 
     const subtotal = grossAmount - itemDiscounts;
@@ -161,7 +178,7 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
         if (totalDiscountPercent !== "" && Number(totalDiscountPercent) > 0) {
             return Math.round(subtotal * (Number(totalDiscountPercent) / 100));
         }
-        return Number(String(totalDiscount).replace(/\./g, '').replace(',', '.')) || 0;
+        return parseIndoNumber(totalDiscount);
     }, [subtotal, totalDiscountPercent, totalDiscount]);
 
     const taxAmount = (subtotal - finalDiscountNominal) * (Number(taxRate) / 100);
@@ -169,9 +186,9 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
 
     const handleSubmit = async (e?: React.FormEvent) => {
         e?.preventDefault();
-        const hasEmptyItems = items.some(i => !i.productId || i.quantity === "" || i.salesPrice === "");
+        const hasEmptyItems = items.some(i => !i.productId || !i.quantity);
         if (!recipient || !buyerName || hasEmptyItems) {
-            setError("Mohon lengkapi semua data dan isi qty/harga.");
+            setError("Mohon lengkapi semua data dan isi qty.");
             return;
         }
 
@@ -185,32 +202,57 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                 poNumber,
                 warehouseId,
                 salesPerson,
+                hasTaxOrDisc: showDiscount,
                 totalDiscount: Number(finalDiscountNominal) || 0,
                 taxRate: Number(taxRate) || 0,
                 createdAt: new Date(date),
                 items: items.map(i => ({
                     productId: i.productId,
-                    quantity: Number(String(i.quantity).replace(/\./g, '').replace(',', '.')),
-                    salesPrice: Number(String(i.salesPrice).replace(/\./g, '').replace(',', '.')),
-                    discount: Number(String(i.discount || 0).replace(/\./g, '').replace(',', '.')),
+                    quantity: parseIndoNumber(i.quantity),
+                    salesPrice: parseIndoNumber(i.salesPrice),
+                    discount: parseIndoNumber(i.discount || 0),
                     uom: i.uom,
                     vendorName: i.vendorName
                 }))
             };
 
+            let res;
             if (initialData) {
-                await callAction("updateSalesDelivery", initialData.id, data);
+                res = await callAction("updateSalesDelivery", initialData.id, data);
             } else {
-                await callAction("createSalesDelivery", data);
+                res = await callAction("createSalesDelivery", data);
             }
-            onClose();
+            setResult(res);
         } catch (err: any) {
-
             setError(err.message || "Gagal menyimpan data.");
-        } finally {
             setLoading(false);
+        } finally {
+            // Loading false handled in catch or by result state
         }
     };
+
+    if (result) {
+        return (
+            <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[110] p-4 backdrop-blur-sm">
+                <div className="bg-white border-2 border-primary rounded-xl shadow-2xl w-full max-w-md p-8 text-center space-y-4">
+                    <div className="mx-auto w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center border-2 border-emerald-500">
+                        <FileCheck className="h-8 w-8 text-emerald-600" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-slate-900">Penjualan Berhasil!</h2>
+                    <p className="text-slate-500 font-medium">No. Form Tracking Anda:</p>
+                    <div className="p-4 bg-slate-100 border-2 border-slate-200 rounded-lg font-mono text-xl font-bold text-primary">
+                        {result.deliveryNumber}
+                    </div>
+                    <button
+                        onClick={onClose}
+                        className="w-full bg-primary text-white py-3 rounded-md hover:bg-primary/90 mt-4 font-bold shadow-lg"
+                    >
+                        Tutup
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md z-[100] flex items-start justify-center p-2 sm:p-4 overflow-y-auto custom-scrollbar">
@@ -270,12 +312,22 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                 <div className="space-y-1">
                                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">PO Number / SJ Date</label>
                                     <div className="flex gap-2">
-                                        <input
-                                            value={poNumber}
-                                            onChange={e => setPoNumber(e.target.value)}
-                                            placeholder="PO#"
-                                            className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg text-sm font-bold focus:border-primary outline-none"
-                                        />
+                                        <div className="relative flex-1">
+                                            <input
+                                                value={poNumber}
+                                                onChange={e => setPoNumber(e.target.value)}
+                                                placeholder="PO#"
+                                                className="w-full bg-slate-50 border border-slate-200 px-3 py-2 pr-10 rounded-lg text-sm font-bold focus:border-primary outline-none transition-all"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={generatePoNumber}
+                                                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-300 hover:text-primary transition-colors p-1"
+                                                title="Generate PO Number"
+                                            >
+                                                <Wand2 className="h-4 w-4" />
+                                            </button>
+                                        </div>
                                         <input
                                             type="date"
                                             value={date}
@@ -364,13 +416,18 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                         <label className="lg:hidden text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Product</label>
                                         <div className="relative w-full">
                                             <input
-                                                list={`product-list-2-${index}`}
+                                                list={`product-list-sales-${index}`}
                                                 value={item.sku}
                                                 onChange={e => updateItem(index, 'sku', e.target.value)}
                                                 className="w-full bg-white border border-slate-200 lg:border-slate-100 px-3 py-1.5 rounded-lg lg:rounded-md text-[13px] font-black outline-none focus:border-primary focus:bg-white focus:shadow-sm transition-all"
                                                 placeholder="SKU"
                                                 required
                                             />
+                                            <datalist id={`product-list-sales-${index}`}>
+                                                {Array.isArray(products) && products.map((p: any) => (
+                                                    <option key={p.id} value={p.sku}>{p.name} - {p.uom}</option>
+                                                ))}
+                                            </datalist>
                                         </div>
                                     </div>
 
