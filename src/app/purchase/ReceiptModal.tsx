@@ -40,21 +40,28 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
     const [error, setError] = useState("");
     const [result, setResult] = useState<any>(null);
 
+    // Helper to parse Indonesian numbers (remove dots, replace comma with dot)
+    const parseIndoNumber = (val: string | number): number => {
+        if (typeof val === 'number') return val;
+        if (!val) return 0;
+        return Number(String(val).replace(/\./g, "").replace(",", ".")) || 0;
+    };
+
     // Derived values
     const subtotal = items.reduce((sum, item) => {
-        const qty = Number(item.quantity) || 0;
-        const price = Number(item.purchasePrice) || 0;
-        const disc = Number(item.discount) || 0;
+        const qty = parseIndoNumber(item.quantity);
+        const price = parseIndoNumber(item.purchasePrice);
+        const disc = parseIndoNumber(item.discount);
         return sum + (qty * price) - disc;
     }, 0);
 
     const finalDiscountNominal = totalDiscountPercent 
-        ? (subtotal * (Number(totalDiscountPercent) / 100)) 
-        : (Number(totalDiscount) || 0);
+        ? (subtotal * (parseIndoNumber(totalDiscountPercent) / 100)) 
+        : (parseIndoNumber(totalDiscount) || 0);
 
     const taxAmount = (subtotal - finalDiscountNominal) * (Number(taxRate) / 100);
     const grandTotal = subtotal - finalDiscountNominal + taxAmount;
-    const totalQty = items.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
+    const totalQty = items.reduce((sum, item) => sum + (parseIndoNumber(item.quantity) || 0), 0);
 
     if (!isOpen && !result) return null;
 
@@ -70,18 +77,30 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
 
     const updateItem = (index: number, field: string, value: string) => {
         const newItems = [...items];
-        newItems[index][field] = value;
+        
+        // Handle numeric inputs with formatting preservation
+        if (field === 'quantity' || field === 'purchasePrice' || field === 'discount') {
+            const userDisplayValue = String(value).replace(/[^0-9,.]/g, '');
+            newItems[index][field] = userDisplayValue;
+        } else {
+            newItems[index][field] = value;
+        }
 
         if (field === 'sku') {
             const lowerValue = value.toLowerCase().trim();
-            const product = products.find((p: any) => p.sku?.toLowerCase().trim() === lowerValue);
+            const product = products.find((p: any) => 
+                p.sku?.toLowerCase().trim() === lowerValue ||
+                p.name?.toLowerCase().trim() === lowerValue
+            );
             
             if (product) {
                 newItems[index].productId = product.id;
+                newItems[index].sku = product.sku; // Standardize to actual SKU
                 newItems[index].name = product.name;
                 newItems[index].uom = product.uom || "PCS";
                 // Default purchase price if available
-                if (!newItems[index].purchasePrice || newItems[index].purchasePrice === "0") {
+                const currentPrice = parseIndoNumber(newItems[index].purchasePrice);
+                if (currentPrice === 0) {
                     newItems[index].purchasePrice = (product.purchasePrice || 0).toString();
                 }
             } else {
@@ -110,15 +129,16 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
                 date: new Date(date),
                 warehouseId,
                 salesPerson,
+                hasTaxOrDisc: showDiscount, // Explicit flag for prefixing
                 taxInvoiceNumber: hasTaxInvoice ? taxInvoiceNumber : null,
                 taxInvoiceDate: (hasTaxInvoice && taxInvoiceDate) ? new Date(taxInvoiceDate) : null,
                 totalDiscount: finalDiscountNominal,
                 taxRate: Number(taxRate),
                 items: items.map(item => ({
                     productId: item.productId,
-                    quantity: Number(item.quantity),
-                    purchasePrice: Number(item.purchasePrice),
-                    discount: Number(item.discount),
+                    quantity: parseIndoNumber(item.quantity),
+                    purchasePrice: parseIndoNumber(item.purchasePrice),
+                    discount: parseIndoNumber(item.discount),
                     uom: item.uom
                 }))
             };

@@ -60,7 +60,11 @@ export async function createGoodsReceiptService(data: any, userId: string) {
     const dateStr = `${day}${month}${year}`;
 
     return await prisma.$transaction(async (tx: any) => {
-        const hasTaxOrDisc = (Number(data.taxRate) || 0) > 0 || (Number(data.totalDiscount) || 0) > 0 || data.items.some((i: any) => (Number(i.discount) || 0) > 0);
+        // Use explicit flag from UI toggle if provided, fallback to value check
+        const hasTaxOrDisc = typeof data.hasTaxOrDisc === 'boolean' 
+            ? data.hasTaxOrDisc 
+            : ((Number(data.taxRate) || 0) > 0 || (Number(data.totalDiscount) || 0) > 0 || data.items.some((i: any) => (Number(i.discount) || 0) > 0));
+            
         const prefix = hasTaxOrDisc ? `KB-LPBD-${dateStr}-` : `KB-LPB-${dateStr}-`;
 
         const latest = await tx.goodsReceipt.findFirst({
@@ -79,8 +83,8 @@ export async function createGoodsReceiptService(data: any, userId: string) {
         const receipt = await tx.goodsReceipt.create({
             data: {
                 receiptNumber,
-                formNumber: data.formNumber,
-                receivedFrom: data.receivedFrom,
+                formNumber: data.formNumber || "",
+                receivedFrom: data.receivedFrom || "UMUM",
                 purchaseOrderId: data.purchaseOrderId,
                 warehouseId: data.warehouseId,
                 salesPerson: data.salesPerson,
