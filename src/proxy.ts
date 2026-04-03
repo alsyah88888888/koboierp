@@ -1,3 +1,4 @@
+import { NextResponse } from "next/server";
 /**
  * ACTION PROXY
  * This file breaks the Turbopack static dependency chain.
@@ -6,6 +7,16 @@
  */
 
 export async function callAction(actionName: string, ...args: any[]) {
+    // Safety check: If called as a middleware or with a Request object, just pass through.
+    if (actionName && typeof actionName === "object" && (actionName as any).url) {
+        return NextResponse.next();
+    }
+
+    if (typeof actionName !== "string") {
+        console.error("Invalid callAction invocation - actionName is not a string:", actionName);
+        console.trace("Call stack for invalid callAction:");
+        throw new Error(`Action name must be a string. Received: ${typeof actionName}`);
+    }
     switch (actionName) {
         // SALES
         case "createSalesDelivery":
@@ -143,6 +154,12 @@ export async function callAction(actionName: string, ...args: any[]) {
         case "createNotification":
             const { createNotificationAction } = await import("@/actions/system");
             return await createNotificationAction(...args as [any]);
+        case "getNotifications":
+            const { getNotificationsAction } = await import("@/actions/system");
+            return await getNotificationsAction();
+        case "deleteNotification":
+            const { deleteNotificationAction } = await import("@/actions/system");
+            return await deleteNotificationAction(...args as [string]);
 
 
         // USERS

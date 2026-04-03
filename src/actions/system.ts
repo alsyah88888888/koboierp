@@ -242,3 +242,13 @@ export async function fixReceiptPrefixMigrationAction() {
     }
 }
 
+export async function deleteNotificationAction(id: string) {
+    const prisma = getPrisma();
+    const session = (await getServerSession(getAuthOptions())) as any;
+    if (session?.user?.role !== 'ADMIN') throw new Error("Unauthorized");
+
+    await prisma.notification.delete({ where: { id } });
+    revalidatePath("/");
+    return { success: true };
+}
+
