@@ -291,6 +291,7 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
                         <div className="space-y-1.5 lg:space-y-0.5">
                             {items.map((item, index) => (
                                 <div key={index} className="grid grid-cols-1 lg:grid-cols-12 gap-2 lg:gap-3 px-3 py-2 lg:p-1.5 bg-white lg:bg-transparent lg:border-b border-slate-100 items-center group relative hover:bg-slate-50/50 transition-colors">
+                                    {/* Column 1-3: Product */}
                                     <div className="col-span-full lg:col-span-3 lg:flex lg:items-center">
                                         <label className="lg:hidden text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Product</label>
                                         <div className="relative w-full">
@@ -302,58 +303,66 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
                                                 placeholder="SKU"
                                                 required
                                             />
-                                            <span className="hidden lg:block text-[10px] text-slate-400 absolute left-3 -bottom-4 truncate max-w-[150px] font-bold opacity-0 group-hover:opacity-100 transition-opacity uppercase tracking-tighter bg-white px-1 border border-slate-100 rounded">{item.name || "Pilih Barang"}</span>
+                                            <span className="hidden lg:block text-[10px] text-slate-400 absolute left-3 -bottom-4 truncate max-w-[150px] font-bold opacity-0 group-hover:opacity-100 transition-opacity uppercase tracking-tighter bg-white px-1 border border-slate-100 rounded z-10">{item.name || "Pilih Barang"}</span>
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-4 lg:contents gap-2">
-                                        <div className="lg:col-span-1">
-                                            <input
-                                                value={item.uom}
-                                                onChange={e => updateItem(index, "uom", e.target.value)}
-                                                className="w-full bg-transparent border-none px-2 py-1.5 rounded-lg text-[11px] font-black text-center uppercase text-slate-500"
-                                            />
-                                        </div>
+                                    {/* Column 4: UOM */}
+                                    <div className="lg:col-span-1">
+                                        <label className="lg:hidden text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 block text-center">UOM</label>
+                                        <input
+                                            value={item.uom}
+                                            onChange={e => updateItem(index, "uom", e.target.value)}
+                                            className="w-full bg-transparent border-none px-2 py-1.5 rounded-lg text-[11px] font-black text-center uppercase text-slate-500"
+                                            readOnly
+                                        />
+                                    </div>
 
+                                    {/* Column 5: Qty */}
+                                    <div className="lg:col-span-1">
+                                        <label className="lg:hidden text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 block text-center">Qty</label>
+                                        <input
+                                            type="text"
+                                            value={item.quantity}
+                                            onChange={e => updateItem(index, "quantity", e.target.value)}
+                                            className="w-full bg-white border border-slate-200 lg:border-slate-100 px-2 py-1.5 rounded-lg lg:rounded-md text-[13px] font-black text-center focus:border-primary"
+                                            required
+                                        />
+                                    </div>
+
+                                    {/* Column 6-8: Price */}
+                                    <div className="lg:col-span-3">
+                                        <label className="lg:hidden text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 block text-right">Price</label>
+                                        <input
+                                            type="text"
+                                            value={item.purchasePrice}
+                                            onChange={e => updateItem(index, "purchasePrice", e.target.value)}
+                                            className="w-full bg-white border border-slate-200 lg:border-slate-100 px-3 py-1.5 rounded-lg lg:rounded-md text-[13px] font-black text-right focus:border-primary pr-4"
+                                            required
+                                        />
+                                    </div>
+
+                                    {/* Column 9: Discount (Optional) */}
+                                    {showDiscount && (
                                         <div className="lg:col-span-1">
+                                            <label className="lg:hidden text-[9px] font-black text-orange-400 uppercase tracking-widest mb-1 block text-right">Disc</label>
                                             <input
                                                 type="text"
-                                                value={item.quantity}
-                                                onChange={e => updateItem(index, "quantity", e.target.value)}
-                                                className="w-full bg-white border border-slate-200 lg:border-slate-100 px-2 py-1.5 rounded-lg lg:rounded-md text-[13px] font-black text-center focus:border-primary"
-                                                required
+                                                value={item.discount}
+                                                onChange={e => updateItem(index, "discount", e.target.value)}
+                                                className="w-full bg-orange-50 border border-orange-200 lg:border-orange-100 px-2 py-1.5 rounded-lg lg:rounded-md text-[12px] font-black text-right text-orange-600 focus:border-orange-400 pr-2"
                                             />
                                         </div>
+                                    )}
 
-                                        <div className="lg:col-span-3">
-                                            <input
-                                                type="text"
-                                                value={item.purchasePrice}
-                                                onChange={e => updateItem(index, "purchasePrice", e.target.value)}
-                                                className="w-full bg-white border border-slate-200 lg:border-slate-100 px-3 py-1.5 rounded-lg lg:rounded-md text-[13px] font-black text-right focus:border-primary pr-4"
-                                                required
-                                            />
-                                        </div>
-
-                                        {showDiscount && (
-                                            <div className="lg:col-span-1">
-                                                <input
-                                                    type="text"
-                                                    value={item.discount}
-                                                    onChange={e => updateItem(index, "discount", e.target.value)}
-                                                    className="w-full bg-orange-50 border border-orange-200 lg:border-orange-100 px-2 py-1.5 rounded-lg lg:rounded-md text-[12px] font-black text-right text-orange-600 focus:border-orange-400 pr-2"
-                                                />
-                                            </div>
-                                        )}
-
-                                        <div className={cn("lg:flex lg:items-center lg:justify-end pr-4", showDiscount ? "lg:col-span-2" : "lg:col-span-3")}>
-                                            <div className="w-full lg:w-auto text-[14px] font-black text-slate-800 text-right">
-                                                {formatCurrency((Number(item.quantity) || 0) * (Number(item.purchasePrice) || 0) - (Number(item.discount) || 0)).replace('Rp', '').trim()}
-                                            </div>
+                                    {/* Column 10-11/12: Subtotal */}
+                                    <div className={cn("hidden lg:flex lg:items-center lg:justify-end pr-4", showDiscount ? "lg:col-span-2" : "lg:col-span-3")}>
+                                        <div className="w-full lg:w-auto text-[14px] font-black text-slate-800 text-right">
+                                            {formatCurrency((Number(item.quantity) || 0) * (Number(item.purchasePrice) || 0) - (Number(item.discount) || 0)).replace('Rp', '').trim()}
                                         </div>
                                     </div>
 
-                                    {/* Action Button */}
+                                    {/* Column 12: Delete */}
                                     <div className="lg:col-span-1 flex justify-center">
                                         <button
                                             type="button"
