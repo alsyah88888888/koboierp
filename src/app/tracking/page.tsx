@@ -1,5 +1,5 @@
 import { getPrisma } from "@/lib/prisma";
-import { TrackingDashboard } from "./TrackingDashboard";
+import { TrackingDashboard } from "@/app/tracking/TrackingDashboard";
 import { serializeDecimal } from "@/lib/utils";
 import { headers } from "next/headers";
 import { getServerSession } from "next-auth/next";
