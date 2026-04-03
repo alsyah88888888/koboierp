@@ -6,7 +6,7 @@ import { format } from "date-fns";
 import SalesModal from "@/app/sales/SalesModal";
 import { useSession } from "next-auth/react";
 import { callAction } from "@/proxy";
-
+import { useDialog } from "@/components/ui/DialogProvider";
 import { cn } from "@/lib/utils";
 import { DashboardStats } from "../components/DashboardStats";
 import Link from "next/link";
@@ -27,6 +27,7 @@ interface SalesDashboardProps {
 }
 
 export default function SalesDashboard({ initialDeliveries, initialReceipts = [], initialReturns = [], products, warehouses, customers, salesExpenses = [] }: SalesDashboardProps) {
+    const { confirm, alert } = useDialog();
     const { data: session } = useSession() as any;
     const isAdmin = session?.user?.role?.toUpperCase() === "ADMIN";
     const userRole = session?.user?.role?.toUpperCase() || "";
@@ -70,24 +71,56 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
         window.print();
     };
     const handleDelete = async (id: string) => {
-        if (!confirm("Hapus pengiriman ini? Stok akan otomatis ditambahkan kembali dan jurnal akan dihapus.")) return;
+        const ok = await confirm({
+            title: "Hapus Penjualan?",
+            message: "Hapus pengiriman ini? Stok akan otomatis ditambahkan kembali dan jurnal akan dihapus secara permanen.",
+            confirmText: "Hapus Sekarang",
+            type: "danger",
+            hasCountdown: true
+        });
+        if (!ok) return;
+
         try {
             await callAction("deleteSalesDelivery", id);
-            alert("Pengiriman berhasil dihapus");
+            await alert({
+                title: "Berhasil",
+                message: "Data penjualan telah dihapus dan stok telah diperbarui.",
+                type: "success"
+            });
             window.location.reload();
-        } catch (e) {
-            alert("Gagal menghapus pengiriman");
+        } catch (e: any) {
+            await alert({
+                title: "Gagal Menghapus",
+                message: e.message || "Gagal menghapus pengiriman. Silakan hubungi admin.",
+                type: "danger"
+            });
         }
     };
 
     const handleDeleteReturn = async (id: string) => {
-        if (!confirm("Hapus retur ini? Stok akan dikurangi kembali (revert).")) return;
+        const ok = await confirm({
+            title: "Hapus Retur Penjualan?",
+            message: "Hapus retur ini? Stok akan dikurangi kembali (revert) secara otomatis.",
+            confirmText: "Hapus Sekarang",
+            type: "danger",
+            hasCountdown: true
+        });
+        if (!ok) return;
+
         try {
             await callAction("deleteSalesReturn", id);
-            alert("Retur berhasil dihapus");
+            await alert({
+                title: "Berhasil",
+                message: "Data retur penjualan telah dihapus.",
+                type: "success"
+            });
             window.location.reload();
         } catch (e: any) {
-            alert(e.message || "Gagal menghapus retur");
+            await alert({
+                title: "Gagal Menghapus",
+                message: e.message || "Gagal menghapus retur.",
+                type: "danger"
+            });
         }
     };
 

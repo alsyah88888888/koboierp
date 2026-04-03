@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { X, Save, Plus, Trash2, Tag, ShoppingCart, Loader2, FileCheck, Check, Search, AlertCircle, Wand2 } from "lucide-react";
 import { callAction } from "@/proxy";
 import { cn } from "@/lib/utils";
+import { useDialog } from "@/components/ui/DialogProvider";
 
 const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -14,6 +15,7 @@ const formatCurrency = (amount: number) => {
 };
 
 export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors, products }: any) {
+    const { prompt } = useDialog();
     const [receivedFrom, setReceivedFrom] = useState(initialData?.receivedFrom || "");
     const [formNumber, setFormNumber] = useState(initialData?.formNumber || "");
     const [date, setDate] = useState(initialData?.date ? new Date(initialData.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
@@ -467,9 +469,14 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
                                                 Diskon Akhir
                                                 <button 
                                                     type="button"
-                                                    onClick={() => {
-                                                        const p = prompt("Percentage %?");
-                                                        if(p) setTotalDiscountPercent(p);
+                                                    onClick={async () => {
+                                                        const p = await prompt({
+                                                            title: "Diskon Persentase",
+                                                            message: "Masukkan nilai persentase diskon untuk seluruh transaksi ini:",
+                                                            defaultValue: totalDiscountPercent || "0",
+                                                            showSlider: true
+                                                        });
+                                                        if(p !== null) setTotalDiscountPercent(p);
                                                     }}
                                                     className="bg-orange-500/10 text-orange-600 hover:bg-orange-500 hover:text-white px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-tighter transition-all border border-orange-500/20"
                                                 >

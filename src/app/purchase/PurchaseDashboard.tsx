@@ -8,6 +8,7 @@ import { ReceiptModal } from "./ReceiptModal";
 import { cn } from "@/lib/utils";
 import { useSession } from "next-auth/react";
 import { callAction } from "@/proxy";
+import { useDialog } from "@/components/ui/DialogProvider";
 
 import { DashboardStats } from "../components/DashboardStats";
 import Link from "next/link";
@@ -24,6 +25,7 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
     warehouses: any[],
     vendors: any[]
 }) {
+    const { confirm, alert } = useDialog();
     const { data: session } = useSession() as any;
     const isAdmin = session?.user?.role === "ADMIN";
     const userRole = session?.user?.role || "";
@@ -50,24 +52,54 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
     const [showProductModal, setShowProductModal] = useState(false);
 
     const handleDelete = async (id: string) => {
-        if (!confirm("Hapus penerimaan ini? Stok akan otomatis dikurangi kembali dan jurnal akan dihapus.")) return;
+        const ok = await confirm({
+            title: "Hapus Penerimaan?",
+            message: "Hapus penerimaan ini? Stok akan otomatis dikurangi kembali dan jurnal akan dihapus secara permanen.",
+            confirmText: "Hapus Sekarang",
+            type: "danger",
+            hasCountdown: true
+        });
+        if (!ok) return;
+
         try {
             await callAction("deleteGoodsReceipt", id);
-            alert("Penerimaan berhasil dihapus");
-        } catch (e) {
-
-            alert("Gagal menghapus penerimaan");
+            await alert({
+                title: "Berhasil",
+                message: "Penerimaan barang telah dihapus dari sistem.",
+                type: "success"
+            });
+        } catch (e: any) {
+            await alert({
+                title: "Gagal Menghapus",
+                message: e.message || "Gagal menghapus penerimaan. Silakan cek koneksi atau hubungi admin.",
+                type: "danger"
+            });
         }
     };
 
     const handleDeleteReturn = async (id: string) => {
-        if (!confirm("Hapus retur ini? Stok akan dikembalikan (revert) dan dampak finansial akan dibatalkan.")) return;
+        const ok = await confirm({
+            title: "Hapus Retur?",
+            message: "Hapus retur ini? Stok akan dikembalikan (revert) dan dampak finansial akan dibatalkan secara permanen.",
+            confirmText: "Hapus Sekarang",
+            type: "danger",
+            hasCountdown: true
+        });
+        if (!ok) return;
+
         try {
             await callAction("deletePurchaseReturn", id);
-            alert("Retur berhasil dihapus");
+            await alert({
+                title: "Berhasil",
+                message: "Data retur pembelian telah dihapus.",
+                type: "success"
+            });
         } catch (e: any) {
-
-            alert(e.message || "Gagal menghapus retur");
+            await alert({
+                title: "Gagal Menghapus",
+                message: e.message || "Gagal menghapus retur. Silakan cek koneksi.",
+                type: "danger"
+            });
         }
     };
 

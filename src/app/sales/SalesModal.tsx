@@ -4,6 +4,7 @@ import { X, Plus, Trash2, Loader2, Save, Tag, ShoppingCart } from "lucide-react"
 import { callAction } from "@/proxy";
 
 import { formatCurrency, cn } from "@/lib/utils";
+import { useDialog } from "@/components/ui/DialogProvider";
 import { useMemo } from "react";
 
 interface SalesItem {
@@ -18,6 +19,7 @@ interface SalesItem {
 }
 
 export default function SalesModal({ products, warehouses, customers, onClose, initialData }: { products: any[], warehouses: any[], customers: any[], onClose: () => void, initialData?: any }) {
+    const { prompt } = useDialog();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
@@ -483,9 +485,14 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                                 Diskon Global
                                                 <span 
                                                     className="text-[9px] lowercase opacity-50 cursor-pointer"
-                                                    onClick={() => {
-                                                        const p = prompt("Percentage?");
-                                                        if(p) setTotalDiscountPercent(p);
+                                                    onClick={async () => {
+                                                        const p = await prompt({
+                                                            title: "Diskon Persentase",
+                                                            message: "Masukkan nilai persentase diskon untuk paket penjualan ini:",
+                                                            defaultValue: String(totalDiscountPercent) || "0",
+                                                            showSlider: true
+                                                        });
+                                                        if(p !== null) setTotalDiscountPercent(p);
                                                     }}
                                                 >
                                                     {totalDiscountPercent ? `${totalDiscountPercent}%` : "set freq"}

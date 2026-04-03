@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { Toaster } from "react-hot-toast";
 import { SidebarProvider } from "./SidebarContext";
+import { DialogProvider } from "../ui/DialogProvider";
 
 import { Session } from "next-auth";
 
@@ -15,8 +16,10 @@ export function Providers({ children, session }: { children: React.ReactNode, se
     return (
         <SessionProvider session={session}>
             <SidebarProvider>
-                {children}
-                <Toaster position="bottom-right" />
+                <DialogProvider>
+                    {children}
+                    <Toaster position="bottom-right" />
+                </DialogProvider>
             </SidebarProvider>
         </SessionProvider>
     );
