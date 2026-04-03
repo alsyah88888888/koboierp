@@ -149,373 +149,313 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
     }
 
     return (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
-            <div className="bg-white shadow-2xl rounded-[2rem] w-full max-w-7xl h-auto max-h-[92vh] min-h-[400px] overflow-hidden flex flex-col border border-slate-200/50">
-                <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 shrink-0">
-                    <div className="pr-4">
-                        <h2 className="text-lg md:text-2xl font-bold text-slate-900 leading-tight">{initialData ? "Edit Pembelian" : "Input Pembelian"}</h2>
-                        <p className="text-[10px] md:text-sm text-slate-500 font-medium mt-0.5">{initialData ? `Mengedit ${initialData.formNumber}` : "Lengkapi detail faktur, sales, dan rincian barang."}</p>
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md z-[100] flex items-start justify-center p-2 sm:p-4 overflow-y-auto custom-scrollbar">
+            <div className="bg-white shadow-2xl rounded-3xl w-full max-w-7xl h-auto max-h-[90vh] min-h-[400px] overflow-hidden flex flex-col border border-slate-200 mt-4 sm:mt-10 mb-4 animate-in fade-in zoom-in duration-300">
+                {/* Unified Header */}
+                <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
+                    <div className="flex items-center gap-5">
+                        <div className="p-3.5 bg-primary text-white rounded-2xl shadow-xl shadow-primary/20">
+                            <ShoppingCart className="h-6 w-6" />
+                        </div>
+                        <div>
+                            <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">
+                                {initialData ? "Update Penerimaan" : "Input Penerimaan Barang"}
+                            </h2>
+                            <div className="flex items-center gap-2 mt-1">
+                                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Inventory & Goods Receipt</span>
+                                <span className="h-1 w-1 bg-slate-300 rounded-full"></span>
+                                <span className="text-[10px] text-primary font-black uppercase tracking-widest">Premium ERP v2.0</span>
+                            </div>
+                        </div>
                     </div>
-                    <button onClick={onClose} className="p-2 hover:bg-slate-200 rounded-full transition-colors border border-slate-200 bg-white shrink-0">
-                        <X className="h-5 w-5 md:h-6 md:w-6 text-slate-600" />
+                    <button onClick={onClose} className="p-3 hover:bg-slate-50 rounded-2xl transition-all text-slate-400 hover:text-slate-900 group">
+                        <X className="h-6 w-6 group-hover:rotate-90 transition-transform duration-300" />
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-4 md:p-6 lg:p-8 overflow-y-auto space-y-6 bg-white custom-scrollbar">
-                    {/* Header Section */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 bg-slate-50 p-4 md:p-5 rounded-xl border-2 border-slate-200">
-                        <div className="space-y-2">
-                            <label htmlFor="vendor-input" className="text-xs font-bold uppercase text-slate-600 cursor-pointer">Terima Dari (Supplier)</label>
-                            <input
-                                id="vendor-input"
-                                name="vendor"
-                                list="supplier-list"
-                                value={receivedFrom}
-                                onChange={e => setReceivedFrom(e.target.value)}
-                                className="w-full p-2.5 bg-white border-2 border-slate-300 rounded-lg focus:border-primary outline-none transition-all font-medium"
-                                placeholder="Ketik/Pilih Supplier..."
-                                required
-                            />
-                            <datalist id="supplier-list">
-                                {Array.isArray(vendors) && vendors.map(v => <option key={v.id} value={v.name} />)}
-                            </datalist>
-                        </div>
-                        <div className="space-y-2">
-                            <label htmlFor="receipt-num" className="text-xs font-bold uppercase text-slate-600 cursor-pointer">No. Surat Jalan / Terima</label>
-                            <input
-                                id="receipt-num"
-                                name="receiptNumber"
-                                value={receiptNumber}
-                                onChange={e => setReceiptNumber(e.target.value)}
-                                className="w-full p-2.5 bg-white border-2 border-slate-300 rounded-lg focus:border-primary outline-none transition-all font-medium"
-                                placeholder={`Otomatis (${(showDiscount || Number(taxRate) > 0) ? "KB-LPBD" : "KB-LPB"}-...)`}
-                            />
-                            <p className="text-[10px] text-slate-400 italic mt-0.5">
-                                Format: <span className="font-bold text-primary">{(showDiscount || Number(taxRate) > 0) ? "KB-LPBD" : "KB-LPB"} ({(showDiscount || Number(taxRate) > 0) ? "Diskon/PPN Aktif" : "Tanpa Diskon/PPN"})</span>
-                            </p>
-                        </div>
-                        <div className="space-y-2">
-                            <label htmlFor="receipt-date" className="text-xs font-bold uppercase text-slate-600 cursor-pointer">Tanggal Penerimaan</label>
-                            <input
-                                id="receipt-date"
-                                name="date"
-                                type="date"
-                                value={date}
-                                onChange={e => setDate(e.target.value)}
-                                className="w-full p-2.5 bg-white border-2 border-slate-300 rounded-lg focus:border-primary outline-none transition-all font-medium"
-                                required
-                            />
-                        </div>
-
-                        <div className="space-y-4 md:col-span-2 bg-white p-4 rounded-xl border-2 border-slate-200">
-                            <div className="flex items-center justify-between">
-                                <label htmlFor="tax-toggle" className="text-sm font-bold text-slate-700 cursor-pointer">Gunakan Faktur Pajak?</label>
-                                <label className="relative inline-flex items-center cursor-pointer">
+                <form onSubmit={handleSubmit} className="flex-1 overflow-hidden flex flex-col lg:flex-row bg-slate-50/30">
+                    {/* Left Side: Inputs & Items */}
+                    <div className="flex-1 overflow-y-auto p-4 lg:p-6 custom-scrollbar space-y-4">
+                        {/* Compact Logistics Header */}
+                        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Terima Dari (Supplier)</label>
                                     <input
-                                        id="tax-toggle"
-                                        type="checkbox"
-                                        className="sr-only peer"
-                                        checked={hasTaxInvoice}
-                                        onChange={(e) => {
-                                            setHasTaxInvoice(e.target.checked);
-                                            if (!e.target.checked) {
-                                                setTaxInvoiceNumber("");
-                                                setTaxInvoiceDate("");
-                                            }
-                                        }}
+                                        list="supplier-list"
+                                        value={receivedFrom}
+                                        onChange={e => setReceivedFrom(e.target.value)}
+                                        className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg text-sm font-bold focus:border-primary outline-none"
+                                        placeholder="Ketik/Pilih Supplier..."
+                                        required
                                     />
-                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                                </label>
-                            </div>
-
-                            <div className={`grid grid-cols-1 sm:grid-cols-2 gap-4 transition-all duration-300 overflow-hidden ${hasTaxInvoice ? 'h-auto opacity-100 mt-4' : 'h-0 opacity-0 m-0'}`}>
-                                <div className="space-y-2">
-                                    <label htmlFor="tax-inv-num" className="text-xs font-bold uppercase text-slate-600 cursor-pointer">Nomor Faktur Pajak</label>
-                                    <input
-                                        id="tax-inv-num"
-                                        name="taxInvoiceNumber"
-                                        value={taxInvoiceNumber}
-                                        onChange={e => setTaxInvoiceNumber(e.target.value)}
-                                        className="w-full p-2.5 bg-slate-50 border-2 border-slate-300 rounded-lg focus:border-primary outline-none transition-all font-medium"
-                                        placeholder="000.000-00.00000000"
-                                        disabled={!hasTaxInvoice}
-                                    />
+                                    <datalist id="supplier-list">
+                                        {Array.isArray(vendors) && vendors.map((v: any) => <option key={v.id} value={v.name} />)}
+                                    </datalist>
                                 </div>
-                                <div className="space-y-2">
-                                    <label htmlFor="tax-inv-date" className="text-xs font-bold uppercase text-slate-600 cursor-pointer">Tgl Faktur Pajak</label>
-                                    <input
-                                        id="tax-inv-date"
-                                        name="taxInvoiceDate"
-                                        type="date"
-                                        value={taxInvoiceDate}
-                                        onChange={e => setTaxInvoiceDate(e.target.value)}
-                                        className="w-full p-2.5 bg-slate-50 border-2 border-slate-300 rounded-lg focus:border-primary outline-none transition-all font-medium"
-                                        disabled={!hasTaxInvoice}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                        <div className="space-y-2">
-                            <label htmlFor="sales-pic" className="text-xs font-bold uppercase text-slate-600 cursor-pointer">Sales / PIC</label>
-                            <select
-                                id="sales-pic"
-                                name="salesPerson"
-                                value={salesPerson}
-                                onChange={e => setSalesPerson(e.target.value)}
-                                className="w-full p-2.5 bg-white border-2 border-slate-300 rounded-lg focus:border-primary outline-none transition-all font-medium"
-                            >
-                                <option value="">Pilih Sales...</option>
-                                <option value="BC">BC (Business Consultant)</option>
-                                <option value="PF">PF (Project Finance)</option>
-                            </select>
-                        </div>
 
-                        <div className="space-y-2 md:col-span-3 border-t pt-4">
-                            <label htmlFor="target-warehouse" className="text-xs font-bold uppercase text-slate-600 cursor-pointer">Gudang Tujuan</label>
-                            <select
-                                id="target-warehouse"
-                                name="warehouseId"
-                                value={warehouseId}
-                                onChange={e => setWarehouseId(e.target.value)}
-                                className="w-full p-2.5 bg-white border-2 border-slate-300 rounded-lg focus:border-primary outline-none transition-all font-medium"
-                                required
-                            >
-                                <option value="">Pilih Gudang Utama...</option>
-                                {Array.isArray(warehouses) && warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
-                            </select>
-                        </div>
-                    </div>
-
-                    {/* Body Section (Items) */}
-                    <div className="space-y-4">
-                        <div className="flex justify-between items-center border-b-2 border-slate-100 pb-2">
-                            <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                                <Tag className="h-5 w-5 text-primary" /> Detail Barang & Harga {initialData && "(Edit)"}
-                            </h3>
-                            <div className="flex items-center gap-4">
-                                <label className="flex items-center gap-2 cursor-pointer group">
-                                    <div className={`w-10 h-5 rounded-full relative transition-colors ${showDiscount ? "bg-orange-500" : "bg-slate-300"}`}>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">No. SJ / Tgl Terima</label>
+                                    <div className="flex gap-2">
                                         <input
-                                            type="checkbox"
-                                            className="sr-only"
-                                            checked={showDiscount}
-                                            onChange={e => setShowDiscount(e.target.checked)}
+                                            value={receiptNumber}
+                                            onChange={e => setReceiptNumber(e.target.value)}
+                                            placeholder="No. SJ (Auto-ID)"
+                                            className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg text-sm font-bold focus:border-primary outline-none"
                                         />
-                                        <div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-all ${showDiscount ? "left-6" : "left-1"}`} />
+                                        <input
+                                            type="date"
+                                            value={date}
+                                            onChange={e => setDate(e.target.value)}
+                                            className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg text-xs font-bold focus:border-primary outline-none"
+                                            required
+                                        />
                                     </div>
-                                    <span className="text-xs font-bold text-slate-600 group-hover:text-primary transition-colors">Aktifkan Diskon/Pajak</span>
-                                </label>
-                                <button
-                                    type="button"
-                                    onClick={addItem}
-                                    className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100 font-bold transition-all border-2 border-emerald-200"
+                                </div>
+
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Warehouse & PIC</label>
+                                    <div className="flex gap-2">
+                                        <select value={warehouseId} onChange={e => setWarehouseId(e.target.value)} className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg text-xs font-bold" required>
+                                            <option value="">Gudang</option>
+                                            {Array.isArray(warehouses) && warehouses.map((w: any) => <option key={w.id} value={w.id}>{w.name}</option>)}
+                                        </select>
+                                        <select value={salesPerson} onChange={e => setSalesPerson(e.target.value)} className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg text-xs font-bold">
+                                            <option value="">Pilih</option>
+                                            <option value="BC">BC</option>
+                                            <option value="PF">PF</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1 flex justify-between">
+                                        Faktur Pajak
+                                        <span className="text-primary hover:underline lowercase cursor-pointer" onClick={() => setHasTaxInvoice(!hasTaxInvoice)}>
+                                            {hasTaxInvoice ? "off" : "on"}
+                                        </span>
+                                    </label>
+                                    <div className="flex gap-2">
+                                        <input
+                                            value={taxInvoiceNumber}
+                                            onChange={e => setTaxInvoiceNumber(e.target.value)}
+                                            placeholder="No. Faktur Pajak"
+                                            className={cn("flex-1 bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg text-[11px] outline-none", !hasTaxInvoice && "opacity-30 pointer-events-none")}
+                                        />
+                                        <input
+                                            type="date"
+                                            value={taxInvoiceDate}
+                                            onChange={e => setTaxInvoiceDate(e.target.value)}
+                                            className={cn("w-24 bg-slate-50 border border-slate-200 px-2 py-2 rounded-lg text-[10px] outline-none", !hasTaxInvoice && "opacity-30 pointer-events-none")}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Items Section Header */}
+                        <div className="flex justify-between items-center px-1">
+                            <div className="flex items-center gap-2">
+                                <span className="bg-primary text-white h-5 w-5 rounded-full flex items-center justify-center text-[10px] font-black">2</span>
+                                <h3 className="font-black text-slate-800 tracking-tight uppercase text-xs">Daftar Barang Masuk</h3>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button type="button" onClick={addItem} className="bg-primary text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider hover:bg-slate-900 transition-all flex items-center gap-1.5">
+                                    <Plus className="h-3.5 w-3.5" /> Item Baru
+                                </button>
+                                <button 
+                                    type="button" 
+                                    onClick={() => setShowDiscount(!showDiscount)} 
+                                    className={cn(
+                                        "px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider border transition-all flex items-center gap-1.5",
+                                        showDiscount ? "bg-orange-600 border-orange-600 text-white" : "bg-white border-slate-200 text-slate-500 hover:border-orange-400"
+                                    )}
                                 >
-                                    <Plus className="h-4 w-4" /> Tambah Barang
+                                    <Tag className="h-3.5 w-3.5" /> Item Disc/Tax
                                 </button>
                             </div>
                         </div>
 
-                        <div className="space-y-4">
+                        {/* Sticky Items Header (Desktop Only) */}
+                        <div className="hidden lg:grid grid-cols-12 gap-3 px-4 py-2 bg-slate-200/50 rounded-xl text-[10px] font-black uppercase text-slate-500 tracking-widest border border-slate-200">
+                            <div className="col-span-5">Product SKU / Name</div>
+                            <div className="col-span-1 text-center">UOM</div>
+                            <div className="col-span-1 text-center">Qty</div>
+                            <div className="col-span-2 text-right">Unit Price</div>
+                            {showDiscount && <div className="col-span-1 text-right">Disc</div>}
+                            <div className={cn(showDiscount ? "col-span-2" : "col-span-3", "text-right")}>Subtotal</div>
+                        </div>
+
+                        {/* Item Rows */}
+                        <div className="space-y-2 lg:space-y-1">
                             {items.map((item, index) => (
-                                <div key={index} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-12 gap-4 p-4 bg-slate-50 rounded-xl border-2 border-slate-200 relative group hover:border-primary/30 transition-all items-end">
-                                    <div className="sm:col-span-2 lg:col-span-1 xl:col-span-3 space-y-1 text-left">
-                                        <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">SKU / Nama Barang</label>
-                                        <div className="relative">
-                                            <input
-                                                list={`product-list-${index}`}
-                                                value={item.sku}
-                                                onChange={e => updateItem(index, 'sku', e.target.value)}
-                                                className="w-full p-2.5 bg-white border-2 border-slate-300 rounded-lg focus:border-primary outline-none transition-all font-bold pr-10"
-                                                placeholder="Ketik SKU..."
-                                                required
-                                            />
-                                            <Search className="absolute right-3 top-3 h-4 w-4 text-slate-400" />
-                                        </div>
+                                <div key={index} className="grid grid-cols-1 lg:grid-cols-12 gap-2 lg:gap-3 p-3 lg:p-2 bg-white lg:bg-transparent lg:border-b border-slate-100 rounded-xl lg:rounded-none items-center group relative animate-fade-up">
+                                    <div className="col-span-full lg:col-span-5 lg:flex lg:items-center">
+                                        <label className="lg:hidden text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Product</label>
+                                        <input
+                                            list={`product-list-${index}`}
+                                            value={item.sku}
+                                            onChange={e => updateItem(index, 'sku', e.target.value)}
+                                            className="w-full lg:bg-white border border-slate-200 lg:border-slate-100 px-3 py-1.5 rounded-lg lg:rounded-md text-[13px] font-bold outline-none focus:border-primary focus:bg-white"
+                                            placeholder="SKU"
+                                            required
+                                        />
                                         <datalist id={`product-list-${index}`}>
                                             {Array.isArray(products) && products.map(p => <option key={p.id} value={p.sku}>{p.name}</option>)}
                                         </datalist>
-                                        <p className="text-[10px] text-slate-400 mt-1 truncate pl-1 font-medium">{item.name || "Belum memilih barang"}</p>
+                                        <span className="hidden lg:block text-[11px] text-slate-400 ml-2 truncate max-w-[150px] font-medium">{item.name}</span>
                                     </div>
 
-                                    <div className="xl:col-span-2 space-y-1">
-                                        <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Quantity</label>
-                                        <div className="flex items-center bg-white border-2 border-slate-300 rounded-lg overflow-hidden focus-within:border-primary transition-all">
+                                    <div className="grid grid-cols-4 lg:contents gap-2">
+                                        <div className="lg:col-span-1">
+                                            <label className="lg:hidden text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 block text-center">UOM</label>
+                                            <input
+                                                value={item.uom}
+                                                onChange={e => updateItem(index, "uom", e.target.value)}
+                                                className="w-full lg:bg-transparent lg:border-none px-2 py-1.5 rounded-lg text-[11px] font-bold text-center uppercase"
+                                            />
+                                        </div>
+
+                                        <div className="lg:col-span-1">
+                                            <label className="lg:hidden text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 block text-center">Qty</label>
                                             <input
                                                 type="text"
                                                 value={item.quantity}
-                                                onChange={e => updateItem(index, 'quantity', e.target.value)}
-                                                className="w-full p-2.5 outline-none font-black text-center"
+                                                onChange={e => updateItem(index, "quantity", e.target.value)}
+                                                className="w-full lg:bg-white border border-slate-200 lg:border-slate-100 px-2 py-1.5 rounded-lg lg:rounded-md text-[13px] font-black text-center"
                                                 required
                                             />
-                                            <span className="bg-slate-100 px-2 py-2.5 text-[10px] font-black text-slate-500 border-l border-slate-200">{item.uom}</span>
                                         </div>
-                                    </div>
 
-                                    <div className="xl:col-span-2 space-y-1">
-                                        <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Harga Beli (DPP)</label>
-                                        <div className="relative">
-                                            <span className="absolute left-3 top-3 text-xs font-bold text-slate-400">Rp</span>
+                                        <div className="lg:col-span-2">
+                                            <label className="lg:hidden text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 block text-right">Price</label>
                                             <input
                                                 type="text"
                                                 value={item.purchasePrice}
-                                                onChange={e => updateItem(index, 'purchasePrice', e.target.value)}
-                                                className="w-full p-2.5 bg-white border-2 border-slate-300 rounded-lg focus:border-primary outline-none transition-all font-black pl-8 text-right"
+                                                onChange={e => updateItem(index, "purchasePrice", e.target.value)}
+                                                className="w-full lg:bg-white border border-slate-200 lg:border-slate-100 px-2 py-1.5 rounded-lg lg:rounded-md text-[12px] font-black text-right"
                                                 required
                                             />
                                         </div>
-                                    </div>
 
-                                    {showDiscount && (
-                                        <div className="xl:col-span-2 space-y-1">
-                                            <label className="text-[10px] font-bold text-orange-600 uppercase ml-1">Potongan (Disc)</label>
-                                            <div className="relative">
-                                                <span className="absolute left-3 top-3 text-xs font-bold text-orange-400">Rp</span>
+                                        {showDiscount && (
+                                            <div className="lg:col-span-1">
+                                                <label className="lg:hidden text-[9px] font-black text-orange-400 uppercase tracking-widest mb-1 block text-right">Disc</label>
                                                 <input
                                                     type="text"
                                                     value={item.discount}
-                                                    onChange={e => updateItem(index, 'discount', e.target.value)}
-                                                    className="w-full p-2.5 bg-orange-50 border-2 border-orange-200 rounded-lg focus:border-orange-500 outline-none transition-all font-black pl-8 text-right text-orange-600"
+                                                    onChange={e => updateItem(index, "discount", e.target.value)}
+                                                    className="w-full lg:bg-orange-50 border border-orange-200 lg:border-orange-100 px-2 py-1.5 rounded-lg lg:rounded-md text-[12px] font-black text-right text-orange-600"
                                                 />
                                             </div>
-                                        </div>
-                                    )}
+                                        )}
 
-                                    <div className={cn("space-y-1", showDiscount ? "xl:col-span-2" : "xl:col-span-4")}>
-                                        <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Subtotal</label>
-                                        <div className="w-full p-2.5 bg-slate-200 border-2 border-slate-300 rounded-lg font-black text-right text-slate-700 h-[46px] flex items-center justify-end">
-                                            {formatCurrency((Number(item.quantity) || 0) * (Number(item.purchasePrice) || 0) - (Number(item.discount) || 0)).replace('Rp', '').trim()}
+                                        <div className={cn("lg:flex lg:items-center lg:justify-end", showDiscount ? "lg:col-span-2" : "lg:col-span-3")}>
+                                            <label className="lg:hidden text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 block text-right">Subtotal</label>
+                                            <div className="w-full lg:w-auto text-[13px] font-black text-slate-800 text-right lg:pr-2">
+                                                {formatCurrency((Number(item.quantity) || 0) * (Number(item.purchasePrice) || 0) - (Number(item.discount) || 0)).replace('Rp', '').trim()}
+                                            </div>
                                         </div>
                                     </div>
 
-                                    {items.length > 1 && (
-                                        <div className="xl:col-span-1 flex justify-center pb-1">
-                                            <button
-                                                type="button"
-                                                onClick={() => removeItem(index)}
-                                                className="p-3 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
-                                            >
-                                                <Trash2 className="h-6 w-6" />
-                                            </button>
-                                        </div>
-                                    )}
+                                    {/* Action Button */}
+                                    <button
+                                        type="button"
+                                        onClick={() => removeItem(index)}
+                                        className="absolute -top-1 -right-1 lg:static lg:col-span-1 p-2 bg-white lg:bg-transparent border border-rose-100 lg:border-none rounded-full text-rose-300 hover:text-rose-600 hover:bg-rose-50 transition-all opacity-0 group-hover:opacity-100"
+                                        disabled={items.length === 1}
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </button>
                                 </div>
                             ))}
                         </div>
+                        {error && (
+                            <div className="p-3 bg-rose-50 border border-rose-100 rounded-xl text-rose-600 text-[10px] font-black uppercase flex items-center gap-3 animate-fade-up">
+                                <div className="h-1.5 w-1.5 bg-rose-500 rounded-full animate-ping"></div>
+                                {error}
+                            </div>
+                        )}
                     </div>
 
-                    {/* Footer Summary Section */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 pt-4">
-                        <div className="space-y-4">
-                            <div className="bg-slate-50 p-6 rounded-2xl border-2 border-slate-200 space-y-4">
-                                <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest border-b pb-2 flex items-center gap-2">
-                                    <AlertCircle className="h-4 w-4" /> Biaya Lain / Diskon Final
-                                </h4>
-                                <div className="flex gap-4">
-                                    <div className="w-24">
-                                        <label htmlFor="total-disc-pct" className="text-[10px] font-bold text-slate-500 uppercase ml-1 cursor-pointer">Disc %</label>
+                    {/* Right Side: Financial Summary (Desktop Sidebar) */}
+                    <div className="w-full lg:w-80 p-4 lg:p-6 bg-slate-900 text-white flex flex-col justify-between relative overflow-hidden shrink-0 shadow-2xl">
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2"></div>
+                        
+                        <div className="relative z-10 space-y-6">
+                            <div className="space-y-4">
+                                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-500 border-b border-white/5 pb-2">Purchase Summary</h3>
+                                
+                                <div className="flex justify-between items-center">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase">Gross Subtotal</span>
+                                    <span className="text-sm font-bold">Rp {subtotal.toLocaleString('id-ID')}</span>
+                                </div>
+
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-bold text-orange-400 uppercase tracking-widest flex justify-between">
+                                        Total Discount
+                                        <span className="text-[9px] lowercase opacity-50 cursor-pointer" onClick={() => {
+                                            const p = prompt("Percentage %?");
+                                            if(p) setTotalDiscountPercent(p);
+                                        }}>
+                                            {totalDiscountPercent ? `${totalDiscountPercent}%` : "set %"}
+                                        </span>
+                                    </label>
+                                    <div className="flex items-center bg-white/5 border border-white/10 rounded-xl px-3 focus-within:border-orange-500/50 transition-all">
+                                        <span className="text-slate-500 font-bold mr-2 text-xs">Rp</span>
                                         <input
-                                            id="total-disc-pct"
-                                            name="totalDiscountPercent"
-                                            type="number"
-                                            step="0.01"
-                                            value={totalDiscountPercent}
-                                            onChange={e => {
-                                                const val = e.target.value;
-                                                setTotalDiscountPercent(val);
-                                                setTotalDiscount("");
-                                            }}
-                                            className="w-full bg-white border-2 border-slate-300 px-3 py-2 rounded-xl text-lg font-black text-primary outline-none focus:border-primary transition-all h-12 shadow-sm"
-                                            placeholder="0"
-                                        />
-                                    </div>
-                                    <div className="flex-1">
-                                        <label htmlFor="total-disc-rp" className="text-[10px] font-bold text-slate-500 uppercase ml-1 cursor-pointer">Diskon (Rp)</label>
-                                        <input
-                                            id="total-disc-rp"
-                                            name="totalDiscount"
                                             type="text"
                                             value={totalDiscount}
                                             onChange={e => {
-                                                const val = e.target.value.replace(/[^0-9,.]/g, '');
-                                                setTotalDiscount(val);
+                                                setTotalDiscount(e.target.value);
                                                 setTotalDiscountPercent("");
                                             }}
-                                            className="w-full bg-white border-2 border-slate-300 px-3 py-2 rounded-xl text-lg font-black text-primary outline-none focus:border-primary transition-all h-12 shadow-sm"
+                                            className="w-full bg-transparent py-2 text-sm font-black text-white outline-none"
                                             placeholder="0"
                                         />
                                     </div>
                                 </div>
-                                <div className="space-y-1 col-span-2 md:col-span-1 pl-0 md:pl-2">
-                                    <label htmlFor="tax-rate-select" className="text-[10px] font-bold text-slate-500 uppercase ml-1 cursor-pointer">Pajak PPN (%)</label>
-                                    <select
-                                        id="tax-rate-select"
-                                        name="taxRate"
-                                        value={taxRate}
+
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">Pajak PPN (%)</label>
+                                    <select 
+                                        value={taxRate} 
                                         onChange={e => setTaxRate(Number(e.target.value))}
-                                        className="w-full bg-white border-2 border-slate-300 px-3 py-2 rounded-xl text-lg font-black text-indigo-600 outline-none focus:border-indigo-500 transition-all h-12 shadow-sm"
+                                        className="w-full bg-white/5 border border-white/10 rounded-xl p-2 text-sm font-black focus:border-blue-500/50 outline-none"
                                     >
-                                        <option value={0}>0% (Tanpa PPN)</option>
-                                        <option value={11}>11% (PPN Standar)</option>
-                                        <option value={12}>12% (PPN 2025)</option>
+                                        <option value={0} className="text-slate-900">Non PPN (0%)</option>
+                                        <option value={11} className="text-slate-900">PPN 11%</option>
+                                        <option value={12} className="text-slate-900">PPN 12%</option>
                                     </select>
                                 </div>
                             </div>
+
+                            <div className="pt-6 border-t border-white/10">
+                                <label className="text-[10px] font-bold uppercase tracking-widest text-emerald-400">Total Pembayaran</label>
+                                <p className="text-3xl font-black text-emerald-400 tracking-tighter mt-1">{formatCurrency(grandTotal)}</p>
+                                <div className="flex items-center gap-2 mt-4 text-slate-500 text-[10px] font-bold uppercase">
+                                    <Check className="h-3 w-3" />
+                                    <span>{totalQty} Items being received</span>
+                                </div>
+                            </div>
                         </div>
 
-                        <div className="flex flex-col justify-center p-6 md:p-8 bg-slate-900 rounded-2xl md:rounded-[2.5rem] text-white border-2 border-slate-800 shadow-2xl relative overflow-hidden group">
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-primary/30 transition-all duration-700" />
-                            <div className="space-y-3 pb-4 border-b border-white/10 relative z-10">
-                                <div className="flex justify-between items-center text-[10px] md:text-xs font-bold text-slate-400">
-                                    <span>TOTAL QTY</span>
-                                    <span className="font-mono text-white tracking-widest">{totalQty.toLocaleString('id-ID')}</span>
-                                </div>
-                                <div className="flex justify-between items-center text-[10px] md:text-xs font-bold text-slate-400">
-                                    <span>SUBTOTAL ITEM (Netto)</span>
-                                    <span className="font-mono text-white tracking-widest">{formatCurrency(subtotal)}</span>
-                                </div>
-                                {showDiscount && (
+                        <div className="relative z-10 pt-8 mt-auto">
+                            <button
+                                onClick={handleSubmit}
+                                disabled={isSubmitting}
+                                className="w-full bg-primary text-white py-4 rounded-2xl font-black shadow-2xl shadow-primary/20 hover:bg-slate-800 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-3 group"
+                            >
+                                {isSubmitting ? (
+                                    <Loader2 className="h-5 w-5 animate-spin" />
+                                ) : (
                                     <>
-                                        <div className="flex justify-between items-center text-[10px] md:text-xs font-bold text-primary">
-                                            <span>DISKON FINAL</span>
-                                            <span className="font-mono font-black italic">- {formatCurrency(finalDiscountNominal)}</span>
-                                        </div>
+                                        <Save className="h-5 w-5 group-hover:scale-110 transition-transform" />
+                                        <span className="text-sm">SIMPAN TRANSAKSI</span>
                                     </>
                                 )}
-                                <div className="flex justify-between items-center text-[10px] md:text-xs font-bold text-indigo-400">
-                                    <span>PPN ({taxRate}%)</span>
-                                    <span className="font-mono tracking-widest">+ {formatCurrency(taxAmount)}</span>
-                                </div>
-                            </div>
-                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center pt-4 relative z-10 gap-4">
-                                <div>
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Grand Total Akhir</p>
-                                    <h4 className="text-3xl md:text-4xl font-black text-emerald-400 tracking-tighter drop-shadow-md">
-                                        {formatCurrency(grandTotal)}
-                                    </h4>
-                                </div>
-                                <div className="text-left md:text-right w-full md:w-auto border-t md:border-none pt-2 md:pt-0">
-                                    <span className="text-[10px] font-bold text-slate-500 block">Metode: API/Hutang</span>
-                                    <span className="text-[10px] md:text-xs font-bold text-primary italic uppercase tracking-tighter bg-primary/10 px-2 py-0.5 rounded mt-1 inline-block border border-primary/20">Checked by System</span>
-                                </div>
-                            </div>
+                            </button>
                         </div>
-                    </div>
-
-                    <div className="pt-6 md:pt-8 border-t-2 border-slate-100 flex flex-col md:flex-row justify-end gap-3 md:gap-4">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="w-full md:w-auto px-8 py-3 border-2 border-slate-300 rounded-xl hover:bg-slate-50 font-bold transition-all text-slate-600 shadow-sm order-2 md:order-1"
-                        >
-                            <span className="text-slate-600">Batal</span>
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={isSubmitting}
-                            className="w-full md:w-auto px-10 py-3 bg-primary text-white rounded-xl hover:bg-primary/90 flex items-center justify-center gap-2 font-bold shadow-xl shadow-primary/20 active:scale-95 disabled:opacity-50 transition-all border-2 border-primary order-1 md:order-2"
-                        >
-                            {isSubmitting ? "Memproses..." : <span className="text-white">{initialData ? "Simpan Perubahan" : "Simpan Penerimaan"}</span>}
-                        </button>
                     </div>
                 </form>
             </div>
