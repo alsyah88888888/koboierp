@@ -197,13 +197,30 @@ export async function updateGoodsReceiptService(id: string, data: any, userId: s
             });
         }
 
-        // 2. Update Header & Items
+        // 2. Determine if Prefix Needs Change
+        const hasTaxOrDisc = typeof data.hasTaxOrDisc === 'boolean' 
+            ? data.hasTaxOrDisc 
+            : ((Number(data.taxRate) || 0) > 0 || (Number(data.totalDiscount) || 0) > 0 || data.items.some((i: any) => (Number(i.discount) || 0) > 0));
+
+        let currentReceiptNumber = oldReceipt.receiptNumber;
+        const isCurrentlyDiscounted = currentReceiptNumber.startsWith("KB-LPBD-");
+        
+        if (hasTaxOrDisc && !isCurrentlyDiscounted) {
+            // Switch to KB-LPBD-
+            currentReceiptNumber = currentReceiptNumber.replace("KB-LPB-", "KB-LPBD-");
+        } else if (!hasTaxOrDisc && isCurrentlyDiscounted) {
+            // Switch to KB-LPB-
+            currentReceiptNumber = currentReceiptNumber.replace("KB-LPBD-", "KB-LPB-");
+        }
+
+        // 3. Update Header & Items
         await tx.goodsReceiptItem.deleteMany({ where: { receiptId: id } });
 
         const txDate = data.date || new Date();
         await tx.goodsReceipt.update({
             where: { id },
             data: {
+                receiptNumber: currentReceiptNumber,
                 formNumber: data.formNumber,
                 receivedFrom: data.receivedFrom,
                 purchaseOrderId: data.purchaseOrderId,
@@ -222,6 +239,14 @@ export async function updateGoodsReceiptService(id: string, data: any, userId: s
                 }
             }
         });
+
+        // 4. Update StockMovement References if Number Changed
+        if (currentReceiptNumber !== oldReceipt.receiptNumber) {
+            await tx.stockMovement.updateMany({
+                where: { reference: oldReceipt.receiptNumber },
+                data: { reference: currentReceiptNumber }
+            });
+        }
 
         // 3. Recalculate Totals (Reuse logic from create)
         let grossAmount = 0;
@@ -277,7 +302,7 @@ export async function updateGoodsReceiptService(id: string, data: any, userId: s
                     vendorName: vendorName,
                     quantity: item.quantity,
                     type: "PURCHASE_UPDATE",
-                    reference: oldReceipt.receiptNumber
+                    reference: currentReceiptNumber
                 }
             });
         }
