@@ -68,7 +68,7 @@ export default function SignInPage() {
                 {/* Brand Logo & Header */}
                 <div className="text-center mb-8 flex flex-col items-center">
                     <h1 className="text-3xl font-black text-slate-900 tracking-tight leading-tight uppercase">PT. Kola Borasi Indonesia</h1>
-                    <p className="text-slate-500 font-bold mt-2 uppercase tracking-[0.3em] text-[10px] bg-white border border-slate-100 px-4 py-1.5 rounded-full shadow-sm">ERP System v1.0</p>
+                    <p className="text-slate-500 font-bold mt-2 uppercase tracking-[0.3em] text-[10px] bg-white border border-slate-100 px-4 py-1.5 rounded-full shadow-sm">ERP System v3.0.0</p>
                 </div>
 
                 {/* Login Card */}
