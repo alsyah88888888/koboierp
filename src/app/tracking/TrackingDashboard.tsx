@@ -70,6 +70,15 @@ export function TrackingDashboard({ initialProducts, userEmail, userRole }: Trac
         exportToExcel(exportData, 'Item_Tracking_Export', 'Items');
     };
 
+    const getDocUrl = (record: any) => {
+        if (!record.parentId) return "#";
+        if (record.type === "PURCHASE") return `/purchase/print/${record.parentId}`;
+        if (record.type === "SALE") return `/sales/print/sj/${record.parentId}`;
+        if (record.type === "PURCHASE_RETURN") return `/purchase/print/invoice/${record.parentId}`;
+        if (record.type === "SALES_RETURN") return `/sales/print/sj/${record.parentId}`;
+        return "#";
+    };
+
     const handleProductClick = async (product: any) => {
         setSelectedProduct(product);
         setLoadingHistory(true);
@@ -390,13 +399,17 @@ export function TrackingDashboard({ initialProducts, userEmail, userRole }: Trac
                                                             <span className="text-[11px] font-bold truncate uppercase">{record.partner}</span>
                                                         </div>
                                                     </div>
-                                                    {userRole === "ADMIN" && (
-                                                        <button 
+                                                    {userRole === "ADMIN" && record.parentId && (
+                                                        <a 
+                                                            href={getDocUrl(record)}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
                                                             className="p-2 hover:bg-slate-100 rounded-xl text-slate-300 hover:text-primary transition-all active:scale-90"
                                                             title="View Document"
+                                                            onClick={(e) => e.stopPropagation()}
                                                         >
                                                             <ExternalLink className="h-4 w-4" />
-                                                        </button>
+                                                        </a>
                                                     )}
                                                 </div>
                                             </div>

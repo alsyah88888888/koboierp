@@ -120,6 +120,7 @@ export async function getProductTrackingService(productId: string, userId: strin
     receipts.forEach((item: any) => {
         history.push({
             id: item.id,
+            parentId: item.receipt.id,
             date: item.receipt.date || item.receipt.createdAt,
             type: "PURCHASE",
             ref: item.receipt.receiptNumber,
@@ -132,6 +133,7 @@ export async function getProductTrackingService(productId: string, userId: strin
     deliveries.forEach((item: any) => {
         history.push({
             id: item.id,
+            parentId: item.delivery.id,
             date: item.delivery.date || item.delivery.createdAt,
             type: "SALE",
             ref: item.delivery.deliveryNumber,
@@ -144,6 +146,7 @@ export async function getProductTrackingService(productId: string, userId: strin
     pReturns.forEach((item: any) => {
         history.push({
             id: item.id,
+            parentId: item.purchaseReturn.id,
             date: item.purchaseReturn.date || item.purchaseReturn.createdAt,
             type: "PURCHASE_RETURN",
             ref: item.purchaseReturn.returnNumber,
@@ -156,6 +159,7 @@ export async function getProductTrackingService(productId: string, userId: strin
     sReturns.forEach((item: any) => {
         history.push({
             id: item.id,
+            parentId: item.salesReturn.id,
             date: item.salesReturn.date || item.salesReturn.createdAt,
             type: "SALES_RETURN",
             ref: item.salesReturn.returnNumber,
