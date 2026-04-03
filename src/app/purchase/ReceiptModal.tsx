@@ -73,7 +73,9 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
         newItems[index][field] = value;
 
         if (field === 'sku') {
-            const product = products.find((p: any) => p.sku === value);
+            const lowerValue = value.toLowerCase().trim();
+            const product = products.find((p: any) => p.sku?.toLowerCase().trim() === lowerValue);
+            
             if (product) {
                 newItems[index].productId = product.id;
                 newItems[index].name = product.name;
@@ -82,6 +84,9 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
                 if (!newItems[index].purchasePrice || newItems[index].purchasePrice === "0") {
                     newItems[index].purchasePrice = (product.purchasePrice || 0).toString();
                 }
+            } else {
+                newItems[index].productId = "";
+                newItems[index].name = "";
             }
         }
         setItems(newItems);
@@ -93,6 +98,12 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
         setError("");
 
         try {
+            // Validation: Ensure all items have a productId
+            const invalidItems = items.filter(item => !item.productId);
+            if (invalidItems.length > 0) {
+                throw new Error(`Ada ${invalidItems.length} barang yang belum valid/terdaftar. Harap periksa SKU Anda.`);
+            }
+
             const data = {
                 receivedFrom,
                 formNumber,
@@ -303,7 +314,16 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
                                                 placeholder="SKU"
                                                 required
                                             />
-                                            <span className="hidden lg:block text-[10px] text-slate-400 absolute left-3 -bottom-4 truncate max-w-[150px] font-bold opacity-0 group-hover:opacity-100 transition-opacity uppercase tracking-tighter bg-white px-1 border border-slate-100 rounded z-10">{item.name || "Pilih Barang"}</span>
+                                            <datalist id={`product-list-${index}`}>
+                                                {Array.isArray(products) && products.map((p: any) => (
+                                                    <option key={p.id} value={p.sku}>{p.name}</option>
+                                                ))}
+                                            </datalist>
+                                            {item.sku && !item.productId ? (
+                                                <span className="text-[9px] text-rose-500 absolute left-3 -bottom-4 font-black uppercase tracking-tighter bg-white px-1 border border-rose-100 rounded z-10 animate-pulse">Barang Tidak Ditemukan</span>
+                                            ) : (
+                                                <span className="hidden lg:block text-[10px] text-slate-400 absolute left-3 -bottom-4 truncate max-w-[150px] font-bold opacity-0 group-hover:opacity-100 transition-opacity uppercase tracking-tighter bg-white px-1 border border-slate-100 rounded z-10">{item.name || "Pilih Barang"}</span>
+                                            )}
                                         </div>
                                     </div>
 
