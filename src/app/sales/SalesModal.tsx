@@ -212,7 +212,7 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
 
     return (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md z-[9999] flex items-center justify-center p-0 md:p-6">
-            <div className="bg-white shadow-2xl rounded-none md:rounded-[2.5rem] w-full max-w-7xl h-full md:max-h-[88vh] overflow-hidden flex flex-col border border-slate-200/50 animate-fade-up">
+            <div className="bg-white shadow-2xl rounded-none md:rounded-[2.5rem] w-full max-w-5xl h-full md:max-h-[88vh] overflow-hidden flex flex-col border border-slate-200/50 animate-fade-up">
                 {/* Header */}
                 <div className="px-8 py-6 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
                     <div className="flex items-center gap-5">

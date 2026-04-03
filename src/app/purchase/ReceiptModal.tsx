@@ -276,7 +276,7 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
 
     return (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-0 md:p-4 backdrop-blur-sm">
-            <div className="bg-white border-2 border-slate-300 rounded-none md:rounded-2xl shadow-2xl w-full max-w-7xl h-full md:max-h-[95vh] overflow-hidden flex flex-col">
+            <div className="bg-white border-2 border-slate-300 rounded-none md:rounded-2xl shadow-2xl w-full max-w-5xl h-full md:max-h-[95vh] overflow-hidden flex flex-col">
                 <div className="p-4 md:p-6 border-b-2 border-slate-100 flex justify-between items-center bg-slate-50">
                     <div className="pr-4">
                         <h2 className="text-lg md:text-2xl font-bold text-slate-900 leading-tight">{initialData ? "Edit Pembelian" : "Input Pembelian"}</h2>
