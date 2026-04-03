@@ -196,18 +196,18 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
 
                                 <div className="space-y-1">
                                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">No. SJ / Tgl Terima</label>
-                                    <div className="flex gap-2">
+                                    <div className="flex gap-1">
                                         <input
                                             value={receiptNumber}
                                             onChange={e => setReceiptNumber(e.target.value)}
-                                            placeholder="No. SJ (Auto-ID)"
-                                            className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg text-sm font-bold focus:border-primary outline-none"
+                                            placeholder="No. SJ"
+                                            className="w-full bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg text-sm font-bold focus:border-primary outline-none transition-all"
                                         />
                                         <input
                                             type="date"
                                             value={date}
                                             onChange={e => setDate(e.target.value)}
-                                            className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg text-xs font-bold focus:border-primary outline-none"
+                                            className="w-full bg-slate-50 border border-slate-200 px-2 py-1.5 rounded-lg text-xs font-bold focus:border-primary outline-none"
                                             required
                                         />
                                     </div>
@@ -215,13 +215,13 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
 
                                 <div className="space-y-1">
                                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Warehouse & PIC</label>
-                                    <div className="flex gap-2">
-                                        <select value={warehouseId} onChange={e => setWarehouseId(e.target.value)} className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg text-xs font-bold" required>
+                                    <div className="flex gap-1">
+                                        <select value={warehouseId} onChange={e => setWarehouseId(e.target.value)} className="w-full bg-slate-50 border border-slate-200 px-2 py-1.5 rounded-lg text-xs font-bold outline-none focus:border-primary" required>
                                             <option value="">Gudang</option>
                                             {Array.isArray(warehouses) && warehouses.map((w: any) => <option key={w.id} value={w.id}>{w.name}</option>)}
                                         </select>
-                                        <select value={salesPerson} onChange={e => setSalesPerson(e.target.value)} className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg text-xs font-bold">
-                                            <option value="">Pilih</option>
+                                        <select value={salesPerson} onChange={e => setSalesPerson(e.target.value)} className="w-full bg-slate-50 border border-slate-200 px-2 py-1.5 rounded-lg text-xs font-bold outline-none focus:border-primary">
+                                            <option value="">PIC</option>
                                             <option value="BC">BC</option>
                                             <option value="PF">PF</option>
                                         </select>
@@ -235,18 +235,18 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
                                             {hasTaxInvoice ? "off" : "on"}
                                         </span>
                                     </label>
-                                    <div className="flex gap-2">
+                                    <div className="flex gap-1">
                                         <input
                                             value={taxInvoiceNumber}
                                             onChange={e => setTaxInvoiceNumber(e.target.value)}
-                                            placeholder="No. Faktur Pajak"
-                                            className={cn("flex-1 bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg text-[11px] outline-none", !hasTaxInvoice && "opacity-30 pointer-events-none")}
+                                            placeholder="No. Faktur"
+                                            className={cn("flex-1 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg text-[11px] font-bold outline-none focus:border-primary", !hasTaxInvoice && "opacity-30 pointer-events-none")}
                                         />
                                         <input
                                             type="date"
                                             value={taxInvoiceDate}
                                             onChange={e => setTaxInvoiceDate(e.target.value)}
-                                            className={cn("w-24 bg-slate-50 border border-slate-200 px-2 py-2 rounded-lg text-[10px] outline-none", !hasTaxInvoice && "opacity-30 pointer-events-none")}
+                                            className={cn("w-28 bg-slate-50 border border-slate-200 px-2 py-1.5 rounded-lg text-[10px] font-bold outline-none", !hasTaxInvoice && "opacity-30 pointer-events-none")}
                                         />
                                     </div>
                                 </div>
@@ -277,83 +277,77 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
                         </div>
 
                         {/* Sticky Items Header (Desktop Only) */}
-                        <div className="hidden lg:grid grid-cols-12 gap-3 px-4 py-2 bg-slate-200/50 rounded-xl text-[10px] font-black uppercase text-slate-500 tracking-widest border border-slate-200">
-                            <div className="col-span-4">Product SKU / Name</div>
+                        <div className="hidden lg:grid grid-cols-12 gap-3 px-4 py-2 bg-slate-100/80 rounded-xl text-[9px] font-black uppercase text-slate-500 tracking-widest border border-slate-200">
+                            <div className="col-span-3">Product SKU / Name</div>
                             <div className="col-span-1 text-center">UOM</div>
                             <div className="col-span-1 text-center">Qty</div>
-                            <div className="col-span-2 text-right">Unit Price</div>
-                            {showDiscount && <div className="col-span-1 text-right">Disc</div>}
-                            <div className={cn(showDiscount ? "col-span-2" : "col-span-3", "text-right")}>Subtotal</div>
+                            <div className="col-span-3 text-right pr-4">Unit Price</div>
+                            {showDiscount && <div className="col-span-1 text-right pr-2">Disc</div>}
+                            <div className={cn(showDiscount ? "col-span-2" : "col-span-3", "text-right pr-4")}>Subtotal</div>
                             <div className="col-span-1 text-center">Del</div>
                         </div>
 
                         {/* Item Rows */}
-                        <div className="space-y-2 lg:space-y-1">
+                        <div className="space-y-1.5 lg:space-y-0.5">
                             {items.map((item, index) => (
-                                <div key={index} className="grid grid-cols-1 lg:grid-cols-12 gap-2 lg:gap-3 p-3 lg:p-2 bg-white lg:bg-transparent lg:border-b border-slate-100 rounded-xl lg:rounded-none items-center group relative animate-fade-up">
-                                    <div className="col-span-full lg:col-span-4 lg:flex lg:items-center">
+                                <div key={index} className="grid grid-cols-1 lg:grid-cols-12 gap-2 lg:gap-3 px-3 py-2 lg:p-1.5 bg-white lg:bg-transparent lg:border-b border-slate-100 items-center group relative hover:bg-slate-50/50 transition-colors">
+                                    <div className="col-span-full lg:col-span-3 lg:flex lg:items-center">
                                         <label className="lg:hidden text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Product</label>
-                                        <input
-                                            list={`product-list-${index}`}
-                                            value={item.sku}
-                                            onChange={e => updateItem(index, 'sku', e.target.value)}
-                                            className="w-full lg:bg-white border border-slate-200 lg:border-slate-100 px-3 py-1.5 rounded-lg lg:rounded-md text-[13px] font-bold outline-none focus:border-primary focus:bg-white"
-                                            placeholder="SKU"
-                                            required
-                                        />
-                                        <datalist id={`product-list-${index}`}>
-                                            {Array.isArray(products) && products.map(p => <option key={p.id} value={p.sku}>{p.name}</option>)}
-                                        </datalist>
-                                        <span className="hidden lg:block text-[11px] text-slate-400 ml-2 truncate max-w-[150px] font-medium">{item.name}</span>
+                                        <div className="relative w-full">
+                                            <input
+                                                list={`product-list-${index}`}
+                                                value={item.sku}
+                                                onChange={e => updateItem(index, 'sku', e.target.value)}
+                                                className="w-full bg-white border border-slate-200 lg:border-slate-100 px-3 py-1.5 rounded-lg lg:rounded-md text-[13px] font-black outline-none focus:border-primary focus:bg-white focus:shadow-sm transition-all"
+                                                placeholder="SKU"
+                                                required
+                                            />
+                                            <span className="hidden lg:block text-[10px] text-slate-400 absolute left-3 -bottom-4 truncate max-w-[150px] font-bold opacity-0 group-hover:opacity-100 transition-opacity uppercase tracking-tighter bg-white px-1 border border-slate-100 rounded">{item.name || "Pilih Barang"}</span>
+                                        </div>
                                     </div>
 
                                     <div className="grid grid-cols-4 lg:contents gap-2">
                                         <div className="lg:col-span-1">
-                                            <label className="lg:hidden text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 block text-center">UOM</label>
                                             <input
                                                 value={item.uom}
                                                 onChange={e => updateItem(index, "uom", e.target.value)}
-                                                className="w-full lg:bg-transparent lg:border-none px-2 py-1.5 rounded-lg text-[11px] font-bold text-center uppercase"
+                                                className="w-full bg-transparent border-none px-2 py-1.5 rounded-lg text-[11px] font-black text-center uppercase text-slate-500"
                                             />
                                         </div>
 
                                         <div className="lg:col-span-1">
-                                            <label className="lg:hidden text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 block text-center">Qty</label>
                                             <input
                                                 type="text"
                                                 value={item.quantity}
                                                 onChange={e => updateItem(index, "quantity", e.target.value)}
-                                                className="w-full lg:bg-white border border-slate-200 lg:border-slate-100 px-2 py-1.5 rounded-lg lg:rounded-md text-[13px] font-black text-center"
+                                                className="w-full bg-white border border-slate-200 lg:border-slate-100 px-2 py-1.5 rounded-lg lg:rounded-md text-[13px] font-black text-center focus:border-primary"
                                                 required
                                             />
                                         </div>
 
-                                        <div className="lg:col-span-2">
-                                            <label className="lg:hidden text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 block text-right">Price</label>
+                                        <div className="lg:col-span-3">
                                             <input
                                                 type="text"
                                                 value={item.purchasePrice}
                                                 onChange={e => updateItem(index, "purchasePrice", e.target.value)}
-                                                className="w-full lg:bg-white border border-slate-200 lg:border-slate-100 px-2 py-1.5 rounded-lg lg:rounded-md text-[12px] font-black text-right"
+                                                className="w-full bg-white border border-slate-200 lg:border-slate-100 px-3 py-1.5 rounded-lg lg:rounded-md text-[13px] font-black text-right focus:border-primary pr-4"
                                                 required
                                             />
                                         </div>
 
                                         {showDiscount && (
                                             <div className="lg:col-span-1">
-                                                <label className="lg:hidden text-[9px] font-black text-orange-400 uppercase tracking-widest mb-1 block text-right">Disc</label>
                                                 <input
                                                     type="text"
                                                     value={item.discount}
                                                     onChange={e => updateItem(index, "discount", e.target.value)}
-                                                    className="w-full lg:bg-orange-50 border border-orange-200 lg:border-orange-100 px-2 py-1.5 rounded-lg lg:rounded-md text-[12px] font-black text-right text-orange-600"
+                                                    className="w-full bg-orange-50 border border-orange-200 lg:border-orange-100 px-2 py-1.5 rounded-lg lg:rounded-md text-[12px] font-black text-right text-orange-600 focus:border-orange-400 pr-2"
                                                 />
                                             </div>
                                         )}
 
-                                        <div className={cn("lg:flex lg:items-center lg:justify-end", showDiscount ? "lg:col-span-2" : "lg:col-span-3")}>
-                                            <label className="lg:hidden text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 block text-right">Subtotal</label>
-                                            <div className="w-full lg:w-auto text-[13px] font-black text-slate-800 text-right lg:pr-2">
+                                        <div className={cn("lg:flex lg:items-center lg:justify-end pr-4", showDiscount ? "lg:col-span-2" : "lg:col-span-3")}>
+                                            <div className="w-full lg:w-auto text-[14px] font-black text-slate-800 text-right">
                                                 {formatCurrency((Number(item.quantity) || 0) * (Number(item.purchasePrice) || 0) - (Number(item.discount) || 0)).replace('Rp', '').trim()}
                                             </div>
                                         </div>
