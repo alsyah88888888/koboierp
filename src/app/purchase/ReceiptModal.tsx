@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { X, Save, Plus, Trash2, Tag, ShoppingCart, Loader2, FileCheck, Check, Search, AlertCircle } from "lucide-react";
+import { X, Save, Plus, Trash2, Tag, ShoppingCart, Loader2, FileCheck, Check, Search, AlertCircle, Wand2 } from "lucide-react";
 import { callAction } from "@/proxy";
 import { cn } from "@/lib/utils";
 
@@ -73,6 +73,13 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
         if (items.length > 1) {
             setItems(items.filter((_, i) => i !== index));
         }
+    };
+
+    const generatePoNumber = () => {
+        const now = new Date();
+        const dateStr = now.toISOString().slice(2, 10).replace(/-/g, ''); // YYMMDD
+        const randomStr = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+        setFormNumber(`PO-${dateStr}-${randomStr}`);
     };
 
     const updateItem = (index: number, field: string, value: string) => {
@@ -228,12 +235,22 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
                                 <div className="space-y-1">
                                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">No. SJ / Tgl Terima</label>
                                     <div className="flex gap-1">
-                                        <input
-                                            value={formNumber}
-                                            onChange={e => setFormNumber(e.target.value)}
-                                            placeholder="No. SJ"
-                                            className="w-full bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg text-sm font-bold focus:border-primary outline-none transition-all"
-                                        />
+                                        <div className="relative flex-1">
+                                            <input
+                                                value={formNumber}
+                                                onChange={e => setFormNumber(e.target.value)}
+                                                placeholder="No. SJ"
+                                                className="w-full bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg text-sm font-bold focus:border-primary outline-none transition-all pr-10"
+                                            />
+                                            <button 
+                                                type="button"
+                                                onClick={generatePoNumber}
+                                                className="absolute right-1 top-1/2 -translate-y-1/2 p-1.5 hover:bg-primary/10 rounded-md text-primary transition-all group"
+                                                title="Auto PO Number"
+                                            >
+                                                <Wand2 className="h-4 w-4 group-hover:scale-110" />
+                                            </button>
+                                        </div>
                                         <input
                                             type="date"
                                             value={date}
@@ -446,14 +463,18 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
                                         </div>
 
                                         <div className="space-y-1">
-                                            <label className="text-[10px] font-bold text-orange-400 uppercase tracking-widest flex justify-between ml-1">
+                                            <label className="text-[10px] font-bold text-orange-400 uppercase tracking-widest flex justify-between items-center ml-1">
                                                 Diskon Akhir
-                                                <span className="text-[9px] lowercase opacity-50 cursor-pointer" onClick={() => {
-                                                    const p = prompt("Percentage %?");
-                                                    if(p) setTotalDiscountPercent(p);
-                                                }}>
-                                                    {totalDiscountPercent ? `${totalDiscountPercent}%` : "set %"}
-                                                </span>
+                                                <button 
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const p = prompt("Percentage %?");
+                                                        if(p) setTotalDiscountPercent(p);
+                                                    }}
+                                                    className="bg-orange-500/10 text-orange-600 hover:bg-orange-500 hover:text-white px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-tighter transition-all border border-orange-500/20"
+                                                >
+                                                    {totalDiscountPercent ? `${totalDiscountPercent}%` : "Disc %"}
+                                                </button>
                                             </label>
                                             <div className="flex items-center bg-white/5 border border-white/10 rounded-xl px-3 focus-within:border-orange-500/50 transition-all">
                                                 <span className="text-slate-500 font-bold mr-2 text-xs">Rp</span>
