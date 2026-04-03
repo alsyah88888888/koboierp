@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from "react";
 import { X, Save, Plus, Trash2, Tag, ShoppingCart, Loader2, FileCheck, Check, Search, AlertCircle } from "lucide-react";
 import { callAction } from "@/proxy";
-import { getPrisma } from "@/lib/prisma";
 import { cn } from "@/lib/utils";
 
 const formatCurrency = (amount: number) => {
@@ -150,8 +149,8 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
     }
 
     return (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xl z-[9999] flex items-center justify-center p-0 md:p-4 lg:p-8">
-            <div className="bg-white shadow-2xl rounded-none md:rounded-[2rem] w-full max-w-7xl h-full md:h-auto md:max-h-[92vh] overflow-hidden flex flex-col border border-slate-200/50 animate-fade-up">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+            <div className="bg-white shadow-2xl rounded-[2rem] w-full max-w-7xl h-auto max-h-[92vh] min-h-[400px] overflow-hidden flex flex-col border border-slate-200/50">
                 <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 shrink-0">
                     <div className="pr-4">
                         <h2 className="text-lg md:text-2xl font-bold text-slate-900 leading-tight">{initialData ? "Edit Pembelian" : "Input Pembelian"}</h2>

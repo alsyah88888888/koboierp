@@ -84,7 +84,13 @@ export default async function SalesPage() {
     })));
 
     const salesReturns = serializeDecimal(await prisma.salesReturn.findMany({
-        where: userFilter,
+        where: isAdmin ? {} : {
+            OR: [
+                { delivery: { salesPerson: "BC" } },
+                { createdById: session?.user?.id }
+            ],
+            NOT: { delivery: { salesPerson: "PF" } }
+        },
         include: {
             delivery: { include: { items: { include: { product: true } } } },
             items: { include: { product: true } }

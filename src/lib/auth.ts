@@ -3,11 +3,13 @@ import { AuthOptions } from "next-auth";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { Adapter } from "next-auth/adapters";
 import CredentialsProvider from "next-auth/providers/credentials";
+import prisma from "@/lib/prisma";
+
+const db = prisma;
 
 export function getAuthOptions(): AuthOptions {
-    const prisma = require("@/lib/prisma").default();
     return {
-        adapter: PrismaAdapter(prisma) as Adapter,
+        adapter: PrismaAdapter(db) as Adapter,
         secret: process.env.NEXTAUTH_SECRET,
         session: {
             strategy: "jwt",
@@ -28,35 +30,39 @@ export function getAuthOptions(): AuthOptions {
             },
         },
         providers: [
-            CredentialsProvider({
-                name: "Credentials",
-                credentials: {
-                    email: { label: "Email", type: "email" },
-                    password: { label: "Password", type: "password" }
-                },
-                async authorize(credentials) {
-                    if (!credentials?.email || !credentials?.password) return null;
+            (() => {
+                const Provider = (CredentialsProvider as any).default || CredentialsProvider;
+                return Provider({
+                    name: "Credentials",
+                    credentials: {
+                        email: { label: "Email", type: "email" },
+                        password: { label: "Password", type: "password" }
+                    },
+                    async authorize(credentials: any) {
+                        if (!credentials?.email || !credentials?.password) {
+                            throw new Error("Missing credentials");
+                        }
 
-                    const prisma = require("@/lib/prisma").default();
-                    const bcrypt = require("bcryptjs");
+                        const bcrypt = require("bcryptjs");
 
-                    const user = await prisma.user.findUnique({
-                        where: { email: credentials.email }
-                    });
+                        const user = await db.user.findUnique({
+                            where: { email: credentials.email }
+                        });
 
-                    if (!user) throw new Error("User Salah");
+                        if (!user) throw new Error("User Salah");
 
-                    const isValid = await (bcrypt as any).compare(credentials.password, user.password || "");
-                    if (!isValid) throw new Error("Password Salah");
+                        const isValid = await (bcrypt as any).compare(credentials.password, user.password || "");
+                        if (!isValid) throw new Error("Password Salah");
 
-                    return {
-                        id: user.id,
-                        name: user.name,
-                        email: user.email,
-                        role: user.role
-                    } as any;
-                }
-            })
+                        return {
+                            id: user.id,
+                            name: user.name,
+                            email: user.email,
+                            role: user.role
+                        } as any;
+                    }
+                });
+            })()
         ],
         pages: {
             signIn: "/auth/signin",
