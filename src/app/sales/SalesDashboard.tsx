@@ -171,7 +171,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                                 className="erp-btn-primary flex-1 lg:flex-none"
                             >
                                 <Plus className="h-5 w-5" />
-                                <span>Input Penjualan (Barcode)</span>
+                                <span>Input Penjualan</span>
                             </button>
                             <button
                                 onClick={() => setShowManualModal(true)}
@@ -355,7 +355,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                         />
                     </div>
                 </div>
-                
+
                 <div className="table-responsive">
                     {activeTab === "SJ" ? (
                         <table className="table-erp table-to-cards min-w-full md:min-w-[1000px]">
