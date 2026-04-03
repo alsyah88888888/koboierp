@@ -183,7 +183,10 @@ export async function getPurchaseRequestsAction() {
     const { getPrisma } = require("@/lib/prisma");
     const prisma = getPrisma();
     return await prisma.purchaseRequest.findMany({
-        include: { items: true },
+        include: { 
+            requestedBy: true,
+            items: true 
+        },
         orderBy: { createdAt: 'desc' }
     });
 }

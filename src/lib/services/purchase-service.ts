@@ -15,21 +15,21 @@ export async function createPurchaseRequestService(data: any, userId: string) {
         const dateStr = `${today.getFullYear()}${(today.getMonth() + 1).toString().padStart(2, '0')}${today.getDate().toString().padStart(2, '0')}`;
         const prefix = `KB-PR-${dateStr}-`;
         const latest = await tx.purchaseRequest.findFirst({
-            where: { requestNumber: { startsWith: prefix } },
-            orderBy: { requestNumber: 'desc' }
+            where: { number: { startsWith: prefix } },
+            orderBy: { number: 'desc' }
         });
 
         let nextNum = 1;
         if (latest) {
-            const parts = latest.requestNumber.split('-');
+            const parts = latest.number.split('-');
             const lastSeq = parseInt(parts[parts.length - 1]);
             if (!isNaN(lastSeq)) nextNum = lastSeq + 1;
         }
-        const requestNumber = `${prefix}${String(nextNum).padStart(3, '0')}`;
+        const number = `${prefix}${String(nextNum).padStart(3, '0')}`;
 
         const req = await tx.purchaseRequest.create({
             data: {
-                requestNumber,
+                number,
                 requestedById: userId,
                 notes: data.notes,
                 category: data.category,
