@@ -173,7 +173,7 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
                     <h2 className="text-2xl font-bold text-slate-900">Penerimaan Berhasil!</h2>
                     <p className="text-slate-500 font-medium">No. Form Tracking Anda:</p>
                     <div className="p-4 bg-slate-100 border-2 border-slate-200 rounded-lg font-mono text-xl font-bold text-primary">
-                        {result.formNumber}
+                        {result.receiptNumber || result.formNumber}
                     </div>
                     <button
                         onClick={onClose}

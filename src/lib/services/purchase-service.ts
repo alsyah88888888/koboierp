@@ -312,7 +312,7 @@ export async function updateGoodsReceiptService(id: string, data: any, userId: s
         revalidatePath("/finance");
         revalidatePath("/");
 
-        return { success: true };
+        return { success: true, receiptNumber: currentReceiptNumber };
     });
 }
 
