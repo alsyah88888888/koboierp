@@ -276,23 +276,23 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
                             </div>
                         </div>
 
-                        {/* Sticky Items Header (Desktop Only) */}
-                        <div className="hidden lg:grid grid-cols-12 gap-3 px-4 py-2 bg-slate-100/80 rounded-xl text-[9px] font-black uppercase text-slate-500 tracking-widest border border-slate-200">
-                            <div className="col-span-3">Product SKU / Name</div>
-                            <div className="col-span-1 text-center">UOM</div>
-                            <div className="col-span-1 text-center">Qty</div>
-                            <div className="col-span-3 text-right pr-4">Unit Price</div>
-                            {showDiscount && <div className="col-span-1 text-right pr-2">Disc</div>}
-                            <div className={cn(showDiscount ? "col-span-2" : "col-span-3", "text-right pr-4")}>Subtotal</div>
-                            <div className="col-span-1 text-center">Del</div>
+                        {/* FIXED WIDTH HEADER (Pixel-Perfect Alignment) */}
+                        <div className="hidden lg:flex items-center gap-4 px-4 py-2.5 bg-slate-100/80 rounded-xl text-[9px] font-black uppercase text-slate-500 tracking-widest border border-slate-200">
+                            <div className="flex-[4] min-w-0">Product SKU / Name</div>
+                            <div className="w-16 text-center">UOM</div>
+                            <div className="w-16 text-center">Qty</div>
+                            <div className="flex-[3] text-right pr-4">Unit Price</div>
+                            {showDiscount && <div className="w-16 text-right pr-2">Disc</div>}
+                            <div className={cn(showDiscount ? "flex-[2]" : "flex-[3]", "text-right pr-4")}>Subtotal</div>
+                            <div className="w-10 text-center">Del</div>
                         </div>
 
-                        {/* Item Rows */}
+                        {/* Item Rows (Fixed Width) */}
                         <div className="space-y-1.5 lg:space-y-0.5">
                             {items.map((item, index) => (
-                                <div key={index} className="grid grid-cols-1 lg:grid-cols-12 gap-2 lg:gap-3 px-3 py-2 lg:p-1.5 bg-white lg:bg-transparent lg:border-b border-slate-100 items-center group relative hover:bg-slate-50/50 transition-colors">
-                                    {/* Column 1-3: Product */}
-                                    <div className="col-span-full lg:col-span-3 lg:flex lg:items-center">
+                                <div key={index} className="flex flex-col lg:flex-row lg:items-center gap-2 lg:gap-4 px-3 py-2 lg:p-1.5 bg-white lg:bg-transparent lg:border-b border-slate-100 group relative hover:bg-slate-50/50 transition-colors">
+                                    {/* Column: Product */}
+                                    <div className="w-full lg:flex-[4] min-w-0">
                                         <label className="lg:hidden text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Product</label>
                                         <div className="relative w-full">
                                             <input
@@ -307,31 +307,31 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
                                         </div>
                                     </div>
 
-                                    {/* Column 4: UOM */}
-                                    <div className="lg:col-span-1">
+                                    {/* Column: UOM */}
+                                    <div className="w-full lg:w-16">
                                         <label className="lg:hidden text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 block text-center">UOM</label>
                                         <input
                                             value={item.uom}
                                             onChange={e => updateItem(index, "uom", e.target.value)}
-                                            className="w-full bg-transparent border-none px-2 py-1.5 rounded-lg text-[11px] font-black text-center uppercase text-slate-500"
+                                            className="w-full bg-transparent border-none px-1 py-1.5 rounded-lg text-[11px] font-black text-center uppercase text-slate-500"
                                             readOnly
                                         />
                                     </div>
 
-                                    {/* Column 5: Qty */}
-                                    <div className="lg:col-span-1">
+                                    {/* Column: Qty */}
+                                    <div className="w-full lg:w-16">
                                         <label className="lg:hidden text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 block text-center">Qty</label>
                                         <input
                                             type="text"
                                             value={item.quantity}
                                             onChange={e => updateItem(index, "quantity", e.target.value)}
-                                            className="w-full bg-white border border-slate-200 lg:border-slate-100 px-2 py-1.5 rounded-lg lg:rounded-md text-[13px] font-black text-center focus:border-primary"
+                                            className="w-full bg-white border border-slate-200 lg:border-slate-100 px-1 py-1.5 rounded-lg lg:rounded-md text-[13px] font-black text-center focus:border-primary"
                                             required
                                         />
                                     </div>
 
-                                    {/* Column 6-8: Price */}
-                                    <div className="lg:col-span-3">
+                                    {/* Column: Price */}
+                                    <div className="w-full lg:flex-[3]">
                                         <label className="lg:hidden text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 block text-right">Price</label>
                                         <input
                                             type="text"
@@ -342,28 +342,28 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
                                         />
                                     </div>
 
-                                    {/* Column 9: Discount (Optional) */}
+                                    {/* Column: Discount */}
                                     {showDiscount && (
-                                        <div className="lg:col-span-1">
+                                        <div className="w-full lg:w-16">
                                             <label className="lg:hidden text-[9px] font-black text-orange-400 uppercase tracking-widest mb-1 block text-right">Disc</label>
                                             <input
                                                 type="text"
                                                 value={item.discount}
                                                 onChange={e => updateItem(index, "discount", e.target.value)}
-                                                className="w-full bg-orange-50 border border-orange-200 lg:border-orange-100 px-2 py-1.5 rounded-lg lg:rounded-md text-[12px] font-black text-right text-orange-600 focus:border-orange-400 pr-2"
+                                                className="w-full bg-orange-50 border border-orange-200 lg:border-orange-100 px-1 py-1.5 rounded-lg lg:rounded-md text-[12px] font-black text-right text-orange-600 focus:border-orange-400 pr-2"
                                             />
                                         </div>
                                     )}
 
-                                    {/* Column 10-11/12: Subtotal */}
-                                    <div className={cn("hidden lg:flex lg:items-center lg:justify-end pr-4", showDiscount ? "lg:col-span-2" : "lg:col-span-3")}>
-                                        <div className="w-full lg:w-auto text-[14px] font-black text-slate-800 text-right">
+                                    {/* Column: Subtotal */}
+                                    <div className={cn("hidden lg:flex items-center justify-end pr-4", showDiscount ? "lg:flex-[2]" : "lg:flex-[3]")}>
+                                        <div className="text-[14px] font-black text-slate-800 text-right">
                                             {formatCurrency((Number(item.quantity) || 0) * (Number(item.purchasePrice) || 0) - (Number(item.discount) || 0)).replace('Rp', '').trim()}
                                         </div>
                                     </div>
 
-                                    {/* Column 12: Delete */}
-                                    <div className="lg:col-span-1 flex justify-center">
+                                    {/* Column: Delete */}
+                                    <div className="w-full lg:w-10 flex justify-center">
                                         <button
                                             type="button"
                                             onClick={() => removeItem(index)}
