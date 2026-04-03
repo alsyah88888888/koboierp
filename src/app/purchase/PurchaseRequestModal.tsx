@@ -119,7 +119,8 @@ export function PurchaseRequestModal({ onClose }: { onClose: () => void }) {
                             </button>
                         </div>
 
-                        <div className="table-responsive border-2 border-slate-100 rounded-xl">
+                        {/* Desktop Table View */}
+                        <div className="hidden md:block table-responsive border-2 border-slate-100 rounded-xl">
                             <table className="w-full text-sm min-w-[600px]">
                                 <thead className="bg-slate-50 border-b-2 border-slate-100 uppercase text-[10px] font-black tracking-widest text-slate-400">
                                     <tr>
@@ -134,21 +135,15 @@ export function PurchaseRequestModal({ onClose }: { onClose: () => void }) {
                                     {items.map((item, index) => (
                                         <tr key={index} className="hover:bg-slate-50/50 transition-colors">
                                             <td className="px-4 py-2">
-                                                <label htmlFor={`pr-item-name-${index}`} className="sr-only">Nama Barang Baris {index + 1}</label>
                                                 <input
-                                                    id={`pr-item-name-${index}`}
-                                                    name={`items[${index}][itemName]`}
-                                                    placeholder="Contoh: Kertas A4, CCTV, Komputer..."
+                                                    placeholder="Contoh: Kertas A4..."
                                                     className="w-full p-2 bg-transparent border-none focus:ring-0 text-sm font-medium"
                                                     value={item.itemName}
                                                     onChange={e => updateItem(index, 'itemName', e.target.value)}
                                                 />
                                             </td>
                                             <td className="px-4 py-2">
-                                                <label htmlFor={`pr-item-qty-${index}`} className="sr-only">Kuantitas Baris {index + 1}</label>
                                                 <input
-                                                    id={`pr-item-qty-${index}`}
-                                                    name={`items[${index}][quantity]`}
                                                     type="text"
                                                     value={item.quantity ? item.quantity.toLocaleString('id-ID') : ""}
                                                     onChange={e => updateItem(index, 'quantity', e.target.value)}
@@ -156,10 +151,7 @@ export function PurchaseRequestModal({ onClose }: { onClose: () => void }) {
                                                 />
                                             </td>
                                             <td className="px-4 py-2">
-                                                <label htmlFor={`pr-item-price-${index}`} className="sr-only">Harga Estimasi Baris {index + 1}</label>
                                                 <input
-                                                    id={`pr-item-price-${index}`}
-                                                    name={`items[${index}][estimatedPrice]`}
                                                     type="text"
                                                     value={item.estimatedPrice ? item.estimatedPrice.toLocaleString('id-ID') : ""}
                                                     onChange={e => updateItem(index, 'estimatedPrice', e.target.value)}
@@ -173,7 +165,8 @@ export function PurchaseRequestModal({ onClose }: { onClose: () => void }) {
                                                 <button
                                                     type="button"
                                                     onClick={() => removeItem(index)}
-                                                    className="p-2 text-slate-300 hover:text-red-500 transition-colors"
+                                                    className="p-2 text-slate-300 hover:text-red-500 transition-colors disabled:opacity-30"
+                                                    disabled={items.length === 1}
                                                 >
                                                     <Trash2 className="h-4 w-4" />
                                                 </button>
@@ -182,6 +175,58 @@ export function PurchaseRequestModal({ onClose }: { onClose: () => void }) {
                                     ))}
                                 </tbody>
                             </table>
+                        </div>
+
+                        {/* Mobile Card View */}
+                        <div className="md:hidden space-y-4">
+                            {items.map((item, index) => (
+                                <div key={index} className="bg-slate-50 p-4 rounded-xl border-2 border-slate-100 space-y-3 relative group">
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Nama Barang</label>
+                                        <input
+                                            placeholder="Nama barang..."
+                                            className="w-full p-3 bg-white border border-slate-200 rounded-lg text-sm font-bold outline-none focus:border-primary"
+                                            value={item.itemName}
+                                            onChange={e => updateItem(index, 'itemName', e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Kuantitas</label>
+                                            <input
+                                                type="text"
+                                                value={item.quantity ? item.quantity.toLocaleString('id-ID') : ""}
+                                                onChange={e => updateItem(index, 'quantity', e.target.value)}
+                                                className="w-full p-3 bg-white border border-slate-200 rounded-lg text-sm font-black outline-none focus:border-primary"
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Est. Harga</label>
+                                            <input
+                                                type="text"
+                                                value={item.estimatedPrice ? item.estimatedPrice.toLocaleString('id-ID') : ""}
+                                                onChange={e => updateItem(index, 'estimatedPrice', e.target.value)}
+                                                className="w-full p-3 bg-white border border-slate-200 rounded-lg text-sm font-black outline-none focus:border-primary"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-between items-center pt-2 border-t border-slate-200">
+                                        <span className="text-xs font-bold text-slate-400 uppercase tracking-tighter">Subtotal</span>
+                                        <span className="text-sm font-black text-primary">
+                                            {formatCurrency(Number(item.quantity || 0) * Number(item.estimatedPrice || 0))}
+                                        </span>
+                                    </div>
+                                    {items.length > 1 && (
+                                        <button
+                                            type="button"
+                                            onClick={() => removeItem(index)}
+                                            className="absolute -top-2 -right-2 bg-white border-2 border-slate-200 p-2 rounded-full text-rose-300 hover:text-rose-500 shadow-sm"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
                         </div>
                     </div>
 

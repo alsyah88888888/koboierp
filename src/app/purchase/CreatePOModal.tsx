@@ -89,48 +89,51 @@ export function CreatePOModal({ vendors, products, onClose }: { vendors: Vendor[
 
                         <div className="space-y-3">
                             {items.map((item, index) => (
-                                <div key={index} className="grid grid-cols-12 gap-3 items-end border p-3 rounded-lg bg-muted/20">
-                                    <div className="col-span-6 space-y-1">
-                                        <label className="text-[10px] uppercase text-muted-foreground">Product</label>
+                                <div key={index} className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end border p-3 md:p-4 rounded-xl bg-slate-50/50 group relative">
+                                    <div className="col-span-1 md:col-span-6 space-y-1">
+                                        <label className="text-[10px] font-bold uppercase text-slate-400 ml-1">Product</label>
                                         <select
                                             value={item.productId}
                                             onChange={e => updateItem(index, 'productId', e.target.value)}
-                                            className="w-full p-2 bg-background border rounded-md text-sm"
+                                            className="w-full p-2.5 bg-white border-2 border-slate-100 rounded-lg text-sm font-bold focus:border-primary outline-none transition-all"
                                             required
                                         >
                                             <option value="">Select Product</option>
                                             {products.map(p => <option key={p.id} value={p.id}>{p.sku} - {p.name}</option>)}
                                         </select>
                                     </div>
-                                    <div className="col-span-2 space-y-1">
-                                        <label className="text-[10px] uppercase text-muted-foreground">Qty</label>
-                                        <input
-                                            type="number"
-                                            value={item.quantity}
-                                            onChange={e => updateItem(index, 'quantity', parseInt(e.target.value))}
-                                            className="w-full p-2 bg-background border rounded-md text-sm"
-                                            min="1"
-                                            required
-                                        />
+                                    <div className="grid grid-cols-2 md:contents gap-3">
+                                        <div className="md:col-span-2 space-y-1">
+                                            <label className="text-[10px] font-bold uppercase text-slate-400 ml-1">Qty</label>
+                                            <input
+                                                type="number"
+                                                value={item.quantity}
+                                                onChange={e => updateItem(index, 'quantity', parseInt(e.target.value))}
+                                                className="w-full p-2.5 bg-white border-2 border-slate-100 rounded-lg text-sm font-black focus:border-primary outline-none transition-all text-center"
+                                                min="1"
+                                                required
+                                            />
+                                        </div>
+                                        <div className="md:col-span-3 space-y-1">
+                                            <label className="text-[10px] font-bold uppercase text-slate-400 ml-1">Price</label>
+                                            <input
+                                                type="number"
+                                                value={item.price}
+                                                onChange={e => updateItem(index, 'price', parseFloat(e.target.value))}
+                                                className="w-full p-2.5 bg-white border-2 border-slate-100 rounded-lg text-sm font-black focus:border-primary outline-none transition-all text-right"
+                                                min="0"
+                                                required
+                                            />
+                                        </div>
                                     </div>
-                                    <div className="col-span-3 space-y-1">
-                                        <label className="text-[10px] uppercase text-muted-foreground">Price</label>
-                                        <input
-                                            type="number"
-                                            value={item.price}
-                                            onChange={e => updateItem(index, 'price', parseFloat(e.target.value))}
-                                            className="w-full p-2 bg-background border rounded-md text-sm"
-                                            min="0"
-                                            required
-                                        />
-                                    </div>
-                                    <div className="col-span-1 pb-1">
+                                    <div className="md:col-span-1 flex justify-center pb-1">
                                         <button
                                             type="button"
                                             onClick={() => removeItem(index)}
-                                            className="p-2 text-destructive hover:bg-destructive/10 rounded-md"
+                                            className="p-2 text-rose-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all disabled:opacity-30"
+                                            disabled={items.length === 1}
                                         >
-                                            <Trash2 className="h-4 w-4" />
+                                            <Trash2 className="h-5 w-5" />
                                         </button>
                                     </div>
                                 </div>

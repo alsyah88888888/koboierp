@@ -381,6 +381,7 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
             {/* Modals */}
             {showReceiptModal && (
                 <ReceiptModal
+                    isOpen={showReceiptModal}
                     products={products}
                     warehouses={warehouses}
                     vendors={vendors}

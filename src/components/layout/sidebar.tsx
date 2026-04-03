@@ -67,9 +67,16 @@ export function Sidebar() {
                     </button>
 
                     <div className="flex items-center gap-4 mb-10 group cursor-pointer">
-                        <div className="h-12 w-12 bg-white rounded-2xl flex items-center justify-center shadow-2xl shadow-primary/40 group-hover:rotate-6 transition-all duration-500 overflow-hidden relative">
-                            <div className="absolute inset-0 bg-gradient-to-br from-white via-slate-50 to-slate-200" />
-                            <img src="/logo.png?v=7" alt="Logo" className="h-8 w-auto object-contain relative z-10" />
+                        <div className="h-12 w-12 bg-white rounded-2xl flex items-center justify-center shadow-2xl shadow-primary/40 group-hover:rotate-6 transition-all duration-500 overflow-hidden relative border border-white/10">
+                            <div className="absolute inset-0 bg-gradient-to-br from-white via-slate-50 to-slate-100" />
+                            <img 
+                                src="/image/logokoboi.png" 
+                                alt="Kobaie Logo" 
+                                className="h-8 w-auto object-contain relative z-10"
+                                onError={(e) => {
+                                    (e.target as any).src = "/logo.png";
+                                }}
+                            />
                         </div>
                         <div>
                             <h1 className="text-lg font-black text-white leading-tight tracking-tight uppercase">Kobaie ERP</h1>

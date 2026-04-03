@@ -371,15 +371,15 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
 
                         <div className="space-y-4">
                             {items.map((item, index) => (
-                                <div key={index} className="erp-card bg-white p-6 flex flex-col xl:flex-row gap-6 items-stretch xl:items-end group relative transition-all animate-fade-up">
-                                    <div className="flex-1 space-y-2">
+                                <div key={index} className="erp-card bg-white p-4 md:p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-12 gap-4 items-end group relative transition-all animate-fade-up">
+                                    <div className="sm:col-span-2 lg:col-span-1 xl:col-span-3 space-y-2">
                                         <label className="erp-label !text-slate-400">SKU / Nama Barang</label>
                                         <input
                                             list={`product-list-2-${index}`}
                                             value={item.sku}
                                             onChange={e => updateItem(index, 'sku', e.target.value)}
                                             className="erp-input px-4 h-12 bg-slate-50/50 border-slate-100 hover:border-slate-200 focus:bg-white"
-                                            placeholder="Ketik SKU atau scan barcode..."
+                                            placeholder="SKU / Barcode..."
                                             required
                                         />
                                         <datalist id={`product-list-2-${index}`}>
@@ -387,8 +387,7 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                         </datalist>
                                     </div>
 
-
-                                    <div className="flex-1 space-y-2">
+                                    <div className="xl:col-span-2 space-y-2">
                                         <label className="erp-label !text-slate-400">Pilih Stok</label>
                                         <select
                                             value={item.vendorName}
@@ -404,10 +403,9 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                             ))}
                                             {!item.productId && <option value="UMUM">UMUM</option>}
                                         </select>
-
                                     </div>
 
-                                    <div className="w-full xl:w-24 space-y-2">
+                                    <div className="xl:col-span-1 space-y-2">
                                         <label className="erp-label !text-slate-400">Qty</label>
                                         <input
                                             type="text"
@@ -418,7 +416,7 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                         />
                                     </div>
 
-                                    <div className="w-full xl:w-36 space-y-2">
+                                    <div className="xl:col-span-2 space-y-2">
                                         <label className="erp-label !text-slate-400">Harga Satuan</label>
                                         <input
                                             type="text"
@@ -431,7 +429,7 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
 
                                     {showDiscount && (
                                         <>
-                                            <div className="w-full xl:w-24 space-y-2">
+                                            <div className="xl:col-span-1 space-y-2">
                                                 <label className="erp-label !text-orange-500">Disc %</label>
                                                 <input
                                                     type="text"
@@ -440,7 +438,7 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                                     className="erp-input bg-orange-50/30 text-right font-black text-orange-600 border-orange-100 h-12"
                                                 />
                                             </div>
-                                            <div className="w-full xl:w-32 space-y-2">
+                                            <div className="xl:col-span-1 space-y-2">
                                                 <label className="erp-label !text-orange-500">Disc Nominal</label>
                                                 <input
                                                     type="text"
@@ -452,7 +450,7 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                         </>
                                     )}
 
-                                    <div className="w-full xl:w-44 space-y-2">
+                                    <div className={cn("space-y-2", showDiscount ? "xl:col-span-1" : "xl:col-span-3")}>
                                         <label className="erp-label !text-slate-400">Subtotal</label>
                                         <div className="erp-input h-12 bg-slate-900 text-white flex items-center justify-end px-5 font-black border-none shadow-xl shadow-slate-100">
                                             {((Number(String(item.quantity).replace(/\./g, '').replace(',', '.')) || 0) * (Number(String(item.salesPrice).replace(/\./g, '').replace(',', '.')) || 0) - (Number(String(item.discount || 0).replace(/\./g, '').replace(',', '.')) || 0)).toLocaleString('id-ID')}

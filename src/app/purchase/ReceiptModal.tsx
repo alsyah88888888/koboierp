@@ -317,8 +317,8 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
 
                         <div className="space-y-4">
                             {items.map((item, index) => (
-                                <div key={index} className="grid grid-cols-1 md:grid-cols-6 xl:grid-cols-12 gap-4 p-4 bg-slate-50 rounded-xl border-2 border-slate-200 relative group hover:border-primary/30 transition-all">
-                                    <div className="md:col-span-2 xl:col-span-3 space-y-1 text-left">
+                                <div key={index} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-12 gap-4 p-4 bg-slate-50 rounded-xl border-2 border-slate-200 relative group hover:border-primary/30 transition-all items-end">
+                                    <div className="sm:col-span-2 lg:col-span-1 xl:col-span-3 space-y-1 text-left">
                                         <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">SKU / Nama Barang</label>
                                         <div className="relative">
                                             <input
@@ -337,7 +337,7 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
                                         <p className="text-[10px] text-slate-400 mt-1 truncate pl-1 font-medium">{item.name || "Belum memilih barang"}</p>
                                     </div>
 
-                                    <div className="md:col-span-1 xl:col-span-2 space-y-1">
+                                    <div className="xl:col-span-2 space-y-1">
                                         <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Quantity</label>
                                         <div className="flex items-center bg-white border-2 border-slate-300 rounded-lg overflow-hidden focus-within:border-primary transition-all">
                                             <input
@@ -351,7 +351,7 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
                                         </div>
                                     </div>
 
-                                    <div className="md:col-span-1 xl:col-span-2 space-y-1">
+                                    <div className="xl:col-span-2 space-y-1">
                                         <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Harga Beli (DPP)</label>
                                         <div className="relative">
                                             <span className="absolute left-3 top-3 text-xs font-bold text-slate-400">Rp</span>
@@ -366,7 +366,7 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
                                     </div>
 
                                     {showDiscount && (
-                                        <div className="md:col-span-1 xl:col-span-2 space-y-1">
+                                        <div className="xl:col-span-2 space-y-1">
                                             <label className="text-[10px] font-bold text-orange-600 uppercase ml-1">Potongan (Disc)</label>
                                             <div className="relative">
                                                 <span className="absolute left-3 top-3 text-xs font-bold text-orange-400">Rp</span>
@@ -380,21 +380,23 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
                                         </div>
                                     )}
 
-                                    <div className={cn("md:col-span-1 xl:col-span-2 space-y-1", !showDiscount && "xl:col-span-4")}>
+                                    <div className={cn("space-y-1", showDiscount ? "xl:col-span-2" : "xl:col-span-4")}>
                                         <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Subtotal</label>
-                                        <div className="w-full p-2.5 bg-slate-200 border-2 border-slate-300 rounded-lg font-black text-right text-slate-700">
+                                        <div className="w-full p-2.5 bg-slate-200 border-2 border-slate-300 rounded-lg font-black text-right text-slate-700 h-[46px] flex items-center justify-end">
                                             {formatCurrency((Number(item.quantity) || 0) * (Number(item.purchasePrice) || 0) - (Number(item.discount) || 0)).replace('Rp', '').trim()}
                                         </div>
                                     </div>
 
                                     {items.length > 1 && (
-                                        <button
-                                            type="button"
-                                            onClick={() => removeItem(index)}
-                                            className="absolute -right-2 -top-2 md:static md:col-span-1 flex items-center justify-center p-2 bg-white md:bg-transparent border-2 border-rose-100 md:border-none rounded-full text-rose-300 hover:text-rose-600 hover:bg-rose-50 transition-all shadow-sm md:shadow-none"
-                                        >
-                                            <Trash2 className="h-5 w-5" />
-                                        </button>
+                                        <div className="xl:col-span-1 flex justify-center pb-1">
+                                            <button
+                                                type="button"
+                                                onClick={() => removeItem(index)}
+                                                className="p-3 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
+                                            >
+                                                <Trash2 className="h-6 w-6" />
+                                            </button>
+                                        </div>
                                     )}
                                 </div>
                             ))}
