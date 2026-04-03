@@ -123,10 +123,10 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
                     <h1 className="text-3xl font-black text-slate-900 tracking-tight">LOGISTIK & PEMBELIAN</h1>
                     <p className="text-slate-500 font-medium text-sm mt-1">Kelola penerimaan barang dan retur supplier</p>
                 </div>
-                
+
                 <div className="flex flex-wrap gap-3 w-full xl:w-auto">
                     <div className="flex bg-slate-100 p-1 rounded-2xl border border-slate-200 w-full sm:w-auto">
-                        <button 
+                        <button
                             onClick={() => setActiveTab("LPB")}
                             className={cn(
                                 "flex-1 sm:flex-none px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all",
@@ -135,7 +135,7 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
                         >
                             Pembelian
                         </button>
-                        <button 
+                        <button
                             onClick={() => setActiveTab("RETUR")}
                             className={cn(
                                 "flex-1 sm:flex-none px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all",
