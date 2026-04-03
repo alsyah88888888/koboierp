@@ -35,10 +35,9 @@ export async function createPurchaseRequestService(data: any, userId: string) {
                 category: data.category,
                 items: {
                     create: data.items.map((i: any) => ({
-                        productId: i.productId,
+                        itemName: i.itemName,
                         quantity: i.quantity,
-                        uom: i.uom,
-                        vendorName: i.vendorName || "UMUM"
+                        estimatedPrice: i.estimatedPrice
                     }))
                 }
             }
