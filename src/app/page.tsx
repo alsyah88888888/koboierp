@@ -13,6 +13,7 @@ import { getServerSession } from "next-auth";
 import { getAuthOptions } from "@/lib/auth";
 
 import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 
 export default async function DashboardPage() {
   // Force dynamic rendering to avoid build-time DB check
@@ -20,6 +21,10 @@ export default async function DashboardPage() {
   
   const prisma = getPrisma();
   const session = await getServerSession(getAuthOptions()) as any;
+
+  if (!session) {
+    redirect("/api/auth/signin");
+  }
 
 
 

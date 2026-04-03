@@ -3,12 +3,20 @@ import { WarehouseDashboard } from "./WarehouseDashboard";
 import { serializeDecimal } from "@/lib/utils";
 
 import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { getServerSession } from "next-auth/next";
+import { getAuthOptions } from "@/lib/auth";
 
 export default async function WarehousePage() {
     // Force dynamic rendering to skip build-time DB check
     await headers();
     
     const prisma = getPrisma();
+    const session = await getServerSession(getAuthOptions()) as any;
+
+    if (!session) {
+        redirect("/api/auth/signin");
+    }
     const products = await prisma.product.findMany({
 
         include: { stocks: true },

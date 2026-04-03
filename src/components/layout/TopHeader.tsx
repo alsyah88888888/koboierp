@@ -20,6 +20,7 @@ export function TopHeader() {
     const [selectedNotification, setSelectedNotification] = useState<any>(null);
 
     const loadNotifications = async () => {
+        if (!session) return;
         try {
             const data = await callAction("getNotifications");
             setNotifications(data);

@@ -6,6 +6,7 @@ import { getFinanceTransactionsAction } from "@/actions/finance";
 
 
 import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth/next";
 import { getAuthOptions } from "@/lib/auth";
 
@@ -15,6 +16,10 @@ export default async function FinancePage() {
     
     const prisma = getPrisma();
     const session = await getServerSession(getAuthOptions()) as any;
+
+    if (!session) {
+        redirect("/api/auth/signin");
+    }
     const accounts = await getBalanceSheet().catch(() => []);
 
 

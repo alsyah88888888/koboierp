@@ -3,6 +3,7 @@ import { PurchaseDashboard } from "./PurchaseDashboard";
 import { serializeDecimal } from "@/lib/utils";
 
 import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth/next";
 import { getAuthOptions } from "@/lib/auth";
 
@@ -12,6 +13,10 @@ export default async function PurchasePage() {
     
     const prisma = getPrisma();
     const session = await getServerSession(getAuthOptions()) as any;
+
+    if (!session) {
+        redirect("/api/auth/signin");
+    }
 
     const isAdmin = session?.user?.role?.toUpperCase() === "ADMIN";
     
