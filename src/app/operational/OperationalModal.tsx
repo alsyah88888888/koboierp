@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { X, Save, AlertCircle } from "lucide-react";
-import { createFinanceTransactionAction } from "@/app/actions";
+import { createFinanceTransactionAction } from "@/actions/finance";
 import { toast } from "react-hot-toast";
 import { formatCurrency } from "@/lib/utils";
 
@@ -29,8 +29,8 @@ export function OperationalModal({ isOpen, onClose, coa }: OperationalModalProps
     if (!isOpen) return null;
 
     // Filter COA for Expense and Bank accounts
-    const expenseAccounts = coa.filter(a => a.type === "EXPENSE" || a.type === "REVENUE");
-    const bankAccounts = coa.filter(a => a.code.startsWith("101") || a.code.startsWith("102"));
+    const expenseAccounts = Array.isArray(coa) ? coa.filter(a => a.type === "EXPENSE" || a.type === "REVENUE") : [];
+    const bankAccounts = Array.isArray(coa) ? coa.filter(a => a.code.startsWith("101") || a.code.startsWith("102")) : [];
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -151,7 +151,7 @@ export function OperationalModal({ isOpen, onClose, coa }: OperationalModalProps
                             required
                         >
                             <option value="">Pilih Kategori...</option>
-                            {expenseAccounts.map(acc => (
+                            {Array.isArray(expenseAccounts) && expenseAccounts.map(acc => (
                                 <option key={acc.id} value={acc.id}>[{acc.code}] {acc.name}</option>
                             ))}
                         </select>
@@ -169,7 +169,7 @@ export function OperationalModal({ isOpen, onClose, coa }: OperationalModalProps
                             required
                         >
                             <option value="">Pilih Rekening...</option>
-                            {bankAccounts.map(acc => (
+                            {Array.isArray(bankAccounts) && bankAccounts.map(acc => (
                                 <option key={acc.id} value={acc.id}>[{acc.code}] {acc.name}</option>
                             ))}
                         </select>

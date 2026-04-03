@@ -1,0 +1,137 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+
+/**
+ * PURCHASE ACTIONS
+ * Entry points for purchase operations.
+ * Use dynamic imports for services to satisfy build boundaries.
+ */
+
+export async function createPurchaseRequestAction(data: any) {
+    const { getAuthOptions } = require("@/lib/auth");
+    const { getServerSession } = require("next-auth");
+    const { createPurchaseRequestService } = require("@/lib/services/purchase-service");
+
+    const session = (await getServerSession(getAuthOptions())) as any;
+    if (!session?.user?.id) throw new Error("Unauthorized");
+
+    return await createPurchaseRequestService(data, session.user.id);
+}
+
+export async function createGoodsReceiptAction(data: any) {
+    const { getAuthOptions } = require("@/lib/auth");
+    const { getServerSession } = require("next-auth");
+    const { createGoodsReceiptService } = require("@/lib/services/purchase-service");
+
+    const session = (await getServerSession(getAuthOptions())) as any;
+    if (!session?.user?.id) throw new Error("Unauthorized");
+
+    return await createGoodsReceiptService(data, session.user.id);
+}
+
+export async function deleteGoodsReceiptAction(id: string) {
+    const { getPrisma } = require("@/lib/prisma");
+    const prisma = getPrisma();
+
+    return await prisma.$transaction(async (tx: any) => {
+        const receipt = await tx.goodsReceipt.findUnique({
+            where: { id },
+            include: { items: true }
+        });
+
+        if (!receipt) throw new Error("Receipt not found");
+
+        for (const item of receipt.items) {
+            const vendorName = receipt.receivedFrom || "UMUM";
+            await tx.stock.update({
+                where: {
+                    productId_warehouseId_vendorName: {
+                        productId: item.productId,
+                        warehouseId: receipt.warehouseId,
+                        vendorName: vendorName
+                    }
+                },
+                data: { quantity: { decrement: item.quantity } }
+            });
+
+            await tx.stockMovement.create({
+                data: {
+                    productId: item.productId,
+                    warehouseId: receipt.warehouseId,
+                    vendorName: vendorName,
+                    quantity: -item.quantity,
+                    type: "PURCHASE_DELETE",
+                    reference: receipt.receiptNumber
+                }
+            });
+        }
+
+        await tx.goodsReceiptItem.deleteMany({ where: { receiptId: id } });
+        await tx.goodsReceipt.delete({ where: { id } });
+
+        revalidatePath("/purchase");
+        revalidatePath("/warehouse");
+        revalidatePath("/finance");
+        revalidatePath("/");
+
+        return { success: true };
+    });
+}
+
+export async function createPurchaseOrderAction(data: any) {
+    const { getAuthOptions } = require("@/lib/auth");
+    const { getServerSession } = require("next-auth");
+    const { getPrisma } = require("@/lib/prisma");
+    const prisma = getPrisma();
+
+    return await prisma.$transaction(async (tx: any) => {
+        const today = new Date();
+        const dateStr = `${today.getFullYear()}${(today.getMonth() + 1).toString().padStart(2, '0')}${today.getDate().toString().padStart(2, '0')}`;
+        const prefix = `KB-PO-${dateStr}-`;
+        const latest = await tx.purchaseOrder.findFirst({
+            where: { orderNumber: { startsWith: prefix } },
+            orderBy: { orderNumber: 'desc' }
+        });
+
+        let nextNum = 1;
+        if (latest) {
+            const parts = latest.orderNumber.split('-');
+            const lastSeq = parseInt(parts[parts.length - 1]);
+            if (!isNaN(lastSeq)) nextNum = lastSeq + 1;
+        }
+        const orderNumber = `${prefix}${String(nextNum).padStart(3, '0')}`;
+
+        const session = (await getServerSession(getAuthOptions())) as any;
+        const po = await tx.purchaseOrder.create({
+            data: {
+                orderNumber,
+                vendorId: data.vendorId,
+                notes: data.notes,
+                createdById: session?.user?.id,
+                items: {
+                    create: data.items.map((i: any) => ({
+                        productId: i.productId,
+                        quantity: i.quantity,
+                        uom: i.uom,
+                        purchasePrice: i.purchasePrice as any
+                    }))
+                }
+            }
+        });
+
+        revalidatePath("/purchase");
+        return po;
+    });
+}
+
+export async function deletePurchaseRequestAction(id: string) {
+    const { getPrisma } = require("@/lib/prisma");
+    const prisma = getPrisma();
+
+    await prisma.purchaseRequestItem.deleteMany({ where: { requestId: id } });
+    await prisma.purchaseRequest.delete({ where: { id } });
+
+    revalidatePath("/purchase");
+    return { success: true };
+}

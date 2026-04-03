@@ -4,7 +4,7 @@ import prisma from "@/lib/prisma";
 import { getBalanceSheet } from "@/modules/finance/finance.service";
 import { FinanceDashboard } from "./FinanceDashboard";
 import { serializeDecimal } from "@/lib/utils";
-import { getFinanceTransactionsAction } from "../actions";
+import { getFinanceTransactionsAction } from "../actions/finance";
 
 import { headers } from "next/headers";
 

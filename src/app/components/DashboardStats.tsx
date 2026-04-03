@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { DollarSign, Package, ShoppingCart, Wallet, TrendingUp, Box } from "lucide-react";
-import { getDashboardSummaryAction } from "@/app/actions";
+import { getDashboardSummaryAction } from "@/actions/system";
 import { formatCurrency } from "@/lib/utils";
 import { useSession } from "next-auth/react";
 

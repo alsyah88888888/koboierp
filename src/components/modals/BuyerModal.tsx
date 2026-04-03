@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { X, Users } from "lucide-react";
-import { createCustomerAction } from "@/app/actions";
+import { createCustomerAction } from "@/actions/master";
 
 export function BuyerModal({ onClose, onSuccess }: { onClose: () => void, onSuccess?: (buyer: any) => void }) {
     const [isLoading, setIsLoading] = useState(false);

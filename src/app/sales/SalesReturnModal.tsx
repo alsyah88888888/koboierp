@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
-import { createSalesReturnAction, updateSalesReturnAction } from "@/app/actions";
+import { createSalesReturnAction, updateSalesReturnAction } from "@/actions/sales";
 import { formatCurrency } from "@/lib/utils";
 
 export function SalesReturnModal({ deliveries, initialData, onClose }: { deliveries: any[], initialData?: any, onClose: () => void }) {
@@ -111,7 +111,7 @@ export function SalesReturnModal({ deliveries, initialData, onClose }: { deliver
                                         defaultValue=""
                                     >
                                         <option value="" disabled>-- Pilih SJ Terkirim --</option>
-                                        {deliveries.map(d => (
+                                        {Array.isArray(deliveries) && deliveries.map(d => (
                                             <option key={d.id} value={d.id}>{d.deliveryNumber} - {d.buyerName} ({new Date(d.date || d.createdAt).toLocaleDateString('id-ID')})</option>
                                         ))}
                                     </select>

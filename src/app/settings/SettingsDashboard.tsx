@@ -42,7 +42,7 @@ import {
     deleteWarehouseAction,
     setOpeningBalanceAction,
     getMDAction
-} from "@/app/actions";
+} from "@/actions/system";
 
 export function SettingsDashboard() {
     const [saved, setSaved] = useState(false);

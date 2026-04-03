@@ -14,7 +14,7 @@ import { useSession } from "next-auth/react";
 import {
     getGoodsReceiptsAction,
     submitGoodsReceiptVerificationAction
-} from "@/app/actions";
+} from "@/actions/warehouse";
 
 export default function WarehouseCheckerPage() {
     const { data: session } = useSession();

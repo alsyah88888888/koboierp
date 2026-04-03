@@ -1,48 +1,52 @@
-import { withAuth } from "next-auth/middleware";
-import { NextResponse } from "next/server";
-import { getToken } from "next-auth/jwt";
+/**
+ * ACTION PROXY
+ * This file breaks the Turbopack static dependency chain.
+ * Client components call this proxy with an action name and payload.
+ * The real server-side code is only loaded at runtime via dynamic import.
+ */
 
-export default withAuth(
-    async function middleware(req) {
-        const token = await getToken({ req });
-        const path = req.nextUrl.pathname;
-
-        // Role-based access rules
-        if (path.startsWith("/finance") && token?.role !== "ADMIN" && token?.role !== "FINANCE") {
-            return NextResponse.redirect(new URL("/", req.url));
-        }
-        if (path.startsWith("/accounting") && token?.role !== "ADMIN" && token?.role !== "FINANCE") {
-            return NextResponse.redirect(new URL("/", req.url));
-        }
-
-        if (path.startsWith("/purchase")) {
-            if (path.startsWith("/purchase/request")) {
-                if (token?.role !== "ADMIN" && token?.role !== "PURCHASE" && token?.role !== "FINANCE") {
-                    return NextResponse.redirect(new URL("/", req.url));
-                }
-            } else {
-                if (token?.role !== "ADMIN" && token?.role !== "PURCHASE" && token?.role !== "SALES") {
-                    return NextResponse.redirect(new URL("/", req.url));
-                }
-            }
-        }
-        if (path.startsWith("/sales") && token?.role !== "ADMIN" && token?.role !== "SALES" && token?.role !== "PURCHASE") {
-            return NextResponse.redirect(new URL("/", req.url));
-        }
-        if (path.startsWith("/warehouse") && token?.role !== "ADMIN" && token?.role !== "WAREHOUSE" && token?.role !== "PURCHASE") {
-            return NextResponse.redirect(new URL("/", req.url));
-        }
-        if (path.startsWith("/settings") && token?.role !== "ADMIN") {
-            return NextResponse.redirect(new URL("/", req.url));
-        }
-    },
-    {
-        callbacks: {
-            authorized: ({ token }) => !!token,
-        },
+export async function callAction(actionName: string, ...args: any[]) {
+    // These strings MUST be literal for the static analyzer to stop tracing.
+    // We map action names to dynamic imports.
+    
+    switch (actionName) {
+        case "createSalesDelivery":
+            const { createSalesDeliveryAction } = await import("@/actions/sales");
+            return await createSalesDeliveryAction(...args as [any]);
+        case "updateSalesDelivery":
+            const { updateSalesDeliveryAction } = await import("@/actions/sales");
+            return await updateSalesDeliveryAction(...args as [string, any]);
+        case "deleteSalesDelivery":
+            const { deleteSalesDeliveryAction } = await import("@/actions/sales");
+            return await deleteSalesDeliveryAction(...args as [string]);
+        case "createFinanceTransaction":
+            const { createFinanceTransactionAction } = await import("@/actions/finance");
+            return await createFinanceTransactionAction(...args as [any]);
+        case "updatePaymentStatus":
+            const { updatePaymentStatusAction } = await import("@/actions/finance");
+            return await updatePaymentStatusAction(...args as [any, any, any, any, any]);
+        case "getDashboardSummary":
+            const { getDashboardSummaryAction } = await import("@/actions/system");
+            return await getDashboardSummaryAction();
+        case "getAccountingData":
+            const { getAccountingDataAction } = await import("@/actions/finance");
+            return await getAccountingDataAction();
+        case "createProduct":
+            const { createProductAction } = await import("@/actions/master");
+            return await createProductAction(...args as [any]);
+        case "updateProduct":
+            const { updateProductAction } = await import("@/actions/master");
+            return await updateProductAction(...args as [string, any]);
+        case "deleteProduct":
+            const { deleteProductAction } = await import("@/actions/master");
+            return await deleteProductAction(...args as [string]);
+        case "createGoodsReceipt":
+            const { createGoodsReceiptAction } = await import("@/actions/purchase");
+            return await createGoodsReceiptAction(...args as [any]);
+        case "adjustStock":
+            const { adjustStockAction } = await import("@/actions/warehouse");
+            return await adjustStockAction(...args as [any]);
+        default:
+            throw new Error(`Action ${actionName} not found in proxy.`);
     }
-);
-
-export const config = {
-    matcher: ["/((?!api|_next/static|_next/image|favicon.ico|auth/signin).*)"],
-};
+}

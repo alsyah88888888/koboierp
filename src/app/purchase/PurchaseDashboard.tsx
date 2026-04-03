@@ -7,7 +7,7 @@ import { format } from "date-fns";
 import { ReceiptModal } from "./ReceiptModal";
 import { cn } from "@/lib/utils";
 import { useSession } from "next-auth/react";
-import { deleteGoodsReceiptAction, deletePurchaseReturnAction } from "@/app/actions";
+import { deleteGoodsReceiptAction, deletePurchaseReturnAction } from "@/actions/purchase";
 import { DashboardStats } from "../components/DashboardStats";
 import Link from "next/link";
 import { exportToExcel } from "@/lib/excel";
@@ -75,7 +75,7 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
     );
 
     const handleExport = () => {
-        const data = filteredReceipts.map(r => ({
+        const data = Array.isArray(filteredReceipts) && filteredReceipts.map(r => ({
             'No. Form': r.formNumber,
             'Tanggal': format(new Date(r.date || r.createdAt), "dd/MM/yyyy"),
             'Terima Dari': r.receivedFrom,
@@ -90,7 +90,7 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
     };
 
     const handlePreview = () => {
-        const data = filteredReceipts.map(r => ({
+        const data = Array.isArray(filteredReceipts) && filteredReceipts.map(r => ({
             'No. Form': r.formNumber,
             'Tanggal': format(new Date(r.date || r.createdAt), "dd/MM/yyyy"),
             'Terima Dari': r.receivedFrom,
@@ -258,7 +258,7 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
                                         </td>
                                     </tr>
                                 ) : (
-                                    filteredReceipts.map((r: any, idx: number) => (
+                                    Array.isArray(filteredReceipts) && filteredReceipts.map((r: any, idx: number) => (
                                         <tr key={r.id}>
                                             <td className="text-center text-slate-400">{idx + 1}</td>
                                             <td className="font-mono text-primary font-black text-xs uppercase tracking-tight">{r.formNumber}</td>
@@ -324,7 +324,7 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
                                         </td>
                                     </tr>
                                 ) : (
-                                    filteredReturns.map((r: any, idx: number) => (
+                                    Array.isArray(filteredReturns) && filteredReturns.map((r: any, idx: number) => (
                                         <tr key={r.id}>
                                             <td className="text-center text-rose-200">{idx + 1}</td>
                                             <td className="font-mono font-black text-rose-600 text-xs uppercase tracking-tight">{r.returnNumber}</td>

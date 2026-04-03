@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { X, Save, ShoppingBag, User, Package, Hash, Calendar } from "lucide-react";
-import { createManualSalesAction } from "@/app/actions";
+import { createManualSalesAction } from "@/actions/sales";
 import { cn } from "@/lib/utils";
 
 interface ManualPOModalProps {
@@ -17,7 +17,7 @@ export function ManualPOModal({ products, warehouses, onClose }: ManualPOModalPr
         deliveryNumber: "",
         buyerName: "",
         recipient: "",
-        warehouseId: warehouses[0]?.id || "",
+        warehouseId: (Array.isArray(warehouses) && warehouses.length > 0) ? warehouses[0]?.id : "",
         salesPerson: "BC",
         items: [{ productId: "", quantity: 0, price: 0 }]
     });
@@ -142,7 +142,7 @@ export function ManualPOModal({ products, warehouses, onClose }: ManualPOModalPr
                                     onChange={e => setFormData(p => ({ ...p, warehouseId: e.target.value }))}
                                     className="w-full px-5 py-3.5 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:outline-none focus:border-primary focus:bg-white transition-all font-bold text-slate-800 shadow-sm appearance-none"
                                 >
-                                    {warehouses.map(w => (
+                                    {Array.isArray(warehouses) && warehouses.map(w => (
                                         <option key={w.id} value={w.id}>{w.name}</option>
                                     ))}
                                 </select>
@@ -177,7 +177,7 @@ export function ManualPOModal({ products, warehouses, onClose }: ManualPOModalPr
                                             className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-primary transition-all text-xs font-bold"
                                         >
                                             <option value="">Pilih Produk</option>
-                                            {products.map(p => (
+                                            {Array.isArray(products) && products.map(p => (
                                                 <option key={p.id} value={p.id}>{p.name} ({p.sku})</option>
                                             ))}
                                         </select>

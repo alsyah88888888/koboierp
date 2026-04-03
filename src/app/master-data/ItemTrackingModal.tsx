@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { X, History, ArrowDownLeft, ArrowUpRight, RotateCcw, Box, Info, Filter, TrendingDown, TrendingUp } from "lucide-react";
-import { getProductTrackingAction } from "@/app/actions";
+import { getProductTrackingAction } from "@/actions/warehouse";
 import { cn, formatCurrency } from "@/lib/utils";
 import { format } from "date-fns";
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Clock, CheckCircle2, ShieldCheck, Calculator } from "lucide-react";
-import { getPurchaseRequestSummaryAction } from "@/app/actions";
+import { getPurchaseRequestSummaryAction } from "@/actions/purchase";
 import { formatCurrency } from "@/lib/utils";
 
 export function PurchaseRequestStats() {

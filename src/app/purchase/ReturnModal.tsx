@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { X, Search, FileText, AlertCircle, Save, CheckCircle2 } from "lucide-react";
-import { createPurchaseReturnAction, updatePurchaseReturnAction } from "@/app/actions";
+import { createPurchaseReturnAction, updatePurchaseReturnAction } from "@/actions/purchase";
 import { formatCurrency } from "@/lib/utils";
 import toast from "react-hot-toast";
 
@@ -144,7 +144,7 @@ export function ReturnModal({ receipts, initialData, onClose }: { receipts: any[
                                             defaultValue=""
                                         >
                                             <option value="" disabled>Pilih LPB Terverifikasi...</option>
-                                            {receipts.filter(r => r.isVerified).map(r => (
+                                            {Array.isArray(receipts) && receipts.filter(r => r.isVerified).map(r => (
                                                 <option key={r.id} value={r.id}>
                                                     {r.receiptNumber} — {r.receivedFrom} ({new Date(r.date || r.createdAt).toLocaleDateString('id-ID')})
                                                 </option>

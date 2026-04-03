@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { X, Building2 } from "lucide-react";
-import { createVendorAction } from "@/app/actions";
+import { createVendorAction } from "@/actions/master";
 
 export function SupplierModal({ onClose, onSuccess }: { onClose: () => void, onSuccess?: (vendor: any) => void }) {
     const [isLoading, setIsLoading] = useState(false);

@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 import prisma from "@/lib/prisma";
-import { getDashboardSummaryAction, getDailyReportAction } from "@/app/actions";
+import { getDashboardSummaryAction, getDailyReportAction } from "@/actions/system";
 import { formatCurrency, serializeDecimal } from "@/lib/utils";
 import { AdminDashboard } from "./AdminDashboard";
 import {

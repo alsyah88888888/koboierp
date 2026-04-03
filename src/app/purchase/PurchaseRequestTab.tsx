@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { format } from "date-fns";
 import { Clock, CheckCircle2, XCircle, ShieldCheck, Trash2, Eye, ChevronDown, ChevronUp, Printer } from "lucide-react";
 import { formatCurrency, cn } from "@/lib/utils";
-import { updatePurchaseRequestStatusAction, deletePurchaseRequestAction } from "@/app/actions";
+import { updatePurchaseRequestStatusAction, deletePurchaseRequestAction } from "@/actions/purchase";
 
 export function PurchaseRequestTab({ requests, userRole, userId }: { requests: any[], userRole: string, userId: string }) {
     const [loading, setLoading] = useState<string | null>(null);
@@ -69,7 +69,7 @@ export function PurchaseRequestTab({ requests, userRole, userId }: { requests: a
                     </tr>
                 </thead>
                 <tbody className="divide-y">
-                    {requests.map((pr: any) => {
+                    {Array.isArray(requests) && requests.map((pr: any) => {
                         const isExpanded = expandedPr === pr.id;
                         const totalEst = pr.items.reduce((acc: number, item: any) => acc + (item.quantity * Number(item.estimatedPrice)), 0);
 

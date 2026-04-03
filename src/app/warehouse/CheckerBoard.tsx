@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Search, CheckCircle, AlertCircle, Barcode, Printer, Package, ChevronRight, X, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
-import { verifyGoodsReceiptAction } from "@/app/actions";
+import { verifyGoodsReceiptAction } from "@/actions/warehouse";
 import { useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 

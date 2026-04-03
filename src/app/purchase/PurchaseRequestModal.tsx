@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { createPurchaseRequestAction } from "@/app/actions";
+import { createPurchaseRequestAction } from "@/actions/purchase";
 import { Plus, Trash2, X, ClipboardList, Calculator } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 

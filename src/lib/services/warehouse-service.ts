@@ -1,98 +1,17 @@
-"use server";
 
 import { revalidatePath } from "next/cache";
-import prisma from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 
 /**
- * Warehouse Stock Adjustment
+ * WAREHOUSE SERVICES
+ * Strictly server-side logic for warehouse operations.
  */
-export async function updateStockAction(data: {
-    productId: string;
-    warehouseId: string;
-    quantity: number;
-    vendorName?: string;
-    type: "ADJUSTMENT" | "SALE" | "GOODS_RECEIPT";
-    reference?: string;
-}) {
-    await prisma.$transaction(async (tx: any) => {
-        const vendorName = data.vendorName || "UMUM";
-        await tx.stock.upsert({
-            where: {
-                productId_warehouseId_vendorName: {
-                    productId: data.productId,
-                    warehouseId: data.warehouseId,
-                    vendorName: vendorName
-                }
-            },
-            update: { quantity: { increment: data.quantity } },
-            create: {
-                productId: data.productId,
-                warehouseId: data.warehouseId,
-                vendorName: vendorName,
-                quantity: data.quantity
-            }
-        });
 
-        await tx.stockMovement.create({
-            data: {
-                productId: data.productId,
-                warehouseId: data.warehouseId,
-                vendorName: vendorName,
-                quantity: data.quantity,
-                type: data.type,
-                reference: data.reference
-            }
-        });
-    });
-
-    revalidatePath("/warehouse");
-    revalidatePath("/");
-}
-
-export async function getStockMovementsAction(filters?: {
-    productId?: string;
-    warehouseId?: string;
-    type?: string;
-}) {
-    return await prisma.stockMovement.findMany({
-        where: filters,
-        include: {
-            product: { select: { name: true, sku: true } },
-            warehouse: { select: { name: true } }
-        },
-        orderBy: { createdAt: 'desc' },
-        take: 100
-    });
-}
-
-/**
- * WAREHOUSE / ADMIN: Manual Stock Adjustment
- */
-export async function adjustStockAction({
-    productId,
-    warehouseId,
-    vendorName,
-    type,
-    amount,
-    notes,
-    adjustedBy
-}: {
-    productId: string;
-    warehouseId: string;
-    vendorName: string;
-    type: "ADD" | "SUBTRACT" | "SET";
-    amount: number;
-    notes: string;
-    adjustedBy: string;
-}) {
-    if (amount < 0 && type !== "SET") {
-        throw new Error("Amount must be positive");
-    }
+export async function adjustStockService(data: any) {
+    const { getPrisma } = require("@/lib/prisma");
+    const prisma = getPrisma();
 
     return await prisma.$transaction(async (tx: any) => {
-        // 1. Get current stock
+        const { productId, warehouseId, vendorName, type, amount, adjustedBy } = data;
         const currentStock = await tx.stock.findUnique({
             where: {
                 productId_warehouseId_vendorName: {
@@ -118,11 +37,8 @@ export async function adjustStockAction({
             diff = amount - currentQty;
         }
 
-        if (diff === 0) {
-            return { success: true, message: "Tidak ada perubahan stok." };
-        }
+        if (diff === 0) return { success: true, message: "Tidak ada perubahan stok." };
 
-        // 2. Update Stock
         await tx.stock.upsert({
             where: {
                 productId_warehouseId_vendorName: {
@@ -140,7 +56,6 @@ export async function adjustStockAction({
             }
         });
 
-        // 3. Create StockMovement
         await tx.stockMovement.create({
             data: {
                 productId,
@@ -153,22 +68,15 @@ export async function adjustStockAction({
         });
 
         revalidatePath("/warehouse");
+        revalidatePath("/");
         return { success: true };
     });
 }
 
-/**
- * ITEM TRACKING: Product Ledger
- */
-export async function getProductTrackingAction(productId: string) {
-    const session = await getServerSession(authOptions) as any;
-    if (!session?.user?.id) throw new Error("Unauthorized");
+export async function getProductTrackingService(productId: string, userId: string, prefix: string, isAdmin: boolean) {
+    const { getPrisma } = require("@/lib/prisma");
+    const prisma = getPrisma();
 
-    const isAdmin = session.user.role?.toUpperCase() === "ADMIN";
-    const prefix = session.user.prefix || null;
-    const userId = session.user.id;
-
-    // Filters for non-admin isolation
     const salesFilter = isAdmin ? {} : { 
         OR: [
             { salesPerson: prefix },
@@ -184,39 +92,22 @@ export async function getProductTrackingAction(productId: string) {
     };
 
     const [receipts, deliveries, pReturns, sReturns, product] = await Promise.all([
-        // Purchases (Receipts)
         prisma.goodsReceiptItem.findMany({
-            where: {
-                productId,
-                receipt: purchaseFilter
-            },
+            where: { productId, receipt: purchaseFilter },
             include: { receipt: true }
         }),
-        // Sales (Deliveries)
         prisma.salesDeliveryItem.findMany({
-            where: {
-                productId,
-                delivery: salesFilter
-            },
+            where: { productId, delivery: salesFilter },
             include: { delivery: true }
         }),
-        // Purchase Returns
         prisma.purchaseReturnItem.findMany({
-            where: {
-                productId,
-                purchaseReturn: { receipt: purchaseFilter }
-            },
+            where: { productId, purchaseReturn: { receipt: purchaseFilter } },
             include: { purchaseReturn: { include: { receipt: true } } }
         }),
-        // Sales Returns
         prisma.salesReturnItem.findMany({
-            where: {
-                productId,
-                salesReturn: { delivery: salesFilter }
-            },
+            where: { productId, salesReturn: { delivery: salesFilter } },
             include: { salesReturn: { include: { delivery: true } } }
         }),
-        // Product Info
         prisma.product.findUnique({
             where: { id: productId },
             select: { name: true, sku: true, uom: true }
@@ -225,11 +116,7 @@ export async function getProductTrackingAction(productId: string) {
 
     if (!product) throw new Error("Produk tidak ditemukan");
 
-    // Unified History
     const history: any[] = [];
-
-    const { serializeDecimal } = await import("@/lib/utils");
-
     receipts.forEach((item: any) => {
         history.push({
             id: item.id,
@@ -278,11 +165,8 @@ export async function getProductTrackingAction(productId: string) {
         });
     });
 
-    // Sort by date desc
     history.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-    return serializeDecimal({
-        product,
-        history
-    });
+    const { serializeDecimal } = require("@/lib/utils");
+    return serializeDecimal({ product, history });
 }

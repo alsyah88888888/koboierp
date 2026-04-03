@@ -8,7 +8,7 @@ import { CheckerBoard } from "./CheckerBoard";
 import { DashboardStats } from "../components/DashboardStats";
 import { cn, formatCurrency } from "@/lib/utils";
 import { useSession } from "next-auth/react";
-import { deleteProductAction } from "@/app/actions";
+import { deleteProductAction } from "@/actions/master";
 import { format } from "date-fns";
 import { exportToExcel } from "@/lib/excel";
 import { ReportPreviewModal } from "@/components/ReportPreviewModal";

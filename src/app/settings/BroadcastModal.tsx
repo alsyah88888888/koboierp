@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { X, Megaphone, Send, Info, AlertTriangle, CheckCircle2 } from "lucide-react";
-import { createNotificationAction } from "@/app/actions";
+import { createNotificationAction } from "@/actions/system";
 import { toast } from "react-hot-toast";
 
 interface BroadcastModalProps {

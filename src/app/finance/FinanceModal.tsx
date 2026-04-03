@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { X, Loader2, Save, ArrowDownLeft, ArrowUpRight } from "lucide-react";
-import { createFinanceTransactionAction } from "../actions";
+import { createFinanceTransactionAction } from "../actions/finance";
 import { formatCurrency } from "@/lib/utils";
 
 export function FinanceModal({ accounts, onClose }: { accounts: any[], onClose: () => void }) {
@@ -109,7 +109,7 @@ export function FinanceModal({ accounts, onClose }: { accounts: any[], onClose: 
                                 required
                             >
                                 <option value="">Pilih Kas/Bank...</option>
-                                {bankAccounts.map(a => <option key={a.id} value={a.id}>[{a.code}] {a.name}</option>)}
+                                {Array.isArray(bankAccounts) && bankAccounts.map(a => <option key={a.id} value={a.id}>[{a.code}] {a.name}</option>)}
                             </select>
                         </div>
                         <div className="space-y-2">
@@ -125,7 +125,7 @@ export function FinanceModal({ accounts, onClose }: { accounts: any[], onClose: 
                                 required
                             >
                                 <option value="">Pilih Akun Tujuan...</option>
-                                {categoryAccounts.map(a => <option key={a.id} value={a.id}>[{a.code}] {a.name}</option>)}
+                                {Array.isArray(categoryAccounts) && categoryAccounts.map(a => <option key={a.id} value={a.id}>[{a.code}] {a.name}</option>)}
                             </select>
                         </div>
                         <div className="space-y-2">

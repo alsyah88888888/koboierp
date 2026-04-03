@@ -1,6 +1,6 @@
 "use client";
 import { useState, useMemo, useEffect } from "react";
-import { createGoodsReceiptAction, updateGoodsReceiptAction } from "@/app/actions";
+import { createGoodsReceiptAction, updateGoodsReceiptAction } from "@/actions/purchase";
 import { Plus, Trash2, X, FileCheck, Calculator, Tag } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 
@@ -404,7 +404,7 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
                                 required
                             >
                                 <option value="">Pilih Gudang Utama...</option>
-                                {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+                                {Array.isArray(warehouses) && warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
                             </select>
                         </div>
                     </div>
@@ -479,7 +479,7 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
                                             required
                                         />
                                         <datalist id={`product-list-${index}`}>
-                                            {products.map(p => <option key={p.id} value={p.sku}>{p.name}</option>)}
+                                            {Array.isArray(products) && products.map(p => <option key={p.id} value={p.sku}>{p.name}</option>)}
                                         </datalist>
                                         {/* Stock Info Badge */}
                                         {item.productId && (() => {
@@ -491,7 +491,7 @@ export function ReceiptModal({ products, warehouses, vendors, onClose, initialDa
                                                 acc[wId] = (acc[wId] || 0) + (Number(s.quantity) || 0);
                                                 return acc;
                                             }, {} as Record<string, number>);
-                                            const selectedWarehouse = warehouses.find((w: any) => w.id === warehouseId);
+                                            const selectedWarehouse = Array.isArray(warehouses) && warehouses.find((w: any) => w.id === warehouseId);
                                             const warehouseStock = warehouseId ? (stockByWarehouse[warehouseId] || 0) : null;
                                             return (
                                                 <div className="flex flex-wrap items-center gap-1.5 mt-0.5 ml-1">

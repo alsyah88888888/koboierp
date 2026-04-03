@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { X, Save, AlertCircle, Plus, Minus, ArrowRightLeft } from "lucide-react";
 import { useSession } from "next-auth/react";
-import { adjustStockAction } from "@/app/actions";
+import { adjustStockAction } from "@/actions/warehouse";
 import { cn } from "@/lib/utils";
 
 interface StockAdjustmentModalProps {

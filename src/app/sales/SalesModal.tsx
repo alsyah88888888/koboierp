@@ -1,7 +1,8 @@
 "use client";
 import { useState, useEffect } from "react";
 import { X, Plus, Trash2, Loader2, Save, Tag, ShoppingCart } from "lucide-react";
-import { createSalesDeliveryAction, updateSalesDeliveryAction } from "../actions";
+import { callAction } from "@/proxy";
+
 import { formatCurrency, cn } from "@/lib/utils";
 import { useMemo } from "react";
 
@@ -196,12 +197,13 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
             };
 
             if (initialData) {
-                await updateSalesDeliveryAction(initialData.id, data);
+                await callAction("updateSalesDelivery", initialData.id, data);
             } else {
-                await createSalesDeliveryAction(data);
+                await callAction("createSalesDelivery", data);
             }
             onClose();
         } catch (err: any) {
+
             setError(err.message || "Gagal menyimpan data.");
         } finally {
             setLoading(false);
@@ -278,11 +280,11 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                     required
                                 />
                                 {!isManualBuyer && (
-                                    <datalist id="customer-list-2">
-                                        {Array.isArray(customers) && customers.map(c => <option key={c.id} value={c.name} />)}
-                                    </datalist>
-                                )}
-                            </div>
+                                {Array.isArray(customers) && customers.map(c => <option key={c.id} value={c.name} />)}
+                            </datalist>
+                        )}
+                    </div>
+
 
                             <div className="space-y-2">
                                 <label className="erp-label">Nomor PO Buyer</label>
@@ -383,6 +385,7 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                         </datalist>
                                     </div>
 
+
                                     <div className="flex-1 space-y-2">
                                         <label className="erp-label !text-slate-400">Pilih Stok</label>
                                         <select
@@ -392,13 +395,14 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                             required
                                         >
                                             <option value="">- Sumber Stok -</option>
-                                            {item.productId && Array.isArray(products) && products.find(p => p.id === item.productId)?.stocks?.map((s: any) => (
+                                            {item.productId && Array.isArray(products) && products.find(p => p.id === item.productId)?.stocks && Array.isArray(products.find(p => p.id === item.productId).stocks) && products.find(p => p.id === item.productId).stocks.map((s: any) => (
                                                 <option key={s.id} value={s.vendorName}>
                                                     {s.vendorName} ({s.quantity} pcs)
                                                 </option>
                                             ))}
                                             {!item.productId && <option value="UMUM">UMUM</option>}
                                         </select>
+
                                     </div>
 
                                     <div className="w-full xl:w-24 space-y-2">

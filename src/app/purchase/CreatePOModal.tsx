@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { createPurchaseOrderAction } from "@/app/actions";
+import { createPurchaseOrderAction } from "@/actions/purchase";
 import { Plus, Trash2, X } from "lucide-react";
 
 interface Product {

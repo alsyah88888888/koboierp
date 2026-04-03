@@ -125,7 +125,7 @@ body {
     
     &::before {
       content: attr(data-label);
-      @apply block md:none text-[10px] font-black uppercase tracking-widest text-slate-400 self-center;
+      @apply block md:hidden text-[10px] font-black uppercase tracking-widest text-slate-400 self-center;
     }
   }
 }

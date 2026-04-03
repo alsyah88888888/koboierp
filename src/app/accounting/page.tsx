@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 
-import { getAccountingDataAction } from "@/app/actions";
+import { getAccountingDataAction } from "@/actions/finance";
 import { AccountingDashboard } from "./AccountingDashboard";
 import { serializeDecimal } from "@/lib/utils";
 

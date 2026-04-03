@@ -1,6 +1,6 @@
 export const dynamic = "force-dynamic";
 
-import { getPurchaseRequestsAction } from "@/app/actions";
+import { getPurchaseRequestsAction } from "@/actions/purchase";
 import { PurchaseRequestDashboard } from "@/app/purchase/request/PurchaseRequestDashboard";
 import { serializeDecimal } from "@/lib/utils";
 

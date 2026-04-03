@@ -14,7 +14,7 @@ import {
 import { formatCurrency } from "@/lib/utils";
 import { OperationalModal } from "./OperationalModal";
 import { toast } from "react-hot-toast";
-import { deleteFinanceTransactionAction } from "@/app/actions";
+import { deleteFinanceTransactionAction } from "@/actions/finance";
 
 interface OperationalDashboardProps {
     transactions: any[];

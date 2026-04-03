@@ -6,7 +6,7 @@ import { useSession } from "next-auth/react";
 import { useSidebar } from "./SidebarContext";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { getNotificationsAction, deleteNotificationAction, markNotificationAsReadAction } from "@/app/actions";
+import { getNotificationsAction, deleteNotificationAction, markNotificationAsReadAction } from "@/actions/system";
 
 export function TopHeader() {
     const pathname = usePathname();

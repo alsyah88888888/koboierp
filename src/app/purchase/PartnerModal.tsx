@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { createVendorAction, createCustomerAction } from "@/app/actions";
+import { createVendorAction, createCustomerAction } from "@/actions/master";
 import { X } from "lucide-react";
 
 export function PartnerModal({ type, onClose }: { type: 'VENDOR' | 'CUSTOMER', onClose: () => void }) {

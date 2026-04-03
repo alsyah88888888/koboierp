@@ -1,0 +1,924 @@
+
+> erp@0.1.0 build
+> prisma generate && next build
+
+Loaded Prisma config from prisma.config.ts.
+
+Prisma config detected, skipping environment variable loading.
+Prisma schema loaded from prisma/schema.prisma
+
+✔ Generated Prisma Client (v6.19.2) to ./node_modules/@prisma/client in 245ms
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+Tip: Want to turn off tips and other hints? https://pris.ly/tip-4-nohints
+
+▲ Next.js 16.2.1 (Turbopack)
+- Environments: .env
+
+  Creating an optimized production build ...
+
+> Build error occurred
+Error: Turbopack build failed with 20 errors:
+./src/app/settings/SettingsDashboard.tsx:27:1
+Export deleteCustomerAction doesn't exist in target module
+  [90m25 |[0m ... [36mfrom[0m [32m"lucide-react"[0m;
+  [90m26 |[0m ...[36mmport[0m [33mBroadcastModal[0m [36mfrom[0m [32m"./...[0m
+[31m[1m>[0m [90m27 |[0m ...[36mmport[0m {
+  [90m   |[0m    [31m[1m^^^^^^^[0m
+[31m[1m>[0m [90m28 |[0m ...   wipeDatabaseAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m29 |[0m ...   importProductsAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m30 |[0m ...   createProductAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m31 |[0m ...   updateProductAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m32 |[0m ...   getSystemSettingsAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m33 |[0m ...   updateSystemSettingsAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m34 |[0m ...   createVendorAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m35 |[0m ...   updateVendorAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m36 |[0m ...   deleteVendorAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m37 |[0m ...   createCustomerAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m38 |[0m ...   updateCustomerAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m39 |[0m ...   deleteCustomerAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m40 |[0m ...   createWarehouseAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m41 |[0m ...   updateWarehouseAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m42 |[0m ...   deleteWarehouseAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m43 |[0m ...   setOpeningBalanceAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m44 |[0m ...   getMDAction
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m45 |[0m ... [36mfrom[0m [32m"@/app/actions/system"[0m;
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m46 |[0m ...
+  [90m47 |[0m ...[36mxport[0m [36mfunction[0m [33mSettingsDashbo...[0m
+  [90m48 |[0m ...   [36mconst[0m [saved, setSaved] = ...
+
+The export deleteCustomerAction was not found in module [project]/src/app/actions/system.ts [app-client] (ecmascript).
+Did you mean to import getDailyReportAction?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import trace:
+  Server Component:
+    ./src/app/settings/SettingsDashboard.tsx
+    ./src/app/settings/page.tsx
+
+
+./src/app/settings/SettingsDashboard.tsx:27:1
+Export deleteCustomerAction doesn't exist in target module
+  [90m25 |[0m ... [36mfrom[0m [32m"lucide-react"[0m;
+  [90m26 |[0m ...[36mmport[0m [33mBroadcastModal[0m [36mfrom[0m [32m"./...[0m
+[31m[1m>[0m [90m27 |[0m ...[36mmport[0m {
+  [90m   |[0m    [31m[1m^^^^^^^[0m
+[31m[1m>[0m [90m28 |[0m ...   wipeDatabaseAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m29 |[0m ...   importProductsAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m30 |[0m ...   createProductAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m31 |[0m ...   updateProductAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m32 |[0m ...   getSystemSettingsAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m33 |[0m ...   updateSystemSettingsAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m34 |[0m ...   createVendorAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m35 |[0m ...   updateVendorAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m36 |[0m ...   deleteVendorAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m37 |[0m ...   createCustomerAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m38 |[0m ...   updateCustomerAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m39 |[0m ...   deleteCustomerAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m40 |[0m ...   createWarehouseAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m41 |[0m ...   updateWarehouseAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m42 |[0m ...   deleteWarehouseAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m43 |[0m ...   setOpeningBalanceAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m44 |[0m ...   getMDAction
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m45 |[0m ... [36mfrom[0m [32m"@/app/actions/system"[0m;
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m46 |[0m ...
+  [90m47 |[0m ...[36mxport[0m [36mfunction[0m [33mSettingsDashbo...[0m
+  [90m48 |[0m ...   [36mconst[0m [saved, setSaved] = ...
+
+The export deleteCustomerAction was not found in module [project]/src/app/actions/system.ts [app-ssr] (ecmascript).
+Did you mean to import getDailyReportAction?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import trace:
+  Server Component:
+    ./src/app/settings/SettingsDashboard.tsx
+    ./src/app/settings/page.tsx
+
+
+./src/components/layout/TopHeader.tsx:9:1
+Export deleteNotificationAction doesn't exist in target module
+  [90m 7 |[0m ...
+  [90m 8 |[0m ...
+[31m[1m>[0m [90m 9 |[0m ...cationAction, markNotificatio...
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m10 |[0m ...
+  [90m11 |[0m ...
+  [90m12 |[0m ...
+
+The export deleteNotificationAction was not found in module [project]/src/app/actions/system.ts [app-client] (ecmascript).
+Did you mean to import getNotificationsAction?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import trace:
+  Server Component:
+    ./src/components/layout/TopHeader.tsx
+    ./src/app/layout.tsx
+
+
+./src/components/layout/TopHeader.tsx:9:1
+Export deleteNotificationAction doesn't exist in target module
+  [90m 7 |[0m ...
+  [90m 8 |[0m ...
+[31m[1m>[0m [90m 9 |[0m ...cationAction, markNotificatio...
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m10 |[0m ...
+  [90m11 |[0m ...
+  [90m12 |[0m ...
+
+The export deleteNotificationAction was not found in module [project]/src/app/actions/system.ts [app-ssr] (ecmascript).
+Did you mean to import getNotificationsAction?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import trace:
+  Server Component:
+    ./src/components/layout/TopHeader.tsx
+    ./src/app/layout.tsx
+
+
+./src/app/settings/SettingsDashboard.tsx:27:1
+Export deleteVendorAction doesn't exist in target module
+  [90m25 |[0m ... [36mfrom[0m [32m"lucide-react"[0m;
+  [90m26 |[0m ...[36mmport[0m [33mBroadcastModal[0m [36mfrom[0m [32m"./...[0m
+[31m[1m>[0m [90m27 |[0m ...[36mmport[0m {
+  [90m   |[0m    [31m[1m^^^^^^^[0m
+[31m[1m>[0m [90m28 |[0m ...   wipeDatabaseAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m29 |[0m ...   importProductsAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m30 |[0m ...   createProductAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m31 |[0m ...   updateProductAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m32 |[0m ...   getSystemSettingsAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m33 |[0m ...   updateSystemSettingsAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m34 |[0m ...   createVendorAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m35 |[0m ...   updateVendorAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m36 |[0m ...   deleteVendorAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m37 |[0m ...   createCustomerAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m38 |[0m ...   updateCustomerAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m39 |[0m ...   deleteCustomerAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m40 |[0m ...   createWarehouseAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m41 |[0m ...   updateWarehouseAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m42 |[0m ...   deleteWarehouseAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m43 |[0m ...   setOpeningBalanceAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m44 |[0m ...   getMDAction
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m45 |[0m ... [36mfrom[0m [32m"@/app/actions/system"[0m;
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m46 |[0m ...
+  [90m47 |[0m ...[36mxport[0m [36mfunction[0m [33mSettingsDashbo...[0m
+  [90m48 |[0m ...   [36mconst[0m [saved, setSaved] = ...
+
+The export deleteVendorAction was not found in module [project]/src/app/actions/system.ts [app-client] (ecmascript).
+Did you mean to import getDailyReportAction?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import trace:
+  Server Component:
+    ./src/app/settings/SettingsDashboard.tsx
+    ./src/app/settings/page.tsx
+
+
+./src/app/settings/SettingsDashboard.tsx:27:1
+Export deleteVendorAction doesn't exist in target module
+  [90m25 |[0m ... [36mfrom[0m [32m"lucide-react"[0m;
+  [90m26 |[0m ...[36mmport[0m [33mBroadcastModal[0m [36mfrom[0m [32m"./...[0m
+[31m[1m>[0m [90m27 |[0m ...[36mmport[0m {
+  [90m   |[0m    [31m[1m^^^^^^^[0m
+[31m[1m>[0m [90m28 |[0m ...   wipeDatabaseAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m29 |[0m ...   importProductsAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m30 |[0m ...   createProductAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m31 |[0m ...   updateProductAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m32 |[0m ...   getSystemSettingsAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m33 |[0m ...   updateSystemSettingsAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m34 |[0m ...   createVendorAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m35 |[0m ...   updateVendorAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m36 |[0m ...   deleteVendorAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m37 |[0m ...   createCustomerAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m38 |[0m ...   updateCustomerAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m39 |[0m ...   deleteCustomerAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m40 |[0m ...   createWarehouseAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m41 |[0m ...   updateWarehouseAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m42 |[0m ...   deleteWarehouseAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m43 |[0m ...   setOpeningBalanceAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m44 |[0m ...   getMDAction
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m45 |[0m ... [36mfrom[0m [32m"@/app/actions/system"[0m;
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m46 |[0m ...
+  [90m47 |[0m ...[36mxport[0m [36mfunction[0m [33mSettingsDashbo...[0m
+  [90m48 |[0m ...   [36mconst[0m [saved, setSaved] = ...
+
+The export deleteVendorAction was not found in module [project]/src/app/actions/system.ts [app-ssr] (ecmascript).
+Did you mean to import getDailyReportAction?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import trace:
+  Server Component:
+    ./src/app/settings/SettingsDashboard.tsx
+    ./src/app/settings/page.tsx
+
+
+./src/app/settings/SettingsDashboard.tsx:27:1
+Export deleteWarehouseAction doesn't exist in target module
+  [90m25 |[0m ... [36mfrom[0m [32m"lucide-react"[0m;
+  [90m26 |[0m ...[36mmport[0m [33mBroadcastModal[0m [36mfrom[0m [32m"./...[0m
+[31m[1m>[0m [90m27 |[0m ...[36mmport[0m {
+  [90m   |[0m    [31m[1m^^^^^^^[0m
+[31m[1m>[0m [90m28 |[0m ...   wipeDatabaseAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m29 |[0m ...   importProductsAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m30 |[0m ...   createProductAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m31 |[0m ...   updateProductAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m32 |[0m ...   getSystemSettingsAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m33 |[0m ...   updateSystemSettingsAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m34 |[0m ...   createVendorAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m35 |[0m ...   updateVendorAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m36 |[0m ...   deleteVendorAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m37 |[0m ...   createCustomerAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m38 |[0m ...   updateCustomerAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m39 |[0m ...   deleteCustomerAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m40 |[0m ...   createWarehouseAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m41 |[0m ...   updateWarehouseAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m42 |[0m ...   deleteWarehouseAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m43 |[0m ...   setOpeningBalanceAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m44 |[0m ...   getMDAction
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m45 |[0m ... [36mfrom[0m [32m"@/app/actions/system"[0m;
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m46 |[0m ...
+  [90m47 |[0m ...[36mxport[0m [36mfunction[0m [33mSettingsDashbo...[0m
+  [90m48 |[0m ...   [36mconst[0m [saved, setSaved] = ...
+
+The export deleteWarehouseAction was not found in module [project]/src/app/actions/system.ts [app-client] (ecmascript).
+Did you mean to import getDashboardSummaryAction?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import trace:
+  Server Component:
+    ./src/app/settings/SettingsDashboard.tsx
+    ./src/app/settings/page.tsx
+
+
+./src/app/settings/SettingsDashboard.tsx:27:1
+Export deleteWarehouseAction doesn't exist in target module
+  [90m25 |[0m ... [36mfrom[0m [32m"lucide-react"[0m;
+  [90m26 |[0m ...[36mmport[0m [33mBroadcastModal[0m [36mfrom[0m [32m"./...[0m
+[31m[1m>[0m [90m27 |[0m ...[36mmport[0m {
+  [90m   |[0m    [31m[1m^^^^^^^[0m
+[31m[1m>[0m [90m28 |[0m ...   wipeDatabaseAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m29 |[0m ...   importProductsAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m30 |[0m ...   createProductAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m31 |[0m ...   updateProductAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m32 |[0m ...   getSystemSettingsAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m33 |[0m ...   updateSystemSettingsAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m34 |[0m ...   createVendorAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m35 |[0m ...   updateVendorAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m36 |[0m ...   deleteVendorAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m37 |[0m ...   createCustomerAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m38 |[0m ...   updateCustomerAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m39 |[0m ...   deleteCustomerAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m40 |[0m ...   createWarehouseAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m41 |[0m ...   updateWarehouseAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m42 |[0m ...   deleteWarehouseAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m43 |[0m ...   setOpeningBalanceAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m44 |[0m ...   getMDAction
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m45 |[0m ... [36mfrom[0m [32m"@/app/actions/system"[0m;
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m46 |[0m ...
+  [90m47 |[0m ...[36mxport[0m [36mfunction[0m [33mSettingsDashbo...[0m
+  [90m48 |[0m ...   [36mconst[0m [saved, setSaved] = ...
+
+The export deleteWarehouseAction was not found in module [project]/src/app/actions/system.ts [app-ssr] (ecmascript).
+Did you mean to import getDashboardSummaryAction?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import trace:
+  Server Component:
+    ./src/app/settings/SettingsDashboard.tsx
+    ./src/app/settings/page.tsx
+
+
+./src/app/warehouse/checker/page.tsx:14:1
+Export getGoodsReceiptsAction doesn't exist in target module
+  [90m12 |[0m ...[36mfrom[0m [32m"lucide-react"[0m;
+  [90m13 |[0m ...[36mport[0m { useSession } [36mfrom[0m [32m"nex...[0m
+[31m[1m>[0m [90m14 |[0m ...[36mport[0m {
+  [90m   |[0m    [31m[1m^^^^^^^[0m
+[31m[1m>[0m [90m15 |[0m ...  getGoodsReceiptsAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m16 |[0m ...  submitGoodsReceiptVerificat...
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m17 |[0m ...[36mfrom[0m [32m"@/app/actions/warehouse"[0m;
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m18 |[0m ...
+  [90m19 |[0m ...[36mport[0m [36mdefault[0m [36mfunction[0m [33mWarehou...[0m
+  [90m20 |[0m ...  [36mconst[0m { data: session } = u...
+
+The export getGoodsReceiptsAction was not found in module [project]/src/app/actions/warehouse.ts [app-client] (ecmascript).
+Did you mean to import getStockMovementsAction?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./src/app/warehouse/checker/page.tsx [Client Component Browser]
+    ./src/app/warehouse/checker/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/warehouse/checker/page.tsx [Client Component SSR]
+    ./src/app/warehouse/checker/page.tsx [Server Component]
+
+
+./src/app/warehouse/checker/page.tsx:14:1
+Export getGoodsReceiptsAction doesn't exist in target module
+  [90m12 |[0m ...[36mfrom[0m [32m"lucide-react"[0m;
+  [90m13 |[0m ...[36mport[0m { useSession } [36mfrom[0m [32m"nex...[0m
+[31m[1m>[0m [90m14 |[0m ...[36mport[0m {
+  [90m   |[0m    [31m[1m^^^^^^^[0m
+[31m[1m>[0m [90m15 |[0m ...  getGoodsReceiptsAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m16 |[0m ...  submitGoodsReceiptVerificat...
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m17 |[0m ...[36mfrom[0m [32m"@/app/actions/warehouse"[0m;
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m18 |[0m ...
+  [90m19 |[0m ...[36mport[0m [36mdefault[0m [36mfunction[0m [33mWarehou...[0m
+  [90m20 |[0m ...  [36mconst[0m { data: session } = u...
+
+The export getGoodsReceiptsAction was not found in module [project]/src/app/actions/warehouse.ts [app-ssr] (ecmascript).
+Did you mean to import getStockMovementsAction?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./src/app/warehouse/checker/page.tsx [Client Component Browser]
+    ./src/app/warehouse/checker/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/warehouse/checker/page.tsx [Client Component SSR]
+    ./src/app/warehouse/checker/page.tsx [Server Component]
+
+
+./src/app/settings/SettingsDashboard.tsx:27:1
+Export getMDAction doesn't exist in target module
+  [90m25 |[0m ... [36mfrom[0m [32m"lucide-react"[0m;
+  [90m26 |[0m ...[36mmport[0m [33mBroadcastModal[0m [36mfrom[0m [32m"./...[0m
+[31m[1m>[0m [90m27 |[0m ...[36mmport[0m {
+  [90m   |[0m    [31m[1m^^^^^^^[0m
+[31m[1m>[0m [90m28 |[0m ...   wipeDatabaseAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m29 |[0m ...   importProductsAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m30 |[0m ...   createProductAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m31 |[0m ...   updateProductAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m32 |[0m ...   getSystemSettingsAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m33 |[0m ...   updateSystemSettingsAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m34 |[0m ...   createVendorAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m35 |[0m ...   updateVendorAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m36 |[0m ...   deleteVendorAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m37 |[0m ...   createCustomerAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m38 |[0m ...   updateCustomerAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m39 |[0m ...   deleteCustomerAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m40 |[0m ...   createWarehouseAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m41 |[0m ...   updateWarehouseAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m42 |[0m ...   deleteWarehouseAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m43 |[0m ...   setOpeningBalanceAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m44 |[0m ...   getMDAction
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m45 |[0m ... [36mfrom[0m [32m"@/app/actions/system"[0m;
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m46 |[0m ...
+  [90m47 |[0m ...[36mxport[0m [36mfunction[0m [33mSettingsDashbo...[0m
+  [90m48 |[0m ...   [36mconst[0m [saved, setSaved] = ...
+
+The export getMDAction was not found in module [project]/src/app/actions/system.ts [app-client] (ecmascript).
+Did you mean to import getDailyReportAction?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import trace:
+  Server Component:
+    ./src/app/settings/SettingsDashboard.tsx
+    ./src/app/settings/page.tsx
+
+
+./src/app/settings/SettingsDashboard.tsx:27:1
+Export getMDAction doesn't exist in target module
+  [90m25 |[0m ... [36mfrom[0m [32m"lucide-react"[0m;
+  [90m26 |[0m ...[36mmport[0m [33mBroadcastModal[0m [36mfrom[0m [32m"./...[0m
+[31m[1m>[0m [90m27 |[0m ...[36mmport[0m {
+  [90m   |[0m    [31m[1m^^^^^^^[0m
+[31m[1m>[0m [90m28 |[0m ...   wipeDatabaseAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m29 |[0m ...   importProductsAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m30 |[0m ...   createProductAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m31 |[0m ...   updateProductAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m32 |[0m ...   getSystemSettingsAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m33 |[0m ...   updateSystemSettingsAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m34 |[0m ...   createVendorAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m35 |[0m ...   updateVendorAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m36 |[0m ...   deleteVendorAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m37 |[0m ...   createCustomerAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m38 |[0m ...   updateCustomerAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m39 |[0m ...   deleteCustomerAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m40 |[0m ...   createWarehouseAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m41 |[0m ...   updateWarehouseAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m42 |[0m ...   deleteWarehouseAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m43 |[0m ...   setOpeningBalanceAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m44 |[0m ...   getMDAction
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m45 |[0m ... [36mfrom[0m [32m"@/app/actions/system"[0m;
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m46 |[0m ...
+  [90m47 |[0m ...[36mxport[0m [36mfunction[0m [33mSettingsDashbo...[0m
+  [90m48 |[0m ...   [36mconst[0m [saved, setSaved] = ...
+
+The export getMDAction was not found in module [project]/src/app/actions/system.ts [app-ssr] (ecmascript).
+Did you mean to import getDailyReportAction?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import trace:
+  Server Component:
+    ./src/app/settings/SettingsDashboard.tsx
+    ./src/app/settings/page.tsx
+
+
+./src/app/settings/SettingsDashboard.tsx:27:1
+Export importProductsAction doesn't exist in target module
+  [90m25 |[0m ... [36mfrom[0m [32m"lucide-react"[0m;
+  [90m26 |[0m ...[36mmport[0m [33mBroadcastModal[0m [36mfrom[0m [32m"./...[0m
+[31m[1m>[0m [90m27 |[0m ...[36mmport[0m {
+  [90m   |[0m    [31m[1m^^^^^^^[0m
+[31m[1m>[0m [90m28 |[0m ...   wipeDatabaseAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m29 |[0m ...   importProductsAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m30 |[0m ...   createProductAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m31 |[0m ...   updateProductAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m32 |[0m ...   getSystemSettingsAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m33 |[0m ...   updateSystemSettingsAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m34 |[0m ...   createVendorAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m35 |[0m ...   updateVendorAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m36 |[0m ...   deleteVendorAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m37 |[0m ...   createCustomerAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m38 |[0m ...   updateCustomerAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m39 |[0m ...   deleteCustomerAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m40 |[0m ...   createWarehouseAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m41 |[0m ...   updateWarehouseAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m42 |[0m ...   deleteWarehouseAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m43 |[0m ...   setOpeningBalanceAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m44 |[0m ...   getMDAction
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m45 |[0m ... [36mfrom[0m [32m"@/app/actions/system"[0m;
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m46 |[0m ...
+  [90m47 |[0m ...[36mxport[0m [36mfunction[0m [33mSettingsDashbo...[0m
+  [90m48 |[0m ...   [36mconst[0m [saved, setSaved] = ...
+
+The export importProductsAction was not found in module [project]/src/app/actions/system.ts [app-client] (ecmascript).
+Did you mean to import getDashboardSummaryAction?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import trace:
+  Server Component:
+    ./src/app/settings/SettingsDashboard.tsx
+    ./src/app/settings/page.tsx
+
+
+./src/app/settings/SettingsDashboard.tsx:27:1
+Export importProductsAction doesn't exist in target module
+  [90m25 |[0m ... [36mfrom[0m [32m"lucide-react"[0m;
+  [90m26 |[0m ...[36mmport[0m [33mBroadcastModal[0m [36mfrom[0m [32m"./...[0m
+[31m[1m>[0m [90m27 |[0m ...[36mmport[0m {
+  [90m   |[0m    [31m[1m^^^^^^^[0m
+[31m[1m>[0m [90m28 |[0m ...   wipeDatabaseAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m29 |[0m ...   importProductsAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m30 |[0m ...   createProductAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m31 |[0m ...   updateProductAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m32 |[0m ...   getSystemSettingsAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m33 |[0m ...   updateSystemSettingsAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m34 |[0m ...   createVendorAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m35 |[0m ...   updateVendorAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m36 |[0m ...   deleteVendorAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m37 |[0m ...   createCustomerAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m38 |[0m ...   updateCustomerAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m39 |[0m ...   deleteCustomerAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m40 |[0m ...   createWarehouseAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m41 |[0m ...   updateWarehouseAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m42 |[0m ...   deleteWarehouseAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m43 |[0m ...   setOpeningBalanceAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m44 |[0m ...   getMDAction
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m45 |[0m ... [36mfrom[0m [32m"@/app/actions/system"[0m;
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m46 |[0m ...
+  [90m47 |[0m ...[36mxport[0m [36mfunction[0m [33mSettingsDashbo...[0m
+  [90m48 |[0m ...   [36mconst[0m [saved, setSaved] = ...
+
+The export importProductsAction was not found in module [project]/src/app/actions/system.ts [app-ssr] (ecmascript).
+Did you mean to import getDashboardSummaryAction?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import trace:
+  Server Component:
+    ./src/app/settings/SettingsDashboard.tsx
+    ./src/app/settings/page.tsx
+
+
+./src/app/settings/SettingsDashboard.tsx:27:1
+Export setOpeningBalanceAction doesn't exist in target module
+  [90m25 |[0m ... [36mfrom[0m [32m"lucide-react"[0m;
+  [90m26 |[0m ...[36mmport[0m [33mBroadcastModal[0m [36mfrom[0m [32m"./...[0m
+[31m[1m>[0m [90m27 |[0m ...[36mmport[0m {
+  [90m   |[0m    [31m[1m^^^^^^^[0m
+[31m[1m>[0m [90m28 |[0m ...   wipeDatabaseAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m29 |[0m ...   importProductsAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m30 |[0m ...   createProductAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m31 |[0m ...   updateProductAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m32 |[0m ...   getSystemSettingsAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m33 |[0m ...   updateSystemSettingsAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m34 |[0m ...   createVendorAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m35 |[0m ...   updateVendorAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m36 |[0m ...   deleteVendorAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m37 |[0m ...   createCustomerAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m38 |[0m ...   updateCustomerAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m39 |[0m ...   deleteCustomerAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m40 |[0m ...   createWarehouseAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m41 |[0m ...   updateWarehouseAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m42 |[0m ...   deleteWarehouseAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m43 |[0m ...   setOpeningBalanceAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m44 |[0m ...   getMDAction
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m45 |[0m ... [36mfrom[0m [32m"@/app/actions/system"[0m;
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m46 |[0m ...
+  [90m47 |[0m ...[36mxport[0m [36mfunction[0m [33mSettingsDashbo...[0m
+  [90m48 |[0m ...   [36mconst[0m [saved, setSaved] = ...
+
+The export setOpeningBalanceAction was not found in module [project]/src/app/actions/system.ts [app-client] (ecmascript).
+Did you mean to import wipeDatabaseAction?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import trace:
+  Server Component:
+    ./src/app/settings/SettingsDashboard.tsx
+    ./src/app/settings/page.tsx
+
+
+./src/app/settings/SettingsDashboard.tsx:27:1
+Export setOpeningBalanceAction doesn't exist in target module
+  [90m25 |[0m ... [36mfrom[0m [32m"lucide-react"[0m;
+  [90m26 |[0m ...[36mmport[0m [33mBroadcastModal[0m [36mfrom[0m [32m"./...[0m
+[31m[1m>[0m [90m27 |[0m ...[36mmport[0m {
+  [90m   |[0m    [31m[1m^^^^^^^[0m
+[31m[1m>[0m [90m28 |[0m ...   wipeDatabaseAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m29 |[0m ...   importProductsAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m30 |[0m ...   createProductAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m31 |[0m ...   updateProductAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m32 |[0m ...   getSystemSettingsAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m33 |[0m ...   updateSystemSettingsAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m34 |[0m ...   createVendorAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m35 |[0m ...   updateVendorAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m36 |[0m ...   deleteVendorAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m37 |[0m ...   createCustomerAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m38 |[0m ...   updateCustomerAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m39 |[0m ...   deleteCustomerAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m40 |[0m ...   createWarehouseAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m41 |[0m ...   updateWarehouseAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m42 |[0m ...   deleteWarehouseAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m43 |[0m ...   setOpeningBalanceAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m44 |[0m ...   getMDAction
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m45 |[0m ... [36mfrom[0m [32m"@/app/actions/system"[0m;
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m46 |[0m ...
+  [90m47 |[0m ...[36mxport[0m [36mfunction[0m [33mSettingsDashbo...[0m
+  [90m48 |[0m ...   [36mconst[0m [saved, setSaved] = ...
+
+The export setOpeningBalanceAction was not found in module [project]/src/app/actions/system.ts [app-ssr] (ecmascript).
+Did you mean to import wipeDatabaseAction?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import trace:
+  Server Component:
+    ./src/app/settings/SettingsDashboard.tsx
+    ./src/app/settings/page.tsx
+
+
+./src/app/warehouse/checker/page.tsx:14:1
+Export submitGoodsReceiptVerificationAction doesn't exist in target module
+  [90m12 |[0m ...[36mfrom[0m [32m"lucide-react"[0m;
+  [90m13 |[0m ...[36mport[0m { useSession } [36mfrom[0m [32m"nex...[0m
+[31m[1m>[0m [90m14 |[0m ...[36mport[0m {
+  [90m   |[0m    [31m[1m^^^^^^^[0m
+[31m[1m>[0m [90m15 |[0m ...  getGoodsReceiptsAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m16 |[0m ...  submitGoodsReceiptVerificat...
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m17 |[0m ...[36mfrom[0m [32m"@/app/actions/warehouse"[0m;
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m18 |[0m ...
+  [90m19 |[0m ...[36mport[0m [36mdefault[0m [36mfunction[0m [33mWarehou...[0m
+  [90m20 |[0m ...  [36mconst[0m { data: session } = u...
+
+The export submitGoodsReceiptVerificationAction was not found in module [project]/src/app/actions/warehouse.ts [app-client] (ecmascript).
+Did you mean to import getStockMovementsAction?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./src/app/warehouse/checker/page.tsx [Client Component Browser]
+    ./src/app/warehouse/checker/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/warehouse/checker/page.tsx [Client Component SSR]
+    ./src/app/warehouse/checker/page.tsx [Server Component]
+
+
+./src/app/warehouse/checker/page.tsx:14:1
+Export submitGoodsReceiptVerificationAction doesn't exist in target module
+  [90m12 |[0m ...[36mfrom[0m [32m"lucide-react"[0m;
+  [90m13 |[0m ...[36mport[0m { useSession } [36mfrom[0m [32m"nex...[0m
+[31m[1m>[0m [90m14 |[0m ...[36mport[0m {
+  [90m   |[0m    [31m[1m^^^^^^^[0m
+[31m[1m>[0m [90m15 |[0m ...  getGoodsReceiptsAction,
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m16 |[0m ...  submitGoodsReceiptVerificat...
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m17 |[0m ...[36mfrom[0m [32m"@/app/actions/warehouse"[0m;
+  [90m   |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m18 |[0m ...
+  [90m19 |[0m ...[36mport[0m [36mdefault[0m [36mfunction[0m [33mWarehou...[0m
+  [90m20 |[0m ...  [36mconst[0m { data: session } = u...
+
+The export submitGoodsReceiptVerificationAction was not found in module [project]/src/app/actions/warehouse.ts [app-ssr] (ecmascript).
+Did you mean to import getStockMovementsAction?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./src/app/warehouse/checker/page.tsx [Client Component Browser]
+    ./src/app/warehouse/checker/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/warehouse/checker/page.tsx [Client Component SSR]
+    ./src/app/warehouse/checker/page.tsx [Server Component]
+
+
+./src/app/warehouse/CheckerBoard.tsx:6:1
+Export verifyGoodsReceiptAction doesn't exist in target module
+  [90m4 |[0m ...[33mheckCircle[0m, [33mAlertCircle[0m, [33mBarco..[0m.
+  [90m5 |[0m ...[36mfrom[0m [32m"date-fns"[0m;
+[31m[1m>[0m [90m6 |[0m ...dsReceiptAction } [36mfrom[0m [32m"@/app/...[0m
+  [90m  |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m7 |[0m ...n } [36mfrom[0m [32m"next-auth/react"[0m;
+  [90m8 |[0m ... [32m"@/lib/utils"[0m;
+  [90m9 |[0m ...
+
+The export verifyGoodsReceiptAction was not found in module [project]/src/app/actions/warehouse.ts [app-client] (ecmascript).
+Did you mean to import getStockMovementsAction?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./src/app/warehouse/CheckerBoard.tsx [Client Component Browser]
+    ./src/app/warehouse/WarehouseDashboard.tsx [Client Component Browser]
+    ./src/app/warehouse/WarehouseDashboard.tsx [Server Component]
+    ./src/app/warehouse/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/warehouse/CheckerBoard.tsx [Client Component SSR]
+    ./src/app/warehouse/WarehouseDashboard.tsx [Client Component SSR]
+    ./src/app/warehouse/WarehouseDashboard.tsx [Server Component]
+    ./src/app/warehouse/page.tsx [Server Component]
+
+
+./src/app/warehouse/CheckerBoard.tsx:6:1
+Export verifyGoodsReceiptAction doesn't exist in target module
+  [90m4 |[0m ...[33mheckCircle[0m, [33mAlertCircle[0m, [33mBarco..[0m.
+  [90m5 |[0m ...[36mfrom[0m [32m"date-fns"[0m;
+[31m[1m>[0m [90m6 |[0m ...dsReceiptAction } [36mfrom[0m [32m"@/app/...[0m
+  [90m  |[0m    [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m7 |[0m ...n } [36mfrom[0m [32m"next-auth/react"[0m;
+  [90m8 |[0m ... [32m"@/lib/utils"[0m;
+  [90m9 |[0m ...
+
+The export verifyGoodsReceiptAction was not found in module [project]/src/app/actions/warehouse.ts [app-ssr] (ecmascript).
+Did you mean to import getStockMovementsAction?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./src/app/warehouse/CheckerBoard.tsx [Client Component Browser]
+    ./src/app/warehouse/WarehouseDashboard.tsx [Client Component Browser]
+    ./src/app/warehouse/WarehouseDashboard.tsx [Server Component]
+    ./src/app/warehouse/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/warehouse/CheckerBoard.tsx [Client Component SSR]
+    ./src/app/warehouse/WarehouseDashboard.tsx [Client Component SSR]
+    ./src/app/warehouse/WarehouseDashboard.tsx [Server Component]
+    ./src/app/warehouse/page.tsx [Server Component]
+
+
+    at <unknown> (./src/app/settings/SettingsDashboard.tsx:27:1)
+    at <unknown> (./src/app/settings/SettingsDashboard.tsx:27:1)
+    at <unknown> (./src/components/layout/TopHeader.tsx:9:1)
+    at <unknown> (./src/components/layout/TopHeader.tsx:9:1)
+    at <unknown> (./src/app/settings/SettingsDashboard.tsx:27:1)
+    ... collapsed 3 duplicate lines matching above 1 lines 3 times...
+    at <unknown> (./src/app/warehouse/checker/page.tsx:14:1)
+    at <unknown> (./src/app/warehouse/checker/page.tsx:14:1)
+    at <unknown> (./src/app/settings/SettingsDashboard.tsx:27:1)
+    ... collapsed 5 duplicate lines matching above 1 lines 5 times...
+    at <unknown> (./src/app/warehouse/checker/page.tsx:14:1)
+    at <unknown> (./src/app/warehouse/checker/page.tsx:14:1)
+    at <unknown> (./src/app/warehouse/CheckerBoard.tsx:6:1)
+    at <unknown> (./src/app/warehouse/CheckerBoard.tsx:6:1)

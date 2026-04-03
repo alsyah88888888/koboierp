@@ -32,7 +32,7 @@ import {
     updateWarehouseAction,
     deleteWarehouseAction,
     getMDAction
-} from "@/app/actions";
+} from "@/actions/master";
 import { cn } from "@/lib/utils";
 import { useSession } from "next-auth/react";
 

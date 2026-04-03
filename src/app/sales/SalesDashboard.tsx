@@ -5,7 +5,7 @@ import { Plus, Clock, FileText, Search, Truck, Trash2, Eye, Edit2, BarChart3, Tr
 import { format } from "date-fns";
 import SalesModal from "@/app/sales/SalesModal";
 import { useSession } from "next-auth/react";
-import { deleteSalesDeliveryAction, deleteSalesReturnAction } from "@/app/actions";
+import { deleteSalesDeliveryAction, deleteSalesReturnAction } from "@/actions/sales";
 import { cn } from "@/lib/utils";
 import { DashboardStats } from "../components/DashboardStats";
 import Link from "next/link";
@@ -368,7 +368,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                                 </tr>
                             </thead>
                             <tbody>
-                                {filteredDeliveries.map((d: any) => (
+                                {Array.isArray(filteredDeliveries) && filteredDeliveries.map((d: any) => (
                                     <tr key={d.id} className="hover:bg-slate-50/50 transition-colors">
                                         <td data-label="No. SJ" className="font-mono text-primary font-bold md:pl-6">
                                             {d.deliveryNumber}
@@ -428,7 +428,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                                 </tr>
                             </thead>
                             <tbody>
-                                {filteredReturns.map((r: any) => (
+                                {Array.isArray(filteredReturns) && filteredReturns.map((r: any) => (
                                     <tr key={r.id}>
                                         <td data-label="No. Retur" className="font-mono text-blue-700 font-bold md:pl-6">{r.returnNumber}</td>
                                         <td data-label="No. SJ" className="font-mono text-slate-500">{r.delivery.deliveryNumber}</td>

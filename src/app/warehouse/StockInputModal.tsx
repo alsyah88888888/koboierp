@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { updateStockAction } from "@/app/actions";
+import { updateStockAction } from "@/actions/warehouse";
 import { X, Box, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -66,14 +66,14 @@ export function StockInputModal({ products, warehouses, onClose }: { products: P
                             <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Product / SKU</label>
                             <select value={productId} onChange={e => setProductId(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-2xl text-sm font-bold focus:border-primary focus:bg-white transition-all outline-none appearance-none" required>
                                 <option value="">Select Product...</option>
-                                {products.map(p => <option key={p.id} value={p.id}>{p.sku} - {p.name}</option>)}
+                                {Array.isArray(products) && products.map(p => <option key={p.id} value={p.id}>{p.sku} - {p.name}</option>)}
                             </select>
                         </div>
                         <div className="space-y-2">
                             <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Warehouse Location</label>
                             <select value={warehouseId} onChange={e => setWarehouseId(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-2xl text-sm font-bold focus:border-primary focus:bg-white transition-all outline-none appearance-none" required>
                                 <option value="">Select Warehouse...</option>
-                                {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+                                {Array.isArray(warehouses) && warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
                             </select>
                         </div>
                     </div>

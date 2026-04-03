@@ -1,4 +1,4 @@
-import { fixReceiptPrefixMigrationAction } from "@/app/actions";
+import { fixReceiptPrefixMigrationAction } from "@/actions/system";
 import { NextResponse } from "next/server";
 
 export async function GET() {

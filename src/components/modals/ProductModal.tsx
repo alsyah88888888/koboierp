@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { X, Box } from "lucide-react";
-import { createProductAction } from "@/app/actions";
+import { createProductAction } from "@/actions/master";
 import { getSuggestedCategory } from "@/lib/categorization";
 
 export function ProductModal({ onClose, onSuccess }: { onClose: () => void, onSuccess?: (product: any) => void }) {

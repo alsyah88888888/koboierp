@@ -7,7 +7,9 @@ import { formatCurrency, cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { FinanceModal } from "./FinanceModal";
 import { useSession } from "next-auth/react";
-import { updatePaymentStatusAction, deleteFinanceTransactionAction, deleteJournalEntryAction, getCortexXmlContentAction, verifyPurchaseReturnAction, verifySalesReturnAction, updatePurchaseRequestStatusAction } from "@/app/actions";
+import { updatePaymentStatusAction, deleteFinanceTransactionAction, deleteJournalEntryAction } from "@/actions/finance";
+import { verifyPurchaseReturnAction, updatePurchaseRequestStatusAction } from "@/actions/purchase";
+import { verifySalesReturnAction, getCortexXmlContentAction } from "@/actions/sales";
 import { DashboardStats } from "../components/DashboardStats";
 import { CheckCircle2, Clock } from "lucide-react";
 import { exportToExcel } from "@/lib/excel";
@@ -725,7 +727,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-rose-50">
-                                        {filteredReturns.map((r: any) => (
+                                        {Array.isArray(filteredReturns) && filteredReturns.map((r: any) => (
                                             <tr key={r.id} className="hover:bg-rose-50/50 transition-colors">
                                                 <td className="px-6 py-4 font-mono font-bold text-rose-600">{r.returnNumber}</td>
                                                 <td className="px-6 py-4 text-slate-500">{format(new Date(r.date || r.createdAt), "dd/MM/yyyy")}</td>
@@ -775,7 +777,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-50 text-slate-700">
-                                    {filteredSales.map((s: any) => (
+                                    {Array.isArray(filteredSales) && filteredSales.map((s: any) => (
                                         <tr key={s.id} className="hover:bg-slate-50/80 transition-all group/row">
                                             <td className="px-8 py-5">
                                                 <div className="text-[11px] font-black text-slate-400 uppercase tracking-widest leading-none mb-2">{isClient ? format(new Date(s.createdAt), "dd/MM/yy") : "..."}</div>
@@ -851,7 +853,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
 
                             {/* Mobile Card View */}
                             <div className="md:hidden p-4 space-y-4">
-                                {filteredSales.map((s: any) => (
+                                {Array.isArray(filteredSales) && filteredSales.map((s: any) => (
                                     <div key={s.id} className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm">
                                         <div className="flex justify-between items-start mb-4">
                                             <div className="flex flex-col gap-1">
@@ -910,7 +912,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-blue-100/50">
-                                        {filteredSalesReturns.map((r: any) => (
+                                        {Array.isArray(filteredSalesReturns) && filteredSalesReturns.map((r: any) => (
                                             <tr key={r.id} className="group/ret">
                                                 <td className="py-4 font-black text-blue-600">
                                                     <div>{r.returnNumber}</div>
@@ -953,7 +955,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-50 text-slate-700">
-                                {unverifiedReceipts.map((r: any) => (
+                                {Array.isArray(unverifiedReceipts) && unverifiedReceipts.map((r: any) => (
                                     <tr key={r.id} className="hover:bg-slate-50/80 transition-all">
                                         <td className="px-8 py-5">
                                             <div className="text-[11px] font-black text-slate-400 uppercase tracking-widest leading-none mb-2">{isClient ? format(new Date(r.createdAt), "dd/MM/yy") : "..."}</div>
@@ -978,7 +980,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
 
                         {/* Mobile Cards for Checker */}
                         <div className="md:hidden p-4 space-y-4">
-                            {unverifiedReceipts.map((r: any) => (
+                            {Array.isArray(unverifiedReceipts) && unverifiedReceipts.map((r: any) => (
                                 <div key={r.id} className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm border-l-4 border-l-amber-400">
                                     <div className="flex justify-between items-start mb-4">
                                         <div className="flex flex-col gap-1">
@@ -1014,7 +1016,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-50 text-slate-700">
-                                {filteredPurchaseRequests.map((r: any) => (
+                                {Array.isArray(filteredPurchaseRequests) && filteredPurchaseRequests.map((r: any) => (
                                     <tr key={r.id} className="hover:bg-slate-50/80 transition-all">
                                         <td className="px-8 py-5">
                                             <div className="text-[11px] font-black text-slate-400 uppercase tracking-widest leading-none mb-2">{isClient ? format(new Date(r.createdAt), "dd/MM/yy") : "..."}</div>
@@ -1043,7 +1045,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
 
                         {/* Mobile Cards for PR */}
                         <div className="md:hidden p-4 space-y-4">
-                             {filteredPurchaseRequests.map((r: any) => (
+                             {Array.isArray(filteredPurchaseRequests) && filteredPurchaseRequests.map((r: any) => (
                                 <div key={r.id} className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm border-l-4 border-l-amber-500">
                                     <div className="flex justify-between items-start mb-4">
                                         <div className="flex flex-col gap-1">
@@ -1086,7 +1088,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-50 text-slate-700">
-                                {transactions.map((tx: any) => (
+                                {Array.isArray(transactions) && transactions.map((tx: any) => (
                                     <tr key={tx.id} className="hover:bg-slate-50/80 transition-all">
                                         <td className="px-8 py-5 text-slate-400 font-bold tabular-nums">
                                             {isClient && tx.date ? format(new Date(tx.date), "dd/MM/yy") : "..."}
@@ -1119,7 +1121,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
 
                         {/* Mobile view for history */}
                         <div className="md:hidden p-4 space-y-4">
-                             {transactions.map((tx: any) => (
+                             {Array.isArray(transactions) && transactions.map((tx: any) => (
                                 <div key={tx.id} className="bg-white border border-slate-50 rounded-2xl p-5 shadow-sm">
                                     <div className="flex justify-between items-start mb-4">
                                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{isClient && tx.date ? format(new Date(tx.date), "dd MMM yyyy") : "..."}</span>
@@ -1200,7 +1202,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
             {/* Account Matrix for Ledger */}
             {activeTab === "ledger" && (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 px-1">
-                    {accounts.map((account: any) => (
+                    {Array.isArray(accounts) && accounts.map((account: any) => (
                         <div key={account.id} className="erp-card p-5 bg-white/60 hover:border-primary/40 transition-all group cursor-pointer border-slate-200/50">
                             <div className="flex justify-between items-start mb-4">
                                 <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest bg-slate-100 px-1.5 py-0.5 rounded-md group-hover:bg-primary group-hover:text-white transition-colors">{account.code}</div>
