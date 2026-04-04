@@ -61,8 +61,8 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
         ? (subtotal * (parseIndoNumber(totalDiscountPercent) / 100)) 
         : (parseIndoNumber(totalDiscount) || 0);
 
-    const taxAmount = (subtotal - finalDiscountNominal) * (Number(taxRate) / 100);
-    const grandTotal = subtotal - finalDiscountNominal + taxAmount;
+    const taxAmount = Math.round((subtotal - finalDiscountNominal) * (Number(taxRate) / 100));
+    const grandTotal = Math.round(subtotal - finalDiscountNominal + taxAmount);
     const totalQty = items.reduce((sum, item) => sum + (parseIndoNumber(item.quantity) || 0), 0);
 
     if (!isOpen && !result) return null;
@@ -155,6 +155,11 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
             const response = initialData 
                 ? await callAction("updateGoodsReceipt", initialData.id, data)
                 : await callAction("createGoodsReceipt", data);
+            
+            if (response && response.error) {
+                setError(response.error);
+                return;
+            }
             
             setResult(response);
             // Don't close immediately so user can see the form number result

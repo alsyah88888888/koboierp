@@ -9,25 +9,35 @@ import { revalidatePath } from "next/cache";
  */
 
 export async function createPurchaseRequestAction(data: any) {
-    const { getAuthOptions } = require("@/lib/auth");
-    const { getServerSession } = require("next-auth");
-    const { createPurchaseRequestService } = require("@/lib/services/purchase-service");
+    try {
+        const { getAuthOptions } = require("@/lib/auth");
+        const { getServerSession } = require("next-auth");
+        const { createPurchaseRequestService } = require("@/lib/services/purchase-service");
 
-    const session = (await getServerSession(getAuthOptions())) as any;
-    if (!session?.user?.id) throw new Error("Unauthorized");
+        const session = (await getServerSession(getAuthOptions())) as any;
+        if (!session?.user?.id) throw new Error("Unauthorized");
 
-    return await createPurchaseRequestService(data, session.user.id);
+        return await createPurchaseRequestService(data, session.user.id);
+    } catch (err: any) {
+        console.error("[createPurchaseRequestAction] ERROR:", err);
+        return { error: err.message || "An unexpected error occurred while creating the purchase request." };
+    }
 }
 
 export async function createGoodsReceiptAction(data: any) {
-    const { getAuthOptions } = require("@/lib/auth");
-    const { getServerSession } = require("next-auth");
-    const { createGoodsReceiptService } = require("@/lib/services/purchase-service");
+    try {
+        const { getAuthOptions } = require("@/lib/auth");
+        const { getServerSession } = require("next-auth");
+        const { createGoodsReceiptService } = require("@/lib/services/purchase-service");
 
-    const session = (await getServerSession(getAuthOptions())) as any;
-    if (!session?.user?.id) throw new Error("Unauthorized");
+        const session = (await getServerSession(getAuthOptions())) as any;
+        if (!session?.user?.id) throw new Error("Unauthorized");
 
-    return await createGoodsReceiptService(data, session.user.id);
+        return await createGoodsReceiptService(data, session.user.id);
+    } catch (err: any) {
+        console.error("[createGoodsReceiptAction] ERROR:", err);
+        return { error: err.message || "An unexpected error occurred while creating the goods receipt." };
+    }
 }
 
 export async function deleteGoodsReceiptAction(id: string) {
@@ -80,49 +90,54 @@ export async function deleteGoodsReceiptAction(id: string) {
 }
 
 export async function createPurchaseOrderAction(data: any) {
-    const { getAuthOptions } = require("@/lib/auth");
-    const { getServerSession } = require("next-auth");
-    const { getPrisma } = require("@/lib/prisma");
-    const prisma = getPrisma();
+    try {
+        const { getAuthOptions } = require("@/lib/auth");
+        const { getServerSession } = require("next-auth");
+        const { getPrisma } = require("@/lib/prisma");
+        const prisma = getPrisma();
 
-    return await prisma.$transaction(async (tx: any) => {
-        const today = new Date();
-        const dateStr = `${today.getFullYear()}${(today.getMonth() + 1).toString().padStart(2, '0')}${today.getDate().toString().padStart(2, '0')}`;
-        const prefix = `KB-PO-${dateStr}-`;
-        const latest = await tx.purchaseOrder.findFirst({
-            where: { orderNumber: { startsWith: prefix } },
-            orderBy: { orderNumber: 'desc' }
-        });
+        return await prisma.$transaction(async (tx: any) => {
+            const today = new Date();
+            const dateStr = `${today.getFullYear()}${(today.getMonth() + 1).toString().padStart(2, '0')}${today.getDate().toString().padStart(2, '0')}`;
+            const prefix = `KB-PO-${dateStr}-`;
+            const latest = await tx.purchaseOrder.findFirst({
+                where: { orderNumber: { startsWith: prefix } },
+                orderBy: { orderNumber: 'desc' }
+            });
 
-        let nextNum = 1;
-        if (latest) {
-            const parts = latest.orderNumber.split('-');
-            const lastSeq = parseInt(parts[parts.length - 1]);
-            if (!isNaN(lastSeq)) nextNum = lastSeq + 1;
-        }
-        const orderNumber = `${prefix}${String(nextNum).padStart(3, '0')}`;
-
-        const session = (await getServerSession(getAuthOptions())) as any;
-        const po = await tx.purchaseOrder.create({
-            data: {
-                orderNumber,
-                vendorId: data.vendorId,
-                notes: data.notes,
-                createdById: session?.user?.id,
-                items: {
-                    create: data.items.map((i: any) => ({
-                        productId: i.productId,
-                        quantity: i.quantity,
-                        uom: i.uom,
-                        purchasePrice: i.purchasePrice as any
-                    }))
-                }
+            let nextNum = 1;
+            if (latest) {
+                const parts = latest.orderNumber.split('-');
+                const lastSeq = parseInt(parts[parts.length - 1]);
+                if (!isNaN(lastSeq)) nextNum = lastSeq + 1;
             }
-        });
+            const orderNumber = `${prefix}${String(nextNum).padStart(3, '0')}`;
 
-        revalidatePath("/purchase");
-        return po;
-    });
+            const session = (await getServerSession(getAuthOptions())) as any;
+            const po = await tx.purchaseOrder.create({
+                data: {
+                    orderNumber,
+                    vendorId: data.vendorId,
+                    notes: data.notes,
+                    createdById: session?.user?.id,
+                    items: {
+                        create: data.items.map((i: any) => ({
+                            productId: i.productId,
+                            quantity: i.quantity,
+                            uom: i.uom,
+                            purchasePrice: i.purchasePrice as any
+                        }))
+                    }
+                }
+            });
+
+            revalidatePath("/purchase");
+            return po;
+        });
+    } catch (err: any) {
+        console.error("[createPurchaseOrderAction] ERROR:", err);
+        return { error: err.message || "An unexpected error occurred while creating the purchase order." };
+    }
 }
 
 export async function deletePurchaseRequestAction(id: string) {
@@ -137,25 +152,35 @@ export async function deletePurchaseRequestAction(id: string) {
 }
 
 export async function updateGoodsReceiptAction(id: string, data: any) {
-    const { getAuthOptions } = require("@/lib/auth");
-    const { getServerSession } = require("next-auth");
-    const { updateGoodsReceiptService } = require("@/lib/services/purchase-service");
+    try {
+        const { getAuthOptions } = require("@/lib/auth");
+        const { getServerSession } = require("next-auth");
+        const { updateGoodsReceiptService } = require("@/lib/services/purchase-service");
 
-    const session = (await getServerSession(getAuthOptions())) as any;
-    if (!session?.user?.id) throw new Error("Unauthorized");
+        const session = (await getServerSession(getAuthOptions())) as any;
+        if (!session?.user?.id) throw new Error("Unauthorized");
 
-    return await updateGoodsReceiptService(id, data, session.user.id);
+        return await updateGoodsReceiptService(id, data, session.user.id);
+    } catch (err: any) {
+        console.error("[updateGoodsReceiptAction] ERROR:", err);
+        return { error: err.message || "An unexpected error occurred while updating the goods receipt." };
+    }
 }
 
 export async function createPurchaseReturnAction(data: any) {
-    const { getAuthOptions } = require("@/lib/auth");
-    const { getServerSession } = require("next-auth");
-    const { createPurchaseReturnService } = require("@/lib/services/purchase-service");
+    try {
+        const { getAuthOptions } = require("@/lib/auth");
+        const { getServerSession } = require("next-auth");
+        const { createPurchaseReturnService } = require("@/lib/services/purchase-service");
 
-    const session = (await getServerSession(getAuthOptions())) as any;
-    if (!session?.user?.id) throw new Error("Unauthorized");
+        const session = (await getServerSession(getAuthOptions())) as any;
+        if (!session?.user?.id) throw new Error("Unauthorized");
 
-    return await createPurchaseReturnService(data, session.user.id);
+        return await createPurchaseReturnService(data, session.user.id);
+    } catch (err: any) {
+        console.error("[createPurchaseReturnAction] ERROR:", err);
+        return { error: err.message || "An unexpected error occurred while creating the purchase return." };
+    }
 }
 
 export async function deletePurchaseReturnAction(id: string) {
