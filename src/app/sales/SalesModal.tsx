@@ -306,10 +306,10 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                     )}
                                 </div>
 
-                                <div className="space-y-1">
+                                <div className="space-y-1 min-w-0">
                                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">PO Number / SJ Date</label>
                                     <div className="flex gap-2">
-                                        <div className="relative flex-1">
+                                        <div className="relative flex-[2] min-w-0">
                                             <input
                                                 value={poNumber}
                                                 onChange={e => setPoNumber(e.target.value)}
@@ -317,13 +317,15 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                                 className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg text-sm font-bold focus:border-primary outline-none transition-all placeholder:text-slate-300"
                                             />
                                         </div>
-                                        <input
-                                            type="date"
-                                            value={date}
-                                            onChange={e => setDate(e.target.value)}
-                                            className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg text-xs font-bold focus:border-primary outline-none cursor-pointer"
-                                            required
-                                        />
+                                        <div className="flex-1 min-w-0">
+                                            <input
+                                                type="date"
+                                                value={date}
+                                                onChange={e => setDate(e.target.value)}
+                                                className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg text-xs font-bold focus:border-primary outline-none cursor-pointer"
+                                                required
+                                            />
+                                        </div>
                                     </div>
                                 </div>
 

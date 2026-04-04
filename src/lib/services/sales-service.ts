@@ -21,10 +21,15 @@ export async function createSalesDeliveryService(data: any, userId: string) {
             ? data.hasTaxOrDisc 
             : ((Number(data.taxRate) || 0) > 0 || (Number(data.totalDiscount) || 0) > 0 || data.items.some((i: any) => (Number(i.discount) || 0) > 0));
 
-        const prefix = hasTaxOrDisc ? `KB-SJD-${dateStr}-` : `KB-SJ-${dateStr}-`;
+        const prefix = hasTaxOrDisc ? `KB-TRND-${dateStr}-` : `KB-TRN-${dateStr}-`;
 
         const latest = await tx.salesDelivery.findFirst({
-            where: { deliveryNumber: { startsWith: prefix } },
+            where: {
+                OR: [
+                    { deliveryNumber: { startsWith: prefix } },
+                    { deliveryNumber: { startsWith: hasTaxOrDisc ? `KB-SJD-${dateStr}-` : `KB-SJ-${dateStr}-` } }
+                ]
+            },
             orderBy: { deliveryNumber: 'desc' }
         });
 
@@ -178,15 +183,21 @@ export async function updateSalesDeliveryService(id: string, data: any) {
             : ((Number(data.taxRate) || 0) > 0 || (Number(data.totalDiscount) || 0) > 0 || data.items.some((i: any) => (Number(i.discount) || 0) > 0));
 
         let currentDeliveryNumber = oldDelivery.deliveryNumber;
-        const isCurrentlyDiscounted = currentDeliveryNumber.startsWith("KB-SJD-");
-        const currentIsTRN = currentDeliveryNumber.startsWith("KB-TRN-");
+        const isCurrentlyTaxed = currentDeliveryNumber.startsWith("KB-TRND-") || currentDeliveryNumber.startsWith("KB-SJD-");
+        const currentIsTRN = currentDeliveryNumber.startsWith("KB-TRN-") || currentDeliveryNumber.startsWith("KB-SJ-");
 
-        if (hasTaxOrDisc && (!isCurrentlyDiscounted || currentIsTRN)) {
-            // Update to SJD (handle migration from TRN too)
-            currentDeliveryNumber = currentDeliveryNumber.replace("KB-SJ-", "KB-SJD-").replace("KB-TRN-", "KB-SJD-");
-        } else if (!hasTaxOrDisc && (isCurrentlyDiscounted || currentIsTRN)) {
-            // Update to SJ (handle migration from TRN too)
-            currentDeliveryNumber = currentDeliveryNumber.replace("KB-SJD-", "KB-SJ-").replace("KB-TRN-", "KB-SJ-");
+        if (hasTaxOrDisc && !isCurrentlyTaxed) {
+            // Update to TRND (handle migration from SJ/TRN/SJD)
+            currentDeliveryNumber = currentDeliveryNumber.replace("KB-SJ-", "KB-TRND-").replace("KB-TRN-", "KB-TRND-").replace("KB-SJD-", "KB-TRND-");
+        } else if (!hasTaxOrDisc && !currentIsTRN) {
+            // Update to TRN (handle migration from SJ/TRN/SJD)
+            currentDeliveryNumber = currentDeliveryNumber.replace("KB-SJD-", "KB-TRN-").replace("KB-TRND-", "KB-TRN-").replace("KB-SJ-", "KB-TRN-");
+        } else if (hasTaxOrDisc && isCurrentlyTaxed && currentDeliveryNumber.startsWith("KB-SJD-")) {
+             // Just migrate prefix SJD -> TRND if mode same
+             currentDeliveryNumber = currentDeliveryNumber.replace("KB-SJD-", "KB-TRND-");
+        } else if (!hasTaxOrDisc && currentIsTRN && currentDeliveryNumber.startsWith("KB-SJ-")) {
+             // Just migrate prefix SJ -> TRN if mode same
+             currentDeliveryNumber = currentDeliveryNumber.replace("KB-SJ-", "KB-TRN-");
         }
 
         await tx.salesDelivery.update({
