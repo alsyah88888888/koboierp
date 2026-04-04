@@ -429,3 +429,19 @@ export async function createManualSalesAction(data: any) {
     revalidatePath("/warehouse");
     return serializeDecimal(result);
 }
+
+export async function voidSalesDeliveryAction(id: string, reason: string) {
+    try {
+        const { getAuthOptions } = require("@/lib/auth");
+        const { getServerSession } = require("next-auth");
+        const { voidSalesDeliveryService } = require("@/lib/services/sales-service");
+
+        const session = (await getServerSession(getAuthOptions())) as any;
+        if (!session?.user?.id) throw new Error("Unauthorized");
+
+        return await voidSalesDeliveryService(id, reason);
+    } catch (err: any) {
+        console.error("[voidSalesDeliveryAction] CRITICAL ERROR:", err);
+        return { error: err.message || "An unexpected error occurred while voiding the delivery." };
+    }
+}

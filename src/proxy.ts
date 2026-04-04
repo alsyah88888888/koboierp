@@ -37,6 +37,9 @@ export async function callAction(actionName: string, ...args: any[]) {
         case "createSalesReturn":
             const { createSalesReturnAction } = await import("@/actions/sales");
             return await createSalesReturnAction(...args as [any]);
+        case "voidSalesDelivery":
+            const { voidSalesDeliveryAction } = await import("@/actions/sales");
+            return await voidSalesDeliveryAction(...args as [string, string]);
 
         // FINANCE
         case "createFinanceTransaction":
