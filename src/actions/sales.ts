@@ -9,25 +9,35 @@ import { revalidatePath } from "next/cache";
  */
 
 export async function createSalesDeliveryAction(data: any) {
-    const { getAuthOptions } = require("@/lib/auth");
-    const { getServerSession } = require("next-auth");
-    const { createSalesDeliveryService } = require("@/lib/services/sales-service");
+    try {
+        const { getAuthOptions } = require("@/lib/auth");
+        const { getServerSession } = require("next-auth");
+        const { createSalesDeliveryService } = require("@/lib/services/sales-service");
 
-    const session = (await getServerSession(getAuthOptions())) as any;
-    if (!session?.user?.id) throw new Error("Unauthorized");
+        const session = (await getServerSession(getAuthOptions())) as any;
+        if (!session?.user?.id) throw new Error("Unauthorized");
 
-    return await createSalesDeliveryService(data, session.user.id);
+        return await createSalesDeliveryService(data, session.user.id);
+    } catch (err: any) {
+        console.error("[createSalesDeliveryAction] CRITICAL ERROR:", err);
+        return { error: err.message || "An unexpected error occurred at the server level." };
+    }
 }
 
 export async function updateSalesDeliveryAction(id: string, data: any) {
-    const { getAuthOptions } = require("@/lib/auth");
-    const { getServerSession } = require("next-auth");
-    const { updateSalesDeliveryService } = require("@/lib/services/sales-service");
+    try {
+        const { getAuthOptions } = require("@/lib/auth");
+        const { getServerSession } = require("next-auth");
+        const { updateSalesDeliveryService } = require("@/lib/services/sales-service");
 
-    const session = (await getServerSession(getAuthOptions())) as any;
-    if (!session?.user?.id) throw new Error("Unauthorized");
+        const session = (await getServerSession(getAuthOptions())) as any;
+        if (!session?.user?.id) throw new Error("Unauthorized");
 
-    return await updateSalesDeliveryService(id, data);
+        return await updateSalesDeliveryService(id, data);
+    } catch (err: any) {
+        console.error("[updateSalesDeliveryAction] CRITICAL ERROR:", err);
+        return { error: err.message || "An unexpected error occurred at the server level." };
+    }
 }
 
 export async function deleteSalesDeliveryAction(id: string) {

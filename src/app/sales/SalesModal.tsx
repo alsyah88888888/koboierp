@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { X, Plus, Trash2, Loader2, Save, Tag, ShoppingCart, Wand2, FileCheck, Search } from "lucide-react";
+import { X, Plus, Trash2, Loader2, Save, Tag, ShoppingCart, FileCheck, Search } from "lucide-react";
 import { callAction } from "@/proxy";
 
 import { formatCurrency, cn } from "@/lib/utils";
@@ -47,13 +47,6 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
         if (typeof val === 'number') return val;
         if (!val) return 0;
         return Number(String(val).replace(/\./g, "").replace(",", ".")) || 0;
-    };
-
-    const generatePoNumber = () => {
-        const now = new Date();
-        const dateStr = now.toISOString().slice(2, 10).replace(/-/g, ''); // YYMMDD
-        const randomStr = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-        setPoNumber(`PO-${dateStr}-${randomStr}`);
     };
 
     useEffect(() => {
@@ -222,12 +215,16 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
             } else {
                 res = await callAction("createSalesDelivery", data);
             }
-            setResult(res);
+
+            if (res && res.error) {
+                setError(res.error);
+                setLoading(false);
+            } else {
+                setResult(res);
+            }
         } catch (err: any) {
             setError(err.message || "Gagal menyimpan data.");
             setLoading(false);
-        } finally {
-            // Loading false handled in catch or by result state
         }
     };
 
@@ -316,17 +313,9 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                             <input
                                                 value={poNumber}
                                                 onChange={e => setPoNumber(e.target.value)}
-                                                placeholder="PO#"
-                                                className="w-full bg-slate-50 border border-slate-200 px-3 py-2 pr-10 rounded-lg text-sm font-bold focus:border-primary outline-none transition-all"
+                                                placeholder="Input No. PO Manual..."
+                                                className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg text-sm font-bold focus:border-primary outline-none transition-all placeholder:text-slate-300"
                                             />
-                                            <button
-                                                type="button"
-                                                onClick={generatePoNumber}
-                                                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-300 hover:text-primary transition-colors p-1"
-                                                title="Generate PO Number"
-                                            >
-                                                <Wand2 className="h-4 w-4" />
-                                            </button>
                                         </div>
                                         <input
                                             type="date"
