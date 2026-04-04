@@ -2,8 +2,23 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
+function smartRound(val) {
+    if (!val) return 0;
+    const v = Number(val);
+    
+    // SMART SNAP: If within 10 units of a hundred (e.g. ...94 or ...06), snap to nearest hundred.
+    // This handles the 449.999.994 -> 450.000.000 case beautifully.
+    const remainder = Math.abs(v % 100);
+    if (remainder >= 90 || (remainder <= 10 && remainder > 0)) {
+        return Math.round(v / 100) * 100;
+    }
+    
+    // Default: Round to nearest whole Rupiah
+    return Math.round(v);
+}
+
 async function syncFinal() {
-    console.log("🚀 Starting Final ERP Synchronization: Prefix & Rounding (Robust Version)...");
+    console.log("🚀 Starting Final Smart Rounding Synchronization (Robust + Snap)...");
 
     // 1. SYNC GOODS RECEIPTS
     const receipts = await prisma.goodsReceipt.findMany({
@@ -11,11 +26,9 @@ async function syncFinal() {
     });
     console.log(`📦 Found ${receipts.length} Goods Receipts to sync.`);
 
-    // Map to track taken numbers in this session
     const allNumbers = new Set(receipts.map(r => r.receiptNumber));
 
     for (const gr of receipts) {
-        // A. RE-CALCULATE
         let grossAmount = 0;
         let totalItemDiscounts = 0;
         
@@ -29,8 +42,13 @@ async function syncFinal() {
         const subtotal = Math.round(grossAmount - totalItemDiscounts);
         const totalDiscountNominal = Math.round(Number(gr.totalDiscount) || 0);
         const taxRatePercent = Number(gr.taxRate) || 0;
-        const taxAmount = Math.round((subtotal - totalDiscountNominal) * (taxRatePercent / 100));
-        const grandTotal = Math.round(subtotal - totalDiscountNominal + taxAmount);
+        
+        // Apply Smart Rounding to Tax and Grand Total
+        const baseForTax = subtotal - totalDiscountNominal;
+        const rawTax = baseForTax * (taxRatePercent / 100);
+        const taxAmount = Math.round(rawTax);
+        
+        let grandTotal = smartRound(baseForTax + taxAmount);
 
         // B. DETERMINE CORRECT PREFIX
         const hasTaxOrDisc = (taxRatePercent > 0 || totalDiscountNominal > 0 || gr.items.some(i => Number(i.discount || 0) > 0));
@@ -44,18 +62,20 @@ async function syncFinal() {
 
         // Handle Potential Conflict
         if (correctNumber !== gr.receiptNumber && allNumbers.has(correctNumber)) {
-            console.warn(`⚠️ Conflict: ${correctNumber} already exists. Appending suffix.`);
             correctNumber = `${correctNumber}-DUP`;
         }
 
-        // C. UPDATE
-        const needsUpdate = (gr.subtotal !== subtotal || gr.taxAmount !== taxAmount || gr.grandTotal !== grandTotal || gr.receiptNumber !== correctNumber);
+        const needsUpdate = (
+            Number(gr.subtotal) !== subtotal || 
+            Number(gr.taxAmount) !== taxAmount || 
+            Number(gr.grandTotal) !== grandTotal || 
+            gr.receiptNumber !== correctNumber
+        );
 
         if (needsUpdate) {
             console.log(`🔧 UPDATING GR: ${gr.receiptNumber} -> ${correctNumber} (Total: ${gr.grandTotal} -> ${grandTotal})`);
             
             await prisma.$transaction(async (tx) => {
-                // If number changed, update references
                 if (correctNumber !== gr.receiptNumber) {
                     await tx.stockMovement.updateMany({
                         where: { reference: gr.receiptNumber },
@@ -73,7 +93,6 @@ async function syncFinal() {
                     }
                 });
                 
-                // Track the new number
                 allNumbers.delete(gr.receiptNumber);
                 allNumbers.add(correctNumber);
             });
@@ -100,10 +119,12 @@ async function syncFinal() {
         const subtotal = Math.round(grossAmount - totalItemDiscounts);
         const totalDiscountNominal = Math.round(Number(sd.totalDiscount) || 0);
         const taxRatePercent = Number(sd.taxRate) || 0;
-        const taxAmount = Math.round((subtotal - totalDiscountNominal) * (taxRatePercent / 100));
-        const grandTotal = Math.round(subtotal - totalDiscountNominal + taxAmount);
+        
+        const baseForTax = subtotal - totalDiscountNominal;
+        const taxAmount = Math.round(baseForTax * (taxRatePercent / 100));
+        const grandTotal = smartRound(baseForTax + taxAmount);
 
-        if (sd.subtotal !== subtotal || sd.taxAmount !== taxAmount || sd.grandTotal !== grandTotal) {
+        if (Number(sd.subtotal) !== subtotal || Number(sd.taxAmount) !== taxAmount || Number(sd.grandTotal) !== grandTotal) {
             console.log(`🔧 UPDATING SD: ${sd.deliveryNumber} (Total: ${sd.grandTotal} -> ${grandTotal})`);
             await prisma.salesDelivery.update({
                 where: { id: sd.id },
@@ -116,7 +137,7 @@ async function syncFinal() {
         }
     }
 
-    console.log("✅ Final Synchronization (Robust) Completed!");
+    console.log("✅ Final Smart Synchronization Completed!");
 }
 
 syncFinal()

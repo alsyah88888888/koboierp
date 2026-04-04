@@ -1,0 +1,2065 @@
+{
+  "timestamp": "2026-04-04T13:30:42.479Z",
+  "goodsReceipts": [
+    {
+      "id": "cmmmy5n5o000guu7cbyzx0hab",
+      "receiptNumber": "KB-LPBD-20260312-001-DUP",
+      "subtotal": "198198190",
+      "taxAmount": "21801801",
+      "grandTotal": "219999991"
+    },
+    {
+      "id": "cmmmyh4dw000puu7cfupb9byk",
+      "receiptNumber": "KB-LPBD-20260312-002-DUP",
+      "subtotal": "4054054",
+      "taxAmount": "445946",
+      "grandTotal": "4500000"
+    },
+    {
+      "id": "cmmn39oqo001ruu7cd6t04uip",
+      "receiptNumber": "KB-LPB-20260223-001",
+      "subtotal": "84501000",
+      "taxAmount": "0",
+      "grandTotal": "84501000"
+    },
+    {
+      "id": "cmmn44mf4002euu7c0xozdwck",
+      "receiptNumber": "KB-LPB-20260312-003",
+      "subtotal": "93775000",
+      "taxAmount": "0",
+      "grandTotal": "93775000"
+    },
+    {
+      "id": "cmmn5wwda004fuu7c6dnhok4v",
+      "receiptNumber": "KB-LPB-20260312-004",
+      "subtotal": "24841500",
+      "taxAmount": "0",
+      "grandTotal": "24841500"
+    },
+    {
+      "id": "cmmn6buiw005uuu7cyy1c39ra",
+      "receiptNumber": "KB-LPB-20260310-002",
+      "subtotal": "175032000",
+      "taxAmount": "0",
+      "grandTotal": "175032000"
+    },
+    {
+      "id": "cmmn6m20m0067uu7ca0veecgv",
+      "receiptNumber": "KB-LPB-20260310-003",
+      "subtotal": "98001600",
+      "taxAmount": "0",
+      "grandTotal": "98001600"
+    },
+    {
+      "id": "cmmn7p12l009cuu7cerlx7xkw",
+      "receiptNumber": "KB-LPBD-20260312-006",
+      "subtotal": "14504505",
+      "taxAmount": "1595496",
+      "grandTotal": "16100001"
+    },
+    {
+      "id": "cmmneepkv0001uuz0cs70j9xt",
+      "receiptNumber": "KB-LPBD-20260312-001",
+      "subtotal": "115942140",
+      "taxAmount": "12753635",
+      "grandTotal": "128695775"
+    },
+    {
+      "id": "cmmngaeiw0018uuz0btvjl56k",
+      "receiptNumber": "KB-LPBD-20260312-002",
+      "subtotal": "19589405",
+      "taxAmount": "2154835",
+      "grandTotal": "21744240"
+    },
+    {
+      "id": "cmmockxs4000muua4xdp0bxv0",
+      "receiptNumber": "KB-LPB-20260313-001",
+      "subtotal": "7155000",
+      "taxAmount": "0",
+      "grandTotal": "7155000"
+    },
+    {
+      "id": "cmmsleolg0024uu34gdroofa4",
+      "receiptNumber": "KB-LPBD-20260302001-DUP",
+      "subtotal": "6875676",
+      "taxAmount": "756324",
+      "grandTotal": "7632000"
+    },
+    {
+      "id": "cmmn6vluo007luu7ci7daqil5",
+      "receiptNumber": "KB-LPBD-20260304-001",
+      "subtotal": "27284160",
+      "taxAmount": "0",
+      "grandTotal": "27284160"
+    },
+    {
+      "id": "cmmk64tvy0003uuwwjyu6nd52",
+      "receiptNumber": "KB-LPBD-20260309-001",
+      "subtotal": "105924324",
+      "taxAmount": "11651676",
+      "grandTotal": "117576000"
+    },
+    {
+      "id": "cmmlt9jzq0001uuf0u9oh19me",
+      "receiptNumber": "KB-LPBD-20260102-001-P",
+      "subtotal": "88079280",
+      "taxAmount": "9688721",
+      "grandTotal": "97768001"
+    },
+    {
+      "id": "cmmltfhef000euuf0fym3w606",
+      "receiptNumber": "KB-LPBD-20260108-001-P",
+      "subtotal": "418018000",
+      "taxAmount": "45981980",
+      "grandTotal": "463999980"
+    },
+    {
+      "id": "cmmltmjxs000muuf0cy5t00yz",
+      "receiptNumber": "KB-LPBD-20260106-001-P",
+      "subtotal": "23279279",
+      "taxAmount": "2560721",
+      "grandTotal": "25840000"
+    },
+    {
+      "id": "cmmluo1em0001uu0geqefh3lt",
+      "receiptNumber": "KB-LPBD-20260106-002-P",
+      "subtotal": "19411172",
+      "taxAmount": "2135229",
+      "grandTotal": "21546401"
+    },
+    {
+      "id": "cmmn62dre005huu7c5jo66p0z",
+      "receiptNumber": "KB-LPBD-20260311-001",
+      "subtotal": "38057658",
+      "taxAmount": "4186342",
+      "grandTotal": "42244000"
+    },
+    {
+      "id": "cmmn7n2dd008zuu7c6evxicf1",
+      "receiptNumber": "KB-LPBD-20260312-005",
+      "subtotal": "28576576",
+      "taxAmount": "3143423",
+      "grandTotal": "31719999"
+    },
+    {
+      "id": "cmmoi4yzv0050uua4p5dy26n0",
+      "receiptNumber": "KB-LPBD-20260313-002",
+      "subtotal": "13513513",
+      "taxAmount": "1486486",
+      "grandTotal": "14999999"
+    },
+    {
+      "id": "cmmojq41u005juua4pyff13rz",
+      "receiptNumber": "KB-LPBD-20260313-003",
+      "subtotal": "4655406",
+      "taxAmount": "512095",
+      "grandTotal": "5167501"
+    },
+    {
+      "id": "cmmojry7a005ruua4g3fxbr8y",
+      "receiptNumber": "KB-LPBD-20260313-004",
+      "subtotal": "29864866",
+      "taxAmount": "3285135",
+      "grandTotal": "33150001"
+    },
+    {
+      "id": "cmmoju1jg005zuua4oz0h7t21",
+      "receiptNumber": "KB-LPBD-20260313-005",
+      "subtotal": "216000000",
+      "taxAmount": "23760000",
+      "grandTotal": "239760000"
+    },
+    {
+      "id": "cmmokx6or006huua44v5lmvcv",
+      "receiptNumber": "KB-LPBD-20260305-001",
+      "subtotal": "175675680",
+      "taxAmount": "19324325",
+      "grandTotal": "195000005"
+    },
+    {
+      "id": "cmmq7kxk40001uuasyjoh26tt",
+      "receiptNumber": "KB-LPBD-20260314-001",
+      "subtotal": "396396380",
+      "taxAmount": "43603602",
+      "grandTotal": "439999982"
+    },
+    {
+      "id": "cmmsin6fa0001uu34l29cpkhw",
+      "receiptNumber": "KB-LPBD-20260316001",
+      "subtotal": "151351340",
+      "taxAmount": "16648647",
+      "grandTotal": "167999987"
+    },
+    {
+      "id": "cmmqa97vq0009uuasf7686c20",
+      "receiptNumber": "KB-LPBD-20260316006",
+      "subtotal": "36000000",
+      "taxAmount": "3960000",
+      "grandTotal": "39960000"
+    },
+    {
+      "id": "cmncsnqxy0052l1nv3e2nw7w1",
+      "receiptNumber": "KB-LPB-20260304-001",
+      "subtotal": "281040000",
+      "taxAmount": "0",
+      "grandTotal": "281040000"
+    },
+    {
+      "id": "cmmsmxkvl0033uu34ogegxnu2",
+      "receiptNumber": "KB-LPB-20260105-002",
+      "subtotal": "48240000",
+      "taxAmount": "0",
+      "grandTotal": "48240000"
+    },
+    {
+      "id": "cmmsmyfci003buu34k3molqxb",
+      "receiptNumber": "KB-LPB-20260105-003",
+      "subtotal": "52920000",
+      "taxAmount": "0",
+      "grandTotal": "52920000"
+    },
+    {
+      "id": "cmmsnc4dt004vuu34zcwlyatb",
+      "receiptNumber": "KB-LPBD-20260302002",
+      "subtotal": "23153153",
+      "taxAmount": "2546847",
+      "grandTotal": "25700000"
+    },
+    {
+      "id": "cmmsp0ktu008juu34iy69hav2",
+      "receiptNumber": "KB-LPBD-20260107-004",
+      "subtotal": "62049783",
+      "taxAmount": "6825476",
+      "grandTotal": "68875259"
+    },
+    {
+      "id": "cmmso7svm007huu34vt0iir6t",
+      "receiptNumber": "KB-LPBD-20260302003",
+      "subtotal": "17189190",
+      "taxAmount": "1890811",
+      "grandTotal": "19080001"
+    },
+    {
+      "id": "cmmsp25jo0096uu34fmqgkb2u",
+      "receiptNumber": "KB-LPB-20260107-005",
+      "subtotal": "174924000",
+      "taxAmount": "0",
+      "grandTotal": "174924000"
+    },
+    {
+      "id": "cmmsqay6000c8uu34koebvk96",
+      "receiptNumber": "KB-LPBD-20260302004",
+      "subtotal": "22578379",
+      "taxAmount": "2483622",
+      "grandTotal": "25062001"
+    },
+    {
+      "id": "cmmsuq9fj00hmuu34e40dj7qt",
+      "receiptNumber": "KB-LPBD-20260302005",
+      "subtotal": "8348754",
+      "taxAmount": "918363",
+      "grandTotal": "9267117"
+    },
+    {
+      "id": "cmmsuys6400i8uu34eco3u409",
+      "receiptNumber": "KB-LPBD-20260302006",
+      "subtotal": "18120721",
+      "taxAmount": "1993279",
+      "grandTotal": "20114000"
+    },
+    {
+      "id": "cmmsv70ox00imuu344krfrwmb",
+      "receiptNumber": "KB-LPBD-20260302007",
+      "subtotal": "141621622",
+      "taxAmount": "15578378",
+      "grandTotal": "157200000"
+    },
+    {
+      "id": "cmmsy0z5a0001uu2kv06hf68w",
+      "receiptNumber": "KB-LPBD-20260302001",
+      "subtotal": "225149550",
+      "taxAmount": "24766451",
+      "grandTotal": "249916001"
+    },
+    {
+      "id": "cmmsyxc4w002quu2kswtgy47g",
+      "receiptNumber": "KB-LPBD-20260303001",
+      "subtotal": "19279279",
+      "taxAmount": "2120721",
+      "grandTotal": "21400000"
+    },
+    {
+      "id": "cmmu2cfl20001uup8l4vcapn8",
+      "receiptNumber": "KB-LPBD-20260303002",
+      "subtotal": "175675676",
+      "taxAmount": "19324324",
+      "grandTotal": "195000000"
+    },
+    {
+      "id": "cmmu2hwuc000fuup8yxti76u5",
+      "receiptNumber": "KB-LPBD-20260303003",
+      "subtotal": "559459460",
+      "taxAmount": "61540541",
+      "grandTotal": "621000001"
+    },
+    {
+      "id": "cmmu3b8yl000tuup8y8l3bx9s",
+      "receiptNumber": "KB-LPBD-20260303004",
+      "subtotal": "15466592",
+      "taxAmount": "1701325",
+      "grandTotal": "17167917"
+    },
+    {
+      "id": "cmmu4hnrg001xuup8cwynd39m",
+      "receiptNumber": "KB-LPBD-20260303005",
+      "subtotal": "185509504",
+      "taxAmount": "20406045",
+      "grandTotal": "205915549"
+    },
+    {
+      "id": "cmmu5ihhb005puup87sl9nbfa",
+      "receiptNumber": "KB-LPBD-20260304003",
+      "subtotal": "51935110",
+      "taxAmount": "5712862",
+      "grandTotal": "57647972"
+    },
+    {
+      "id": "cmmu6e6t80069uup8zzsz6nf3",
+      "receiptNumber": "KB-LPBD-20260304004",
+      "subtotal": "10360360",
+      "taxAmount": "1139640",
+      "grandTotal": "11500000"
+    },
+    {
+      "id": "cmmsn8gp1004iuu34flbsop09",
+      "receiptNumber": "KB-LPBD-20260106-004",
+      "subtotal": "160367570",
+      "taxAmount": "17640433",
+      "grandTotal": "178008003"
+    },
+    {
+      "id": "cmmsnrdug005suu34utu9is55",
+      "receiptNumber": "KB-LPBD-20260107-001",
+      "subtotal": "45102701",
+      "taxAmount": "4961297",
+      "grandTotal": "50063998"
+    },
+    {
+      "id": "cmmso548f006zuu34i2aow9q8",
+      "receiptNumber": "KB-LPBD-20260107-002",
+      "subtotal": "45729730",
+      "taxAmount": "5030270",
+      "grandTotal": "50760000"
+    },
+    {
+      "id": "cmmssezzb00dluu34nk62yocv",
+      "receiptNumber": "KB-LPBD-20260108-002",
+      "subtotal": "50450450",
+      "taxAmount": "5549550",
+      "grandTotal": "56000000"
+    },
+    {
+      "id": "cmmssgcif00ejuu3437zg0hjr",
+      "receiptNumber": "KB-LPBD-20260108-003",
+      "subtotal": "38873875",
+      "taxAmount": "4276126",
+      "grandTotal": "43150001"
+    },
+    {
+      "id": "cmmstabzb00g9uu34q5gxirrr",
+      "receiptNumber": "KB-LPBD-20260109-001",
+      "subtotal": "48648650",
+      "taxAmount": "5351352",
+      "grandTotal": "54000002"
+    },
+    {
+      "id": "cmmstcfc300ghuu34eah57prx",
+      "receiptNumber": "KB-LPBD-20260109-002",
+      "subtotal": "41513514",
+      "taxAmount": "4566487",
+      "grandTotal": "46080001"
+    },
+    {
+      "id": "cmmsthelk00guuu34bozgr44w",
+      "receiptNumber": "KB-LPBD-20260109-003",
+      "subtotal": "166891901",
+      "taxAmount": "18358109",
+      "grandTotal": "185250010"
+    },
+    {
+      "id": "cmmsmwocu002vuu34yfxx8cll",
+      "receiptNumber": "KB-LPB-20260105-001",
+      "subtotal": "35280000",
+      "taxAmount": "0",
+      "grandTotal": "35280000"
+    },
+    {
+      "id": "cmnctowii005ql1nv15san1ww",
+      "receiptNumber": "KB-LPBD-20260304-007",
+      "subtotal": "18120721",
+      "taxAmount": "1993279",
+      "grandTotal": "20114000"
+    },
+    {
+      "id": "cmncu8c9u0065l1nvkxy5s4d0",
+      "receiptNumber": "KB-LPB-20260304-002",
+      "subtotal": "25000500",
+      "taxAmount": "0",
+      "grandTotal": "25000500"
+    },
+    {
+      "id": "cmncw5whx006jl1nvprz8rgfx",
+      "receiptNumber": "KB-LPBD-20260304-008",
+      "subtotal": "332564324",
+      "taxAmount": "36582076",
+      "grandTotal": "369146400"
+    },
+    {
+      "id": "cmnadlwad0003l1t0wrx8fwpo",
+      "receiptNumber": "KB-LPBD-20260324-001",
+      "subtotal": "114637838",
+      "taxAmount": "12610162",
+      "grandTotal": "127248000"
+    },
+    {
+      "id": "cmncyaca500o8l1nvy9y1qrru",
+      "receiptNumber": "KB-LPBD-20260304-009",
+      "subtotal": "26032432",
+      "taxAmount": "2863568",
+      "grandTotal": "28896000"
+    },
+    {
+      "id": "cmncz5nth00pal1nvzekwaejw",
+      "receiptNumber": "KB-LPBD-20260305-002",
+      "subtotal": "130162162",
+      "taxAmount": "14317838",
+      "grandTotal": "144480000"
+    },
+    {
+      "id": "cmncq2xt40035l1nv3t7z48rl",
+      "receiptNumber": "KB-LPBD-20260329-002",
+      "subtotal": "13189189",
+      "taxAmount": "1450811",
+      "grandTotal": "14640000"
+    },
+    {
+      "id": "cmncp9k6h002il1nvk05speyj",
+      "receiptNumber": "KB-LPBD-20260304-005",
+      "subtotal": "4905405",
+      "taxAmount": "539595",
+      "grandTotal": "5445000"
+    },
+    {
+      "id": "cmncp6pxn0022l1nv3bywujhw",
+      "receiptNumber": "KB-LPBD-20260304-004",
+      "subtotal": "125769729",
+      "taxAmount": "13834670",
+      "grandTotal": "139604399"
+    },
+    {
+      "id": "cmncmw19p001cl1nvumm93n0c",
+      "receiptNumber": "KB-LPBD-20260304-003",
+      "subtotal": "21982162",
+      "taxAmount": "2418038",
+      "grandTotal": "24400200"
+    },
+    {
+      "id": "cmnczd5ne00pzl1nvhrvaykos",
+      "receiptNumber": "KB-LPBD-20260305-003",
+      "subtotal": "17105406",
+      "taxAmount": "1881595",
+      "grandTotal": "18987001"
+    },
+    {
+      "id": "cmnd0qf1h00qol1nv5jhnwmxm",
+      "receiptNumber": "KB-LPBD-20260108-004",
+      "subtotal": "131277838",
+      "taxAmount": "14440562",
+      "grandTotal": "145718400"
+    },
+    {
+      "id": "cmnd1em1k00sjl1nvazv50ljj",
+      "receiptNumber": "KB-LPB-20260305-001",
+      "subtotal": "581400000",
+      "taxAmount": "0",
+      "grandTotal": "581400000"
+    },
+    {
+      "id": "cmmua53nz007nuup8wzrwg2wj",
+      "receiptNumber": "KB-LPBD-20260304006",
+      "subtotal": "123873874",
+      "taxAmount": "13626126",
+      "grandTotal": "137500000"
+    },
+    {
+      "id": "cmnd23kl500t7l1nvgmgg1iex",
+      "receiptNumber": "KB-LPBD-20260225-001",
+      "subtotal": "156756756",
+      "taxAmount": "17243243",
+      "grandTotal": "173999999"
+    },
+    {
+      "id": "cmndb827900uel1nv4n463w4b",
+      "receiptNumber": "KB-LPB-20260329-001",
+      "subtotal": "85878000",
+      "taxAmount": "0",
+      "grandTotal": "85878000"
+    },
+    {
+      "id": "cmnd12bn900s5l1nv3fz0uqbu",
+      "receiptNumber": "KB-LPBD-20260305-004",
+      "subtotal": "175675676",
+      "taxAmount": "19324324",
+      "grandTotal": "195000000"
+    },
+    {
+      "id": "cmmuiiia5009vuup8ng3t1zlm",
+      "receiptNumber": "KB-LPBD-20260317",
+      "subtotal": "141621622",
+      "taxAmount": "15578378",
+      "grandTotal": "157200000"
+    },
+    {
+      "id": "cmmujs83s00a8uup889rcy98h",
+      "receiptNumber": "KB-LPBD-20260305002",
+      "subtotal": "12027027",
+      "taxAmount": "1322973",
+      "grandTotal": "13350000"
+    },
+    {
+      "id": "cmmuk0gmr00amuup8bfvuk0uq",
+      "receiptNumber": "KB-LPBD-20260305003",
+      "subtotal": "49729730",
+      "taxAmount": "5470270",
+      "grandTotal": "55200000"
+    },
+    {
+      "id": "cmmk8gbjo0001uu5437nyhp6l",
+      "receiptNumber": "KB-LPBD-20260310-001",
+      "subtotal": "217945943",
+      "taxAmount": "23974054",
+      "grandTotal": "241919997"
+    },
+    {
+      "id": "cmmn707s90083uu7cqisw5s9q",
+      "receiptNumber": "KB-LPBD-20260304-002",
+      "subtotal": "4011840",
+      "taxAmount": "441302",
+      "grandTotal": "4453142"
+    },
+    {
+      "id": "cmmubwiba008luup8bct0g4qw",
+      "receiptNumber": "KB-LPBD-20260304008",
+      "subtotal": "16866666",
+      "taxAmount": "1855333",
+      "grandTotal": "18721999"
+    },
+    {
+      "id": "cmmsn59lv0045uu3462ncbhgp",
+      "receiptNumber": "KB-LPBD-20260106-003",
+      "subtotal": "477405411",
+      "taxAmount": "52514595",
+      "grandTotal": "529920006"
+    },
+    {
+      "id": "cmmuam2gz0081uup8zli1g9pl",
+      "receiptNumber": "KB -LPBD-20260304007",
+      "subtotal": "71221621",
+      "taxAmount": "7834378",
+      "grandTotal": "79055999"
+    },
+    {
+      "id": "cmnck0gx20001l1hdfriayege",
+      "receiptNumber": "KB-LPBD-20260329-001",
+      "subtotal": "111261261",
+      "taxAmount": "12238739",
+      "grandTotal": "123500000"
+    },
+    {
+      "id": "cmne09s8d00wll1nvg2n1ud29",
+      "receiptNumber": "KB-LPBD-20260330-001",
+      "subtotal": "25675676",
+      "taxAmount": "2824324",
+      "grandTotal": "28500000"
+    },
+    {
+      "id": "cmne3cb4v00zdl1nv2xosylc0",
+      "receiptNumber": "KB-LPBD-20260329-003",
+      "subtotal": "223362162",
+      "taxAmount": "24569838",
+      "grandTotal": "247932000"
+    },
+    {
+      "id": "cmne5citi00zzl1nv58isjuc7",
+      "receiptNumber": "KB-LPB-20260330-001",
+      "subtotal": "152000000",
+      "taxAmount": "0",
+      "grandTotal": "152000000"
+    },
+    {
+      "id": "cmnctde22005gl1nvzlthqkmn",
+      "receiptNumber": "KB-LPBD-20260304-006",
+      "subtotal": "64639639",
+      "taxAmount": "7110360",
+      "grandTotal": "71749999"
+    },
+    {
+      "id": "cmnfqjdww022xl1nvtekle4l6",
+      "receiptNumber": "KB-LPBD-20260306-001",
+      "subtotal": "207087838",
+      "taxAmount": "22779662",
+      "grandTotal": "229867500"
+    },
+    {
+      "id": "cmnfpg3v601y7l1nvdonjjizj",
+      "receiptNumber": "KB-LPBD-20260406-001",
+      "subtotal": "61187432",
+      "taxAmount": "6730618",
+      "grandTotal": "67918050"
+    },
+    {
+      "id": "cmnfqsfx6024jl1nvlhtv689o",
+      "receiptNumber": "KB-LPBD-20260331-003",
+      "subtotal": "249436937",
+      "taxAmount": "27438063",
+      "grandTotal": "276875000"
+    },
+    {
+      "id": "cmnfs6nac02bwl1nvcan8v6zs",
+      "receiptNumber": "KB-LPBD-20260308-002",
+      "subtotal": "9144649",
+      "taxAmount": "1005911",
+      "grandTotal": "10150560"
+    },
+    {
+      "id": "cmnfkbcxz01tzl1nvo8kjzvsx",
+      "receiptNumber": "KB-LPBD-20260330-007",
+      "subtotal": "162162162",
+      "taxAmount": "17837838",
+      "grandTotal": "180000000"
+    },
+    {
+      "id": "cmnfif0zk01r2l1nvmbgqiddt",
+      "receiptNumber": "KB-LPBD-20260108-005",
+      "subtotal": "32509550",
+      "taxAmount": "3576051",
+      "grandTotal": "36085601"
+    },
+    {
+      "id": "cmne6uppv016xl1nvbkjzqztq",
+      "receiptNumber": "KB-LPB-20260329-002",
+      "subtotal": "209970000",
+      "taxAmount": "0",
+      "grandTotal": "209970000"
+    },
+    {
+      "id": "cmne7v44a017ll1nva9r3i2jc",
+      "receiptNumber": "KB-LPB-20260304-003",
+      "subtotal": "39600000",
+      "taxAmount": "0",
+      "grandTotal": "39600000"
+    },
+    {
+      "id": "cmne8k8ys018fl1nvtr2voab5",
+      "receiptNumber": "KB-LPBD-20260305-005",
+      "subtotal": "6324324",
+      "taxAmount": "695676",
+      "grandTotal": "7020000"
+    },
+    {
+      "id": "cmne9fyoo01arl1nvo4cqcvxl",
+      "receiptNumber": "KB-LPBD-20260330-002",
+      "subtotal": "170961845",
+      "taxAmount": "18805803",
+      "grandTotal": "189767648"
+    },
+    {
+      "id": "cmnfs9xgb02hal1nvf6lyl6ax",
+      "receiptNumber": "KB-LPBD-20260109-004",
+      "subtotal": "102702705",
+      "taxAmount": "11297298",
+      "grandTotal": "114000003"
+    },
+    {
+      "id": "cmnfggqyx01oxl1nvm6q8eg6e",
+      "receiptNumber": "KB-LPBD-20260331-001",
+      "subtotal": "8065004",
+      "taxAmount": "887150",
+      "grandTotal": "8952154"
+    },
+    {
+      "id": "cmnfg1qoj01nnl1nvpmczafcx",
+      "receiptNumber": "KB-LPB-20260329-003",
+      "subtotal": "235475000",
+      "taxAmount": "0",
+      "grandTotal": "235475000"
+    },
+    {
+      "id": "cmneju7u701jhl1nvaaz2tjd8",
+      "receiptNumber": "KB-LPBD-20260329-004",
+      "subtotal": "39267706",
+      "taxAmount": "4319448",
+      "grandTotal": "43587154"
+    },
+    {
+      "id": "cmneij0ip01i5l1nv1l2wueuy",
+      "receiptNumber": "KB-LPBD-20260330-006",
+      "subtotal": "13145350",
+      "taxAmount": "1445989",
+      "grandTotal": "14591339"
+    },
+    {
+      "id": "cmnegch9t01hnl1nv4l4mjz6k",
+      "receiptNumber": "KB-LPBD-20260130-001",
+      "subtotal": "195945946",
+      "taxAmount": "21554054",
+      "grandTotal": "217500000"
+    },
+    {
+      "id": "cmnfsc0v902jul1nv5or50upv",
+      "receiptNumber": "KB-LPBD-20260109-005",
+      "subtotal": "311351344",
+      "taxAmount": "34248648",
+      "grandTotal": "345599992"
+    },
+    {
+      "id": "cmne8l4ut0197l1nvjgbnrl7g",
+      "receiptNumber": "KB-LPBD-20260316-001",
+      "subtotal": "39267724",
+      "taxAmount": "4319450",
+      "grandTotal": "43587174"
+    },
+    {
+      "id": "cmne9c5i001a5l1nvm8o198q5",
+      "receiptNumber": "KB-LPB-20260305-002",
+      "subtotal": "7920000",
+      "taxAmount": "0",
+      "grandTotal": "7920000"
+    },
+    {
+      "id": "cmne9nnhi01bxl1nvq4kpkp58",
+      "receiptNumber": "KB-LPBD-20260305-006",
+      "subtotal": "83243244",
+      "taxAmount": "9156757",
+      "grandTotal": "92400001"
+    },
+    {
+      "id": "cmne9sq6n01ccl1nvwy1c775g",
+      "receiptNumber": "KB-LPB-20260306-001",
+      "subtotal": "9836400",
+      "taxAmount": "0",
+      "grandTotal": "9836400"
+    },
+    {
+      "id": "cmnea3q2r01cll1nvtjbryhuq",
+      "receiptNumber": "KB-LPBD-20260129-001",
+      "subtotal": "78378378",
+      "taxAmount": "8621622",
+      "grandTotal": "87000000"
+    },
+    {
+      "id": "cmnea3qov01ctl1nvvi8l0auz",
+      "receiptNumber": "KB-LPBD-20260330-003",
+      "subtotal": "18421622",
+      "taxAmount": "2026378",
+      "grandTotal": "20448000"
+    },
+    {
+      "id": "cmnebnxq301dil1nvmj9ltjfl",
+      "receiptNumber": "KB-LPBD-20260316-002",
+      "subtotal": "176156757",
+      "taxAmount": "19377243",
+      "grandTotal": "195534000"
+    },
+    {
+      "id": "cmndzuh5a00vsl1nv8tk8rlnd",
+      "receiptNumber": "KB-LPBD-20260223-001",
+      "subtotal": "8783784",
+      "taxAmount": "966216",
+      "grandTotal": "9750000"
+    },
+    {
+      "id": "cmnefcs9601fwl1nvczcsx7c8",
+      "receiptNumber": "KB-LPBD-20260330-005",
+      "subtotal": "41621621",
+      "taxAmount": "4578378",
+      "grandTotal": "46199999"
+    },
+    {
+      "id": "cmnfkm6an01udl1nvvqt3yjz9",
+      "receiptNumber": "KB-LPBD-20260331-002",
+      "subtotal": "169369370",
+      "taxAmount": "18630631",
+      "grandTotal": "188000001"
+    },
+    {
+      "id": "cmnfrxa4f0269l1nvxsnj48az",
+      "receiptNumber": "KB-LPBD-20260308-001",
+      "subtotal": "198198198",
+      "taxAmount": "21801802",
+      "grandTotal": "220000000"
+    },
+    {
+      "id": "cmnft44b802r8l1nvue8wnjye",
+      "receiptNumber": "KB-LPBD-20260309-002",
+      "subtotal": "11133333",
+      "taxAmount": "1224667",
+      "grandTotal": "12358000"
+    },
+    {
+      "id": "cmnfyjj9x02wtl1nvdg36ru38",
+      "receiptNumber": "KB-LPBD-20260409-001",
+      "subtotal": "164135135",
+      "taxAmount": "18054865",
+      "grandTotal": "182190000"
+    },
+    {
+      "id": "cmngohh06035pl1nvs8wtyc28",
+      "receiptNumber": "KB-LPBD-20260331-005",
+      "subtotal": "167567567",
+      "taxAmount": "18432432",
+      "grandTotal": "185999999"
+    },
+    {
+      "id": "cmngxnxcq03b2l1nv6i0wkv28",
+      "receiptNumber": "KB-LPBD-20260111-001",
+      "subtotal": "26486487",
+      "taxAmount": "2913514",
+      "grandTotal": "29400001"
+    },
+    {
+      "id": "cmngxj86j03apl1nvshin0uac",
+      "receiptNumber": "KB-LPBD-20260110-001",
+      "subtotal": "158200219",
+      "taxAmount": "17402024",
+      "grandTotal": "175602243"
+    },
+    {
+      "id": "cmngyzxvy03cul1nvhi4k0lzd",
+      "receiptNumber": "KB-LPB-20260401-001",
+      "subtotal": "23637600",
+      "taxAmount": "0",
+      "grandTotal": "23637600"
+    },
+    {
+      "id": "cmngzg9a203frl1nvyuvvx6xn",
+      "receiptNumber": "KB-LPB-20260111-002",
+      "subtotal": "21300000",
+      "taxAmount": "0",
+      "grandTotal": "21300000"
+    },
+    {
+      "id": "cmngz6gyw03fdl1nvrf05fek5",
+      "receiptNumber": "KB-LPB-20260111-001",
+      "subtotal": "71503200",
+      "taxAmount": "0",
+      "grandTotal": "71503200"
+    },
+    {
+      "id": "cmnh31myy03ihl1nvemzxr2fy",
+      "receiptNumber": "KB-LPBD-20260309-004",
+      "subtotal": "78378378",
+      "taxAmount": "8621622",
+      "grandTotal": "87000000"
+    },
+    {
+      "id": "cmnh3hjvl03jkl1nvhw46bo5p",
+      "receiptNumber": "KB-LPBD-20260310-002",
+      "subtotal": "7783784",
+      "taxAmount": "856216",
+      "grandTotal": "8640000"
+    },
+    {
+      "id": "cmnh3b8r903ivl1nvebjohsq2",
+      "receiptNumber": "KB-LPBD-20260212-001",
+      "subtotal": "4378379",
+      "taxAmount": "481622",
+      "grandTotal": "4860001"
+    },
+    {
+      "id": "cmnk2rs2r000ml15dsq0w7r8n",
+      "receiptNumber": "KB-LPBD-11032026-001",
+      "subtotal": "27712000",
+      "taxAmount": "3048320",
+      "grandTotal": "30760320"
+    },
+    {
+      "id": "cmnk3ju6r001al15d2x9nx2rz",
+      "receiptNumber": "KB-LPBD-11032026-002",
+      "subtotal": "97621621650",
+      "taxAmount": "10738378382",
+      "grandTotal": "108360000032"
+    },
+    {
+      "id": "cmnk9djk7003nl1zdvp13hpkx",
+      "receiptNumber": "KB-LPBD-04042026-001",
+      "subtotal": "198198200",
+      "taxAmount": "21801802",
+      "grandTotal": "220000002"
+    },
+    {
+      "id": "cmmsoai4w007quu34fu8vka6f",
+      "receiptNumber": "KB-LPBD-20260107-003",
+      "subtotal": "401405405",
+      "taxAmount": "44154595",
+      "grandTotal": "445560000"
+    },
+    {
+      "id": "cmnk71e69001hl1zdtjw1jzps",
+      "receiptNumber": "KB-LPBD-02042026-001",
+      "subtotal": "405405400",
+      "taxAmount": "44594594",
+      "grandTotal": "449999994"
+    },
+    {
+      "id": "cmnkbueeo002vl17tm6nj6jsa",
+      "receiptNumber": "KB-LPB-31032026-001",
+      "subtotal": "24948000",
+      "taxAmount": "0",
+      "grandTotal": "24948000"
+    },
+    {
+      "id": "cmmncw0sx00gauu7c3aom10ah",
+      "receiptNumber": "KB-LPBD-20260312-007",
+      "subtotal": "56828832",
+      "taxAmount": "6251172",
+      "grandTotal": "63080004"
+    },
+    {
+      "id": "cmnfsimb302mwl1nv8kt2y6l4",
+      "receiptNumber": "KB-LPBD-20260408-001",
+      "subtotal": "215697298",
+      "taxAmount": "23726703",
+      "grandTotal": "239424001"
+    },
+    {
+      "id": "cmnfxtml702vzl1nvobus6otn",
+      "receiptNumber": "KB-LPBD-20260309-003",
+      "subtotal": "21450451",
+      "taxAmount": "2359550",
+      "grandTotal": "23810001"
+    },
+    {
+      "id": "cmngt17p80374l1nv8wh1cp92",
+      "receiptNumber": "KB-LPBD-20260330-008",
+      "subtotal": "44324324",
+      "taxAmount": "4875676",
+      "grandTotal": "49200000"
+    },
+    {
+      "id": "cmnh4cmzf03lhl1nv6kgjce3w",
+      "receiptNumber": "KB-LPBD-20260112-001",
+      "subtotal": "13837838",
+      "taxAmount": "1522162",
+      "grandTotal": "15360000"
+    },
+    {
+      "id": "cmnh4ejli03lpl1nvrtaqbgiq",
+      "receiptNumber": "KB-LPBD-20260310-003",
+      "subtotal": "59909910",
+      "taxAmount": "6590090",
+      "grandTotal": "66500000"
+    },
+    {
+      "id": "cmnh4kyr203mbl1nvm2by34ge",
+      "receiptNumber": "KB-LPB-20260310-004",
+      "subtotal": "16400000",
+      "taxAmount": "0",
+      "grandTotal": "16400000"
+    },
+    {
+      "id": "cmnj385yl000ll1ecn954a06c",
+      "receiptNumber": "KB-LPBD-03042026-001",
+      "subtotal": "499990",
+      "taxAmount": "0",
+      "grandTotal": "499990"
+    },
+    {
+      "id": "cmnkbi9xv001bl17tn0cpi6jn",
+      "receiptNumber": "KB-LPB-02042026-002",
+      "subtotal": "23637600",
+      "taxAmount": "0",
+      "grandTotal": "23637600"
+    },
+    {
+      "id": "cmnfw1i2o02tll1nv2wisvbsf",
+      "receiptNumber": "KB-LPBD-20260331-004",
+      "subtotal": "101681436",
+      "taxAmount": "11184958",
+      "grandTotal": "112866394"
+    },
+    {
+      "id": "cmnecyeim01enl1nvkgnplepx",
+      "receiptNumber": "KB-LPBD-20260330-004",
+      "subtotal": "207567568",
+      "taxAmount": "22832432",
+      "grandTotal": "230400000"
+    }
+  ],
+  "salesDeliveries": [
+    {
+      "id": "cmmk6bdyy0001uu3w72vc0pte",
+      "deliveryNumber": "KB-TRN-10032026-001",
+      "subtotal": "111891890",
+      "taxAmount": "12308108",
+      "grandTotal": "124199998"
+    },
+    {
+      "id": "cmmlu76zd000quu886neem0q8",
+      "deliveryNumber": "KB-TRN-11032026-001",
+      "subtotal": "19114414",
+      "taxAmount": "2102586",
+      "grandTotal": "21217000"
+    },
+    {
+      "id": "cmmsn0zpo003juu34gvb06sll",
+      "deliveryNumber": "KB-TRN-08012026-001",
+      "subtotal": "142920000",
+      "taxAmount": "0",
+      "grandTotal": "142920000"
+    },
+    {
+      "id": "cmmluu5kf000juu0g1439ksi9",
+      "deliveryNumber": "KB-TRN-02012026-001",
+      "subtotal": "21800000",
+      "taxAmount": "0",
+      "grandTotal": "21800000"
+    },
+    {
+      "id": "cmmlv5vr70001uu7cz4ib4etm",
+      "deliveryNumber": "KB-TRN-09012026-001",
+      "subtotal": "227544000",
+      "taxAmount": "0",
+      "grandTotal": "227544000"
+    },
+    {
+      "id": "cmmsp5ixe00aeuu34fmwnjxtw",
+      "deliveryNumber": "KB-TRN-08012026-003",
+      "subtotal": "48432431",
+      "taxAmount": "5327567",
+      "grandTotal": "53759998"
+    },
+    {
+      "id": "cmmmyki1m000xuu7curqq0heq",
+      "deliveryNumber": "KB-TRN-12032026-001",
+      "subtotal": "4909910",
+      "taxAmount": "540090",
+      "grandTotal": "5450000"
+    },
+    {
+      "id": "cmmn3cdfq0024uu7ci489n1hy",
+      "deliveryNumber": "KB-TRN-12032026-002",
+      "subtotal": "89000000",
+      "taxAmount": "0",
+      "grandTotal": "89000000"
+    },
+    {
+      "id": "cmmn7ifrz008buu7c76nkbiq2",
+      "deliveryNumber": "KB-TRN-12032026-003",
+      "subtotal": "181755000",
+      "taxAmount": "0",
+      "grandTotal": "181755000"
+    },
+    {
+      "id": "cmmn91k5o00aruu7co0l908vs",
+      "deliveryNumber": "KB-TRN-11032026-002",
+      "subtotal": "104000000",
+      "taxAmount": "0",
+      "grandTotal": "104000000"
+    },
+    {
+      "id": "cmmncsxuu00g0uu7crie53nsp",
+      "deliveryNumber": "KB-TRN-13032026-001",
+      "subtotal": "118918921",
+      "taxAmount": "13081081",
+      "grandTotal": "132000002"
+    },
+    {
+      "id": "cmmnd4xig00gnuu7cqxa7t1wy",
+      "deliveryNumber": "KB-TRN-13032026-002",
+      "subtotal": "61016215",
+      "taxAmount": "6711784",
+      "grandTotal": "67727999"
+    },
+    {
+      "id": "cmmohc04f004ruua417frs2hu",
+      "deliveryNumber": "KB-TRN-13032026-003",
+      "subtotal": "80242484",
+      "taxAmount": "0",
+      "grandTotal": "80242484"
+    },
+    {
+      "id": "cmmoljprd0077uua4aw6sh9gx",
+      "deliveryNumber": "KB-TRN-14032026-002",
+      "subtotal": "22792793",
+      "taxAmount": "2507207",
+      "grandTotal": "25300000"
+    },
+    {
+      "id": "cmmondjd9007duua4oh86z2o3",
+      "deliveryNumber": "KB-TRN-14032026-003",
+      "subtotal": "4880631",
+      "taxAmount": "536869",
+      "grandTotal": "5417500"
+    },
+    {
+      "id": "cmmoqnjf5007kuua42k7u38i3",
+      "deliveryNumber": "KB-TRN-13032026-004",
+      "subtotal": "52774774",
+      "taxAmount": "5805225",
+      "grandTotal": "58579999"
+    },
+    {
+      "id": "cmmqac695000huuas2qwdmq4o",
+      "deliveryNumber": "KB-TRN-14032026-004",
+      "subtotal": "40972973",
+      "taxAmount": "4507027",
+      "grandTotal": "45480000"
+    },
+    {
+      "id": "cmmsip13i000euu34bofeqajz",
+      "deliveryNumber": "KB-TRN-16032026-001",
+      "subtotal": "160360360",
+      "taxAmount": "17639640",
+      "grandTotal": "178000000"
+    },
+    {
+      "id": "cmmsm16kx002cuu343sj4oi4x",
+      "deliveryNumber": "KB-TRN-03032026-001",
+      "subtotal": "6875670",
+      "taxAmount": "756324",
+      "grandTotal": "7631994"
+    },
+    {
+      "id": "cmmsnf5np0054uu346h1tlxse",
+      "deliveryNumber": "KB-TRN-02032026-001",
+      "subtotal": "24054054",
+      "taxAmount": "2645946",
+      "grandTotal": "26700000"
+    },
+    {
+      "id": "cmmso16310060uu34t45kbq29",
+      "deliveryNumber": "KB-TRN-16032026-002",
+      "subtotal": "87387390",
+      "taxAmount": "9612613",
+      "grandTotal": "97000003"
+    },
+    {
+      "id": "cmmsohwmw0086uu348sy53rz7",
+      "deliveryNumber": "KB-TRN-02032026-002",
+      "subtotal": "17027027",
+      "taxAmount": "1872973",
+      "grandTotal": "18900000"
+    },
+    {
+      "id": "cmmsnkyx2005juu341eyt29vy",
+      "deliveryNumber": "KB-TRN-07012026-001",
+      "subtotal": "163063060",
+      "taxAmount": "17936937",
+      "grandTotal": "180999997"
+    },
+    {
+      "id": "cmmsq7hjo00btuu34633hwzz4",
+      "deliveryNumber": "KB-TRN-08012026-005",
+      "subtotal": "63366090",
+      "taxAmount": "6970270",
+      "grandTotal": "70336360"
+    },
+    {
+      "id": "cmmssvhl500f6uu34kq64nq53",
+      "deliveryNumber": "KB-TRN-08012026-007",
+      "subtotal": "26550000",
+      "taxAmount": "0",
+      "grandTotal": "26550000"
+    },
+    {
+      "id": "cmmsri4ba00dfuu34uu59gddk",
+      "deliveryNumber": "KB-TRN-03032026-002",
+      "subtotal": "2398649",
+      "taxAmount": "263851",
+      "grandTotal": "2662500"
+    },
+    {
+      "id": "cmmspuyyn00b8uu34o03bflt0",
+      "deliveryNumber": "KB-TRN-14012026-001",
+      "subtotal": "38500000",
+      "taxAmount": "0",
+      "grandTotal": "38500000"
+    },
+    {
+      "id": "cmmssg3zf00dyuu34wc9186ul",
+      "deliveryNumber": "KB-TRN-03032026-003",
+      "subtotal": "10951090",
+      "taxAmount": "1204620",
+      "grandTotal": "12155710"
+    },
+    {
+      "id": "cmmssj1k600eruu347yymz8xb",
+      "deliveryNumber": "KB-TRN-03032026-004",
+      "subtotal": "3338919",
+      "taxAmount": "367281",
+      "grandTotal": "3706200"
+    },
+    {
+      "id": "cmmsswdsr00fcuu343aos9c93",
+      "deliveryNumber": "KB-TRN-08012026-008",
+      "subtotal": "95000",
+      "taxAmount": "0",
+      "grandTotal": "95000"
+    },
+    {
+      "id": "cmmstygju00h7uu34vbhang70",
+      "deliveryNumber": "KB-TRN-03032026-005",
+      "subtotal": "7427234",
+      "taxAmount": "816996",
+      "grandTotal": "8244230"
+    },
+    {
+      "id": "cmmsuv2we00hzuu34p3tvh50v",
+      "deliveryNumber": "KB-TRN-06032026-001",
+      "subtotal": "8519143",
+      "taxAmount": "937106",
+      "grandTotal": "9456249"
+    },
+    {
+      "id": "cmmsv0ysz00iguu34azbn1unk",
+      "deliveryNumber": "KB-TRN-06032026-002",
+      "subtotal": "20171528",
+      "taxAmount": "2218868",
+      "grandTotal": "22390396"
+    },
+    {
+      "id": "cmmsvg4im00iuuu34t2y0wssa",
+      "deliveryNumber": "KB-TRN-03032026-006",
+      "subtotal": "67297298",
+      "taxAmount": "7402703",
+      "grandTotal": "74700001"
+    },
+    {
+      "id": "cmmsw12z000j4uu34d5j19yac",
+      "deliveryNumber": "KB-TRN-16032026-003",
+      "subtotal": "82252253",
+      "taxAmount": "9047748",
+      "grandTotal": "91300001"
+    },
+    {
+      "id": "cmmsyksf9001nuu2kzpxrctcc",
+      "deliveryNumber": "KB-TRN-03032026-007",
+      "subtotal": "213895495",
+      "taxAmount": "23528504",
+      "grandTotal": "237423999"
+    },
+    {
+      "id": "cmmsyoxq9002huu2kyh5dz5rw",
+      "deliveryNumber": "KB-TRN-03032026-008",
+      "subtotal": "16677478",
+      "taxAmount": "1834523",
+      "grandTotal": "18512001"
+    },
+    {
+      "id": "cmmszylr30001uups434wtybl",
+      "deliveryNumber": "KB-TRN-03032026-009",
+      "subtotal": "20675676",
+      "taxAmount": "2274324",
+      "grandTotal": "22950000"
+    },
+    {
+      "id": "cmmu2err40009uup882r7jwwk",
+      "deliveryNumber": "KB-TRN-04032026-001",
+      "subtotal": "207207207",
+      "taxAmount": "22792793",
+      "grandTotal": "230000000"
+    },
+    {
+      "id": "cmmu2klo7000nuup8x01ma2qd",
+      "deliveryNumber": "KB-TRN-03032026-010",
+      "subtotal": "571621622",
+      "taxAmount": "62878378",
+      "grandTotal": "634500000"
+    },
+    {
+      "id": "cmmu3eepn001cuup87r7669le",
+      "deliveryNumber": "KB-TRN-03032026-011",
+      "subtotal": "16000000",
+      "taxAmount": "1760000",
+      "grandTotal": "17760000"
+    },
+    {
+      "id": "cmmu4vm7x0048uup8rz3gl1ne",
+      "deliveryNumber": "KB-TRN-03032026-012",
+      "subtotal": "187364597",
+      "taxAmount": "20610106",
+      "grandTotal": "207974703"
+    },
+    {
+      "id": "cmmu64k8o005xuup81eum9dt0",
+      "deliveryNumber": "KB-TRN-05032026-001",
+      "subtotal": "19200000",
+      "taxAmount": "0",
+      "grandTotal": "19200000"
+    },
+    {
+      "id": "cmmu65dh50063uup8ivkq41nx",
+      "deliveryNumber": "KB-TRN-05032026-002",
+      "subtotal": "44660000",
+      "taxAmount": "0",
+      "grandTotal": "44660000"
+    },
+    {
+      "id": "cmmu6ghca006muup819tflr4k",
+      "deliveryNumber": "KB-TRN-06032026-003",
+      "subtotal": "5163117",
+      "taxAmount": "567943",
+      "grandTotal": "5731060"
+    },
+    {
+      "id": "cmmsssern00exuu34fg072x5c",
+      "deliveryNumber": "KB-TRN-08012026-006",
+      "subtotal": "51621622",
+      "taxAmount": "5678378",
+      "grandTotal": "57300000"
+    },
+    {
+      "id": "cmmu6hy9t006suup8v67foobd",
+      "deliveryNumber": "KB-TRN-06032026-004",
+      "subtotal": "5630631",
+      "taxAmount": "619369",
+      "grandTotal": "6250000"
+    },
+    {
+      "id": "cmncpahqo002ql1nv6zg5fb9h",
+      "deliveryNumber": "KB-TRN-05032026-007",
+      "subtotal": "5180180",
+      "taxAmount": "569820",
+      "grandTotal": "5750000"
+    },
+    {
+      "id": "cmncq85ze003jl1nvg8mgti77",
+      "deliveryNumber": "KB-TRN-30032026-003",
+      "subtotal": "14346847",
+      "taxAmount": "1578153",
+      "grandTotal": "15925000"
+    },
+    {
+      "id": "cmmu6sabv007buup8l4dpgewc",
+      "deliveryNumber": "KB-TRN-05032026-003",
+      "subtotal": "86194595",
+      "taxAmount": "9481405",
+      "grandTotal": "95676000"
+    },
+    {
+      "id": "cmncsovr8005al1nvlsznj7cy",
+      "deliveryNumber": "KB-TRN-05032026-008",
+      "subtotal": "301000000",
+      "taxAmount": "0",
+      "grandTotal": "301000000"
+    },
+    {
+      "id": "cmnctqptp005yl1nv7mma1pga",
+      "deliveryNumber": "KB-TRN-05032026-009",
+      "subtotal": "20171518",
+      "taxAmount": "2218867",
+      "grandTotal": "22390385"
+    },
+    {
+      "id": "cmncu99gh006dl1nvatagpwu0",
+      "deliveryNumber": "KB-TRN-05032026-010",
+      "subtotal": "29000000",
+      "taxAmount": "0",
+      "grandTotal": "29000000"
+    },
+    {
+      "id": "cmncycx0p00ovl1nvntpb5oex",
+      "deliveryNumber": "KB-TRN-06032026-007",
+      "subtotal": "26637838",
+      "taxAmount": "2930162",
+      "grandTotal": "29568000"
+    },
+    {
+      "id": "cmncxxr9v00ekl1nvcdx01kd5",
+      "deliveryNumber": "KB-TRN-06032026-006",
+      "subtotal": "340298378",
+      "taxAmount": "37432822",
+      "grandTotal": "377731200"
+    },
+    {
+      "id": "cmnczfa9n00qdl1nveqwcrukn",
+      "deliveryNumber": "KB-TRN-09032026-001",
+      "subtotal": "8783784",
+      "taxAmount": "966216",
+      "grandTotal": "9750000"
+    },
+    {
+      "id": "cmnd1ku0200syl1nvvjftizqv",
+      "deliveryNumber": "KB-TRN-07032026-002",
+      "subtotal": "604350000",
+      "taxAmount": "0",
+      "grandTotal": "604350000"
+    },
+    {
+      "id": "cmnd26xy100tfl1nv22gf87z5",
+      "deliveryNumber": "KB-TRN-27032026-001",
+      "subtotal": "85000000",
+      "taxAmount": "0",
+      "grandTotal": "85000000"
+    },
+    {
+      "id": "cmnd2817000tll1nv6y04as8i",
+      "deliveryNumber": "KB-TRN-27032026-002",
+      "subtotal": "38250000",
+      "taxAmount": "0",
+      "grandTotal": "38250000"
+    },
+    {
+      "id": "cmnd2l1f200ttl1nvlb2ne366",
+      "deliveryNumber": "KB-TRN-30032026-004",
+      "subtotal": "15315315",
+      "taxAmount": "1684685",
+      "grandTotal": "17000000"
+    },
+    {
+      "id": "cmndausiu00u8l1nv6ze90n05",
+      "deliveryNumber": "KB-TRN-30032026-005",
+      "subtotal": "11486486",
+      "taxAmount": "1263513",
+      "grandTotal": "12749999"
+    },
+    {
+      "id": "cmndbdl7u00uwl1nvmw1u84rx",
+      "deliveryNumber": "KB-TRN-31032026-001",
+      "subtotal": "86970000",
+      "taxAmount": "0",
+      "grandTotal": "86970000"
+    },
+    {
+      "id": "cmmol4spo006xuua4z1v50voe",
+      "deliveryNumber": "KB-TRN-14032026-001",
+      "subtotal": "207207210",
+      "taxAmount": "22792793",
+      "grandTotal": "230000003"
+    },
+    {
+      "id": "cmndy1oey00vcl1nv6tbdcw3g",
+      "deliveryNumber": "KB-TRN-31032026-002",
+      "subtotal": "63513514",
+      "taxAmount": "6986487",
+      "grandTotal": "70500001"
+    },
+    {
+      "id": "cmncp7ubd002cl1nvrp3hzsxf",
+      "deliveryNumber": "KB-TRN-05032026-006",
+      "subtotal": "131540541",
+      "taxAmount": "14469460",
+      "grandTotal": "146010001"
+    },
+    {
+      "id": "cmmua81e4007vuup8wiqltddj",
+      "deliveryNumber": "KB-TRN-07032026-001",
+      "subtotal": "115000000",
+      "taxAmount": "0",
+      "grandTotal": "115000000"
+    },
+    {
+      "id": "cmncmy8z8001pl1nvijdtgk1x",
+      "deliveryNumber": "KB-TRN-06032026-005",
+      "subtotal": "22162162",
+      "taxAmount": "2437838",
+      "grandTotal": "24600000"
+    },
+    {
+      "id": "cmmuap0p2008euup8918pbkun",
+      "deliveryNumber": "KB-TRN-13032026-005",
+      "subtotal": "82080000",
+      "taxAmount": "0",
+      "grandTotal": "82080000"
+    },
+    {
+      "id": "cmmubxvxs008yuup8d4muk267",
+      "deliveryNumber": "KB-TRN-05032026-004",
+      "subtotal": "17945946",
+      "taxAmount": "1974054",
+      "grandTotal": "19920000"
+    },
+    {
+      "id": "cmmujuaqd00aguup83ksq7ew3",
+      "deliveryNumber": "KB-TRN-05032026-005",
+      "subtotal": "13243243",
+      "taxAmount": "1456757",
+      "grandTotal": "14700000"
+    },
+    {
+      "id": "cmncm48zr0009l1nvsr6uq7no",
+      "deliveryNumber": "KB-TRN-30032026-001",
+      "subtotal": "149549550",
+      "taxAmount": "16450451",
+      "grandTotal": "166000001"
+    },
+    {
+      "id": "cmne3088000y2l1nvakfs8078",
+      "deliveryNumber": "KB-TRN-31032026-004",
+      "subtotal": "139243243",
+      "taxAmount": "15316757",
+      "grandTotal": "154560000"
+    },
+    {
+      "id": "cmne7ytks0183l1nvei0y4nq9",
+      "deliveryNumber": "KB-TRN-05032026-011",
+      "subtotal": "55000000",
+      "taxAmount": "0",
+      "grandTotal": "55000000"
+    },
+    {
+      "id": "cmne8uzfc019kl1nvqj8vvhek",
+      "deliveryNumber": "KB-TRN-09032026-002",
+      "subtotal": "81277477",
+      "taxAmount": "8940522",
+      "grandTotal": "90217999"
+    },
+    {
+      "id": "cmne9do4f01ail1nvljne7ljd",
+      "deliveryNumber": "KB-TRN-06032026-008",
+      "subtotal": "12000000",
+      "taxAmount": "0",
+      "grandTotal": "12000000"
+    },
+    {
+      "id": "cmne9pezv01c5l1nv26gw50gm",
+      "deliveryNumber": "KB-TRN-09032026-003",
+      "subtotal": "93837837",
+      "taxAmount": "10322162",
+      "grandTotal": "104159999"
+    },
+    {
+      "id": "cmnfg93f501ool1nvnr5b9v8f",
+      "deliveryNumber": "KB-TRN-31032026-009",
+      "subtotal": "49000000",
+      "taxAmount": "0",
+      "grandTotal": "49000000"
+    },
+    {
+      "id": "cmnegjvma01hvl1nvex78njko",
+      "deliveryNumber": "KB-TRN-31032026-006",
+      "subtotal": "85000000",
+      "taxAmount": "0",
+      "grandTotal": "85000000"
+    },
+    {
+      "id": "cmnea8cd101d1l1nvo4kn8wzh",
+      "deliveryNumber": "KB-TRN-31032026-005",
+      "subtotal": "17100000",
+      "taxAmount": "0",
+      "grandTotal": "17100000"
+    },
+    {
+      "id": "cmneeb5wh01fkl1nvvozxdf1u",
+      "deliveryNumber": "KB-TRN-26032026-001",
+      "subtotal": "34000000",
+      "taxAmount": "0",
+      "grandTotal": "34000000"
+    },
+    {
+      "id": "cmneenjlx01fql1nvroonbpwu",
+      "deliveryNumber": "KB-TRN-08032026-001",
+      "subtotal": "11690000",
+      "taxAmount": "0",
+      "grandTotal": "11690000"
+    },
+    {
+      "id": "cmnfd39c801lzl1nvww0gp64t",
+      "deliveryNumber": "KB-TRN-01042026-001",
+      "subtotal": "18810811",
+      "taxAmount": "2069189",
+      "grandTotal": "20880000"
+    },
+    {
+      "id": "cmnfdllg101m5l1nvmc2cvqux",
+      "deliveryNumber": "KB-TRN-01042026-002",
+      "subtotal": "407959468",
+      "taxAmount": "44875541",
+      "grandTotal": "452835009"
+    },
+    {
+      "id": "cmnfe293j01mzl1nv47840s6r",
+      "deliveryNumber": "KB-TRN-01042026-003",
+      "subtotal": "216216216",
+      "taxAmount": "23783784",
+      "grandTotal": "240000000"
+    },
+    {
+      "id": "cmmspbcxl00apuu34bd58wymp",
+      "deliveryNumber": "KB-TRN-07012026-002",
+      "subtotal": "177636000",
+      "taxAmount": "0",
+      "grandTotal": "177636000"
+    },
+    {
+      "id": "cmmluwg75000suu0g80t9y8pp",
+      "deliveryNumber": "KB-TRN-06012026-001",
+      "subtotal": "26656000",
+      "taxAmount": "0",
+      "grandTotal": "26656000"
+    },
+    {
+      "id": "cmnfh8rsd01pjl1nv5ezqn5v6",
+      "deliveryNumber": "KB-TRN-31032026-010",
+      "subtotal": "74150000",
+      "taxAmount": "0",
+      "grandTotal": "74150000"
+    },
+    {
+      "id": "cmnfh9ogv01psl1nvdi4xwuwe",
+      "deliveryNumber": "KB-TRN-31032026-011",
+      "subtotal": "81396000",
+      "taxAmount": "0",
+      "grandTotal": "81396000"
+    },
+    {
+      "id": "cmmspryps00b1uu34ep1g2238",
+      "deliveryNumber": "KB-TRN-12012026-001",
+      "subtotal": "12972973",
+      "taxAmount": "1427027",
+      "grandTotal": "14400000"
+    },
+    {
+      "id": "cmnfjwar001thl1nvlhbyr0bg",
+      "deliveryNumber": "KB-TRN-08012026-009",
+      "subtotal": "69189190",
+      "taxAmount": "7610811",
+      "grandTotal": "76800001"
+    },
+    {
+      "id": "cmnfkrxzg01ull1nv9ou6rf49",
+      "deliveryNumber": "KB-TRN-01042026-006",
+      "subtotal": "164864865",
+      "taxAmount": "18135135",
+      "grandTotal": "183000000"
+    },
+    {
+      "id": "cmmsnhnhz005auu34wwrasnci",
+      "deliveryNumber": "KB-TRN-08012026-002",
+      "subtotal": "515945936",
+      "taxAmount": "56754053",
+      "grandTotal": "572699989"
+    },
+    {
+      "id": "cmndzvswx00w0l1nv8w8wzsxu",
+      "deliveryNumber": "KB-TRN-31032026-003",
+      "subtotal": "278351351",
+      "taxAmount": "30618649",
+      "grandTotal": "308970000"
+    },
+    {
+      "id": "cmnejv5d801jpl1nvgjwwxbsq",
+      "deliveryNumber": "KB-TRN-31032026-007",
+      "subtotal": "26400000",
+      "taxAmount": "0",
+      "grandTotal": "26400000"
+    },
+    {
+      "id": "cmnfege1n01nfl1nv7bunyvuo",
+      "deliveryNumber": "KB-TRN-01042026-005",
+      "subtotal": "17400000",
+      "taxAmount": "0",
+      "grandTotal": "17400000"
+    },
+    {
+      "id": "cmnfg6x9p01ofl1nv7bsn37j0",
+      "deliveryNumber": "KB-TRN-31032026-008",
+      "subtotal": "99540000",
+      "taxAmount": "0",
+      "grandTotal": "99540000"
+    },
+    {
+      "id": "cmncm65n80010l1nv1lugoelt",
+      "deliveryNumber": "KB-TRN-30032026-002",
+      "subtotal": "151351351",
+      "taxAmount": "16648649",
+      "grandTotal": "168000000"
+    },
+    {
+      "id": "cmnfeccln01n5l1nvkl30vwhb",
+      "deliveryNumber": "KB-TRN-01042026-004",
+      "subtotal": "26100000",
+      "taxAmount": "0",
+      "grandTotal": "26100000"
+    },
+    {
+      "id": "cmnfqwue8024rl1nv5kuu82s1",
+      "deliveryNumber": "KB-TRN-07032026-003",
+      "subtotal": "209459459",
+      "taxAmount": "23040540",
+      "grandTotal": "232499999"
+    },
+    {
+      "id": "cmnfrmokc024xl1nvjva6zc55",
+      "deliveryNumber": "KB-TRN-01042026-008",
+      "subtotal": "34120000",
+      "taxAmount": "0",
+      "grandTotal": "34120000"
+    },
+    {
+      "id": "cmnfp8gie01xhl1nv7popdx5s",
+      "deliveryNumber": "KB-TRN-10012026-001",
+      "subtotal": "184459451",
+      "taxAmount": "20290540",
+      "grandTotal": "204749991"
+    },
+    {
+      "id": "cmnfsajbe02i0l1nv0wexiyyd",
+      "deliveryNumber": "KB-TRN-10032026-002",
+      "subtotal": "9774774",
+      "taxAmount": "1075225",
+      "grandTotal": "10849999"
+    },
+    {
+      "id": "cmnfgr6oo01pal1nvxbsl40su",
+      "deliveryNumber": "KB-TRN-17042026-001",
+      "subtotal": "40065081",
+      "taxAmount": "4407159",
+      "grandTotal": "44472240"
+    },
+    {
+      "id": "cmnfpjxtw01ypl1nv4l5gu35j",
+      "deliveryNumber": "KB-TRN-10012026-002",
+      "subtotal": "105029189",
+      "taxAmount": "11553211",
+      "grandTotal": "116582400"
+    },
+    {
+      "id": "cmnfrwfaa0263l1nvagr9pqob",
+      "deliveryNumber": "KB-TRN-12012026-002",
+      "subtotal": "16648649",
+      "taxAmount": "1831351",
+      "grandTotal": "18480000"
+    },
+    {
+      "id": "cmnfryafl026hl1nvimsrfwfv",
+      "deliveryNumber": "KB-TRN-11032026-003",
+      "subtotal": "234234234",
+      "taxAmount": "25765766",
+      "grandTotal": "260000000"
+    },
+    {
+      "id": "cmnfs27ec026tl1nv0b0t2k8p",
+      "deliveryNumber": "KB-TRN-01042026-009",
+      "subtotal": "4250000",
+      "taxAmount": "0",
+      "grandTotal": "4250000"
+    },
+    {
+      "id": "cmnfs43n0028tl1nv523wbkzk",
+      "deliveryNumber": "KB-TRN-10012026-003",
+      "subtotal": "33265586",
+      "taxAmount": "3659214",
+      "grandTotal": "36924800"
+    },
+    {
+      "id": "cmnfsdvnd02k2l1nv0m3pb6kp",
+      "deliveryNumber": "KB-TRN-12012026-003",
+      "subtotal": "105855855",
+      "taxAmount": "11644144",
+      "grandTotal": "117499999"
+    },
+    {
+      "id": "cmnfsxzge02qhl1nvfg4uwvv9",
+      "deliveryNumber": "KB-TRN-10032026-003",
+      "subtotal": "222529730",
+      "taxAmount": "24478270",
+      "grandTotal": "247008000"
+    },
+    {
+      "id": "cmnfvnpbr02s8l1nvfiplj9vj",
+      "deliveryNumber": "KB-TRN-02042026-002",
+      "subtotal": "112162163",
+      "taxAmount": "12337838",
+      "grandTotal": "124500001"
+    },
+    {
+      "id": "cmnftr03c02rnl1nvc496ybqt",
+      "deliveryNumber": "KB-TRN-01042026-010",
+      "subtotal": "12336937",
+      "taxAmount": "1357063",
+      "grandTotal": "13694000"
+    },
+    {
+      "id": "cmnfvlk8a02rzl1nvtr93sa4y",
+      "deliveryNumber": "KB-TRN-02042026-001",
+      "subtotal": "112162163",
+      "taxAmount": "12337838",
+      "grandTotal": "124500001"
+    },
+    {
+      "id": "cmnfwdb3k02v2l1nvtq9dte35",
+      "deliveryNumber": "KB-TRN-02042026-003",
+      "subtotal": "118234234",
+      "taxAmount": "11445074",
+      "grandTotal": "115491200"
+    },
+    {
+      "id": "cmnfxw60g02whl1nve0cic98p",
+      "deliveryNumber": "KB-TRN-10032026-004",
+      "subtotal": "24778000",
+      "taxAmount": "0",
+      "grandTotal": "24778000"
+    },
+    {
+      "id": "cmnfzads502y5l1nvaptvhzdf",
+      "deliveryNumber": "KB-TRN-11032026-004",
+      "subtotal": "173513513",
+      "taxAmount": "19086486",
+      "grandTotal": "192599999"
+    },
+    {
+      "id": "cmngsuyfo036sl1nv0dcqsjzc",
+      "deliveryNumber": "KB-TRN-01042026-011",
+      "subtotal": "0",
+      "taxAmount": "0",
+      "grandTotal": "0"
+    },
+    {
+      "id": "cmmsq0cnq00bkuu34r89ual7x",
+      "deliveryNumber": "KB-TRN-08012026-004",
+      "subtotal": "408558560",
+      "taxAmount": "44941442",
+      "grandTotal": "453500002"
+    },
+    {
+      "id": "cmnfpngge01yvl1nvt1p6n7ck",
+      "deliveryNumber": "KB-TRN-07042026-001",
+      "subtotal": "63711712",
+      "taxAmount": "7008288",
+      "grandTotal": "70720000"
+    },
+    {
+      "id": "cmnfo03fi01wkl1nv2zw6pzsi",
+      "deliveryNumber": "KB-TRN-09012026-002",
+      "subtotal": "49774775",
+      "taxAmount": "5475225",
+      "grandTotal": "55250000"
+    },
+    {
+      "id": "cmngtst730383l1nvev0ldofy",
+      "deliveryNumber": "KB-TRN-02042026-007",
+      "subtotal": "22663063",
+      "taxAmount": "2492937",
+      "grandTotal": "25156000"
+    },
+    {
+      "id": "cmngu43xm038fl1nv8d0bv49y",
+      "deliveryNumber": "KB-TRN-02042026-008",
+      "subtotal": "36756756",
+      "taxAmount": "4043243",
+      "grandTotal": "40799999"
+    },
+    {
+      "id": "cmnh2c3fr03h9l1nvwlymviwf",
+      "deliveryNumber": "KB-TRN-02042026-010",
+      "subtotal": "12750000",
+      "taxAmount": "0",
+      "grandTotal": "12750000"
+    },
+    {
+      "id": "cmngsvgcc036yl1nvky1acqw4",
+      "deliveryNumber": "KB-TRN-02042026-004",
+      "subtotal": "0",
+      "taxAmount": "0",
+      "grandTotal": "0"
+    },
+    {
+      "id": "cmngwp4e0039vl1nvbqe8te2y",
+      "deliveryNumber": "KB-TRN-02042026-009",
+      "subtotal": "52927928",
+      "taxAmount": "5822072",
+      "grandTotal": "58750000"
+    },
+    {
+      "id": "cmngxb3xh03a1l1nv49o00r93",
+      "deliveryNumber": "KB-TRN-12012026-004",
+      "subtotal": "64864866",
+      "taxAmount": "7135135",
+      "grandTotal": "72000001"
+    },
+    {
+      "id": "cmngxcmay03a7l1nvxf7ivrkz",
+      "deliveryNumber": "KB-TRN-12012026-005",
+      "subtotal": "113671171",
+      "taxAmount": "12503829",
+      "grandTotal": "126175000"
+    },
+    {
+      "id": "cmnjoq091000dl1myvkmx801t",
+      "deliveryNumber": "KB-TRN-04042026-001",
+      "subtotal": "105432432",
+      "taxAmount": "11597568",
+      "grandTotal": "117030000"
+    },
+    {
+      "id": "cmngzuj0v03h3l1nvgnqln5yy",
+      "deliveryNumber": "KB-TRN-12012026-007",
+      "subtotal": "160067566",
+      "taxAmount": "17607432",
+      "grandTotal": "177674998"
+    },
+    {
+      "id": "cmnh3vayn03knl1nvvoa7ufr4",
+      "deliveryNumber": "KB-TRN-13012026-003",
+      "subtotal": "19189190",
+      "taxAmount": "2110811",
+      "grandTotal": "21300001"
+    },
+    {
+      "id": "cmnh2oewa03hfl1nv9u8dxb18",
+      "deliveryNumber": "KB-TRN-13012026-001",
+      "subtotal": "30855856",
+      "taxAmount": "3394144",
+      "grandTotal": "34250000"
+    },
+    {
+      "id": "cmnh3o6ds03k2l1nvo3ijr9t2",
+      "deliveryNumber": "KB-TRN-11032026-005",
+      "subtotal": "8360360",
+      "taxAmount": "919640",
+      "grandTotal": "9280000"
+    },
+    {
+      "id": "cmnh3pq0v03k8l1nv7iunuliy",
+      "deliveryNumber": "KB-TRN-11032026-006",
+      "subtotal": "80405405",
+      "taxAmount": "8844595",
+      "grandTotal": "89250000"
+    },
+    {
+      "id": "cmnh3r74503kel1nv2jc7ogdf",
+      "deliveryNumber": "KB-TRN-13012026-002",
+      "subtotal": "73500000",
+      "taxAmount": "0",
+      "grandTotal": "73500000"
+    },
+    {
+      "id": "cmnh4gvge03m2l1nvw58975on",
+      "deliveryNumber": "KB-TRN-11032026-007",
+      "subtotal": "64324324",
+      "taxAmount": "7075676",
+      "grandTotal": "71400000"
+    },
+    {
+      "id": "cmnh4n0nw03mtl1nvklhh3f9e",
+      "deliveryNumber": "KB-TRN-11032026-008",
+      "subtotal": "18040000",
+      "taxAmount": "0",
+      "grandTotal": "18040000"
+    },
+    {
+      "id": "cmnfkulhh01uul1nv58lcwpmc",
+      "deliveryNumber": "KB-TRN-01042026-007",
+      "subtotal": "173164865",
+      "taxAmount": "19048135",
+      "grandTotal": "192213000"
+    },
+    {
+      "id": "cmngt3aj4037cl1nvq74a93wo",
+      "deliveryNumber": "KB-TRN-02042026-005",
+      "subtotal": "43243243",
+      "taxAmount": "4756757",
+      "grandTotal": "48000000"
+    },
+    {
+      "id": "cmngxf54903ajl1nv76232fuy",
+      "deliveryNumber": "KB-TRN-30012026-001",
+      "subtotal": "15765766",
+      "taxAmount": "1734234",
+      "grandTotal": "17500000"
+    },
+    {
+      "id": "cmnjrc2ze001yl1mymj687pyr",
+      "deliveryNumber": "KB-TRN-04042026-002",
+      "subtotal": "105432430",
+      "taxAmount": "11597567",
+      "grandTotal": "117029997"
+    },
+    {
+      "id": "cmngxe0kk03adl1nvr766lsya",
+      "deliveryNumber": "KB-TRN-12012026-006",
+      "subtotal": "84684684",
+      "taxAmount": "9315315",
+      "grandTotal": "93999999"
+    },
+    {
+      "id": "cmngthaz8037il1nvundklvha",
+      "deliveryNumber": "KB-TRN-02042026-006",
+      "subtotal": "171621622",
+      "taxAmount": "18878378",
+      "grandTotal": "190500000"
+    },
+    {
+      "id": "cmnk3lknn001il15dqqijwbvi",
+      "deliveryNumber": "KB-TRN-11032026-010",
+      "subtotal": "10090090",
+      "taxAmount": "1109910",
+      "grandTotal": "11200000"
+    },
+    {
+      "id": "cmnk4mhb4001ol15d9onpxj0x",
+      "deliveryNumber": "KB-TRND-12012026-001",
+      "subtotal": "15693694",
+      "taxAmount": "1726306",
+      "grandTotal": "17420000"
+    },
+    {
+      "id": "cmnk72l31001pl1zdtdhlyk31",
+      "deliveryNumber": "KB-TRN-04042026-004",
+      "subtotal": "41441441",
+      "taxAmount": "4558559",
+      "grandTotal": "46000000"
+    },
+    {
+      "id": "cmnk871e4002nl1zdrj9n3mlj",
+      "deliveryNumber": "KB-TRN-03042026-002",
+      "subtotal": "206531532",
+      "taxAmount": "22718469",
+      "grandTotal": "229250001"
+    },
+    {
+      "id": "cmnk7lg2j002dl1zdvl6uqn14",
+      "deliveryNumber": "KB-TRN-03042026-001",
+      "subtotal": "208558559",
+      "taxAmount": "22941441",
+      "grandTotal": "231500000"
+    },
+    {
+      "id": "cmnkc19yf0042l17t65lum54l",
+      "deliveryNumber": "KB-TRN-04042026-005",
+      "subtotal": "26013000",
+      "taxAmount": "0",
+      "grandTotal": "26013000"
+    },
+    {
+      "id": "cmnk38g3z000zl15dfrgrav4q",
+      "deliveryNumber": "KB-TRN-11032026-009",
+      "subtotal": "28252252",
+      "taxAmount": "3107748",
+      "grandTotal": "31360000"
+    },
+    {
+      "id": "cmnfo6e0101wql1nvfccopi0v",
+      "deliveryNumber": "KB-TRN-09012026-003",
+      "subtotal": "44864864",
+      "taxAmount": "4935135",
+      "grandTotal": "49799999"
+    },
+    {
+      "id": "cmnjrprre0031l1mymc6c5v5w",
+      "deliveryNumber": "KB-TRN-15012026-001",
+      "subtotal": "4378379",
+      "taxAmount": "481622",
+      "grandTotal": "4860001"
+    },
+    {
+      "id": "cmnjrot8e002vl1myqcdmgodm",
+      "deliveryNumber": "KB-TRN-04042026-003",
+      "subtotal": "56081081",
+      "taxAmount": "6168919",
+      "grandTotal": "62250000"
+    }
+  ]
+}
