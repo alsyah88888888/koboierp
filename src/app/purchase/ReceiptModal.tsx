@@ -42,11 +42,23 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
     const [error, setError] = useState("");
     const [result, setResult] = useState<any>(null);
 
-    // Helper to parse Indonesian numbers (remove dots, replace comma with dot)
+    // Helper to parse numbers intelligently (handle Indonesian dots/commas and decimal points)
     const parseIndoNumber = (val: string | number): number => {
         if (typeof val === 'number') return val;
         if (!val) return 0;
-        return Number(String(val).replace(/\./g, "").replace(",", ".")) || 0;
+        
+        let s = String(val).trim();
+        
+        // If it contains only ONE dot and NO comma, it's likely a decimal point (US style parsing)
+        const dotCount = (s.match(/\./g) || []).length;
+        const commaCount = (s.match(/,/g) || []).length;
+        
+        if (dotCount === 1 && commaCount === 0) {
+            return parseFloat(s) || 0;
+        }
+        
+        // Otherwise, treat dots as thousand separators and comma as decimal (ID style)
+        return Number(s.replace(/\./g, "").replace(",", ".")) || 0;
     };
 
     // Derived values
@@ -79,9 +91,9 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
 
     const generatePoNumber = () => {
         const now = new Date();
-        const dateStr = now.toISOString().slice(2, 10).replace(/-/g, ''); // YYMMDD
-        const randomStr = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-        setFormNumber(`PO-${dateStr}-${randomStr}`);
+        const dateStr = `${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}`;
+        const randomStr = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+        setFormNumber(`KB-TRN-SJ-${dateStr}-${randomStr}`);
     };
 
     const updateItem = (index: number, field: string, value: string) => {
