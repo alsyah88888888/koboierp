@@ -93,7 +93,7 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
         const now = new Date();
         const dateStr = `${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}`;
         const randomStr = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-        setFormNumber(`KB-TRN-SJ-${dateStr}-${randomStr}`);
+        setFormNumber(`PO-${dateStr}-${randomStr}`);
     };
 
     const updateItem = (index: number, field: string, value: string) => {
