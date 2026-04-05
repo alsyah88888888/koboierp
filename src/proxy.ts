@@ -205,6 +205,10 @@ export async function callAction(actionName: string, ...args: any[]) {
             const { getProductTrackingAction } = await import("@/actions/warehouse");
             return await getProductTrackingAction(...args as [string]);
 
+        case "voidGoodsReceipt":
+            const { voidGoodsReceiptAction } = await import("@/actions/warehouse");
+            return await voidGoodsReceiptAction(...args as [string, string]);
+
 
         default:
             throw new Error(`Action ${actionName} not found in proxy.`);

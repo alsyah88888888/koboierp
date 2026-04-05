@@ -126,3 +126,7 @@ export async function verifyGoodsReceiptAction(receiptId: string, verifiedBy: st
     return await verifyGoodsReceiptService(receiptId, verifiedBy, checkedItems);
 }
 
+export async function voidGoodsReceiptAction(id: string, reason: string) {
+    const { voidGoodsReceiptService } = require("@/lib/services/warehouse-service");
+    return await voidGoodsReceiptService(id, reason);
+}
