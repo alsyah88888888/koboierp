@@ -83,7 +83,7 @@ export async function createGoodsReceiptService(data: any, userId: string) {
         const receipt = await tx.goodsReceipt.create({
             data: {
                 receiptNumber,
-                formNumber: data.formNumber || "",
+                formNumber: data.formNumber?.trim() || null,
                 receivedFrom: data.receivedFrom || "UMUM",
                 purchaseOrderId: data.purchaseOrderId,
                 warehouseId: data.warehouseId,
@@ -221,7 +221,7 @@ export async function updateGoodsReceiptService(id: string, data: any, userId: s
             where: { id },
             data: {
                 receiptNumber: currentReceiptNumber,
-                formNumber: data.formNumber,
+                formNumber: data.formNumber?.trim() || null,
                 receivedFrom: data.receivedFrom,
                 purchaseOrderId: data.purchaseOrderId,
                 warehouseId: data.warehouseId,

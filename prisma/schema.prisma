@@ -226,7 +226,7 @@ model GoodsReceipt {
   id                String   @id @default(cuid())
   receiptNumber     String   @unique
   receivedFrom      String
-  formNumber        String   @unique
+  formNumber        String?  @unique
   date              DateTime?
   taxInvoiceDate    DateTime?
   taxInvoiceNumber  String?
