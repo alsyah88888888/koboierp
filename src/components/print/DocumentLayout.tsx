@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { Printer, ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { ClientBarcode as Barcode } from "@/components/print/ClientBarcode";
@@ -15,6 +16,13 @@ interface DocumentLayoutProps {
 
 export function DocumentLayout({ title, docNumber, date, children, headerInfo, isA5 }: DocumentLayoutProps) {
     const router = useRouter();
+
+    useEffect(() => {
+        if (docNumber) {
+            document.title = docNumber;
+        }
+    }, [docNumber]);
+
 
     return (
         <div className="min-h-screen bg-slate-100 p-4 md:p-8 flex flex-col items-center print:bg-white print:p-0 print:block">
