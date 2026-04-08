@@ -64,13 +64,14 @@ export function AdminDashboard({ role, stats, salesData, inventoryData, recentAc
         // 1. Sales Tab
         const salesRows = sales.map((s: any) => ({
             "No. Transaksi": s.deliveryNumber,
+            "No. PO": s.poNumber || "-",
             "Buyer": s.buyerName,
             "Penerima": s.recipient,
             "Total": Number(s.grandTotal),
             "Status": s.paymentStatus,
             "Waktu Input": new Date(s.createdAt).toLocaleString('id-ID'),
             "Operator": s.createdBy?.name || "System",
-            "Tgl Transaksi": new Date(s.date).toLocaleDateString('id-ID')
+            "Tanggal SJ": s.date ? new Date(s.date).toLocaleDateString('id-ID') : "-"
         }));
         const wsSales = XLSX.utils.json_to_sheet(salesRows);
         XLSX.utils.book_append_sheet(wb, wsSales, "Penjualan");

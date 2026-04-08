@@ -141,7 +141,9 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
     const handleExport = () => {
         const data = filteredDeliveries.map(d => ({
             'No. SJ': d.deliveryNumber,
-            'Tanggal': format(new Date(d.createdAt), "dd/MM/yyyy HH:mm"),
+            'No. PO': d.poNumber || "-",
+            'Tanggal SJ': d.date ? format(new Date(d.date), "dd/MM/yyyy") : "-",
+            'Waktu Input': format(new Date(d.createdAt), "dd/MM/yyyy HH:mm"),
             'Kirim Ke': d.recipient,
             'Buyer': d.buyerName,
             'Gudang': d.warehouse?.name || "-",
@@ -157,14 +159,12 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
     const handlePreview = () => {
         const data = filteredDeliveries.map(d => ({
             'No. SJ': d.deliveryNumber,
-            'Tanggal': format(new Date(d.createdAt), "dd/MM/yyyy HH:mm"),
-            'Kirim Ke': d.recipient,
+            'No. PO': d.poNumber || "-",
+            'Tanggal SJ': d.date ? format(new Date(d.date), "dd/MM/yyyy") : "-",
             'Buyer': d.buyerName,
             'Gudang': d.warehouse.name,
             'Sales Person': d.salesPerson,
             'Qty': d.items.reduce((acc: number, i: any) => acc + i.quantity, 0),
-            'Subtotal': Number(d.subtotal),
-            'Discount': Number(d.totalDiscount),
             'Total': Number(d.subtotal) - Number(d.totalDiscount)
         }));
         setPreviewData(data);
