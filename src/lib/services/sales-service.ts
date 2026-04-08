@@ -49,6 +49,7 @@ export async function createSalesDeliveryService(data: any, userId: string) {
                 poNumber: data.poNumber,
                 warehouseId: data.warehouseId,
                 salesPerson: data.salesPerson,
+                date: txDate,
                 createdAt: txDate,
                 createdById: userId,
                 items: {
@@ -209,6 +210,7 @@ export async function updateSalesDeliveryService(id: string, data: any) {
                 poNumber: data.poNumber,
                 warehouseId: data.warehouseId,
                 salesPerson: data.salesPerson,
+                date: txDate,
                 createdAt: txDate
             }
         });
