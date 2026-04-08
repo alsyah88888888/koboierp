@@ -108,9 +108,9 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
     };
 
     const filteredReceipts = initialReceipts.filter(r =>
-        r.receiptNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.receivedFrom.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.formNumber.toLowerCase().includes(searchTerm.toLowerCase())
+        r.receiptNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        r.receivedFrom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        r.formNumber?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     const handleExport = () => {

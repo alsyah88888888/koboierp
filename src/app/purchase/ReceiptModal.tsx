@@ -150,7 +150,7 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
                 date: new Date(date),
                 warehouseId,
                 salesPerson,
-                hasTaxOrDisc: showDiscount, // Explicit flag for prefixing
+                hasTaxOrDisc: showDiscount || Number(taxRate) > 0, // Explicit flag for prefixing if tax or disc exists
                 taxInvoiceNumber: hasTaxInvoice ? taxInvoiceNumber : null,
                 taxInvoiceDate: (hasTaxInvoice && taxInvoiceDate) ? new Date(taxInvoiceDate) : null,
                 totalDiscount: finalDiscountNominal,

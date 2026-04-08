@@ -61,9 +61,8 @@ export async function createGoodsReceiptService(data: any, userId: string) {
 
     return await prisma.$transaction(async (tx: any) => {
         // Use explicit flag from UI toggle if provided, fallback to value check
-        const hasTaxOrDisc = typeof data.hasTaxOrDisc === 'boolean' 
-            ? data.hasTaxOrDisc 
-            : ((Number(data.taxRate) || 0) > 0 || (Number(data.totalDiscount) || 0) > 0 || data.items.some((i: any) => (Number(i.discount) || 0) > 0));
+        const hasTaxOrDisc = data.hasTaxOrDisc === true || 
+            ((Number(data.taxRate) || 0) > 0 || (Number(data.totalDiscount) || 0) > 0 || data.items.some((i: any) => (Number(i.discount) || 0) > 0));
             
         const prefix = hasTaxOrDisc ? `KB-LPBD-${dateStr}-` : `KB-LPB-${dateStr}-`;
 
@@ -198,9 +197,8 @@ export async function updateGoodsReceiptService(id: string, data: any, userId: s
         }
 
         // 2. Determine if Prefix Needs Change
-        const hasTaxOrDisc = typeof data.hasTaxOrDisc === 'boolean' 
-            ? data.hasTaxOrDisc 
-            : ((Number(data.taxRate) || 0) > 0 || (Number(data.totalDiscount) || 0) > 0 || data.items.some((i: any) => (Number(i.discount) || 0) > 0));
+        const hasTaxOrDisc = data.hasTaxOrDisc === true || 
+            ((Number(data.taxRate) || 0) > 0 || (Number(data.totalDiscount) || 0) > 0 || data.items.some((i: any) => (Number(i.discount) || 0) > 0));
 
         let currentReceiptNumber = oldReceipt.receiptNumber;
         const isCurrentlyDiscounted = currentReceiptNumber.startsWith("KB-LPBD-");
