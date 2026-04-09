@@ -14,7 +14,6 @@ import { ReportPreviewModal } from "@/components/ReportPreviewModal";
 import { exportToExcel } from "@/lib/excel";
 import { SalesReturnModal } from "./SalesReturnModal";
 import { ManualPOModal } from "./ManualPOModal";
-import { Undo2, XCircle } from "lucide-react";
 import { VoidReasonModal } from "@/components/VoidReasonModal";
 
 interface SalesDashboardProps {
