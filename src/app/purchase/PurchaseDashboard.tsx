@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Search, Trash2, Edit2, Eye, Download, FileText } from "lucide-react";
+import { Plus, Search, Trash2, Edit2, Eye, Download, FileText, ChevronRight, PackagePlus, History } from "lucide-react";
 import { ReportPreviewModal } from "@/components/ReportPreviewModal";
 import { format } from "date-fns";
 import { ReceiptModal } from "./ReceiptModal";
