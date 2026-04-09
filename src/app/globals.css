@@ -169,7 +169,7 @@ body {
 }
 
 @utility erp-stat-card {
-  @apply erp-card p-6 md:p-8 relative overflow-hidden group transition-all duration-300;
+  @apply erp-card p-6 md:p-8 relative overflow-hidden transition-all duration-300;
   &:hover {
     @apply scale-[1.02];
   }
