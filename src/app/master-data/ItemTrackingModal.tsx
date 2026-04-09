@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { X, History, ArrowDownLeft, ArrowUpRight, RotateCcw, Box, Info, Filter, TrendingDown, TrendingUp } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { X, History, ArrowDownLeft, ArrowUpRight, RotateCcw, Box, Info, Filter, TrendingDown, TrendingUp, RefreshCw, Tag as LucideTag } from "lucide-react";
 import { callAction } from "@/proxy";
 
 import { cn, formatCurrency } from "@/lib/utils";
@@ -17,6 +17,11 @@ export function ItemTrackingModal({ productId, onClose }: ItemTrackingModalProps
     const [data, setData] = useState<any>(null);
     const [error, setError] = useState<string | null>(null);
     const [isClient, setIsClient] = useState(false);
+    
+    // Filters State
+    const [filterDay, setFilterDay] = useState("");
+    const [filterMonth, setFilterMonth] = useState("");
+    const [filterYear, setFilterYear] = useState("");
 
     useEffect(() => {
         setIsClient(true);
@@ -69,9 +74,35 @@ export function ItemTrackingModal({ productId, onClose }: ItemTrackingModalProps
         );
     }
 
-    const totalIn = data.history.reduce((acc: number, row: any) => acc + (row.qtyIn || 0), 0);
-    const totalOut = data.history.reduce((acc: number, row: any) => acc + (row.qtyOut || 0), 0);
-    const netBalance = totalIn - totalOut;
+    const { filteredHistory, totalIn, totalOut, netBalance } = useMemo(() => {
+        if (!data?.history) return { filteredHistory: [], totalIn: 0, totalOut: 0, netBalance: 0 };
+
+        const filtered = data.history.filter((record: any) => {
+            const date = new Date(record.date);
+            const matchesDay = filterDay === "" || date.getDate() === parseInt(filterDay);
+            const matchesMonth = filterMonth === "" || (date.getMonth() + 1) === parseInt(filterMonth);
+            const matchesYear = filterYear === "" || date.getFullYear() === parseInt(filterYear);
+            return matchesDay && matchesMonth && matchesYear;
+        });
+
+        const tin = filtered.reduce((acc: number, row: any) => acc + (row.qtyIn || 0), 0);
+        const tout = filtered.reduce((acc: number, row: any) => acc + (row.qtyOut || 0), 0);
+
+        return {
+            filteredHistory: filtered,
+            totalIn: tin,
+            totalOut: tout,
+            netBalance: tin - tout
+        };
+    }, [data, filterDay, filterMonth, filterYear]);
+
+    const months = [
+        "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+        "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+    ];
+
+    const currentYear = new Date().getFullYear();
+    const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
 
     return (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md z-[60] flex items-center justify-center p-0 sm:p-6 animate-in fade-in duration-500">
@@ -91,7 +122,7 @@ export function ItemTrackingModal({ productId, onClose }: ItemTrackingModalProps
                             </div>
                             <div className="flex items-center gap-3 mt-2">
                                 <span className="text-[11px] font-mono text-slate-500 font-bold bg-slate-100 flex items-center gap-1.5 px-3 py-1 rounded-xl border border-slate-200">
-                                    <Tag className="h-3 w-3" /> SKU: {data.product.sku}
+                                    <LucideTag className="h-3 w-3" /> SKU: {data.product.sku}
                                 </span>
                                 <span className="text-[11px] font-black text-slate-600 uppercase tracking-widest bg-white shadow-sm border border-slate-200 px-3 py-1 rounded-xl">
                                     SATUAN: {data.product.uom}
@@ -154,9 +185,57 @@ export function ItemTrackingModal({ productId, onClose }: ItemTrackingModalProps
                         </div>
                     ) : (
                         <div className="erp-card bg-white p-0 overflow-hidden shadow-xl border-slate-200">
-                            <div className="p-4 border-b border-slate-100 bg-slate-50/30 flex items-center gap-2">
-                                <Filter className="h-3.5 w-3.5 text-slate-400" />
-                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Rincian Pergerakan Barang</span>
+                            <div className="p-4 border-b border-slate-100 bg-slate-50/30 flex flex-wrap items-center justify-between gap-4">
+                                <div className="flex items-center gap-2">
+                                    <Filter className="h-3.5 w-3.5 text-slate-400" />
+                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Rincian Pergerakan Barang</span>
+                                </div>
+                                
+                                <div className="flex items-center gap-2">
+                                    <select 
+                                        value={filterDay}
+                                        onChange={(e) => setFilterDay(e.target.value)}
+                                        className="bg-white border border-slate-200 rounded-lg px-2 py-1 text-[10px] font-bold outline-primary cursor-pointer h-8"
+                                    >
+                                        <option value="">Tgl</option>
+                                        {Array.from({ length: 31 }, (_, i) => (
+                                            <option key={i+1} value={i+1}>{i+1}</option>
+                                        ))}
+                                    </select>
+                                    <select 
+                                        value={filterMonth}
+                                        onChange={(e) => setFilterMonth(e.target.value)}
+                                        className="bg-white border border-slate-200 rounded-lg px-2 py-1 text-[10px] font-bold outline-primary cursor-pointer h-8"
+                                    >
+                                        <option value="">Bulan</option>
+                                        {months.map((m, i) => (
+                                            <option key={i} value={i+1}>{m}</option>
+                                        ))}
+                                    </select>
+                                    <select 
+                                        value={filterYear}
+                                        onChange={(e) => setFilterYear(e.target.value)}
+                                        className="bg-white border border-slate-200 rounded-lg px-2 py-1 text-[10px] font-bold outline-primary cursor-pointer h-8"
+                                    >
+                                        <option value="">Tahun</option>
+                                        {years.map(y => (
+                                            <option key={y} value={y}>{y}</option>
+                                        ))}
+                                    </select>
+                                    {(filterDay || filterMonth || filterYear) && (
+                                        <button 
+                                            onClick={() => {
+                                                setFilterDay("");
+                                                setFilterMonth("");
+                                                setFilterYear("");
+                                            }}
+                                            className="p-2 bg-rose-50 text-rose-500 rounded-lg hover:bg-rose-100 transition-colors"
+                                            title="Reset Filters"
+                                        >
+                                            <RefreshCw className="h-3 w-3" />
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                             <table className="table-erp">
                                 <thead>
@@ -171,7 +250,14 @@ export function ItemTrackingModal({ productId, onClose }: ItemTrackingModalProps
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {data.history.map((row: any, idx: number) => (
+                                    {filteredHistory.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={7} className="py-20 text-center">
+                                                <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Data tidak ditemukan pada periode ini</p>
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        filteredHistory.map((row: any, idx: number) => (
                                         <tr key={row.id} className="group">
                                             <td className="text-center text-slate-400">{idx + 1}</td>
                                             <td className="whitespace-nowrap font-bold text-slate-600 text-[11px]">
@@ -204,7 +290,8 @@ export function ItemTrackingModal({ productId, onClose }: ItemTrackingModalProps
                                             </td>
                                             <td className="text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">{data.product.uom}</td>
                                         </tr>
-                                    ))}
+                                    ))
+                                )}
                                 </tbody>
                             </table>
                         </div>
