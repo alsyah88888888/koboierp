@@ -137,7 +137,7 @@ body {
 }
 
 @utility table-responsive {
-  @apply w-full overflow-x-auto custom-scrollbar;
+  @apply w-full overflow-x-auto custom-scrollbar block;
 }
 
 @utility table-erp {

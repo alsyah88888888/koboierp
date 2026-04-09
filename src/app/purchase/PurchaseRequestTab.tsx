@@ -58,8 +58,8 @@ export function PurchaseRequestTab({ requests, userRole, userId }: { requests: a
     };
 
     return (
-        <div className="table-responsive">
-            <table className="w-full text-sm text-left">
+        <div className="table-responsive w-full overflow-x-auto">
+            <table className="w-full text-sm text-left min-w-[1000px]">
                 <thead className="bg-slate-50 text-slate-500 border-b-2 border-slate-50 text-[10px] uppercase font-black tracking-widest sticky top-0 z-10">
                     <tr>
                         <th className="px-6 py-4 w-10"></th>

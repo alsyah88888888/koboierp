@@ -272,7 +272,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                 <DashboardStats />
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-[1400px]">
                 {/* BC Performance Card */}
                 {(isAdmin || bcStats.sjCount > 0) && (
                     <div className="erp-card p-6 md:p-8 relative overflow-hidden group">

@@ -272,8 +272,8 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
                     </div>
                 </div>
 
-                <div className="overflow-x-auto">
-                    <table className="table-erp">
+                <div className="overflow-x-auto w-full">
+                    <table className="table-erp min-w-[1000px]">
                         <thead>
                             {activeTab === "LPB" ? (
                                 <tr>
