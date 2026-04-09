@@ -331,7 +331,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                                     ))}
                                 </div>
                             ) : (
-                                <p className="text-xs text-muted-foreground italic text-center py-4">Belum ada pengiriman</p>
+                                <p className="text-xs text-slate-400 italic text-center py-4">Belum ada pengiriman</p>
                             )}
                         </div>
                     </div>
@@ -382,7 +382,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                                     ))}
                                 </div>
                             ) : (
-                                <p className="text-xs text-muted-foreground italic text-center py-4">Belum ada pengiriman</p>
+                                <p className="text-xs text-slate-400 italic text-center py-4">Belum ada pengiriman</p>
                             )}
                         </div>
                     </div>

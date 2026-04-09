@@ -122,8 +122,8 @@ export function AccountingDashboard({ journals, accounts }: { journals: any[], a
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hide-print px-1">
                 <div>
-                    <h2 className="text-2xl md:text-3xl font-black tracking-tighter text-primary uppercase">Accounting</h2>
-                    <p className="text-muted-foreground text-[10px] md:text-sm font-bold uppercase tracking-widest opacity-70">Financial Reports & Journal entries</p>
+                    <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight uppercase">Accounting</h1>
+                    <p className="text-slate-500 text-[10px] md:text-sm font-bold uppercase tracking-widest opacity-70">Financial Reports & Journal entries</p>
                 </div>
                 <button
                     onClick={handleExport}
@@ -134,7 +134,6 @@ export function AccountingDashboard({ journals, accounts }: { journals: any[], a
                 </button>
             </div>
 
-            {/* TABS */}
             <div className="bg-white rounded-2xl shadow-sm border p-1.5 flex flex-nowrap overflow-x-auto gap-2 hide-print custom-scrollbar scrollbar-hide">
                 {[
                     { id: "PNL", label: "Laba Rugi", icon: BarChart3 },
@@ -158,17 +157,16 @@ export function AccountingDashboard({ journals, accounts }: { journals: any[], a
                 ))}
             </div>
 
-            {/* TAB CONTENT: PNL */}
             {activeTab === "PNL" && (
                 <div className="space-y-6 animate-in fade-in duration-300">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="bg-white rounded-2xl p-6 border shadow-sm">
-                            <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-2">Total Pendapatan</p>
-                            <p className="text-3xl font-black text-emerald-600 tracking-tighter">{formatCurrency(totalRevenue)}</p>
+                        <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex-1">
+                            <p className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">Total Pendapatan</p>
+                            <p className="text-2xl font-black text-emerald-600">{formatCurrency(totalRevenue)}</p>
                         </div>
-                        <div className="bg-white rounded-2xl p-6 border shadow-sm">
-                            <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-2">Total Beban (HPP & Op)</p>
-                            <p className="text-3xl font-black text-rose-600 tracking-tighter">{formatCurrency(totalExpense)}</p>
+                        <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex-1">
+                            <p className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">Total Beban (HPP & Op)</p>
+                            <p className="text-2xl font-black text-rose-600">{formatCurrency(totalExpense)}</p>
                         </div>
                         <div className={cn("rounded-2xl p-6 border shadow-sm", netIncome >= 0 ? "bg-emerald-50 border-emerald-200" : "bg-rose-50 border-rose-200")}>
                             <p className={cn("text-sm font-bold uppercase tracking-wider mb-2", netIncome >= 0 ? "text-emerald-700" : "text-rose-700")}>Laba/Rugi Bersih</p>
@@ -208,7 +206,6 @@ export function AccountingDashboard({ journals, accounts }: { journals: any[], a
                 </div>
             )}
 
-            {/* TAB CONTENT: BALANCE SHEET */}
             {activeTab === "BALANCE" && (
                 <div className="space-y-6 animate-in fade-in duration-300">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -280,13 +277,12 @@ export function AccountingDashboard({ journals, accounts }: { journals: any[], a
                 </div>
             )}
 
-            {/* TAB CONTENT: LEDGER */}
             {activeTab === "LEDGER" && (
                 <div className="bg-white rounded-2xl border shadow-sm animate-in fade-in duration-300">
                     <div className="p-6 border-b flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-50 rounded-t-2xl">
-                        <div>
-                            <h3 className="text-xl font-bold text-slate-800">Buku Besar</h3>
-                            <p className="text-xs text-muted-foreground mt-1">Pilih akun untuk melihat mutasi transaksi.</p>
+                        <div className="flex-1">
+                            <h3 className="text-lg font-black text-slate-900">Mutation Ledger</h3>
+                            <p className="text-xs text-slate-500 mt-1">Pilih akun untuk melihat mutasi transaksi.</p>
                         </div>
                         <select
                             value={selectedAccountId}
@@ -320,8 +316,8 @@ export function AccountingDashboard({ journals, accounts }: { journals: any[], a
 
                                         return (
                                             <tr key={j.id} className="hover:bg-slate-50 transition-colors">
-                                                <td className="px-6 py-4 font-mono text-[11px] text-muted-foreground whitespace-nowrap">
-                                                    {format(new Date(j.date), "dd/MM/yyyy HH:mm")}
+                                                <td className="px-6 py-4 font-mono text-[11px] text-slate-500 whitespace-nowrap">
+                                                    {isClient ? format(new Date(j.date), "dd/MM/yyyy HH:mm") : "--/--/----"}
                                                 </td>
                                                 <td className="px-6 py-4 font-medium truncate" title={j.description}>{j.description}</td>
                                                 <td className="px-6 py-4 text-right font-black text-emerald-600">
@@ -350,13 +346,12 @@ export function AccountingDashboard({ journals, accounts }: { journals: any[], a
                 </div>
             )}
 
-            {/* TAB CONTENT: JOURNAL */}
             {activeTab === "JOURNAL" && (
                 <div className="bg-white rounded-2xl border shadow-sm animate-in fade-in duration-300">
                     <div className="p-6 border-b flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-50 rounded-t-2xl">
-                        <div>
-                            <h3 className="text-xl font-bold text-slate-800">Jurnal Umum</h3>
-                            <p className="text-xs text-muted-foreground mt-1">Daftar seluruh jurnal double-entry.</p>
+                        <div className="flex-1">
+                            <h3 className="text-lg font-black text-slate-900">Journal Audit Trail</h3>
+                            <p className="text-xs text-slate-500 mt-1">Daftar seluruh jurnal double-entry.</p>
                         </div>
                         <div className="relative w-full md:w-80">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

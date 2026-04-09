@@ -65,36 +65,37 @@ export function OperationalModal({ isOpen, onClose, coa }: OperationalModalProps
                 <div className="p-6 border-b flex justify-between items-center">
                     <div>
                         <h2 className="text-xl font-black uppercase tracking-tighter">Input Operasional</h2>
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-none">Catat Pengeluaran/Pemasukan Baru</p>
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-none">Catat Pengeluaran/Pemasukan Baru</p>
+                        <h2 className="text-xl font-black text-slate-900 tracking-tight">Financial Record</h2>
                     </div>
-                    <button onClick={onClose} className="p-2 hover:bg-accent rounded-full transition-colors">
-                        <X className="w-5 h-5 text-muted-foreground" />
+                    <button onClick={onClose} className="p-2 hover:bg-red-50 hover:text-red-500 rounded-full transition-all text-slate-400 group">
+                        <X className="w-5 h-5 text-slate-400" />
                     </button>
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">
                     <div className="flex gap-4">
-                        <div className="flex-1 space-y-2">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Tipe Transaksi</label>
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Tipe Transaksi</label>
                             <div className="grid grid-cols-2 gap-2">
                                 <button
                                     type="button"
-                                    onClick={() => setFormData(prev => ({ ...prev, transactionType: 'PAYMENT' }))}
-                                    className={`py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${formData.transactionType === 'PAYMENT' ? 'bg-red-500 text-white shadow-lg shadow-red-500/20' : 'bg-accent text-muted-foreground'}`}
+                                    onClick={() => setFormData({ ...formData, transactionType: 'PAYMENT' })}
+                                    className={`py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${formData.transactionType === 'PAYMENT' ? 'bg-red-500 text-white shadow-lg shadow-red-500/20' : 'bg-accent text-slate-500'}`}
                                 >
                                     Pengeluaran
                                 </button>
                                 <button
                                     type="button"
-                                    onClick={() => setFormData(prev => ({ ...prev, transactionType: 'RECEIPT' }))}
-                                    className={`py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${formData.transactionType === 'RECEIPT' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-accent text-muted-foreground'}`}
+                                    onClick={() => setFormData({ ...formData, transactionType: 'RECEIPT' })}
+                                    className={`py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${formData.transactionType === 'RECEIPT' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-accent text-slate-500'}`}
                                 >
                                     Pemasukan
                                 </button>
                             </div>
                         </div>
-                        <div className="flex-1 space-y-2">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Tanggal</label>
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Tanggal</label>
                             <input
                                 type="date"
                                 className="w-full bg-accent/50 border-none rounded-xl py-2 px-3 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all"
@@ -106,7 +107,7 @@ export function OperationalModal({ isOpen, onClose, coa }: OperationalModalProps
                     </div>
 
                     <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Deskripsi Transaksi</label>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Deskripsi Transaksi</label>
                         <input
                             type="text"
                             placeholder="Contoh: Bayar Listrik, ATK, Kebersihan..."
@@ -119,7 +120,7 @@ export function OperationalModal({ isOpen, onClose, coa }: OperationalModalProps
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Jumlah (Rp)</label>
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Jumlah (Rp)</label>
                             <input
                                 type="text"
                                 placeholder="0"
@@ -133,7 +134,7 @@ export function OperationalModal({ isOpen, onClose, coa }: OperationalModalProps
                             />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">No. Referensi (Opsional)</label>
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">No. Referensi (Opsional)</label>
                             <input
                                 type="text"
                                 placeholder="Ref/ID/Invoice"
@@ -145,7 +146,7 @@ export function OperationalModal({ isOpen, onClose, coa }: OperationalModalProps
                     </div>
 
                     <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Kategori (Chart of Account)</label>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Kategori (Chart of Account)</label>
                         <select
                             className="w-full bg-accent/50 border-none rounded-xl py-2 px-3 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all"
                             value={formData.accountId}
@@ -160,7 +161,7 @@ export function OperationalModal({ isOpen, onClose, coa }: OperationalModalProps
                     </div>
 
                     <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Sumber/Tujuan Dana</label>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Sumber/Tujuan Dana</label>
                         <select
                             className="w-full bg-accent/50 border-none rounded-xl py-2 px-3 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all"
                             value={formData.bankAccountId}
@@ -178,7 +179,7 @@ export function OperationalModal({ isOpen, onClose, coa }: OperationalModalProps
                     </div>
 
                     <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Sales Context (Opsional)</label>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Sales Context (Opsional)</label>
                         <select
                             className="w-full bg-accent/50 border-none rounded-xl py-2 px-3 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all"
                             value={formData.salesPerson}
@@ -188,14 +189,15 @@ export function OperationalModal({ isOpen, onClose, coa }: OperationalModalProps
                             <option value="BC">Sales BC</option>
                             <option value="PF">Sales PF</option>
                         </select>
-                        <p className="text-[9px] text-muted-foreground ml-1 font-medium mt-1 uppercase italic">
+                        <div className="px-2">
+                        <p className="text-[9px] text-slate-400 ml-1 font-medium mt-1 uppercase italic">
                             *Jika dipilih, transaksi ini akan otomatis memotong Nett Margin Sales.
                         </p>
+                        </div>
                     </div>
 
-                    <div className="bg-primary/5 p-4 rounded-2xl flex gap-3 items-start border border-primary/10">
-                        <AlertCircle className="w-4 h-4 text-primary mt-0.5" />
-                        <p className="text-[10px] font-bold text-muted-foreground leading-relaxed uppercase">
+                    <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10">
+                        <p className="text-[10px] font-bold text-slate-600 leading-relaxed uppercase">
                             Transaksi ini akan otomatis memotong/menambah saldo rekening yang dipilih dan mencatat jurnal akuntansi yang sesuai.
                         </p>
                     </div>

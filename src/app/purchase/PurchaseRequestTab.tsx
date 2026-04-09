@@ -90,7 +90,7 @@ export function PurchaseRequestTab({ requests, userRole, userId }: { requests: a
                                                 <span className="text-red-500 text-[10px] italic">Nomor Tidak Valid</span>
                                             )}
                                         </div>
-                                        <div className="text-[10px] text-muted-foreground">{format(new Date(pr.date), "dd/MM/yyyy HH:mm")}</div>
+                                        <div className="text-[10px] text-slate-500 font-bold">{format(new Date(pr.date), "dd/MM/yyyy HH:mm")}</div>
                                     </td>
                                     <td className="px-6 py-4 font-medium">
                                         {pr.requestedBy?.name || "Unknown"}
@@ -102,7 +102,7 @@ export function PurchaseRequestTab({ requests, userRole, userId }: { requests: a
                                                     {item.itemName} ({item.quantity})
                                                 </span>
                                             ))}
-                                            {pr.items.length > 2 && <span className="text-[10px] text-muted-foreground">+{pr.items.length - 2} lagi</span>}
+                                            {pr.items.length > 2 && <span className="text-[10px] text-slate-500 font-black">+{pr.items.length - 2} lagi</span>}
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
@@ -197,14 +197,14 @@ export function PurchaseRequestTab({ requests, userRole, userId }: { requests: a
                                                                 <div>
                                                                     <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Approve By (Admin)</h4>
                                                                     <p className="text-xs font-bold text-slate-800">{pr.approvedBy.name}</p>
-                                                                    <p className="text-[10px] text-muted-foreground">{format(new Date(pr.approvedAt), "dd/MM/yy HH:mm")}</p>
+                                                                    <p className="text-[10px] text-slate-500 font-bold">{format(new Date(pr.approvedAt), "dd/MM/yy HH:mm")}</p>
                                                                 </div>
                                                             )}
                                                             {pr.verifiedBy && (
                                                                 <div>
                                                                     <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Verify By (Finance)</h4>
                                                                     <p className="text-xs font-bold text-slate-800">{pr.verifiedBy.name}</p>
-                                                                    <p className="text-[10px] text-muted-foreground">{format(new Date(pr.verifiedAt), "dd/MM/yy HH:mm")}</p>
+                                                                    <p className="text-[10px] text-slate-500 font-bold">{format(new Date(pr.verifiedAt), "dd/MM/yy HH:mm")}</p>
                                                                 </div>
                                                             )}
                                                         </div>
@@ -219,7 +219,7 @@ export function PurchaseRequestTab({ requests, userRole, userId }: { requests: a
                     })}
                     {requests.length === 0 && (
                         <tr>
-                            <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground italic">
+                            <td colSpan={6} className="px-6 py-12 text-center text-slate-400 italic font-bold">
                                 Tidak ada data pengajuan pembelian.
                             </td>
                         </tr>

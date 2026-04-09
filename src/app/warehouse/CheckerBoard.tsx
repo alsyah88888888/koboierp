@@ -376,8 +376,8 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
             </div>
 
             {unverifiedReceipts.length === 0 ? (
-                <div className="p-12 text-center border-2 border-dashed rounded-xl text-muted-foreground italic">
-                    Semua barang telah diverifikasi.
+                <div className="p-12 text-center border-2 border-dashed rounded-xl text-slate-400 font-bold italic">
+                    Belum ada barang yang didaftarkan...
                 </div>
             ) : (
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -388,11 +388,11 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
                                 <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-bold uppercase tracking-tighter">Pending</span>
                             </div>
                             <p className="text-sm font-bold truncate mb-1">{r.receivedFrom}</p>
-                            <p className="text-xs text-muted-foreground flex items-center gap-1 mb-4">
+                            <p className="text-xs text-slate-500 font-bold flex items-center gap-1 mb-4 uppercase tracking-widest">
                                 <Package className="h-3 w-3" />
                                 {r.items.length} Jenis Barang
                             </p>
-                            <div className="flex justify-between items-center text-[10px] text-muted-foreground mb-4">
+                            <div className="flex justify-between items-center text-[10px] text-slate-400 font-black uppercase mb-4">
                                 <span>{r.createdAt ? format(new Date(r.createdAt), "dd MMM yyyy") : "-"}</span>
                                 <span className="uppercase">{r.warehouse?.name || "Unknown"}</span>
                             </div>

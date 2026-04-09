@@ -59,8 +59,8 @@ export function PurchaseRequestDashboard({ purchaseRequests }: {
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hide-print px-1">
                 <div>
-                    <h2 className="text-2xl md:text-3xl font-black tracking-tighter text-primary uppercase">Purchase Request</h2>
-                    <p className="text-muted-foreground text-[10px] md:text-sm font-bold uppercase tracking-widest opacity-70">Internal procurement requests</p>
+                    <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight uppercase">Product Requests</h1>
+                    <p className="text-slate-500 text-[10px] md:text-sm font-bold uppercase tracking-widest opacity-70">Internal procurement requests</p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                     <button
@@ -94,8 +94,8 @@ export function PurchaseRequestDashboard({ purchaseRequests }: {
             <div className="rounded-xl border bg-card shadow-sm">
                 <div className="p-6 border-b flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-primary">
                     <h3 className="text-lg font-bold">Data Pengajuan Pembelian</h3>
-                    <div className="relative w-full md:w-80">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <div className="relative w-full md:max-w-md">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                         <input
                             value={searchTerm}
                             onChange={e => setSearchTerm(e.target.value)}

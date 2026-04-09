@@ -103,7 +103,7 @@ export function OperationalDashboard({
                 <div className="bg-gradient-to-br from-indigo-50 to-white border border-indigo-100 shadow-sm p-5 rounded-3xl flex justify-between items-center transition-all hover:shadow-md gap-4">
                     <div className="min-w-0 flex-1">
                         <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1 shadow-sm px-2 py-0.5 rounded-full bg-white w-fit border border-indigo-50">Sales BC</p>
-                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mt-2">Nett Margin</p>
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-2">Nett Margin</p>
                         <p className={`text-2xl font-black tracking-tighter truncate ${bcStats.margin >= 0 ? 'text-indigo-600' : 'text-rose-600'}`} title={isClient ? `Rp ${bcStats.margin.toLocaleString('id-ID')}` : ""}>
                             Rp {isClient ? bcStats.margin.toLocaleString('id-ID') : "---"}
                         </p>
@@ -125,7 +125,7 @@ export function OperationalDashboard({
                     <div className="bg-gradient-to-br from-amber-50 to-white border border-amber-100 shadow-sm p-5 rounded-3xl flex justify-between items-center transition-all hover:shadow-md gap-4">
                         <div className="min-w-0 flex-1">
                             <p className="text-[10px] font-black text-amber-400 uppercase tracking-widest mb-1 shadow-sm px-2 py-0.5 rounded-full bg-white w-fit border border-amber-50">Sales PF</p>
-                            <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mt-2">Nett Margin</p>
+                            <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-2">Nett Margin</p>
                             <p className={`text-2xl font-black tracking-tighter truncate ${pfStats.margin >= 0 ? 'text-amber-600' : 'text-rose-600'}`} title={isClient ? `Rp ${pfStats.margin.toLocaleString('id-ID')}` : ""}>
                                 Rp {isClient ? pfStats.margin.toLocaleString('id-ID') : "---"}
                             </p>
@@ -150,8 +150,8 @@ export function OperationalDashboard({
                         <ArrowDownCircle className="w-6 h-6" />
                     </div>
                     <div>
-                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Total Pengeluaran</p>
-                        <p className="text-xl font-black tracking-tighter">
+                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Total Pengeluaran</p>
+                        <p className="text-xl font-black tracking-tighter text-slate-900">
                             {isClient ? formatCurrency(transactions.filter(t => t.transactionType === "PAYMENT").reduce((sum, t) => sum + Number(t.amount), 0)) : "Rp ---"}
                         </p>
                     </div>
@@ -161,8 +161,8 @@ export function OperationalDashboard({
                         <ArrowUpCircle className="w-6 h-6" />
                     </div>
                     <div>
-                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Total Pemasukan</p>
-                        <p className="text-xl font-black tracking-tighter">
+                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Total Pemasukan</p>
+                        <p className="text-xl font-black tracking-tighter text-slate-900">
                             {isClient ? formatCurrency(transactions.filter(t => t.transactionType === "RECEIPT").reduce((sum, t) => sum + Number(t.amount), 0)) : "Rp ---"}
                         </p>
                     </div>
@@ -172,8 +172,8 @@ export function OperationalDashboard({
                         <Receipt className="w-6 h-6" />
                     </div>
                     <div>
-                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Banyak Transaksi</p>
-                        <p className="text-xl font-black tracking-tighter">{transactions.length}</p>
+                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Banyak Transaksi</p>
+                        <p className="text-xl font-black tracking-tighter text-slate-900">{transactions.length}</p>
                     </div>
                 </div>
             </div>
@@ -199,7 +199,7 @@ export function OperationalDashboard({
 
                 <div className="overflow-x-auto custom-scrollbar">
                     <table className="w-full text-left table-fixed min-w-[900px]">
-                        <thead className="text-[10px] font-black uppercase tracking-widest text-muted-foreground bg-accent/30 border-b">
+                        <thead className="text-[10px] font-black uppercase tracking-widest text-slate-500 bg-accent/30 border-b">
                             <tr>
                                 <th className="px-6 py-4 w-32">Tanggal</th>
                                 <th className="px-6 py-4">Deskripsi</th>
@@ -212,16 +212,16 @@ export function OperationalDashboard({
                         <tbody className="divide-y text-sm">
                             {filteredTransactions.map((t) => (
                                 <tr key={t.id} className="hover:bg-accent/20 transition-colors group">
-                                    <td className="px-6 py-4 font-bold text-muted-foreground">
+                                    <td className="px-6 py-4 font-bold text-slate-500">
                                         <div className="flex items-center gap-2">
                                             <Calendar className="w-3.5 h-3.5 text-primary/40" />
                                             {isClient ? new Date(t.date).toLocaleDateString('id-ID') : "--/--/----"}
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <div className="font-bold text-foreground tracking-tight truncate" title={t.description}>{t.description}</div>
+                                        <div className="font-bold text-slate-900 tracking-tight truncate" title={t.description}>{t.description}</div>
                                         {t.referenceNumber && (
-                                            <div className="text-[10px] font-black text-muted-foreground uppercase opacity-60 truncate" title={t.referenceNumber}>
+                                            <div className="text-[10px] font-black text-slate-400 uppercase opacity-60 truncate" title={t.referenceNumber}>
                                                 Ref: {t.referenceNumber}
                                             </div>
                                         )}
@@ -234,14 +234,14 @@ export function OperationalDashboard({
                                         )}
                                     </td>
                                     <td className="px-6 py-4">
-                                        <span className="px-2 py-1 bg-accent rounded-lg text-[10px] font-black uppercase tracking-tighter">
+                                        <span className="px-2 py-1 bg-slate-100 text-slate-700 rounded-lg text-[10px] font-black uppercase tracking-tighter border border-slate-200">
                                             {t.journals?.[0]?.account?.name || "Uncategorized"}
                                         </span>
                                     </td>
                                     <td className={`px-6 py-4 text-right font-black tracking-tighter ${t.transactionType === 'PAYMENT' ? 'text-red-500' : 'text-emerald-500'}`}>
                                         {isClient ? (t.transactionType === 'PAYMENT' ? '-' : '+') + " " + formatCurrency(Number(t.amount)) : "Rp ---"}
                                     </td>
-                                    <td className="px-6 py-4 font-bold text-xs uppercase opacity-70">
+                                    <td className="px-6 py-4 font-bold text-xs uppercase text-slate-500">
                                         <div className="flex items-center gap-2">
                                             <Wallet className="w-3 h-3" />
                                             {t.bank}

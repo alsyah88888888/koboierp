@@ -181,7 +181,7 @@ export function AdminDashboard({
                         <div className="h-5 w-2 bg-primary rounded-full shadow-lg shadow-primary/20" />
                         <div>
                             <h2 className="text-lg font-black text-slate-900 uppercase tracking-tight">Live Insights</h2>
-                            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Real-time Daily Performance</p>
+                            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">Real-time Daily Performance</p>
                         </div>
                     </div>
                     <button 
@@ -292,7 +292,7 @@ export function AdminDashboard({
                             </div>
                             <div>
                                 <h3 className="text-xl font-black text-slate-900 tracking-tight">Live Activity Stream</h3>
-                                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-1">Real-time data entry monitor</p>
+                                <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mt-1">Real-time data entry monitor</p>
                             </div>
                         </div>
                         <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100">
@@ -344,11 +344,11 @@ export function AdminDashboard({
                                             <span className="text-[13px] font-black text-slate-900 tracking-tight">
                                                 {act.deliveryNumber || act.receiptNumber || act.number || act.description}
                                             </span>
-                                            <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100">
+                                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100">
                                                 {isClient ? new Date(act.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : "--:--"}
                                             </span>
                                         </div>
-                                        <p className="text-[11px] font-bold text-slate-400 flex items-center gap-2">
+                                        <p className="text-[11px] font-bold text-slate-500 flex items-center gap-2">
                                             {act.activityType === 'SALE' ? `Transactional shipment to ${act.buyerName || '-'}` :
                                              act.activityType === 'PURCHASE' ? `Inbound supply from ${act.receivedFrom || '-'}` :
                                              act.activityType === 'REQUEST' ? `New stock request: ${act.notes || 'No description'}` :
@@ -362,8 +362,6 @@ export function AdminDashboard({
                                             {act.createdBy?.name || act.requestedBy?.name || "Verified App"}
                                         </div>
                                         <div className={`text-[9px] font-black uppercase tracking-[0.2em] mt-1 ${
-                                            act.activityType === 'SALE' ? 'text-blue-500' :
-                                            act.activityType === 'PURCHASE' ? 'text-emerald-500' :
                                             act.activityType === 'FINANCE' ? 'text-amber-500' :
                                             'text-purple-500'
                                         }`}>
