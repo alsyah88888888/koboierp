@@ -159,21 +159,40 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
     );
 
     const handleExport = () => {
-        const data = filteredDeliveries.map(d => ({
-            'No. SJ': d.deliveryNumber,
-            'No. PO': d.poNumber || "-",
-            'Tgl SJ': format(new Date(d.createdAt), "dd/MM/yyyy"),
-            'Tanggal': format(new Date(d.createdAt), "dd/MM/yyyy HH:mm"),
-            'Kirim Ke': d.recipient,
-            'Buyer': d.buyerName,
-            'Gudang': d.warehouse?.name || "-",
-            'Sales Person': d.salesPerson,
-            'Total Qty': d.items?.reduce((acc: number, i: any) => acc + (Number(i.quantity) || 0), 0) || 0,
-            'Subtotal': Number(d.subtotal || 0),
-            'Discount': Number(d.totalDiscount || 0),
-            'Total': Number(d.subtotal || 0) - Number(d.totalDiscount || 0)
-        }));
-        exportToExcel(data, 'Laporan_Penjualan', 'Penjualan');
+        const exportData: any[] = [];
+        
+        filteredDeliveries.forEach(d => {
+            const items = d.items || [];
+            items.forEach((item: any) => {
+                const qty = Number(item.quantity) || 0;
+                const price = Number(item.salesPrice) || 0;
+                const discLine = Number(item.discount || 0);
+                const itemTotalBrutto = qty * price;
+
+                exportData.push({
+                    'No. Surat Jalan': d.deliveryNumber,
+                    'No. PO Buyer': d.poNumber || "-",
+                    'Tanggal': format(new Date(d.createdAt), "dd/MM/yyyy HH:mm"),
+                    'Buyer / Customer': d.buyerName,
+                    'Barcode / SKU': item.product?.sku || "-",
+                    'Nama Barang': item.product?.name || "-",
+                    'Qty': qty,
+                    'Satuan': item.uom || item.product?.uom || "-",
+                    'Harga Satuan': price,
+                    'Total Harga Item': itemTotalBrutto,
+                    'Potongan Item': discLine,
+                    'Tgl SJ': format(new Date(d.createdAt), "dd/MM/yyyy"),
+                    'Gudang': d.warehouse?.name || "-",
+                    'Sales Person': d.salesPerson || "-",
+                    'Hasil Jumlah Qty': Number(d.items?.reduce((acc: number, i: any) => acc + (Number(i.quantity) || 0), 0) || 0),
+                    'Hasil Total Brutto': Number(d.subtotal || 0),
+                    'Hasil PPN 11%': Number(d.taxAmount || 0),
+                    'Hasil Grand Total Netto': Number(d.grandTotal || 0)
+                });
+            });
+        });
+
+        exportToExcel(exportData, `Laporan_Penjualan_Detail_${format(new Date(), "yyyyMMdd")}`, 'Penjualan');
     };
 
     const handlePreview = () => {
