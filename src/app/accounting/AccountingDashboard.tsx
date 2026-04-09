@@ -325,13 +325,22 @@ export function AccountingDashboard({ journals, accounts }: { journals: any[], a
                             <h3 className="text-lg font-black text-slate-900">Mutation Ledger</h3>
                             <p className="text-xs text-slate-500 mt-1">Pilih akun untuk melihat mutasi transaksi.</p>
                         </div>
-                        <select
-                            value={selectedAccountId}
-                            onChange={(e) => setSelectedAccountId(e.target.value)}
-                            className="w-full md:w-80 bg-white border border-slate-300 px-4 py-2 rounded-lg outline-none focus:border-primary font-bold text-slate-700"
-                        >
-                            {accounts.map(a => <option key={a.id} value={a.id}>{a.code} - {a.name}</option>)}
-                        </select>
+                        <div className="flex w-full md:w-auto gap-2">
+                            <select
+                                value={selectedAccountId}
+                                onChange={(e) => setSelectedAccountId(e.target.value)}
+                                className="w-full md:w-80 bg-white border border-slate-300 px-4 py-2 rounded-lg outline-none focus:border-primary font-bold text-slate-700"
+                            >
+                                {accounts.map(a => <option key={a.id} value={a.id}>{a.code} - {a.name}</option>)}
+                            </select>
+                            <button
+                                onClick={handleExport}
+                                className="bg-slate-900 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-slate-800 transition-all font-bold text-xs uppercase tracking-widest whitespace-nowrap"
+                            >
+                                <Download className="h-4 w-4" />
+                                Export
+                            </button>
+                        </div>
                     </div>
 
                     <div className="table-responsive">

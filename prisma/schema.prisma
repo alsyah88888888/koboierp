@@ -332,6 +332,7 @@ model SalesDelivery {
   poNumber       String?  // No. PO Buyer (Manual)
   recipient      String   // Kirim Ke
   buyerName      String   // Pengiriman ke Buyer
+  vehicleNumber  String?  // No. Kendaraan & Driver
   salesPerson    String?  // BC or PF
   date           DateTime @default(now())
   items          SalesDeliveryItem[]

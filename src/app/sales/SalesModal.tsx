@@ -30,6 +30,7 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
     const [salesPerson, setSalesPerson] = useState("");
     const [poNumber, setPoNumber] = useState("");
+    const [vehicleNumber, setVehicleNumber] = useState("");
     const [isManualBuyer, setIsManualBuyer] = useState(false);
 
     // Body (Items)
@@ -59,6 +60,7 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
             setPoNumber(initialData.poNumber || "");
             setTotalDiscount(Number(initialData.totalDiscount || 0));
             setTaxRate(Number(initialData.taxRate || 0));
+            setVehicleNumber(initialData.vehicleNumber || "");
 
             if (initialData.items && initialData.items.length > 0) {
                 setItems(initialData.items.map((i: any) => {
@@ -193,6 +195,7 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                 recipient,
                 buyerName,
                 poNumber,
+                vehicleNumber,
                 warehouseId,
                 salesPerson,
                 hasTaxOrDisc: showDiscount,
@@ -327,6 +330,23 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                             />
                                         </div>
                                     </div>
+                                </div>
+
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">No. Kendaraan / Driver</label>
+                                    <input
+                                        list="vehicle-list"
+                                        value={vehicleNumber}
+                                        onChange={e => setVehicleNumber(e.target.value)}
+                                        placeholder="F 0000 XX - Nama"
+                                        className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg text-sm font-bold focus:border-primary outline-none transition-all placeholder:text-slate-300"
+                                    />
+                                    <datalist id="vehicle-list">
+                                        <option value="F 8440 GY - Karno" />
+                                        <option value="F 8744 GY - Rahmat/imam" />
+                                        <option value="F 8065 HI - Rohman/yadi" />
+                                        <option value="B 9918 TIT - Heru/Tatang" />
+                                    </datalist>
                                 </div>
 
                                 <div className="space-y-1">

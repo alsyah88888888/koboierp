@@ -388,6 +388,7 @@ export async function createManualSalesAction(data: any) {
                 recipient: data.recipient,
                 warehouseId: data.warehouseId,
                 salesPerson: data.salesPerson,
+                vehicleNumber: data.vehicleNumber,
                 createdById: session.user.id,
                 items: {
                     create: data.items.map((item: any) => ({
