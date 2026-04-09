@@ -164,6 +164,13 @@ body {
   }
 }
 
+@utility table-compact {
+  @apply w-auto min-w-[800px] mx-auto border-collapse;
+  & th, & td {
+    @apply px-4 py-3;
+  }
+}
+
 @utility stats-grid {
   @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6;
 }

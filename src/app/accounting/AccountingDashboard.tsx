@@ -164,7 +164,7 @@ export function AccountingDashboard({ journals, accounts }: { journals: any[], a
 
             {activeTab === "PNL" && (
                 <div className="space-y-6 animate-in fade-in duration-300">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-[1200px]">
                         <div className="erp-card p-6 relative group transition-all hover:scale-[1.02] border-emerald-100 bg-emerald-50/20">
                             <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-emerald-600/[0.03] blur-2xl group-hover:scale-150 transition-all" />
                             <div className="relative">

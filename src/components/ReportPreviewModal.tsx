@@ -37,9 +37,9 @@ export function ReportPreviewModal({ title, data, onClose, onExport }: ReportPre
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 overflow-auto p-4 md:p-6 custom-scrollbar">
-                    <div className="border border-slate-100 rounded-xl overflow-x-auto shadow-sm custom-scrollbar scrollbar-hide">
-                        <table className="w-full text-sm text-left border-collapse">
+                <div className="flex-1 overflow-auto p-4 md:p-10 custom-scrollbar bg-slate-50/10">
+                    <div className="border border-slate-100 rounded-2xl overflow-x-auto shadow-sm custom-scrollbar scrollbar-hide bg-white p-4">
+                        <table className="w-auto min-w-full mx-auto text-sm text-left border-collapse">
                             <thead className="bg-slate-50 text-slate-500 border-b uppercase text-[10px] font-black tracking-widest sticky top-0 z-10">
                                 <tr>
                                     {headers.map((header) => (
