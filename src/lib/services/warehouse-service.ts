@@ -330,6 +330,10 @@ export async function runStockAuditService() {
             salesReturnItems: {
                 where: { salesReturn: { isVoid: false } },
                 select: { quantity: true }
+            },
+            movements: {
+                where: { type: "ADJUSTMENT" },
+                select: { quantity: true }
             }
         }
     });
@@ -341,8 +345,9 @@ export async function runStockAuditService() {
         const totalSold = p.salesItems.reduce((acc: number, s: any) => acc + (Number(s.quantity) || 0), 0);
         const totalPurchReturned = p.purchaseReturnItems.reduce((acc: number, pr: any) => acc + (Number(pr.quantity) || 0), 0);
         const totalSalesReturned = p.salesReturnItems.reduce((acc: number, sr: any) => acc + (Number(sr.quantity) || 0), 0);
+        const totalAdjustments = p.movements.reduce((acc: number, m: any) => acc + (Number(m.quantity) || 0), 0);
 
-        const calculatedStock = totalPurchased - totalSold - totalPurchReturned + totalSalesReturned;
+        const calculatedStock = totalPurchased - totalSold - totalPurchReturned + totalSalesReturned + totalAdjustments;
         const discrepancy = currentStock - calculatedStock;
 
         return {
@@ -355,10 +360,97 @@ export async function runStockAuditService() {
             totalPurchased,
             totalSold,
             totalPurchReturned,
-            totalSalesReturned
+            totalSalesReturned,
+            totalAdjustments
         };
     });
 
     const { serializeDecimal } = require("@/lib/utils");
     return serializeDecimal(results);
+}
+
+export async function syncProductStockService(productId: string, syncBy: string) {
+    const { getPrisma } = require("@/lib/prisma");
+    const prisma = getPrisma();
+
+    return await prisma.$transaction(async (tx: any) => {
+        // 1. Calculate History
+        const p = await tx.product.findUnique({
+            where: { id: productId },
+            include: {
+                stocks: true,
+                receiptItems: { where: { receipt: { isVerified: true, isVoid: false } }, select: { quantity: true } },
+                salesItems: { where: { delivery: { isVoid: false } }, select: { quantity: true } },
+                purchaseReturnItems: { where: { purchaseReturn: { isVoid: false } }, select: { quantity: true } },
+                salesReturnItems: { where: { salesReturn: { isVoid: false } }, select: { quantity: true } },
+                movements: { where: { type: "ADJUSTMENT" }, select: { quantity: true } }
+            }
+        });
+
+        if (!p) throw new Error("Produk tidak ditemukan");
+
+        const currentStockTotal = p.stocks.reduce((acc: number, s: any) => acc + (Number(s.quantity) || 0), 0);
+        const totalPurchased = p.receiptItems.reduce((acc: number, r: any) => acc + (Number(r.quantity) || 0), 0);
+        const totalSold = p.salesItems.reduce((acc: number, s: any) => acc + (Number(s.quantity) || 0), 0);
+        const totalPurchReturned = p.purchaseReturnItems.reduce((acc: number, pr: any) => acc + (Number(pr.quantity) || 0), 0);
+        const totalSalesReturned = p.salesReturnItems.reduce((acc: number, sr: any) => acc + (Number(sr.quantity) || 0), 0);
+        const totalAdjustments = p.movements.reduce((acc: number, m: any) => acc + (Number(m.quantity) || 0), 0);
+
+        const calculatedStock = totalPurchased - totalSold - totalPurchReturned + totalSalesReturned + totalAdjustments;
+        const discrepancy = calculatedStock - currentStockTotal;
+
+        if (discrepancy === 0) return { success: true, message: "Stok sudah sinkron." };
+
+        // 2. We apply the correction to the 'UMUM' vendor stock in the primary warehouse (or first found)
+        const primaryStock = p.stocks[0] || await tx.stock.findFirst({ where: { productId } });
+        
+        if (!primaryStock) {
+            // If no stock record exists at all, we create one in a default warehouse
+            const warehouse = await tx.warehouse.findFirst();
+            if (!warehouse) throw new Error("Tidak ada gudang terdefinisi untuk sinkronisasi");
+            
+            await tx.stock.create({
+                data: {
+                    productId,
+                    warehouseId: warehouse.id,
+                    vendorName: "UMUM",
+                    quantity: calculatedStock
+                }
+            });
+
+            await tx.stockMovement.create({
+                data: {
+                    productId,
+                    warehouseId: warehouse.id,
+                    vendorName: "UMUM",
+                    quantity: calculatedStock,
+                    type: "ADJUSTMENT",
+                    reference: `SYNC-INITIAL-${syncBy.substring(0, 3).toUpperCase()}`
+                }
+            });
+        } else {
+            // Apply compensator movement
+            await tx.stock.update({
+                where: { id: primaryStock.id },
+                data: { quantity: { increment: discrepancy } }
+            });
+
+            await tx.stockMovement.create({
+                data: {
+                    productId,
+                    warehouseId: primaryStock.warehouseId,
+                    vendorName: primaryStock.vendorName,
+                    quantity: discrepancy,
+                    type: "ADJUSTMENT",
+                    reference: `SYNC-AUDIT-${syncBy.substring(0, 3).toUpperCase()}`
+                }
+            });
+        }
+
+        revalidatePath("/warehouse");
+        revalidatePath("/tracking");
+        revalidatePath("/");
+        
+        return { success: true, discrepancy };
+    });
 }

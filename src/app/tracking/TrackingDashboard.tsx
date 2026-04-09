@@ -21,7 +21,9 @@ import {
     X,
     ShieldCheck,
     AlertTriangle,
-    RefreshCw
+    RefreshCw,
+    RotateCcw,
+    CheckCircle
 } from "lucide-react";
 import { callAction } from "@/proxy";
 import { cn } from "@/lib/utils";
@@ -42,6 +44,7 @@ export function TrackingDashboard({ initialProducts, userEmail, userRole }: Trac
     const [auditData, setAuditData] = useState<any[]>([]);
     const [showAudit, setShowAudit] = useState(false);
     const [loadingAudit, setLoadingAudit] = useState(false);
+    const [syncingId, setSyncingId] = useState<string | null>(null);
 
     // Permission Logic
     const canExport = userRole === "ADMIN" || userEmail === "ferza@kolaborasi.id";
@@ -111,6 +114,29 @@ export function TrackingDashboard({ initialProducts, userEmail, userRole }: Trac
             console.error("Audit failed:", err);
         } finally {
             setLoadingAudit(false);
+        }
+    };
+
+    const handleSync = async (productId: string) => {
+        if (!["ADMIN", "PURCHASE", "WAREHOUSE"].includes(userRole?.toUpperCase())) {
+            alert("Anda tidak memiliki izin untuk melakukan sinkronisasi");
+            return;
+        }
+
+        setSyncingId(productId);
+        try {
+            const res = await callAction("syncProductStockAction", productId);
+            if (res.success) {
+                // Refresh audit data
+                const updated = await callAction("runStockAuditAction");
+                setAuditData(updated);
+            } else {
+                alert("Gagal sinkronisasi: " + (res.error || "Unknown error"));
+            }
+        } catch (err) {
+            console.error("Sync failed:", err);
+        } finally {
+            setSyncingId(null);
         }
     };
 
@@ -532,7 +558,9 @@ export function TrackingDashboard({ initialProducts, userEmail, userRole }: Trac
                                                 <td className="py-4 text-center">
                                                     <div className="flex flex-col">
                                                         <span className="text-lg font-black font-mono">{item.calculatedStock}</span>
-                                                        <span className="text-[8px] text-slate-400 font-bold uppercase">(+{item.totalPurchased} in, -{item.totalSold} out)</span>
+                                                        <span className="text-[8px] text-slate-400 font-bold uppercase">
+                                                            (+{item.totalPurchased} in, -{item.totalSold} out, {item.totalAdjustments >= 0 ? '+' : ''}{item.totalAdjustments} adj)
+                                                        </span>
                                                     </div>
                                                 </td>
                                                 <td className="py-4 text-center">
@@ -545,9 +573,25 @@ export function TrackingDashboard({ initialProducts, userEmail, userRole }: Trac
                                                             <span className="text-[10px] font-black uppercase">Verified</span>
                                                         </div>
                                                     ) : (
-                                                        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-rose-50 text-rose-600 rounded-full border border-rose-100">
-                                                            <AlertTriangle className="h-3.5 w-3.5" />
-                                                            <span className="text-[10px] font-black uppercase">Diff: {item.discrepancy}</span>
+                                                        <div className="flex flex-col items-center gap-2">
+                                                            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-rose-50 text-rose-600 rounded-full border border-rose-100">
+                                                                <AlertTriangle className="h-3.5 w-3.5" />
+                                                                <span className="text-[10px] font-black uppercase">Diff: {item.discrepancy}</span>
+                                                            </div>
+                                                            {["ADMIN", "PURCHASE", "WAREHOUSE"].includes(userRole?.toUpperCase()) && (
+                                                                <button 
+                                                                    onClick={() => handleSync(item.id)}
+                                                                    disabled={syncingId === item.id}
+                                                                    className="flex items-center gap-1.5 px-3 py-1 bg-primary text-white rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-slate-900 transition-all disabled:opacity-50"
+                                                                >
+                                                                    {syncingId === item.id ? (
+                                                                        <RefreshCw className="h-3 w-3 animate-spin" />
+                                                                    ) : (
+                                                                        <RotateCcw className="h-3 w-3" />
+                                                                    )}
+                                                                    Sync History
+                                                                </button>
+                                                            )}
                                                         </div>
                                                     )}
                                                 </td>

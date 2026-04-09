@@ -135,3 +135,19 @@ export async function runStockAuditAction() {
     const { runStockAuditService } = require("@/lib/services/warehouse-service");
     return await runStockAuditService();
 }
+
+export async function syncProductStockAction(productId: string) {
+    const { getServerSession } = require("next-auth");
+    const { getAuthOptions } = require("@/lib/auth");
+    const { syncProductStockService } = require("@/lib/services/warehouse-service");
+    
+    const session = (await getServerSession(getAuthOptions())) as any;
+    if (!session?.user?.id) throw new Error("Unauthorized");
+
+    const role = session.user.role?.toUpperCase();
+    if (!["ADMIN", "PURCHASE", "WAREHOUSE"].includes(role)) {
+        throw new Error("Anda tidak memiliki izin untuk melakukan sinkronisasi stok");
+    }
+
+    return await syncProductStockService(productId, session.user.name || session.user.email || "SYSTEM");
+}
