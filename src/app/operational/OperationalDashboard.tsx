@@ -9,9 +9,10 @@ import {
     MoreVertical,
     Calendar,
     Receipt,
-    Wallet
+    Wallet,
+    TrendingUp
 } from "lucide-react";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, cn } from "@/lib/utils";
 import { OperationalModal } from "./OperationalModal";
 import { toast } from "react-hot-toast";
 import { callAction } from "@/proxy";

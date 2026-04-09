@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { DollarSign, Package, ShoppingCart, Wallet, TrendingUp, Box } from "lucide-react";
 import { callAction } from "@/proxy";
 
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, cn } from "@/lib/utils";
 import { useSession } from "next-auth/react";
 
 export function DashboardStats() {

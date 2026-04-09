@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Clock, FileText, Search, Truck, Trash2, Eye, Edit2, BarChart3, TrendingUp, TrendingDown, Users } from "lucide-react";
+import { Plus, Clock, FileText, Search, Truck, Trash2, Eye, Edit2, BarChart3, TrendingUp, TrendingDown, Users, Download, Wallet, XCircle, Undo2 } from "lucide-react";
 import { format } from "date-fns";
 import SalesModal from "@/app/sales/SalesModal";
 import { useSession } from "next-auth/react";
 import { callAction } from "@/proxy";
 import { useDialog } from "@/components/ui/DialogProvider";
-import { cn } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
 import { DashboardStats } from "../components/DashboardStats";
 import Link from "next/link";
 import { ReportPreviewModal } from "@/components/ReportPreviewModal";
