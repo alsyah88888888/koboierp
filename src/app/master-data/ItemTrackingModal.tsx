@@ -5,7 +5,7 @@ import { X, History, ArrowDownLeft, ArrowUpRight, RotateCcw, Box, Info, Filter, 
 import { callAction } from "@/proxy";
 
 import { cn, formatCurrency } from "@/lib/utils";
-import { format } from "date-fns";
+import { format, isValid } from "date-fns";
 
 interface ItemTrackingModalProps {
     productId: string;
@@ -261,7 +261,11 @@ export function ItemTrackingModal({ productId, onClose }: ItemTrackingModalProps
                                         <tr key={row.id} className="group">
                                             <td className="text-center text-slate-400">{idx + 1}</td>
                                             <td className="whitespace-nowrap font-bold text-slate-600 text-[11px]">
-                                                {isClient ? format(new Date(row.date), "dd MMM yyyy, HH:mm") : "..."}
+                                                {(() => {
+                                                    const d = new Date(row.date);
+                                                    if (!isClient) return "...";
+                                                    return isValid(d) ? format(d, "dd MMM yyyy, HH:mm") : "Tanggal tidak valid";
+                                                })()}
                                             </td>
                                             <td className="font-mono text-xs font-black text-slate-900 group-hover:text-primary transition-colors uppercase tracking-tight">
                                                 <div className="flex items-center gap-2">
