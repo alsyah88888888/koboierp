@@ -148,5 +148,9 @@ export default async function DashboardPage() {
     lowStockCount={summary.lowStockCount || 0}
     lowStockProducts={lowStockProducts}
     activeOrdersToday={summary.activeOrdersToday || 0}
+    totalPaidSales={summary.totalPaidSales || 0}
+    totalPaidPurchases={summary.totalPaidPurchases || 0}
+    totalPiutangPending={summary.totalPiutangPending || 0}
+    totalHutangPending={summary.totalHutangPending || 0}
   />;
 }

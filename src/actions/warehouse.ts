@@ -130,3 +130,8 @@ export async function voidGoodsReceiptAction(id: string, reason: string) {
     const { voidGoodsReceiptService } = require("@/lib/services/warehouse-service");
     return await voidGoodsReceiptService(id, reason);
 }
+
+export async function runStockAuditAction() {
+    const { runStockAuditService } = require("@/lib/services/warehouse-service");
+    return await runStockAuditService();
+}

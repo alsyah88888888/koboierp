@@ -38,19 +38,27 @@ export default async function InvoicePrintPage({ params }: { params: Promise<{ i
             docNumber={delivery.deliveryNumber}
             date={format(new Date(delivery.createdAt), "dd MMM yyyy")}
             headerInfo={
-                <div className="flex justify-between items-start gap-8 text-xs font-bold uppercase italic border-2 border-slate-100 p-4 rounded-xl bg-slate-50/20">
-                    <div className="flex-1 space-y-1">
-                        <span className="text-[9px] text-slate-400 tracking-widest not-italic block mb-1">DITUJUKAN KEPADA</span>
-                        <div className="text-slate-900 text-sm leading-tight font-black tabular-nums">{delivery.buyerName}</div>
+                <div className="flex flex-col gap-4">
+                    <div className="flex justify-between items-start gap-8 text-xs font-bold uppercase italic border-2 border-slate-100 p-4 rounded-xl bg-slate-50/20">
+                        <div className="flex-1 space-y-1">
+                            <span className="text-[9px] text-slate-400 tracking-widest not-italic block mb-1">DITUJUKAN KEPADA</span>
+                            <div className="text-slate-900 text-sm leading-tight font-black tabular-nums">{delivery.buyerName}</div>
+                        </div>
+                        <div className="flex-[1.5] space-y-1 border-l-2 border-slate-200 pl-8">
+                            <span className="text-[9px] text-slate-400 tracking-widest not-italic block mb-1">ALAMAT PENGIRIMAN</span>
+                            <div className="text-slate-600 leading-relaxed font-semibold normal-case italic">{delivery.recipient}</div>
+                        </div>
+                        {delivery.salesPerson && (
+                            <div className="flex-none space-y-1 border-l-2 border-slate-200 pl-8 text-center min-w-[60px]">
+                                <span className="text-[9px] text-slate-400 tracking-widest not-italic block mb-1">SALES</span>
+                                <div className="text-primary text-sm font-black italic">{delivery.salesPerson}</div>
+                            </div>
+                        )}
                     </div>
-                    <div className="flex-[1.5] space-y-1 border-l-2 border-slate-200 pl-8">
-                        <span className="text-[9px] text-slate-400 tracking-widest not-italic block mb-1">ALAMAT PENGIRIMAN</span>
-                        <div className="text-slate-600 leading-relaxed font-semibold normal-case italic">{delivery.recipient}</div>
-                    </div>
-                    {delivery.salesPerson && (
-                        <div className="flex-none space-y-1 border-l-2 border-slate-200 pl-8 text-center min-w-[60px]">
-                            <span className="text-[9px] text-slate-400 tracking-widest not-italic block mb-1">SALES</span>
-                            <div className="text-primary text-sm font-black italic">{delivery.salesPerson}</div>
+                    {delivery.poNumber && (
+                        <div className="flex items-center gap-3 px-4 py-2 bg-slate-900 text-white rounded-lg w-fit">
+                            <span className="text-[8px] font-black tracking-[0.2em] opacity-60">NO. PO BUYER:</span>
+                            <span className="text-[11px] font-black">{delivery.poNumber}</span>
                         </div>
                     )}
                 </div>

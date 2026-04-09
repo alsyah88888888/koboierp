@@ -19,6 +19,9 @@ import {
     ExternalLink,
     Clock,
     X,
+    ShieldCheck,
+    AlertTriangle,
+    RefreshCw
 } from "lucide-react";
 import { callAction } from "@/proxy";
 import { cn } from "@/lib/utils";
@@ -36,6 +39,9 @@ export function TrackingDashboard({ initialProducts, userEmail, userRole }: Trac
     const [selectedProduct, setSelectedProduct] = useState<any>(null);
     const [history, setHistory] = useState<any[]>([]);
     const [loadingHistory, setLoadingHistory] = useState(false);
+    const [auditData, setAuditData] = useState<any[]>([]);
+    const [showAudit, setShowAudit] = useState(false);
+    const [loadingAudit, setLoadingAudit] = useState(false);
 
     // Permission Logic
     const canExport = userRole === "ADMIN" || userEmail === "ferza@kolaborasi.id";
@@ -95,6 +101,19 @@ export function TrackingDashboard({ initialProducts, userEmail, userRole }: Trac
         }
     };
 
+    const handleRunAudit = async () => {
+        setLoadingAudit(true);
+        setShowAudit(true);
+        try {
+            const res = await callAction("runStockAuditAction");
+            setAuditData(res);
+        } catch (err) {
+            console.error("Audit failed:", err);
+        } finally {
+            setLoadingAudit(false);
+        }
+    };
+
     return (
         <div className="p-4 lg:p-8 space-y-8 animate-in fade-in duration-500">
             {/* Header / Stats Section */}
@@ -133,13 +152,22 @@ export function TrackingDashboard({ initialProducts, userEmail, userRole }: Trac
                     </button>
                     
                     {canExport && (
-                        <button 
-                            onClick={handleExport}
-                            className="ml-2 flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-600/20 active:scale-95"
-                        >
-                            <Download className="h-3.5 w-3.5" />
-                            Export Excel
-                        </button>
+                        <div className="flex items-center gap-2">
+                            <button 
+                                onClick={handleRunAudit}
+                                className="flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-slate-600/20 active:scale-95 border border-slate-700"
+                            >
+                                <ShieldCheck className="h-3.5 w-3.5" />
+                                Audit Stok
+                            </button>
+                            <button 
+                                onClick={handleExport}
+                                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-600/20 active:scale-95"
+                            >
+                                <Download className="h-3.5 w-3.5" />
+                                Export Excel
+                            </button>
+                        </div>
                     )}
                 </div>
             </div>
@@ -454,6 +482,93 @@ export function TrackingDashboard({ initialProducts, userEmail, userRole }: Trac
                                     <p className="text-[10px] font-mono font-bold italic lowercase">{new Date().toLocaleTimeString('id-ID')}</p>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* Audit Modal */}
+            {showAudit && (
+                <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md animate-in fade-in" onClick={() => setShowAudit(false)} />
+                    <div className="relative w-full max-w-5xl bg-white rounded-[3rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-300">
+                        <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 bg-slate-900 text-white rounded-2xl">
+                                    <ShieldCheck className="h-6 w-6" />
+                                </div>
+                                <div>
+                                    <h2 className="text-2xl font-black text-slate-900 leading-none">Stock Reconciliation</h2>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Comparing Transaction History vs Stock Table</p>
+                                </div>
+                            </div>
+                            <button onClick={() => setShowAudit(false)} className="p-3 hover:bg-slate-100 rounded-2xl transition-all">
+                                <X className="h-5 w-5 text-slate-400" />
+                            </button>
+                        </div>
+
+                        <div className="flex-1 overflow-auto p-8 custom-scrollbar">
+                            {loadingAudit ? (
+                                <div className="flex flex-col items-center justify-center py-20 space-y-4">
+                                    <RefreshCw className="h-10 w-10 text-primary animate-spin" />
+                                    <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Calculating inventory life-cycles...</p>
+                                </div>
+                            ) : (
+                                <table className="w-full text-left">
+                                    <thead>
+                                        <tr className="border-b border-slate-100">
+                                            <th className="pb-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">SKU / Item</th>
+                                            <th className="pb-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">History Sum</th>
+                                            <th className="pb-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Table Sum</th>
+                                            <th className="pb-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-50">
+                                        {auditData.map((item: any) => (
+                                            <tr key={item.id} className="group">
+                                                <td className="py-4">
+                                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{item.sku}</p>
+                                                    <p className="text-sm font-black text-slate-900 uppercase">{item.name}</p>
+                                                </td>
+                                                <td className="py-4 text-center">
+                                                    <div className="flex flex-col">
+                                                        <span className="text-lg font-black font-mono">{item.calculatedStock}</span>
+                                                        <span className="text-[8px] text-slate-400 font-bold uppercase">(+{item.totalPurchased} in, -{item.totalSold} out)</span>
+                                                    </div>
+                                                </td>
+                                                <td className="py-4 text-center">
+                                                    <span className="text-lg font-black font-mono text-slate-900">{item.currentStock}</span>
+                                                </td>
+                                                <td className="py-4 text-center">
+                                                    {item.discrepancy === 0 ? (
+                                                        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full border border-emerald-100">
+                                                            <ShieldCheck className="h-3.5 w-3.5" />
+                                                            <span className="text-[10px] font-black uppercase">Verified</span>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-rose-50 text-rose-600 rounded-full border border-rose-100">
+                                                            <AlertTriangle className="h-3.5 w-3.5" />
+                                                            <span className="text-[10px] font-black uppercase">Diff: {item.discrepancy}</span>
+                                                        </div>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            )}
+                        </div>
+
+                        <div className="p-8 bg-slate-900 text-white flex justify-between items-center">
+                            <div className="flex items-center gap-4">
+                                <Activity className="h-5 w-5 text-emerald-400" />
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">
+                                    Audit ini menghitung saldo berdasarkan seluruh riwayat transaksi (GR, Sale, Returns) <br/>dan membandingkannya dengan saldo tabel Stock saat ini secara real-time.
+                                </p>
+                            </div>
+                            <button onClick={handleRunAudit} className="px-6 py-3 bg-white text-slate-900 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl active:scale-95 transition-all flex items-center gap-2">
+                                <RefreshCw className={cn("h-4 w-4", loadingAudit && "animate-spin")} />
+                                Re-Calculate
+                            </button>
                         </div>
                     </div>
                 </div>

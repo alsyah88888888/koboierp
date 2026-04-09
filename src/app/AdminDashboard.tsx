@@ -30,7 +30,13 @@ import {
     Calendar,
     Activity,
     FileSpreadsheet,
-    ChevronRight
+    ChevronRight,
+    Clock,
+    CreditCard,
+    DollarSign,
+    PiggyBank,
+    Receipt,
+    Target
 } from "lucide-react";
 
 import * as XLSX from 'xlsx';
@@ -49,7 +55,21 @@ const IconMap: any = {
     TrendingUp
 };
 
-export function AdminDashboard({ role, stats, salesData, inventoryData, recentActivity, lowStockCount, lowStockProducts = [], activeOrdersToday, dailyReport }: any) {
+export function AdminDashboard({ 
+    role, 
+    stats, 
+    salesData, 
+    inventoryData, 
+    recentActivity, 
+    lowStockCount, 
+    lowStockProducts = [], 
+    activeOrdersToday, 
+    dailyReport,
+    totalPaidSales = 0,
+    totalPaidPurchases = 0,
+    totalPiutangPending = 0,
+    totalHutangPending = 0
+}: any) {
     const [isClient, setIsClient] = useState(false);
 
     useEffect(() => {
@@ -556,6 +576,95 @@ export function AdminDashboard({ role, stats, salesData, inventoryData, recentAc
                 </div>
             </div>
 
+            {/* Settlement Monitoring Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                {/* Sales Settlement */}
+                <div className="erp-card p-8 bg-gradient-to-br from-white to-emerald-50/20 border-emerald-100/50">
+                    <div className="flex justify-between items-start mb-8">
+                        <div className="space-y-1">
+                            <div className="flex items-center gap-2 text-emerald-600 mb-1">
+                                <PiggyBank className="h-4 w-4" />
+                                <span className="text-[10px] font-black uppercase tracking-wider">SALES SETTLEMENT</span>
+                            </div>
+                            <h3 className="text-xl font-black text-slate-900 uppercase italic">Monitoring Piutang</h3>
+                        </div>
+                        <div className="p-3 bg-emerald-500 text-white rounded-2xl shadow-lg shadow-emerald-200">
+                            <ArrowUpRight className="h-5 w-5" />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-6 mb-8">
+                        <div className="space-y-1">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Terbayar</p>
+                            <p className="text-2xl font-black text-emerald-600 font-mono">Rp {totalPaidSales?.toLocaleString() || 0}</p>
+                        </div>
+                        <div className="space-y-1 text-right">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Sisa Piutang</p>
+                            <p className="text-2xl font-black text-rose-500 font-mono">Rp {totalPiutangPending?.toLocaleString() || 0}</p>
+                        </div>
+                    </div>
+
+                    {/* Progress Bar */}
+                    <div className="space-y-3">
+                        <div className="flex justify-between items-end">
+                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Collection Rate</span>
+                            <span className="text-sm font-black text-emerald-600">
+                                {Math.round((totalPaidSales / (totalPaidSales + totalPiutangPending || 1)) * 100)}%
+                            </span>
+                        </div>
+                        <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden shadow-inner flex">
+                            <div 
+                                className="h-full bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.4)] transition-all duration-1000"
+                                style={{ width: `${(totalPaidSales / (totalPaidSales + totalPiutangPending || 1)) * 100}%` }}
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Purchase Settlement */}
+                <div className="erp-card p-8 bg-gradient-to-br from-white to-blue-50/20 border-blue-100/50">
+                    <div className="flex justify-between items-start mb-8">
+                        <div className="space-y-1">
+                            <div className="flex items-center gap-2 text-blue-600 mb-1">
+                                <Wallet className="h-4 w-4" />
+                                <span className="text-[10px] font-black uppercase tracking-wider">PURCHASE SETTLEMENT</span>
+                            </div>
+                            <h3 className="text-xl font-black text-slate-900 uppercase italic">Monitoring Hutang</h3>
+                        </div>
+                        <div className="p-3 bg-blue-500 text-white rounded-2xl shadow-lg shadow-blue-200">
+                            <ArrowDownRight className="h-5 w-5" />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-6 mb-8">
+                        <div className="space-y-1">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Telah Dilunasi</p>
+                            <p className="text-2xl font-black text-blue-600 font-mono">Rp {totalPaidPurchases?.toLocaleString() || 0}</p>
+                        </div>
+                        <div className="space-y-1 text-right">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Sisa Hutang</p>
+                            <p className="text-2xl font-black text-amber-600 font-mono">Rp {totalHutangPending?.toLocaleString() || 0}</p>
+                        </div>
+                    </div>
+
+                    {/* Progress Bar */}
+                    <div className="space-y-3">
+                        <div className="flex justify-between items-end">
+                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Payment Progress</span>
+                            <span className="text-sm font-black text-blue-600">
+                                {Math.round((totalPaidPurchases / (totalPaidPurchases + totalHutangPending || 1)) * 100)}%
+                            </span>
+                        </div>
+                        <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden shadow-inner flex">
+                            <div 
+                                className="h-full bg-blue-500 shadow-[0_0_12px_rgba(59,130,246,0.4)] transition-all duration-1000"
+                                style={{ width: `${(totalPaidPurchases / (totalPaidPurchases + totalHutangPending || 1)) * 100}%` }}
+                            />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             {/* Bottom Activity Section */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-10 pt-4">
                 {/* Recent Activity Premium Feed */}
@@ -581,14 +690,14 @@ export function AdminDashboard({ role, stats, salesData, inventoryData, recentAc
                                     <div className="flex items-center gap-3 text-[10px] font-bold text-slate-300 uppercase tracking-[0.2em]">
                                         <span>{isClient && act.date ? new Date(act.date).toLocaleDateString('id-ID') : "-"}</span>
                                         <span className="h-1.5 w-1.5 rounded-full bg-slate-100" />
-                                        <span>REF: {act.reference}</span>
+                                        <span className={cn(
+                                            "capitalize px-2 py-0.5 rounded-md",
+                                            act.type === 'SALE' ? 'bg-blue-50 text-blue-500' : 'bg-emerald-50 text-emerald-500'
+                                        )}>{act.type.toLowerCase()}</span>
                                     </div>
                                 </div>
                                 <div className="text-right">
-                                    <div className={cn(
-                                        "text-base font-black tracking-tight tabular-nums",
-                                        act.type === 'SALE' ? 'text-emerald-500' : 'text-slate-900'
-                                    )}>
+                                    <div className="text-sm font-black text-slate-900 font-mono">
                                         {isClient ? (act.type === 'SALE' ? '+' : '-') + formatCurrency(act.amount) : "Rp ---"}
                                     </div>
                                     <div className="text-[9px] font-black text-slate-300 uppercase tracking-widest mt-1">Confirmed</div>
@@ -668,5 +777,4 @@ export function AdminDashboard({ role, stats, salesData, inventoryData, recentAc
             </div>
         </div>
     );
-
 }

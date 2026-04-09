@@ -25,9 +25,10 @@ interface SalesDashboardProps {
     warehouses: any[];
     customers: any[];
     salesExpenses?: any[];
+    systemSettings?: any;
 }
 
-export default function SalesDashboard({ initialDeliveries, initialReceipts = [], initialReturns = [], products, warehouses, customers, salesExpenses = [] }: SalesDashboardProps) {
+export default function SalesDashboard({ initialDeliveries, initialReceipts = [], initialReturns = [], products, warehouses, customers, salesExpenses = [], systemSettings }: SalesDashboardProps) {
     const { confirm, alert } = useDialog();
     const { data: session } = useSession() as any;
     const isAdmin = session?.user?.role?.toUpperCase() === "ADMIN";
@@ -133,6 +134,25 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
         d.buyerName.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+    const handleExportXMLCoretax = async () => {
+        try {
+            const { generateCoretaxXML } = await import("@/lib/coretax-xml");
+            const xmlContent = generateCoretaxXML(filteredDeliveries, systemSettings);
+            const blob = new Blob([xmlContent], { type: 'text/xml' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Coretax_Export_${format(new Date(), "yyyyMMdd_HHmm")}.xml`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        } catch (e: any) {
+            console.error("XML Export error:", e);
+            alert({ title: "Gagal Ekspor", message: "Terjadi kesalahan saat membuat file XML.", type: "danger" });
+        }
+    };
+
     const filteredReturns = initialReturns.filter(r =>
         r.returnNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
         r.delivery?.buyerName.toLowerCase().includes(searchTerm.toLowerCase())
@@ -193,6 +213,13 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                     >
                         <FileText className="h-4 w-4" />
                         <span>Export</span>
+                    </button>
+                    <button
+                        onClick={handleExportXMLCoretax}
+                        className="bg-slate-900 text-white px-4 py-2 rounded-xl flex items-center justify-center gap-2 hover:bg-slate-800 shadow-lg shadow-slate-200 transition-all active:scale-95 font-bold flex-1 sm:flex-none"
+                    >
+                        <FileText className="h-4 w-4" />
+                        <span>Coretax XML</span>
                     </button>
                     <button
                         onClick={() => setShowReturnModal(true)}

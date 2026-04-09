@@ -98,6 +98,8 @@ export default async function SalesPage() {
         orderBy: { createdAt: 'desc' }
     }).catch(() => []));
 
+    const systemSettings = serializeDecimal(await prisma.systemSetting.findUnique({ where: { id: "global" } }).catch(() => null));
+
     return (
         <SalesDashboard
             initialDeliveries={deliveries}
@@ -107,6 +109,7 @@ export default async function SalesPage() {
             warehouses={warehouses}
             customers={serializedCustomers}
             salesExpenses={salesExpenses}
+            systemSettings={systemSettings}
         />
     );
 }

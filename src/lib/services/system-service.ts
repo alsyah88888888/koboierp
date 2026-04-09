@@ -121,7 +121,7 @@ export async function getDashboardSummaryService(userId: string, prefix: string,
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
 
-    const [deliveries, receipts, expenses, countRequests, countDeliveries, purchaseVolRes] = await Promise.all([
+    const [deliveries, receipts, expenses, countRequests, countDeliveries, purchaseVolRes, salesPaidRes, purchasePaidRes] = await Promise.all([
         prisma.salesDelivery.findMany({ 
             where: userFilter,
             select: { subtotal: true, totalDiscount: true, salesPerson: true } 
@@ -144,11 +144,21 @@ export async function getDashboardSummaryService(userId: string, prefix: string,
         prisma.goodsReceiptItem.aggregate({
             _sum: { quantity: true },
             where: { receipt: { ...userFilter, createdAt: { gte: todayStart } } }
+        }),
+        prisma.salesDelivery.aggregate({
+            where: userFilter,
+            _sum: { paidAmount: true }
+        }),
+        prisma.goodsReceipt.aggregate({
+            where: { ...userFilter, isVerified: true },
+            _sum: { paidAmount: true }
         })
     ]);
 
     const activeOrdersToday = countRequests + countDeliveries;
     const purchaseVol = Number(purchaseVolRes._sum?.quantity || 0);
+    const totalPaidSales = Number(salesPaidRes._sum?.paidAmount || 0);
+    const totalPaidPurchases = Number(purchasePaidRes._sum?.paidAmount || 0);
 
     let revenueBC = 0, revenuePF = 0;
     deliveries.forEach((d: any) => {
@@ -188,6 +198,10 @@ export async function getDashboardSummaryService(userId: string, prefix: string,
         lowStockCount,
         activeOrdersToday,
         purchaseVol,
+        totalPaidSales,
+        totalPaidPurchases,
+        totalPiutangPending: totalPiutang, // Already calculated as (DEBIT - CREDIT)
+        totalHutangPending: totalHutang,
         weeklyStats: await getWeeklyStatsService(userId, isAdmin)
     };
 

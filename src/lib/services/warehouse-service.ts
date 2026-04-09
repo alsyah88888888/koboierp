@@ -303,7 +303,62 @@ export async function voidGoodsReceiptService(id: string, reason: string) {
         revalidatePath("/purchase");
         revalidatePath("/tracking");
         revalidatePath("/");
-
         return { success: true };
     });
+}
+
+export async function runStockAuditService() {
+    const { getPrisma } = require("@/lib/prisma");
+    const prisma = getPrisma();
+
+    // 1. Get all products with their current stock table values
+    const products = await prisma.product.findMany({
+        include: {
+            stocks: true,
+            receiptItems: {
+                where: { receipt: { isVerified: true, isVoid: false } },
+                select: { quantity: true }
+            },
+            salesItems: {
+                where: { delivery: { isVoid: false } },
+                select: { quantity: true }
+            },
+            purchaseReturnItems: {
+                where: { purchaseReturn: { isVoid: false } },
+                select: { quantity: true }
+            },
+            salesReturnItems: {
+                where: { salesReturn: { isVoid: false } },
+                select: { quantity: true }
+            }
+        }
+    });
+
+    const results = products.map((p: any) => {
+        const currentStock = p.stocks.reduce((acc: number, s: any) => acc + (Number(s.quantity) || 0), 0);
+        
+        const totalPurchased = p.receiptItems.reduce((acc: number, r: any) => acc + (Number(r.quantity) || 0), 0);
+        const totalSold = p.salesItems.reduce((acc: number, s: any) => acc + (Number(s.quantity) || 0), 0);
+        const totalPurchReturned = p.purchaseReturnItems.reduce((acc: number, pr: any) => acc + (Number(pr.quantity) || 0), 0);
+        const totalSalesReturned = p.salesReturnItems.reduce((acc: number, sr: any) => acc + (Number(sr.quantity) || 0), 0);
+
+        const calculatedStock = totalPurchased - totalSold - totalPurchReturned + totalSalesReturned;
+        const discrepancy = currentStock - calculatedStock;
+
+        return {
+            id: p.id,
+            sku: p.sku,
+            name: p.name,
+            currentStock,
+            calculatedStock,
+            discrepancy,
+            totalPurchased,
+            totalSold,
+            totalPurchReturned,
+            totalSalesReturned
+        };
+    });
+
+    const { serializeDecimal } = require("@/lib/utils");
+    return serializeDecimal(results);
 }
