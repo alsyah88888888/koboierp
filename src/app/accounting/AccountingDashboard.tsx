@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { FileText, Calculator, BarChart3, Scale, Search, Download } from "lucide-react";
 import { formatCurrency, cn } from "@/lib/utils";
@@ -8,6 +8,11 @@ import { exportToExcel } from "@/lib/excel";
 
 export function AccountingDashboard({ journals, accounts }: { journals: any[], accounts: any[] }) {
     const [activeTab, setActiveTab] = useState<"JOURNAL" | "LEDGER" | "PNL" | "BALANCE">("PNL");
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
 
     // JOURNAL STATE
     const [journalSearch, setJournalSearch] = useState("");
@@ -379,7 +384,7 @@ export function AccountingDashboard({ journals, accounts }: { journals: any[], a
                                 {filteredJournals.map(j => (
                                     <tr key={j.id} className="hover:bg-slate-50 transition-colors">
                                         <td className="px-6 py-3 font-mono text-[11px] text-slate-500 whitespace-nowrap align-top pt-4">
-                                            {format(new Date(j.date), "dd/MM/yyyy HH:mm:ss")}
+                                            {isClient ? format(new Date(j.date), "dd/MM/yyyy HH:mm:ss") : "--/--/---- --:--:--"}
                                         </td>
                                         <td className="px-6 py-3">
                                             <span className={cn(
