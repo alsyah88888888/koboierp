@@ -46,16 +46,28 @@ export function ItemTrackingModal({ productId, onClose }: ItemTrackingModalProps
     const currentYear = new Date().getFullYear();
     const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
 
-    const filteredHistory = useMemo(() => {
-        if (!data?.history) return [];
-        return data.history.filter((rec: any) => {
+    const { filteredHistory, totalIn, totalOut } = useMemo(() => {
+        if (!data?.history) return { filteredHistory: [], totalIn: 0, totalOut: 0 };
+        
+        let tin = 0;
+        let tout = 0;
+        
+        const filtered = data.history.filter((rec: any) => {
             const d = new Date(rec.date);
             if (!isValid(d)) return true;
             const mDay = fDay === "" || d.getDate() === parseInt(fDay);
             const mMonth = fMonth === "" || (d.getMonth() + 1) === parseInt(fMonth);
             const mYear = fYear === "" || d.getFullYear() === parseInt(fYear);
-            return mDay && mMonth && mYear;
+            
+            const match = mDay && mMonth && mYear;
+            if (match) {
+                tin += (rec.qtyIn || 0);
+                tout += (rec.qtyOut || 0);
+            }
+            return match;
         });
+
+        return { filteredHistory: filtered, totalIn: tin, totalOut: tout };
     }, [data, fDay, fMonth, fYear]);
 
     if (loading) {
@@ -103,11 +115,27 @@ export function ItemTrackingModal({ productId, onClose }: ItemTrackingModalProps
                     </button>
                 </div>
 
-                {/* Filter Panel */}
-                <div className="p-4 bg-slate-50/50 border-b border-slate-100 flex flex-wrap items-center justify-between gap-4">
-                    <div className="flex items-center gap-2">
-                        <Filter className="h-3.5 w-3.5 text-slate-400" />
-                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Filter Periode</span>
+                {/* Filter & Stats Panel */}
+                <div className="p-4 bg-slate-50/50 border-b border-slate-100 flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div className="flex items-center gap-6">
+                        <div className="flex items-center gap-2">
+                            <Filter className="h-3.5 w-3.5 text-slate-400" />
+                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Filter & Ringkasan</span>
+                        </div>
+                        
+                        {/* Dynamic Quick Stats */}
+                        {isClient && (
+                            <div className="flex items-center gap-4 border-l border-slate-200 pl-6">
+                                <div className="flex flex-col">
+                                    <span className="text-[8px] font-black text-emerald-500 uppercase tracking-tighter">Total Masuk</span>
+                                    <span className="text-xs font-black text-emerald-700 leading-none">+{totalIn}</span>
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="text-[8px] font-black text-rose-500 uppercase tracking-tighter">Total Keluar</span>
+                                    <span className="text-xs font-black text-rose-700 leading-none">-{totalOut}</span>
+                                </div>
+                            </div>
+                        )}
                     </div>
                     
                     <div className="flex items-center gap-2">
