@@ -362,6 +362,8 @@ export function AdminDashboard({
                                             {act.createdBy?.name || act.requestedBy?.name || "Verified App"}
                                         </div>
                                         <div className={`text-[9px] font-black uppercase tracking-[0.2em] mt-1 ${
+                                            act.activityType === 'SALE' ? 'text-blue-500' :
+                                            act.activityType === 'PURCHASE' ? 'text-emerald-500' :
                                             act.activityType === 'FINANCE' ? 'text-amber-500' :
                                             'text-purple-500'
                                         }`}>

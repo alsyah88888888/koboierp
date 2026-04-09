@@ -354,7 +354,7 @@ export function AccountingDashboard({ journals, accounts }: { journals: any[], a
                             <p className="text-xs text-slate-500 mt-1">Daftar seluruh jurnal double-entry.</p>
                         </div>
                         <div className="relative w-full md:w-80">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                             <input
                                 value={journalSearch}
                                 onChange={e => setJournalSearch(e.target.value)}
@@ -378,7 +378,7 @@ export function AccountingDashboard({ journals, accounts }: { journals: any[], a
                             <tbody className="divide-y text-slate-700">
                                 {filteredJournals.map(j => (
                                     <tr key={j.id} className="hover:bg-slate-50 transition-colors">
-                                        <td className="px-6 py-3 font-mono text-[11px] text-muted-foreground whitespace-nowrap align-top pt-4">
+                                        <td className="px-6 py-3 font-mono text-[11px] text-slate-500 whitespace-nowrap align-top pt-4">
                                             {format(new Date(j.date), "dd/MM/yyyy HH:mm:ss")}
                                         </td>
                                         <td className="px-6 py-3">
