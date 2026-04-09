@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
-import { FileText, Calculator, BarChart3, Scale, Search, Download } from "lucide-react";
+import { FileText, Calculator, BarChart3, Scale, Search, Download, TrendingUp, TrendingDown } from "lucide-react";
 import { formatCurrency, cn } from "@/lib/utils";
 import { exportToExcel } from "@/lib/excel";
 
