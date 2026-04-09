@@ -99,45 +99,78 @@ export function OperationalDashboard({
             </div>
 
             {/* Nett Margin Cards for Sales */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-gradient-to-br from-indigo-50 to-white border border-indigo-100 shadow-sm p-5 rounded-3xl flex justify-between items-center transition-all hover:shadow-md gap-4">
-                    <div className="min-w-0 flex-1">
-                        <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1 shadow-sm px-2 py-0.5 rounded-full bg-white w-fit border border-indigo-50">Sales BC</p>
-                        <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-2">Nett Margin</p>
-                        <p className={`text-2xl font-black tracking-tighter truncate ${bcStats.margin >= 0 ? 'text-indigo-600' : 'text-rose-600'}`} title={isClient ? `Rp ${bcStats.margin.toLocaleString('id-ID')}` : ""}>
-                            Rp {isClient ? bcStats.margin.toLocaleString('id-ID') : "---"}
-                        </p>
-                    </div>
-                    <div className="text-right flex flex-col items-end gap-1">
-                        <div className="bg-white px-3 py-1.5 rounded-xl border border-indigo-50 shadow-sm w-full">
-                            <p className="text-[9px] font-bold text-emerald-500 uppercase">Total Penjualan</p>
-                            <p className="text-xs font-black text-emerald-600 tracking-tighter whitespace-nowrap">Rp {isClient ? bcStats.salesVal.toLocaleString('id-ID') : "---"}</p>
+            {/* Nett Margin Cards for Sales */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="erp-card p-6 md:p-8 relative overflow-hidden group">
+                    <div className="absolute -right-12 -top-12 h-48 w-48 bg-indigo-50 rounded-full blur-3xl transition-transform group-hover:scale-110 opacity-60" />
+                    <div className="relative z-10">
+                        <div className="flex justify-between items-start mb-6">
+                            <div className="flex items-center gap-4">
+                                <div className="bg-indigo-600 text-white p-3 rounded-2xl shadow-lg shadow-indigo-100">
+                                    <TrendingUp className="h-5 w-5" />
+                                </div>
+                                <div className="space-y-0.5">
+                                    <h3 className="text-lg font-black text-slate-900 tracking-tight">Performance: BC</h3>
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-indigo-400 bg-indigo-50 px-2 py-0.5 rounded-full inline-block">Sales Channel</p>
+                                </div>
+                            </div>
                         </div>
-                        <div className="bg-white px-3 py-1.5 rounded-xl border border-indigo-50 shadow-sm w-full">
-                            <p className="text-[9px] font-bold text-rose-400 uppercase">Total Pembelian & Ops</p>
-                            <p className="text-xs font-black text-rose-500 tracking-tighter whitespace-nowrap">Rp {isClient ? (bcStats.purchaseVal + bcStats.expenseVal).toLocaleString('id-ID') : "---"}</p>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="p-5 bg-white border border-slate-100 rounded-3xl shadow-sm space-y-1">
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Nett Margin</p>
+                                <p className={`text-2xl font-black tracking-tighter ${bcStats.margin >= 0 ? 'text-indigo-600' : 'text-rose-600'}`}>
+                                    {formatCurrency(bcStats.margin)}
+                                </p>
+                            </div>
+                            <div className="space-y-2">
+                                <div className="p-3 bg-emerald-50/50 border border-emerald-100 rounded-2xl flex justify-between items-center">
+                                    <span className="text-[9px] font-bold text-emerald-600 uppercase">Sales</span>
+                                    <span className="text-xs font-black text-emerald-700">{formatCurrency(bcStats.salesVal)}</span>
+                                </div>
+                                <div className="p-3 bg-rose-50/50 border border-rose-100 rounded-2xl flex justify-between items-center">
+                                    <span className="text-[9px] font-bold text-rose-600 uppercase">Ops/Purchase</span>
+                                    <span className="text-xs font-black text-rose-700">{formatCurrency(bcStats.purchaseVal + bcStats.expenseVal)}</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 {/* Only show Sales PF if not Bu Cici */}
                 {userEmail !== 'cici@kolaborasi.id' && (
-                    <div className="bg-gradient-to-br from-amber-50 to-white border border-amber-100 shadow-sm p-5 rounded-3xl flex justify-between items-center transition-all hover:shadow-md gap-4">
-                        <div className="min-w-0 flex-1">
-                            <p className="text-[10px] font-black text-amber-400 uppercase tracking-widest mb-1 shadow-sm px-2 py-0.5 rounded-full bg-white w-fit border border-amber-50">Sales PF</p>
-                            <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-2">Nett Margin</p>
-                            <p className={`text-2xl font-black tracking-tighter truncate ${pfStats.margin >= 0 ? 'text-amber-600' : 'text-rose-600'}`} title={isClient ? `Rp ${pfStats.margin.toLocaleString('id-ID')}` : ""}>
-                                Rp {isClient ? pfStats.margin.toLocaleString('id-ID') : "---"}
-                            </p>
-                        </div>
-                        <div className="text-right flex flex-col items-end gap-1">
-                            <div className="bg-white px-3 py-1.5 rounded-xl border border-amber-50 shadow-sm w-full">
-                                <p className="text-[9px] font-bold text-emerald-500 uppercase">Total Penjualan</p>
-                                <p className="text-xs font-black text-emerald-600 tracking-tighter whitespace-nowrap">Rp {isClient ? pfStats.salesVal.toLocaleString('id-ID') : "---"}</p>
+                    <div className="erp-card p-6 md:p-8 relative overflow-hidden group">
+                        <div className="absolute -right-12 -top-12 h-48 w-48 bg-amber-50 rounded-full blur-3xl transition-transform group-hover:scale-110 opacity-60" />
+                        <div className="relative z-10">
+                            <div className="flex justify-between items-start mb-6">
+                                <div className="flex items-center gap-4">
+                                    <div className="bg-amber-600 text-white p-3 rounded-2xl shadow-lg shadow-amber-100">
+                                        <Wallet className="h-5 w-5" />
+                                    </div>
+                                    <div className="space-y-0.5">
+                                        <h3 className="text-lg font-black text-slate-900 tracking-tight">Performance: PF</h3>
+                                        <p className="text-[9px] font-black uppercase tracking-widest text-amber-400 bg-amber-50 px-2 py-0.5 rounded-full inline-block">Direct Channel</p>
+                                    </div>
+                                </div>
                             </div>
-                            <div className="bg-white px-3 py-1.5 rounded-xl border border-amber-50 shadow-sm w-full">
-                                <p className="text-[9px] font-bold text-rose-400 uppercase">Total Pembelian & Ops</p>
-                                <p className="text-xs font-black text-rose-500 tracking-tighter whitespace-nowrap">Rp {isClient ? (pfStats.purchaseVal + pfStats.expenseVal).toLocaleString('id-ID') : "---"}</p>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="p-5 bg-white border border-slate-100 rounded-3xl shadow-sm space-y-1">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Nett Margin</p>
+                                    <p className={`text-2xl font-black tracking-tighter ${pfStats.margin >= 0 ? 'text-amber-600' : 'text-rose-600'}`}>
+                                        {formatCurrency(pfStats.margin)}
+                                    </p>
+                                </div>
+                                <div className="space-y-2">
+                                    <div className="p-3 bg-emerald-50/50 border border-emerald-100 rounded-2xl flex justify-between items-center">
+                                        <span className="text-[9px] font-bold text-emerald-600 uppercase">Sales</span>
+                                        <span className="text-xs font-black text-emerald-700">{formatCurrency(pfStats.salesVal)}</span>
+                                    </div>
+                                    <div className="p-3 bg-rose-50/50 border border-rose-100 rounded-2xl flex justify-between items-center">
+                                        <span className="text-[9px] font-bold text-rose-600 uppercase">Ops/Purchase</span>
+                                        <span className="text-xs font-black text-rose-700">{formatCurrency(pfStats.purchaseVal + pfStats.expenseVal)}</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>

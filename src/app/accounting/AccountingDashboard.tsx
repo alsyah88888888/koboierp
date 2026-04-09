@@ -165,17 +165,53 @@ export function AccountingDashboard({ journals, accounts }: { journals: any[], a
             {activeTab === "PNL" && (
                 <div className="space-y-6 animate-in fade-in duration-300">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex-1">
-                            <p className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">Total Pendapatan</p>
-                            <p className="text-2xl font-black text-emerald-600">{formatCurrency(totalRevenue)}</p>
+                        <div className="erp-card p-6 relative group transition-all hover:scale-[1.02] border-emerald-100 bg-emerald-50/20">
+                            <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-emerald-600/[0.03] blur-2xl group-hover:scale-150 transition-all" />
+                            <div className="relative">
+                                <div className="flex items-center justify-between mb-4">
+                                    <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">Total Pendapatan</p>
+                                    <div className="p-2 bg-emerald-100/50 rounded-xl text-emerald-600 border border-emerald-100">
+                                        <TrendingUp className="h-4 w-4" />
+                                    </div>
+                                </div>
+                                <h3 className="text-2xl font-black text-emerald-600 tracking-tighter decoration-emerald-200 decoration-2 underline-offset-8">
+                                    {formatCurrency(totalRevenue)}
+                                </h3>
+                            </div>
                         </div>
-                        <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex-1">
-                            <p className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">Total Beban (HPP & Op)</p>
-                            <p className="text-2xl font-black text-rose-600">{formatCurrency(totalExpense)}</p>
+
+                        <div className="erp-card p-6 relative group transition-all hover:scale-[1.02] border-rose-100 bg-rose-50/20">
+                            <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-rose-600/[0.03] blur-2xl group-hover:scale-150 transition-all" />
+                            <div className="relative">
+                                <div className="flex items-center justify-between mb-4">
+                                    <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">Total Beban</p>
+                                    <div className="p-2 bg-rose-100/50 rounded-xl text-rose-600 border border-rose-100">
+                                        <TrendingDown className="h-4 w-4" />
+                                    </div>
+                                </div>
+                                <h3 className="text-2xl font-black text-rose-600 tracking-tighter">
+                                    {formatCurrency(totalExpense)}
+                                </h3>
+                            </div>
                         </div>
-                        <div className={cn("rounded-2xl p-6 border shadow-sm", netIncome >= 0 ? "bg-emerald-50 border-emerald-200" : "bg-rose-50 border-rose-200")}>
-                            <p className={cn("text-sm font-bold uppercase tracking-wider mb-2", netIncome >= 0 ? "text-emerald-700" : "text-rose-700")}>Laba/Rugi Bersih</p>
-                            <p className={cn("text-3xl font-black tracking-tighter", netIncome >= 0 ? "text-emerald-700" : "text-rose-700")}>{formatCurrency(netIncome)}</p>
+
+                        <div className={cn(
+                            "erp-card p-6 relative group transition-all hover:scale-[1.02] border-2",
+                            netIncome >= 0 ? "bg-emerald-600 text-white border-emerald-400" : "bg-rose-600 text-white border-rose-400"
+                        )}>
+                            <div className="absolute -right-6 -top-6 h-32 w-32 rounded-full bg-white/10 blur-3xl group-hover:scale-150 transition-all" />
+                            <div className="relative">
+                                <div className="flex items-center justify-between mb-4">
+                                    <p className="text-[10px] font-black uppercase tracking-[0.15em] text-white/70">Laba/Rugi Bersih</p>
+                                    <div className="p-2 bg-white/20 rounded-xl text-white backdrop-blur-md">
+                                        <BarChart3 className="h-4 w-4" />
+                                    </div>
+                                </div>
+                                <h3 className="text-3xl font-black tracking-tighter">
+                                    {formatCurrency(netIncome)}
+                                </h3>
+                                <p className="text-[9px] font-bold uppercase tracking-widest mt-2 text-white/50">Periode Berjalan</p>
+                            </div>
                         </div>
                     </div>
 

@@ -168,6 +168,13 @@ body {
   @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6;
 }
 
+@utility erp-stat-card {
+  @apply erp-card p-6 md:p-8 relative overflow-hidden group transition-all duration-300;
+  &:hover {
+    @apply scale-[1.02];
+  }
+}
+
 @utility modal-grid-header {
   @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8;
 }

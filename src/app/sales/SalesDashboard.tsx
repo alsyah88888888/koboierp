@@ -217,67 +217,55 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
 
     return (
         <div className="space-y-6 animate-fade-up">
-            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm hide-print">
-                <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
-                    <button
-                        onClick={handlePreview}
-                        className="bg-white border-2 border-slate-200 text-slate-600 px-4 py-2 rounded-xl flex items-center justify-center gap-2 hover:border-emerald-500 hover:text-emerald-600 transition-all font-bold active:scale-95 flex-1 sm:flex-none"
-                    >
-                        <Eye className="h-4 w-4" />
-                        <span>Preview</span>
-                    </button>
-                    <button
-                        onClick={handleExport}
-                        className="bg-emerald-600 text-white px-4 py-2 rounded-xl flex items-center justify-center gap-2 hover:bg-emerald-700 shadow-lg shadow-emerald-200 transition-all active:scale-95 font-bold flex-1 sm:flex-none"
-                    >
-                        <FileText className="h-4 w-4" />
-                        <span>Export</span>
-                    </button>
-                    <button
-                        onClick={handleExportXMLCoretax}
-                        className="bg-slate-900 text-white px-4 py-2 rounded-xl flex items-center justify-center gap-2 hover:bg-slate-800 shadow-lg shadow-slate-200 transition-all active:scale-95 font-bold flex-1 sm:flex-none"
-                    >
-                        <FileText className="h-4 w-4" />
-                        <span>Coretax XML</span>
-                    </button>
-                    <button
-                        onClick={() => setShowReturnModal(true)}
-                        className="bg-white border-2 border-slate-200 text-slate-600 px-4 py-2 rounded-xl flex items-center justify-center gap-2 hover:border-blue-500 hover:text-blue-600 transition-all font-bold active:scale-95 flex-1 sm:flex-none"
-                    >
-                        <Undo2 className="h-4 w-4" />
-                        <span>Retur</span>
-                    </button>
+            {/* Header Section */}
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 px-1 hide-print">
+                <div className="space-y-1">
+                    <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight uppercase">Sales Operations</h1>
+                    <p className="text-slate-500 text-[10px] md:text-sm font-bold uppercase tracking-widest opacity-70">Shipment tracking & Revenue performance</p>
                 </div>
-                <div className="w-full lg:w-auto">
-                    {activeTab === "SJ" ? (
-                        <div className="flex flex-wrap lg:flex-nowrap items-center gap-2 w-full lg:w-auto">
-                            <button
-                                onClick={() => setShowSalesModal(true)}
-                                className="erp-btn-primary flex-1 lg:flex-none"
-                            >
-                                <Plus className="h-5 w-5" />
-                                <span>Input Penjualan</span>
-                            </button>
-                            <button
-                                onClick={() => setShowManualModal(true)}
-                                className="bg-white border-2 border-slate-200 text-slate-600 px-6 py-2.5 rounded-xl flex items-center justify-center gap-2 hover:border-slate-900 hover:text-slate-900 transition-all font-black active:scale-95 flex-1 lg:flex-none"
-                            >
-                                <FileText className="h-4 w-4" />
-                                <span>Manual SJ/PO</span>
-                            </button>
-                        </div>
-                    ) : (
+
+                <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+                    <div className="flex bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm w-full sm:w-auto">
                         <button
-                            onClick={() => {
-                                setEditData(null);
-                                setShowReturnModal(true);
-                            }}
-                            className="bg-blue-600 text-white px-6 py-2.5 rounded-xl flex items-center justify-center gap-2 hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all active:scale-95 font-bold w-full lg:w-auto"
+                            onClick={() => setActiveTab("SJ")}
+                            className={cn(
+                                "flex-1 sm:flex-none px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                                activeTab === "SJ" ? "bg-primary text-white shadow-md shadow-primary/20" : "text-slate-500 hover:bg-slate-50"
+                            )}
                         >
-                            <Plus className="h-5 w-5" />
-                            <span>Tambah Retur</span>
+                            Pengiriman
                         </button>
-                    )}
+                        <button
+                            onClick={() => setActiveTab("RETURNS")}
+                            className={cn(
+                                "flex-1 sm:flex-none px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                                activeTab === "RETURNS" ? "bg-rose-600 text-white shadow-md shadow-rose-200" : "text-slate-500 hover:bg-slate-50"
+                            )}
+                        >
+                            Retur Pelanggan
+                        </button>
+                    </div>
+
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <button
+                            onClick={activeTab === "SJ" ? () => setShowSalesModal(true) : () => setShowReturnModal(true)}
+                            className={cn(
+                                "flex-1 sm:flex-none px-8 py-3 rounded-2xl flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95 font-black text-[10px] uppercase tracking-widest",
+                                activeTab === "SJ" ? "bg-primary text-white shadow-primary/20" : "bg-rose-600 text-white shadow-rose-200"
+                            )}
+                        >
+                            <Plus className="h-4 w-4" />
+                            <span>{activeTab === "SJ" ? "Input SJ" : "Input Retur"}</span>
+                        </button>
+                        <div className="flex gap-2">
+                           <button onClick={handlePreview} className="p-3 bg-white border border-slate-200 rounded-2xl hover:border-primary hover:text-primary transition-all shadow-sm group" title="Preview Report">
+                               <Eye className="h-5 w-5 text-slate-400 group-hover:text-primary" />
+                           </button>
+                           <button onClick={handleExport} className="p-3 bg-white border border-slate-200 rounded-2xl hover:border-emerald-500 hover:text-emerald-500 transition-all shadow-sm group" title="Export Excel">
+                               <Download className="h-5 w-5 text-slate-400 group-hover:text-emerald-500" />
+                           </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -285,105 +273,123 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                 <DashboardStats />
             </div>
 
-            <div className="grid gap-4 md:gap-6 md:grid-cols-2">
+            <div className="grid gap-6 md:grid-cols-2">
                 {/* BC Performance Card */}
                 {(isAdmin || bcStats.sjCount > 0) && (
-                    <div className="erp-card p-6 bg-gradient-to-br from-indigo-50/50 to-white">
-                        <div className="flex justify-between items-center mb-6">
-                            <div className="flex items-center gap-4">
-                                <div className="bg-indigo-600 text-white p-3 rounded-2xl shadow-lg shadow-indigo-200">
-                                    <Users className="h-6 w-6" />
+                    <div className="erp-card p-6 md:p-8 relative overflow-hidden group">
+                        <div className="absolute -right-12 -top-12 h-48 w-48 bg-indigo-50 rounded-full blur-3xl transition-transform group-hover:scale-110 opacity-60" />
+                        
+                        <div className="relative z-10">
+                            <div className="flex justify-between items-start mb-8">
+                                <div className="flex items-center gap-5">
+                                    <div className="bg-indigo-600 text-white p-4 rounded-2xl shadow-xl shadow-indigo-100">
+                                        <TrendingUp className="h-6 w-6" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl font-black text-slate-900 tracking-tight">Performance: BC</h3>
+                                        <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 mt-1">Enterprise Sales Lead</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h3 className="text-lg font-black text-slate-900 tracking-tight">Performance: BC</h3>
-                                    <p className="erp-label !mb-0">Salesperson Overview</p>
-                                </div>
+                                <div className="bg-indigo-50 text-indigo-700 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-indigo-100 shadow-sm">Lead Active</div>
                             </div>
-                            <div className="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-indigo-200">Active</div>
-                        </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="p-4 bg-white border border-slate-100 rounded-2xl shadow-sm">
-                                <p className="erp-label">Total SJ</p>
-                                <p className="text-2xl font-black text-indigo-600">{bcStats.sjCount}</p>
-                            </div>
-                            <div className="p-4 bg-white border border-slate-100 rounded-2xl shadow-sm">
-                                <p className="erp-label">Total Qty</p>
-                                <p className="text-2xl font-black text-indigo-600">{bcStats.totalQty}</p>
-                            </div>
-                        </div>
-
-                        <div className="mt-6 pt-6 border-t border-slate-100">
-                            <span className="erp-label">Riwayat Pengiriman Terbaru</span>
-                            {bcStats.recentDeliveries.length > 0 ? (
-                                <div className="space-y-2">
-                                    {bcStats.recentDeliveries.map((delivery, idx) => (
-                                        <div key={idx} className="flex justify-between items-center text-xs p-3 bg-slate-50 border border-slate-100 rounded-xl">
-                                            <div className="min-w-0">
-                                                <p className="font-black text-slate-800 truncate">{delivery.deliveryNumber}</p>
-                                                <p className="text-[10px] text-slate-500 truncate">{delivery.buyerName}</p>
-                                            </div>
-                                            <div className="text-right shrink-0 ml-4">
-                                                <p className="font-bold text-slate-600">{isClient ? format(new Date(delivery.createdAt), "dd MMM") : "..."}</p>
-                                                <p className="text-[10px] font-black text-indigo-600">{delivery.items.reduce((s: number, i: any) => s + i.quantity, 0)} Pcs</p>
-                                            </div>
-                                        </div>
-                                    ))}
+                            <div className="grid grid-cols-2 gap-6">
+                                <div className="p-5 bg-white/50 backdrop-blur-sm border border-slate-100 rounded-[2rem] shadow-sm group-hover:border-indigo-100 transition-colors">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Total Delivery</p>
+                                    <p className="text-3xl font-black text-indigo-600 tracking-tighter">{bcStats.sjCount}</p>
                                 </div>
-                            ) : (
-                                <p className="text-xs text-slate-400 italic text-center py-4">Belum ada pengiriman</p>
-                            )}
+                                <div className="p-5 bg-white/50 backdrop-blur-sm border border-slate-100 rounded-[2rem] shadow-sm group-hover:border-indigo-100 transition-colors">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Total Quantity</p>
+                                    <p className="text-3xl font-black text-indigo-600 tracking-tighter">{bcStats.totalQty}</p>
+                                </div>
+                            </div>
+
+                            <div className="mt-8 pt-6 border-t border-slate-100/60">
+                                <div className="flex items-center justify-between mb-4">
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Recent Shipments</span>
+                                    <div className="h-1 w-8 bg-indigo-200 rounded-full" />
+                                </div>
+                                {bcStats.recentDeliveries.length > 0 ? (
+                                    <div className="space-y-3">
+                                        {bcStats.recentDeliveries.map((delivery, idx) => (
+                                            <div key={idx} className="flex justify-between items-center text-xs p-4 bg-white border border-slate-100 rounded-2xl hover:shadow-md hover:border-indigo-100 transition-all cursor-default group/item">
+                                                <div className="min-w-0">
+                                                    <p className="font-black text-slate-800 text-[13px] tracking-tight">{delivery.deliveryNumber}</p>
+                                                    <p className="text-[10px] font-bold text-slate-400 truncate mt-0.5">{delivery.buyerName}</p>
+                                                </div>
+                                                <div className="text-right shrink-0 ml-4 flex flex-col items-end">
+                                                    <p className="font-black text-indigo-600 text-[13px]">{delivery.items.reduce((s: number, i: any) => s + i.quantity, 0)} <span className="text-[9px] uppercase">Pcs</span></p>
+                                                    <p className="text-[10px] font-bold text-slate-400 mt-0.5">{isClient ? format(new Date(delivery.createdAt), "dd MMM") : "..."}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="py-10 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                                        <p className="text-[10px] font-black text-slate-400 italic uppercase tracking-widest">Belum ada pengiriman</p>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 )}
 
                 {/* PF Performance Card */}
                 {(isAdmin || pfStats.sjCount > 0) && (
-                    <div className="erp-card p-6 bg-gradient-to-br from-amber-50/50 to-white">
-                        <div className="flex justify-between items-center mb-6">
-                            <div className="flex items-center gap-4">
-                                <div className="bg-amber-600 text-white p-3 rounded-2xl shadow-lg shadow-amber-200">
-                                    <Users className="h-6 w-6" />
+                    <div className="erp-card p-6 md:p-8 relative overflow-hidden group">
+                        <div className="absolute -right-12 -top-12 h-48 w-48 bg-amber-50 rounded-full blur-3xl transition-transform group-hover:scale-110 opacity-60" />
+                        
+                        <div className="relative z-10">
+                            <div className="flex justify-between items-start mb-8">
+                                <div className="flex items-center gap-5">
+                                    <div className="bg-amber-600 text-white p-4 rounded-2xl shadow-xl shadow-amber-100">
+                                        <Users className="h-6 w-6" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl font-black text-slate-900 tracking-tight">Performance: PF</h3>
+                                        <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 mt-1">Direct Sales Channel</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h3 className="text-lg font-black text-slate-900 tracking-tight">Performance: PF</h3>
-                                    <p className="erp-label !mb-0">Salesperson Overview</p>
-                                </div>
+                                <div className="bg-amber-100 text-amber-700 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-amber-100 shadow-sm">Lead Active</div>
                             </div>
-                            <div className="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-amber-200">Active</div>
-                        </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="p-4 bg-white border border-slate-100 rounded-2xl shadow-sm">
-                                <p className="erp-label">Total SJ</p>
-                                <p className="text-2xl font-black text-amber-600">{pfStats.sjCount}</p>
-                            </div>
-                            <div className="p-4 bg-white border border-slate-100 rounded-2xl shadow-sm">
-                                <p className="erp-label">Total Qty</p>
-                                <p className="text-2xl font-black text-amber-600">{pfStats.totalQty}</p>
-                            </div>
-                        </div>
-
-                        <div className="mt-6 pt-6 border-t border-slate-100">
-                            <span className="erp-label">Riwayat Pengiriman Terbaru</span>
-                            {pfStats.recentDeliveries.length > 0 ? (
-                                <div className="space-y-2">
-                                    {pfStats.recentDeliveries.map((delivery, idx) => (
-                                        <div key={idx} className="flex justify-between items-center text-xs p-3 bg-slate-50 border border-slate-100 rounded-xl">
-                                            <div className="min-w-0">
-                                                <p className="font-black text-slate-800 truncate">{delivery.deliveryNumber}</p>
-                                                <p className="text-[10px] text-slate-500 truncate">{delivery.buyerName}</p>
-                                            </div>
-                                            <div className="text-right shrink-0 ml-4">
-                                                <p className="font-bold text-slate-600">{isClient ? format(new Date(delivery.createdAt), "dd MMM") : "..."}</p>
-                                                <p className="text-[10px] font-black text-amber-600">{delivery.items.reduce((s: number, i: any) => s + i.quantity, 0)} Pcs</p>
-                                            </div>
-                                        </div>
-                                    ))}
+                            <div className="grid grid-cols-2 gap-6">
+                                <div className="p-5 bg-white/50 backdrop-blur-sm border border-slate-100 rounded-[2rem] shadow-sm group-hover:border-amber-100 transition-colors">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Total Delivery</p>
+                                    <p className="text-3xl font-black text-indigo-600 tracking-tighter">{pfStats.sjCount}</p>
                                 </div>
-                            ) : (
-                                <p className="text-xs text-slate-400 italic text-center py-4">Belum ada pengiriman</p>
-                            )}
+                                <div className="p-5 bg-white/50 backdrop-blur-sm border border-slate-100 rounded-[2rem] shadow-sm group-hover:border-amber-100 transition-colors">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Total Quantity</p>
+                                    <p className="text-3xl font-black text-indigo-600 tracking-tighter">{pfStats.totalQty}</p>
+                                </div>
+                            </div>
+
+                            <div className="mt-8 pt-6 border-t border-slate-100/60">
+                                <div className="flex items-center justify-between mb-4">
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Recent Shipments</span>
+                                    <div className="h-1 w-8 bg-amber-200 rounded-full" />
+                                </div>
+                                {pfStats.recentDeliveries.length > 0 ? (
+                                    <div className="space-y-3">
+                                        {pfStats.recentDeliveries.map((delivery, idx) => (
+                                            <div key={idx} className="flex justify-between items-center text-xs p-4 bg-white border border-slate-100 rounded-2xl hover:shadow-md hover:border-amber-100 transition-all cursor-default group/item">
+                                                <div className="min-w-0">
+                                                    <p className="font-black text-slate-800 text-[13px] tracking-tight">{delivery.deliveryNumber}</p>
+                                                    <p className="text-[10px] font-bold text-slate-400 truncate mt-0.5">{delivery.buyerName}</p>
+                                                </div>
+                                                <div className="text-right shrink-0 ml-4 flex flex-col items-end">
+                                                    <p className="font-black text-amber-600 text-[13px]">{delivery.items.reduce((s: number, i: any) => s + i.quantity, 0)} <span className="text-[9px] uppercase">Pcs</span></p>
+                                                    <p className="text-[10px] font-bold text-slate-400 mt-0.5">{isClient ? format(new Date(delivery.createdAt), "dd MMM") : "..."}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="py-10 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                                        <p className="text-[10px] font-black text-slate-400 italic uppercase tracking-widest">Belum ada pengiriman</p>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 )}

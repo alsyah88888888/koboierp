@@ -73,17 +73,25 @@ export function DashboardStats() {
     });
 
     return (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             {items.map((item, i) => (
-                <div key={i} className={`p-4 rounded-xl border-2 ${item.border} ${item.bg} flex items-start justify-between shadow-sm transition-all hover:scale-[1.02]`}>
-                    <div>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">{item.label}</p>
-                        <h3 className={`text-xl font-black ${item.color}`}>
-                            {isClient ? item.value : "..."}{item.suffix}
-                        </h3>
-                    </div>
-                    <div className={`${item.bg} p-2 rounded-lg border ${item.border}`}>
-                        <item.icon className={`h-5 w-5 ${item.color}`} />
+                <div key={i} className={`erp-card p-6 md:p-7 relative group transition-all hover:scale-[1.03] active:scale-[0.98] border-slate-200/40`}>
+                    {/* Decorative Background Glow */}
+                    <div className={`absolute -right-10 -top-10 h-32 w-32 rounded-full opacity-[0.03] group-hover:opacity-[0.08] blur-3xl transition-all ${item.bg}`} />
+                    
+                    <div className="relative flex flex-col justify-between h-full space-y-6">
+                        <div className="flex items-center justify-between">
+                            <div className={cn(item.bg, "p-3 rounded-2xl shadow-sm border border-white/50 backdrop-blur-md")}>
+                                <item.icon className={`h-5 w-5 ${item.color}`} />
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 mb-2 truncate">{item.label}</p>
+                            <h3 className={`text-xl md:text-2xl font-black ${item.color} tracking-tighter leading-none`}>
+                                {isClient ? item.value : "Rp ---"}{isClient && item.suffix}
+                            </h3>
+                        </div>
                     </div>
                 </div>
             ))}
