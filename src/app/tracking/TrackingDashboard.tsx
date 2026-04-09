@@ -46,6 +46,11 @@ export function TrackingDashboard({ initialProducts, userEmail, userRole }: Trac
     const [loadingAudit, setLoadingAudit] = useState(false);
     const [syncingId, setSyncingId] = useState<string | null>(null);
 
+    // History Filters
+    const [filterDay, setFilterDay] = useState("");
+    const [filterMonth, setFilterMonth] = useState("");
+    const [filterYear, setFilterYear] = useState("");
+
     // Permission Logic
     const canExport = userRole === "ADMIN" || userEmail === "ferza@kolaborasi.id";
 
@@ -65,6 +70,25 @@ export function TrackingDashboard({ initialProducts, userEmail, userRole }: Trac
             p.name?.toLowerCase().includes(term)
         );
     }, [processedProducts, searchTerm]);
+
+    // History Filtering Logic
+    const filteredHistory = useMemo(() => {
+        return history.filter(record => {
+            const date = new Date(record.date);
+            const matchesDay = filterDay === "" || date.getDate() === parseInt(filterDay);
+            const matchesMonth = filterMonth === "" || (date.getMonth() + 1) === parseInt(filterMonth);
+            const matchesYear = filterYear === "" || date.getFullYear() === parseInt(filterYear);
+            return matchesDay && matchesMonth && matchesYear;
+        });
+    }, [history, filterDay, filterMonth, filterYear]);
+
+    const months = [
+        "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+        "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+    ];
+
+    const currentYear = new Date().getFullYear();
+    const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
 
     const handleExport = () => {
         if (!canExport) return;
@@ -92,6 +116,10 @@ export function TrackingDashboard({ initialProducts, userEmail, userRole }: Trac
         setSelectedProduct(product);
         setLoadingHistory(true);
         setHistory([]);
+        // Reset filters when opening new product
+        setFilterDay("");
+        setFilterMonth("");
+        setFilterYear("");
         try {
             const res = await callAction("getProductTracking", product.id);
             if (res && res.history) {
@@ -387,9 +415,62 @@ export function TrackingDashboard({ initialProducts, userEmail, userRole }: Trac
                                 </div>
                                 <h3 className="text-2xl font-black tracking-tight">Lifecycle Tracking</h3>
                             </div>
-                            <div className="space-y-1">
+                            <div className="space-y-1 mb-6">
                                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">{selectedProduct.sku}</p>
                                 <h4 className="text-xl font-black leading-tight uppercase line-clamp-2">{selectedProduct.name}</h4>
+                            </div>
+
+                            {/* Filters Bar */}
+                            <div className="flex flex-wrap items-center gap-2 pt-6 border-t border-slate-200/60">
+                                <div className="flex-1 min-w-[80px]">
+                                    <select 
+                                        value={filterDay}
+                                        onChange={(e) => setFilterDay(e.target.value)}
+                                        className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[10px] font-bold outline-primary cursor-pointer"
+                                    >
+                                        <option value="">Tgl</option>
+                                        {Array.from({ length: 31 }, (_, i) => (
+                                            <option key={i+1} value={i+1}>{i+1}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="flex-[2] min-w-[120px]">
+                                    <select 
+                                        value={filterMonth}
+                                        onChange={(e) => setFilterMonth(e.target.value)}
+                                        className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[10px] font-bold outline-primary cursor-pointer"
+                                    >
+                                        <option value="">Bulan</option>
+                                        {months.map((m, i) => (
+                                            <option key={i} value={i+1}>{m}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="flex-1 min-w-[90px]">
+                                    <select 
+                                        value={filterYear}
+                                        onChange={(e) => setFilterYear(e.target.value)}
+                                        className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[10px] font-bold outline-primary cursor-pointer"
+                                    >
+                                        <option value="">Tahun</option>
+                                        {years.map(y => (
+                                            <option key={y} value={y}>{y}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                {(filterDay || filterMonth || filterYear) && (
+                                    <button 
+                                        onClick={() => {
+                                            setFilterDay("");
+                                            setFilterMonth("");
+                                            setFilterYear("");
+                                        }}
+                                        className="p-2 bg-rose-50 text-rose-500 rounded-lg hover:bg-rose-100 transition-colors"
+                                        title="Reset Filters"
+                                    >
+                                        <RefreshCw className="h-3 w-3" />
+                                    </button>
+                                )}
                             </div>
                         </div>
 
@@ -407,9 +488,9 @@ export function TrackingDashboard({ initialProducts, userEmail, userRole }: Trac
                                         </div>
                                     ))}
                                 </div>
-                            ) : history.length > 0 ? (
+                            ) : filteredHistory.length > 0 ? (
                                 <div className="space-y-4">
-                                    {history.map((record, index) => (
+                                    {filteredHistory.map((record, index) => (
                                         <div key={record.id} className="relative pl-10 group">
                                             {/* Timeline Line */}
                                             {index !== history.length - 1 && (
@@ -486,7 +567,9 @@ export function TrackingDashboard({ initialProducts, userEmail, userRole }: Trac
                                     <div className="h-20 w-20 bg-slate-100 rounded-full flex items-center justify-center mb-4">
                                         <History className="h-10 w-10 text-slate-300" />
                                     </div>
-                                    <p className="text-sm font-black text-slate-400 uppercase tracking-widest">Belum ada riwayat transaksi</p>
+                                    <p className="text-sm font-black text-slate-400 uppercase tracking-widest">
+                                        {(filterDay || filterMonth || filterYear) ? "Data tidak ditemukan pada periode ini" : "Belum ada riwayat transaksi"}
+                                    </p>
                                 </div>
                             )}
                         </div>
