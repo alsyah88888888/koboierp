@@ -215,7 +215,8 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
     };
 
     return (
-        <div className="space-y-6 animate-fade-up">
+        <>
+            <div className="space-y-6 animate-fade-up">
             {/* Header Section */}
             <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 px-1 hide-print">
                 <div className="space-y-1">
@@ -567,9 +568,8 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                             </tbody>
                         </table>
                     )}
-                </div>
             </div>
-
+            {/* Modals outside animation container to escape stacking context */}
             {showSalesModal && (
                 <SalesModal
                     products={products}
@@ -624,6 +624,6 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                 title="Batalkan Penjualan (VOID)"
                 message="Membatalkan pengiriman ini akan mengembalikan stok barang ke gudang secara otomatis. Tindakan ini tidak dapat dibatalkan."
             />
-        </div>
+        </>
     );
 }
