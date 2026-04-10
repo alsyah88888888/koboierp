@@ -284,7 +284,7 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                     <div className="p-4 lg:p-6 space-y-6">
                         {/* Compact Logistics Header */}
                         <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
                                 <div className="space-y-1">
                                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Buyer / Customer</label>
                                     <input
@@ -298,7 +298,7 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                                 if (customer && customer.address) setRecipient(customer.address);
                                             }
                                         }}
-                                        className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg text-sm font-bold focus:border-primary outline-none transition-all"
+                                        className="w-full bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg text-sm font-bold focus:border-primary outline-none transition-all"
                                         placeholder={isManualBuyer ? "Manual Buyer..." : "Search customer..."}
                                         required
                                     />
@@ -311,13 +311,13 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
 
                                 <div className="space-y-1 min-w-0">
                                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">PO Number / SJ Date</label>
-                                    <div className="flex gap-2">
+                                    <div className="flex gap-1">
                                         <div className="relative flex-[2] min-w-0">
                                             <input
                                                 value={poNumber}
                                                 onChange={e => setPoNumber(e.target.value)}
-                                                placeholder="Input No. PO Manual..."
-                                                className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg text-sm font-bold focus:border-primary outline-none transition-all placeholder:text-slate-300"
+                                                placeholder="PO"
+                                                className="w-full bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg text-sm font-bold focus:border-primary outline-none transition-all placeholder:text-slate-300"
                                             />
                                         </div>
                                         <div className="flex-1 min-w-0">
@@ -325,7 +325,7 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                                 type="date"
                                                 value={date}
                                                 onChange={e => setDate(e.target.value)}
-                                                className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg text-xs font-bold focus:border-primary outline-none cursor-pointer"
+                                                className="w-full bg-slate-50 border border-slate-200 px-2 py-1.5 rounded-lg text-xs font-bold focus:border-primary outline-none cursor-pointer"
                                                 required
                                             />
                                         </div>
@@ -333,13 +333,13 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                 </div>
 
                                 <div className="space-y-1">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">No. Kendaraan / Driver</label>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">No. Kendaraan</label>
                                     <input
                                         list="vehicle-list"
                                         value={vehicleNumber}
                                         onChange={e => setVehicleNumber(e.target.value)}
-                                        placeholder="F 0000 XX - Nama"
-                                        className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg text-sm font-bold focus:border-primary outline-none transition-all placeholder:text-slate-300"
+                                        placeholder="F 0000 XX"
+                                        className="w-full bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg text-sm font-bold focus:border-primary outline-none transition-all placeholder:text-slate-300"
                                     />
                                     <datalist id="vehicle-list">
                                         <option value="F 8440 GY - Karno" />
@@ -350,12 +350,12 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                 </div>
 
                                 <div className="space-y-1">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Warehouse & Sales</label>
-                                    <div className="flex gap-2">
-                                        <select value={warehouseId} onChange={e => setWarehouseId(e.target.value)} className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg text-xs font-bold focus:border-primary outline-none" required>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Gudang & Sales</label>
+                                    <div className="flex gap-1">
+                                        <select value={warehouseId} onChange={e => setWarehouseId(e.target.value)} className="w-full bg-slate-50 border border-slate-200 px-2 py-1.5 rounded-lg text-xs font-bold focus:border-primary outline-none" required>
                                             {Array.isArray(warehouses) && warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
                                         </select>
-                                        <select value={salesPerson} onChange={e => setSalesPerson(e.target.value)} className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg text-xs font-bold focus:border-primary outline-none">
+                                        <select value={salesPerson} onChange={e => setSalesPerson(e.target.value)} className="w-full bg-slate-50 border border-slate-200 px-2 py-1.5 rounded-lg text-xs font-bold focus:border-primary outline-none">
                                             <option value="">(None)</option>
                                             <option value="BC">BC</option>
                                             <option value="PF">PF</option>
@@ -370,14 +370,14 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                             className="text-primary hover:underline lowercase cursor-pointer"
                                             onClick={() => setIsManualBuyer(!isManualBuyer)}
                                         >
-                                            {isManualBuyer ? "auto" : "manual"}
+                                            {isManualBuyer ? "auto" : "man"}
                                         </span>
                                     </label>
                                     <input
                                         value={recipient}
                                         onChange={e => setRecipient(e.target.value)}
-                                        placeholder="Delivery address..."
-                                        className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg text-sm font-medium focus:border-primary outline-none"
+                                        placeholder="Address..."
+                                        className="w-full bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg text-sm font-medium focus:border-primary outline-none"
                                         required
                                     />
                                 </div>
