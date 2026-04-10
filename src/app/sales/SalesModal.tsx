@@ -233,7 +233,7 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
 
     if (result) {
         return (
-            <div className="absolute inset-0 bg-slate-900/60 flex items-center justify-center z-[110] p-4 backdrop-blur-sm rounded-3xl">
+            <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-[110] p-4 backdrop-blur-sm">
                 <div className="bg-white border-2 border-primary rounded-xl shadow-2xl w-full max-w-md p-8 text-center space-y-4 animate-in fade-in zoom-in duration-300">
                     <div className="mx-auto w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center border-2 border-emerald-500">
                         <FileCheck className="h-8 w-8 text-emerald-600" />
@@ -255,8 +255,8 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
     }
 
     return (
-        <div className="absolute inset-0 bg-slate-900/20 z-[100] flex items-start justify-center p-2 sm:p-4 overflow-y-auto custom-scrollbar rounded-3xl animate-in fade-in duration-300">
-            <div className="bg-white shadow-2xl rounded-3xl w-full max-w-7xl h-auto max-h-[95vh] min-h-[400px] overflow-hidden flex flex-col border border-slate-200 mt-2 sm:mt-4 mb-4 animate-in slide-in-from-top-4 duration-500">
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md z-[100] flex items-start justify-center p-2 sm:p-4 overflow-y-auto custom-scrollbar animate-in fade-in duration-300">
+            <div className="bg-white shadow-2xl rounded-3xl w-full max-w-7xl h-auto max-h-[90vh] min-h-[400px] overflow-hidden flex flex-col border border-slate-200 mt-4 sm:mt-10 mb-4 animate-in zoom-in duration-300">
                 {/* Header */}
                 <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
                     <div className="flex items-center gap-5">
@@ -526,7 +526,7 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                             </div>
                         )}
 
-                        {/* Financial Summary & Footer (V.1 Vertical Style) */}
+                        {/* Financial Summary & Footer (V.1 Vertical Style) - MATCHING RECEIPT MODAL */}
                         <div className="mt-8 border-t-2 border-slate-200 pt-8">
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                                 {/* Left/Center column: Empty or notes in future */}
