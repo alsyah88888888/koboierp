@@ -568,7 +568,9 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                             </tbody>
                         </table>
                     )}
+                </div>
             </div>
+        </div>
             {/* Modals outside animation container to escape stacking context */}
             {showSalesModal && (
                 <SalesModal
