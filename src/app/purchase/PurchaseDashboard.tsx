@@ -114,18 +114,47 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
     );
 
     const handleExport = () => {
-        const data = (Array.isArray(filteredReceipts) ? filteredReceipts : []).map(r => ({
-            'No. Form': r.formNumber,
-            'Tanggal': format(new Date(r.date || r.createdAt), "dd/MM/yyyy"),
-            'Terima Dari': r.receivedFrom,
-            'No. Terima': r.receiptNumber,
-            'Gudang': r.warehouse?.name,
-            'Sales Person': r.salesPerson,
-            'Total Qty': r.items?.reduce((acc: number, i: any) => acc + (Number(i.quantity) || 0), 0) || 0,
-            'Total Harga': r.items?.reduce((acc: number, i: any) => acc + (Number(i.quantity) * Number(i.purchasePrice || 0)), 0) || 0,
-            'Status': r.isVerified ? 'VERIFIED' : 'PENDING'
-        }));
-        exportToExcel(data, 'Laporan_Penerimaan_Barang', 'Penerimaan');
+        const exportData: any[] = [];
+        
+        (Array.isArray(filteredReceipts) ? filteredReceipts : []).forEach(r => {
+            const items = r.items || [];
+            items.forEach((item: any) => {
+                const qty = Number(item.quantity) || 0;
+                const buyPrice = Number(item.purchasePrice || 0);
+                const discLine = Number(item.discount || 0);
+                const taxRate = Number(r.taxRate || 0);
+
+                const itemTotalBrutto = qty * buyPrice;
+                const itemNettoBeforeTax = itemTotalBrutto - discLine;
+                const itemTax = itemNettoBeforeTax * taxRate;
+                const itemNettoTotal = itemNettoBeforeTax + itemTax;
+
+                exportData.push({
+                    'No. Terima': r.receiptNumber,
+                    'No. Form': r.formNumber || "-",
+                    'Tanggal': format(new Date(r.date || r.createdAt), "dd/MM/yyyy HH:mm"),
+                    'Terima Dari': r.receivedFrom,
+                    'Barcode': item.product?.barcode || item.product?.sku || "-",
+                    'SKU': item.product?.sku || "-",
+                    'Nama Barang': item.product?.name || "-",
+                    'Qty': qty,
+                    'Satuan': item.uom || item.product?.uom || "-",
+                    'Harga Beli': buyPrice,
+                    'Potongan Item': discLine,
+                    'Total Brutto (Row)': itemTotalBrutto,
+                    'PPN 11% (Row)': itemTax,
+                    'Grand Total Netto (Row)': itemNettoTotal,
+                    'Gudang': r.warehouse?.name || "-",
+                    'Sales Person': r.salesPerson || "-",
+                    'Total Dokumen (Brutto)': Number(r.subtotal || 0),
+                    'Total Dokumen (PPN)': Number(r.taxAmount || 0),
+                    'Total Dokumen (Netto)': Number(r.grandTotal || 0),
+                    'Status': r.isVoid ? 'VOID' : (r.isVerified ? 'VERIFIED' : 'PENDING')
+                });
+            });
+        });
+        
+        exportToExcel(exportData, `Laporan_Penerimaan_Barang_Detail_${format(new Date(), "yyyyMMdd")}`, 'Penerimaan');
     };
 
 

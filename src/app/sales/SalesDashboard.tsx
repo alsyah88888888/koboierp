@@ -179,22 +179,20 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                     'No. PO Buyer': d.poNumber || "-",
                     'Tanggal': format(new Date(d.createdAt), "dd/MM/yyyy HH:mm"),
                     'Buyer / Customer': d.buyerName,
-                    'Barcode': item.product?.barcode || item.product?.sku || "-",
-                    'SKU': item.product?.sku || "-",
+                    'Barcode / SKU': item.product?.sku || "-",
                     'Nama Barang': item.product?.name || "-",
                     'Qty': qty,
                     'Satuan': item.uom || item.product?.uom || "-",
-                    'Harga Beli': purchasePrice,
-                    'Harga Jual': price,
+                    'Harga Satuan': price,
+                    'Total Harga Item': itemTotalBrutto,
                     'Potongan Item': discLine,
-                    'Total Brutto (Row)': itemTotalBrutto,
-                    'PPN 11% (Row)': itemTax,
-                    'Grand Total Netto (Row)': itemNetto,
+                    'Tgl SJ': format(new Date(d.createdAt), "dd/MM/yyyy"),
                     'Gudang': d.warehouse?.name || "-",
                     'Sales Person': d.salesPerson || "-",
-                    'Total Dokumen (Brutto)': Number(d.subtotal || 0),
-                    'Total Dokumen (PPN)': Number(d.taxAmount || 0),
-                    'Total Dokumen (Netto)': Number(d.grandTotal || 0)
+                    'Hasil Jumlah Qty': Number(d.items?.reduce((acc: number, i: any) => acc + (Number(i.quantity) || 0), 0) || 0),
+                    'Hasil Total Brutto': Number(d.subtotal || 0),
+                    'Hasil PPN 11%': Number(d.taxAmount || 0),
+                    'Hasil Grand Total Netto': Number(d.grandTotal || 0)
                 });
             });
         });
