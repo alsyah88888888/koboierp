@@ -165,28 +165,36 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
             items.forEach((item: any) => {
                 const qty = Number(item.quantity) || 0;
                 const price = Number(item.salesPrice) || 0;
+                const purchasePrice = Number(item.product?.purchasePrice || 0);
                 const discLine = Number(item.discount || 0);
+                const taxRate = Number(d.taxRate || 0);
+                
                 const itemTotalBrutto = qty * price;
+                const itemAfterDisc = itemTotalBrutto - discLine;
+                const itemTax = itemAfterDisc * taxRate;
+                const itemNetto = itemAfterDisc + itemTax;
 
                 exportData.push({
                     'No. Surat Jalan': d.deliveryNumber,
                     'No. PO Buyer': d.poNumber || "-",
                     'Tanggal': format(new Date(d.createdAt), "dd/MM/yyyy HH:mm"),
                     'Buyer / Customer': d.buyerName,
-                    'Barcode / SKU': item.product?.sku || "-",
+                    'Barcode': item.product?.barcode || item.product?.sku || "-",
+                    'SKU': item.product?.sku || "-",
                     'Nama Barang': item.product?.name || "-",
                     'Qty': qty,
                     'Satuan': item.uom || item.product?.uom || "-",
-                    'Harga Satuan': price,
-                    'Total Harga Item': itemTotalBrutto,
+                    'Harga Beli': purchasePrice,
+                    'Harga Jual': price,
                     'Potongan Item': discLine,
-                    'Tgl SJ': format(new Date(d.createdAt), "dd/MM/yyyy"),
+                    'Total Brutto (Row)': itemTotalBrutto,
+                    'PPN 11% (Row)': itemTax,
+                    'Grand Total Netto (Row)': itemNetto,
                     'Gudang': d.warehouse?.name || "-",
                     'Sales Person': d.salesPerson || "-",
-                    'Hasil Jumlah Qty': Number(d.items?.reduce((acc: number, i: any) => acc + (Number(i.quantity) || 0), 0) || 0),
-                    'Hasil Total Brutto': Number(d.subtotal || 0),
-                    'Hasil PPN 11%': Number(d.taxAmount || 0),
-                    'Hasil Grand Total Netto': Number(d.grandTotal || 0)
+                    'Total Dokumen (Brutto)': Number(d.subtotal || 0),
+                    'Total Dokumen (PPN)': Number(d.taxAmount || 0),
+                    'Total Dokumen (Netto)': Number(d.grandTotal || 0)
                 });
             });
         });
