@@ -34,12 +34,14 @@ export async function getProductTraceabilityService() {
                 'Nama Barang': product.name,
                 'Tanggal': ri.receipt.date || ri.receipt.createdAt,
                 'Tipe': 'MASUK (BELI)',
-                'No. Dokumen': ri.receipt.receiptNumber,
-                'Pihak Terkait': ri.receipt.receivedFrom,
+                'No. Dokumen Internal': ri.receipt.receiptNumber,
+                'No. Surat Jalan (Supplier)': ri.receipt.formNumber || "-",
+                'Pihak Terkait (Supplier/Customer)': ri.receipt.receivedFrom,
                 'Quantity': ri.quantity,
-                'Harga Satuan': Number(ri.purchasePrice),
-                'Total': Number(ri.quantity) * Number(ri.purchasePrice),
-                'Warehouse': 'Pusat' // Can be refined if needed
+                'Harga Beli Satuan': Number(ri.purchasePrice),
+                'Harga Jual Satuan': 0,
+                'Total Nilai': Number(ri.quantity) * Number(ri.purchasePrice),
+                'Warehouse': 'Pusat'
             });
         });
 
@@ -50,11 +52,13 @@ export async function getProductTraceabilityService() {
                 'Nama Barang': product.name,
                 'Tanggal': si.delivery.date || si.delivery.createdAt,
                 'Tipe': 'KELUAR (JUAL)',
-                'No. Dokumen': si.delivery.deliveryNumber,
-                'Pihak Terkait': si.delivery.buyerName || si.delivery.recipient || 'UMUM',
+                'No. Dokumen Internal': si.delivery.deliveryNumber,
+                'No. Surat Jalan (Supplier)': si.delivery.poNumber || "-", // PO Number from Customer
+                'Pihak Terkait (Supplier/Customer)': si.delivery.buyerName || si.delivery.recipient || 'UMUM',
                 'Quantity': si.quantity,
-                'Harga Satuan': Number(si.salesPrice || 0),
-                'Total': Number(si.quantity) * Number(si.salesPrice || 0),
+                'Harga Beli Satuan': 0,
+                'Harga Jual Satuan': Number(si.salesPrice || 0),
+                'Total Nilai': Number(si.quantity) * Number(si.salesPrice || 0),
                 'Warehouse': 'Pusat'
             });
         });
