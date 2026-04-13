@@ -42,25 +42,40 @@ export function PurchaseRequestDashboard({ purchaseRequests, coa = [] }: {
         setEditingPr(null);
     };
 
+    const getStatusLabel = (status: string) => {
+        switch (status) {
+            case "PENDING": return "MENUNGGU ADMIN";
+            case "APPROVED_BY_ADMIN": return "MENUNGGU FINANCE";
+            case "VERIFIED_BY_FINANCE": return "TERVERIFIKASI";
+            case "EXECUTED": return "TERBAYAR";
+            case "REJECTED": return "DITOLAK";
+            default: return status;
+        }
+    };
+
     const handleExport = () => {
         const data = filteredRequests.map(r => ({
-            'No. PR': r.number,
-            'Tanggal': format(new Date(r.createdAt), "dd/MM/yyyy HH:mm"),
+            'No. Pengajuan': r.number,
+            'Tanggal': format(new Date(r.date || r.createdAt), "dd/MM/yyyy HH:mm"),
             'Pemohon': r.requestedBy?.name,
-            'Status': r.status,
-            'Catatan': r.notes,
-            'Total Qty': r.items.reduce((acc: number, i: any) => acc + i.quantity, 0)
+            'Ringkasan Barang': r.items.map((i: any) => `${i.itemName} (${i.quantity})`).join(", "),
+            'Tipe': r.category || "PEMBELIAN",
+            'Status': getStatusLabel(r.status),
+            'Catatan': r.notes || "-",
+            'Total Estimasi': r.items.reduce((acc: number, i: any) => acc + (i.quantity * Number(i.estimatedPrice)), 0)
         }));
         exportToExcel(data, 'Laporan_Pengajuan_Pembelian', 'Pengajuan');
     };
 
     const handlePreview = () => {
         const data = filteredRequests.map(r => ({
-            'No. PR': r.number,
-            'Tanggal': format(new Date(r.createdAt), "dd/MM/yyyy HH:mm"),
+            'No. Pengajuan': r.number,
+            'Tanggal': format(new Date(r.date || r.createdAt), "dd/MM/yyyy HH:mm"),
             'Pemohon': r.requestedBy?.name,
-            'Status': r.status,
-            'Total Qty': r.items.reduce((acc: number, i: any) => acc + i.quantity, 0)
+            'Ringkasan Barang': r.items.map((i: any) => `${i.itemName} (${i.quantity})`).join(", "),
+            'Tipe': r.category || "PEMBELIAN",
+            'Status': getStatusLabel(r.status),
+            'Total Estimasi': r.items.reduce((acc: number, i: any) => acc + (i.quantity * Number(i.estimatedPrice)), 0)
         }));
         setPreviewData(data);
         setPreviewTitle("Riwayat Pengajuan Pembelian (PR)");
