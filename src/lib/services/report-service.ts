@@ -12,7 +12,6 @@ export async function getProductTraceabilityService() {
     try {
         // 1. Fetch Sales Items - LIMITED TO 100 ROWS FOR DIAGNOSIS
         const salesItems = await prisma.salesDeliveryItem.findMany({
-            take: 100, // <--- TEST LIMIT
             select: {
                 productId: true,
                 vendorName: true,
