@@ -10,6 +10,11 @@ export async function getProductTraceabilityService() {
     try {
         // 1. Fetch Sales Items with specific field selection to save memory
         const salesItems = await prisma.salesDeliveryItem.findMany({
+            where: {
+                delivery: {
+                    date: { gte: new Date('2026-01-01') }
+                }
+            },
             select: {
                 productId: true,
                 vendorName: true,
