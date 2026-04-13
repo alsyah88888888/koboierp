@@ -145,25 +145,46 @@ export async function deletePurchaseRequestAction(id: string) {
         const { getPrisma } = require("@/lib/prisma");
         const prisma = getPrisma();
 
-        const pr = await prisma.purchaseRequest.findUnique({
-            where: { id }
-        });
+        return await prisma.$transaction(async (tx: any) => {
+            const pr = await tx.purchaseRequest.findUnique({
+                where: { id }
+            });
 
-        if (!pr) throw new Error("Pengajuan tidak ditemukan");
-        if (pr.status === "EXECUTED") {
-            throw new Error("Pengajuan yang sudah dieksekusi/terbayar tidak dapat dihapus.");
-        }
+            if (!pr) throw new Error("Pengajuan tidak ditemukan");
 
-        await prisma.purchaseRequestItem.deleteMany({ where: { purchaseRequestId: id } });
-        await prisma.purchaseRequest.delete({ where: { id } });
+            // If EXECUTED, cleanup financial records
+            if (pr.status === "EXECUTED") {
+                // Find associated transactions by searching for the PR number in description
+                const transactions = await tx.financeTransaction.findMany({
+                    where: {
+                        description: { contains: pr.number }
+                    }
+                });
 
-        revalidatePath("/purchase");
-        revalidatePath("/purchase/request");
-        revalidatePath("/operational");
-        revalidatePath("/finance");
-        revalidatePath("/");
+                for (const ftx of transactions) {
+                    // Delete journal entries first
+                    await tx.journalEntry.deleteMany({
+                        where: { transactionId: ftx.id }
+                    });
+                    // Delete the transaction itself
+                    await tx.financeTransaction.delete({
+                        where: { id: ftx.id }
+                    });
+                }
+            }
 
-        return { success: true };
+            // Standard cleanup
+            await tx.purchaseRequestItem.deleteMany({ where: { purchaseRequestId: id } });
+            await tx.purchaseRequest.delete({ where: { id } });
+
+            revalidatePath("/purchase");
+            revalidatePath("/purchase/request");
+            revalidatePath("/operational");
+            revalidatePath("/finance");
+            revalidatePath("/");
+
+            return { success: true };
+        }, { timeout: 30000 });
     } catch (err: any) {
         console.error("[deletePurchaseRequestAction] ERROR:", err);
         return { error: err.message || "Gagal menghapus pengajuan" };

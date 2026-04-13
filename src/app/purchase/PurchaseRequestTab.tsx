@@ -60,10 +60,16 @@ export function PurchaseRequestTab({ requests, userRole, userId, coa = [] }: { r
         }
     };
 
-    const handleDelete = async (id: string) => {
-        if (!confirm("Hapus pengajuan ini secara permanen?")) return;
+    const handleDelete = async (pr: any) => {
+        const isExecuted = pr.status === "EXECUTED";
+        const message = isExecuted 
+            ? `Peringatan: Pengajuan ${pr.number} ini sudah TERBAYAR.\nMenghapusnya akan ikut menghapus catatan bukti kas/bank terkait.\n\nLanjutkan penghapusan permanen?`
+            : `Hapus pengajuan ${pr.number} secara permanen?`;
+
+        if (!confirm(message)) return;
+        
         try {
-            const res = await callAction("deletePurchaseRequest", id);
+            const res = await callAction("deletePurchaseRequest", pr.id);
 
             if (res.success) {
                 alert("Pengajuan dihapus.");
@@ -208,7 +214,7 @@ export function PurchaseRequestTab({ requests, userRole, userId, coa = [] }: { r
                                             {/* Delete Button */}
                                             {(userRole === "ADMIN" || pr.requestedById === userId) && (
                                                 <button
-                                                    onClick={() => handleDelete(pr.id)}
+                                                    onClick={() => handleDelete(pr)}
                                                     className="p-1.5 text-slate-400 hover:text-red-500 rounded transition-colors"
                                                     title="Hapus"
                                                 >
