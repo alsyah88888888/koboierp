@@ -1,16 +1,18 @@
 
-/**
- * REPORT SERVICES - HIGH PERFORMANCE MATCHED TRACEABILITY
- */
+import { getPrisma } from "@/lib/prisma";
 
+/**
+ * DIAGNOSTIC REPORT SERVICE (TESTING VOLUME & SERIALIZATION)
+ */
 export async function getProductTraceabilityService() {
-    const { getPrisma } = require("@/lib/prisma");
     const prisma = getPrisma();
 
+    console.log("[DIAGNOSTIC] Starting Traceability Report...");
+
     try {
-        // 1. Fetch Sales Items first (The anchor of the report)
-        // We select only minimal fields to keep memory footprint low
+        // 1. Fetch Sales Items - LIMITED TO 100 ROWS FOR DIAGNOSIS
         const salesItems = await prisma.salesDeliveryItem.findMany({
+            take: 100, // <--- TEST LIMIT
             select: {
                 productId: true,
                 vendorName: true,
@@ -37,16 +39,15 @@ export async function getProductTraceabilityService() {
             orderBy: { delivery: { date: 'desc' } }
         });
 
+        console.log(`[DIAGNOSTIC] Fetched ${salesItems.length} sales items.`);
+
         if (salesItems.length === 0) return [];
 
-        // 2. Optimization: Get unique product IDs from sales to filter purchase query
         const productIds = [...new Set(salesItems.map((si: any) => si.productId))];
 
-        // 3. Fetch Purchase Items ONLY for products that have been sold
+        // 2. Fetch related Purchase Items
         const purchaseItems = await prisma.goodsReceiptItem.findMany({
-            where: {
-                productId: { in: productIds }
-            },
+            where: { productId: { in: productIds } },
             select: {
                 id: true,
                 productId: true,
@@ -67,84 +68,84 @@ export async function getProductTraceabilityService() {
             orderBy: { receipt: { date: 'desc' } }
         });
 
-        // 4. Build a Map for fast O(1) matching
         const purchaseMap = new Map();
         purchaseItems.forEach((pi: any) => {
             if (!pi.receipt) return;
             const key = `${pi.productId}_${pi.receipt.receivedFrom}`;
-            // Keep the latest one per product+vendor key
-            if (!purchaseMap.has(key)) {
-                purchaseMap.set(key, pi);
-            }
+            if (!purchaseMap.has(key)) purchaseMap.set(key, pi);
         });
 
         const reportData: any[] = [];
 
-        // 5. Build the paired report rows
+        // 3. Pair them carefully, ensuring NO Prisma Decimal objects survive
         salesItems.forEach((si: any) => {
             if (!si.delivery || !si.product) return;
 
             const key = `${si.productId}_${si.vendorName}`;
             const match = purchaseMap.get(key);
 
+            // FORCE EVERYTHING TO PLAIN NUMBERS
             const buyPrice = match ? Number(match.purchasePrice || 0) : 0;
             const sellPrice = Number(si.salesPrice || 0);
             const buyDisc = match ? Number(match.discount || 0) : 0;
             const sellDisc = Number(si.discount || 0);
+            const buyTax = match?.receipt?.taxRate ? Number(match.receipt.taxRate) : 0;
+            const sellTax = Number(si.delivery.taxRate || 0);
             const qty = Number(si.quantity || 0);
-            
+
             const buyTotal = qty * (buyPrice - buyDisc);
             const sellTotal = qty * (sellPrice - sellDisc);
 
             const saleDate = si.delivery.date || si.delivery.createdAt;
             const buyDate = match?.receipt?.date || match?.receipt?.createdAt;
 
-            // Ensure all calculated fields are plain numbers for JSON serialization
             reportData.push({
-                'SKU': si.product.sku,
-                'Nama Barang': si.product.name,
-                'Satuan': si.product.uom || "PCS",
+                'SKU': String(si.product.sku),
+                'Nama Barang': String(si.product.name),
+                'Satuan': String(si.product.uom || "PCS"),
                 
-                // --- INFO PEMBELIAN (KIRI) ---
+                // --- INFO PEMBELIAN ---
                 '[BELI] Tgl': buyDate ? new Date(buyDate).toLocaleDateString('id-ID') : "-",
-                '[BELI] No. LPB': match?.receipt?.receiptNumber || "-",
-                '[BELI] No. SJ Supplier': match?.receipt?.formNumber || "-",
-                '[BELI] Supplier': si.vendorName || match?.receipt?.receivedFrom || "UMUM",
+                '[BELI] No. LPB': String(match?.receipt?.receiptNumber || "-"),
+                '[BELI] No. SJ Supplier': String(match?.receipt?.formNumber || "-"),
+                '[BELI] Supplier': String(si.vendorName || match?.receipt?.receivedFrom || "UMUM"),
                 '[BELI] Harga Satuan': buyPrice,
-                '[BELI] PPN (%)': match?.receipt?.taxRate ? `${match.receipt.taxRate}%` : "0%",
+                '[BELI] PPN (%)': buyTax > 0 ? `${buyTax}%` : "0%",
                 
-                // --- INFO PENJUALAN (KANAN) ---
+                // --- INFO PENJUALAN ---
                 '_rawSortDate': saleDate, 
-                '[JUAL] No. TRN': si.delivery.deliveryNumber || "-",
-                '[JUAL] No. PO Buyer': si.delivery.poNumber || "-",
-                '[JUAL] Buyer / Customer': si.delivery.buyerName || si.delivery.recipient || "UMUM",
+                '[JUAL] No. TRN': String(si.delivery.deliveryNumber || "-"),
+                '[JUAL] No. PO Buyer': String(si.delivery.poNumber || "-"),
+                '[JUAL] Buyer / Customer': String(si.delivery.buyerName || si.delivery.recipient || "UMUM"),
                 'Qty Jual': qty,
                 '[JUAL] Harga Jual Satuan': sellPrice,
-                '[JUAL] PPN (%)': si.delivery.taxRate ? `${si.delivery.taxRate}%` : "0%",
+                '[JUAL] PPN (%)': sellTax > 0 ? `${sellTax}%` : "0%",
                 '[JUAL] Total Nilai Jual': sellTotal,
                 
                 // --- ANALYSIS ---
                 'Margin Estimasi (Rp)': sellTotal - buyTotal,
-                'Gudang': si.delivery.warehouse?.name || match?.receipt?.warehouse?.name || "Pusat",
-                'Catatan': si.delivery.notes || "-"
+                'Gudang': String(si.delivery.warehouse?.name || match?.receipt?.warehouse?.name || "Pusat"),
+                'Catatan': String(si.delivery.notes || "-")
             });
         });
 
-        // 6. Final sort
+        // 4. Sort and Cleanup
         reportData.sort((a, b) => {
             const dateA = a._rawSortDate ? new Date(a._rawSortDate).getTime() : 0;
             const dateB = b._rawSortDate ? new Date(b._rawSortDate).getTime() : 0;
             return dateA - dateB;
         });
 
-        // 7. Cleanup and format
-        return reportData.map(({ _rawSortDate, ...rest }) => ({
+        const finalResult = reportData.map(({ _rawSortDate, ...rest }) => ({
             ...rest,
             'Tanggal': _rawSortDate ? new Date(_rawSortDate).toLocaleDateString('id-ID') : "-"
         }));
 
+        console.log("[DIAGNOSTIC] Report generation successful.");
+        return finalResult;
+
     } catch (error: any) {
-        console.error("[getProductTraceabilityService] FATAL:", error);
+        console.error("[DIAGNOSTIC] FATAL ERROR:", error.message, error.stack);
         throw error;
     }
 }
