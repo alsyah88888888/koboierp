@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { callAction } from "@/proxy";
 
 import { Plus, Trash2, X, ClipboardList, Calculator } from "lucide-react";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, cn } from "@/lib/utils";
 
 interface RequestItem {
     itemName: string;

@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { getPurchaseRequestsAction } from "@/actions/purchase";
 import { PurchaseRequestDashboard } from "@/app/purchase/request/PurchaseRequestDashboard";
 import { serializeDecimal } from "@/lib/utils";
+import { getPrisma } from "@/lib/prisma";
 
 import { headers } from "next/headers";
 
