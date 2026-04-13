@@ -12,10 +12,25 @@ interface RequestItem {
     estimatedPrice: number | "";
 }
 
-export function PurchaseRequestModal({ onClose }: { onClose: () => void }) {
-    const [category, setCategory] = useState("PEMBELIAN");
-    const [notes, setNotes] = useState("");
-    const [items, setItems] = useState<RequestItem[]>([{ itemName: "", quantity: 1, estimatedPrice: 0 }]);
+export function PurchaseRequestModal({ 
+    onClose, 
+    initialPr 
+}: { 
+    onClose: () => void,
+    initialPr?: any 
+}) {
+    const isEditing = !!initialPr;
+    const [category, setCategory] = useState(initialPr?.category || "PEMBELIAN");
+    const [notes, setNotes] = useState(initialPr?.notes || "");
+    const [items, setItems] = useState<RequestItem[]>(
+        initialPr?.items?.length > 0 
+            ? initialPr.items.map((i: any) => ({
+                itemName: i.itemName,
+                quantity: i.quantity,
+                estimatedPrice: Number(i.estimatedPrice)
+            }))
+            : [{ itemName: "", quantity: 1, estimatedPrice: 0 }]
+    );
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const addItem = () => setItems([...items, { itemName: "", quantity: 1, estimatedPrice: 0 }]);
@@ -54,7 +69,7 @@ export function PurchaseRequestModal({ onClose }: { onClose: () => void }) {
 
         setIsSubmitting(true);
         try {
-            const res = await callAction("createPurchaseRequest", {
+            const payload = {
                 notes,
                 category,
                 items: items.map(i => ({
@@ -62,16 +77,20 @@ export function PurchaseRequestModal({ onClose }: { onClose: () => void }) {
                     quantity: Number(i.quantity),
                     estimatedPrice: Number(i.estimatedPrice)
                 }))
-            });
+            };
+
+            const res = isEditing 
+                ? await callAction("updatePurchaseRequest", initialPr.id, payload)
+                : await callAction("createPurchaseRequest", payload);
 
             if (res.success) {
-                alert(`Pengajuan berhasil dibuat: ${res.prNumber}`);
+                alert(isEditing ? "Pengajuan diperbarui." : `Pengajuan berhasil dibuat: ${res.prNumber}`);
                 onClose();
             } else {
-                alert(res.error || "Gagal membuat pengajuan");
+                alert(res.error || "Gagal memproses pengajuan");
             }
         } catch (error: any) {
-            alert(error.message || "Gagal membuat pengajuan");
+            alert(error.message || "Gagal memproses pengajuan");
         } finally {
             setIsSubmitting(false);
         }

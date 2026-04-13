@@ -89,6 +89,9 @@ export async function callAction(actionName: string, ...args: any[]) {
         case "createPurchaseRequest":
             const { createPurchaseRequestAction } = await import("@/actions/purchase");
             return await createPurchaseRequestAction(...args as [any]);
+        case "updatePurchaseRequest":
+            const { updatePurchaseRequestAction } = await import("@/actions/purchase");
+            return await updatePurchaseRequestAction(...args as [string, any]);
         case "createPurchaseOrder":
             const { createPurchaseOrderAction } = await import("@/actions/purchase");
             return await createPurchaseOrderAction(...args as [any]);

@@ -2,12 +2,12 @@
 
 import React, { useState } from "react";
 import { format } from "date-fns";
-import { Clock, CheckCircle2, XCircle, ShieldCheck, Trash2, Eye, ChevronDown, ChevronUp, Printer } from "lucide-react";
+import { Clock, CheckCircle2, XCircle, ShieldCheck, Trash2, Eye, ChevronDown, ChevronUp, Printer, Pencil } from "lucide-react";
 import { formatCurrency, cn } from "@/lib/utils";
 import { callAction } from "@/proxy";
 
 
-export function PurchaseRequestTab({ requests, userRole, userId, coa = [] }: { requests: any[], userRole: string, userId: string, coa?: any[] }) {
+export function PurchaseRequestTab({ requests, userRole, userId, coa = [], onEdit }: { requests: any[], userRole: string, userId: string, coa?: any[], onEdit?: (pr: any) => void }) {
     const [loading, setLoading] = useState<string | null>(null);
     const [executingPr, setExecutingPr] = useState<string | null>(null);
     const [expandedPr, setExpandedPr] = useState<string | null>(null);
@@ -210,6 +210,17 @@ export function PurchaseRequestTab({ requests, userRole, userId, coa = [] }: { r
                                             >
                                                 <Printer className="h-4 w-4" />
                                             </a>
+
+                                            {/* Edit Button */}
+                                            {(userRole === "ADMIN" || pr.requestedById === userId) && pr.status !== "EXECUTED" && (
+                                                <button
+                                                    onClick={() => onEdit?.(pr)}
+                                                    className="p-1.5 text-slate-400 hover:text-indigo-600 rounded transition-colors"
+                                                    title="Edit"
+                                                >
+                                                    <Pencil className="h-4 w-4" />
+                                                </button>
+                                            )}
 
                                             {/* Delete Button */}
                                             {(userRole === "ADMIN" || pr.requestedById === userId) && (

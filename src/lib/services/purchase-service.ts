@@ -49,6 +49,52 @@ export async function createPurchaseRequestService(data: any, userId: string) {
     }, { timeout: 30000 });
 }
 
+export async function updatePurchaseRequestService(id: string, data: any, userId: string) {
+    const { getPrisma } = require("@/lib/prisma");
+    const prisma = getPrisma();
+
+    return await prisma.$transaction(async (tx: any) => {
+        const pr = await tx.purchaseRequest.findUnique({
+            where: { id }
+        });
+
+        if (!pr) throw new Error("Pengajuan tidak ditemukan");
+        if (pr.status === "EXECUTED") {
+            throw new Error("Pengajuan yang sudah terbayar tidak dapat diubah.");
+        }
+
+        // Update main request
+        await tx.purchaseRequest.update({
+            where: { id },
+            data: {
+                notes: data.notes,
+                category: data.category,
+                updatedAt: new Date()
+            }
+        });
+
+        // Sync items: delete old ones and create new ones
+        await tx.purchaseRequestItem.deleteMany({
+            where: { purchaseRequestId: id }
+        });
+
+        await tx.purchaseRequestItem.createMany({
+            data: data.items.map((i: any) => ({
+                purchaseRequestId: id,
+                itemName: i.itemName,
+                quantity: i.quantity,
+                estimatedPrice: i.estimatedPrice
+            }))
+        });
+
+        revalidatePath("/purchase");
+        revalidatePath("/purchase/request");
+        revalidatePath("/");
+
+        return { success: true };
+    }, { timeout: 30000 });
+}
+
 export async function createGoodsReceiptService(data: any, userId: string) {
     const { getPrisma } = require("@/lib/prisma");
     const prisma = getPrisma();

@@ -19,6 +19,7 @@ export function PurchaseRequestDashboard({ purchaseRequests, coa = [] }: {
     const userId = session?.user?.id || "";
 
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingPr, setEditingPr] = useState<any>(null);
     const [searchTerm, setSearchTerm] = useState("");
 
     const [showPreview, setShowPreview] = useState(false);
@@ -30,6 +31,16 @@ export function PurchaseRequestDashboard({ purchaseRequests, coa = [] }: {
         r.requestedBy?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         r.notes?.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    const handleEdit = (pr: any) => {
+        setEditingPr(pr);
+        setIsModalOpen(true);
+    };
+
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
+        setEditingPr(null);
+    };
 
     const handleExport = () => {
         const data = filteredRequests.map(r => ({
@@ -111,12 +122,14 @@ export function PurchaseRequestDashboard({ purchaseRequests, coa = [] }: {
                     userRole={userRole}
                     userId={userId}
                     coa={coa}
+                    onEdit={handleEdit}
                 />
             </div>
 
             {isModalOpen && (
                 <PurchaseRequestModal
-                    onClose={() => setIsModalOpen(false)}
+                    onClose={handleCloseModal}
+                    initialPr={editingPr}
                 />
             )}
 

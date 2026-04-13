@@ -24,6 +24,22 @@ export async function createPurchaseRequestAction(data: any) {
     }
 }
 
+export async function updatePurchaseRequestAction(id: string, data: any) {
+    try {
+        const { getAuthOptions } = require("@/lib/auth");
+        const { getServerSession } = require("next-auth");
+        const { updatePurchaseRequestService } = require("@/lib/services/purchase-service");
+
+        const session = (await getServerSession(getAuthOptions())) as any;
+        if (!session?.user?.id) throw new Error("Unauthorized");
+
+        return await updatePurchaseRequestService(id, data, session.user.id);
+    } catch (err: any) {
+        console.error("[updatePurchaseRequestAction] ERROR:", err);
+        return { error: err.message || "An unexpected error occurred while updating the purchase request." };
+    }
+}
+
 export async function createGoodsReceiptAction(data: any) {
     try {
         const { getAuthOptions } = require("@/lib/auth");
