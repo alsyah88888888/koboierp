@@ -84,6 +84,8 @@ export function OperationalDashboard({
         } catch (error: any) {
             toast.error(error.message);
         }
+    };
+
     const handleExport = () => {
         const data = filteredTransactions.map(t => ({
             'Tanggal': format(new Date(t.date), "dd/MM/yyyy"),
