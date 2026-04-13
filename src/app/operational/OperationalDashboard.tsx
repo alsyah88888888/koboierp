@@ -324,10 +324,13 @@ export function OperationalDashboard({
                                             {!t.description.includes("KB-PR-") && (
                                                 <button
                                                     onClick={() => handleSync(t.id)}
-                                                    className="p-2 text-indigo-500 hover:bg-indigo-50 rounded-xl transition-all opacity-0 group-hover:opacity-100"
+                                                    className="p-2 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-all shadow-sm border border-indigo-200"
                                                     title="Sinkronkan ke Pengajuan"
                                                 >
-                                                    <Link className="w-4 h-4" />
+                                                    <div className="flex items-center gap-1 px-1">
+                                                        <Link className="w-4 h-4" />
+                                                        <span className="text-[10px] font-bold uppercase tracking-tight">Sinkronkan</span>
+                                                    </div>
                                                 </button>
                                             )}
                                             <button
