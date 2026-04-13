@@ -25,16 +25,7 @@ export default async function WarehousePage() {
 
     const warehouses = await prisma.warehouse.findMany().catch(() => []);
 
-    const unverifiedReceiptsRaw = await prisma.goodsReceipt.findMany({
-        where: { isVerified: false },
-        include: {
-            items: { include: { product: true } },
-            warehouse: true
-        },
-        orderBy: { createdAt: 'desc' }
-    }).catch(() => []);
-
-    const unverifiedReceipts = unverifiedReceiptsRaw;
+    const unverifiedReceipts: any[] = [];
 
     // Manual relation fetch for StockMovement to avoid TS errors and schema migration issues
     const rawMovements = await prisma.stockMovement.findMany({

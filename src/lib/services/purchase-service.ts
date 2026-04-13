@@ -136,6 +136,9 @@ export async function createGoodsReceiptService(data: any, userId: string) {
                 notes: data.notes,
                 date: txDate,
                 createdById: userId,
+                isVerified: true,
+                verifiedAt: new Date(),
+                verifiedBy: "SYSTEM",
                 items: {
                     create: data.items.map((item: any) => ({
                         productId: item.productId,

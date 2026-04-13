@@ -153,30 +153,7 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                     {activeTab === "inventory" && <div className="absolute -right-4 -bottom-4 w-16 h-16 bg-white/10 rounded-full" />}
                 </button>
 
-                <button
-                    onClick={() => setActiveTab("checker")}
-                    className={cn(
-                        "p-6 rounded-[2rem] border-2 transition-all group relative overflow-hidden flex flex-col items-center gap-3 text-center",
-                        activeTab === "checker"
-                            ? "bg-primary border-primary text-white shadow-2xl shadow-primary/30 -translate-y-1"
-                            : "bg-white border-slate-100 text-slate-400 hover:border-primary/20 hover:text-primary shadow-sm"
-                    )}
-                >
-                    <div className="relative">
-                        <Activity className={cn("h-7 w-7 transition-transform group-hover:scale-110", activeTab === "checker" ? "text-white" : "text-primary")} />
-                        {unverifiedReceipts.length > 0 && (
-                            <span className="absolute -top-1 -right-1 flex h-4 w-4">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500 text-[8px] items-center justify-center text-white font-black">{unverifiedReceipts.length}</span>
-                            </span>
-                        )}
-                    </div>
-                    <div className="relative z-10">
-                        <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60 mb-0.5">Section</p>
-                        <p className="text-lg font-black tracking-tight">Checker</p>
-                    </div>
-                    {activeTab === "checker" && <div className="absolute -right-4 -bottom-4 w-16 h-16 bg-white/10 rounded-full" />}
-                </button>
+{/* Checker Section Disabled */}
 
                 <button
                     onClick={handleExport}
@@ -204,9 +181,8 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
 
             <DashboardStats />
 
-            {activeTab === "checker" ? (
-                <CheckerBoard unverifiedReceipts={unverifiedReceipts} />
-            ) : (
+            {/* Checker Board Disabled */}
+            {(
                 <>
                     <div className="grid gap-6 md:grid-cols-4">
                         <div className="md:col-span-3 space-y-6">
