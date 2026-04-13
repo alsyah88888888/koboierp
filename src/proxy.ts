@@ -220,10 +220,12 @@ export async function callAction(actionName: string, ...args: any[]) {
             return await executePurchaseRequestAction(...args as [string, any]);
 
 
+        case "getProductTraceability":
+            const { getProductTraceabilityAction } = await import("@/actions/reports");
+            return await getProductTraceabilityAction();
         default:
             throw new Error(`Action ${actionName} not found in proxy.`);
     }
 }
 
 export default callAction;
-
