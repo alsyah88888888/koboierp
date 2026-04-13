@@ -45,7 +45,7 @@ export async function createPurchaseRequestService(data: any, userId: string) {
 
         revalidatePath("/purchase");
         revalidatePath("/");
-        return req;
+        return { success: true, prNumber: req.number, pr: req };
     }, { timeout: 30000 });
 }
 

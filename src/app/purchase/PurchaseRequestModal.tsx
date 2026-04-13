@@ -67,6 +67,8 @@ export function PurchaseRequestModal({ onClose }: { onClose: () => void }) {
             if (res.success) {
                 alert(`Pengajuan berhasil dibuat: ${res.prNumber}`);
                 onClose();
+            } else {
+                alert(res.error || "Gagal membuat pengajuan");
             }
         } catch (error: any) {
             alert(error.message || "Gagal membuat pengajuan");
