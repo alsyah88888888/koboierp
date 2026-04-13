@@ -154,7 +154,7 @@ export async function deletePurchaseRequestAction(id: string) {
             throw new Error("Pengajuan yang sudah dieksekusi/terbayar tidak dapat dihapus.");
         }
 
-        await prisma.purchaseRequestItem.deleteMany({ where: { requestId: id } });
+        await prisma.purchaseRequestItem.deleteMany({ where: { purchaseRequestId: id } });
         await prisma.purchaseRequest.delete({ where: { id } });
 
         revalidatePath("/purchase");
