@@ -70,7 +70,7 @@ export async function adjustStockService(data: any) {
         revalidatePath("/warehouse");
         revalidatePath("/");
         return { success: true };
-    });
+    }, { timeout: 30000 });
 }
 
 export async function getProductTrackingService(productId: string, userId: string, prefix: string, isAdmin: boolean) {
@@ -244,7 +244,7 @@ export async function verifyGoodsReceiptService(receiptId: string, verifiedBy: s
         revalidatePath("/purchase");
         revalidatePath("/");
         return { success: true };
-    });
+    }, { timeout: 30000 });
 }
 
 export async function voidGoodsReceiptService(id: string, reason: string) {
@@ -304,7 +304,7 @@ export async function voidGoodsReceiptService(id: string, reason: string) {
         revalidatePath("/tracking");
         revalidatePath("/");
         return { success: true };
-    });
+    }, { timeout: 30000 });
 }
 
 export async function runStockAuditService() {
@@ -452,5 +452,5 @@ export async function syncProductStockService(productId: string, syncBy: string)
         revalidatePath("/");
         
         return { success: true, discrepancy };
-    });
+    }, { timeout: 30000 });
 }

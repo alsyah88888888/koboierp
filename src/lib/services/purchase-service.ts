@@ -46,7 +46,7 @@ export async function createPurchaseRequestService(data: any, userId: string) {
         revalidatePath("/purchase");
         revalidatePath("/");
         return req;
-    });
+    }, { timeout: 30000 });
 }
 
 export async function createGoodsReceiptService(data: any, userId: string) {
@@ -166,7 +166,7 @@ export async function createGoodsReceiptService(data: any, userId: string) {
         revalidatePath("/");
 
         return { success: true, receiptNumber };
-    });
+    }, { timeout: 30000 });
 }
 
 export async function updateGoodsReceiptService(id: string, data: any, userId: string) {
@@ -311,7 +311,7 @@ export async function updateGoodsReceiptService(id: string, data: any, userId: s
         revalidatePath("/");
 
         return { success: true, receiptNumber: currentReceiptNumber };
-    });
+    }, { timeout: 30000 });
 }
 
 export async function createPurchaseReturnService(data: any, userId: string) {
@@ -390,7 +390,7 @@ export async function createPurchaseReturnService(data: any, userId: string) {
         revalidatePath("/");
         
         return ret;
-    });
+    }, { timeout: 30000 });
 }
 
 export async function updatePurchaseRequestStatusService(id: string, status: string, userId: string) {
@@ -465,7 +465,7 @@ export async function deletePurchaseReturnService(id: string) {
         revalidatePath("/");
 
         return { success: true };
-    });
+    }, { timeout: 30000 });
 }
 
 export async function getPurchaseRequestSummaryService() {

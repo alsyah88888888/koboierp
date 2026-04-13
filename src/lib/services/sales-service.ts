@@ -148,7 +148,7 @@ export async function createSalesDeliveryService(data: any, userId: string) {
         revalidatePath("/");
 
         return { success: true, deliveryNumber };
-    });
+    }, { timeout: 30000 });
 }
 
 export async function updateSalesDeliveryService(id: string, data: any) {
@@ -297,7 +297,7 @@ export async function updateSalesDeliveryService(id: string, data: any) {
         revalidatePath("/");
 
         return { success: true, deliveryNumber: currentDeliveryNumber };
-    });
+    }, { timeout: 30000 });
 }
 
 export async function deleteSalesDeliveryService(id: string) {
@@ -345,7 +345,7 @@ export async function deleteSalesDeliveryService(id: string) {
         revalidatePath("/");
 
         return { success: true };
-    });
+    }, { timeout: 30000 });
 }
 
 export async function voidSalesDeliveryService(id: string, reason: string) {
@@ -403,5 +403,5 @@ export async function voidSalesDeliveryService(id: string, reason: string) {
         revalidatePath("/");
 
         return { success: true };
-    });
+    }, { timeout: 30000 });
 }

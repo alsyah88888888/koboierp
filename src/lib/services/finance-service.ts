@@ -237,7 +237,7 @@ export async function updatePaymentStatusService(
         revalidatePath("/sales");
 
         return { success: true };
-    });
+    }, { timeout: 30000 });
 }
 
 export async function createFinanceTransactionService(data: any, userId: string) {
@@ -305,5 +305,5 @@ export async function createFinanceTransactionService(data: any, userId: string)
         revalidatePath("/");
 
         return { success: true, transactionId: transaction.id };
-    });
+    }, { timeout: 30000 });
 }
