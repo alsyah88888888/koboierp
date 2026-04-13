@@ -288,4 +288,79 @@ export async function executePurchaseRequestAction(id: string, paymentData: any)
     }
 }
 
+export async function syncTransactionToPRAction(transactionId: string) {
+    try {
+        const { getAuthOptions } = require("@/lib/auth");
+        const { getServerSession } = require("next-auth");
+        const { getPrisma } = require("@/lib/prisma");
+        const prisma = getPrisma();
 
+        const session = (await getServerSession(getAuthOptions())) as any;
+        if (!session?.user?.id) throw new Error("Unauthorized");
+
+        return await prisma.$transaction(async (tx: any) => {
+            // 1. Find transaction
+            const transaction = await tx.financeTransaction.findUnique({
+                where: { id: transactionId }
+            });
+
+            if (!transaction) throw new Error("Transaksi tidak ditemukan");
+            if (transaction.description.includes("KB-PR-")) {
+                throw new Error("Transaksi ini sudah disinkronkan dengan pengajuan.");
+            }
+
+            // 2. Generate PR Number
+            const today = new Date();
+            const dateStr = `${today.getFullYear()}${(today.getMonth() + 1).toString().padStart(2, '0')}${today.getDate().toString().padStart(2, '0')}`;
+            const prefix = `KB-PR-${dateStr}-`;
+            const latest = await tx.purchaseRequest.findFirst({
+                where: { number: { startsWith: prefix } },
+                orderBy: { number: 'desc' }
+            });
+
+            let nextNum = 1;
+            if (latest) {
+                const parts = latest.number.split('-');
+                const lastSeq = parseInt(parts[parts.length - 1]);
+                if (!isNaN(lastSeq)) nextNum = lastSeq + 1;
+            }
+            const prNumber = `${prefix}${String(nextNum).padStart(3, '0')}`;
+
+            // 3. Create PR (EXECUTED)
+            const pr = await tx.purchaseRequest.create({
+                data: {
+                    number: prNumber,
+                    requestedById: session.user.id,
+                    notes: `Sync from Ops: ${transaction.description}`,
+                    category: "OPERASIONAL",
+                    status: "EXECUTED",
+                    items: {
+                        create: [{
+                            itemName: transaction.description,
+                            quantity: 1,
+                            estimatedPrice: transaction.amount
+                        }]
+                    }
+                }
+            });
+
+            // 4. Update Transaction Description to link
+            await tx.financeTransaction.update({
+                where: { id: transactionId },
+                data: {
+                    description: `Payment for Request ${prNumber}: ${transaction.description}`
+                }
+            });
+
+            revalidatePath("/purchase");
+            revalidatePath("/operational");
+            revalidatePath("/finance");
+            revalidatePath("/");
+
+            return { success: true, prNumber };
+        }, { timeout: 30000 });
+    } catch (err: any) {
+        console.error("[syncTransactionToPRAction] ERROR:", err);
+        return { error: err.message || "Gagal sinkronisasi" };
+    }
+}

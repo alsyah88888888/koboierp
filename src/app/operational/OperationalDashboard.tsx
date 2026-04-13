@@ -11,7 +11,8 @@ import {
     Receipt,
     Wallet,
     TrendingUp,
-    Download
+    Download,
+    Link
 } from "lucide-react";
 import { formatCurrency, cn } from "@/lib/utils";
 import { exportToExcel } from "@/lib/excel";
@@ -80,6 +81,19 @@ export function OperationalDashboard({
 
             if (res.success) {
                 toast.success("Transaction deleted");
+            }
+        } catch (error: any) {
+            toast.error(error.message);
+        }
+    };
+
+    const handleSync = async (id: string) => {
+        try {
+            const res = await callAction("syncTransactionToPR", id);
+            if (res.success) {
+                toast.success(`Berhasil sinkron ke Pengajuan: ${res.prNumber}`);
+            } else {
+                toast.error(res.error || "Gagal sinkron");
             }
         } catch (error: any) {
             toast.error(error.message);
@@ -306,12 +320,24 @@ export function OperationalDashboard({
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 text-center">
-                                        <button
-                                            onClick={() => handleDelete(t.id)}
-                                            className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl transition-all opacity-0 group-hover:opacity-100"
-                                        >
-                                            <MoreVertical className="w-4 h-4" />
-                                        </button>
+                                        <div className="flex items-center justify-center gap-1">
+                                            {!t.description.includes("KB-PR-") && (
+                                                <button
+                                                    onClick={() => handleSync(t.id)}
+                                                    className="p-2 text-indigo-500 hover:bg-indigo-50 rounded-xl transition-all opacity-0 group-hover:opacity-100"
+                                                    title="Sinkronkan ke Pengajuan"
+                                                >
+                                                    <Link className="w-4 h-4" />
+                                                </button>
+                                            )}
+                                            <button
+                                                onClick={() => handleDelete(t.id)}
+                                                className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl transition-all opacity-0 group-hover:opacity-100"
+                                                title="Hapus"
+                                            >
+                                                <MoreVertical className="w-4 h-4" />
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
