@@ -91,6 +91,8 @@ export function PurchaseRequestTab({ requests, userRole, userId, coa = [], onEdi
                 return <span className="bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full text-[10px] font-black uppercase flex items-center gap-1 w-fit"><CheckCircle2 className="h-3 w-3" /> Terverifikasi</span>;
             case "REJECTED":
                 return <span className="bg-red-100 text-red-700 px-2 py-1 rounded-full text-[10px] font-black uppercase flex items-center gap-1 w-fit"><XCircle className="h-3 w-3" /> Ditolak</span>;
+            case "EXECUTED":
+                return <span className="bg-slate-100 text-slate-700 px-2 py-1 rounded-full text-[10px] font-black uppercase flex items-center gap-1 w-fit"><CheckCircle2 className="h-3 w-3" /> Terbayar</span>;
             default:
                 return status;
         }

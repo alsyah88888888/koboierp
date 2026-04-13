@@ -334,6 +334,7 @@ export async function syncTransactionToPRAction(transactionId: string) {
                     notes: `Sync from Ops: ${transaction.description}`,
                     category: "OPERASIONAL",
                     status: "EXECUTED",
+                    date: transaction.date, // Ggunakan tanggal dari transaksi operasional
                     items: {
                         create: [{
                             itemName: transaction.description,

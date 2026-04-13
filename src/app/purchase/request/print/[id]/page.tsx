@@ -41,7 +41,8 @@ export default async function PurchaseRequestPrintPage({ params }: { params: Pro
                             <span className="font-black text-slate-800 uppercase">
                                 {request.status === "PENDING" ? "Menunggu Admin" :
                                     request.status === "APPROVED_BY_ADMIN" ? "Menunggu Finance" :
-                                        request.status === "VERIFIED_BY_FINANCE" ? "Terverifikasi" : "Ditolak"}
+                                        request.status === "VERIFIED_BY_FINANCE" ? "Terverifikasi" : 
+                                            request.status === "EXECUTED" ? "Terbayar" : "Ditolak"}
                             </span>
                         </div>
                         <div className="flex gap-4">
