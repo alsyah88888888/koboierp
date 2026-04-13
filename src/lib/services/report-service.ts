@@ -29,7 +29,6 @@ export async function getProductTraceabilityService() {
                         recipient: true,
                         taxRate: true,
                         salesPerson: true,
-                        notes: true,
                         warehouse: { select: { name: true } }
                     }
                 }
