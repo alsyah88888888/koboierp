@@ -141,14 +141,33 @@ export async function createPurchaseOrderAction(data: any) {
 }
 
 export async function deletePurchaseRequestAction(id: string) {
-    const { getPrisma } = require("@/lib/prisma");
-    const prisma = getPrisma();
+    try {
+        const { getPrisma } = require("@/lib/prisma");
+        const prisma = getPrisma();
 
-    await prisma.purchaseRequestItem.deleteMany({ where: { requestId: id } });
-    await prisma.purchaseRequest.delete({ where: { id } });
+        const pr = await prisma.purchaseRequest.findUnique({
+            where: { id }
+        });
 
-    revalidatePath("/purchase");
-    return { success: true };
+        if (!pr) throw new Error("Pengajuan tidak ditemukan");
+        if (pr.status === "EXECUTED") {
+            throw new Error("Pengajuan yang sudah dieksekusi/terbayar tidak dapat dihapus.");
+        }
+
+        await prisma.purchaseRequestItem.deleteMany({ where: { requestId: id } });
+        await prisma.purchaseRequest.delete({ where: { id } });
+
+        revalidatePath("/purchase");
+        revalidatePath("/purchase/request");
+        revalidatePath("/operational");
+        revalidatePath("/finance");
+        revalidatePath("/");
+
+        return { success: true };
+    } catch (err: any) {
+        console.error("[deletePurchaseRequestAction] ERROR:", err);
+        return { error: err.message || "Gagal menghapus pengajuan" };
+    }
 }
 
 export async function updateGoodsReceiptAction(id: string, data: any) {

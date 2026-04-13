@@ -63,9 +63,13 @@ export function PurchaseRequestTab({ requests, userRole, userId, coa = [] }: { r
     const handleDelete = async (id: string) => {
         if (!confirm("Hapus pengajuan ini secara permanen?")) return;
         try {
-            await callAction("deletePurchaseRequest", id);
+            const res = await callAction("deletePurchaseRequest", id);
 
-            alert("Pengajuan dihapus.");
+            if (res.success) {
+                alert("Pengajuan dihapus.");
+            } else {
+                alert(res.error || "Gagal menghapus");
+            }
         } catch (error: any) {
             alert(error.message || "Gagal menghapus");
         }
