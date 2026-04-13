@@ -1,86 +1,87 @@
 
 /**
- * REPORT SERVICES - TRACEABILITY (CONNECTED PURCHASE & SALES)
+ * REPORT SERVICES - SUPER INTEGRATED (MATCHED BUY/SELL)
  */
 
 export async function getProductTraceabilityService() {
     const { getPrisma } = require("@/lib/prisma");
     const prisma = getPrisma();
 
-    // Fetch all products with their transactions, including warehouse details
-    const products = await prisma.product.findMany({
+    // 1. Fetch all Sales Items with full context
+    const salesItems = await prisma.salesDeliveryItem.findMany({
         include: {
-            receiptItems: {
+            product: true,
+            delivery: {
                 include: {
-                    receipt: {
-                        include: {
-                            warehouse: true
-                        }
-                    }
-                }
-            },
-            salesItems: {
-                include: {
-                    delivery: {
-                        include: {
-                            warehouse: true
-                        }
-                    }
+                    warehouse: true
                 }
             }
         },
-        orderBy: { name: 'asc' }
+        orderBy: { delivery: { date: 'desc' } }
+    });
+
+    // 2. Fetch all Purchase Items with full context
+    const purchaseItems = await prisma.goodsReceiptItem.findMany({
+        include: {
+            product: true,
+            receipt: {
+                include: {
+                    warehouse: true
+                }
+            }
+        },
+        orderBy: { receipt: { date: 'desc' } }
     });
 
     const reportData: any[] = [];
 
-    products.forEach((product: any) => {
-        // Collect Purchases (Masuk - LPBD/LPB)
-        product.receiptItems.forEach((ri: any) => {
-            const taxRate = Number(ri.receipt.taxRate || 0) * 100;
-            reportData.push({
-                'SKU': product.sku,
-                'Nama Barang': product.name,
-                'Tanggal': ri.receipt.date || ri.receipt.createdAt,
-                'Jenis Transaksi': 'MASUK (BELI)',
-                'No. Dokumen Internal': ri.receipt.receiptNumber,
-                'No. Dokumen Eksternal (SJ Supplier)': ri.receipt.formNumber || "-",
-                'Pihak Terkait (Supplier/Customer)': ri.receipt.receivedFrom,
-                'Sales Person (BC/PF)': ri.receipt.salesPerson || "-",
-                'Quantity': ri.quantity,
-                'Satuan': product.uom || "PCS",
-                'Harga Beli Satuan': Number(ri.purchasePrice),
-                'Harga Jual Satuan': 0,
-                'Diskon': Number(ri.discount || 0),
-                'PPN (%)': taxRate > 0 ? `${taxRate}%` : "0%",
-                'Total Nilai (Net)': Number(ri.quantity) * (Number(ri.purchasePrice) - Number(ri.discount || 0)),
-                'Gudang': ri.receipt.warehouse?.name || "Pusat",
-                'Catatan': ri.receipt.notes || "-"
-            });
-        });
+    // 3. Process each Sale and Match it with its Purchase source
+    salesItems.forEach((si: any) => {
+        // Find the matching purchase based on Product + VendorName selected in SJ
+        // We look for the most relevant purchase from that supplier
+        const match = purchaseItems.find((pi: any) => 
+            pi.productId === si.productId && 
+            pi.receipt.receivedFrom === si.vendorName
+        );
 
-        // Collect Sales (Keluar - TRN/TRD)
-        product.salesItems.forEach((si: any) => {
-            const taxRate = Number(si.delivery.taxRate || 0) * 100;
-            reportData.push({
-                'SKU': product.sku,
-                'Nama Barang': product.name,
-                'Tanggal': si.delivery.date || si.delivery.createdAt,
-                'Jenis Transaksi': 'KELUAR (JUAL)',
-                'No. Dokumen Internal': si.delivery.deliveryNumber,
-                'No. Dokumen Eksternal (PO Customer)': si.delivery.poNumber || "-",
-                'Pihak Terkait (Supplier/Customer)': si.delivery.buyerName || si.delivery.recipient || 'UMUM',
-                'Sales Person (BC/PF)': si.delivery.salesPerson || "-",
-                'Quantity': si.quantity,
-                'Satuan': product.uom || "PCS",
-                'Harga Beli Satuan': 0,
-                'Harga Jual Satuan': Number(si.salesPrice || 0),
-                'Diskon': Number(si.discount || 0),
-                'PPN (%)': taxRate > 0 ? `${taxRate}%` : "0%",
-                'Total Nilai (Net)': Number(si.quantity) * (Number(si.salesPrice || 0) - Number(si.discount || 0)),
-                'Gudang': si.delivery.warehouse?.name || "Pusat",
-                'Catatan': si.delivery.notes || "-"
-            });
+        const buyTax = match ? Number(match.receipt.taxRate || 0) * 100 : 0;
+        const sellTax = Number(si.delivery.taxRate || 0) * 100;
+
+        const buyPrice = match ? Number(match.purchasePrice) : 0;
+        const sellPrice = Number(si.salesPrice || 0);
+        
+        const buyTotal = Number(si.quantity) * (buyPrice - Number(match?.discount || 0));
+        const sellTotal = Number(si.quantity) * (sellPrice - Number(si.discount || 0));
+
+        reportData.push({
+            'SKU': si.product.sku,
+            'Nama Barang': si.product.name,
+            'Satuan': si.product.uom || "PCS",
+            
+            // --- INFO PEMBELIAN (LPB/LPBD) ---
+            '[BELI] Tgl': match ? (match.receipt.date || match.receipt.createdAt).toLocaleDateString('id-ID') : "-",
+            '[BELI] No. LPB': match ? match.receipt.receiptNumber : "-",
+            '[BELI] No. SJ Supplier': match ? (match.receipt.formNumber || "-") : "-",
+            '[BELI] Supplier': si.vendorName || (match ? match.receipt.receivedFrom : "UMUM"),
+            '[BELI] Qty': match ? match.quantity : 0, // Total bought in that LPB
+            '[BELI] Harga Satuan': buyPrice,
+            '[BELI] PPN (%)': buyTax > 0 ? `${buyTax}%` : "0%",
+            
+            // --- INFO PENJUALAN (TRN/TRD) ---
+            '[JUAL] Tgl': (si.delivery.date || si.delivery.createdAt).toLocaleDateString('id-ID'),
+            '[JUAL] No. TRN': si.delivery.deliveryNumber,
+            '[JUAL] No. PO Buyer': si.delivery.poNumber || "-",
+            '[JUAL] Buyer / Customer': si.delivery.buyerName || si.delivery.recipient || "UMUM",
+            '[JUAL] Sales (BC/PF)': si.delivery.salesPerson || "-",
+            '[JUAL] Qty Jual': si.quantity,
+            '[JUAL] Harga Jual Satuan': sellPrice,
+            '[JUAL] PPN (%)': sellTax > 0 ? `${sellTax}%` : "0%",
+            '[JUAL] Total Nilai Jual': sellTotal,
+            
+            // --- ANALYSIS ---
+            'Margin Estimasi (Rp)': sellTotal - buyTotal,
+            'Gudang': si.delivery.warehouse?.name || "Pusat",
+            'Catatan': si.delivery.notes || "-"
         });
     });
 
@@ -88,7 +89,7 @@ export async function getProductTraceabilityService() {
     reportData.sort((a, b) => new Date(a.Tanggal).getTime() - new Date(b.Tanggal).getTime());
 
     // Format final object for Excel
-    return reportData.map(r => ({
+    return reportData.map((r: any) => ({
         ...r,
         'Tanggal': new Date(r.Tanggal).toLocaleDateString('id-ID')
     }));
