@@ -87,7 +87,7 @@ export function OperationalDashboard({
     };
 
     const handleExport = () => {
-        const data = filteredTransactions.map(t => ({
+        const data: any[] = filteredTransactions.map(t => ({
             'Tanggal': format(new Date(t.date), "dd/MM/yyyy"),
             'Kategori': t.category || 'N/A',
             'Keterangan': t.description,
