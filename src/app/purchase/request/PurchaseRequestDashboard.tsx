@@ -10,8 +10,9 @@ import { PurchaseRequestTab } from "../PurchaseRequestTab";
 import { PurchaseRequestModal } from "../PurchaseRequestModal";
 import { PurchaseRequestStats } from "./PurchaseRequestStats";
 
-export function PurchaseRequestDashboard({ purchaseRequests }: {
-    purchaseRequests: any[]
+export function PurchaseRequestDashboard({ purchaseRequests, coa = [] }: {
+    purchaseRequests: any[],
+    coa?: any[]
 }) {
     const { data: session } = useSession() as any;
     const userRole = session?.user?.role || "";
@@ -59,8 +60,8 @@ export function PurchaseRequestDashboard({ purchaseRequests }: {
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hide-print px-1">
                 <div>
-                    <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight uppercase">Product Requests</h1>
-                    <p className="text-slate-500 text-[10px] md:text-sm font-bold uppercase tracking-widest opacity-70">Internal procurement requests</p>
+                    <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight uppercase">Menu Pengajuan</h1>
+                    <p className="text-slate-500 text-[10px] md:text-sm font-bold uppercase tracking-widest opacity-70">Draft dokumen pembelian & operasional</p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                     <button
@@ -75,7 +76,7 @@ export function PurchaseRequestDashboard({ purchaseRequests }: {
                         className="w-full sm:w-auto bg-primary text-white px-6 py-2 rounded-full flex items-center justify-center gap-2 hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all active:scale-95 font-black uppercase text-[10px] tracking-widest"
                     >
                         <Plus className="h-4 w-4 text-white" />
-                        <span>Create PR</span>
+                        <span>Buat Pengajuan</span>
                     </button>
                     <button
                         onClick={handleExport}
@@ -93,7 +94,7 @@ export function PurchaseRequestDashboard({ purchaseRequests }: {
 
             <div className="rounded-xl border bg-card shadow-sm">
                 <div className="p-6 border-b flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-primary">
-                    <h3 className="text-lg font-bold">Data Pengajuan Pembelian</h3>
+                    <h3 className="text-lg font-bold">Data Pengajuan (Draft)</h3>
                     <div className="relative w-full md:max-w-md">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                         <input
@@ -109,6 +110,7 @@ export function PurchaseRequestDashboard({ purchaseRequests }: {
                     requests={filteredRequests}
                     userRole={userRole}
                     userId={userId}
+                    coa={coa}
                 />
             </div>
 

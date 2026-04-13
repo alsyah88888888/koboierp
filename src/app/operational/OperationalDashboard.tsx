@@ -87,16 +87,9 @@ export function OperationalDashboard({
         <div className="space-y-6 flex-1 h-full overflow-hidden flex flex-col">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 px-1">
                 <div>
-                    <h1 className="text-2xl font-black text-primary uppercase tracking-tighter">Operasional</h1>
-                    <p className="text-muted-foreground text-[10px] md:text-xs uppercase font-bold tracking-widest">Manajemen Pengeluaran Operasional</p>
+                    <h1 className="text-2xl font-black text-primary uppercase tracking-tighter">Hasil Operasional</h1>
+                    <p className="text-muted-foreground text-[10px] md:text-xs uppercase font-bold tracking-widest text-emerald-600">Akumulasi Realisasi Kegiatan (Terbayar)</p>
                 </div>
-                <button
-                    onClick={() => setIsModalOpen(true)}
-                    className="flex items-center justify-center gap-2 bg-primary text-primary-foreground px-6 py-2.5 rounded-full font-black text-xs uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-lg shadow-primary/20 w-full sm:w-auto"
-                >
-                    <Plus className="w-4 h-4" strokeWidth={3} />
-                    Input Operasional
-                </button>
             </div>
 
             {/* Nett Margin Cards for Sales */}

@@ -414,7 +414,81 @@ export async function updatePurchaseRequestStatusService(id: string, status: str
     });
 
     revalidatePath("/purchase");
+    revalidatePath("/operational");
     return { success: true, request: res };
+}
+
+export async function executePurchaseRequestService(id: string, paymentData: any, userId: string) {
+    const { getPrisma } = require("@/lib/prisma");
+    const prisma = getPrisma();
+
+    return await prisma.$transaction(async (tx: any) => {
+        const pr = await tx.purchaseRequest.findUnique({
+            where: { id },
+            include: { items: true }
+        });
+
+        if (!pr) throw new Error("Pengajuan tidak ditemukan");
+        if (pr.status !== "VERIFIED_BY_FINANCE") {
+            throw new Error("Pengajuan harus diverifikasi Finance terlebih dahulu");
+        }
+
+        const totalAmount = pr.items.reduce((acc: number, item: any) => acc + (item.quantity * Number(item.estimatedPrice)), 0);
+
+        // 1. Create Finance Transaction
+        const transaction = await tx.financeTransaction.create({
+            data: {
+                transactionType: "PAYMENT",
+                bank: paymentData.bank,
+                date: new Date(),
+                referenceNumber: pr.number,
+                description: `Payment for PR: ${pr.number} - ${pr.notes || ""}`,
+                amount: totalAmount,
+                category: pr.category,
+                createdById: userId
+            }
+        });
+
+        // 2. Journal Entries
+        // Debit Expense
+        await tx.journalEntry.create({
+            data: {
+                description: `Execution PR: ${pr.number}`,
+                amount: totalAmount,
+                type: "DEBIT",
+                accountId: paymentData.accountId,
+                transactionId: transaction.id,
+                date: new Date(),
+                createdById: userId
+            }
+        });
+
+        // Credit Bank
+        await tx.journalEntry.create({
+            data: {
+                description: `Payment ${pr.number}: ${paymentData.bank}`,
+                amount: totalAmount,
+                type: "CREDIT",
+                accountId: paymentData.bankAccountId,
+                transactionId: transaction.id,
+                date: new Date(),
+                createdById: userId
+            }
+        });
+
+        // 3. Update PR Status
+        await tx.purchaseRequest.update({
+            where: { id },
+            data: { status: "EXECUTED" }
+        });
+
+        revalidatePath("/purchase");
+        revalidatePath("/operational");
+        revalidatePath("/finance");
+        revalidatePath("/");
+
+        return { success: true, transactionId: transaction.id };
+    }, { timeout: 30000 });
 }
 
 export async function deletePurchaseReturnService(id: string) {

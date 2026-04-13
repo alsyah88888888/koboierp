@@ -7,9 +7,38 @@ import { formatCurrency, cn } from "@/lib/utils";
 import { callAction } from "@/proxy";
 
 
-export function PurchaseRequestTab({ requests, userRole, userId }: { requests: any[], userRole: string, userId: string }) {
+export function PurchaseRequestTab({ requests, userRole, userId, coa = [] }: { requests: any[], userRole: string, userId: string, coa?: any[] }) {
     const [loading, setLoading] = useState<string | null>(null);
+    const [executingPr, setExecutingPr] = useState<string | null>(null);
     const [expandedPr, setExpandedPr] = useState<string | null>(null);
+
+    const [paymentData, setPaymentData] = useState({
+        bank: "BANK",
+        accountId: "",
+        bankAccountId: ""
+    });
+
+    const handleExecute = async (id: string) => {
+        if (!paymentData.accountId || !paymentData.bankAccountId) {
+            alert("Mohon pilih akun pengeluaran dan akun bank.");
+            return;
+        }
+
+        setLoading(id);
+        try {
+            const res = await callAction("executePurchaseRequest", id, paymentData);
+            if (res.success) {
+                alert("Pengajuan berhasil dieksekusi dan dicatat di keuangan.");
+                setExecutingPr(null);
+            } else {
+                alert(res.error || "Gagal mengeksekusi");
+            }
+        } catch (error: any) {
+            alert(error.message || "Gagal mengeksekusi");
+        } finally {
+            setLoading(null);
+        }
+    };
 
     const handleStatusUpdate = async (id: string, status: any) => {
         const confirmMsg = status === "REJECTED" ? "Yakin ingin menolak pengajuan ini?" : "Konfirmasi persetujuan/verifikasi pengajuan ini?";
@@ -66,6 +95,7 @@ export function PurchaseRequestTab({ requests, userRole, userId }: { requests: a
                         <th className="px-6 py-4">No. Pengajuan / Tgl</th>
                         <th className="px-6 py-4">Pemohon</th>
                         <th className="px-6 py-4">Ringkasan Barang</th>
+                        <th className="px-6 py-4">Tipe</th>
                         <th className="px-6 py-4">Status</th>
                         <th className="px-6 py-4 text-right">Est. Total</th>
                         <th className="px-6 py-4 text-center">Aksi</th>
@@ -106,7 +136,22 @@ export function PurchaseRequestTab({ requests, userRole, userId }: { requests: a
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
+                                        <span className={cn(
+                                            "text-[9px] font-black uppercase px-2 py-0.5 rounded border",
+                                            pr.category === "OPERASIONAL" 
+                                                ? "bg-indigo-50 text-indigo-600 border-indigo-100" 
+                                                : "bg-emerald-50 text-emerald-600 border-emerald-100"
+                                        )}>
+                                            {pr.category || "PEMBELIAN"}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4">
                                         {getStatusBadge(pr.status)}
+                                        {pr.status === "EXECUTED" && (
+                                            <span className="bg-slate-100 text-slate-500 px-2 py-1 rounded-full text-[10px] font-black uppercase flex items-center gap-1 w-fit mt-1">
+                                                <CheckCircle2 className="h-3 w-3" /> Terbayar
+                                            </span>
+                                        )}
                                     </td>
                                     <td className="px-6 py-4 text-right font-black text-slate-700">
                                         {formatCurrency(totalEst)}
@@ -124,14 +169,14 @@ export function PurchaseRequestTab({ requests, userRole, userId }: { requests: a
                                                 </button>
                                             )}
 
-                                            {/* Finance Verification */}
-                                            {(userRole === "FINANCE" || userRole === "ADMIN") && pr.status === "APPROVED_BY_ADMIN" && (
+                                            {/* Finance Execution Button */}
+                                            {(userRole === "FINANCE" || userRole === "ADMIN") && pr.status === "VERIFIED_BY_FINANCE" && (
                                                 <button
                                                     disabled={loading === pr.id}
-                                                    onClick={() => handleStatusUpdate(pr.id, "VERIFIED_BY_FINANCE")}
-                                                    className="bg-emerald-600 text-white px-3 py-1.5 rounded text-[10px] font-bold hover:bg-emerald-700 transition-all shrink-0"
+                                                    onClick={() => setExecutingPr(pr.id)}
+                                                    className="bg-indigo-600 text-white px-3 py-1.5 rounded text-[10px] font-bold hover:bg-indigo-700 transition-all shrink-0 animate-pulse"
                                                 >
-                                                    {loading === pr.id ? "..." : "Verifikasi (Finance)"}
+                                                    {loading === pr.id ? "..." : "Eksekusi / Bayar"}
                                                 </button>
                                             )}
 
@@ -169,9 +214,68 @@ export function PurchaseRequestTab({ requests, userRole, userId }: { requests: a
                                         </div>
                                     </td>
                                 </tr>
+                                {executingPr === pr.id && (
+                                    <tr className="bg-indigo-50/50">
+                                        <td colSpan={8} className="px-6 py-6 border-b text-slate-900">
+                                            <div className="flex flex-col md:flex-row items-end gap-4 max-w-4xl mx-auto">
+                                                <div className="flex-1 space-y-2">
+                                                    <label className="text-[10px] font-black uppercase text-indigo-400 tracking-widest">Detail Pembayaran</label>
+                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                                        <select 
+                                                            className="w-full text-xs p-2 rounded-lg border border-indigo-200"
+                                                            value={paymentData.bank}
+                                                            onChange={e => setPaymentData({...paymentData, bank: e.target.value})}
+                                                        >
+                                                            <option value="BANK">Transfer Bank</option>
+                                                            <option value="CASH">Tunai / Cash</option>
+                                                            <option value="OVO">OVO</option>
+                                                            <option value="GOPAY">GOPAY</option>
+                                                        </select>
+                                                        <select 
+                                                            className="w-full text-xs p-2 rounded-lg border border-indigo-200"
+                                                            value={paymentData.accountId}
+                                                            onChange={e => setPaymentData({...paymentData, accountId: e.target.value})}
+                                                        >
+                                                            <option value="">Pilih Akun Biaya</option>
+                                                            {coa.map((a: any) => (
+                                                                <option key={a.id} value={a.id}>{a.code} - {a.name}</option>
+                                                            ))}
+                                                        </select>
+                                                        <select 
+                                                            className="w-full text-xs p-2 rounded-lg border border-indigo-200"
+                                                            value={paymentData.bankAccountId}
+                                                            onChange={e => setPaymentData({...paymentData, bankAccountId: e.target.value})}
+                                                        >
+                                                            <option value="">Pilih Sumber Dana (Kas/Bank)</option>
+                                                            {coa.filter((a: any) => a.type === "ASSET").map((a: any) => (
+                                                                <option key={a.id} value={a.id}>{a.code} - {a.name}</option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <button 
+                                                        onClick={() => setExecutingPr(null)}
+                                                        className="px-4 py-2 text-xs font-bold text-slate-500 bg-white border border-slate-200 rounded-lg"
+                                                    >
+                                                        Batal
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => handleExecute(pr.id)}
+                                                        disabled={loading === pr.id}
+                                                        className="px-6 py-2 text-xs font-black uppercase tracking-widest bg-indigo-600 text-white rounded-lg shadow-lg shadow-indigo-200 flex items-center gap-2"
+                                                    >
+                                                        {loading === pr.id ? "Proses..." : "Konfirmasi Pembayaran"}
+                                                        <CheckCircle2 className="h-4 w-4" />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                )}
                                 {isExpanded && (
                                     <tr className="bg-slate-50/50">
-                                        <td colSpan={7} className="px-4 md:px-12 py-6 border-b">
+                                        <td colSpan={8} className="px-4 md:px-12 py-6 border-b">
                                             <div className="space-y-6">
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                                     <div>
@@ -219,8 +323,8 @@ export function PurchaseRequestTab({ requests, userRole, userId }: { requests: a
                     })}
                     {requests.length === 0 && (
                         <tr>
-                            <td colSpan={6} className="px-6 py-12 text-center text-slate-400 italic font-bold">
-                                Tidak ada data pengajuan pembelian.
+                            <td colSpan={8} className="px-6 py-12 text-center text-slate-400 italic font-bold">
+                                Tidak ada data pengajuan.
                             </td>
                         </tr>
                     )}

@@ -34,7 +34,7 @@ export function PurchaseRequestStats() {
             color: "text-amber-600",
             bg: "bg-amber-50",
             border: "border-amber-100",
-            suffix: " PR"
+            suffix: " Dok"
         },
         {
             label: "Menunggu Finance",
@@ -43,7 +43,7 @@ export function PurchaseRequestStats() {
             color: "text-blue-600",
             bg: "bg-blue-50",
             border: "border-blue-100",
-            suffix: " PR"
+            suffix: " Dok"
         },
         {
             label: "Terverifikasi",
@@ -52,10 +52,10 @@ export function PurchaseRequestStats() {
             color: "text-emerald-600",
             bg: "bg-emerald-50",
             border: "border-emerald-100",
-            suffix: " PR"
+            suffix: " Dok"
         },
         {
-            label: "Total Estimasi PR",
+            label: "Total Estimasi Diajukan",
             value: formatCurrency(stats.totalEstimation),
             icon: Calculator,
             color: "text-indigo-600",

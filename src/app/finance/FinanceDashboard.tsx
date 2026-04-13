@@ -378,8 +378,8 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                     </div>
                 </div>
                 <div className="erp-card p-6 border-l-4 border-l-amber-500 bg-white/50">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Purchase Requests</p>
-                    <h3 className="text-2xl font-black text-amber-600 tracking-tighter">{pendingPurchaseRequests.length} <span className="text-xs text-slate-400 font-bold ml-1">Requests</span></h3>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Pengajuan (Draft)</p>
+                    <h3 className="text-2xl font-black text-amber-600 tracking-tighter">{pendingPurchaseRequests.length} <span className="text-xs text-slate-400 font-bold ml-1">Dokumen</span></h3>
                     <div className="mt-3 flex items-center gap-2 underline underline-offset-4 decoration-amber-100 cursor-pointer" onClick={() => setActiveTab("purchase_requests")}>
                         <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest">Open Approvals</span>
                     </div>
@@ -395,7 +395,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                         { id: "ap", label: "AP (Hutang)", icon: ArrowDownCircle, count: pendingPurchases.length + pendingReturns.length },
                         { id: "ar", label: "AR (Piutang)", icon: ArrowUpCircle, count: pendingSales.length + pendingSalesReturns.length },
                         { id: "checker", label: "Checker", icon: CheckCircle2, count: unverifiedReceipts.length },
-                        { id: "purchase_requests", label: "PR Approvals", icon: Wallet, count: pendingPurchaseRequests.length },
+                        { id: "purchase_requests", label: "Pengajuan", icon: Wallet, count: pendingPurchaseRequests.length },
                         { id: "history", label: "History", icon: Clock, count: 0 },
                     ].map((tab) => (
                         <button
@@ -1014,9 +1014,9 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                         <table className="w-full text-sm text-left min-w-[900px] table-fixed hidden md:table">
                             <thead className="bg-slate-50/50 text-slate-400 border-b border-slate-100 text-[10px] uppercase tracking-[0.2em] font-black">
                                 <tr>
-                                    <th className="px-8 py-5 w-44">Doc Date / PR Ref</th>
-                                    <th className="px-8 py-5">Requested By</th>
-                                    <th className="px-8 py-5">Allocated Warehouse</th>
+                                    <th className="px-8 py-5 w-44">Timeline / Ref</th>
+                                    <th className="px-8 py-5">Pemohon</th>
+                                    <th className="px-8 py-5">Kategori</th>
                                     <th className="px-8 py-5 text-right w-40">Load (Items)</th>
                                     <th className="px-8 py-5 text-center w-48 tracking-[0.3em]">Decision</th>
                                 </tr>
@@ -1030,9 +1030,14 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                         </td>
                                         <td className="px-8 py-5 font-black text-slate-900 tracking-tight">{r.requestedBy?.name}</td>
                                         <td className="px-8 py-5">
-                                            <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest bg-slate-100/50 px-3 py-1.5 rounded-lg border border-slate-100 inline-block font-mono">
-                                                ID: {r.warehouse?.name}
-                                            </div>
+                                            <span className={cn(
+                                                "text-[9px] font-black uppercase px-2 py-0.5 rounded border",
+                                                r.category === "OPERASIONAL" 
+                                                    ? "bg-indigo-50 text-indigo-600 border-indigo-100" 
+                                                    : "bg-emerald-50 text-emerald-600 border-emerald-100"
+                                            )}>
+                                                {r.category || "PEMBELIAN"}
+                                            </span>
                                         </td>
                                         <td className="px-8 py-5 text-right font-black tabular-nums">{r.items.length} Items</td>
                                         <td className="px-8 py-5 text-center">
@@ -1041,7 +1046,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                                 onClick={() => handleVerifyPurchaseRequest(r.id, r.number)}
                                                 className="erp-btn-primary !bg-amber-500 hover:!bg-amber-600 !py-2 !px-6 !text-[10px] !rounded-xl shadow-lg shadow-amber-100 w-full"
                                             >
-                                                {loading === r.id ? "..." : "FINALIZE PR"}
+                                                {loading === r.id ? "..." : "VERIFIKASI FINANCE"}
                                             </button>
                                         </td>
                                     </tr>
@@ -1059,7 +1064,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                             <div className="font-mono text-[9px] text-slate-300 uppercase tracking-tighter truncate w-32">{r.number}</div>
                                         </div>
                                         <div className="px-2 py-1 bg-amber-50 rounded-lg text-[9px] font-black text-amber-600 uppercase border border-amber-100">
-                                            Finance Queue
+                                            {r.category || "PEMBELIAN"}
                                         </div>
                                     </div>
                                     <div className="mb-4">

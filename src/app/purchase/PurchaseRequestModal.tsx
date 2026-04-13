@@ -13,6 +13,7 @@ interface RequestItem {
 }
 
 export function PurchaseRequestModal({ onClose }: { onClose: () => void }) {
+    const [category, setCategory] = useState("PEMBELIAN");
     const [notes, setNotes] = useState("");
     const [items, setItems] = useState<RequestItem[]>([{ itemName: "", quantity: 1, estimatedPrice: 0 }]);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -55,6 +56,7 @@ export function PurchaseRequestModal({ onClose }: { onClose: () => void }) {
         try {
             const res = await callAction("createPurchaseRequest", {
                 notes,
+                category,
                 items: items.map(i => ({
                     itemName: i.itemName,
                     quantity: Number(i.quantity),
@@ -83,16 +85,47 @@ export function PurchaseRequestModal({ onClose }: { onClose: () => void }) {
                             <ClipboardList className="h-6 w-6 text-primary" />
                         </div>
                         <div>
-                            <h2 className="text-xl font-bold text-slate-800">Buat Pengajuan Pembelian</h2>
-                            <p className="text-xs text-slate-500">Ajukan kebutuhan stok barang ke Admin Pusat.</p>
+                            <h2 className="text-xl font-bold text-slate-800">Buat Pengajuan (Draft)</h2>
+                            <p className="text-xs text-slate-500">Ajukan kebutuhan stok atau operasional ke Admin & Finance.</p>
                         </div>
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-slate-200 rounded-full transition-colors">
                         <X className="h-6 w-6 text-slate-400" />
                     </button>
                 </div>
-
                 <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
+
+                    {/* Category Selection */}
+                    <div className="space-y-2">
+                        <label className="text-xs font-black uppercase tracking-widest text-slate-400">Tipe Pengajuan</label>
+                        <div className="grid grid-cols-2 gap-4">
+                            <button
+                                type="button"
+                                onClick={() => setCategory("PEMBELIAN")}
+                                className={cn(
+                                    "p-4 rounded-xl border-2 transition-all flex items-center justify-center gap-2 font-bold",
+                                    category === "PEMBELIAN" 
+                                        ? "border-primary bg-primary/5 text-primary shadow-sm" 
+                                        : "border-slate-100 bg-slate-50 text-slate-400 grayscale"
+                                )}
+                            >
+                                📦 Pembelian Barang
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setCategory("OPERASIONAL")}
+                                className={cn(
+                                    "p-4 rounded-xl border-2 transition-all flex items-center justify-center gap-2 font-bold",
+                                    category === "OPERASIONAL" 
+                                        ? "border-indigo-500 bg-indigo-50 text-indigo-600 shadow-sm" 
+                                        : "border-slate-100 bg-slate-50 text-slate-400 grayscale"
+                                )}
+                            >
+                                🏢 Operasional
+                            </button>
+                        </div>
+                    </div>
+
                     {/* Notes Area */}
                     <div className="space-y-2">
                         <label htmlFor="pr-notes" className="text-xs font-black uppercase tracking-widest text-slate-400 cursor-pointer">Keterangan / Alasan Pengajuan</label>

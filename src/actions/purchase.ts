@@ -216,4 +216,20 @@ export async function getPurchaseRequestsAction() {
     });
 }
 
+export async function executePurchaseRequestAction(id: string, paymentData: any) {
+    try {
+        const { getAuthOptions } = require("@/lib/auth");
+        const { getServerSession } = require("next-auth");
+        const { executePurchaseRequestService } = require("@/lib/services/purchase-service");
+
+        const session = (await getServerSession(getAuthOptions())) as any;
+        if (!session?.user?.id) throw new Error("Unauthorized");
+
+        return await executePurchaseRequestService(id, paymentData, session.user.id);
+    } catch (err: any) {
+        console.error("[executePurchaseRequestAction] ERROR:", err);
+        return { error: err.message || "An unexpected error occurred while executing the request." };
+    }
+}
+
 
