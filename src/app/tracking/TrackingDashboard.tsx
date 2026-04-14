@@ -108,11 +108,20 @@ export function TrackingDashboard({ initialProducts, userEmail, userRole }: Trac
     const handleExportTraceability = async () => {
         if (!canExport) return;
         try {
-            const data = await callAction("getProductTraceabilityAction", Number(reportMonth), Number(reportYear));
+            // Use direct API Route instead of Server Action for large data stability
+            const url = `/api/reports/traceability?month=${reportMonth}&year=${reportYear}`;
+            const response = await fetch(url);
+            
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || "Gagal mengambil data dari server");
+            }
+            
+            const data = await response.json();
             exportToExcel(data, `Laporan_Traceability_${reportMonth}_${reportYear}`, 'Traceability');
-        } catch (err) {
+        } catch (err: any) {
             console.error("Export Traceability failed:", err);
-            alert("Gagal menarik data traceability (Ukuran data mungkin terlalu besar)");
+            alert(`Gagal menarik data: ${err.message || "Ukuran data mungkin terlalu besar"}`);
         }
     };
 
