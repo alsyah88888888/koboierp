@@ -222,6 +222,23 @@ export async function updateSalesDeliveryService(id: string, data: any) {
 
         for (const item of data.items) {
             const vendorName = item.vendorName || "UMUM";
+
+            // VALIDASI STOK: Cek apakah stok mencukupi sebelum mengurangi
+            const currentStock = await tx.stock.findUnique({
+                where: {
+                    productId_warehouseId_vendorName: {
+                        productId: item.productId,
+                        warehouseId: data.warehouseId,
+                        vendorName: vendorName
+                    }
+                }
+            });
+
+            if (!currentStock || currentStock.quantity < item.quantity) {
+                const product = await tx.product.findUnique({ where: { id: item.productId } });
+                throw new Error(`Stok tidak mencukupi untuk produk ${product?.name || item.productId} dari vendor ${vendorName}. Tersedia: ${currentStock?.quantity || 0}, Dibutuhkan: ${item.quantity}`);
+            }
+
             await tx.salesDeliveryItem.create({
                 data: {
                     deliveryId: id,
