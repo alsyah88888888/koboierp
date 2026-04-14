@@ -184,17 +184,22 @@ function formatTraceabilityRow(sale: any, buy: any, matchedQty: number) {
     const buyTotal = matchedQty * (buyPrice - buyDisc); 
     const sellTotal = matchedQty * (sellPrice - sellDisc);
 
+    // Always use product info from SALE if BUY is missing
+    const productSKU = buy?.sku || sale.product?.sku || "-";
+    const productName = buy?.name || sale.product?.name || "-";
+    const productUOM = buy?.uom || sale.product?.uom || "KARTON";
+
     return {
-        'Satuan': buy?.uom || "KARTON",
-        'SKU': buy?.sku || "-",
-        'Nama Barang': buy?.name || "-",
+        'Satuan': productUOM,
+        'SKU': productSKU,
+        'Nama Barang': productName,
         'Tanggal': sale.date ? new Date(sale.date).toLocaleDateString('id-ID') : "-",
         
         // --- INFO PEMBELIAN (KIRI) ---
         '[BELI] Tgl': buy?.date ? new Date(buy.date).toLocaleDateString('id-ID') : "-",
-        '[BELI] No. LPB': buy?.number || "-",
+        '[BELI] No. LPB': buy?.number || "[SALDO AWAL / BELUM INPUT]",
         '[BELI] No. SJ Supplier': buy?.formNumber || "-",
-        '[BELI] Supplier': buy?.receivedFrom || "UMUM",
+        '[BELI] Supplier': buy?.receivedFrom || (buy ? "UMUM" : "-"),
         '[BELI] Sales (BC/PF)': buy?.salesPerson || "-",
         '[BELI] Qty Asli': buy?.qtyGross || 0,
         '[BELI] Qty Retur': buy?.qtyRet || 0,
