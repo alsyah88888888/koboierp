@@ -12,6 +12,16 @@ export function ReturnModal({ receipts, initialData, onClose }: { receipts: any[
     const [returnItems, setReturnItems] = useState<{ productId: string, quantity: number, reason: string }[]>([]);
     const [notes, setNotes] = useState(initialData?.notes || "");
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [searchTerm, setSearchTerm] = useState(initialData?.receipt?.receiptNumber || "");
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+    const filteredReceiptItems = (receipts || []).filter(r => 
+        r.isVerified && (
+            r.receiptNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            r.receivedFrom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            r.formNumber?.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+    );
 
     useEffect(() => {
         if (initialData) {
@@ -28,9 +38,10 @@ export function ReturnModal({ receipts, initialData, onClose }: { receipts: any[
         }
     }, [initialData]);
 
-    const handleReceiptChange = (e: any) => {
-        const receipt = receipts.find(r => r.id === e.target.value);
+    const onSelectReceipt = (receipt: any) => {
         setSelectedReceipt(receipt);
+        setSearchTerm(receipt.receiptNumber);
+        setIsDropdownOpen(false);
         if (receipt) {
             setReturnItems(receipt.items.map((i: any) => ({
                 productId: i.productId,
@@ -141,21 +152,78 @@ export function ReturnModal({ receipts, initialData, onClose }: { receipts: any[
                                     </div>
                                 ) : (
                                     <div className="relative">
-                                        <select
-                                            className="erp-input appearance-none bg-white pr-10"
-                                            onChange={handleReceiptChange}
-                                            defaultValue=""
-                                        >
-                                            <option value="" disabled>Pilih LPB Terverifikasi...</option>
-                                            {Array.isArray(receipts) && receipts.filter(r => r.isVerified).map(r => (
-                                                <option key={r.id} value={r.id}>
-                                                    {r.receiptNumber} — {r.receivedFrom} ({new Date(r.date || r.createdAt).toLocaleDateString('id-ID')})
-                                                </option>
-                                            ))}
-                                        </select>
-                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                                            <FileText className="h-4 w-4 text-slate-400" />
+                                        <div className="relative group">
+                                            <input
+                                                type="text"
+                                                className="erp-input pl-10 pr-10 cursor-pointer"
+                                                placeholder="Ketik Nomor LPB / Supplier..."
+                                                value={searchTerm}
+                                                onChange={(e) => {
+                                                    setSearchTerm(e.target.value);
+                                                    setIsDropdownOpen(true);
+                                                    if (!e.target.value) {
+                                                        setSelectedReceipt(null);
+                                                        setReturnItems([]);
+                                                    }
+                                                }}
+                                                onFocus={() => setIsDropdownOpen(true)}
+                                            />
+                                            <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                                                <Search className="h-4 w-4 text-slate-400 group-focus-within:text-rose-500 transition-colors" />
+                                            </div>
+                                            {selectedReceipt && (
+                                                <button 
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setSelectedReceipt(null);
+                                                        setSearchTerm("");
+                                                        setReturnItems([]);
+                                                    }}
+                                                    className="absolute right-4 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 rounded-full"
+                                                >
+                                                    <X className="h-3 w-3 text-slate-500" />
+                                                </button>
+                                            )}
                                         </div>
+
+                                        {isDropdownOpen && !initialData && (
+                                            <>
+                                                <div 
+                                                    className="fixed inset-0 z-[110]" 
+                                                    onClick={() => setIsDropdownOpen(false)}
+                                                />
+                                                <div className="absolute top-full left-0 w-full mt-2 bg-white rounded-2xl shadow-2xl border border-slate-200 z-[120] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                                                    <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
+                                                        {filteredReceiptItems.length > 0 ? (
+                                                            filteredReceiptItems.map((r) => (
+                                                                <button
+                                                                    key={r.id}
+                                                                    type="button"
+                                                                    onClick={() => onSelectReceipt(r)}
+                                                                    className="w-full text-left px-5 py-4 hover:bg-rose-50 border-b border-slate-50 last:border-none transition-colors group flex items-start gap-3"
+                                                                >
+                                                                    <div className="p-2 bg-slate-50 rounded-lg group-hover:bg-rose-100/50 transition-colors">
+                                                                        <FileText className="h-4 w-4 text-slate-400 group-hover:text-rose-600" />
+                                                                    </div>
+                                                                    <div>
+                                                                        <div className="font-black text-slate-900 text-sm">{r.receiptNumber}</div>
+                                                                        <div className="text-xs font-bold text-slate-500 group-hover:text-rose-700">{r.receivedFrom}</div>
+                                                                        <div className="text-[10px] text-slate-400 mt-1">{new Date(r.date || r.createdAt).toLocaleDateString('id-ID')} - {r.formNumber || "No Form"}</div>
+                                                                    </div>
+                                                                </button>
+                                                            ))
+                                                        ) : (
+                                                            <div className="px-5 py-8 text-center">
+                                                                <div className="inline-flex p-3 bg-slate-50 rounded-full mb-2">
+                                                                    <Search className="h-5 w-5 text-slate-300" />
+                                                                </div>
+                                                                <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Tidak ditemukan</p>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </>
+                                        )}
                                     </div>
                                 )}
                                 <p className="text-[10px] text-slate-400 mt-1.5 ml-1 italic italic italic italic italic italic italic italic italic">
