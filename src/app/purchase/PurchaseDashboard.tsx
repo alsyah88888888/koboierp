@@ -157,6 +157,36 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
         exportToExcel(exportData, `Laporan_Penerimaan_Barang_Detail_${format(new Date(), "yyyyMMdd")}`, 'Penerimaan');
     };
 
+    const handleExportReturn = async () => {
+        try {
+            const response = await fetch('/api/reports/purchase-return');
+            if (!response.ok) throw new Error("Gagal mengambil data retur");
+            const rawData = await response.json();
+            
+            const exportData = rawData.map((item: any) => ({
+                'No. Retur': item.purchaseReturn.returnNumber,
+                'Tanggal': format(new Date(item.purchaseReturn.date), "dd/MM/yyyy"),
+                'Supplier': item.purchaseReturn.receipt?.receivedFrom || "-",
+                'Ref. LPB': item.purchaseReturn.receipt?.receiptNumber || "-",
+                'SKU': item.product.sku,
+                'Nama Barang': item.product.name,
+                'Qty Retur': item.quantity,
+                'Satuan': item.product.uom || "PCS",
+                'Alasan': item.reason || "-",
+                'Status': item.purchaseReturn.status
+            }));
+
+            exportToExcel(exportData, `Laporan_Retur_Pembelian_${format(new Date(), "yyyyMMdd")}`, 'Retur_Pembelian');
+        } catch (err: any) {
+            console.error("Export Return failed:", err);
+            await alert({
+                title: "Gagal Ekspor",
+                message: "Gagal ekspor retur: " + err.message,
+                type: "danger"
+            });
+        }
+    };
+
 
     const handlePreview = () => {
         const data = (Array.isArray(filteredReceipts) ? filteredReceipts : []).map(r => ({
@@ -223,7 +253,7 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
                             <span>{activeTab === "LPB" ? "Input LPB" : "Input Retur"}</span>
                         </button>
                         <button
-                            onClick={handleExport}
+                            onClick={activeTab === "LPB" ? handleExport : handleExportReturn}
                             className="p-3 bg-white border-2 border-slate-100 rounded-2xl hover:border-primary hover:text-primary transition-all shadow-sm group"
                             title="Export Excel"
                         >

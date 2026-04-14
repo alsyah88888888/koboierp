@@ -165,7 +165,6 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
             items.forEach((item: any) => {
                 const qty = Number(item.quantity) || 0;
                 const price = Number(item.salesPrice) || 0;
-                const purchasePrice = Number(item.product?.purchasePrice || 0);
                 const discLine = Number(item.discount || 0);
                 const taxRate = Number(d.taxRate || 0);
                 
@@ -198,6 +197,36 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
         });
 
         exportToExcel(exportData, `Laporan_Penjualan_Detail_${format(new Date(), "yyyyMMdd")}`, 'Penjualan');
+    };
+
+    const handleExportReturn = async () => {
+        try {
+            const response = await fetch('/api/reports/sales-return');
+            if (!response.ok) throw new Error("Gagal mengambil data retur");
+            const rawData = await response.json();
+            
+            const exportData = rawData.map((item: any) => ({
+                'No. Retur': item.salesReturn.returnNumber,
+                'Tanggal': format(new Date(item.salesReturn.date), "dd/MM/yyyy"),
+                'Buyer': item.salesReturn.delivery?.buyerName || "-",
+                'Ref. SJ': item.salesReturn.delivery?.deliveryNumber || "-",
+                'SKU': item.product.sku,
+                'Nama Barang': item.product.name,
+                'Qty Retur': item.quantity,
+                'Satuan': item.product.uom || "PCS",
+                'Alasan': item.reason || "-",
+                'Status': item.salesReturn.status
+            }));
+
+            exportToExcel(exportData, `Laporan_Retur_Penjualan_${format(new Date(), "yyyyMMdd")}`, 'Retur_Penjualan');
+        } catch (err: any) {
+            console.error("Export Return failed:", err);
+            await alert({
+                title: "Gagal Ekspor",
+                message: "Gagal ekspor retur: " + (err.message || "Unknown error"),
+                type: "danger"
+            });
+        }
     };
 
     const handlePreview = () => {
@@ -267,7 +296,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                            <button onClick={handlePreview} className="p-3 bg-white border border-slate-200 rounded-2xl hover:border-primary hover:text-primary transition-all shadow-sm group" title="Preview Report">
                                <Eye className="h-5 w-5 text-slate-400 group-hover:text-primary" />
                            </button>
-                           <button onClick={handleExport} className="p-3 bg-white border border-slate-200 rounded-2xl hover:border-emerald-500 hover:text-emerald-500 transition-all shadow-sm group" title="Export Excel">
+                           <button onClick={activeTab === "SJ" ? handleExport : handleExportReturn} className="p-3 bg-white border border-slate-200 rounded-2xl hover:border-emerald-500 hover:text-emerald-500 transition-all shadow-sm group" title="Export Excel">
                                <Download className="h-5 w-5 text-slate-400 group-hover:text-emerald-500" />
                            </button>
                         </div>

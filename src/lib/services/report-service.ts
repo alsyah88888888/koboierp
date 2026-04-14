@@ -123,3 +123,49 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
         throw new Error(`SQL Error: ${error.message}`);
     }
 }
+
+/**
+ * PURCHASE RETURNS DETAIL REPORT
+ */
+export async function getPurchaseReturnsDetailService() {
+    const prisma = getPrisma();
+    return await prisma.purchaseReturnItem.findMany({
+        select: {
+            quantity: true,
+            reason: true,
+            product: { select: { sku: true, name: true, uom: true } },
+            purchaseReturn: {
+                select: {
+                    returnNumber: true,
+                    date: true,
+                    status: true,
+                    receipt: { select: { receiptNumber: true, receivedFrom: true } }
+                }
+            }
+        },
+        orderBy: { purchaseReturn: { date: 'desc' } }
+    });
+}
+
+/**
+ * SALES RETURNS DETAIL REPORT
+ */
+export async function getSalesReturnsDetailService() {
+    const prisma = getPrisma();
+    return await prisma.salesReturnItem.findMany({
+        select: {
+            quantity: true,
+            reason: true,
+            product: { select: { sku: true, name: true, uom: true } },
+            salesReturn: {
+                select: {
+                    returnNumber: true,
+                    date: true,
+                    status: true,
+                    delivery: { select: { deliveryNumber: true, recipient: true, buyerName: true } }
+                }
+            }
+        },
+        orderBy: { salesReturn: { date: 'desc' } }
+    });
+}
