@@ -45,6 +45,8 @@ export function TrackingDashboard({ initialProducts, userEmail, userRole }: Trac
     const [showAudit, setShowAudit] = useState(false);
     const [loadingAudit, setLoadingAudit] = useState(false);
     const [syncingId, setSyncingId] = useState<string | null>(null);
+    const [reportMonth, setReportMonth] = useState((new Date().getMonth() + 1).toString());
+    const [reportYear, setReportYear] = useState(new Date().getFullYear().toString());
 
     // History Filters
     const [filterDay, setFilterDay] = useState("");
@@ -106,11 +108,11 @@ export function TrackingDashboard({ initialProducts, userEmail, userRole }: Trac
     const handleExportTraceability = async () => {
         if (!canExport) return;
         try {
-            const data = await callAction("getProductTraceability");
-            exportToExcel(data, 'Laporan_Traceability_Produk', 'Traceability');
+            const data = await callAction("getProductTraceabilityAction", Number(reportMonth), Number(reportYear));
+            exportToExcel(data, `Laporan_Traceability_${reportMonth}_${reportYear}`, 'Traceability');
         } catch (err) {
             console.error("Export Traceability failed:", err);
-            alert("Gagal menarik data traceability");
+            alert("Gagal menarik data traceability (Ukuran data mungkin terlalu besar)");
         }
     };
 
@@ -218,6 +220,30 @@ export function TrackingDashboard({ initialProducts, userEmail, userRole }: Trac
                     
                     {canExport && (
                         <div className="flex items-center gap-2">
+                            {/* Monthly Filter for Traceability */}
+                            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl">
+                                <Filter className="h-3 w-3 text-slate-400" />
+                                <select 
+                                    value={reportMonth}
+                                    onChange={(e) => setReportMonth(e.target.value)}
+                                    className="bg-transparent text-[10px] font-black uppercase tracking-widest outline-none cursor-pointer text-slate-600"
+                                >
+                                    {months.map((m, i) => (
+                                        <option key={i} value={i+1}>{m}</option>
+                                    ))}
+                                </select>
+                                <div className="w-[1px] h-3 bg-slate-200 mx-1" />
+                                <select 
+                                    value={reportYear}
+                                    onChange={(e) => setReportYear(e.target.value)}
+                                    className="bg-transparent text-[10px] font-black uppercase tracking-widest outline-none cursor-pointer text-slate-600"
+                                >
+                                    {years.map(y => (
+                                        <option key={y} value={y}>{y}</option>
+                                    ))}
+                                </select>
+                            </div>
+
                             <button 
                                 onClick={handleRunAudit}
                                 className="flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-slate-600/20 active:scale-95 border border-slate-700"

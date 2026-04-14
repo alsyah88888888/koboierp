@@ -4,15 +4,24 @@ import { getPrisma } from "@/lib/prisma";
 /**
  * HIGH PERFORMANCE MATCHED TRACEABILITY (BUY/SELL PAIRING)
  */
-export async function getProductTraceabilityService() {
+export async function getProductTraceabilityService(month?: number, year?: number) {
     const prisma = getPrisma();
 
     try {
-        // 1. Fetch Sales Items with specific field selection to save memory
+        // 1. Calculate Date Range
+        const filterYear = year || new Date().getFullYear();
+        const filterMonth = month || (new Date().getMonth() + 1);
+        const startDate = new Date(filterYear, filterMonth - 1, 1);
+        const endDate = new Date(filterYear, filterMonth, 0, 23, 59, 59);
+
+        // 2. Fetch Sales Items for the selected month
         const salesItems = await prisma.salesDeliveryItem.findMany({
             where: {
                 delivery: {
-                    date: { gte: new Date('2026-01-01') }
+                    date: {
+                        gte: startDate,
+                        lte: endDate
+                    }
                 }
             },
             select: {
