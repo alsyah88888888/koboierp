@@ -54,6 +54,7 @@ export async function getProductTraceabilityService() {
             select: {
                 id: true,
                 productId: true,
+                quantity: true,
                 purchasePrice: true,
                 discount: true,
                 receipt: {
@@ -117,6 +118,7 @@ export async function getProductTraceabilityService() {
                 '[BELI] No. SJ Supplier': match?.receipt?.formNumber || "-",
                 '[BELI] Supplier': si.vendorName || match?.receipt?.receivedFrom || "UMUM",
                 '[BELI] Sales (BC/PF)': match?.receipt?.salesPerson || "-",
+                '[BELI] Qty Beli': match?.quantity ? Number(match.quantity) : "-",
                 '[BELI] Harga Satuan': buyPrice,
                 '[BELI] PPN (%)': buyTax > 0 ? `${buyTax}%` : "0%",
                 
