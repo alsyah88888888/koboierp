@@ -98,7 +98,7 @@ export async function getProductTraceabilityService(month: number, year: number)
                 number: item.delivery.deliveryNumber,
                 poNumber: item.delivery.poNumber || "-",
                 buyerName: item.delivery.buyerName || item.delivery.recipient || "UMUM",
-                salesPerson: item.salesPerson || "-",
+                salesPerson: item.delivery.salesPerson || "-",
                 qtyGross: item.quantity,
                 qtyRet: itemReturns,
                 qtyNet: item.quantity - itemReturns,
