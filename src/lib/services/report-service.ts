@@ -2,60 +2,88 @@
 import { getPrisma } from "@/lib/prisma";
 
 /**
- * ADVANCED FIFO TRACEABILITY (BUY/SELL PAIRING)
+ * OPTIMIZED FIFO TRACEABILITY (BUY/SELL PAIRING)
+ * Performance: Only loads data for products sold in the target month.
+ * Uses pre-computed Maps for O(1) return lookups.
  */
 export async function getProductTraceabilityService(month?: number, year?: number) {
     const prisma = getPrisma();
     
-    // Handle defaults if not provided
     const filterYear = year || new Date().getFullYear();
     const filterMonth = month || (new Date().getMonth() + 1);
     const startDate = new Date(filterYear, filterMonth - 1, 1);
     const endDate = new Date(filterYear, filterMonth, 0, 23, 59, 59);
 
     try {
-        // 1. Fetch ALL historical data for the products involved to ensure accurate FIFO
-        const allLPBItems = await prisma.goodsReceiptItem.findMany({
-            where: { receipt: { isVoid: false } },
-            include: { 
-                receipt: { include: { warehouse: true } },
-                product: true
+        // STEP 1: Find which products were SOLD in the target month (lightweight query)
+        const soldItems = await prisma.salesDeliveryItem.findMany({
+            where: { 
+                delivery: { isVoid: false, date: { gte: startDate, lte: endDate } }
             },
-            orderBy: [{ receipt: { date: 'asc' } }, { receipt: { createdAt: 'asc' } }]
+            select: { productId: true },
+            distinct: ['productId']
         });
+        
+        const targetProductIds = soldItems.map(i => i.productId);
+        
+        if (targetProductIds.length === 0) return [];
 
-        const allSJItems = await prisma.salesDeliveryItem.findMany({
-            where: { delivery: { isVoid: false } },
-            include: { 
-                delivery: { include: { warehouse: true } },
-                product: true
-            },
-            orderBy: [{ delivery: { date: 'asc' } }, { delivery: { createdAt: 'asc' } }]
-        });
+        // STEP 2: Fetch data ONLY for those products
+        const [allLPBItems, allSJItems, allPurchaseReturns, allSalesReturns] = await Promise.all([
+            // Purchases for target products only
+            prisma.goodsReceiptItem.findMany({
+                where: { productId: { in: targetProductIds }, receipt: { isVoid: false } },
+                include: { 
+                    receipt: { select: { date: true, createdAt: true, receiptNumber: true, formNumber: true, receivedFrom: true, salesPerson: true, taxRate: true, warehouse: { select: { name: true } } } },
+                    product: { select: { sku: true, name: true, uom: true } }
+                },
+                orderBy: [{ receipt: { date: 'asc' } }, { receipt: { createdAt: 'asc' } }]
+            }),
+            // Sales for target products only
+            prisma.salesDeliveryItem.findMany({
+                where: { productId: { in: targetProductIds }, delivery: { isVoid: false } },
+                include: { 
+                    delivery: { select: { date: true, createdAt: true, deliveryNumber: true, poNumber: true, buyerName: true, recipient: true, salesPerson: true, taxRate: true, warehouse: { select: { name: true } } } },
+                    product: { select: { sku: true, name: true, uom: true } }
+                },
+                orderBy: [{ delivery: { date: 'asc' } }, { delivery: { createdAt: 'asc' } }]
+            }),
+            // Purchase returns for target products
+            prisma.purchaseReturnItem.findMany({
+                where: { productId: { in: targetProductIds }, purchaseReturn: { status: 'COMPLETED' } },
+                select: { productId: true, quantity: true, purchaseReturn: { select: { receiptId: true } } }
+            }),
+            // Sales returns for target products
+            prisma.salesReturnItem.findMany({
+                where: { productId: { in: targetProductIds }, salesReturn: { status: 'COMPLETED' } },
+                select: { productId: true, quantity: true, salesReturn: { select: { deliveryId: true } } }
+            })
+        ]);
 
-        const allPurchaseReturns = await prisma.purchaseReturnItem.findMany({
-            where: { purchaseReturn: { status: 'COMPLETED' } },
-            include: { purchaseReturn: true }
-        });
+        // STEP 3: Pre-compute return Maps for O(1) lookup
+        // Key: "receiptId|productId" -> total returned qty
+        const purchaseReturnMap = new Map<string, number>();
+        for (const r of allPurchaseReturns) {
+            const key = `${r.purchaseReturn.receiptId}|${r.productId}`;
+            purchaseReturnMap.set(key, (purchaseReturnMap.get(key) || 0) + r.quantity);
+        }
+        // Key: "deliveryId|productId" -> total returned qty
+        const salesReturnMap = new Map<string, number>();
+        for (const r of allSalesReturns) {
+            const key = `${r.salesReturn.deliveryId}|${r.productId}`;
+            salesReturnMap.set(key, (salesReturnMap.get(key) || 0) + r.quantity);
+        }
 
-        const allSalesReturns = await prisma.salesReturnItem.findMany({
-            where: { salesReturn: { status: 'COMPLETED' } },
-            include: { salesReturn: true }
-        });
-
-        // 2. Prepare for FIFO pairing (Grouped by Product only)
+        // STEP 4: Group by Product
         const productStats: Record<string, { buyers: any[], sellers: any[] }> = {};
 
-        // Process Purchases (LPBs)
         for (const item of allLPBItems) {
             if (!productStats[item.productId]) productStats[item.productId] = { buyers: [], sellers: [] };
             
-            const itemReturns = allPurchaseReturns
-                .filter(r => r.purchaseReturn.receiptId === item.receiptId && r.productId === item.productId)
-                .reduce((sum, r) => sum + r.quantity, 0);
+            const retKey = `${item.receiptId}|${item.productId}`;
+            const itemReturns = purchaseReturnMap.get(retKey) || 0;
 
             productStats[item.productId].buyers.push({
-                productId: item.productId,
                 date: item.receipt.date,
                 number: item.receipt.receiptNumber,
                 formNumber: item.receipt.formNumber,
@@ -75,16 +103,13 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
             });
         }
 
-        // Process Sales (SJs)
         for (const item of allSJItems) {
             if (!productStats[item.productId]) productStats[item.productId] = { buyers: [], sellers: [] };
 
-            const itemReturns = allSalesReturns
-                .filter(r => r.salesReturn.deliveryId === item.deliveryId && r.productId === item.productId)
-                .reduce((sum, r) => sum + r.quantity, 0);
+            const retKey = `${item.deliveryId}|${item.productId}`;
+            const itemReturns = salesReturnMap.get(retKey) || 0;
 
             productStats[item.productId].sellers.push({
-                productId: item.productId,
                 date: item.delivery.date,
                 number: item.delivery.deliveryNumber,
                 poNumber: item.delivery.poNumber || "-",
@@ -101,12 +126,11 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
             });
         }
 
-        // 3. FIFO Allocation (Global SKU Flow)
+        // STEP 5: FIFO Allocation (Global SKU Flow)
         const finalRows: any[] = [];
 
         for (const productId in productStats) {
             const { buyers, sellers } = productStats[productId];
-            
             let buyerIdx = 0;
 
             for (const sale of sellers) {
@@ -114,26 +138,20 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
 
                 while (qtyToAllocate > 0 && buyerIdx < buyers.length) {
                     const batch = buyers[buyerIdx];
-                    
-                    if (batch.remaining <= 0) {
-                        buyerIdx++;
-                        continue;
-                    }
+                    if (batch.remaining <= 0) { buyerIdx++; continue; }
 
                     const taken = Math.min(qtyToAllocate, batch.remaining);
                     
-                    // Only add to report if the SALE falls within the requested period
                     if (sale.date >= startDate && sale.date <= endDate) {
                         finalRows.push(formatTraceabilityRow(sale, batch, taken));
                     }
 
                     batch.remaining -= taken;
                     qtyToAllocate -= taken;
-
                     if (batch.remaining <= 0) buyerIdx++;
                 }
 
-                // Oversell Case (Remaining qty but no LPB batches left)
+                // Oversell (no more LPB batches)
                 if (qtyToAllocate > 0 && sale.date >= startDate && sale.date <= endDate) {
                     finalRows.push(formatTraceabilityRow(sale, null, qtyToAllocate));
                 }
