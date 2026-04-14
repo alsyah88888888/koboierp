@@ -221,11 +221,6 @@ function formatTraceabilityRow(sale: any, buy: any, matchedQty: number) {
     };
 }
 
-    } catch (error: any) {
-        console.error("[getProductTraceabilityService] FATAL SQL ERROR:", error);
-        throw new Error(`SQL Error: ${error.message}`);
-    }
-}
 
 /**
  * PURCHASE RETURNS DETAIL REPORT
