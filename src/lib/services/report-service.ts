@@ -4,10 +4,14 @@ import { getPrisma } from "@/lib/prisma";
 /**
  * ADVANCED FIFO TRACEABILITY (BUY/SELL PAIRING)
  */
-export async function getProductTraceabilityService(month: number, year: number) {
+export async function getProductTraceabilityService(month?: number, year?: number) {
     const prisma = getPrisma();
-    const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month, 0, 23, 59, 59);
+    
+    // Handle defaults if not provided
+    const filterYear = year || new Date().getFullYear();
+    const filterMonth = month || (new Date().getMonth() + 1);
+    const startDate = new Date(filterYear, filterMonth - 1, 1);
+    const endDate = new Date(filterYear, filterMonth, 0, 23, 59, 59);
 
     try {
         // 1. Fetch ALL historical data for the products involved to ensure accurate FIFO
