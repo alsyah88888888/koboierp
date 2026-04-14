@@ -33,7 +33,6 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
                 sd."salesPerson" as "sales_person_jual",
                 sd."date" as "sale_date",
                 sd."taxRate" as "sell_tax_rate",
-                sd."notes" as "sale_notes",
                 w."name" as "warehouse_name",
                 
                 latest_buy.buy_date,
@@ -115,8 +114,7 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
                 
                 // --- ANALYSIS ---
                 'Margin Estimasi (Rp)': Math.round(sellTotal - buyTotal),
-                'Gudang': row.warehouse_name || row.buy_warehouse_name || "Pusat",
-                'Catatan': row.sale_notes || "-"
+                'Gudang': row.warehouse_name || row.buy_warehouse_name || "Pusat"
             };
         });
 
