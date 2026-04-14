@@ -2,7 +2,7 @@
 import { getPrisma } from "@/lib/prisma";
 
 /**
- * HIGH PERFORMANCE MATCHED TRACEABILITY (BUY/SELL PAIRING)
+ * ADVANCED FIFO TRACEABILITY (BUY/SELL PAIRING)
  */
 export async function getProductTraceabilityService(month?: number, year?: number) {
     const prisma = getPrisma();
@@ -14,144 +14,212 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
         const startDate = new Date(filterYear, filterMonth - 1, 1);
         const endDate = new Date(filterYear, filterMonth, 0, 23, 59, 59);
 
-        // 2. High Performance Raw SQL Join
-        // Using LATERAL JOIN to find the latest purchase for each sales item efficiently.
-        // 2. High Performance Raw SQL Join
-        // Optimized to include returns for both side (Buy/Sell)
-        const results = await prisma.$queryRaw`
-            SELECT 
-                sdi."productId",
-                p."sku",
-                p."name" as "product_name",
-                p."uom",
-                sdi."quantity" as "qty_jual_gross",
-                COALESCE(sret.ret_qty, 0) as "sale_ret_qty",
-                sdi."salesPrice" as "sell_price",
-                sdi."discount" as "sell_disc",
-                sdi."vendorName" as "vendor_name",
-                sd."deliveryNumber" as "delivery_number",
-                sd."poNumber" as "po_number",
-                sd."buyerName" as "buyer_name",
-                sd."recipient",
-                sd."salesPerson" as "sales_person_jual",
-                sd."date" as "sale_date",
-                sd."taxRate" as "sell_tax_rate",
-                w."name" as "warehouse_name",
-                
-                latest_buy.buy_date,
-                latest_buy.buy_receipt_number,
-                latest_buy.buy_form_number,
-                latest_buy.buy_received_from,
-                latest_buy.buy_sales_person,
-                latest_buy.buy_qty_gross,
-                COALESCE(pret.ret_qty, 0) as "buy_ret_qty",
-                latest_buy.buy_price,
-                latest_buy.buy_disc,
-                latest_buy.buy_tax_rate,
-                latest_buy.buy_warehouse_name
-            FROM "SalesDeliveryItem" sdi
-            JOIN "SalesDelivery" sd ON sdi."deliveryId" = sd."id"
-            JOIN "Product" p ON sdi."productId" = p."id"
-            LEFT JOIN "Warehouse" w ON sd."warehouseId" = w."id"
-            
-            -- Subquery for Sales Returns
-            LEFT JOIN (
-                SELECT "deliveryItemId", SUM(quantity) as ret_qty
-                FROM "SalesReturnItem"
-                GROUP BY "deliveryItemId"
-            ) sret ON sdi."id" = sret."deliveryItemId"
-            
-            -- Matching with Purchase Data
-            LEFT JOIN LATERAL (
-                SELECT 
-                    gr."id" as buy_id,
-                    gr."date" as buy_date,
-                    gr."receiptNumber" as buy_receipt_number,
-                    gr."formNumber" as buy_form_number,
-                    gr."receivedFrom" as buy_received_from,
-                    gr."salesPerson" as buy_sales_person,
-                    gri."quantity" as buy_qty_gross,
-                    gri."purchasePrice" as buy_price,
-                    gri."discount" as buy_disc,
-                    gr."taxRate" as buy_tax_rate,
-                    bw."name" as buy_warehouse_name
-                FROM "GoodsReceiptItem" gri
-                JOIN "GoodsReceipt" gr ON gri."receiptId" = gr."id"
-                LEFT JOIN "Warehouse" bw ON gr."warehouseId" = bw."id"
-                WHERE gri."productId" = sdi."productId" 
-                  AND (gr."receivedFrom" = sdi."vendorName" OR sdi."vendorName" = 'UMUM')
-                ORDER BY gr."date" DESC, gr."createdAt" DESC
-                LIMIT 1
-            ) latest_buy ON TRUE
-
-            -- Join Purchase Returns based on the matched LPB
-            LEFT JOIN (
-                SELECT pr."receiptId", pri."productId", SUM(pri.quantity) as ret_qty
-                FROM "PurchaseReturnItem" pri
-                JOIN "PurchaseReturn" pr ON pri."purchaseReturnId" = pr."id"
-                GROUP BY pr."receiptId", pri."productId"
-            ) pret ON latest_buy.buy_id = pret."receiptId" AND sdi."productId" = pret."productId"
-
-            WHERE sd."date" >= ${startDate} AND sd."date" <= ${endDate}
-            ORDER BY sd."date" DESC
-        `;
-
-        // 3. Map SQL Results to Excel Format
-        return (results as any[]).map((row: any) => {
-            const saleQtyGross = Number(row.qty_jual_gross || 0);
-            const saleQtyRet = Number(row.sale_ret_qty || 0);
-            const netSaleQty = saleQtyGross - saleQtyRet;
-
-            const buyQtyGross = Number(row.buy_qty_gross || 0);
-            const buyQtyRet = Number(row.buy_ret_qty || 0);
-            const netBuyQty = buyQtyGross - buyQtyRet;
-
-            const buyPrice = Number(row.buy_price || 0);
-            const sellPrice = Number(row.sell_price || 0);
-            const buyDisc = Number(row.buy_disc || 0);
-            const sellDisc = Number(row.sell_disc || 0);
-            const buyTaxRate = Number(row.buy_tax_rate || 0);
-            const sellTaxRate = Number(row.sell_tax_rate || 0);
-
-            // Calculation based on Net quantities
-            const buyTotal = netSaleQty * (buyPrice - buyDisc); 
-            const sellTotal = netSaleQty * (sellPrice - sellDisc);
-
-            return {
-                'Satuan': row.uom || "PCS",
-                'SKU': row.sku,
-                'Nama Barang': row.product_name,
-                'Tanggal': row.sale_date ? new Date(row.sale_date).toLocaleDateString('id-ID') : "-",
-                
-                // --- INFO PEMBELIAN (KIRI) ---
-                '[BELI] Tgl': row.buy_date ? new Date(row.buy_date).toLocaleDateString('id-ID') : "-",
-                '[BELI] No. LPB': row.buy_receipt_number || "-",
-                '[BELI] No. SJ Supplier': row.buy_form_number || "-",
-                '[BELI] Supplier': row.vendor_name || row.buy_received_from || "UMUM",
-                '[BELI] Sales (BC/PF)': row.buy_sales_person || "-",
-                '[BELI] Qty Asli': buyQtyGross,
-                '[BELI] Qty Retur': buyQtyRet,
-                '[BELI] Qty Bersih': netBuyQty,
-                '[BELI] Harga Satuan': buyPrice,
-                '[BELI] PPN (%)': buyTaxRate > 0 ? `${buyTaxRate}%` : "0%",
-                
-                // --- INFO PENJUALAN (KANAN) ---
-                '[JUAL] No. TRN': row.delivery_number || "-",
-                '[JUAL] No. PO Buyer': row.po_number || "-",
-                '[JUAL] Buyer / Customer': row.buyer_name || row.recipient || "UMUM",
-                '[JUAL] Sales (BC/PF)': row.sales_person_jual || "-",
-                '[JUAL] Qty Asli': saleQtyGross,
-                '[JUAL] Qty Retur': saleQtyRet,
-                '[JUAL] Qty Jual Bersih': netSaleQty,
-                '[JUAL] Harga Jual Satuan': sellPrice,
-                '[JUAL] PPN (%)': sellTaxRate > 0 ? `${sellTaxRate}%` : "0%",
-                '[JUAL] Total Nilai Jual': sellTotal,
-                
-                // --- ANALYSIS ---
-                'Margin Estimasi (Rp)': Math.round(sellTotal - buyTotal),
-                'Gudang': row.warehouse_name || row.buy_warehouse_name || "Pusat"
-            };
+        // 2. Fetch All Relevant Data for the entire period (and before for FIFO buffer)
+        // We fetch everything to ensure FIFO accuracy, then filter result rows by date.
+        
+        // a. Fetch All Purchases (LPB)
+        const allLPBItems = await prisma.goodsReceiptItem.findMany({
+            where: { receipt: { isVoid: false } },
+            include: { 
+                receipt: { include: { warehouse: true } },
+                product: true
+            },
+            orderBy: [{ receipt: { date: 'asc' } }, { receipt: { createdAt: 'asc' } }]
         });
+
+        // b. Fetch All Purchase Returns
+        const allPurchaseReturns = await prisma.purchaseReturnItem.findMany({
+            where: { purchaseReturn: { isVoid: false } },
+            include: { purchaseReturn: true }
+        });
+
+        // c. Fetch All Sales (SJ)
+        const allSJItems = await prisma.salesDeliveryItem.findMany({
+            where: { delivery: { isVoid: false } },
+            include: { 
+                delivery: { include: { warehouse: true } },
+                product: true
+            },
+            orderBy: [{ delivery: { date: 'asc' } }, { delivery: { createdAt: 'asc' } }]
+        });
+
+        // d. Fetch All Sales Returns
+        const allSalesReturns = await prisma.salesReturnItem.findMany({
+            where: { salesReturn: { isVoid: false } },
+            include: { salesReturn: true }
+        });
+
+        // 3. Process Data into Product Batches
+        const productStats: Record<string, { buyers: any[], sellers: any[] }> = {};
+
+        // Group Purchases by Product
+        for (const item of allLPBItems) {
+            if (!productStats[item.productId]) productStats[item.productId] = { buyers: [], sellers: [] };
+            
+            // Calculate Net Qty for this specific LPB item
+            const itemReturns = allPurchaseReturns
+                .filter(r => r.purchaseReturn.receiptId === item.receiptId && r.productId === item.productId)
+                .reduce((sum, r) => sum + r.quantity, 0);
+
+            productStats[item.productId].buyers.push({
+                id: item.id,
+                receiptId: item.receiptId,
+                date: item.receipt.date,
+                number: item.receipt.receiptNumber,
+                formNumber: item.receipt.formNumber,
+                receivedFrom: item.receipt.receivedFrom,
+                salesPerson: item.receipt.salesPerson,
+                qtyGross: item.quantity,
+                qtyRet: itemReturns,
+                qtyNet: item.quantity - itemReturns,
+                price: Number(item.purchasePrice || 0),
+                disc: Number(item.discount || 0),
+                taxRate: Number(item.receipt.taxRate || 0),
+                warehouse: item.receipt.warehouse?.name || "Pusat",
+                sku: item.product.sku,
+                name: item.product.name,
+                uom: item.product.uom,
+                remaining: item.quantity - itemReturns
+            });
+        }
+
+        // Group Sales by Product
+        for (const item of allSJItems) {
+            if (!productStats[item.productId]) productStats[item.productId] = { buyers: [], sellers: [] };
+            
+            // Calculate Net Qty for this specific SJ item
+            const itemReturns = allSalesReturns
+                .filter(r => r.deliveryItemId === item.id)
+                .reduce((sum, r) => sum + r.quantity, 0);
+
+            productStats[item.productId].sellers.push({
+                id: item.id,
+                date: item.delivery.date,
+                number: item.delivery.deliveryNumber,
+                poNumber: item.delivery.poNumber,
+                buyerName: item.delivery.buyerName,
+                recipient: item.delivery.recipient,
+                salesPerson: item.delivery.salesPerson,
+                qtyGross: item.quantity,
+                qtyRet: itemReturns,
+                qtyNet: item.quantity - itemReturns,
+                price: Number(item.salesPrice || 0),
+                disc: Number(item.discount || 0),
+                taxRate: Number(item.delivery.taxRate || 0),
+                warehouse: item.delivery.warehouse?.name || "Pusat"
+            });
+        }
+
+        // 4. Run FIFO Allocation
+        const finalRows: any[] = [];
+
+        for (const productId in productStats) {
+            const { buyers, sellers } = productStats[productId];
+            
+            let buyerIdx = 0;
+
+            for (const sale of sellers) {
+                let qtyToAllocate = sale.qtyNet;
+
+                // Handle cases where there might be NO purchases recorded yet (negative stock)
+                if (qtyToAllocate > 0 && (buyerIdx >= buyers.length || buyers.every(b => b.remaining <= 0))) {
+                     // Still show the sale row but with empty purchase info
+                     if (sale.date >= startDate && sale.date <= endDate) {
+                        finalRows.push(formatTraceabilityRow(sale, null, sale.qtyNet));
+                     }
+                     continue;
+                }
+
+                while (qtyToAllocate > 0 && buyerIdx < buyers.length) {
+                    const batch = buyers[buyerIdx];
+                    
+                    if (batch.remaining <= 0) {
+                        buyerIdx++;
+                        continue;
+                    }
+
+                    const taken = Math.min(qtyToAllocate, batch.remaining);
+                    
+                    // Only add to report if the SALE falls within the requested period
+                    if (sale.date >= startDate && sale.date <= endDate) {
+                        finalRows.push(formatTraceabilityRow(sale, batch, taken));
+                    }
+
+                    batch.remaining -= taken;
+                    qtyToAllocate -= taken;
+
+                    if (batch.remaining <= 0) buyerIdx++;
+                }
+
+                // If sale still has remaining qty but no batches left (Oversell)
+                if (qtyToAllocate > 0 && sale.date >= startDate && sale.date <= endDate) {
+                    finalRows.push(formatTraceabilityRow(sale, null, qtyToAllocate));
+                }
+            }
+        }
+
+        return finalRows.sort((a, b) => {
+            const dateA = new Date(a['Tanggal'].split('/').reverse().join('-')).getTime();
+            const dateB = new Date(b['Tanggal'].split('/').reverse().join('-')).getTime();
+            return dateB - dateA;
+        });
+
+    } catch (error: any) {
+        console.error("[getProductTraceabilityService] FIFO ERROR:", error);
+        throw new Error(`FIFO Error: ${error.message}`);
+    }
+}
+
+/**
+ * Helper to format a single matched row
+ */
+function formatTraceabilityRow(sale: any, buy: any, matchedQty: number) {
+    const buyPrice = buy ? Number(buy.price || 0) : 0;
+    const sellPrice = Number(sale.price || 0);
+    const buyDisc = buy ? Number(buy.disc || 0) : 0;
+    const sellDisc = Number(sale.disc || 0);
+    const buyTaxRate = buy ? Number(buy.taxRate || 0) : 0;
+    const sellTaxRate = Number(sale.taxRate || 0);
+
+    const buyTotal = matchedQty * (buyPrice - buyDisc); 
+    const sellTotal = matchedQty * (sellPrice - sellDisc);
+
+    return {
+        'Satuan': buy?.uom || "KARTON",
+        'SKU': buy?.sku || "-",
+        'Nama Barang': buy?.name || "-",
+        'Tanggal': sale.date ? new Date(sale.date).toLocaleDateString('id-ID') : "-",
+        
+        // --- INFO PEMBELIAN (KIRI) ---
+        '[BELI] Tgl': buy?.date ? new Date(buy.date).toLocaleDateString('id-ID') : "-",
+        '[BELI] No. LPB': buy?.number || "-",
+        '[BELI] No. SJ Supplier': buy?.formNumber || "-",
+        '[BELI] Supplier': buy?.receivedFrom || "UMUM",
+        '[BELI] Sales (BC/PF)': buy?.salesPerson || "-",
+        '[BELI] Qty Asli': buy?.qtyGross || 0,
+        '[BELI] Qty Retur': buy?.qtyRet || 0,
+        '[BELI] Qty Bersih': buy?.qtyNet || 0,
+        '[BELI] Harga Satuan': buyPrice,
+        '[BELI] PPN (%)': buyTaxRate > 0 ? `${buyTaxRate}%` : "0%",
+        
+        // --- INFO PENJUALAN (KANAN) ---
+        '[JUAL] No. TRN': sale.number || "-",
+        '[JUAL] No. PO Buyer': sale.poNumber || "-",
+        '[JUAL] Buyer / Customer': sale.buyerName || sale.recipient || "UMUM",
+        '[JUAL] Sales (BC/PF)': sale.salesPerson || "-",
+        '[JUAL] Qty Penjodoh': matchedQty, // Qty that specifically matches this LPB
+        '[JUAL] Qty Asli': sale.qtyGross,
+        '[JUAL] Qty Retur': sale.qtyRet,
+        '[JUAL] Qty Jual Bersih': sale.qtyNet,
+        '[JUAL] Harga Jual Satuan': sellPrice,
+        '[JUAL] PPN (%)': sellTaxRate > 0 ? `${sellTaxRate}%` : "0%",
+        '[JUAL] Total Nilai Jual': sellTotal,
+        
+        // --- ANALYSIS ---
+        'Margin Estimasi (Rp)': Math.round(sellTotal - buyTotal),
+        'Gudang': sale.warehouse || buy?.warehouse || "Pusat"
+    };
+}
 
     } catch (error: any) {
         console.error("[getProductTraceabilityService] FATAL SQL ERROR:", error);
