@@ -163,8 +163,10 @@ export async function createGoodsReceiptService(data: any, userId: string) {
         const subtotal = Math.round(grossAmount - totalItemDiscounts);
         const totalDiscountNominal = Math.round(Number(data.totalDiscount) || 0);
         const taxRatePercent = Number(data.taxRate) || 0;
-        const taxAmount = Math.round((subtotal - totalDiscountNominal) * (taxRatePercent / 100));
-        const grandTotal = Math.round(subtotal - totalDiscountNominal + taxAmount);
+        const dpp = subtotal - totalDiscountNominal;
+        const dppNilaiLain = taxRatePercent > 0 ? Math.round(dpp * 0.916666666666667) : 0;
+        const taxAmount = taxRatePercent > 0 ? Math.round(dppNilaiLain * 0.12) : 0;
+        const grandTotal = Math.round(dpp + taxAmount);
 
         await tx.goodsReceipt.update({
             where: { id: receipt.id },
@@ -308,8 +310,10 @@ export async function updateGoodsReceiptService(id: string, data: any, userId: s
         const subtotal = Math.round(grossAmount - totalItemDiscounts);
         const totalDiscountNominal = Math.round(Number(data.totalDiscount) || 0);
         const taxRatePercent = Number(data.taxRate) || 0;
-        const taxAmount = Math.round((subtotal - totalDiscountNominal) * (taxRatePercent / 100));
-        const grandTotal = Math.round(subtotal - totalDiscountNominal + taxAmount);
+        const dpp = subtotal - totalDiscountNominal;
+        const dppNilaiLain = taxRatePercent > 0 ? Math.round(dpp * 0.916666666666667) : 0;
+        const taxAmount = taxRatePercent > 0 ? Math.round(dppNilaiLain * 0.12) : 0;
+        const grandTotal = Math.round(dpp + taxAmount);
 
         await tx.goodsReceipt.update({
             where: { id },
