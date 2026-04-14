@@ -4,20 +4,13 @@ import { getPrisma } from "@/lib/prisma";
 /**
  * ADVANCED FIFO TRACEABILITY (BUY/SELL PAIRING)
  */
-export async function getProductTraceabilityService(month?: number, year?: number) {
+export async function getProductTraceabilityService(month: number, year: number) {
     const prisma = getPrisma();
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0, 23, 59, 59);
 
     try {
-        // 1. Calculate Date Range
-        const filterYear = year || new Date().getFullYear();
-        const filterMonth = month || (new Date().getMonth() + 1);
-        const startDate = new Date(filterYear, filterMonth - 1, 1);
-        const endDate = new Date(filterYear, filterMonth, 0, 23, 59, 59);
-
-        // 2. Fetch All Relevant Data for the entire period (and before for FIFO buffer)
-        // We fetch everything to ensure FIFO accuracy, then filter result rows by date.
-        
-        // a. Fetch All Purchases (LPB)
+        // 1. Fetch ALL historical data for the products involved to ensure accurate FIFO
         const allLPBItems = await prisma.goodsReceiptItem.findMany({
             where: { receipt: { isVoid: false } },
             include: { 
@@ -27,13 +20,6 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
             orderBy: [{ receipt: { date: 'asc' } }, { receipt: { createdAt: 'asc' } }]
         });
 
-        // b. Fetch All Purchase Returns
-        const allPurchaseReturns = await prisma.purchaseReturnItem.findMany({
-            where: { purchaseReturn: { isVoid: false } },
-            include: { purchaseReturn: true }
-        });
-
-        // c. Fetch All Sales (SJ)
         const allSJItems = await prisma.salesDeliveryItem.findMany({
             where: { delivery: { isVoid: false } },
             include: { 
@@ -43,117 +29,124 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
             orderBy: [{ delivery: { date: 'asc' } }, { delivery: { createdAt: 'asc' } }]
         });
 
-        // d. Fetch All Sales Returns
+        const allPurchaseReturns = await prisma.purchaseReturnItem.findMany({
+            where: { purchaseReturn: { status: 'COMPLETED' } },
+            include: { purchaseReturn: true }
+        });
+
         const allSalesReturns = await prisma.salesReturnItem.findMany({
-            where: { salesReturn: { isVoid: false } },
+            where: { salesReturn: { status: 'COMPLETED' } },
             include: { salesReturn: true }
         });
 
-        // 3. Process Data into Product Batches
-        const productStats: Record<string, { buyers: any[], sellers: any[] }> = {};
+        // 2. Normalize and Group by [ProductId][VendorKey]
+        const productStats: Record<string, Record<string, { buyers: any[], sellers: any[] }>> = {};
 
-        // Group Purchases by Product
+        function getVendorKey(name: string | null) {
+            if (!name || name.trim() === "" || name.toUpperCase() === "UMUM") return "UMUM";
+            return name.trim().toUpperCase();
+        }
+
+        // Process LPBs into Groups
         for (const item of allLPBItems) {
-            if (!productStats[item.productId]) productStats[item.productId] = { buyers: [], sellers: [] };
+            const pId = item.productId;
+            const vKey = getVendorKey(item.receipt.receivedFrom);
             
-            // Calculate Net Qty for this specific LPB item
+            if (!productStats[pId]) productStats[pId] = {};
+            if (!productStats[pId][vKey]) productStats[pId][vKey] = { buyers: [], sellers: [] };
+
             const itemReturns = allPurchaseReturns
                 .filter(r => r.purchaseReturn.receiptId === item.receiptId && r.productId === item.productId)
                 .reduce((sum, r) => sum + r.quantity, 0);
 
-            productStats[item.productId].buyers.push({
-                id: item.id,
-                receiptId: item.receiptId,
+            productStats[pId][vKey].buyers.push({
+                productId: item.productId,
                 date: item.receipt.date,
                 number: item.receipt.receiptNumber,
                 formNumber: item.receipt.formNumber,
                 receivedFrom: item.receipt.receivedFrom,
-                salesPerson: item.receipt.salesPerson,
+                salesPerson: item.receipt.salesPerson || "-",
                 qtyGross: item.quantity,
                 qtyRet: itemReturns,
                 qtyNet: item.quantity - itemReturns,
+                remaining: item.quantity - itemReturns,
                 price: Number(item.purchasePrice || 0),
                 disc: Number(item.discount || 0),
                 taxRate: Number(item.receipt.taxRate || 0),
-                warehouse: item.receipt.warehouse?.name || "Pusat",
                 sku: item.product.sku,
                 name: item.product.name,
                 uom: item.product.uom,
-                remaining: item.quantity - itemReturns
+                warehouse: item.receipt.warehouse?.name || "Pusat"
             });
         }
 
-        // Group Sales by Product
+        // Process SJs into Groups
         for (const item of allSJItems) {
-            if (!productStats[item.productId]) productStats[item.productId] = { buyers: [], sellers: [] };
+            const pId = item.productId;
+            const vKey = getVendorKey(item.vendorName);
             
-            // Calculate Net Qty for this specific SJ item
+            if (!productStats[pId]) productStats[pId] = {};
+            if (!productStats[pId][vKey]) productStats[pId][vKey] = { buyers: [], sellers: [] };
+
             const itemReturns = allSalesReturns
-                .filter(r => r.deliveryItemId === item.id)
+                .filter(r => r.salesReturn.deliveryId === item.deliveryId && r.productId === item.productId)
                 .reduce((sum, r) => sum + r.quantity, 0);
 
-            productStats[item.productId].sellers.push({
-                id: item.id,
+            productStats[pId][vKey].sellers.push({
+                productId: item.productId,
                 date: item.delivery.date,
                 number: item.delivery.deliveryNumber,
-                poNumber: item.delivery.poNumber,
-                buyerName: item.delivery.buyerName,
-                recipient: item.delivery.recipient,
-                salesPerson: item.delivery.salesPerson,
+                poNumber: item.delivery.poNumber || "-",
+                buyerName: item.delivery.buyerName || item.delivery.recipient || "UMUM",
+                salesPerson: item.salesPerson || "-",
                 qtyGross: item.quantity,
                 qtyRet: itemReturns,
                 qtyNet: item.quantity - itemReturns,
                 price: Number(item.salesPrice || 0),
                 disc: Number(item.discount || 0),
                 taxRate: Number(item.delivery.taxRate || 0),
+                product: item.product,
                 warehouse: item.delivery.warehouse?.name || "Pusat"
             });
         }
 
-        // 4. Run FIFO Allocation
+        // 3. FIFO Allocation per Vendor Group
         const finalRows: any[] = [];
 
         for (const productId in productStats) {
-            const { buyers, sellers } = productStats[productId];
-            
-            let buyerIdx = 0;
+            for (const vendorKey in productStats[productId]) {
+                const { buyers, sellers } = productStats[productId][vendorKey];
+                
+                let buyerIdx = 0;
 
-            for (const sale of sellers) {
-                let qtyToAllocate = sale.qtyNet;
+                for (const sale of sellers) {
+                    let qtyToAllocate = sale.qtyNet;
 
-                // Handle cases where there might be NO purchases recorded yet (negative stock)
-                if (qtyToAllocate > 0 && (buyerIdx >= buyers.length || buyers.every(b => b.remaining <= 0))) {
-                     // Still show the sale row but with empty purchase info
-                     if (sale.date >= startDate && sale.date <= endDate) {
-                        finalRows.push(formatTraceabilityRow(sale, null, sale.qtyNet));
-                     }
-                     continue;
-                }
+                    while (qtyToAllocate > 0 && buyerIdx < buyers.length) {
+                        const batch = buyers[buyerIdx];
+                        
+                        if (batch.remaining <= 0) {
+                            buyerIdx++;
+                            continue;
+                        }
 
-                while (qtyToAllocate > 0 && buyerIdx < buyers.length) {
-                    const batch = buyers[buyerIdx];
-                    
-                    if (batch.remaining <= 0) {
-                        buyerIdx++;
-                        continue;
+                        const taken = Math.min(qtyToAllocate, batch.remaining);
+                        
+                        // Only add to report if the SALE falls within the requested period
+                        if (sale.date >= startDate && sale.date <= endDate) {
+                            finalRows.push(formatTraceabilityRow(sale, batch, taken));
+                        }
+
+                        batch.remaining -= taken;
+                        qtyToAllocate -= taken;
+
+                        if (batch.remaining <= 0) buyerIdx++;
                     }
 
-                    const taken = Math.min(qtyToAllocate, batch.remaining);
-                    
-                    // Only add to report if the SALE falls within the requested period
-                    if (sale.date >= startDate && sale.date <= endDate) {
-                        finalRows.push(formatTraceabilityRow(sale, batch, taken));
+                    // Handle Oversell (Remaining Qty with no LPB pairing in this vendor group)
+                    if (qtyToAllocate > 0 && sale.date >= startDate && sale.date <= endDate) {
+                        finalRows.push(formatTraceabilityRow(sale, null, qtyToAllocate));
                     }
-
-                    batch.remaining -= taken;
-                    qtyToAllocate -= taken;
-
-                    if (batch.remaining <= 0) buyerIdx++;
-                }
-
-                // If sale still has remaining qty but no batches left (Oversell)
-                if (qtyToAllocate > 0 && sale.date >= startDate && sale.date <= endDate) {
-                    finalRows.push(formatTraceabilityRow(sale, null, qtyToAllocate));
                 }
             }
         }
