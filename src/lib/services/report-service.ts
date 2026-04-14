@@ -43,27 +43,18 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
             include: { salesReturn: true }
         });
 
-        // 2. Normalize and Group by [ProductId][VendorKey]
-        const productStats: Record<string, Record<string, { buyers: any[], sellers: any[] }>> = {};
+        // 2. Prepare for FIFO pairing (Grouped by Product only)
+        const productStats: Record<string, { buyers: any[], sellers: any[] }> = {};
 
-        function getVendorKey(name: string | null) {
-            if (!name || name.trim() === "" || name.toUpperCase() === "UMUM") return "UMUM";
-            return name.trim().toUpperCase();
-        }
-
-        // Process LPBs into Groups
+        // Process Purchases (LPBs)
         for (const item of allLPBItems) {
-            const pId = item.productId;
-            const vKey = getVendorKey(item.receipt.receivedFrom);
+            if (!productStats[item.productId]) productStats[item.productId] = { buyers: [], sellers: [] };
             
-            if (!productStats[pId]) productStats[pId] = {};
-            if (!productStats[pId][vKey]) productStats[pId][vKey] = { buyers: [], sellers: [] };
-
             const itemReturns = allPurchaseReturns
                 .filter(r => r.purchaseReturn.receiptId === item.receiptId && r.productId === item.productId)
                 .reduce((sum, r) => sum + r.quantity, 0);
 
-            productStats[pId][vKey].buyers.push({
+            productStats[item.productId].buyers.push({
                 productId: item.productId,
                 date: item.receipt.date,
                 number: item.receipt.receiptNumber,
@@ -84,19 +75,15 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
             });
         }
 
-        // Process SJs into Groups
+        // Process Sales (SJs)
         for (const item of allSJItems) {
-            const pId = item.productId;
-            const vKey = getVendorKey(item.vendorName);
-            
-            if (!productStats[pId]) productStats[pId] = {};
-            if (!productStats[pId][vKey]) productStats[pId][vKey] = { buyers: [], sellers: [] };
+            if (!productStats[item.productId]) productStats[item.productId] = { buyers: [], sellers: [] };
 
             const itemReturns = allSalesReturns
                 .filter(r => r.salesReturn.deliveryId === item.deliveryId && r.productId === item.productId)
                 .reduce((sum, r) => sum + r.quantity, 0);
 
-            productStats[pId][vKey].sellers.push({
+            productStats[item.productId].sellers.push({
                 productId: item.productId,
                 date: item.delivery.date,
                 number: item.delivery.deliveryNumber,
@@ -114,43 +101,41 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
             });
         }
 
-        // 3. FIFO Allocation per Vendor Group
+        // 3. FIFO Allocation (Global SKU Flow)
         const finalRows: any[] = [];
 
         for (const productId in productStats) {
-            for (const vendorKey in productStats[productId]) {
-                const { buyers, sellers } = productStats[productId][vendorKey];
-                
-                let buyerIdx = 0;
+            const { buyers, sellers } = productStats[productId];
+            
+            let buyerIdx = 0;
 
-                for (const sale of sellers) {
-                    let qtyToAllocate = sale.qtyNet;
+            for (const sale of sellers) {
+                let qtyToAllocate = sale.qtyNet;
 
-                    while (qtyToAllocate > 0 && buyerIdx < buyers.length) {
-                        const batch = buyers[buyerIdx];
-                        
-                        if (batch.remaining <= 0) {
-                            buyerIdx++;
-                            continue;
-                        }
-
-                        const taken = Math.min(qtyToAllocate, batch.remaining);
-                        
-                        // Only add to report if the SALE falls within the requested period
-                        if (sale.date >= startDate && sale.date <= endDate) {
-                            finalRows.push(formatTraceabilityRow(sale, batch, taken));
-                        }
-
-                        batch.remaining -= taken;
-                        qtyToAllocate -= taken;
-
-                        if (batch.remaining <= 0) buyerIdx++;
+                while (qtyToAllocate > 0 && buyerIdx < buyers.length) {
+                    const batch = buyers[buyerIdx];
+                    
+                    if (batch.remaining <= 0) {
+                        buyerIdx++;
+                        continue;
                     }
 
-                    // Handle Oversell (Remaining Qty with no LPB pairing in this vendor group)
-                    if (qtyToAllocate > 0 && sale.date >= startDate && sale.date <= endDate) {
-                        finalRows.push(formatTraceabilityRow(sale, null, qtyToAllocate));
+                    const taken = Math.min(qtyToAllocate, batch.remaining);
+                    
+                    // Only add to report if the SALE falls within the requested period
+                    if (sale.date >= startDate && sale.date <= endDate) {
+                        finalRows.push(formatTraceabilityRow(sale, batch, taken));
                     }
+
+                    batch.remaining -= taken;
+                    qtyToAllocate -= taken;
+
+                    if (batch.remaining <= 0) buyerIdx++;
+                }
+
+                // Oversell Case (Remaining qty but no LPB batches left)
+                if (qtyToAllocate > 0 && sale.date >= startDate && sale.date <= endDate) {
+                    finalRows.push(formatTraceabilityRow(sale, null, qtyToAllocate));
                 }
             }
         }
