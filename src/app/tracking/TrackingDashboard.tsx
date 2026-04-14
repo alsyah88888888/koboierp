@@ -114,7 +114,8 @@ export function TrackingDashboard({ initialProducts, userEmail, userRole }: Trac
             
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.error || "Gagal mengambil data dari server");
+                const msg = errorData.details ? `${errorData.error} (${errorData.details})` : (errorData.error || "Gagal mengambil data dari server");
+                throw new Error(msg);
             }
             
             const data = await response.json();

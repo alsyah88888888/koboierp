@@ -114,7 +114,7 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
                 '[JUAL] Total Nilai Jual': sellTotal,
                 
                 // --- ANALYSIS ---
-                'Margin Estimasi (Rp)': sellTotal - buyTotal,
+                'Margin Estimasi (Rp)': Math.round(sellTotal - buyTotal),
                 'Gudang': row.warehouse_name || row.buy_warehouse_name || "Pusat",
                 'Catatan': row.sale_notes || "-"
             };
@@ -122,6 +122,6 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
 
     } catch (error: any) {
         console.error("[getProductTraceabilityService] FATAL SQL ERROR:", error);
-        throw error;
+        throw new Error(`SQL Error: ${error.message}`);
     }
 }
