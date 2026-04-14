@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getProductTraceabilityService } from "@/lib/services/report-service";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getAuthOptions } from "@/lib/auth";
 
 /**
  * RELIABLE EXPORT API
@@ -10,7 +10,7 @@ import { authOptions } from "@/lib/auth";
  */
 export async function GET(req: NextRequest) {
     try {
-        const session = await getServerSession(authOptions);
+        const session = await getServerSession(getAuthOptions());
         if (!session) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
