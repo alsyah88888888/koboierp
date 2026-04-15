@@ -114,35 +114,9 @@ export function StockInputModal({ products, warehouses, onClose }: { products: P
                             </div>
                         </div>
 
-                        {type === "GOODS_RECEIPT" && (
-                            <div className="pt-4 border-t border-slate-200">
-                                <div 
-                                    onClick={() => setIsAutoVerify(!isAutoVerify)}
-                                    className={cn(
-                                        "flex items-center justify-between p-4 rounded-2xl cursor-pointer transition-all",
-                                        isAutoVerify ? "bg-emerald-50 border-2 border-emerald-200" : "bg-blue-50 border-2 border-blue-200"
-                                    )}
-                                >
-                                    <div className="flex flex-col">
-                                        <span className={cn("text-xs font-black uppercase tracking-widest", isAutoVerify ? "text-emerald-700" : "text-blue-700")}>
-                                            {isAutoVerify ? "Auto-Verify: Aktif" : "Auto-Verify: Non-aktif"}
-                                        </span>
-                                        <span className="text-[10px] font-medium text-slate-500">
-                                            {isAutoVerify ? "Stok akan langsung bertambah sekarang." : "Gunakan menu Purchase untuk Draft LPB."}
-                                        </span>
-                                    </div>
-                                    <div className={cn(
-                                        "w-12 h-6 rounded-full relative transition-all",
-                                        isAutoVerify ? "bg-emerald-500" : "bg-slate-300"
-                                    )}>
-                                        <div className={cn(
-                                            "absolute top-1 w-4 h-4 bg-white rounded-full transition-all",
-                                            isAutoVerify ? "right-1" : "left-1"
-                                        )} />
-                                    </div>
-                                </div>
-                            </div>
-                        )}
+                        <div className="pt-4 border-t border-slate-200 italic text-[10px] text-slate-400 font-bold tracking-widest text-center uppercase">
+                            * Stok akan langsung diperbarui di sistem.
+                        </div>
                     </div>
 
                     <div className="pt-6 flex flex-col md:flex-row gap-3">
