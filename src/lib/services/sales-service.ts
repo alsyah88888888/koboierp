@@ -17,9 +17,7 @@ export async function createSalesDeliveryService(data: any, userId: string) {
     const dateStr = `${day}${month}${year}`;
 
     return await prisma.$transaction(async (tx: any) => {
-        const hasTaxOrDisc = typeof data.hasTaxOrDisc === 'boolean' 
-            ? data.hasTaxOrDisc 
-            : ((Number(data.taxRate) || 0) > 0 || (Number(data.totalDiscount) || 0) > 0 || data.items.some((i: any) => (Number(i.discount) || 0) > 0));
+        const hasTaxOrDisc = (Number(data.taxRate) || 0) > 0 || (Number(data.totalDiscount) || 0) > 0 || data.items.some((i: any) => (Number(i.discount) || 0) > 0);
 
         const prefix = hasTaxOrDisc ? `KB-TRN-${dateStr}-` : `KB-TRD-${dateStr}-`;
 
@@ -183,9 +181,7 @@ export async function updateSalesDeliveryService(id: string, data: any) {
         const txDate = data.createdAt || new Date();
 
         // Prefix switching logic
-        const hasTaxOrDisc = typeof data.hasTaxOrDisc === 'boolean' 
-            ? data.hasTaxOrDisc 
-            : ((Number(data.taxRate) || 0) > 0 || (Number(data.totalDiscount) || 0) > 0 || data.items.some((i: any) => (Number(i.discount) || 0) > 0));
+        const hasTaxOrDisc = (Number(data.taxRate) || 0) > 0 || (Number(data.totalDiscount) || 0) > 0 || data.items.some((i: any) => (Number(i.discount) || 0) > 0);
 
         let currentDeliveryNumber = oldDelivery.deliveryNumber;
         const isCurrentlyTaxed = currentDeliveryNumber.startsWith("KB-TRND-") || currentDeliveryNumber.startsWith("KB-SJD-");
