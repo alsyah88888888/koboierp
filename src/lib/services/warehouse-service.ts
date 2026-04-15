@@ -228,9 +228,9 @@ export async function voidGoodsReceiptService(id: string, reason: string) {
         if (receipt.isVerified) {
             // Revert Stock
             for (const item of receipt.items) {
-                const vendorName = item.vendorName || "UMUM";
+                const vendorName = receipt.receivedFrom || "UMUM";
                 
-                await tx.stock.update({
+                await tx.stock.upsert({
                     where: {
                         productId_warehouseId_vendorName: {
                             productId: item.productId,
@@ -238,7 +238,13 @@ export async function voidGoodsReceiptService(id: string, reason: string) {
                             vendorName: vendorName
                         }
                     },
-                    data: { quantity: { decrement: item.quantity } }
+                    update: { quantity: { decrement: item.quantity } },
+                    create: {
+                        productId: item.productId,
+                        warehouseId: receipt.warehouseId,
+                        vendorName: vendorName,
+                        quantity: -item.quantity
+                    }
                 });
 
                 // Create Reversing Movement
