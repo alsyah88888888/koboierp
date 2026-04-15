@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Search, CheckCircle, AlertCircle, Barcode, Printer, Package, ChevronRight, X, AlertTriangle } from "lucide-react";
+import { Search, CheckCircle, AlertCircle, Barcode, Printer, Package, ChevronRight, X, AlertTriangle, Camera, CameraOff, Sparkles } from "lucide-react";
+import { Html5Qrcode } from "html5-qrcode";
 import { format } from "date-fns";
 import { callAction } from "@/proxy";
 
@@ -15,21 +16,63 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
     const [checkedItems, setCheckedItems] = useState<Record<string, number>>({});
     const [isVerifying, setIsVerifying] = useState(false);
     const [showDiscrepancyModal, setShowDiscrepancyModal] = useState(false);
+    const [showCamera, setShowCamera] = useState(false);
+    const [lastScannedId, setLastScannedId] = useState<string | null>(null);
     const scanInputRef = useRef<HTMLInputElement>(null);
+    const cameraRef = useRef<Html5Qrcode | null>(null);
 
     // Auto-focus barcode input
     useEffect(() => {
-        if (selectedReceipt && scanInputRef.current) {
+        if (selectedReceipt && scanInputRef.current && !showCamera) {
             scanInputRef.current.focus();
         }
-    }, [selectedReceipt]);
+    }, [selectedReceipt, showCamera]);
+
+    // Handle Camera Scanner Lifecycle
+    useEffect(() => {
+        if (showCamera && selectedReceipt) {
+            const startCamera = async () => {
+                try {
+                    const html5QrCode = new Html5Qrcode("reader");
+                    cameraRef.current = html5QrCode;
+                    await html5QrCode.start(
+                        { facingMode: "environment" },
+                        {
+                            fps: 10,
+                            qrbox: { width: 250, height: 250 }
+                        },
+                        (decodedText) => {
+                            handleScan(decodedText);
+                        },
+                        () => { } // Error silencer
+                    );
+                } catch (err) {
+                    console.error("Failed to start camera", err);
+                    alert("Gagal mengakses kamera. Pastikan izin kamera sudah diaktifkan.");
+                    setShowCamera(false);
+                }
+            };
+            startCamera();
+        }
+
+        return () => {
+            if (cameraRef.current && cameraRef.current.isScanning) {
+                cameraRef.current.stop().then(() => {
+                    cameraRef.current?.clear();
+                }).catch(err => console.error("Error stopping camera", err));
+            }
+        };
+    }, [showCamera, selectedReceipt]);
 
     const handleScan = (barcode: string) => {
-        if (!selectedReceipt) return;
+        if (!selectedReceipt || !barcode) return;
+
+        const cleanBarcode = barcode.trim().toUpperCase();
 
         // Find item by barcode or SKU
         const item = selectedReceipt.items.find((i: any) =>
-            i.product.barcode === barcode || i.product.sku === barcode
+            (i.product.barcode && i.product.barcode.toUpperCase() === cleanBarcode) ||
+            (i.product.sku && i.product.sku.toUpperCase() === cleanBarcode)
         );
 
         if (item) {
@@ -38,9 +81,21 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
                 [item.id]: (prev[item.id] || 0) + 1
             }));
             setScanBuffer("");
+            setLastScannedId(item.id);
+            setTimeout(() => setLastScannedId(null), 1000);
         } else {
-            alert("Barang tidak ditemukan dalam surat jalan ini!");
+            // Optional: visual error feedback instead of alert to not interrupt scanning flow
             setScanBuffer("");
+            // Play error beep if possible via browser
+            try {
+                const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(440, audioContext.currentTime);
+                oscillator.connect(audioContext.destination);
+                oscillator.start();
+                oscillator.stop(audioContext.currentTime + 0.1);
+            } catch (e) {}
         }
     };
 
@@ -100,26 +155,55 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
                 <div className="p-8 space-y-8">
                     <div className="bg-primary/5 p-6 rounded-[2rem] border-2 border-primary/10 border-dashed flex flex-col md:flex-row gap-6 items-center justify-between">
                         <div className="flex-1">
-                            <p className="text-sm font-black text-slate-800">Scan Barcode / SKU</p>
-                            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-tight mt-1">Sistem akan otomatis menghitung jumlah barang yang masuk.</p>
+                            <div className="flex items-center gap-2">
+                                <p className="text-sm font-black text-slate-800">Scan Barcode / SKU</p>
+                                <div className="bg-emerald-500 w-2 h-2 rounded-full animate-pulse" />
+                            </div>
+                            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-tight mt-1">Gunakan alat scanner atau kamera HP di bawah.</p>
                         </div>
-                        <div className="relative w-full md:w-80">
-                            <label htmlFor="barcode-checker-input" className="sr-only">Scan SKU / Barcode</label>
-                            <Barcode className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary" />
-                            <input
-                                id="barcode-checker-input"
-                                name="barcodeCheck"
-                                ref={scanInputRef}
-                                value={scanBuffer}
-                                onChange={(e) => setScanBuffer(e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') handleScan(scanBuffer);
-                                }}
-                                placeholder="Klik disini & Tarik Barcode..."
-                                className="w-full pl-12 pr-4 py-3 bg-white border-2 border-primary/20 rounded-2xl focus:border-primary outline-none transition-all font-mono font-bold text-sm shadow-inner"
-                            />
+                        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                            <button 
+                                onClick={() => setShowCamera(!showCamera)}
+                                className={cn(
+                                    "flex items-center justify-center gap-2 px-6 py-3 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all active:scale-95 shadow-lg",
+                                    showCamera 
+                                        ? "bg-rose-500 text-white shadow-rose-200" 
+                                        : "bg-indigo-600 text-white shadow-indigo-200 hover:bg-indigo-700"
+                                )}
+                            >
+                                {showCamera ? <CameraOff className="h-4 w-4" /> : <Camera className="h-4 w-4" />}
+                                {showCamera ? "Tutup Kamera" : "Scan via Kamera HP"}
+                            </button>
+                            
+                            <div className="relative flex-1 md:w-64">
+                                <Barcode className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary" />
+                                <input
+                                    id="barcode-checker-input"
+                                    name="barcodeCheck"
+                                    ref={scanInputRef}
+                                    value={scanBuffer}
+                                    onChange={(e) => setScanBuffer(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') handleScan(scanBuffer);
+                                    }}
+                                    placeholder="Input Manual / Scanner..."
+                                    className="w-full pl-12 pr-4 py-3 bg-white border-2 border-primary/20 rounded-2xl focus:border-primary outline-none transition-all font-mono font-bold text-sm shadow-inner"
+                                />
+                            </div>
                         </div>
                     </div>
+
+                    {showCamera && (
+                        <div className="relative bg-slate-900 rounded-[2rem] overflow-hidden border-4 border-slate-800 shadow-2xl animate-in fade-in slide-in-from-top-4 duration-300">
+                            <div id="reader" className="w-full h-[300px] md:h-[400px]"></div>
+                            <div className="absolute inset-x-0 bottom-4 flex justify-center pointer-events-none">
+                                <div className="bg-white/10 backdrop-blur-md px-4 py-2 rounded-full border border-white/20 flex items-center gap-2">
+                                    <Sparkles className="h-3 w-3 text-emerald-400" />
+                                    <span className="text-[10px] text-white font-black uppercase tracking-widest">Arahkan ke Barcode Produk</span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     <div className="overflow-hidden rounded-2xl border-2 border-slate-100 bg-white">
                         <table className="w-full text-sm text-left">
@@ -135,8 +219,15 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
                                 {selectedReceipt.items.map((item: any) => {
                                     const scanned = checkedItems[item.id] || 0;
                                     const isComplete = scanned === item.quantity;
+                                    const isFlashing = lastScannedId === item.id;
                                     return (
-                                        <tr key={item.id} className={cn("transition-colors", isComplete ? "bg-emerald-50/30" : "hover:bg-slate-50")}>
+                                        <tr
+                                            key={item.id}
+                                            className={cn(
+                                                "transition-all duration-300",
+                                                isFlashing ? "bg-emerald-400/20 scale-[1.01] shadow-lg relative z-10" : isComplete ? "bg-emerald-50/30" : "hover:bg-slate-50"
+                                            )}
+                                        >
                                             <td className="px-6 py-4">
                                                 <div className="font-black text-slate-800">{item.product?.name || "Unknown Product"}</div>
                                                 <div className="text-[10px] font-mono text-slate-400 uppercase tracking-tighter mt-1">{item.product?.sku || "-"}</div>
