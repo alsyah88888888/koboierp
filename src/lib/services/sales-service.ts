@@ -17,16 +17,16 @@ export async function createSalesDeliveryService(data: any, userId: string) {
     const dateStr = `${day}${month}${year}`;
 
     return await prisma.$transaction(async (tx: any) => {
-        const hasTaxOrDisc = (Number(data.taxRate) || 0) > 0 || (Number(data.totalDiscount) || 0) > 0 || data.items.some((i: any) => (Number(i.discount) || 0) > 0);
+        const isPKP = data.isPKP === true || (Number(data.taxRate) || 0) > 0;
 
-        const prefix = hasTaxOrDisc ? `KB-TRN-${dateStr}-` : `KB-TRD-${dateStr}-`;
+        const prefix = isPKP ? `KB-TRN-${dateStr}-` : `KB-TRD-${dateStr}-`;
 
         const latest = await tx.salesDelivery.findFirst({
             where: {
                 OR: [
                     { deliveryNumber: { startsWith: prefix } },
-                    { deliveryNumber: { startsWith: hasTaxOrDisc ? `KB-SJ-${dateStr}-` : `KB-SJD-${dateStr}-` } }, // Reversed logic for fallback compat
-                    { deliveryNumber: { startsWith: hasTaxOrDisc ? `KB-TRND-${dateStr}-` : `KB-TRN-${dateStr}-` } } // Old logic compat
+                    { deliveryNumber: { startsWith: isPKP ? `KB-SJ-${dateStr}-` : `KB-SJD-${dateStr}-` } },
+                    { deliveryNumber: { startsWith: isPKP ? `KB-TRND-${dateStr}-` : `KB-TRN-${dateStr}-` } }
                 ]
             },
             orderBy: { deliveryNumber: 'desc' }
@@ -186,19 +186,16 @@ export async function updateSalesDeliveryService(id: string, data: any) {
 
         const txDate = data.createdAt || new Date();
 
-        // Prefix switching logic
-        const hasTaxOrDisc = (Number(data.taxRate) || 0) > 0 || (Number(data.totalDiscount) || 0) > 0 || data.items.some((i: any) => (Number(i.discount) || 0) > 0);
+        // Prefix switching logic based on PKP flag
+        const isPKP = data.isPKP === true || (Number(data.taxRate) || 0) > 0;
 
         let currentDeliveryNumber = oldDelivery.deliveryNumber;
-        const isCurrentlyTaxed = currentDeliveryNumber.startsWith("KB-TRND-") || currentDeliveryNumber.startsWith("KB-SJD-");
-        const currentIsTRN = currentDeliveryNumber.startsWith("KB-TRN-") || currentDeliveryNumber.startsWith("KB-SJ-");
-
-        if (hasTaxOrDisc && !isCurrentlyTaxed) {
-            // Update to TRN (active)
-            currentDeliveryNumber = currentDeliveryNumber.replace("KB-SJ-", "KB-TRN-").replace("KB-TRD-", "KB-TRN-").replace("KB-SJD-", "KB-TRN-");
-        } else if (!hasTaxOrDisc && !currentIsTRN) {
-            // Update to TRD (inactive)
-            currentDeliveryNumber = currentDeliveryNumber.replace("KB-SJD-", "KB-TRD-").replace("KB-TRN-", "KB-TRD-").replace("KB-SJ-", "KB-TRD-");
+        const currentIsPKP = currentDeliveryNumber.startsWith("KB-TRN");
+        
+        if (isPKP && !currentIsPKP) {
+            currentDeliveryNumber = currentDeliveryNumber.replace("KB-TRD-", "KB-TRN-").replace("KB-SJ-", "KB-TRN-").replace("KB-SJD-", "KB-TRN-");
+        } else if (!isPKP && currentIsPKP) {
+            currentDeliveryNumber = currentDeliveryNumber.replace("KB-TRN-", "KB-TRD-").replace("KB-TRND-", "KB-TRD-");
         }
 
         await tx.salesDelivery.update({

@@ -40,7 +40,8 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
     const [showDiscount, setShowDiscount] = useState(false);
     const [totalDiscount, setTotalDiscount] = useState<number | string>(0);
     const [totalDiscountPercent, setTotalDiscountPercent] = useState<number | string>("");
-    const [taxRate, setTaxRate] = useState<number | "">(0); // 0 or 0.11
+    const [taxRate, setTaxRate] = useState<number | "">(0);
+    const [isPKP, setIsPKP] = useState(false); // false = Non-PKP (KB-TRD), true = PKP (KB-TRN)
     const [result, setResult] = useState<any>(null);
 
     // Helper to parse Indonesian numbers (remove dots, replace comma with dot)
@@ -59,7 +60,9 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
             setDate(new Date(initialData.createdAt).toISOString().split('T')[0]);
             setPoNumber(initialData.poNumber || "");
             setTotalDiscount(Number(initialData.totalDiscount || 0));
-            setTaxRate(Number(initialData.taxRate || 0));
+            const initTax = Number(initialData.taxRate || 0);
+            setTaxRate(initTax);
+            setIsPKP(initTax > 0);
             setVehicleNumber(initialData.vehicleNumber || "");
 
             if (initialData.items && initialData.items.length > 0) {
@@ -176,8 +179,10 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
         return parseIndoNumber(totalDiscount);
     }, [subtotal, totalDiscountPercent, totalDiscount]);
 
-    const taxAmount = (subtotal - finalDiscountNominal) * (Number(taxRate) / 100);
-    const grandTotal = Math.round(subtotal - finalDiscountNominal + taxAmount);
+    const dpp = subtotal - finalDiscountNominal;
+    const dppNilaiLain = isPKP ? Math.round(dpp * 0.916666666666667) : 0;
+    const taxAmount = isPKP ? Math.round(dppNilaiLain * 0.12) : 0;
+    const grandTotal = Math.round(dpp + taxAmount);
 
     const handleSubmit = async (e?: React.FormEvent) => {
         e?.preventDefault();
@@ -198,9 +203,9 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                 vehicleNumber,
                 warehouseId,
                 salesPerson,
-                hasTaxOrDisc: showDiscount,
+                isPKP: isPKP,
                 totalDiscount: Number(finalDiscountNominal) || 0,
-                taxRate: Number(taxRate) || 0,
+                taxRate: isPKP ? 11 : 0,
                 createdAt: new Date(date),
                 items: items.map(i => ({
                     productId: i.productId,
@@ -578,17 +583,34 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                                             </div>
                                         </div>
 
-                                        <div className="space-y-1">
-                                            <label className="text-[10px] font-bold text-blue-400 uppercase tracking-widest ml-1">Pajak PPN (%)</label>
-                                            <select 
-                                                value={taxRate} 
-                                                onChange={e => setTaxRate(Number(e.target.value))}
-                                                className="w-full bg-white/5 border border-white/10 rounded-xl p-2.5 text-sm font-black focus:border-blue-500/50 outline-none font-mono"
-                                            >
-                                                <option value={0} className="text-slate-900">Non PPN (0%)</option>
-                                                <option value={11} className="text-slate-900">PPN 11%</option>
-                                                <option value={12} className="text-slate-900">PPN 12%</option>
-                                            </select>
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-bold text-blue-400 uppercase tracking-widest ml-1">Tipe Faktur</label>
+                                            <div className="flex gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => { setIsPKP(true); setTaxRate(11); }}
+                                                    className={`flex-1 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all border ${
+                                                        isPKP 
+                                                            ? 'bg-blue-500 border-blue-400 text-white shadow-lg shadow-blue-500/30' 
+                                                            : 'bg-white/5 border-white/10 text-slate-500 hover:border-blue-400/50'
+                                                    }`}
+                                                >
+                                                    PKP
+                                                    <span className="block text-[8px] font-bold opacity-70 mt-0.5">KB-TRN • PPN 11%</span>
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => { setIsPKP(false); setTaxRate(0); }}
+                                                    className={`flex-1 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all border ${
+                                                        !isPKP 
+                                                            ? 'bg-slate-600 border-slate-500 text-white shadow-lg shadow-slate-600/30' 
+                                                            : 'bg-white/5 border-white/10 text-slate-500 hover:border-slate-400/50'
+                                                    }`}
+                                                >
+                                                    Non PKP
+                                                    <span className="block text-[8px] font-bold opacity-70 mt-0.5">KB-TRD • 0%</span>
+                                                </button>
+                                            </div>
                                         </div>
 
                                         <div className="pt-4 mt-2 border-t border-white/10">
