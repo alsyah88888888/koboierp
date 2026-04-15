@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { X, Save, Plus, Trash2, Tag, ShoppingCart, Loader2, FileCheck, Check, Search, AlertCircle, Wand2 } from "lucide-react";
+import { X, Save, Plus, Trash2, Tag, ShoppingCart, Loader2, FileCheck, Check, Search, AlertCircle, Wand2, Activity } from "lucide-react";
 import { callAction } from "@/proxy";
 import { cn } from "@/lib/utils";
 import { useDialog } from "@/components/ui/DialogProvider";
