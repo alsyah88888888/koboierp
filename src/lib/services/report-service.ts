@@ -29,10 +29,10 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
         if (targetProductIds.length === 0) return [];
 
         // STEP 2: Fetch data ONLY for those products
-        const [allLPBItems, allSJItems, allPurchaseReturns, allSalesReturns] = await Promise.all([
+        const [allLPBItems, allSJItems, allPurchaseReturns, allSalesReturns, allAdjustments] = await Promise.all([
             // Purchases for target products only
             prisma.goodsReceiptItem.findMany({
-                where: { productId: { in: targetProductIds }, receipt: { isVoid: false } },
+                where: { productId: { in: targetProductIds }, receipt: { isVerified: true, isVoid: false } }, // Ensure verified
                 include: { 
                     receipt: { select: { date: true, createdAt: true, receiptNumber: true, formNumber: true, receivedFrom: true, salesPerson: true, taxRate: true, warehouse: { select: { name: true } } } },
                     product: { select: { sku: true, name: true, uom: true } }
@@ -57,6 +57,12 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
             prisma.salesReturnItem.findMany({
                 where: { productId: { in: targetProductIds }, salesReturn: { status: 'COMPLETED' } },
                 select: { productId: true, quantity: true, salesReturn: { select: { deliveryId: true } } }
+            }),
+            // NEW: Adjustments as potential sources (Saldo Awal)
+            prisma.stockMovement.findMany({
+                where: { productId: { in: targetProductIds }, type: 'ADJUSTMENT', quantity: { gt: 0 } },
+                include: { product: { select: { sku: true, name: true, uom: true, purchasePrice: true } }, warehouse: { select: { name: true } } },
+                orderBy: { createdAt: 'asc' }
             })
         ]);
 
@@ -84,7 +90,8 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
             const itemReturns = purchaseReturnMap.get(retKey) || 0;
 
             productStats[item.productId].buyers.push({
-                date: item.receipt.date,
+                type: 'LPB',
+                date: item.receipt.date || item.receipt.createdAt,
                 number: item.receipt.receiptNumber,
                 formNumber: item.receipt.formNumber,
                 receivedFrom: item.receipt.receivedFrom,
@@ -101,6 +108,36 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
                 uom: item.product.uom,
                 warehouse: item.receipt.warehouse?.name || "Pusat"
             });
+        }
+
+        // Add Adjustments to buyers list
+        for (const adj of allAdjustments) {
+            if (!productStats[adj.productId]) productStats[adj.productId] = { buyers: [], sellers: [] };
+
+            productStats[adj.productId].buyers.push({
+                type: 'ADJUSTMENT',
+                date: adj.createdAt,
+                number: adj.reference || "[ADJUSTMENT]",
+                formNumber: "-",
+                receivedFrom: "[SALDO AWAL / SYNC]",
+                salesPerson: "-",
+                qtyGross: adj.quantity,
+                qtyRet: 0,
+                qtyNet: adj.quantity,
+                remaining: adj.quantity,
+                price: Number(adj.product.purchasePrice || 0),
+                disc: 0,
+                taxRate: 0,
+                sku: adj.product.sku,
+                name: adj.product.name,
+                uom: adj.product.uom,
+                warehouse: adj.warehouse?.name || "Pusat"
+            });
+        }
+
+        // Sort unified buyers (LPB + Adjustment) by date ASC
+        for (const productId in productStats) {
+            productStats[productId].buyers.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
         }
 
         for (const item of allSJItems) {
@@ -197,7 +234,7 @@ function formatTraceabilityRow(sale: any, buy: any, matchedQty: number) {
         
         // --- INFO PEMBELIAN (KIRI) ---
         '[BELI] Tgl': buy?.date ? new Date(buy.date).toLocaleDateString('id-ID') : "-",
-        '[BELI] No. LPB': buy?.number || "[SALDO AWAL / BELUM INPUT]",
+        '[BELI] No. LPB': buy?.type === 'ADJUSTMENT' ? `[ADJ] ${buy.number}` : (buy?.number || "[BELUM INPUT]"),
         '[BELI] No. SJ Supplier': buy?.formNumber || "-",
         '[BELI] Supplier': buy?.receivedFrom || (buy ? "UMUM" : "-"),
         '[BELI] Sales (BC/PF)': buy?.salesPerson || "-",
