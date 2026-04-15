@@ -156,7 +156,21 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                     {activeTab === "inventory" && <div className="absolute -right-4 -bottom-4 w-16 h-16 bg-white/10 rounded-full" />}
                 </button>
 
-{/* Checker Section Disabled */}
+                <button
+                    onClick={() => setActiveTab("checker")}
+                    className={cn(
+                        "p-6 rounded-[2rem] border-2 transition-all group relative overflow-hidden flex flex-col items-center gap-3 text-center",
+                        activeTab === "checker"
+                            ? "bg-primary border-primary text-white shadow-2xl shadow-primary/30 -translate-y-1"
+                            : "bg-white border-slate-100 text-slate-400 hover:border-primary/20 hover:text-primary shadow-sm"
+                    )}
+                >
+                    <Layers className={cn("h-7 w-7 transition-transform group-hover:scale-110", activeTab === "checker" ? "text-white" : "text-primary")} />
+                    <div className="relative z-10">
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60 mb-0.5">Section</p>
+                        <p className="text-lg font-black tracking-tight">Checker</p>
+                    </div>
+                </button>
 
                 <button
                     onClick={handleExport}
@@ -185,8 +199,10 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
             </div>
 
             <DashboardStats />
-
-            {/* Checker Board Disabled */}
+            
+            {activeTab === "checker" ? (
+                <CheckerBoard unverifiedReceipts={unverifiedReceipts} />
+            ) : (
                 <>
                     <div className="grid gap-6 md:grid-cols-4">
                         <div className="md:col-span-3 space-y-6">
@@ -532,6 +548,7 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                         />
                     )}
                 </>
+            )}
 
             {showPreview && (
                 <ReportPreviewModal

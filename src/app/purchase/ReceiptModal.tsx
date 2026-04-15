@@ -156,7 +156,6 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
                 taxInvoiceDate: (hasTaxInvoice && taxInvoiceDate) ? new Date(taxInvoiceDate) : null,
                 totalDiscount: finalDiscountNominal,
                 taxRate: Number(taxRate),
-                isAutoVerify,
                 items: items.map(item => ({
                     productId: item.productId,
                     quantity: parseIndoNumber(item.quantity),
@@ -232,33 +231,16 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
                     </button>
                 </div>
 
-                {/* Status Alert for Auto-Verify */}
+                {/* Notice for Option A */}
                 {!initialData && (
-                    <div className={cn(
-                        "px-6 py-2 flex items-center justify-between transition-all",
-                        isAutoVerify ? "bg-emerald-500 text-white" : "bg-blue-600 text-white"
-                    )}>
+                    <div className="px-6 py-2 bg-slate-900 text-white flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                            {isAutoVerify ? <Check className="h-4 w-4" /> : <Loader2 className="h-4 w-4 animate-spin" />}
+                            <Activity className="h-4 w-4 text-primary animate-pulse" />
                             <span className="text-[10px] font-black uppercase tracking-widest">
-                                Status: {isAutoVerify ? "Auto-Verify Active (Stok Langsung Terupdate)" : "Draft Mode (Menunggu Verifikasi Gudang)"}
+                                Status: Auto-Stock Active
                             </span>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <span className="text-[9px] font-bold uppercase opacity-80">Gunakan Auto-Verify untuk Cross-docking</span>
-                            <div 
-                                onClick={() => setIsAutoVerify(!isAutoVerify)}
-                                className={cn(
-                                    "w-10 h-5 rounded-full relative cursor-pointer transition-all border-2",
-                                    isAutoVerify ? "bg-white border-white" : "bg-transparent border-white/40"
-                                )}
-                            >
-                                <div className={cn(
-                                    "absolute top-0.5 w-3 h-3 rounded-full transition-all",
-                                    isAutoVerify ? "right-1 bg-emerald-500" : "left-1 bg-white"
-                                )} />
-                            </div>
-                        </div>
+                        <span className="text-[9px] font-bold uppercase opacity-80">Stok akan langsung diperbarui saat disimpan</span>
                     </div>
                 )}
 

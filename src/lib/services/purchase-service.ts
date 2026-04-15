@@ -136,9 +136,9 @@ export async function createGoodsReceiptService(data: any, userId: string) {
                 notes: data.notes,
                 date: txDate,
                 createdById: userId,
-                isVerified: !!data.isAutoVerify,
-                verifiedAt: data.isAutoVerify ? new Date() : null,
-                verifiedBy: data.isAutoVerify ? "SYSTEM (Auto)" : null,
+                isVerified: false, // Starts as draft for checking
+                verifiedAt: null,
+                verifiedBy: null,
                 items: {
                     create: data.items.map((item: any) => ({
                         productId: item.productId,
@@ -180,37 +180,36 @@ export async function createGoodsReceiptService(data: any, userId: string) {
             }
         });
 
-        if (data.isAutoVerify) {
-            for (const item of data.items) {
-                const vendorName = data.receivedFrom || "UMUM";
-                await tx.stock.upsert({
-                    where: {
-                        productId_warehouseId_vendorName: {
-                            productId: item.productId,
-                            warehouseId: data.warehouseId,
-                            vendorName: vendorName
-                        }
-                    },
-                    update: { quantity: { increment: item.quantity } },
-                    create: {
+        // Always add stock at creation stage (Option A)
+        for (const item of data.items) {
+            const vendorName = data.receivedFrom || "UMUM";
+            await tx.stock.upsert({
+                where: {
+                    productId_warehouseId_vendorName: {
                         productId: item.productId,
                         warehouseId: data.warehouseId,
-                        vendorName: vendorName,
-                        quantity: item.quantity
+                        vendorName: vendorName
                     }
-                });
+                },
+                update: { quantity: { increment: item.quantity } },
+                create: {
+                    productId: item.productId,
+                    warehouseId: data.warehouseId,
+                    vendorName: vendorName,
+                    quantity: item.quantity
+                }
+            });
 
-                await tx.stockMovement.create({
-                    data: {
-                        productId: item.productId,
-                        warehouseId: data.warehouseId,
-                        vendorName: vendorName,
-                        quantity: item.quantity,
-                        type: "PURCHASE",
-                        reference: receiptNumber
-                    }
-                });
-            }
+            await tx.stockMovement.create({
+                data: {
+                    productId: item.productId,
+                    warehouseId: data.warehouseId,
+                    vendorName: vendorName,
+                    quantity: item.quantity,
+                    type: "PURCHASE",
+                    reference: receiptNumber
+                }
+            });
         }
 
         revalidatePath("/purchase");

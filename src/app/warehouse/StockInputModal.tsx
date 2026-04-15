@@ -24,7 +24,6 @@ export function StockInputModal({ products, warehouses, onClose }: { products: P
     const [type, setType] = useState<"ADJUSTMENT" | "SALE" | "GOODS_RECEIPT">("ADJUSTMENT");
     const [vendorName, setVendorName] = useState("UMUM");
     const [reference, setReference] = useState("");
-    const [isAutoVerify, setIsAutoVerify] = useState(true);
     const [isLoading, setIsLoading] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
