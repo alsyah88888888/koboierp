@@ -22,13 +22,7 @@ export async function createSalesDeliveryService(data: any, userId: string) {
         const prefix = isPKP ? `KB-TRN-${dateStr}-` : `KB-TRD-${dateStr}-`;
 
         const latest = await tx.salesDelivery.findFirst({
-            where: {
-                OR: [
-                    { deliveryNumber: { startsWith: prefix } },
-                    { deliveryNumber: { startsWith: isPKP ? `KB-SJ-${dateStr}-` : `KB-SJD-${dateStr}-` } },
-                    { deliveryNumber: { startsWith: isPKP ? `KB-TRND-${dateStr}-` : `KB-TRN-${dateStr}-` } }
-                ]
-            },
+            where: { deliveryNumber: { startsWith: prefix } },
             orderBy: { deliveryNumber: 'desc' }
         });
 
