@@ -24,6 +24,7 @@ export function StockInputModal({ products, warehouses, onClose }: { products: P
     const [type, setType] = useState<"ADJUSTMENT" | "SALE" | "GOODS_RECEIPT">("ADJUSTMENT");
     const [vendorName, setVendorName] = useState("UMUM");
     const [reference, setReference] = useState("");
+    const [isAutoVerify, setIsAutoVerify] = useState(true);
     const [isLoading, setIsLoading] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -113,6 +114,36 @@ export function StockInputModal({ products, warehouses, onClose }: { products: P
                                 <input value={reference} onChange={e => setReference(e.target.value)} className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-2xl text-sm font-medium focus:border-primary transition-all outline-none placeholder:text-slate-300" placeholder="e.g. Stock Opname Ref #1" />
                             </div>
                         </div>
+
+                        {type === "GOODS_RECEIPT" && (
+                            <div className="pt-4 border-t border-slate-200">
+                                <div 
+                                    onClick={() => setIsAutoVerify(!isAutoVerify)}
+                                    className={cn(
+                                        "flex items-center justify-between p-4 rounded-2xl cursor-pointer transition-all",
+                                        isAutoVerify ? "bg-emerald-50 border-2 border-emerald-200" : "bg-blue-50 border-2 border-blue-200"
+                                    )}
+                                >
+                                    <div className="flex flex-col">
+                                        <span className={cn("text-xs font-black uppercase tracking-widest", isAutoVerify ? "text-emerald-700" : "text-blue-700")}>
+                                            {isAutoVerify ? "Auto-Verify: Aktif" : "Auto-Verify: Non-aktif"}
+                                        </span>
+                                        <span className="text-[10px] font-medium text-slate-500">
+                                            {isAutoVerify ? "Stok akan langsung bertambah sekarang." : "Gunakan menu Purchase untuk Draft LPB."}
+                                        </span>
+                                    </div>
+                                    <div className={cn(
+                                        "w-12 h-6 rounded-full relative transition-all",
+                                        isAutoVerify ? "bg-emerald-500" : "bg-slate-300"
+                                    )}>
+                                        <div className={cn(
+                                            "absolute top-1 w-4 h-4 bg-white rounded-full transition-all",
+                                            isAutoVerify ? "right-1" : "left-1"
+                                        )} />
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     <div className="pt-6 flex flex-col md:flex-row gap-3">

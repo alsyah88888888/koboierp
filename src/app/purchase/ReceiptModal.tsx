@@ -38,6 +38,7 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
     const [totalDiscountPercent, setTotalDiscountPercent] = useState("");
     const [taxRate, setTaxRate] = useState(initialData?.taxRate || 0);
     const [showDiscount, setShowDiscount] = useState(items.some(i => Number(i.discount) > 0) || Number(totalDiscount) > 0);
+    const [isAutoVerify, setIsAutoVerify] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState("");
     const [result, setResult] = useState<any>(null);
@@ -155,6 +156,7 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
                 taxInvoiceDate: (hasTaxInvoice && taxInvoiceDate) ? new Date(taxInvoiceDate) : null,
                 totalDiscount: finalDiscountNominal,
                 taxRate: Number(taxRate),
+                isAutoVerify,
                 items: items.map(item => ({
                     productId: item.productId,
                     quantity: parseIndoNumber(item.quantity),
@@ -229,6 +231,36 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
                         <X className="h-6 w-6 group-hover:rotate-90 transition-transform duration-300" />
                     </button>
                 </div>
+
+                {/* Status Alert for Auto-Verify */}
+                {!initialData && (
+                    <div className={cn(
+                        "px-6 py-2 flex items-center justify-between transition-all",
+                        isAutoVerify ? "bg-emerald-500 text-white" : "bg-blue-600 text-white"
+                    )}>
+                        <div className="flex items-center gap-2">
+                            {isAutoVerify ? <Check className="h-4 w-4" /> : <Loader2 className="h-4 w-4 animate-spin" />}
+                            <span className="text-[10px] font-black uppercase tracking-widest">
+                                Status: {isAutoVerify ? "Auto-Verify Active (Stok Langsung Terupdate)" : "Draft Mode (Menunggu Verifikasi Gudang)"}
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="text-[9px] font-bold uppercase opacity-80">Gunakan Auto-Verify untuk Cross-docking</span>
+                            <div 
+                                onClick={() => setIsAutoVerify(!isAutoVerify)}
+                                className={cn(
+                                    "w-10 h-5 rounded-full relative cursor-pointer transition-all border-2",
+                                    isAutoVerify ? "bg-white border-white" : "bg-transparent border-white/40"
+                                )}
+                            >
+                                <div className={cn(
+                                    "absolute top-0.5 w-3 h-3 rounded-full transition-all",
+                                    isAutoVerify ? "right-1 bg-emerald-500" : "left-1 bg-white"
+                                )} />
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto bg-slate-50/30 custom-scrollbar">
                     {/* Main Content: Headers then Items then Totals */}

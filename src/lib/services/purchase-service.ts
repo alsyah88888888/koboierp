@@ -136,9 +136,9 @@ export async function createGoodsReceiptService(data: any, userId: string) {
                 notes: data.notes,
                 date: txDate,
                 createdById: userId,
-                isVerified: true,
-                verifiedAt: new Date(),
-                verifiedBy: "SYSTEM",
+                isVerified: !!data.isAutoVerify,
+                verifiedAt: data.isAutoVerify ? new Date() : null,
+                verifiedBy: data.isAutoVerify ? "SYSTEM (Auto)" : null,
                 items: {
                     create: data.items.map((item: any) => ({
                         productId: item.productId,
@@ -180,35 +180,37 @@ export async function createGoodsReceiptService(data: any, userId: string) {
             }
         });
 
-        for (const item of data.items) {
-            const vendorName = data.receivedFrom || "UMUM";
-            await tx.stock.upsert({
-                where: {
-                    productId_warehouseId_vendorName: {
+        if (data.isAutoVerify) {
+            for (const item of data.items) {
+                const vendorName = data.receivedFrom || "UMUM";
+                await tx.stock.upsert({
+                    where: {
+                        productId_warehouseId_vendorName: {
+                            productId: item.productId,
+                            warehouseId: data.warehouseId,
+                            vendorName: vendorName
+                        }
+                    },
+                    update: { quantity: { increment: item.quantity } },
+                    create: {
                         productId: item.productId,
                         warehouseId: data.warehouseId,
-                        vendorName: vendorName
+                        vendorName: vendorName,
+                        quantity: item.quantity
                     }
-                },
-                update: { quantity: { increment: item.quantity } },
-                create: {
-                    productId: item.productId,
-                    warehouseId: data.warehouseId,
-                    vendorName: vendorName,
-                    quantity: item.quantity
-                }
-            });
+                });
 
-            await tx.stockMovement.create({
-                data: {
-                    productId: item.productId,
-                    warehouseId: data.warehouseId,
-                    vendorName: vendorName,
-                    quantity: item.quantity,
-                    type: "PURCHASE",
-                    reference: receiptNumber
-                }
-            });
+                await tx.stockMovement.create({
+                    data: {
+                        productId: item.productId,
+                        warehouseId: data.warehouseId,
+                        vendorName: vendorName,
+                        quantity: item.quantity,
+                        type: "PURCHASE",
+                        reference: receiptNumber
+                    }
+                });
+            }
         }
 
         revalidatePath("/purchase");
@@ -232,25 +234,27 @@ export async function updateGoodsReceiptService(id: string, data: any, userId: s
 
         if (!oldReceipt) throw new Error("Receipt not found");
 
-        // 1. Revert Old Stock
-        for (const item of oldReceipt.items) {
-            const vendorName = oldReceipt.receivedFrom || "UMUM";
-            await tx.stock.upsert({
-                where: {
-                    productId_warehouseId_vendorName: {
+        // 1. Revert Old Stock (Only if it was already verified)
+        if (oldReceipt.isVerified) {
+            for (const item of oldReceipt.items) {
+                const vendorName = oldReceipt.receivedFrom || "UMUM";
+                await tx.stock.upsert({
+                    where: {
+                        productId_warehouseId_vendorName: {
+                            productId: item.productId,
+                            warehouseId: oldReceipt.warehouseId,
+                            vendorName: vendorName
+                        }
+                    },
+                    create: {
                         productId: item.productId,
                         warehouseId: oldReceipt.warehouseId,
-                        vendorName: vendorName
-                    }
-                },
-                create: {
-                    productId: item.productId,
-                    warehouseId: oldReceipt.warehouseId,
-                    vendorName: vendorName,
-                    quantity: -item.quantity
-                },
-                update: { quantity: { decrement: item.quantity } }
-            });
+                        vendorName: vendorName,
+                        quantity: -item.quantity
+                    },
+                    update: { quantity: { decrement: item.quantity } }
+                });
+            }
         }
 
         // 2. Determine if Prefix Needs Change
@@ -332,36 +336,38 @@ export async function updateGoodsReceiptService(id: string, data: any, userId: s
             }
         });
 
-        // 4. Apply New Stock
-        for (const item of data.items) {
-            const vendorName = data.receivedFrom || "UMUM";
-            await tx.stock.upsert({
-                where: {
-                    productId_warehouseId_vendorName: {
+        // 4. Apply New Stock (Only if it was already verified)
+        if (oldReceipt.isVerified) {
+            for (const item of data.items) {
+                const vendorName = data.receivedFrom || "UMUM";
+                await tx.stock.upsert({
+                    where: {
+                        productId_warehouseId_vendorName: {
+                            productId: item.productId,
+                            warehouseId: data.warehouseId,
+                            vendorName: vendorName
+                        }
+                    },
+                    update: { quantity: { increment: item.quantity } },
+                    create: {
                         productId: item.productId,
                         warehouseId: data.warehouseId,
-                        vendorName: vendorName
+                        vendorName: vendorName,
+                        quantity: item.quantity
                     }
-                },
-                update: { quantity: { increment: item.quantity } },
-                create: {
-                    productId: item.productId,
-                    warehouseId: data.warehouseId,
-                    vendorName: vendorName,
-                    quantity: item.quantity
-                }
-            });
+                });
 
-            await tx.stockMovement.create({
-                data: {
-                    productId: item.productId,
-                    warehouseId: data.warehouseId,
-                    vendorName: vendorName,
-                    quantity: item.quantity,
-                    type: "PURCHASE_UPDATE",
-                    reference: currentReceiptNumber
-                }
-            });
+                await tx.stockMovement.create({
+                    data: {
+                        productId: item.productId,
+                        warehouseId: data.warehouseId,
+                        vendorName: vendorName,
+                        quantity: item.quantity,
+                        type: "PURCHASE_UPDATE",
+                        reference: currentReceiptNumber
+                    }
+                });
+            }
         }
 
         revalidatePath("/purchase");
