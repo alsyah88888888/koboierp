@@ -222,7 +222,7 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
                             <div className="flex items-center gap-2 mt-1">
                                 <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Inventory & Goods Receipt</span>
                                 <span className="h-1 w-1 bg-slate-300 rounded-full"></span>
-                                <span className="text-[10px] text-primary font-black uppercase tracking-widest">Premium ERP v2.0</span>
+                                <span className="text-[10px] text-primary font-black uppercase tracking-widest">PT. Kola Borasi Indonesia ERP V.3</span>
                             </div>
                         </div>
                     </div>
@@ -237,7 +237,7 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
                         <div className="flex items-center gap-2">
                             <Activity className="h-4 w-4 text-primary animate-pulse" />
                             <span className="text-[10px] font-black uppercase tracking-widest">
-                                Status: Auto-Stock Active
+                                Status: Auto-Stock Active (Sistem Pilihan A)
                             </span>
                         </div>
                         <span className="text-[9px] font-bold uppercase opacity-80">Stok akan langsung diperbarui saat disimpan</span>

@@ -275,7 +275,7 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                             <div className="flex items-center gap-2 mt-1">
                                 <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Surat Jalan & Invoice</span>
                                 <span className="h-1 w-1 bg-slate-300 rounded-full"></span>
-                                <span className="text-[10px] text-primary font-black uppercase tracking-widest">Premium ERP v2.0</span>
+                                <span className="text-[10px] text-primary font-black uppercase tracking-widest">PT. Kola Borasi Indonesia ERP V.3</span>
                             </div>
                         </div>
                     </div>
