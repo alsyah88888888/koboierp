@@ -447,10 +447,87 @@ export async function syncProductStockService(productId: string, syncBy: string)
             });
         }
 
-        revalidatePath("/warehouse");
-        revalidatePath("/tracking");
-        revalidatePath("/");
+    revalidatePath("/warehouse");
+    revalidatePath("/tracking");
+    revalidatePath("/");
+    
+    return { success: true, discrepancy };
+}
+
+export async function getStockCardService(productId: string, startDate?: string, endDate?: string, warehouseId?: string) {
+    const { getPrisma } = require("@/lib/prisma");
+    const prisma = getPrisma();
+
+    // 1. Get Product Info
+    const product = await prisma.product.findUnique({
+        where: { id: productId },
+        select: { sku: true, name: true, uom: true }
+    });
+    if (!product) throw new Error("Produk tidak ditemukan");
+
+    // 2. Define Filters
+    const whereMovements: any = { productId };
+    if (warehouseId) whereMovements.warehouseId = warehouseId;
+    
+    // Set start to beginning of day and end to end of day if strings provided
+    const start = startDate ? new Date(new Date(startDate).setHours(0,0,0,0)) : new Date(0);
+    const end = endDate ? new Date(new Date(endDate).setHours(23,59,59,999)) : new Date();
+
+    // 3. Calculate Opening Balance (Saldo Awal)
+    const openingAgg = await prisma.stockMovement.aggregate({
+        where: {
+            ...whereMovements,
+            createdAt: { lt: start }
+        },
+        _sum: { quantity: true }
+    });
+    const openingBalance = Number(openingAgg._sum.quantity || 0);
+
+    // 4. Fetch Movements within range
+    const movements = await prisma.stockMovement.findMany({
+        where: {
+            ...whereMovements,
+            createdAt: { gte: start, lte: end }
+        },
+        orderBy: { createdAt: 'asc' },
+        include: { warehouse: { select: { name: true } } }
+    });
+
+    // 5. Calculate Running Balance
+    let currentBalance = openingBalance;
+    const history = movements.map((m: any) => {
+        const qty = Number(m.quantity);
+        currentBalance += qty;
         
-        return { success: true, discrepancy };
-    }, { timeout: 30000 });
+        // Map type to human readable label
+        let label = m.type;
+        if (m.type === "GOODS_RECEIPT") label = "PEMBELIAN";
+        if (m.type === "SALE") label = "PENJUALAN";
+        if (m.type === "ADJUSTMENT") label = "ADJUSTMENT";
+        if (m.type === "PURCHASE_VOID") label = "VOID BELI";
+        if (m.type === "SALE_VOID") label = "VOID JUAL";
+        if (m.type === "SALE_DELETE") label = "HAPUS JUAL";
+
+        return {
+            date: m.createdAt,
+            ref: m.reference || "-",
+            type: label,
+            qtyIn: qty > 0 ? qty : 0,
+            qtyOut: qty < 0 ? Math.abs(qty) : 0,
+            balance: currentBalance,
+            warehouse: m.warehouse?.name || "Unknown",
+            vendor: m.vendorName || "UMUM"
+        };
+    });
+
+    const { serializeDecimal } = require("@/lib/utils");
+    return serializeDecimal({
+        product,
+        warehouseName: warehouseId ? movements[0]?.warehouse?.name : "SEMUA GUDANG",
+        openingBalance,
+        history,
+        totalIn: history.reduce((acc: number, curr: any) => acc + curr.qtyIn, 0),
+        totalOut: history.reduce((acc: number, curr: any) => acc + curr.qtyOut, 0),
+        finalBalance: currentBalance
+    });
 }

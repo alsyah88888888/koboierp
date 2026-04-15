@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from "react";
 import { Plus, Warehouse as WarehouseIcon, Layers, Trash2, FileText, Search, Activity, Box, ArrowUpRight, ArrowDownLeft, Download, Eye, Edit2 } from "lucide-react";
 import { StockInputModal } from "./StockInputModal";
 import { StockAdjustmentModal } from "./StockAdjustmentModal";
+import { StockCardModal } from "./StockCardModal";
 import { CheckerBoard } from "./CheckerBoard";
 import { DashboardStats } from "../components/DashboardStats";
 import { cn, formatCurrency } from "@/lib/utils";
@@ -27,6 +28,8 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
     const [activeTab, setActiveTab] = useState<"inventory" | "checker">("inventory");
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedStockForAdjustment, setSelectedStockForAdjustment] = useState<{product: any, stock: any} | null>(null);
+    const [showStockCard, setShowStockCard] = useState(false);
+    const [selectedProductIdForCard, setSelectedProductIdForCard] = useState<string | undefined>(undefined);
     const [isClient, setIsClient] = useState(false);
 
     useEffect(() => {
@@ -167,16 +170,21 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                 </button>
 
                 <Link
-                    href="/warehouse/print-database"
-                    target="_blank"
+                </Link>
+
+                <button
+                    onClick={() => {
+                        setSelectedProductIdForCard(undefined);
+                        setShowStockCard(true);
+                    }}
                     className="p-6 bg-white border-2 border-slate-100 rounded-[2rem] text-slate-400 hover:border-indigo-500/20 hover:text-indigo-500 transition-all group flex flex-col items-center gap-3 text-center shadow-sm hover:-translate-y-1"
                 >
                     <FileText className="h-7 w-7 text-indigo-500 transition-transform group-hover:scale-110" />
                     <div>
                         <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60 mb-0.5">Report</p>
-                        <p className="text-lg font-black tracking-tight text-slate-800 group-hover:text-indigo-500 transition-colors">Cetak DB</p>
+                        <p className="text-lg font-black tracking-tight text-slate-800 group-hover:text-indigo-500 transition-colors">Kartu Stok</p>
                     </div>
-                </Link>
+                </button>
             </div>
 
             <DashboardStats />
@@ -303,6 +311,16 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                                                                 <Edit2 className="h-4 w-4" />
                                                                             </button>
                                                                             <button
+                                                                                onClick={() => {
+                                                                                    setSelectedProductIdForCard(p.id);
+                                                                                    setShowStockCard(true);
+                                                                                }}
+                                                                                className="p-2 text-slate-300 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
+                                                                                title="Kartu Stok"
+                                                                            >
+                                                                                <FileText className="h-4 w-4" />
+                                                                            </button>
+                                                                            <button
                                                                                 onClick={() => handleDeleteProduct(p.id)}
                                                                                 className="p-2 text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
                                                                                 title="Hapus Produk"
@@ -390,20 +408,29 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                                                 </div>
                                                             </div>
                                                             {isAdmin && (
-                                                                <div className="flex items-center gap-2">
-                                                                    <button
-                                                                        onClick={() => setSelectedStockForAdjustment({ product: p, stock: s })}
-                                                                        className="p-2 text-slate-400 hover:text-primary bg-slate-100 rounded-xl transition-all active:scale-90"
-                                                                    >
-                                                                        <Edit2 className="h-3.5 w-3.5" />
-                                                                    </button>
-                                                                    <button
-                                                                        onClick={() => handleDeleteProduct(p.id)}
-                                                                        className="p-2 text-slate-400 hover:text-red-600 bg-slate-100 rounded-xl transition-all active:scale-90"
-                                                                    >
-                                                                        <Trash2 className="h-3.5 w-3.5" />
-                                                                    </button>
-                                                                </div>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <button
+                                                                            onClick={() => setSelectedStockForAdjustment({ product: p, stock: s })}
+                                                                            className="p-2 text-slate-400 hover:text-primary bg-slate-100 rounded-xl transition-all active:scale-90"
+                                                                        >
+                                                                            <Edit2 className="h-3.5 w-3.5" />
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                setSelectedProductIdForCard(p.id);
+                                                                                setShowStockCard(true);
+                                                                            }}
+                                                                            className="p-2 text-slate-400 hover:text-indigo-600 bg-slate-100 rounded-xl transition-all active:scale-90"
+                                                                        >
+                                                                            <FileText className="h-3.5 w-3.5" />
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => handleDeleteProduct(p.id)}
+                                                                            className="p-2 text-slate-400 hover:text-red-600 bg-slate-100 rounded-xl transition-all active:scale-90"
+                                                                        >
+                                                                            <Trash2 className="h-3.5 w-3.5" />
+                                                                        </button>
+                                                                    </div>
                                                             )}
                                                         </div>
                                                     </div>
@@ -518,6 +545,15 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                     data={previewData}
                     onClose={() => setShowPreview(false)}
                     onExport={handleExport}
+                />
+            )}
+
+            {showStockCard && (
+                <StockCardModal
+                    initialProductId={selectedProductIdForCard}
+                    products={initialProducts}
+                    warehouses={warehouses}
+                    onClose={() => setShowStockCard(false)}
                 />
             )}
         </div >

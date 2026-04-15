@@ -151,3 +151,8 @@ export async function syncProductStockAction(productId: string) {
 
     return await syncProductStockService(productId, session.user.name || session.user.email || "SYSTEM");
 }
+
+export async function getStockCardAction(productId: string, startDate?: string, endDate?: string, warehouseId?: string) {
+    const { getStockCardService } = require("@/lib/services/warehouse-service");
+    return await getStockCardService(productId, startDate, endDate, warehouseId);
+}
