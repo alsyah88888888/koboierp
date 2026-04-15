@@ -682,6 +682,8 @@ export function TrackingDashboard({ initialProducts, userEmail, userRole }: Trac
                                             <th className="pb-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">SKU / Item</th>
                                             <th className="pb-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">History Sum</th>
                                             <th className="pb-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Table Sum</th>
+                                            <th className="pb-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Price</th>
+                                            <th className="pb-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Value Diff</th>
                                             <th className="pb-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Status</th>
                                         </tr>
                                     </thead>
@@ -702,6 +704,17 @@ export function TrackingDashboard({ initialProducts, userEmail, userRole }: Trac
                                                 </td>
                                                 <td className="py-4 text-center">
                                                     <span className="text-lg font-black font-mono text-slate-900">{item.currentStock}</span>
+                                                </td>
+                                                <td className="py-4 text-center">
+                                                    <span className="text-sm font-black text-slate-900">{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(item.purchasePrice)}</span>
+                                                </td>
+                                                <td className="py-4 text-center">
+                                                    <span className={cn(
+                                                        "text-sm font-black",
+                                                        item.discrepancyValue !== 0 ? "text-rose-600" : "text-emerald-600"
+                                                    )}>
+                                                        {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(item.discrepancyValue)}
+                                                    </span>
                                                 </td>
                                                 <td className="py-4 text-center">
                                                     {item.discrepancy === 0 ? (
@@ -746,10 +759,36 @@ export function TrackingDashboard({ initialProducts, userEmail, userRole }: Trac
                                     Audit ini menghitung saldo berdasarkan seluruh riwayat transaksi (GR, Sale, Returns) <br/>dan membandingkannya dengan saldo tabel Stock saat ini secara real-time.
                                 </p>
                             </div>
-                            <button onClick={handleRunAudit} className="px-6 py-3 bg-white text-slate-900 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl active:scale-95 transition-all flex items-center gap-2">
-                                <RefreshCw className={cn("h-4 w-4", loadingAudit && "animate-spin")} />
-                                Re-Calculate
-                            </button>
+                            <div className="flex items-center gap-4">
+                                <button 
+                                    onClick={handleRunAudit} 
+                                    className="px-6 py-3 bg-white text-slate-900 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl active:scale-95 transition-all flex items-center gap-2 border border-slate-200"
+                                >
+                                    <RefreshCw className={cn("h-4 w-4", loadingAudit && "animate-spin")} />
+                                    Re-Calculate
+                                </button>
+                                <button 
+                                    onClick={() => {
+                                        const exportData = auditData.map(item => ({
+                                            'SKU': item.sku,
+                                            'Nama Barang': item.name,
+                                            'Stok Riwayat (History)': item.calculatedStock,
+                                            'Stok Tabel (Current)': item.currentStock,
+                                            'Selisih (Qty)': item.discrepancy,
+                                            'Harga Beli': item.purchasePrice,
+                                            'Nilai Selisih (Rp)': item.discrepancyValue,
+                                            'Total Masuk': item.totalPurchased,
+                                            'Total Keluar': item.totalSold,
+                                            'Total Penyesuaian': item.totalAdjustments
+                                        }));
+                                        exportToExcel(exportData, `Audit_Stok_Reconciliation_${new Date().toISOString().split('T')[0]}`, 'Audit');
+                                    }} 
+                                    className="px-6 py-3 bg-emerald-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl active:scale-95 transition-all flex items-center gap-2"
+                                >
+                                    <Download className="h-4 w-4" />
+                                    Export Excel
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

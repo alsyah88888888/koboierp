@@ -311,44 +311,75 @@ export async function runStockAuditService() {
     const { getPrisma } = require("@/lib/prisma");
     const prisma = getPrisma();
 
-    // 1. Get all products with their current stock table values
+    // 1. Get all products with their current stock table values (shallow fetch)
     const products = await prisma.product.findMany({
-        include: {
-            stocks: true,
-            receiptItems: {
-                where: { receipt: { isVerified: true, isVoid: false } },
-                select: { quantity: true }
-            },
-            salesItems: {
-                where: { delivery: { isVoid: false } },
-                select: { quantity: true }
-            },
-            purchaseReturnItems: {
-                where: { purchaseReturn: { isVoid: false } },
-                select: { quantity: true }
-            },
-            salesReturnItems: {
-                where: { salesReturn: { isVoid: false } },
-                select: { quantity: true }
-            },
-            movements: {
-                where: { type: "ADJUSTMENT" },
-                select: { quantity: true }
-            }
+        select: {
+            id: true,
+            sku: true,
+            name: true,
+            purchasePrice: true,
+            stocks: { select: { quantity: true } }
         }
     });
 
+    // 2. Aggregate counts from history using database groupBy (Massively faster)
+    const [
+        purchasedAgg, 
+        soldAgg, 
+        purchRetAgg, 
+        salesRetAgg, 
+        adjAgg
+    ] = await Promise.all([
+        prisma.goodsReceiptItem.groupBy({
+            by: ['productId'],
+            where: { receipt: { isVerified: true, isVoid: false } },
+            _sum: { quantity: true }
+        }),
+        prisma.salesDeliveryItem.groupBy({
+            by: ['productId'],
+            where: { delivery: { isVoid: false } },
+            _sum: { quantity: true }
+        }),
+        prisma.purchaseReturnItem.groupBy({
+            by: ['productId'],
+            where: { purchaseReturn: { isVoid: false } },
+            _sum: { quantity: true }
+        }),
+        prisma.salesReturnItem.groupBy({
+            by: ['productId'],
+            where: { salesReturn: { isVoid: false } },
+            _sum: { quantity: true }
+        }),
+        prisma.stockMovement.groupBy({
+            by: ['productId'],
+            where: { type: "ADJUSTMENT" },
+            _sum: { quantity: true }
+        })
+    ]);
+
+    // 3. Convert aggregations to Maps for O(1) lookup
+    const purchasedMap = new Map(purchasedAgg.map((i: any) => [i.productId, i._sum.quantity || 0]));
+    const soldMap = new Map(soldAgg.map((i: any) => [i.productId, i._sum.quantity || 0]));
+    const purchRetMap = new Map(purchRetAgg.map((i: any) => [i.productId, i._sum.quantity || 0]));
+    const salesRetMap = new Map(salesRetAgg.map((i: any) => [i.productId, i._sum.quantity || 0]));
+    const adjMap = new Map(adjAgg.map((i: any) => [i.productId, i._sum.quantity || 0]));
+
+    // 4. Compute Results
     const results = products.map((p: any) => {
         const currentStock = p.stocks.reduce((acc: number, s: any) => acc + (Number(s.quantity) || 0), 0);
         
-        const totalPurchased = p.receiptItems.reduce((acc: number, r: any) => acc + (Number(r.quantity) || 0), 0);
-        const totalSold = p.salesItems.reduce((acc: number, s: any) => acc + (Number(s.quantity) || 0), 0);
-        const totalPurchReturned = p.purchaseReturnItems.reduce((acc: number, pr: any) => acc + (Number(pr.quantity) || 0), 0);
-        const totalSalesReturned = p.salesReturnItems.reduce((acc: number, sr: any) => acc + (Number(sr.quantity) || 0), 0);
-        const totalAdjustments = p.movements.reduce((acc: number, m: any) => acc + (Number(m.quantity) || 0), 0);
+        const totalPurchased = Number(purchasedMap.get(p.id) || 0);
+        const totalSold = Number(soldMap.get(p.id) || 0);
+        const totalPurchReturned = Number(purchRetMap.get(p.id) || 0);
+        const totalSalesReturned = Number(salesRetMap.get(p.id) || 0);
+        const totalAdjustments = Number(adjMap.get(p.id) || 0);
 
         const calculatedStock = totalPurchased - totalSold - totalPurchReturned + totalSalesReturned + totalAdjustments;
         const discrepancy = currentStock - calculatedStock;
+        
+        // Financials
+        const buyPrice = Number(p.purchasePrice || 0);
+        const discrepancyValue = discrepancy * buyPrice;
 
         return {
             id: p.id,
@@ -357,6 +388,8 @@ export async function runStockAuditService() {
             currentStock,
             calculatedStock,
             discrepancy,
+            discrepancyValue,
+            purchasePrice: buyPrice,
             totalPurchased,
             totalSold,
             totalPurchReturned,
