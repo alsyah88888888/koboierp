@@ -169,9 +169,6 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                     </div>
                 </button>
 
-                <Link
-                </Link>
-
                 <button
                     onClick={() => {
                         setSelectedProductIdForCard(undefined);
@@ -190,7 +187,6 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
             <DashboardStats />
 
             {/* Checker Board Disabled */}
-            {(
                 <>
                     <div className="grid gap-6 md:grid-cols-4">
                         <div className="md:col-span-3 space-y-6">
@@ -527,8 +523,8 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
 
                     {selectedStockForAdjustment && (
                         <StockAdjustmentModal
-                            product={selectedStockForAdjustment.product}
-                            stock={selectedStockForAdjustment.stock}
+                            product={selectedStockForAdjustment!.product}
+                            stock={selectedStockForAdjustment!.stock}
                             onClose={() => {
                                 setSelectedStockForAdjustment(null);
                                 window.location.reload();
@@ -536,8 +532,6 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                         />
                     )}
                 </>
-            )
-            }
 
             {showPreview && (
                 <ReportPreviewModal
@@ -556,6 +550,6 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                     onClose={() => setShowStockCard(false)}
                 />
             )}
-        </div >
+        </div>
     );
 }

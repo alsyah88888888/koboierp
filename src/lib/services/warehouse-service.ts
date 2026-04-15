@@ -452,6 +452,7 @@ export async function syncProductStockService(productId: string, syncBy: string)
     revalidatePath("/");
     
     return { success: true, discrepancy };
+    }, { timeout: 30000 });
 }
 
 export async function getStockCardService(productId: string, startDate?: string, endDate?: string, warehouseId?: string) {
