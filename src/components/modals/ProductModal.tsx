@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { X, Box } from "lucide-react";
 import { callAction } from "@/proxy";
 
-import { getSuggestedCategory } from "@/lib/categorization";
+import { getSuggestedCategory, CATEGORY_OPTIONS, generateSkuFromCategory } from "@/lib/categorization";
 
 export function ProductModal({ onClose, onSuccess }: { onClose: () => void, onSuccess?: (product: any) => void }) {
     const [isLoading, setIsLoading] = useState(false);
@@ -22,9 +22,15 @@ export function ProductModal({ onClose, onSuccess }: { onClose: () => void, onSu
     useEffect(() => {
         const suggestion = getSuggestedCategory(formData.name, formData.sku);
         if (suggestion && formData.category === "UMUM") {
-            setFormData(prev => ({ ...prev, category: suggestion }));
+            const newSku = generateSkuFromCategory(formData.name, suggestion, formData.sku);
+            setFormData(prev => ({ ...prev, category: suggestion, sku: newSku }));
         }
-    }, [formData.name, formData.sku]);
+    }, [formData.name]);
+
+    const handleCategoryChange = (val: string) => {
+        const newSku = generateSkuFromCategory(formData.name, val, formData.sku);
+        setFormData({ ...formData, category: val, sku: newSku });
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -97,12 +103,15 @@ export function ProductModal({ onClose, onSuccess }: { onClose: () => void, onSu
                         </div>
                         <div className="space-y-1.5">
                             <label className="text-xs font-bold text-slate-600 uppercase">Kategori</label>
-                            <input
+                            <select
                                 value={formData.category}
-                                onChange={e => setFormData({ ...formData, category: e.target.value.toUpperCase() })}
-                                className="w-full p-2.5 border-2 border-slate-200 rounded-lg focus:border-primary outline-none text-sm uppercase"
-                                placeholder="UMUM"
-                            />
+                                onChange={e => handleCategoryChange(e.target.value)}
+                                className="w-full p-2.5 border-2 border-slate-200 rounded-lg focus:border-primary outline-none text-sm uppercase bg-white cursor-pointer"
+                            >
+                                {CATEGORY_OPTIONS.map(opt => (
+                                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                ))}
+                            </select>
                         </div>
                         <div className="space-y-1.5">
                             <label className="text-xs font-bold text-slate-600 uppercase">Satuan (UOM)</label>

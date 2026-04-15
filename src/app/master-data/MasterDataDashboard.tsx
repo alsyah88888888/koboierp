@@ -22,6 +22,7 @@ import { callAction } from "@/proxy";
 
 import { cn } from "@/lib/utils";
 import { useSession } from "next-auth/react";
+import { CATEGORY_OPTIONS, generateSkuFromCategory } from "@/lib/categorization";
 
 type MDType = "product" | "vendor" | "customer" | "warehouse";
 
@@ -82,6 +83,11 @@ export function MasterDataDashboard() {
             (item.location?.toLowerCase().includes(q))
         );
     })();
+
+    const handleCategoryChange = (val: string) => {
+        const newSku = generateSkuFromCategory(form.name, val, form.sku);
+        setForm({ ...form, category: val, sku: newSku });
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -455,12 +461,16 @@ export function MasterDataDashboard() {
                                             </div>
                                             <div className="space-y-1.5">
                                                 <label className="text-xs font-black uppercase text-slate-400 tracking-widest ml-1">Kategori</label>
-                                                <input
+                                                <select
                                                     value={form.category}
-                                                    onChange={e => setForm({ ...form, category: e.target.value })}
-                                                    className="w-full bg-slate-50 border-2 border-slate-100 px-5 py-3.5 rounded-2xl outline-none focus:border-primary focus:bg-white transition-all font-bold text-slate-700"
-                                                    placeholder="e.g. Beverage"
-                                                />
+                                                    onChange={e => handleCategoryChange(e.target.value)}
+                                                    className="w-full bg-slate-50 border-2 border-slate-100 px-5 py-3.5 rounded-2xl outline-none focus:border-primary focus:bg-white transition-all font-bold text-slate-700 cursor-pointer"
+                                                >
+                                                    <option value="">Select Category</option>
+                                                    {CATEGORY_OPTIONS.map(opt => (
+                                                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                                    ))}
+                                                </select>
                                             </div>
                                             <div className="space-y-1.5">
                                                 <label className="text-xs font-black uppercase text-slate-400 tracking-widest ml-1">Unit (UOM)</label>
