@@ -211,6 +211,15 @@ export async function callAction(actionName: string, ...args: any[]) {
         case "voidGoodsReceipt":
             const { voidGoodsReceiptAction } = await import("@/actions/warehouse");
             return await voidGoodsReceiptAction(...args as [string, string]);
+        case "runStockAuditAction":
+            const { runStockAuditAction } = await import("@/actions/warehouse");
+            return await runStockAuditAction();
+        case "syncProductStockAction":
+            const { syncProductStockAction } = await import("@/actions/warehouse");
+            return await syncProductStockAction(...args as [string]);
+        case "getStockCardAction":
+            const { getStockCardAction } = await import("@/actions/warehouse");
+            return await getStockCardAction(...args as [string, string, string, string]);
 
         case "executePurchaseRequest":
             const { executePurchaseRequestAction } = await import("@/actions/purchase");
