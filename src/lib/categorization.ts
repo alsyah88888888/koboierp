@@ -23,31 +23,27 @@ export function generateSkuFromCategory(name: string, category: string, currentS
 
     const prefix = cat.prefix;
     
-    // Clean name: Uppercase, alphanumeric only, max 10 chars
+    // Clean name: Uppercase, alphanumeric only
     const cleanedName = name
         .toUpperCase()
         .replace(/[^A-Z0-9]/g, "")
-        .substring(0, 10);
+        .substring(0, 3); // Take first 3 characters
+
+    // Generate 3 random digits
+    const randomSuffix = Math.floor(100 + Math.random() * 900);
 
     // If existing SKU starts with another category's prefix, replace it
     for (const option of CATEGORY_OPTIONS) {
         if (currentSku.startsWith(option.prefix)) {
-            return currentSku.replace(option.prefix, prefix);
+            // Keep the suffix if it already has a dash and 3 digits
+            const parts = currentSku.split("-");
+            const existingSuffix = parts.length > 1 && parts[1].length === 3 ? parts[1] : randomSuffix;
+            return `${prefix}${cleanedName}-${existingSuffix}`;
         }
     }
 
-    // Default: Combine prefix + cleaned name + random suffix if needed
-    // But per user request, just prefixing name is usually what they want
-    if (!currentSku || currentSku === "FOO" || currentSku === "BEV" || currentSku === "HOM" || currentSku === "PER") {
-        return `${prefix}${cleanedName}`;
-    }
-
-    // If SKU is already manual and from user, just prepend if not there
-    if (!currentSku.startsWith(prefix)) {
-        return `${prefix}${currentSku}`;
-    }
-
-    return currentSku;
+    // Default: Combine prefix + 3 chars name + dash + 3 random digits
+    return `${prefix}${cleanedName}-${randomSuffix}`;
 }
 
 export const KEYWORD_MAP: Record<string, string> = {
