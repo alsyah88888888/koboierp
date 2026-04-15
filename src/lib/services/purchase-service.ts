@@ -235,7 +235,7 @@ export async function updateGoodsReceiptService(id: string, data: any, userId: s
         // 1. Revert Old Stock
         for (const item of oldReceipt.items) {
             const vendorName = oldReceipt.receivedFrom || "UMUM";
-            await tx.stock.update({
+            await tx.stock.upsert({
                 where: {
                     productId_warehouseId_vendorName: {
                         productId: item.productId,
@@ -243,7 +243,13 @@ export async function updateGoodsReceiptService(id: string, data: any, userId: s
                         vendorName: vendorName
                     }
                 },
-                data: { quantity: { decrement: item.quantity } }
+                create: {
+                    productId: item.productId,
+                    warehouseId: oldReceipt.warehouseId,
+                    vendorName: vendorName,
+                    quantity: -item.quantity
+                },
+                update: { quantity: { decrement: item.quantity } }
             });
         }
 
@@ -414,7 +420,7 @@ export async function createPurchaseReturnService(data: any, userId: string) {
 
         for (const item of data.items) {
             const vendorName = receipt.receivedFrom || "UMUM";
-            await tx.stock.update({
+            await tx.stock.upsert({
                 where: {
                     productId_warehouseId_vendorName: {
                         productId: item.productId,
@@ -422,7 +428,13 @@ export async function createPurchaseReturnService(data: any, userId: string) {
                         vendorName: vendorName
                     }
                 },
-                data: { quantity: { decrement: item.quantity } }
+                create: {
+                    productId: item.productId,
+                    warehouseId: receipt.warehouseId,
+                    vendorName: vendorName,
+                    quantity: -item.quantity
+                },
+                update: { quantity: { decrement: item.quantity } }
             });
 
             await tx.stockMovement.create({
@@ -561,7 +573,7 @@ export async function deletePurchaseReturnService(id: string) {
 
         for (const item of ret.items) {
             const vendorName = ret.receipt.receivedFrom || "UMUM";
-            await tx.stock.update({
+            await tx.stock.upsert({
                 where: {
                     productId_warehouseId_vendorName: {
                         productId: item.productId,
@@ -569,7 +581,13 @@ export async function deletePurchaseReturnService(id: string) {
                         vendorName: vendorName
                     }
                 },
-                data: { quantity: { increment: item.quantity } }
+                create: {
+                    productId: item.productId,
+                    warehouseId: ret.receipt.warehouseId,
+                    vendorName: vendorName,
+                    quantity: item.quantity
+                },
+                update: { quantity: { increment: item.quantity } }
             });
 
             await tx.stockMovement.create({

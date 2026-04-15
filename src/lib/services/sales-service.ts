@@ -164,7 +164,7 @@ export async function updateSalesDeliveryService(id: string, data: any) {
         if (!oldDelivery) throw new Error("Delivery not found");
 
         for (const item of oldDelivery.items) {
-            await tx.stock.update({
+            await tx.stock.upsert({
                 where: {
                     productId_warehouseId_vendorName: {
                         productId: item.productId,
@@ -172,7 +172,13 @@ export async function updateSalesDeliveryService(id: string, data: any) {
                         vendorName: item.vendorName
                     }
                 },
-                data: { quantity: { increment: item.quantity } }
+                create: {
+                    productId: item.productId,
+                    warehouseId: oldDelivery.warehouseId,
+                    vendorName: item.vendorName,
+                    quantity: item.quantity
+                },
+                update: { quantity: { increment: item.quantity } }
             });
         }
 
@@ -330,7 +336,7 @@ export async function deleteSalesDeliveryService(id: string) {
         if (!delivery) throw new Error("Delivery not found");
 
         for (const item of delivery.items) {
-            await tx.stock.update({
+            await tx.stock.upsert({
                 where: {
                     productId_warehouseId_vendorName: {
                         productId: item.productId,
@@ -338,7 +344,13 @@ export async function deleteSalesDeliveryService(id: string) {
                         vendorName: item.vendorName
                     }
                 },
-                data: { quantity: { increment: item.quantity } }
+                create: {
+                    productId: item.productId,
+                    warehouseId: delivery.warehouseId,
+                    vendorName: item.vendorName,
+                    quantity: item.quantity
+                },
+                update: { quantity: { increment: item.quantity } }
             });
 
             await tx.stockMovement.create({
@@ -380,7 +392,7 @@ export async function voidSalesDeliveryService(id: string, reason: string) {
 
         for (const item of delivery.items) {
             // Restore Stock
-            await tx.stock.update({
+            await tx.stock.upsert({
                 where: {
                     productId_warehouseId_vendorName: {
                         productId: item.productId,
@@ -388,7 +400,13 @@ export async function voidSalesDeliveryService(id: string, reason: string) {
                         vendorName: item.vendorName
                     }
                 },
-                data: { quantity: { increment: item.quantity } }
+                create: {
+                    productId: item.productId,
+                    warehouseId: delivery.warehouseId,
+                    vendorName: item.vendorName,
+                    quantity: item.quantity
+                },
+                update: { quantity: { increment: item.quantity } }
             });
 
             // Create Reversing Movement
