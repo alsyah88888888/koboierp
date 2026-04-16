@@ -193,6 +193,7 @@ model PurchaseRequest {
   status        String   @default("PENDING") // PENDING, APPROVED_BY_ADMIN, VERIFIED_BY_FINANCE, REJECTED
   category      String?  // PEMBELIAN, OPERASIONAL
   notes         String?
+  salesPerson   String?  // BC, PF, or UMUM
   
   items         PurchaseRequestItem[]
   

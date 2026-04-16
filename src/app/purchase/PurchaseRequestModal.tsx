@@ -21,6 +21,8 @@ export function PurchaseRequestModal({
 }) {
     const isEditing = !!initialPr;
     const [category, setCategory] = useState(initialPr?.category || "PEMBELIAN");
+    const [date, setDate] = useState(initialPr?.date ? new Date(initialPr.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
+    const [salesPerson, setSalesPerson] = useState(initialPr?.salesPerson || "UMUM");
     const [notes, setNotes] = useState(initialPr?.notes || "");
     const [items, setItems] = useState<RequestItem[]>(
         initialPr?.items?.length > 0 
@@ -70,8 +72,10 @@ export function PurchaseRequestModal({
         setIsSubmitting(true);
         try {
             const payload = {
+                date,
                 notes,
                 category,
+                salesPerson,
                 items: items.map(i => ({
                     itemName: i.itemName,
                     quantity: Number(i.quantity),
@@ -84,7 +88,7 @@ export function PurchaseRequestModal({
                 : await callAction("createPurchaseRequest", payload);
 
             if (res.success) {
-                alert(isEditing ? "Pengajuan diperbarui." : `Pengajuan berhasil dibuat: ${res.prNumber}`);
+                alert(res.message || (isEditing ? "Pengajuan diperbarui." : `Pengajuan berhasil dibuat: ${res.prNumber}`));
                 onClose();
             } else {
                 alert(res.error || "Gagal memproses pengajuan");
@@ -106,7 +110,7 @@ export function PurchaseRequestModal({
                             <ClipboardList className="h-6 w-6 text-primary" />
                         </div>
                         <div>
-                            <h2 className="text-xl font-bold text-slate-800">Buat Pengajuan (Draft)</h2>
+                            <h2 className="text-xl font-bold text-slate-800 uppercase tracking-tight">PENGAJUAN</h2>
                             <p className="text-xs text-slate-500">Ajukan kebutuhan stok atau operasional ke Admin & Finance.</p>
                         </div>
                     </div>
@@ -116,36 +120,73 @@ export function PurchaseRequestModal({
                 </div>
                 <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
 
-                    {/* Category Selection */}
-                    <div className="space-y-2">
-                        <label className="text-xs font-black uppercase tracking-widest text-slate-400">Tipe Pengajuan</label>
-                        <div className="grid grid-cols-2 gap-4">
-                            <button
-                                type="button"
-                                onClick={() => setCategory("PEMBELIAN")}
-                                className={cn(
-                                    "p-4 rounded-xl border-2 transition-all flex items-center justify-center gap-2 font-bold",
-                                    category === "PEMBELIAN" 
-                                        ? "border-primary bg-primary/5 text-primary shadow-sm" 
-                                        : "border-slate-100 bg-slate-50 text-slate-400 grayscale"
-                                )}
-                            >
-                                📦 Pembelian Barang
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setCategory("OPERASIONAL")}
-                                className={cn(
-                                    "p-4 rounded-xl border-2 transition-all flex items-center justify-center gap-2 font-bold",
-                                    category === "OPERASIONAL" 
-                                        ? "border-indigo-500 bg-indigo-50 text-indigo-600 shadow-sm" 
-                                        : "border-slate-100 bg-slate-50 text-slate-400 grayscale"
-                                )}
-                            >
-                                🏢 Operasional
-                            </button>
+                    <div className="grid md:grid-cols-2 gap-6">
+                        {/* Date Picker */}
+                        <div className="space-y-2">
+                            <label className="text-xs font-black uppercase tracking-widest text-slate-400">Tanggal Pengajuan</label>
+                            <input
+                                type="date"
+                                value={date}
+                                onChange={e => setDate(e.target.value)}
+                                className="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-xl text-sm font-bold focus:border-primary outline-none transition-all"
+                            />
+                        </div>
+
+                        {/* Category Selection */}
+                        <div className="space-y-2">
+                            <label className="text-xs font-black uppercase tracking-widest text-slate-400">Tipe Pengajuan</label>
+                            <div className="grid grid-cols-2 gap-4">
+                                <button
+                                    type="button"
+                                    onClick={() => setCategory("PEMBELIAN")}
+                                    className={cn(
+                                        "p-4 rounded-xl border-2 transition-all flex items-center justify-center gap-2 font-bold",
+                                        category === "PEMBELIAN" 
+                                            ? "border-primary bg-primary/5 text-primary shadow-sm" 
+                                            : "border-slate-100 bg-slate-50 text-slate-400 grayscale"
+                                    )}
+                                >
+                                    📦 Pembelian
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setCategory("OPERASIONAL")}
+                                    className={cn(
+                                        "p-4 rounded-xl border-2 transition-all flex items-center justify-center gap-2 font-bold",
+                                        category === "OPERASIONAL" 
+                                            ? "border-indigo-500 bg-indigo-50 text-indigo-600 shadow-sm" 
+                                            : "border-slate-100 bg-slate-50 text-slate-400 grayscale"
+                                    )}
+                                >
+                                    🏢 Operasional
+                                </button>
+                            </div>
                         </div>
                     </div>
+
+                    {/* Sales Person Selection for Operasional */}
+                    {category === "OPERASIONAL" && (
+                        <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                            <label className="text-xs font-black uppercase tracking-widest text-slate-400">Klasifikasi Operasional</label>
+                            <div className="flex flex-wrap gap-3">
+                                {["BC", "PF", "UMUM"].map((sp) => (
+                                    <button
+                                        key={sp}
+                                        type="button"
+                                        onClick={() => setSalesPerson(sp)}
+                                        className={cn(
+                                            "px-6 py-3 rounded-xl border-2 font-black transition-all",
+                                            salesPerson === sp
+                                                ? "bg-slate-900 border-slate-900 text-white shadow-lg"
+                                                : "bg-white border-slate-100 text-slate-400 hover:border-slate-200"
+                                        )}
+                                    >
+                                        {sp}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
                     {/* Notes Area */}
                     <div className="space-y-2">

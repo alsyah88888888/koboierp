@@ -11,8 +11,8 @@ export async function createPurchaseRequestService(data: any, userId: string) {
     const prisma = getPrisma();
 
     return await prisma.$transaction(async (tx: any) => {
-        const today = new Date();
-        const dateStr = `${today.getFullYear()}${(today.getMonth() + 1).toString().padStart(2, '0')}${today.getDate().toString().padStart(2, '0')}`;
+        const txDate = data.date ? new Date(data.date) : new Date();
+        const dateStr = `${txDate.getFullYear()}${(txDate.getMonth() + 1).toString().padStart(2, '0')}${txDate.getDate().toString().padStart(2, '0')}`;
         const prefix = `KB-PR-${dateStr}-`;
         const latest = await tx.purchaseRequest.findFirst({
             where: { number: { startsWith: prefix } },
@@ -30,9 +30,11 @@ export async function createPurchaseRequestService(data: any, userId: string) {
         const req = await tx.purchaseRequest.create({
             data: {
                 number,
+                date: txDate,
                 requestedById: userId,
                 notes: data.notes,
                 category: data.category,
+                salesPerson: data.salesPerson,
                 items: {
                     create: data.items.map((i: any) => ({
                         itemName: i.itemName,
@@ -67,8 +69,10 @@ export async function updatePurchaseRequestService(id: string, data: any, userId
         await tx.purchaseRequest.update({
             where: { id },
             data: {
+                date: data.date ? new Date(data.date) : undefined,
                 notes: data.notes,
                 category: data.category,
+                salesPerson: data.salesPerson,
                 updatedAt: new Date()
             }
         });
