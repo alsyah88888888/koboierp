@@ -64,7 +64,7 @@ export function PurchaseRequestDashboard({ purchaseRequests, coa = [] }: {
             'Catatan': r.notes || "-",
             'Total Estimasi': r.items.reduce((acc: number, i: any) => acc + (i.quantity * Number(i.estimatedPrice)), 0)
         }));
-        exportToExcel(data, 'Laporan_Pengajuan_Pembelian', 'Pengajuan');
+        exportToExcel(data, 'Laporan_Pengajuan', 'Pengajuan');
     };
 
     const handlePreview = () => {
@@ -78,7 +78,7 @@ export function PurchaseRequestDashboard({ purchaseRequests, coa = [] }: {
             'Total Estimasi': r.items.reduce((acc: number, i: any) => acc + (i.quantity * Number(i.estimatedPrice)), 0)
         }));
         setPreviewData(data);
-        setPreviewTitle("Riwayat Pengajuan Pembelian (PR)");
+        setPreviewTitle("Riwayat Pengajuan (PR)");
         setShowPreview(true);
     };
 
@@ -86,7 +86,7 @@ export function PurchaseRequestDashboard({ purchaseRequests, coa = [] }: {
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hide-print px-1">
                 <div>
-                    <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight uppercase">Menu Pengajuan</h1>
+                    <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight uppercase">Pengajuan</h1>
                     <p className="text-slate-500 text-[10px] md:text-sm font-bold uppercase tracking-widest opacity-70">Draft dokumen pembelian & operasional</p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
