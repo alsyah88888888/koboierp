@@ -138,7 +138,7 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
             </div>
 
             {/* Main Action Grid */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
                 <button
                     onClick={() => setActiveTab("inventory")}
                     className={cn(
@@ -172,16 +172,17 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                     </div>
                 </button>
 
-                <button
-                    onClick={handleExport}
-                    className="p-6 bg-white border-2 border-slate-100 rounded-[2rem] text-slate-400 hover:border-emerald-500/20 hover:text-emerald-500 transition-all group flex flex-col items-center gap-3 text-center shadow-sm hover:-translate-y-1"
+                <Link
+                    href="/warehouse/print-database"
+                    target="_blank"
+                    className="p-6 bg-white border-2 border-slate-100 rounded-[2rem] text-slate-400 hover:border-indigo-500/20 hover:text-indigo-500 transition-all group flex flex-col items-center gap-3 text-center shadow-sm hover:-translate-y-1"
                 >
-                    <Download className="h-7 w-7 text-emerald-500 transition-transform group-hover:scale-110" />
+                    <FileText className="h-7 w-7 text-indigo-500 transition-transform group-hover:scale-110" />
                     <div>
-                        <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60 mb-0.5">Action</p>
-                        <p className="text-lg font-black tracking-tight text-slate-800 group-hover:text-emerald-500 transition-colors">Export Excel</p>
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60 mb-0.5">Report</p>
+                        <p className="text-lg font-black tracking-tight text-slate-800 group-hover:text-indigo-500 transition-colors">Cetak DB</p>
                     </div>
-                </button>
+                </Link>
 
                 <button
                     onClick={() => {
@@ -194,6 +195,17 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                     <div>
                         <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60 mb-0.5">Report</p>
                         <p className="text-lg font-black tracking-tight text-slate-800 group-hover:text-indigo-500 transition-colors">Kartu Stok</p>
+                    </div>
+                </button>
+
+                <button
+                    onClick={handleExport}
+                    className="p-6 bg-white border-2 border-slate-100 rounded-[2rem] text-slate-400 hover:border-emerald-500/20 hover:text-emerald-500 transition-all group flex flex-col items-center gap-3 text-center shadow-sm hover:-translate-y-1"
+                >
+                    <Download className="h-7 w-7 text-emerald-500 transition-transform group-hover:scale-110" />
+                    <div>
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60 mb-0.5">Action</p>
+                        <p className="text-lg font-black tracking-tight text-slate-800 group-hover:text-emerald-500 transition-colors">Export Excel</p>
                     </div>
                 </button>
             </div>
@@ -524,7 +536,7 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                     <h4 className="font-black text-lg mb-1 leading-tight">Warehouse Insight</h4>
                                     <p className="text-xs text-white/80 font-medium mb-4">Total Stock di seluruh gudang saat ini:</p>
                                     <div className="text-4xl font-black mb-1">
-                                        {isClient ? initialProducts.reduce((acc: number, p: any) => acc + p.stocks.reduce((sacc: number, s: any) => sacc + s.quantity, 0), 0).toLocaleString() : "..."}
+                                        {isClient ? initialProducts.reduce((acc: number, p: any) => acc + (p.stocks?.reduce((sacc: number, s: any) => sacc + s.quantity, 0) || 0), 0).toLocaleString() : "..."}
                                     </div>
                                     <p className="text-[10px] font-black uppercase tracking-widest text-primary-foreground/60">Items Handled</p>
                                 </div>

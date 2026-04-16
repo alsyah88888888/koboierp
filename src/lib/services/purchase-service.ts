@@ -262,13 +262,28 @@ export async function updateGoodsReceiptService(id: string, data: any, userId: s
 
         let currentReceiptNumber = oldReceipt.receiptNumber;
         const isCurrentlyDiscounted = currentReceiptNumber.startsWith("KB-LPBD-");
-        
-        if (hasTaxOrDisc && !isCurrentlyDiscounted) {
-            // Switch to KB-LPBD-
-            currentReceiptNumber = currentReceiptNumber.replace("KB-LPB-", "KB-LPBD-");
-        } else if (!hasTaxOrDisc && isCurrentlyDiscounted) {
-            // Switch to KB-LPB-
-            currentReceiptNumber = currentReceiptNumber.replace("KB-LPBD-", "KB-LPB-");
+        const prefixChanged = (hasTaxOrDisc && !isCurrentlyDiscounted) || (!hasTaxOrDisc && isCurrentlyDiscounted);
+
+        if (prefixChanged) {
+            const txDate = data.date || oldReceipt.date || new Date();
+            const day = String(txDate.getDate()).padStart(2, '0');
+            const month = String(txDate.getMonth() + 1).padStart(2, '0');
+            const year = txDate.getFullYear();
+            const dateStr = `${day}${month}${year}`;
+            const newPrefix = hasTaxOrDisc ? `KB-LPBD-${dateStr}-` : `KB-LPB-${dateStr}-`;
+
+            const latest = await tx.goodsReceipt.findFirst({
+                where: { receiptNumber: { startsWith: newPrefix } },
+                orderBy: { receiptNumber: 'desc' }
+            });
+
+            let nextNum = 1;
+            if (latest) {
+                const parts = latest.receiptNumber.split('-');
+                const lastSeq = parseInt(parts[parts.length - 1]);
+                if (!isNaN(lastSeq)) nextNum = lastSeq + 1;
+            }
+            currentReceiptNumber = `${newPrefix}${String(nextNum).padStart(3, '0')}`;
         }
 
         // 3. Update Header & Items
