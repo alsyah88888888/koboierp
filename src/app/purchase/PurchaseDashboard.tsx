@@ -470,8 +470,15 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
                                             <td className="text-right text-slate-500">
                                                 {isClient ? format(new Date(r.date || r.createdAt), "dd MMM yyyy") : "..."}
                                             </td>
-                                            <td>
+                                             <td>
                                                 <div className="flex items-center justify-center gap-2">
+                                                    <Link
+                                                        href={`/purchase/return/print/${r.id}`}
+                                                        className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
+                                                        title="Cetak Retur"
+                                                    >
+                                                        <Eye className="h-4 w-4" />
+                                                    </Link>
                                                     <button
                                                         onClick={() => {
                                                             setEditData(r);

@@ -588,8 +588,11 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                                                 <span className="px-3 py-1 bg-emerald-100 text-emerald-700 text-[10px] font-black rounded-full border border-emerald-200">VERIFIED</span>
                                             )}
                                         </td>
-                                        <td data-label="Aksi" className="md:pr-6">
+                                         <td data-label="Aksi" className="md:pr-6">
                                             <div className="flex items-center justify-end md:justify-center gap-1">
+                                                <Link href={`/sales/return/print/${r.id}`} className="p-2.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all" title="Cetak Retur">
+                                                    <Eye className="h-4 w-4" />
+                                                </Link>
                                                 <button onClick={() => { setEditData(r); setShowReturnModal(true); }} className="p-2.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-all" disabled={r.status !== "PENDING"}>
                                                     <Edit2 className="h-4 w-4" />
                                                 </button>

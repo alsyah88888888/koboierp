@@ -136,12 +136,12 @@ export function DocumentLayout({ title, docNumber, date, children, headerInfo, i
                             <p>( ________________ )</p>
                         </div>
                         <div className={`${isA5 ? 'space-y-12' : 'space-y-20'}`}>
-                            <p>Hormat Kami,</p>
+                            <p>Driver,</p>
                             <div className="border-b-2 border-slate-900 w-full mx-auto"></div>
                             <p>( ________________ )</p>
                         </div>
                         <div className={`${isA5 ? 'space-y-12' : 'space-y-20'}`}>
-                            <p>Pengirim,</p>
+                            <p>Hormat Kami,</p>
                             <div className="border-b-2 border-slate-900 w-full mx-auto"></div>
                             <p>( ________________ )</p>
                         </div>
