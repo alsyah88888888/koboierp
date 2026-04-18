@@ -163,7 +163,7 @@ export function OperationalDashboard({
                 </div>
 
                 {/* Only show Sales PF if not Bu Cici */}
-                {userEmail !== 'cici@kolaborasi.id' && (
+                {userEmail !== 'chici@kolaborasi.id' && (
                     <div className="erp-card p-6 md:p-8 relative overflow-hidden group">
                         <div className="absolute -right-12 -top-12 h-48 w-48 bg-amber-50 rounded-full blur-3xl transition-transform group-hover:scale-110 opacity-60" />
                         <div className="relative z-10">

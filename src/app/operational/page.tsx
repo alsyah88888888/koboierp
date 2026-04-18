@@ -20,7 +20,7 @@ export default async function OperationalPage() {
 
 
     const transactions = await prisma.financeTransaction.findMany({
-        where: session?.user?.email === 'cici@kolaborasi.id' ? { salesPerson: 'BC' } : {},
+        where: session?.user?.email === 'chici@kolaborasi.id' ? { salesPerson: 'BC' } : {},
         orderBy: { date: 'desc' }
     });
 
