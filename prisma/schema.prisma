@@ -36,6 +36,7 @@ model User {
   customers        Customer[]         @relation("CustomerCreatedBy")
   salesReturns     SalesReturn[]      @relation("SRCreatedBy")
   purchaseReturns  PurchaseReturn[]   @relation("PRCreatedBy")
+  salesOrders      SalesOrder[]       @relation("SOCreatedBy")
 
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -327,10 +328,61 @@ model PurchaseReturnItem {
   reason           String?
 }
 
-// --- SALES MODULE (Simplified: Sales Delivery) ---
+// --- SALES MODULE (PI -> PO -> SJ) ---
+model SalesOrder {
+  id              String   @id @default(cuid())
+  orderNumber     String   @unique // KB-TRN... or KB-TRD...
+  proformaNumber  String?  @unique // KB-PI...
+  poNumber        String?  // Buyer's PO (manual)
+  status          String   @default("OPEN") // DRAFT (PI), OPEN, PARTIAL, CLOSED, CANCELLED
+  
+  recipient       String
+  buyerName       String
+  salesPerson     String?  // BC or PF
+  date            DateTime @default(now())
+  warehouseId     String
+  warehouse       Warehouse @relation(fields: [warehouseId], references: [id])
+  
+  // Financials
+  subtotal        Decimal  @default(0)
+  totalDiscount   Decimal  @default(0)
+  taxRate         Decimal  @default(0)
+  taxAmount       Decimal  @default(0)
+  grandTotal      Decimal  @default(0)
+  
+  items           SalesOrderItem[]
+  deliveries      SalesDelivery[]
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  createdById     String?
+  createdBy       User?    @relation("SOCreatedBy", fields: [createdById], references: [id])
+
+  @@index([orderNumber])
+  @@index([proformaNumber])
+  @@index([createdAt])
+}
+
+model SalesOrderItem {
+  id              String         @id @default(cuid())
+  orderId         String
+  order           SalesOrder     @relation(fields: [orderId], references: [id])
+  productId       String
+  product         Product        @relation(fields: [productId], references: [id])
+  quantity        Int            // Ordered Quantity
+  shippedQuantity Int            @default(0) // Fulfilled Quantity
+  salesPrice      Decimal
+  discount        Decimal        @default(0)
+  uom             String?
+  vendorName      String         @default("UMUM")
+  deliveryItems   SalesDeliveryItem[]
+}
+
 model SalesDelivery {
   id             String   @id @default(cuid())
-  deliveryNumber String   @unique // No. Pengiriman (SJ-YYYYMMDD-XXX)
+  deliveryNumber String   @unique // No. Pengiriman (KB-SJ-YYYYMMDD-XXX-X)
+  orderId        String?  // Link to SalesOrder
+  order          SalesOrder? @relation(fields: [orderId], references: [id])
   poNumber       String?  // No. PO Buyer (Manual)
   recipient      String   // Kirim Ke
   buyerName      String   // Pengiriman ke Buyer
@@ -371,6 +423,8 @@ model SalesDeliveryItem {
   id             String        @id @default(cuid())
   deliveryId     String
   delivery       SalesDelivery @relation(fields: [deliveryId], references: [id])
+  orderItemId    String?
+  orderItem      SalesOrderItem? @relation(fields: [orderItemId], references: [id])
   productId      String
   product        Product       @relation(fields: [productId], references: [id])
   quantity       Int
@@ -425,6 +479,7 @@ model Warehouse {
   stocks   Stock[]
   receipts GoodsReceipt[]
   deliveries SalesDelivery[]
+  salesOrders SalesOrder[]
   movements StockMovement[]
 }
 
@@ -446,6 +501,7 @@ model Product {
   purchaseOrderItems PurchaseOrderItem[]
   purchaseReturnItems PurchaseReturnItem[]
   salesReturnItems    SalesReturnItem[]
+  orderItems          SalesOrderItem[]
   movements StockMovement[]
 
   createdById     String?
