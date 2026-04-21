@@ -110,6 +110,12 @@ export default async function SalesOrderPrintPage({ params }: { params: Promise<
                         <span className="text-slate-400 uppercase">Total Brutto</span>
                         <span>{formatCurrency(subTotal)}</span>
                     </div>
+                    {Number(order.totalDiscount) > 0 && (
+                        <div className="flex justify-between text-xs text-orange-600">
+                            <span className="text-slate-400 uppercase">Diskon Global</span>
+                            <span>- {formatCurrency(Number(order.totalDiscount))}</span>
+                        </div>
+                    )}
                     {taxAmount > 0 && (
                         <div className="flex justify-between text-xs text-indigo-600">
                             <span className="text-slate-400 uppercase">PPN (11%)</span>
