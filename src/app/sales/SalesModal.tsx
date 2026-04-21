@@ -683,8 +683,9 @@ export default function SalesModal({ products, warehouses, customers, orders = [
                                 </div>
                             </div>
                         </div>
-                </form>
+                    </form>
+                </div>
             </div>
-        </div>
-    );
+        );
+    }
 }
