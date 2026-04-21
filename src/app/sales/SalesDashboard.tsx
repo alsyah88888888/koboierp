@@ -20,6 +20,7 @@ interface SalesDashboardProps {
     initialDeliveries: any[];
     initialReceipts?: any[];
     initialReturns?: any[];
+    initialSalesOrders?: any[];
     products: any[];
     warehouses: any[];
     customers: any[];
@@ -27,7 +28,7 @@ interface SalesDashboardProps {
     systemSettings?: any;
 }
 
-export default function SalesDashboard({ initialDeliveries, initialReceipts = [], initialReturns = [], products, warehouses, customers, salesExpenses = [], systemSettings }: SalesDashboardProps) {
+export default function SalesDashboard({ initialDeliveries, initialReceipts = [], initialReturns = [], initialSalesOrders = [], products, warehouses, customers, salesExpenses = [], systemSettings }: SalesDashboardProps) {
     const { confirm, alert } = useDialog();
     const { data: session } = useSession() as any;
     const isAdmin = session?.user?.role?.toUpperCase() === "ADMIN";
@@ -37,7 +38,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
     const [showManualModal, setShowManualModal] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [editData, setEditData] = useState<any>(null);
-    const [activeTab, setActiveTab] = useState<"SJ" | "RETURNS">("SJ");
+    const [activeTab, setActiveTab] = useState<"SJ" | "RETURNS" | "PO">("SJ");
     const [isClient, setIsClient] = useState(false);
     const [showVoidModal, setShowVoidModal] = useState(false);
     const [voidId, setVoidId] = useState<string | null>(null);
@@ -155,6 +156,11 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
     const filteredReturns = initialReturns.filter(r =>
         r.returnNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
         r.delivery?.buyerName.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    
+    const filteredOrders = initialSalesOrders.filter(o =>
+        o.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        o.buyerName.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     const handleExport = () => {
@@ -279,18 +285,29 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                         >
                             Retur Pelanggan
                         </button>
+                        <button
+                            onClick={() => setActiveTab("PO")}
+                            className={cn(
+                                "flex-1 sm:flex-none px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                                activeTab === "PO" ? "bg-indigo-600 text-white shadow-md shadow-indigo-200" : "text-slate-500 hover:bg-slate-50"
+                            )}
+                        >
+                            PO Penjualan
+                        </button>
                     </div>
 
                     <div className="flex items-center gap-2 w-full sm:w-auto">
                         <button
-                            onClick={activeTab === "SJ" ? () => setShowSalesModal(true) : () => setShowReturnModal(true)}
+                            onClick={activeTab === "SJ" ? () => setShowSalesModal(true) : activeTab === "RETURNS" ? () => setShowReturnModal(true) : () => setShowManualModal(true)}
                             className={cn(
                                 "flex-1 sm:flex-none px-8 py-3 rounded-2xl flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95 font-black text-[10px] uppercase tracking-widest",
-                                activeTab === "SJ" ? "bg-primary text-white shadow-primary/20" : "bg-rose-600 text-white shadow-rose-200"
+                                activeTab === "SJ" ? "bg-primary text-white shadow-primary/20" : 
+                                activeTab === "RETURNS" ? "bg-rose-600 text-white shadow-rose-200" :
+                                "bg-indigo-600 text-white shadow-indigo-200"
                             )}
                         >
                             <Plus className="h-4 w-4" />
-                            <span>{activeTab === "SJ" ? "Input SJ" : "Input Retur"}</span>
+                            <span>{activeTab === "SJ" ? "Input SJ" : activeTab === "RETURNS" ? "Input Retur" : "Input PO"}</span>
                         </button>
                         <div className="flex gap-2">
                            <button onClick={handlePreview} className="p-3 bg-white border border-slate-200 rounded-2xl hover:border-primary hover:text-primary transition-all shadow-sm group" title="Preview Report">
@@ -465,10 +482,19 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                             onClick={() => setActiveTab("RETURNS")}
                             className={cn(
                                 "text-sm font-black uppercase tracking-widest transition-all border-b-4 pb-3 shrink-0",
-                                activeTab === "RETURNS" ? "text-blue-600 border-blue-600" : "text-slate-300 border-transparent hover:text-slate-400"
+                                activeTab === "RETURNS" ? "text-rose-600 border-rose-600" : "text-slate-300 border-transparent hover:text-slate-400"
                             )}
                         >
                             Retur Penjualan
+                        </button>
+                        <button
+                            onClick={() => setActiveTab("PO")}
+                            className={cn(
+                                "text-sm font-black uppercase tracking-widest transition-all border-b-4 pb-3 shrink-0",
+                                activeTab === "PO" ? "text-indigo-600 border-indigo-600" : "text-slate-300 border-transparent hover:text-slate-400"
+                            )}
+                        >
+                            PO Penjualan
                         </button>
                     </div>
                     <div className="relative w-full md:w-96 group">
@@ -560,7 +586,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                                 ))}
                             </tbody>
                         </table>
-                    ) : (
+                    ) : activeTab === "RETURNS" ? (
                         <table className="table-erp table-to-cards min-w-full md:min-w-[1000px]">
                             <thead className="hidden md:table-header-group">
                                 <tr>
@@ -575,10 +601,10 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                             <tbody>
                                 {Array.isArray(filteredReturns) && filteredReturns.map((r: any) => (
                                     <tr key={r.id}>
-                                        <td data-label="No. Retur" className="font-mono text-blue-700 font-bold md:pl-6">{r.returnNumber}</td>
+                                        <td data-label="No. Retur" className="font-mono text-rose-700 font-bold md:pl-6">{r.returnNumber}</td>
                                         <td data-label="No. SJ" className="font-mono text-slate-500">{r.delivery.deliveryNumber}</td>
                                         <td data-label="Buyer" className="font-bold">{r.delivery.buyerName}</td>
-                                        <td data-label="Total" className="text-right font-black text-blue-600 md:pr-6">
+                                        <td data-label="Total" className="text-right font-black text-rose-600 md:pr-6">
                                             {r.items.reduce((acc: number, item: any) => acc + item.quantity, 0)} <span className="text-[10px] text-slate-400">Pcs</span>
                                         </td>
                                         <td data-label="Status" className="text-center">
@@ -590,7 +616,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                                         </td>
                                          <td data-label="Aksi" className="md:pr-6">
                                             <div className="flex items-center justify-end md:justify-center gap-1">
-                                                <Link href={`/sales/return/print/${r.id}`} className="p-2.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all" title="Cetak Retur">
+                                                <Link href={`/sales/return/print/${r.id}`} className="p-2.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all" title="Cetak Retur">
                                                     <Eye className="h-4 w-4" />
                                                 </Link>
                                                 <button onClick={() => { setEditData(r); setShowReturnModal(true); }} className="p-2.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-all" disabled={r.status !== "PENDING"}>
@@ -598,6 +624,53 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                                                 </button>
                                                 <button onClick={() => handleDeleteReturn(r.id)} className="p-2.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all">
                                                     <Trash2 className="h-4 w-4" />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    ) : (
+                        <table className="table-erp table-to-cards min-w-full md:min-w-[1000px]">
+                            <thead className="hidden md:table-header-group">
+                                <tr>
+                                    <th className="w-48">No. PO Jual</th>
+                                    <th>Buyer / Customer</th>
+                                    <th className="w-40">Status</th>
+                                    <th className="text-right w-40">Total Item</th>
+                                    <th className="text-right w-40">Tgl PO</th>
+                                    <th className="text-center w-32">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {Array.isArray(filteredOrders) && filteredOrders.map((o: any) => (
+                                    <tr key={o.id}>
+                                        <td data-label="No. PO" className="font-mono text-indigo-700 font-bold md:pl-6">{o.orderNumber}</td>
+                                        <td data-label="Buyer" className="font-bold">{o.buyerName}</td>
+                                        <td data-label="Status" className="text-center md:text-left">
+                                            <span className={cn(
+                                                "px-3 py-1 text-[10px] font-black rounded-full border",
+                                                o.status === "DRAFT" ? "bg-slate-100 text-slate-600 border-slate-200" :
+                                                o.status === "CONFIRMED" ? "bg-blue-100 text-blue-700 border-blue-200" :
+                                                "bg-emerald-100 text-emerald-700 border-emerald-200"
+                                            )}>
+                                                {o.status}
+                                            </span>
+                                        </td>
+                                        <td data-label="Total Qty" className="text-right font-black text-slate-900 md:pr-6">
+                                            {o.items?.reduce((acc: number, item: any) => acc + (Number(item.quantity) || 0), 0)} <span className="text-[10px] text-slate-400">Pcs</span>
+                                        </td>
+                                        <td data-label="Tanggal" className="text-right text-xs text-slate-500 md:pr-6">
+                                            {isClient ? format(new Date(o.date), "dd/MM/yyyy") : "..."}
+                                        </td>
+                                        <td data-label="Aksi" className="md:pr-6">
+                                            <div className="flex items-center justify-end md:justify-center gap-1">
+                                                <Link href={`/sales/order/view/${o.id}`} className="p-2.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all">
+                                                    <Eye className="h-4 w-4" />
+                                                </Link>
+                                                <button onClick={() => { setEditData(o); setShowManualModal(true); }} className="p-2.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-all">
+                                                    <Edit2 className="h-4 w-4" />
                                                 </button>
                                             </div>
                                         </td>

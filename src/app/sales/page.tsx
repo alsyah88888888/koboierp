@@ -98,6 +98,18 @@ export default async function SalesPage() {
         orderBy: { createdAt: 'desc' }
     }).catch(() => []));
 
+    const salesOrders = serializeDecimal(await prisma.salesOrder.findMany({
+        where: isAdmin ? {} : {
+            OR: [
+                { salesPerson: "BC" },
+                { createdById: session?.user?.id }
+            ],
+            NOT: { salesPerson: "PF" }
+        },
+        include: { items: { include: { product: true } }, deliveries: true },
+        orderBy: { date: 'desc' }
+    }).catch(() => []));
+
     const systemSettings = serializeDecimal(await prisma.systemSetting.findUnique({ where: { id: "global" } }).catch(() => null));
 
     return (
@@ -105,6 +117,7 @@ export default async function SalesPage() {
             initialDeliveries={deliveries}
             initialReceipts={receipts}
             initialReturns={salesReturns}
+            initialSalesOrders={salesOrders}
             products={products}
             warehouses={warehouses}
             customers={serializedCustomers}
