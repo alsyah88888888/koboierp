@@ -296,16 +296,10 @@ export default function SalesModal({ products, warehouses, customers, orders = [
                         <div className="p-3.5 bg-primary text-white rounded-2xl shadow-xl shadow-primary/20">
                             <ShoppingCart className="h-6 w-6" />
                         </div>
-                        <div>
-                            <h2 className="text-2xl font-black text-slate-900 tracking-tight">
-                                {initialData ? "Update Penjualan" : "Input Penjualan Baru"}
-                            </h2>
-                    <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3 uppercase">
-                        <div className="p-2 bg-primary rounded-xl text-white">
-                            <Truck className="h-5 w-5" />
-                        </div>
-                        {initialData ? "Edit Surat Jalan" : "Input Surat Jalan (SJ)"}
-                    </h2>
+                        <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3 uppercase">
+                            {initialData ? "Edit Surat Jalan" : "Input Surat Jalan (SJ)"}
+                        </h2>
+                    </div>
                     <button onClick={onClose} className="p-3 hover:bg-rose-50 hover:text-rose-500 rounded-2xl transition-all">
                         <X className="h-6 w-6 text-slate-400" />
                     </button>
@@ -689,7 +683,6 @@ export default function SalesModal({ products, warehouses, customers, orders = [
                                 </div>
                             </div>
                         </div>
-                    </div>
                 </form>
             </div>
         </div>
