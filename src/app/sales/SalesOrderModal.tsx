@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Plus, Trash2, Save, Calculator, FileText, CheckCircle } from "lucide-react";
+import { X, Plus, Trash2, Save, Calculator, FileText, CheckCircle, ChevronRight } from "lucide-react";
 import { callAction } from "@/proxy";
 import { useDialog } from "@/components/ui/DialogProvider";
 import { formatCurrency } from "@/lib/utils";
@@ -104,12 +104,17 @@ export default function SalesOrderModal({ products, customers, warehouses, initi
                 <div className="p-8 border-b flex justify-between items-center bg-slate-50/50">
                     <div>
                         <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3 uppercase">
-                            <div className="p-2 bg-primary rounded-xl text-white">
+                            <div className="p-2 bg-indigo-600 rounded-xl text-white">
                                 <FileText className="h-6 w-6" />
                             </div>
-                            {initialData ? "Edit Order" : "Input Proforma Invoice (PI)"}
+                            {initialData ? "Update Data Pesanan" : "Buat Penawaran / Pesanan"}
                         </h2>
-                        <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mt-1 opacity-70">Sales Workflow: PI → PO → SJ</p>
+                        <div className="flex items-center gap-2 mt-1">
+                            <span className="text-slate-500 text-[10px] font-black uppercase tracking-widest opacity-70">Sales Workflow:</span>
+                            <span className="px-2 py-0.5 bg-indigo-100 text-indigo-700 text-[9px] font-black rounded uppercase">PI (Penawaran)</span>
+                            <ChevronRight className="h-3 w-3 text-slate-300" />
+                            <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[9px] font-black rounded uppercase">PO (Pesanan)</span>
+                        </div>
                     </div>
                     <button onClick={onClose} className="p-3 hover:bg-rose-50 hover:text-rose-500 rounded-2xl transition-all group">
                         <X className="h-6 w-6 text-slate-400 group-hover:rotate-90 transition-transform duration-300" />
@@ -117,6 +122,20 @@ export default function SalesOrderModal({ products, customers, warehouses, initi
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar">
+                    {/* Workflow Help Alert */}
+                    <div className="bg-amber-50 border border-amber-200 rounded-3xl p-5 flex items-start gap-4">
+                        <div className="bg-amber-500 text-white p-2 rounded-xl shrink-0 mt-1">
+                            <Calculator className="h-4 w-4" />
+                        </div>
+                        <div className="space-y-1">
+                            <p className="text-xs font-black text-amber-900 uppercase tracking-widest">Panduan Admin:</p>
+                            <p className="text-xs text-amber-800 leading-relaxed">
+                                Gunakan <span className="font-bold">Simpan sebagai PI</span> jika baru sekedar penawaran (stok tidak terkunci). <br/>
+                                Gunakan <span className="font-bold text-emerald-700">Konfirmasi Jadi PO</span> jika pelanggan sudah OK, agar data bisa ditarik saat membuat <span className="font-bold underline">Surat Jalan (SJ)</span>.
+                            </p>
+                        </div>
+                    </div>
+
                     {/* Basic Info */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div className="space-y-2">

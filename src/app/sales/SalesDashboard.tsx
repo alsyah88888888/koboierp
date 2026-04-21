@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Clock, FileText, Search, Truck, Trash2, Eye, Edit2, BarChart3, TrendingUp, TrendingDown, Users, Download, Wallet, XCircle, Undo2 } from "lucide-react";
+import { Plus, Clock, FileText, Search, Truck, Trash2, Eye, Edit2, BarChart3, TrendingUp, TrendingDown, Users, Download, Wallet, XCircle, Undo2, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import SalesModal from "@/app/sales/SalesModal";
 import { useSession } from "next-auth/react";
@@ -262,7 +262,13 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
             <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 px-1 hide-print">
                 <div className="space-y-1">
                     <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight uppercase">Sales Operations</h1>
-                    <p className="text-slate-500 text-[10px] md:text-sm font-bold uppercase tracking-widest opacity-70">Shipment tracking & Revenue performance</p>
+                    <div className="flex items-center gap-2 text-slate-500 text-[9px] md:text-xs font-bold uppercase tracking-widest opacity-80">
+                        <span>PI (Draft)</span>
+                        <ChevronRight className="h-3 w-3" />
+                        <span>PO (Confirm)</span>
+                        <ChevronRight className="h-3 w-3" />
+                        <span className="text-primary">SJ (Shipment)</span>
+                    </div>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
@@ -307,7 +313,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                             )}
                         >
                             <Plus className="h-4 w-4" />
-                            <span>{activeTab === "SJ" ? "Input SJ" : activeTab === "RETURNS" ? "Input Retur" : "Input PO"}</span>
+                            <span>{activeTab === "SJ" ? "Input Surat Jalan (SJ)" : activeTab === "RETURNS" ? "Input Retur" : "Input PI / PO Penjualan"}</span>
                         </button>
                         <div className="flex gap-2">
                            <button onClick={handlePreview} className="p-3 bg-white border border-slate-200 rounded-2xl hover:border-primary hover:text-primary transition-all shadow-sm group" title="Preview Report">

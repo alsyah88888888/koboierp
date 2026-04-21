@@ -308,19 +308,22 @@ export default function SalesModal({ products, warehouses, customers, orders = [
                                     <ShoppingCart className="h-6 w-6 text-indigo-600" />
                                 </div>
                                 <div className="flex-1 space-y-1">
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Pilih dari PO Penjualan</p>
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Pilih dari PO Penjualan (Sangat Disarankan)</p>
+                                        <div className="bg-indigo-600 text-white px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest">Recommended</div>
+                                    </div>
+                                    <p className="text-[10px] text-indigo-800/60 mb-2 font-bold uppercase italic">* Tarik data PO agar otomatis mengisi daftar barang dan mengurangi kesalahan input.</p>
                                     <select 
                                         value={selectedOrderId}
                                         onChange={e => handleOrderSelect(e.target.value)}
-                                        className="w-full bg-transparent border-none focus:ring-0 text-sm font-black text-slate-900 placeholder:text-slate-400 p-0"
+                                        className="w-full bg-white/80 border-2 border-indigo-100 focus:border-indigo-500 rounded-xl px-4 py-2 text-sm font-black text-slate-900 outline-none transition-all shadow-sm"
                                     >
-                                        <option value="">-- Buat SJ Tanpa PO / Manual --</option>
+                                        <option value="">-- BUAT SJ MANUAL (Tanpa Referensi PO) --</option>
                                         {orders.filter((o: any) => o.status !== "DRAFT").map((o: any) => (
-                                            <option key={o.id} value={o.id}>{o.orderNumber} - {o.buyerName}</option>
+                                            <option key={o.id} value={o.id}>{o.orderNumber} - {o.buyerName} ({o.items.length} items)</option>
                                         ))}
                                     </select>
                                 </div>
-                                <div className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-indigo-200">Recommended</div>
                             </div>
                         )}
 
