@@ -453,8 +453,12 @@ export async function createSalesOrderService(data: any, userId: string) {
         const orderNumber = `${prefix}${String(nextNum).padStart(3, '0')}`;
 
         const subtotal = data.items.reduce((acc: number, i: any) => acc + (i.quantity * i.salesPrice) - (i.discount || 0), 0);
-        const taxAmount = (data.taxRate || 0) * subtotal;
-        const grandTotal = subtotal + taxAmount;
+        const totalDiscountNominal = Math.round(Number(data.totalDiscount) || 0);
+        const dpp = subtotal - totalDiscountNominal;
+        const taxRatePercent = Number(data.taxRate) || 0;
+        const dppNilaiLain = taxRatePercent > 0 ? Math.round(dpp * 0.916666666666667) : 0;
+        const taxAmount = taxRatePercent > 0 ? Math.round(dppNilaiLain * 0.12) : 0;
+        const grandTotal = Math.round(dpp + taxAmount);
 
         const order = await tx.salesOrder.create({
             data: {
@@ -467,7 +471,8 @@ export async function createSalesOrderService(data: any, userId: string) {
                 date: txDate,
                 createdById: userId,
                 subtotal,
-                taxRate: data.taxRate || 0,
+                totalDiscount: totalDiscountNominal,
+                taxRate: taxRatePercent,
                 taxAmount,
                 grandTotal,
                 items: {
@@ -493,8 +498,12 @@ export async function updateSalesOrderService(id: string, data: any) {
 
     return await prisma.$transaction(async (tx: any) => {
         const subtotal = data.items.reduce((acc: number, i: any) => acc + (i.quantity * i.salesPrice) - (i.discount || 0), 0);
-        const taxAmount = (data.taxRate || 0) * subtotal;
-        const grandTotal = subtotal + taxAmount;
+        const totalDiscountNominal = Math.round(Number(data.totalDiscount) || 0);
+        const dpp = subtotal - totalDiscountNominal;
+        const taxRatePercent = Number(data.taxRate) || 0;
+        const dppNilaiLain = taxRatePercent > 0 ? Math.round(dpp * 0.916666666666667) : 0;
+        const taxAmount = taxRatePercent > 0 ? Math.round(dppNilaiLain * 0.12) : 0;
+        const grandTotal = Math.round(dpp + taxAmount);
 
         await tx.salesOrderItem.deleteMany({ where: { orderId: id } });
 
@@ -508,7 +517,8 @@ export async function updateSalesOrderService(id: string, data: any) {
                 salesPerson: data.salesPerson,
                 date: new Date(data.date),
                 subtotal,
-                taxRate: data.taxRate || 0,
+                totalDiscount: totalDiscountNominal,
+                taxRate: taxRatePercent,
                 taxAmount,
                 grandTotal,
                 items: {
