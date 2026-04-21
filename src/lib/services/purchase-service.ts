@@ -260,35 +260,7 @@ export async function updateGoodsReceiptService(id: string, data: any, userId: s
             }
         }
 
-        // 2. Determine if Prefix Needs Change
-        const hasTaxOrDisc = data.hasTaxOrDisc === true || 
-            ((Number(data.taxRate) || 0) > 0 || (Number(data.totalDiscount) || 0) > 0 || data.items.some((i: any) => (Number(i.discount) || 0) > 0));
-
-        let currentReceiptNumber = oldReceipt.receiptNumber;
-        const isCurrentlyDiscounted = currentReceiptNumber.startsWith("KB-LPBD-");
-        const prefixChanged = (hasTaxOrDisc && !isCurrentlyDiscounted) || (!hasTaxOrDisc && isCurrentlyDiscounted);
-
-        if (prefixChanged) {
-            const txDate = data.date || oldReceipt.date || new Date();
-            const day = String(txDate.getDate()).padStart(2, '0');
-            const month = String(txDate.getMonth() + 1).padStart(2, '0');
-            const year = txDate.getFullYear();
-            const dateStr = `${day}${month}${year}`;
-            const newPrefix = hasTaxOrDisc ? `KB-LPBD-${dateStr}-` : `KB-LPB-${dateStr}-`;
-
-            const latest = await tx.goodsReceipt.findFirst({
-                where: { receiptNumber: { startsWith: newPrefix } },
-                orderBy: { receiptNumber: 'desc' }
-            });
-
-            let nextNum = 1;
-            if (latest) {
-                const parts = latest.receiptNumber.split('-');
-                const lastSeq = parseInt(parts[parts.length - 1]);
-                if (!isNaN(lastSeq)) nextNum = lastSeq + 1;
-            }
-            currentReceiptNumber = `${newPrefix}${String(nextNum).padStart(3, '0')}`;
-        }
+        const currentReceiptNumber = oldReceipt.receiptNumber;
 
         // 3. Update Header & Items
         await tx.goodsReceiptItem.deleteMany({ where: { receiptId: id } });
@@ -297,7 +269,6 @@ export async function updateGoodsReceiptService(id: string, data: any, userId: s
         await tx.goodsReceipt.update({
             where: { id },
             data: {
-                receiptNumber: currentReceiptNumber,
                 formNumber: data.formNumber?.trim() || null,
                 receivedFrom: data.receivedFrom,
                 purchaseOrderId: data.purchaseOrderId,
@@ -317,13 +288,6 @@ export async function updateGoodsReceiptService(id: string, data: any, userId: s
             }
         });
 
-        // 4. Update StockMovement References if Number Changed
-        if (currentReceiptNumber !== oldReceipt.receiptNumber) {
-            await tx.stockMovement.updateMany({
-                where: { reference: oldReceipt.receiptNumber },
-                data: { reference: currentReceiptNumber }
-            });
-        }
 
         // 3. Recalculate Totals (Reuse logic from create)
         let grossAmount = 0;

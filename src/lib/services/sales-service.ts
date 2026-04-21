@@ -180,22 +180,9 @@ export async function updateSalesDeliveryService(id: string, data: any) {
 
         const txDate = data.createdAt || new Date();
 
-        // Prefix switching logic based on PKP flag
-        const isPKP = data.isPKP === true || (Number(data.taxRate) || 0) > 0;
-
-        let currentDeliveryNumber = oldDelivery.deliveryNumber;
-        const currentIsPKP = currentDeliveryNumber.startsWith("KB-TRN");
-        
-        if (isPKP && !currentIsPKP) {
-            currentDeliveryNumber = currentDeliveryNumber.replace("KB-TRD-", "KB-TRN-").replace("KB-SJ-", "KB-TRN-").replace("KB-SJD-", "KB-TRN-");
-        } else if (!isPKP && currentIsPKP) {
-            currentDeliveryNumber = currentDeliveryNumber.replace("KB-TRN-", "KB-TRD-").replace("KB-TRND-", "KB-TRD-");
-        }
-
         await tx.salesDelivery.update({
             where: { id },
             data: {
-                deliveryNumber: currentDeliveryNumber,
                 recipient: data.recipient,
                 buyerName: data.buyerName,
                 vehicleNumber: data.vehicleNumber,
@@ -207,13 +194,7 @@ export async function updateSalesDeliveryService(id: string, data: any) {
             }
         });
 
-        // Sync references if changed
-        if (currentDeliveryNumber !== oldDelivery.deliveryNumber) {
-            await tx.stockMovement.updateMany({
-                where: { reference: oldDelivery.deliveryNumber },
-                data: { reference: currentDeliveryNumber }
-            });
-        }
+        const currentDeliveryNumber = oldDelivery.deliveryNumber;
 
         for (const item of data.items) {
             const vendorName = item.vendorName || "UMUM";
