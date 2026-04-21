@@ -424,3 +424,106 @@ export async function voidSalesDeliveryService(id: string, reason: string) {
         return { success: true };
     }, { timeout: 30000 });
 }
+
+export async function createSalesOrderService(data: any, userId: string) {
+    const { getPrisma } = require("@/lib/prisma");
+    const prisma = getPrisma();
+
+    const txDate = data.date || new Date();
+    const day = String(txDate.getDate()).padStart(2, '0');
+    const month = String(txDate.getMonth() + 1).padStart(2, '0');
+    const year = txDate.getFullYear();
+    const dateStr = `${day}${month}${year}`;
+
+    return await prisma.$transaction(async (tx: any) => {
+        const isConfirm = data.status === "CONFIRMED";
+        const prefix = isConfirm ? `KB-PO-${dateStr}-` : `KB-PI-${dateStr}-`;
+
+        const latest = await tx.salesOrder.findFirst({
+            where: { orderNumber: { startsWith: prefix } },
+            orderBy: { orderNumber: 'desc' }
+        });
+
+        let nextNum = 1;
+        if (latest) {
+            const parts = latest.orderNumber.split('-');
+            const lastSeq = parseInt(parts[parts.length - 1]);
+            if (!isNaN(lastSeq)) nextNum = lastSeq + 1;
+        }
+        const orderNumber = `${prefix}${String(nextNum).padStart(3, '0')}`;
+
+        const subtotal = data.items.reduce((acc: number, i: any) => acc + (i.quantity * i.salesPrice) - (i.discount || 0), 0);
+        const taxAmount = (data.taxRate || 0) * subtotal;
+        const grandTotal = subtotal + taxAmount;
+
+        const order = await tx.salesOrder.create({
+            data: {
+                orderNumber,
+                status: data.status || "DRAFT",
+                buyerName: data.buyerName,
+                recipient: data.recipient,
+                warehouseId: data.warehouseId,
+                salesPerson: data.salesPerson,
+                date: txDate,
+                createdById: userId,
+                subtotal,
+                taxRate: data.taxRate || 0,
+                taxAmount,
+                grandTotal,
+                items: {
+                    create: data.items.map((item: any) => ({
+                        productId: item.productId,
+                        quantity: item.quantity,
+                        salesPrice: item.salesPrice,
+                        discount: item.discount || 0,
+                        uom: item.uom
+                    }))
+                }
+            }
+        });
+
+        revalidatePath("/sales");
+        return { success: true, orderNumber };
+    });
+}
+
+export async function updateSalesOrderService(id: string, data: any) {
+    const { getPrisma } = require("@/lib/prisma");
+    const prisma = getPrisma();
+
+    return await prisma.$transaction(async (tx: any) => {
+        const subtotal = data.items.reduce((acc: number, i: any) => acc + (i.quantity * i.salesPrice) - (i.discount || 0), 0);
+        const taxAmount = (data.taxRate || 0) * subtotal;
+        const grandTotal = subtotal + taxAmount;
+
+        await tx.salesOrderItem.deleteMany({ where: { orderId: id } });
+
+        const order = await tx.salesOrder.update({
+            where: { id },
+            data: {
+                status: data.status,
+                buyerName: data.buyerName,
+                recipient: data.recipient,
+                warehouseId: data.warehouseId,
+                salesPerson: data.salesPerson,
+                date: new Date(data.date),
+                subtotal,
+                taxRate: data.taxRate || 0,
+                taxAmount,
+                grandTotal,
+                items: {
+                    create: data.items.map((item: any) => ({
+                        productId: item.productId,
+                        quantity: item.quantity,
+                        salesPrice: item.salesPrice,
+                        discount: item.discount || 0,
+                        uom: item.uom
+                    }))
+                }
+            }
+        });
+
+        revalidatePath("/sales");
+        return { success: true };
+    });
+}

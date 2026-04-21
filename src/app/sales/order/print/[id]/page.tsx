@@ -10,7 +10,7 @@ export default async function SalesOrderPrintPage({ params }: { params: Promise<
     const prisma = getPrisma();
     const { id } = await params;
 
-    const order: any = await prisma.salesOrder.findUnique({
+    const order: any = await (prisma as any).salesOrder.findUnique({
         where: { id },
         include: {
             items: { include: { product: true } },

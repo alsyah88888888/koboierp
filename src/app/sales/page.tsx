@@ -98,7 +98,7 @@ export default async function SalesPage() {
         orderBy: { createdAt: 'desc' }
     }).catch(() => []));
 
-    const salesOrders = serializeDecimal(await prisma.salesOrder.findMany({
+    const salesOrders = serializeDecimal(await (prisma as any).salesOrder.findMany({
         where: isAdmin ? {} : {
             OR: [
                 { salesPerson: "BC" },
