@@ -446,3 +446,35 @@ export async function voidSalesDeliveryAction(id: string, reason: string) {
         return { error: err.message || "An unexpected error occurred while voiding the delivery." };
     }
 }
+
+export async function createSalesOrderAction(data: any) {
+    try {
+        const { getAuthOptions } = require("@/lib/auth");
+        const { getServerSession } = require("next-auth");
+        const { createSalesOrderService } = require("@/lib/services/sales-service");
+
+        const session = (await getServerSession(getAuthOptions())) as any;
+        if (!session?.user?.id) throw new Error("Unauthorized");
+
+        return await createSalesOrderService(data, session.user.id);
+    } catch (err: any) {
+        console.error("[createSalesOrderAction] ERROR:", err);
+        return { error: err.message || "Failed to create sales order." };
+    }
+}
+
+export async function updateSalesOrderAction(id: string, data: any) {
+    try {
+        const { getAuthOptions } = require("@/lib/auth");
+        const { getServerSession } = require("next-auth");
+        const { updateSalesOrderService } = require("@/lib/services/sales-service");
+
+        const session = (await getServerSession(getAuthOptions())) as any;
+        if (!session?.user?.id) throw new Error("Unauthorized");
+
+        return await updateSalesOrderService(id, data);
+    } catch (err: any) {
+        console.error("[updateSalesOrderAction] ERROR:", err);
+        return { error: err.message || "Failed to update sales order." };
+    }
+}

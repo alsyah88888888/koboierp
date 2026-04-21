@@ -37,6 +37,7 @@ export async function createSalesDeliveryService(data: any, userId: string) {
         const delivery = await tx.salesDelivery.create({
             data: {
                 deliveryNumber: deliveryNumber,
+                orderId: data.orderId || null,
                 recipient: data.recipient,
                 buyerName: data.buyerName,
                 vehicleNumber: data.vehicleNumber,
@@ -49,6 +50,7 @@ export async function createSalesDeliveryService(data: any, userId: string) {
                 items: {
                     create: data.items.map((item: any) => ({
                         productId: item.productId,
+                        orderItemId: item.orderItemId || null,
                         quantity: item.quantity,
                         salesPrice: item.salesPrice as any,
                         uom: item.uom,
@@ -134,7 +136,17 @@ export async function createSalesDeliveryService(data: any, userId: string) {
                     reference: deliveryNumber
                 }
             });
+
+            // If linked to a PO, update shipped quantity
+            if (item.orderItemId) {
+                await tx.salesOrderItem.update({
+                    where: { id: item.orderItemId },
+                    data: { shippedQuantity: { increment: item.quantity } }
+                });
+            }
         }
+        
+        // If all items in PO are shipped, we could mark PO as CLOSED if we want
 
         revalidatePath("/sales");
         revalidatePath("/warehouse");

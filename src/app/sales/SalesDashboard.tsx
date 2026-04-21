@@ -13,7 +13,7 @@ import Link from "next/link";
 import { ReportPreviewModal } from "@/components/ReportPreviewModal";
 import { exportToExcel } from "@/lib/excel";
 import { SalesReturnModal } from "./SalesReturnModal";
-import { ManualPOModal } from "./ManualPOModal";
+import SalesOrderModal from "./SalesOrderModal";
 import { VoidReasonModal } from "@/components/VoidReasonModal";
 
 interface SalesDashboardProps {
@@ -666,10 +666,13 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                                         </td>
                                         <td data-label="Aksi" className="md:pr-6">
                                             <div className="flex items-center justify-end md:justify-center gap-1">
-                                                <Link href={`/sales/order/view/${o.id}`} className="p-2.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all">
+                                                <Link href={`/sales/order/print/${o.id}`} className="p-2.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all" title="Cetak PI/PO">
+                                                    <FileText className="h-4 w-4" />
+                                                </Link>
+                                                <Link href={`/sales/order/view/${o.id}`} className="p-2.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all" title="Lihat Detail">
                                                     <Eye className="h-4 w-4" />
                                                 </Link>
-                                                <button onClick={() => { setEditData(o); setShowManualModal(true); }} className="p-2.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-all">
+                                                <button onClick={() => { setEditData(o); setShowManualModal(true); }} className="p-2.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-all" title="Edit Order">
                                                     <Edit2 className="h-4 w-4" />
                                                 </button>
                                             </div>
@@ -688,6 +691,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                     products={products}
                     warehouses={warehouses}
                     customers={customers}
+                    orders={initialSalesOrders}
                     initialData={editData}
                     onClose={() => {
                         setShowSalesModal(false);
@@ -708,12 +712,14 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
             )}
 
             {showManualModal && (
-                <ManualPOModal
+                <SalesOrderModal
                     products={products}
+                    customers={customers}
                     warehouses={warehouses}
+                    initialData={editData}
                     onClose={() => {
                         setShowManualModal(false);
-                        window.location.reload();
+                        setEditData(null);
                     }}
                 />
             )}

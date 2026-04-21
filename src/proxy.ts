@@ -40,6 +40,12 @@ export async function callAction(actionName: string, ...args: any[]) {
         case "voidSalesDelivery":
             const { voidSalesDeliveryAction } = await import("@/actions/sales");
             return await voidSalesDeliveryAction(...args as [string, string]);
+        case "createSalesOrder":
+            const { createSalesOrderAction } = await import("@/actions/sales");
+            return await createSalesOrderAction(...args as [any]);
+        case "updateSalesOrder":
+            const { updateSalesOrderAction } = await import("@/actions/sales");
+            return await updateSalesOrderAction(...args as [string, any]);
 
         // FINANCE
         case "createFinanceTransaction":

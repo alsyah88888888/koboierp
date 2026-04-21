@@ -18,7 +18,7 @@ interface SalesItem {
     vendorName: string;
 }
 
-export default function SalesModal({ products, warehouses, customers, onClose, initialData }: { products: any[], warehouses: any[], customers: any[], onClose: () => void, initialData?: any }) {
+export default function SalesModal({ products, warehouses, customers, orders = [], onClose, initialData }: { products: any[], warehouses: any[], customers: any[], orders?: any[], onClose: () => void, initialData?: any }) {
     const { prompt } = useDialog();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
@@ -32,6 +32,7 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
     const [poNumber, setPoNumber] = useState("");
     const [vehicleNumber, setVehicleNumber] = useState("");
     const [isManualBuyer, setIsManualBuyer] = useState(false);
+    const [selectedOrderId, setSelectedOrderId] = useState(initialData?.orderId || "");
 
     // Body (Items)
     const [items, setItems] = useState<SalesItem[]>([{ productId: "", sku: "", quantity: 1, salesPrice: 0, discount: 0, discountPercent: "", uom: "", vendorName: "UMUM" }]);
@@ -155,6 +156,32 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
         setItems(newItems);
     };
 
+    const handleOrderSelect = (orderId: string) => {
+        setSelectedOrderId(orderId);
+        const order = orders.find(o => o.id === orderId);
+        if (order) {
+            setBuyerName(order.buyerName);
+            setRecipient(order.recipient);
+            setWarehouseId(order.warehouseId);
+            setSalesPerson(order.salesPerson);
+            setIsPKP(Number(order.taxRate) > 0);
+            
+            // Map order items to delivery items
+            const newItems = order.items.map((i: any) => ({
+                productId: i.productId,
+                sku: i.product?.sku || "",
+                quantity: Number(i.quantity) - Number(i.shippedQuantity || 0), // Remaining to ship
+                salesPrice: Number(i.salesPrice),
+                discount: Number(i.discount),
+                discountPercent: "",
+                uom: i.uom || i.product?.uom || "",
+                vendorName: "UMUM",
+                orderItemId: i.id
+            }));
+            setItems(newItems.filter((i: any) => i.quantity > 0));
+        }
+    };
+
     const totalQty = useMemo(() => {
         return items.reduce((acc, item) => acc + parseIndoNumber(item.quantity), 0);
     }, [items]);
@@ -197,6 +224,7 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
 
         try {
             const data = {
+                orderId: selectedOrderId,
                 recipient,
                 buyerName,
                 poNumber,
@@ -272,21 +300,43 @@ export default function SalesModal({ products, warehouses, customers, onClose, i
                             <h2 className="text-2xl font-black text-slate-900 tracking-tight">
                                 {initialData ? "Update Penjualan" : "Input Penjualan Baru"}
                             </h2>
-                            <div className="flex items-center gap-2 mt-1">
-                                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Surat Jalan & Invoice</span>
-                                <span className="h-1 w-1 bg-slate-300 rounded-full"></span>
-                                <span className="text-[10px] text-primary font-black uppercase tracking-widest">PT. Kola Borasi Indonesia ERP V.3</span>
-                            </div>
+                    <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3 uppercase">
+                        <div className="p-2 bg-primary rounded-xl text-white">
+                            <Truck className="h-5 w-5" />
                         </div>
-                    </div>
-                    <button onClick={onClose} className="p-3 hover:bg-slate-50 rounded-2xl transition-all text-slate-400 hover:text-slate-900 group">
-                        <X className="h-6 w-6 group-hover:rotate-90 transition-transform duration-300" />
+                        {initialData ? "Edit Surat Jalan" : "Input Surat Jalan (SJ)"}
+                    </h2>
+                    <button onClick={onClose} className="p-3 hover:bg-rose-50 hover:text-rose-500 rounded-2xl transition-all">
+                        <X className="h-6 w-6 text-slate-400" />
                     </button>
                 </div>
 
                 <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto bg-slate-50/30 custom-scrollbar">
                     {/* Main Content: Headers then Items then Totals */}
                     <div className="p-4 lg:p-6 space-y-6">
+                        {/* Reference Selection */}
+                        {!initialData && (
+                            <div className="bg-indigo-50 p-6 rounded-[2rem] border border-indigo-100 flex flex-col md:flex-row items-center gap-6">
+                                <div className="bg-white p-3 rounded-2xl shadow-sm border border-indigo-100 shrink-0">
+                                    <ShoppingCart className="h-6 w-6 text-indigo-600" />
+                                </div>
+                                <div className="flex-1 space-y-1">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Pilih dari PO Penjualan</p>
+                                    <select 
+                                        value={selectedOrderId}
+                                        onChange={e => handleOrderSelect(e.target.value)}
+                                        className="w-full bg-transparent border-none focus:ring-0 text-sm font-black text-slate-900 placeholder:text-slate-400 p-0"
+                                    >
+                                        <option value="">-- Buat SJ Tanpa PO / Manual --</option>
+                                        {orders.filter((o: any) => o.status !== "DRAFT").map((o: any) => (
+                                            <option key={o.id} value={o.id}>{o.orderNumber} - {o.buyerName}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-indigo-200">Recommended</div>
+                            </div>
+                        )}
+
                         {/* Compact Logistics Header */}
                         <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
