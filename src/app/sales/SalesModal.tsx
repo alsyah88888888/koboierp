@@ -29,7 +29,7 @@ export default function SalesModal({ products, warehouses, customers, orders = [
     const [buyerName, setBuyerName] = useState("");
     const [warehouseId, setWarehouseId] = useState(Array.isArray(warehouses) && warehouses.length > 0 ? warehouses[0]?.id : "");
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-    const [salesPerson, setSalesPerson] = useState("");
+    const [salesPerson, setSalesPerson] = useState("BC");
     const [poNumber, setPoNumber] = useState("");
     const [vehicleNumber, setVehicleNumber] = useState("");
     const [isManualBuyer, setIsManualBuyer] = useState(false);
@@ -58,7 +58,7 @@ export default function SalesModal({ products, warehouses, customers, orders = [
             setRecipient(initialData.recipient || "");
             setBuyerName(initialData.buyerName || "");
             setWarehouseId(initialData.warehouseId || "");
-            setSalesPerson(initialData.salesPerson || "");
+            setSalesPerson(initialData.salesPerson || "BC");
             setDate(new Date(initialData.createdAt).toISOString().split('T')[0]);
             setPoNumber(initialData.poNumber || "");
             setTotalDiscount(Number(initialData.totalDiscount || 0));
@@ -400,7 +400,6 @@ export default function SalesModal({ products, warehouses, customers, orders = [
                                             {Array.isArray(warehouses) && warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
                                         </select>
                                         <select value={salesPerson} onChange={e => setSalesPerson(e.target.value)} className="w-full bg-slate-50 border border-slate-200 px-2 py-1.5 rounded-lg text-xs font-bold focus:border-primary outline-none">
-                                            <option value="">(None)</option>
                                             <option value="BC">BC</option>
                                             <option value="PF">PF</option>
                                         </select>

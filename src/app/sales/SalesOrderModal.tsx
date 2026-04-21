@@ -25,7 +25,7 @@ export default function SalesOrderModal({ products, customers, warehouses, initi
     const [recipient, setRecipient] = useState(initialData?.recipient || "");
     const [warehouseId, setWarehouseId] = useState(initialData?.warehouseId || warehouses[0]?.id || "");
     const [date, setDate] = useState(initialData?.date ? new Date(initialData.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
-    const [salesPerson, setSalesPerson] = useState(initialData?.salesPerson || "");
+    const [salesPerson, setSalesPerson] = useState(initialData?.salesPerson || "BC");
     
     const [items, setItems] = useState<any[]>(initialData?.items?.map((i: any) => ({
         productId: i.productId,
@@ -211,10 +211,8 @@ export default function SalesOrderModal({ products, customers, warehouses, initi
                                             {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
                                         </select>
                                         <select value={salesPerson} onChange={e => setSalesPerson(e.target.value)} className="w-full bg-slate-50 border border-slate-100 px-3 py-2.5 rounded-xl text-xs font-black focus:border-indigo-500 outline-none">
-                                            <option value="">(Sales)</option>
                                             <option value="BC">BC</option>
                                             <option value="PF">PF</option>
-                                            <option value="UMUM">UMUM</option>
                                         </select>
                                     </div>
                                 </div>
