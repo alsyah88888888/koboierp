@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { X, Plus, Trash2, Loader2, Save, Tag, ShoppingCart, FileCheck, Search } from "lucide-react";
+import { X, Plus, Trash2, Loader2, Save, Tag, ShoppingCart, FileCheck, Search, Truck, FileText, Eye } from "lucide-react";
 import { callAction } from "@/proxy";
 
 import { formatCurrency, cn } from "@/lib/utils";
@@ -16,6 +16,7 @@ interface SalesItem {
     discountPercent?: number | string; // Percentage discount per line
     uom: string;
     vendorName: string;
+    orderItemId?: string;
 }
 
 export default function SalesModal({ products, warehouses, customers, orders = [], onClose, initialData }: { products: any[], warehouses: any[], customers: any[], orders?: any[], onClose: () => void, initialData?: any }) {
@@ -98,12 +99,10 @@ export default function SalesModal({ products, warehouses, customers, orders = [
     const updateItem = (index: number, field: string, value: any) => {
         const newItems = [...items];
 
-        // Handle numeric inputs with formatting preservation
         if (field === 'quantity' || field === 'salesPrice' || field === 'discount') {
             const userDisplayValue = String(value).replace(/[^0-9,.]/g, '');
             (newItems[index] as any)[field] = userDisplayValue;
 
-            // Sync discount if percent exists
             if (field !== 'discount' && newItems[index].discountPercent !== "" && newItems[index].discountPercent !== undefined) {
                 const qty = parseIndoNumber(newItems[index].quantity);
                 const price = parseIndoNumber(newItems[index].salesPrice);
@@ -112,7 +111,7 @@ export default function SalesModal({ products, warehouses, customers, orders = [
             }
 
             if (field === 'discount') {
-                newItems[index].discountPercent = ""; // Clear percent when manual nominal entered
+                newItems[index].discountPercent = "";
             }
         } else if (field === 'discountPercent') {
             newItems[index].discountPercent = value;
@@ -125,7 +124,6 @@ export default function SalesModal({ products, warehouses, customers, orders = [
             (newItems[index] as any)[field] = value;
         }
 
-        // Auto-fill UOM and Price if product selected via SKU typing (Case-Insensitive)
         if (field === "sku") {
             const valStr = String(value).trim().toLowerCase();
             const product = Array.isArray(products) ? products.find(p =>
@@ -141,7 +139,6 @@ export default function SalesModal({ products, warehouses, customers, orders = [
                 if (parseIndoNumber(newItems[index].salesPrice) === 0) {
                     newItems[index].salesPrice = Number(product.price || 0);
                 }
-                // Pre-select first vendor with stock if available
                 if (product.stocks && product.stocks.length > 0) {
                     newItems[index].vendorName = product.stocks[0].vendorName;
                 } else {
@@ -166,11 +163,10 @@ export default function SalesModal({ products, warehouses, customers, orders = [
             setSalesPerson(order.salesPerson);
             setIsPKP(Number(order.taxRate) > 0);
             
-            // Map order items to delivery items
             const newItems = order.items.map((i: any) => ({
                 productId: i.productId,
                 sku: i.product?.sku || "",
-                quantity: Number(i.quantity) - Number(i.shippedQuantity || 0), // Remaining to ship
+                quantity: Number(i.quantity) - Number(i.shippedQuantity || 0),
                 salesPrice: Number(i.salesPrice),
                 discount: Number(i.discount),
                 discountPercent: "",
@@ -186,7 +182,6 @@ export default function SalesModal({ products, warehouses, customers, orders = [
         return items.reduce((acc, item) => acc + parseIndoNumber(item.quantity), 0);
     }, [items]);
 
-    // Totals Calculation
     const grossAmount = items.reduce((sum, item) => {
         const q = parseIndoNumber(item.quantity);
         const p = parseIndoNumber(item.salesPrice);
@@ -241,7 +236,8 @@ export default function SalesModal({ products, warehouses, customers, orders = [
                     salesPrice: parseIndoNumber(i.salesPrice),
                     discount: parseIndoNumber(i.discount || 0),
                     uom: i.uom,
-                    vendorName: i.vendorName
+                    vendorName: i.vendorName,
+                    orderItemId: i.orderItemId
                 }))
             };
 
@@ -290,7 +286,6 @@ export default function SalesModal({ products, warehouses, customers, orders = [
     return (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md z-[100] flex items-start justify-center p-2 sm:p-4 overflow-y-auto custom-scrollbar animate-in fade-in duration-300">
             <div className="bg-white shadow-2xl rounded-3xl w-full max-w-7xl h-auto max-h-[90vh] min-h-[400px] overflow-hidden flex flex-col border border-slate-200 mt-4 sm:mt-10 mb-4 animate-in zoom-in duration-300">
-                {/* Header */}
                 <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
                     <div className="flex items-center gap-5">
                         <div className="p-3.5 bg-primary text-white rounded-2xl shadow-xl shadow-primary/20">
@@ -306,9 +301,7 @@ export default function SalesModal({ products, warehouses, customers, orders = [
                 </div>
 
                 <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto bg-slate-50/30 custom-scrollbar">
-                    {/* Main Content: Headers then Items then Totals */}
                     <div className="p-4 lg:p-6 space-y-6">
-                        {/* Reference Selection */}
                         {!initialData && (
                             <div className="bg-indigo-50 p-6 rounded-[2rem] border border-indigo-100 flex flex-col md:flex-row items-center gap-6">
                                 <div className="bg-white p-3 rounded-2xl shadow-sm border border-indigo-100 shrink-0">
@@ -331,13 +324,12 @@ export default function SalesModal({ products, warehouses, customers, orders = [
                             </div>
                         )}
 
-                        {/* Compact Logistics Header */}
                         <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
                                 <div className="space-y-1">
                                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Buyer / Customer</label>
                                     <input
-                                        list={isManualBuyer ? undefined : "customer-list-2"}
+                                        list={isManualBuyer ? undefined : "customer-list-sales"}
                                         value={buyerName}
                                         onChange={e => {
                                             const val = e.target.value;
@@ -352,7 +344,7 @@ export default function SalesModal({ products, warehouses, customers, orders = [
                                         required
                                     />
                                     {!isManualBuyer && (
-                                        <datalist id="customer-list-2">
+                                        <datalist id="customer-list-sales">
                                             {Array.isArray(customers) && customers.map(c => <option key={c.id} value={c.name} />)}
                                         </datalist>
                                     )}
@@ -384,13 +376,13 @@ export default function SalesModal({ products, warehouses, customers, orders = [
                                 <div className="space-y-1">
                                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">No. Kendaraan</label>
                                     <input
-                                        list="vehicle-list"
+                                        list="vehicle-list-sales"
                                         value={vehicleNumber}
                                         onChange={e => setVehicleNumber(e.target.value)}
                                         placeholder="F 0000 XX"
                                         className="w-full bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg text-sm font-bold focus:border-primary outline-none transition-all placeholder:text-slate-300"
                                     />
-                                    <datalist id="vehicle-list">
+                                    <datalist id="vehicle-list-sales">
                                         <option value="F 8440 GY - Karno" />
                                         <option value="F 8744 GY - Rahmat/imam" />
                                         <option value="F 8065 HI - Rohman/yadi" />
@@ -433,7 +425,6 @@ export default function SalesModal({ products, warehouses, customers, orders = [
                             </div>
                         </div>
 
-                        {/* Items Section Header */}
                         <div className="flex justify-between items-center px-1">
                             <div className="flex items-center gap-2">
                                 <span className="bg-primary text-white h-5 w-5 rounded-full flex items-center justify-center text-[10px] font-black">2</span>
@@ -456,7 +447,6 @@ export default function SalesModal({ products, warehouses, customers, orders = [
                             </div>
                         </div>
 
-                        {/* FIXED WIDTH HEADER (Pixel-Perfect Alignment) */}
                         <div className="hidden lg:flex items-center gap-4 px-4 py-2.5 bg-slate-100/80 rounded-xl text-[9px] font-black uppercase text-slate-500 tracking-widest border border-slate-200">
                             <div className="flex-[4] min-w-0">Product / SKU</div>
                             <div className="flex-[2] min-w-0">Source / Vendor</div>
@@ -467,11 +457,9 @@ export default function SalesModal({ products, warehouses, customers, orders = [
                             <div className="w-10 text-center">Del</div>
                         </div>
 
-                        {/* Item Rows (Fixed Width) */}
                         <div className="space-y-1.5 lg:space-y-0.5">
                             {items.map((item, index) => (
                                 <div key={index} className="flex flex-col lg:flex-row lg:items-center gap-2 lg:gap-4 px-3 py-2 lg:p-1.5 bg-white lg:bg-transparent lg:border-b border-slate-100 group relative hover:bg-slate-50/50 transition-colors">
-                                    {/* Column: Product */}
                                     <div className="w-full lg:flex-[4] min-w-0">
                                         <label className="lg:hidden text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Product</label>
                                         <div className="relative w-full">
@@ -491,7 +479,6 @@ export default function SalesModal({ products, warehouses, customers, orders = [
                                         </div>
                                     </div>
 
-                                    {/* Column: Vendor */}
                                     <div className="w-full lg:flex-[2] min-w-0">
                                         <label className="lg:hidden text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Vendor</label>
                                         <select
@@ -510,7 +497,6 @@ export default function SalesModal({ products, warehouses, customers, orders = [
                                         </select>
                                     </div>
 
-                                    {/* Column: Qty */}
                                     <div className="w-full lg:w-16">
                                         <label className="lg:hidden text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 block text-center">Qty</label>
                                         <input
@@ -522,7 +508,6 @@ export default function SalesModal({ products, warehouses, customers, orders = [
                                         />
                                     </div>
 
-                                    {/* Column: Price */}
                                     <div className="w-full lg:flex-[2]">
                                         <label className="lg:hidden text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 block text-right">Price</label>
                                         <input
@@ -534,7 +519,6 @@ export default function SalesModal({ products, warehouses, customers, orders = [
                                         />
                                     </div>
 
-                                    {/* Column: Discount */}
                                     {showDiscount && (
                                         <div className="w-full lg:w-16">
                                             <label className="lg:hidden text-[9px] font-black text-orange-400 uppercase tracking-widest mb-1 block text-right">Disc</label>
@@ -547,14 +531,12 @@ export default function SalesModal({ products, warehouses, customers, orders = [
                                         </div>
                                     )}
 
-                                    {/* Column: Subtotal */}
                                     <div className={cn("hidden lg:flex items-center justify-end pr-4", showDiscount ? "lg:flex-[2]" : "lg:flex-[3]")}>
                                         <div className="text-[14px] font-black text-slate-800 text-right">
                                             {((Number(String(item.quantity).replace(/\./g, '').replace(',', '.')) || 0) * (Number(String(item.salesPrice).replace(/\./g, '').replace(',', '.')) || 0) - (Number(String(item.discount || 0).replace(/\./g, '').replace(',', '.')) || 0)).toLocaleString('id-ID')}
                                         </div>
                                     </div>
 
-                                    {/* Column: Delete */}
                                     <div className="w-full lg:w-10 flex justify-center">
                                         <button
                                             type="button"
@@ -575,10 +557,8 @@ export default function SalesModal({ products, warehouses, customers, orders = [
                             </div>
                         )}
 
-                        {/* Financial Summary & Footer (V.1 Vertical Style) - MATCHING RECEIPT MODAL */}
                         <div className="mt-8 border-t-2 border-slate-200 pt-8">
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                                {/* Left/Center column: Empty or notes in future */}
                                 <div className="lg:col-span-2 hidden lg:block">
                                     <div className="bg-white border border-slate-200 rounded-2xl p-6 h-full flex flex-col justify-center items-center text-slate-400">
                                         <ShoppingCart className="h-12 w-12 mb-2 opacity-20" />
@@ -586,7 +566,6 @@ export default function SalesModal({ products, warehouses, customers, orders = [
                                     </div>
                                 </div>
 
-                                {/* Right column: Totals */}
                                 <div className="bg-slate-900 text-white p-6 rounded-3xl shadow-2xl relative overflow-hidden">
                                     <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-full blur-[40px] -translate-y-1/2 translate-x-1/2"></div>
                                     <div className="relative z-10 space-y-4">
@@ -683,9 +662,9 @@ export default function SalesModal({ products, warehouses, customers, orders = [
                                 </div>
                             </div>
                         </div>
-                    </form>
-                </div>
+                    </div>
+                </form>
             </div>
-        );
-    }
+        </div>
+    );
 }
