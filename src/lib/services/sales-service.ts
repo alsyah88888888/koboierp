@@ -478,9 +478,9 @@ export async function createSalesOrderService(data: any, userId: string) {
                 items: {
                     create: data.items.map((item: any) => ({
                         productId: item.productId,
-                        quantity: item.quantity,
-                        salesPrice: item.salesPrice,
-                        discount: item.discount || 0,
+                        quantity: Math.round(Number(item.quantity) || 0),
+                        salesPrice: Number(item.salesPrice) || 0,
+                        discount: Number(item.discount || 0),
                         uom: item.uom
                     }))
                 }
@@ -524,9 +524,9 @@ export async function updateSalesOrderService(id: string, data: any) {
                 items: {
                     create: data.items.map((item: any) => ({
                         productId: item.productId,
-                        quantity: item.quantity,
-                        salesPrice: item.salesPrice,
-                        discount: item.discount || 0,
+                        quantity: Math.round(Number(item.quantity) || 0),
+                        salesPrice: Number(item.salesPrice) || 0,
+                        discount: Number(item.discount || 0),
                         uom: item.uom
                     }))
                 }
