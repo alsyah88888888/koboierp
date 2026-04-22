@@ -42,11 +42,20 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
         const deliveries = await prisma.salesDelivery.findMany({
             where: { isVoid: false, date: { gte: startDate, lte: endDate } },
             include: {
-                items: { include: { product: { select: { sku: true, name: true, uom: true } } } },
-                order: { select: { orderNumber: true } }
+                items: { include: { product: { select: { sku: true, name: true, uom: true } } } }
             },
             orderBy: { date: 'asc' }
         });
+
+        // Fetch SO numbers separately (Prisma type doesn't expose 'order' include directly)
+        const orderIds = deliveries.map((d: any) => d.orderId).filter(Boolean) as string[];
+        const salesOrders = orderIds.length > 0
+            ? await (prisma as any).salesOrder.findMany({
+                where: { id: { in: orderIds } },
+                select: { id: true, orderNumber: true }
+              })
+            : [];
+        const orderNumberMap = new Map<string, string>(salesOrders.map((o: any) => [o.id, o.orderNumber]));
 
         const report: Record<string, any>[] = [];
 
@@ -70,7 +79,7 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
                             'HPP Per Unit (Rp)'   : 0,
                             'Tgl Jual'            : new Date(sd.date).toLocaleDateString('id-ID'),
                             'No. SJ'              : sd.deliveryNumber,
-                            'No. SO'              : sd.order?.orderNumber ?? (sd as any).poNumber ?? '-',
+                            'No. SO'              : orderNumberMap.get((sd as any).orderId ?? '') ?? (sd as any).poNumber ?? '-',
                             'Buyer'               : sd.buyerName || sd.recipient,
                             'SKU'                 : sdItem.product.sku,
                             'Nama Barang'         : sdItem.product.name,
@@ -102,7 +111,7 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
                         'HPP Per Unit (Rp)'   : batch.price,
                         'Tgl Jual'            : new Date(sd.date).toLocaleDateString('id-ID'),
                         'No. SJ'              : sd.deliveryNumber,
-                        'No. SO'              : sd.order?.orderNumber ?? (sd as any).poNumber ?? '-',
+                        'No. SO'              : orderNumberMap.get((sd as any).orderId ?? '') ?? (sd as any).poNumber ?? '-',
                         'Buyer'               : sd.buyerName || sd.recipient,
                         'SKU'                 : sdItem.product.sku,
                         'Nama Barang'         : sdItem.product.name,
