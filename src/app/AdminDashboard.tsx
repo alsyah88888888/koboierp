@@ -326,7 +326,16 @@ export function AdminDashboard({
                             }
 
                             return activities.map((act: any, idx: number) => (
-                            <div key={idx} className="bg-white p-5 rounded-[1.5rem] flex flex-col sm:flex-row sm:items-center justify-between gap-6 group hover:shadow-xl hover:shadow-slate-200/30 transition-all border border-transparent hover:border-slate-100 animate-fade-up">
+                            <Link 
+                                href={
+                                    act.activityType === 'SALE' ? '/sales' :
+                                    act.activityType === 'PURCHASE' ? '/purchase' :
+                                    act.activityType === 'FINANCE' ? '/finance' :
+                                    '/purchase/request'
+                                }
+                                key={idx} 
+                                className="bg-white p-5 rounded-[1.5rem] flex flex-col sm:flex-row sm:items-center justify-between gap-6 group hover:shadow-xl hover:shadow-slate-200/30 transition-all border border-transparent hover:border-slate-100 animate-fade-up"
+                            >
                                 <div className="flex items-center gap-5">
                                     <div className={`p-4 rounded-2xl shrink-0 shadow-sm transition-all group-hover:scale-110 ${
                                         act.activityType === 'SALE' ? 'bg-blue-50 text-blue-600 border border-blue-100/50' :
@@ -345,7 +354,7 @@ export function AdminDashboard({
                                                 {act.deliveryNumber || act.receiptNumber || act.number || act.description}
                                             </span>
                                             <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100">
-                                                {isClient ? new Date(act.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : "--:--"}
+                                                {isClient ? new Date(act.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : "--:--:--"}
                                             </span>
                                         </div>
                                         <p className="text-[11px] font-bold text-slate-500 flex items-center gap-2">
@@ -370,11 +379,11 @@ export function AdminDashboard({
                                             Module: {act.activityType}
                                         </div>
                                     </div>
-                                    <div className="h-10 w-10 rounded-full bg-slate-50 flex items-center justify-center border border-slate-100">
+                                    <div className="h-10 w-10 rounded-full bg-slate-50 flex items-center justify-center border border-slate-100 group-hover:bg-primary/10 transition-colors">
                                         <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-primary transition-colors" />
                                     </div>
                                 </div>
-                            </div>
+                            </Link>
                         ));
                     })()}
                     </div>

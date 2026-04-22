@@ -199,18 +199,33 @@ export async function getDailyReportAction() {
     const tomorrow = new Date(today);
     tomorrow.setDate(today.getDate() + 1);
 
-    const [sales, purchases] = await Promise.all([
+    const [sales, purchases, operational, requests] = await Promise.all([
         prisma.salesDelivery.findMany({
             where: { ...userFilter, createdAt: { gte: today, lt: tomorrow } },
-            include: { createdBy: { select: { name: true } } }
+            include: { createdBy: { select: { name: true } } },
+            orderBy: { createdAt: 'desc' }
         }),
         prisma.goodsReceipt.findMany({
             where: { ...userFilter, createdAt: { gte: today, lt: tomorrow } },
-            include: { createdBy: { select: { name: true } } }
+            include: { createdBy: { select: { name: true } } },
+            orderBy: { createdAt: 'desc' }
+        }),
+        prisma.financeTransaction.findMany({
+            where: { ...userFilter, createdAt: { gte: today, lt: tomorrow } },
+            include: { createdBy: { select: { name: true } } },
+            orderBy: { createdAt: 'desc' }
+        }),
+        prisma.purchaseRequest.findMany({
+            where: { 
+                ...(isAdmin ? {} : { requestedById: session?.user?.id }), 
+                createdAt: { gte: today, lt: tomorrow } 
+            },
+            include: { requestedBy: { select: { name: true } } },
+            orderBy: { createdAt: 'desc' }
         })
     ]);
 
-    return serializeDecimal({ sales, purchases });
+    return serializeDecimal({ sales, purchases, operational, requests });
 }
 
 /**
