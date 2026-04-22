@@ -43,6 +43,27 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
     const [error, setError] = useState("");
     const [result, setResult] = useState<any>(null);
 
+    // Cashback (CB) state — each CB has a label and % rate applied to DPP
+    const [cashbacks, setCashbacks] = useState<{ label: string; rate: string }[]>(
+        initialData?.cashbacks || [{ label: "CB 1", rate: "" }]
+    );
+
+    const addCashback = () => {
+        if (cashbacks.length < 3) {
+            setCashbacks([...cashbacks, { label: `CB ${cashbacks.length + 1}`, rate: "" }]);
+        }
+    };
+
+    const removeCashback = (i: number) => {
+        setCashbacks(cashbacks.filter((_, idx) => idx !== i));
+    };
+
+    const updateCashback = (i: number, field: 'label' | 'rate', val: string) => {
+        const updated = [...cashbacks];
+        updated[i][field] = val;
+        setCashbacks(updated);
+    };
+
     // Helper to parse numbers intelligently (handle Indonesian dots/commas and decimal points)
     const parseIndoNumber = (val: string | number): number => {
         if (typeof val === 'number') return val;
@@ -62,7 +83,7 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
         return Number(s.replace(/\./g, "").replace(",", ".")) || 0;
     };
 
-    // Derived values
+    // Derived values — PERSIS seperti format faktur PPN
     const subtotal = items.reduce((sum, item) => {
         const qty = parseIndoNumber(item.quantity);
         const price = parseIndoNumber(item.purchasePrice);
@@ -74,8 +95,29 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
         ? (subtotal * (parseIndoNumber(totalDiscountPercent) / 100)) 
         : (parseIndoNumber(totalDiscount) || 0);
 
-    const taxAmount = Math.round((subtotal - finalDiscountNominal) * (Number(taxRate) / 100));
-    const grandTotal = Math.round(subtotal - finalDiscountNominal + taxAmount);
+    // DPP = Subtotal setelah diskon header
+    const dpp = Math.round(subtotal - finalDiscountNominal);
+
+    // DPP Nilai Lain = DPP × 11/12 (PMK 131/2024 — PPN 12%)
+    const dppNilaiLain = Number(taxRate) === 12 ? Math.round(dpp * (11 / 12)) : dpp;
+
+    // PPN = DPP Nilai Lain × taxRate%
+    const taxAmount = Math.round(dppNilaiLain * (Number(taxRate) / 100));
+
+    // Total Netto (yang tercetak di faktur) = DPP + PPN
+    const grandTotal = Math.round(dpp + taxAmount);
+
+    // Cashback: dihitung dari DPP (bukan dari Total Netto)
+    const cashbackDetails = cashbacks.map(cb => ({
+        label: cb.label,
+        rate: parseIndoNumber(cb.rate),
+        amount: Math.floor(dpp * (parseIndoNumber(cb.rate) / 100))
+    }));
+    const totalCashback = cashbackDetails.reduce((s, cb) => s + cb.amount, 0);
+
+    // Net Transfer = Total Netto - Total Cashback
+    const netTransfer = grandTotal - totalCashback;
+
     const totalQty = items.reduce((sum, item) => sum + (parseIndoNumber(item.quantity) || 0), 0);
 
     if (!isOpen && !result) return null;
@@ -473,87 +515,162 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
                             </div>
                         )}
 
-                        {/* Financial Summary & Footer (V.1 Vertical Style) */}
+                        {/* Financial Summary — Format Faktur PPN + Cashback */}
                         <div className="mt-8 border-t-2 border-slate-200 pt-8">
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                                {/* Left/Center column: Empty or notes in future */}
-                                <div className="lg:col-span-2 hidden lg:block">
-                                    <div className="bg-white border border-slate-200 rounded-2xl p-6 h-full flex flex-col justify-center items-center text-slate-400">
-                                        <ShoppingCart className="h-12 w-12 mb-2 opacity-20" />
-                                        <p className="text-[10px] font-black uppercase tracking-widest">Pemeriksaan Barang Masuk Selesai</p>
+                                {/* Left: Cashback Section */}
+                                <div className="lg:col-span-2">
+                                    <div className="bg-white border border-slate-200 rounded-2xl p-6 h-full space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Cashback / Rebate</p>
+                                                <p className="text-xs text-slate-500 mt-0.5">CB dihitung dari DPP, dikurangi dari Total Netto saat pembayaran</p>
+                                            </div>
+                                            {cashbacks.length < 3 && (
+                                                <button type="button" onClick={addCashback}
+                                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 border border-amber-200 text-amber-700 rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-amber-100 transition-all">
+                                                    <Plus className="h-3.5 w-3.5" /> Tambah CB
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        {cashbacks.map((cb, i) => (
+                                            <div key={i} className="flex items-center gap-3 p-3 bg-amber-50/60 border border-amber-100 rounded-xl">
+                                                <input
+                                                    type="text"
+                                                    value={cb.label}
+                                                    onChange={e => updateCashback(i, 'label', e.target.value)}
+                                                    className="w-16 bg-white border border-amber-200 rounded-lg px-2 py-1.5 text-[11px] font-black text-center outline-none focus:border-amber-400"
+                                                    placeholder="CB 1"
+                                                />
+                                                <div className="flex items-center flex-1 bg-white border border-amber-200 rounded-lg px-3 focus-within:border-amber-400 transition-all">
+                                                    <input
+                                                        type="text"
+                                                        value={cb.rate}
+                                                        onChange={e => updateCashback(i, 'rate', e.target.value.replace(/[^0-9.]/g, ''))}
+                                                        className="flex-1 bg-transparent py-1.5 text-sm font-black outline-none text-amber-700"
+                                                        placeholder="0"
+                                                    />
+                                                    <span className="text-amber-500 font-black text-sm">%</span>
+                                                </div>
+                                                <div className="text-right min-w-[120px]">
+                                                    <p className="text-[10px] text-slate-400 font-bold uppercase">dari DPP</p>
+                                                    <p className="text-sm font-black text-amber-700">− {formatCurrency(Math.floor(dpp * (parseIndoNumber(cb.rate) / 100)))}</p>
+                                                </div>
+                                                {cashbacks.length > 1 && (
+                                                    <button type="button" onClick={() => removeCashback(i)}
+                                                        className="p-1.5 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all">
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        ))}
+
+                                        {totalCashback > 0 && (
+                                            <div className="flex justify-between items-center pt-3 border-t border-amber-100">
+                                                <span className="text-[10px] font-black text-amber-700 uppercase tracking-widest">Total Cashback</span>
+                                                <span className="text-lg font-black text-amber-700">− {formatCurrency(totalCashback)}</span>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
-                                {/* Right column: Totals */}
+                                {/* Right: Calculation Panel */}
                                 <div className="bg-slate-900 text-white p-6 rounded-3xl shadow-2xl relative overflow-hidden">
                                     <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-full blur-[40px] -translate-y-1/2 translate-x-1/2"></div>
-                                    <div className="relative z-10 space-y-4">
-                                        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 border-b border-white/5 pb-2">Ringkasan Pembelian</h3>
-                                        
-                                        <div className="flex justify-between items-center px-1">
-                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Subtotal Kotor</span>
-                                            <span className="text-sm font-bold">Rp {subtotal.toLocaleString('id-ID')}</span>
+                                    <div className="relative z-10 space-y-3">
+                                        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 border-b border-white/5 pb-2">Perhitungan Faktur PPN</h3>
+
+                                        {/* TOTAL */}
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">TOTAL</span>
+                                            <span className="text-xs font-bold">{formatCurrency(subtotal)}</span>
                                         </div>
 
-                                        <div className="space-y-1">
-                                            <label className="text-[10px] font-bold text-orange-400 uppercase tracking-widest flex justify-between items-center ml-1">
-                                                Diskon Akhir
-                                                <button 
-                                                    type="button"
-                                                    onClick={async () => {
-                                                        const p = await prompt({
-                                                            title: "Diskon Persentase",
-                                                            message: "Masukkan nilai persentase diskon untuk seluruh transaksi ini:",
-                                                            defaultValue: totalDiscountPercent || "0",
-                                                            showSlider: true
-                                                        });
-                                                        if(p !== null) setTotalDiscountPercent(p);
-                                                    }}
-                                                    className="bg-orange-500/10 text-orange-600 hover:bg-orange-500 hover:text-white px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-tighter transition-all border border-orange-500/20"
-                                                >
-                                                    {totalDiscountPercent ? `${totalDiscountPercent}%` : "Disc %"}
-                                                </button>
-                                            </label>
-                                            <div className="flex items-center bg-white/5 border border-white/10 rounded-xl px-3 focus-within:border-orange-500/50 transition-all">
+                                        {/* DISC */}
+                                        <div className="space-y-1.5">
+                                            <div className="flex justify-between items-center">
+                                                <label className="text-[10px] font-bold text-orange-400 uppercase tracking-widest flex items-center gap-2">
+                                                    DISC
+                                                    <button type="button"
+                                                        onClick={async () => {
+                                                            const p = await prompt({ title: "Diskon %", message: "Masukkan persentase diskon:", defaultValue: totalDiscountPercent || "0", showSlider: true });
+                                                            if (p !== null) setTotalDiscountPercent(p);
+                                                        }}
+                                                        className="bg-orange-500/10 text-orange-500 hover:bg-orange-500 hover:text-white px-1.5 py-0.5 rounded text-[9px] font-black transition-all border border-orange-500/20">
+                                                        {totalDiscountPercent ? `${totalDiscountPercent}%` : "Disc %"}
+                                                    </button>
+                                                </label>
+                                                <span className="text-xs font-bold text-orange-400">− {formatCurrency(finalDiscountNominal)}</span>
+                                            </div>
+                                            <div className="flex items-center bg-white/5 border border-white/10 rounded-lg px-3 focus-within:border-orange-500/50">
                                                 <span className="text-slate-500 font-bold mr-2 text-xs">Rp</span>
-                                                <input
-                                                    type="text"
-                                                    value={totalDiscount}
-                                                    onChange={e => {
-                                                        setTotalDiscount(e.target.value);
-                                                        setTotalDiscountPercent("");
-                                                    }}
-                                                    className="w-full bg-transparent py-2 text-sm font-black text-white outline-none"
-                                                    placeholder="0"
-                                                />
+                                                <input type="text" value={totalDiscount}
+                                                    onChange={e => { setTotalDiscount(e.target.value); setTotalDiscountPercent(""); }}
+                                                    className="w-full bg-transparent py-1.5 text-xs font-black text-white outline-none"
+                                                    placeholder="0" />
                                             </div>
                                         </div>
 
-                                        <div className="space-y-1">
-                                            <label className="text-[10px] font-bold text-blue-400 uppercase tracking-widest ml-1">Pajak PPN (%)</label>
-                                            <select 
-                                                value={taxRate} 
-                                                onChange={e => setTaxRate(Number(e.target.value))}
-                                                className="w-full bg-white/5 border border-white/10 rounded-xl p-2.5 text-sm font-black focus:border-blue-500/50 outline-none"
-                                            >
+                                        {/* DPP */}
+                                        <div className="flex justify-between items-center py-1 border-t border-white/5">
+                                            <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">DPP</span>
+                                            <span className="text-xs font-black text-white">{formatCurrency(dpp)}</span>
+                                        </div>
+
+                                        {/* PPN select + DPP NILAI LAIN */}
+                                        <div className="space-y-1.5">
+                                            <label className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">PPN</label>
+                                            <select value={taxRate} onChange={e => setTaxRate(Number(e.target.value))}
+                                                className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-xs font-black focus:border-blue-500/50 outline-none">
                                                 <option value={0} className="text-slate-900">Non PPN (0%)</option>
                                                 <option value={11} className="text-slate-900">PPN 11%</option>
-                                                <option value={12} className="text-slate-900">PPN 12%</option>
+                                                <option value={12} className="text-slate-900">PPN 12% (DPP Nilai Lain)</option>
                                             </select>
+                                            {Number(taxRate) === 12 && (
+                                                <div className="flex justify-between items-center px-1">
+                                                    <span className="text-[9px] text-slate-500 font-bold uppercase">DPP Nilai Lain (×11/12)</span>
+                                                    <span className="text-[10px] font-black text-blue-300">{formatCurrency(dppNilaiLain)}</span>
+                                                </div>
+                                            )}
+                                            <div className="flex justify-between items-center px-1">
+                                                <span className="text-[9px] text-blue-400 font-bold uppercase">PPN ({taxRate}%)</span>
+                                                <span className="text-[10px] font-black text-blue-300">+ {formatCurrency(taxAmount)}</span>
+                                            </div>
                                         </div>
 
-                                        <div className="pt-4 mt-2 border-t border-white/10">
+                                        {/* TOTAL NETTO */}
+                                        <div className="flex justify-between items-center py-2 border-t border-white/10">
+                                            <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">TOTAL NETTO</span>
+                                            <span className="text-sm font-black text-white">{formatCurrency(grandTotal)}</span>
+                                        </div>
+
+                                        {/* CASHBACK summary */}
+                                        {totalCashback > 0 && (
+                                            <div className="space-y-1 pt-1">
+                                                {cashbackDetails.map((cb, i) => cb.amount > 0 && (
+                                                    <div key={i} className="flex justify-between items-center px-1">
+                                                        <span className="text-[9px] text-amber-400 font-bold uppercase">{cb.label} ({cb.rate}%)</span>
+                                                        <span className="text-[10px] font-black text-amber-400">− {formatCurrency(cb.amount)}</span>
+                                                    </div>
+                                                ))}
+                                                <div className="flex justify-between items-center px-1 pt-1 border-t border-amber-500/20">
+                                                    <span className="text-[9px] text-amber-400 font-black uppercase tracking-widest">Total CB</span>
+                                                    <span className="text-[10px] font-black text-amber-400">− {formatCurrency(totalCashback)}</span>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* NET TRANSFER */}
+                                        <div className="pt-3 mt-1 border-t-2 border-emerald-500/30">
                                             <div className="flex justify-between items-end mb-1">
-                                                <label className="text-[10px] font-bold uppercase tracking-widest text-emerald-400">Total Akhir</label>
+                                                <label className="text-[10px] font-black uppercase tracking-widest text-emerald-400">Yang Harus TF</label>
                                                 <span className="text-[9px] text-slate-500 font-bold uppercase tracking-widest mb-1">{totalQty} Items</span>
                                             </div>
-                                            <p className="text-3xl font-black text-emerald-400 tracking-tighter leading-none mb-4">{formatCurrency(grandTotal)}</p>
-                                            
-                                            <button
-                                                type="submit"
-                                                disabled={isSubmitting}
-                                                className="w-full bg-primary text-white py-4 rounded-2xl font-black shadow-2xl shadow-primary/20 hover:bg-slate-800 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-3 group"
-                                            >
+                                            <p className="text-3xl font-black text-emerald-400 tracking-tighter leading-none mb-4">{formatCurrency(netTransfer)}</p>
+
+                                            <button type="submit" disabled={isSubmitting}
+                                                className="w-full bg-primary text-white py-4 rounded-2xl font-black shadow-2xl shadow-primary/20 hover:bg-slate-800 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-3 group">
                                                 {isSubmitting ? (
                                                     <Loader2 className="h-5 w-5 animate-spin" />
                                                 ) : (
