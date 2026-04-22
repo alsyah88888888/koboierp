@@ -6,6 +6,11 @@ import { getPrisma } from "@/lib/prisma";
  * Performance: Only loads data for products sold in the target month.
  * Uses pre-computed Maps for O(1) return lookups.
  */
+/**
+ * ENRICHED TRANSACTION HISTORY REPORT (STOCK CARD STYLE)
+ * This replaces the old FIFO traceability with a chronological audit trail.
+ * It includes running balances, partner names, and profit margins.
+ */
 export async function getProductTraceabilityService(month?: number, year?: number) {
     const prisma = getPrisma();
     
@@ -15,252 +20,121 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
     const endDate = new Date(filterYear, filterMonth, 0, 23, 59, 59);
 
     try {
-        // STEP 1: Find which products were SOLD in the target month (lightweight query)
-        const soldItems = await prisma.salesDeliveryItem.findMany({
-            where: { 
-                delivery: { isVoid: false, date: { gte: startDate, lte: endDate } }
+        // 1. Fetch ALL Stock Movements in range
+        const movements = await prisma.stockMovement.findMany({
+            where: { createdAt: { gte: startDate, lte: endDate } },
+            include: { 
+                product: { select: { sku: true, name: true, uom: true, purchasePrice: true } },
+                warehouse: { select: { name: true } }
             },
-            select: { productId: true },
-            distinct: ['productId']
+            orderBy: { createdAt: 'asc' }
+        });
+
+        if (movements.length === 0) return [];
+
+        // 2. Identify all products involved to get opening balances
+        const productIds = Array.from(new Set(movements.map((m: any) => m.productId)));
+        
+        // 3. Calculate Opening Balances (Saldo Awal) for each product
+        const openingBalancesAgg = await prisma.stockMovement.groupBy({
+            by: ['productId'],
+            where: {
+                productId: { in: productIds },
+                createdAt: { lt: startDate }
+            },
+            _sum: { quantity: true }
         });
         
-        const targetProductIds = soldItems.map(i => i.productId);
-        
-        if (targetProductIds.length === 0) return [];
+        const openingBalanceMap = new Map<string, number>();
+        openingBalancesAgg.forEach((agg: any) => {
+            openingBalanceMap.set(agg.productId, Number(agg._sum.quantity || 0));
+        });
 
-        // STEP 2: Fetch data ONLY for those products
-        const [allLPBItems, allSJItems, allPurchaseReturns, allSalesReturns, allAdjustments] = await Promise.all([
-            // Purchases for target products only
-            prisma.goodsReceiptItem.findMany({
-                where: { productId: { in: targetProductIds }, receipt: { isVerified: true, isVoid: false } }, // Ensure verified
-                include: { 
-                    receipt: { select: { date: true, createdAt: true, receiptNumber: true, formNumber: true, receivedFrom: true, salesPerson: true, taxRate: true, warehouse: { select: { name: true } } } },
-                    product: { select: { sku: true, name: true, uom: true } }
-                },
-                orderBy: [{ receipt: { date: 'asc' } }, { receipt: { createdAt: 'asc' } }]
+        // 4. Fetch Transaction Details (Partner names, Prices)
+        const grRefs = movements.filter((m: any) => m.type === 'GOODS_RECEIPT' || m.type === 'PURCHASE_VOID').map((m: any) => m.reference).filter(Boolean);
+        const sdRefs = movements.filter((m: any) => m.type === 'SALE' || m.type === 'SALE_VOID' || m.type === 'SALE_DELETE').map((m: any) => m.reference).filter(Boolean);
+
+        const [receipts, deliveries] = await Promise.all([
+            prisma.goodsReceipt.findMany({
+                where: { receiptNumber: { in: grRefs } },
+                include: { items: true }
             }),
-            // Sales for target products only
-            prisma.salesDeliveryItem.findMany({
-                where: { productId: { in: targetProductIds }, delivery: { isVoid: false } },
-                include: { 
-                    delivery: { select: { date: true, createdAt: true, deliveryNumber: true, poNumber: true, buyerName: true, recipient: true, salesPerson: true, taxRate: true, warehouse: { select: { name: true } } } },
-                    product: { select: { sku: true, name: true, uom: true } }
-                },
-                orderBy: [{ delivery: { date: 'asc' } }, { delivery: { createdAt: 'asc' } }]
-            }),
-            // Purchase returns for target products
-            prisma.purchaseReturnItem.findMany({
-                where: { productId: { in: targetProductIds }, purchaseReturn: { status: 'COMPLETED' } },
-                select: { productId: true, quantity: true, purchaseReturn: { select: { receiptId: true } } }
-            }),
-            // Sales returns for target products
-            prisma.salesReturnItem.findMany({
-                where: { productId: { in: targetProductIds }, salesReturn: { status: 'COMPLETED' } },
-                select: { productId: true, quantity: true, salesReturn: { select: { deliveryId: true } } }
-            }),
-            // NEW: Adjustments as potential sources (Saldo Awal)
-            prisma.stockMovement.findMany({
-                where: { productId: { in: targetProductIds }, type: 'ADJUSTMENT', quantity: { gt: 0 } },
-                include: { product: { select: { sku: true, name: true, uom: true, purchasePrice: true } }, warehouse: { select: { name: true } } },
-                orderBy: { createdAt: 'asc' }
+            prisma.salesDelivery.findMany({
+                where: { deliveryNumber: { in: sdRefs } },
+                include: { items: true }
             })
         ]);
 
-        // STEP 3: Pre-compute return Maps for O(1) lookup
-        // Key: "receiptId|productId" -> total returned qty
-        const purchaseReturnMap = new Map<string, number>();
-        for (const r of allPurchaseReturns) {
-            const key = `${r.purchaseReturn.receiptId}|${r.productId}`;
-            purchaseReturnMap.set(key, (purchaseReturnMap.get(key) || 0) + r.quantity);
-        }
-        // Key: "deliveryId|productId" -> total returned qty
-        const salesReturnMap = new Map<string, number>();
-        for (const r of allSalesReturns) {
-            const key = `${r.salesReturn.deliveryId}|${r.productId}`;
-            salesReturnMap.set(key, (salesReturnMap.get(key) || 0) + r.quantity);
-        }
+        const receiptMap = new Map<string, any>();
+        receipts.forEach((r: any) => receiptMap.set(r.receiptNumber, r));
 
-        // STEP 4: Group by Product
-        const productStats: Record<string, { buyers: any[], sellers: any[] }> = {};
+        const deliveryMap = new Map<string, any>();
+        deliveries.forEach((d: any) => deliveryMap.set(d.deliveryNumber, d));
 
-        for (const item of allLPBItems) {
-            if (!productStats[item.productId]) productStats[item.productId] = { buyers: [], sellers: [] };
-            
-            const retKey = `${item.receiptId}|${item.productId}`;
-            const itemReturns = purchaseReturnMap.get(retKey) || 0;
+        // 5. Build the Report Rows
+        const runningBalances = new Map<string, number>();
+        // Initialize running balances with opening balances
+        productIds.forEach(id => runningBalances.set(id, openingBalanceMap.get(id) || 0));
 
-            productStats[item.productId].buyers.push({
-                type: 'LPB',
-                date: item.receipt.date || item.receipt.createdAt,
-                number: item.receipt.receiptNumber,
-                formNumber: item.receipt.formNumber,
-                receivedFrom: item.receipt.receivedFrom,
-                salesPerson: item.receipt.salesPerson || "-",
-                qtyGross: item.quantity,
-                qtyRet: itemReturns,
-                qtyNet: item.quantity - itemReturns,
-                remaining: item.quantity - itemReturns,
-                price: Number(item.purchasePrice || 0),
-                disc: Number(item.discount || 0),
-                taxRate: Number(item.receipt.taxRate || 0),
-                sku: item.product.sku,
-                name: item.product.name,
-                uom: item.product.uom,
-                warehouse: item.receipt.warehouse?.name || "Pusat"
-            });
-        }
+        const finalRows = movements.map((m: any) => {
+            const currentBal = runningBalances.get(m.productId) || 0;
+            const newBal = currentBal + Number(m.quantity);
+            runningBalances.set(m.productId, newBal);
 
-        // Add Adjustments to buyers list
-        for (const adj of allAdjustments) {
-            if (!productStats[adj.productId]) productStats[adj.productId] = { buyers: [], sellers: [] };
+            let partner = "-";
+            let price = 0;
+            let buyPrice = Number(m.product.purchasePrice || 0);
+            let margin = 0;
+            let refNum = m.reference || "-";
 
-            productStats[adj.productId].buyers.push({
-                type: 'ADJUSTMENT',
-                date: adj.createdAt,
-                number: adj.reference || "[ADJUSTMENT]",
-                formNumber: "-",
-                receivedFrom: "[SALDO AWAL / SYNC]",
-                salesPerson: "-",
-                qtyGross: adj.quantity,
-                qtyRet: 0,
-                qtyNet: adj.quantity,
-                remaining: adj.quantity,
-                price: Number(adj.product.purchasePrice || 0),
-                disc: 0,
-                taxRate: 0,
-                sku: adj.product.sku,
-                name: adj.product.name,
-                uom: adj.product.uom,
-                warehouse: adj.warehouse?.name || "Pusat"
-            });
-        }
-
-        // Sort unified buyers (LPB + Adjustment) by date ASC
-        for (const productId in productStats) {
-            productStats[productId].buyers.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-        }
-
-        for (const item of allSJItems) {
-            if (!productStats[item.productId]) productStats[item.productId] = { buyers: [], sellers: [] };
-
-            const retKey = `${item.deliveryId}|${item.productId}`;
-            const itemReturns = salesReturnMap.get(retKey) || 0;
-
-            productStats[item.productId].sellers.push({
-                date: item.delivery.date,
-                number: item.delivery.deliveryNumber,
-                poNumber: item.delivery.poNumber || "-",
-                buyerName: item.delivery.buyerName || item.delivery.recipient || "UMUM",
-                salesPerson: item.delivery.salesPerson || "-",
-                qtyGross: item.quantity,
-                qtyRet: itemReturns,
-                qtyNet: item.quantity - itemReturns,
-                price: Number(item.salesPrice || 0),
-                disc: Number(item.discount || 0),
-                taxRate: Number(item.delivery.taxRate || 0),
-                product: item.product,
-                warehouse: item.delivery.warehouse?.name || "Pusat"
-            });
-        }
-
-        // STEP 5: FIFO Allocation (Global SKU Flow)
-        const finalRows: any[] = [];
-
-        for (const productId in productStats) {
-            const { buyers, sellers } = productStats[productId];
-            let buyerIdx = 0;
-
-            for (const sale of sellers) {
-                let qtyToAllocate = sale.qtyNet;
-
-                while (qtyToAllocate > 0 && buyerIdx < buyers.length) {
-                    const batch = buyers[buyerIdx];
-                    if (batch.remaining <= 0) { buyerIdx++; continue; }
-
-                    const taken = Math.min(qtyToAllocate, batch.remaining);
-                    
-                    if (sale.date >= startDate && sale.date <= endDate) {
-                        finalRows.push(formatTraceabilityRow(sale, batch, taken));
+            // Enrich based on type
+            if (m.type === 'GOODS_RECEIPT' || m.type === 'PURCHASE_VOID') {
+                const gr = receiptMap.get(m.reference);
+                if (gr) {
+                    partner = gr.receivedFrom;
+                    const item = gr.items.find((i: any) => i.productId === m.productId);
+                    if (item) buyPrice = Number(item.purchasePrice || 0);
+                }
+            } else if (m.type === 'SALE' || m.type === 'SALE_VOID' || m.type === 'SALE_DELETE') {
+                const sd = deliveryMap.get(m.reference);
+                if (sd) {
+                    partner = sd.buyerName || sd.recipient || "UMUM";
+                    const item = sd.items.find((i: any) => i.productId === m.productId);
+                    if (item) {
+                        price = Number(item.salesPrice || 0);
+                        margin = (price - buyPrice) * Math.abs(Number(m.quantity));
                     }
-
-                    batch.remaining -= taken;
-                    qtyToAllocate -= taken;
-                    if (batch.remaining <= 0) buyerIdx++;
                 }
-
-                // Oversell (no more LPB batches)
-                if (qtyToAllocate > 0 && sale.date >= startDate && sale.date <= endDate) {
-                    finalRows.push(formatTraceabilityRow(sale, null, qtyToAllocate));
-                }
+            } else if (m.type === 'ADJUSTMENT') {
+                partner = "[STOCK ADJUSTMENT]";
             }
-        }
 
-        return finalRows.sort((a, b) => {
-            const dateA = new Date(a['Tanggal'].split('/').reverse().join('-')).getTime();
-            const dateB = new Date(b['Tanggal'].split('/').reverse().join('-')).getTime();
-            return dateB - dateA;
+            return {
+                'Tanggal': new Date(m.createdAt).toLocaleDateString('id-ID'),
+                'Jam': new Date(m.createdAt).toLocaleTimeString('id-ID'),
+                'SKU': m.product.sku,
+                'Nama Barang': m.product.name,
+                'Tipe': m.type.replace('_', ' '),
+                'No. Ref': refNum,
+                'Partner': partner,
+                'Gudang': m.warehouse?.name || "Pusat",
+                'Masuk': Number(m.quantity) > 0 ? Number(m.quantity) : 0,
+                'Keluar': Number(m.quantity) < 0 ? Math.abs(Number(m.quantity)) : 0,
+                'Saldo Berjalan': newBal,
+                'HPP / Harga Beli': buyPrice,
+                'Harga Jual': price > 0 ? price : "-",
+                'Estimasi Margin': margin !== 0 ? Math.round(margin) : "-",
+                'Satuan': m.product.uom || "PCS"
+            };
         });
 
+        // Return sorted by Date DESC (latest first for easier reading)
+        return finalRows.reverse();
+
     } catch (error: any) {
-        console.error("[getProductTraceabilityService] FIFO ERROR:", error);
-        throw new Error(`FIFO Error: ${error.message}`);
+        console.error("[getEnrichedTransactionReportService] FATAL ERROR:", error);
+        throw new Error(`Report Error: ${error.message}`);
     }
-}
-
-/**
- * Helper to format a single matched row
- */
-function formatTraceabilityRow(sale: any, buy: any, matchedQty: number) {
-    const buyPrice = buy ? Number(buy.price || 0) : 0;
-    const sellPrice = Number(sale.price || 0);
-    const buyDisc = buy ? Number(buy.disc || 0) : 0;
-    const sellDisc = Number(sale.disc || 0);
-    const buyTaxRate = buy ? Number(buy.taxRate || 0) : 0;
-    const sellTaxRate = Number(sale.taxRate || 0);
-
-    const buyTotal = matchedQty * (buyPrice - buyDisc); 
-    const sellTotal = matchedQty * (sellPrice - sellDisc);
-
-    // Always use product info from SALE if BUY is missing
-    const productSKU = buy?.sku || sale.product?.sku || "-";
-    const productName = buy?.name || sale.product?.name || "-";
-    const productUOM = buy?.uom || sale.product?.uom || "KARTON";
-
-    return {
-        'Satuan': productUOM,
-        'SKU': productSKU,
-        'Nama Barang': productName,
-        'Tanggal': sale.date ? new Date(sale.date).toLocaleDateString('id-ID') : "-",
-        
-        // --- INFO PEMBELIAN (KIRI) ---
-        '[BELI] Tgl': buy?.date ? new Date(buy.date).toLocaleDateString('id-ID') : "-",
-        '[BELI] No. LPB': buy?.type === 'ADJUSTMENT' ? `[ADJ] ${buy.number}` : (buy?.number || "[BELUM INPUT]"),
-        '[BELI] No. SJ Supplier': buy?.formNumber || "-",
-        '[BELI] Supplier': buy?.receivedFrom || (buy ? "UMUM" : "-"),
-        '[BELI] Sales (BC/PF)': buy?.salesPerson || "-",
-        '[BELI] Qty Asli': buy?.qtyGross || 0,
-        '[BELI] Qty Retur': buy?.qtyRet || 0,
-        '[BELI] Qty Bersih': buy?.qtyNet || 0,
-        '[BELI] Harga Satuan': buyPrice,
-        '[BELI] PPN (%)': buyTaxRate > 0 ? `${buyTaxRate}%` : "0%",
-        
-        // --- INFO PENJUALAN (KANAN) ---
-        '[JUAL] No. TRN': sale.number || "-",
-        '[JUAL] No. PO Buyer': sale.poNumber || "-",
-        '[JUAL] Buyer / Customer': sale.buyerName || sale.recipient || "UMUM",
-        '[JUAL] Sales (BC/PF)': sale.salesPerson || "-",
-        '[JUAL] Qty Penjodoh': matchedQty, // Qty that specifically matches this LPB
-        '[JUAL] Qty Asli': sale.qtyGross,
-        '[JUAL] Qty Retur': sale.qtyRet,
-        '[JUAL] Qty Jual Bersih': sale.qtyNet,
-        '[JUAL] Harga Jual Satuan': sellPrice,
-        '[JUAL] PPN (%)': sellTaxRate > 0 ? `${sellTaxRate}%` : "0%",
-        '[JUAL] Total Nilai Jual': sellTotal,
-        
-        // --- ANALYSIS ---
-        'Margin Estimasi (Rp)': Math.round(sellTotal - buyTotal),
-        'Gudang': sale.warehouse || buy?.warehouse || "Pusat"
-    };
 }
 
 
