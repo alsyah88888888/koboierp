@@ -1,15 +1,9 @@
-
 import { getPrisma } from "@/lib/prisma";
 
 /**
- * OPTIMIZED FIFO TRACEABILITY (BUY/SELL PAIRING)
- * Performance: Only loads data for products sold in the target month.
- * Uses pre-computed Maps for O(1) return lookups.
- */
-/**
- * ENRICHED TRANSACTION HISTORY REPORT (STOCK CARD STYLE)
- * This replaces the old FIFO traceability with a chronological audit trail.
- * It includes running balances, partner names, and profit margins.
+ * FIFO TRACEABILITY SERVICE
+ * Matches every sales item to its original purchase batch (FIFO)
+ * and calculates the margin for each unit sold.
  */
 export async function getProductTraceabilityService(month?: number, year?: number) {
     const prisma = getPrisma();
@@ -20,123 +14,120 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
     const endDate = new Date(filterYear, filterMonth, 0, 23, 59, 59);
 
     try {
-        // 1. Fetch ALL Stock Movements in range
-        const movements = await prisma.stockMovement.findMany({
-            where: { createdAt: { gte: startDate, lte: endDate } },
-            include: { 
-                product: { select: { sku: true, name: true, uom: true, purchasePrice: true } },
-                warehouse: { select: { name: true } }
-            },
-            orderBy: { createdAt: 'asc' }
+        // 1. Fetch ALL Goods Receipts up to end of period to build FIFO Purchase Pool
+        const receipts = await prisma.goodsReceipt.findMany({
+            where: { isVoid: false, date: { lte: endDate } },
+            include: { items: { include: { product: { select: { sku: true, name: true, uom: true } } } } },
+            orderBy: { date: 'asc' }
         });
 
-        if (movements.length === 0) return [];
+        // 2. Build Inventory Pool per product (FIFO queue)
+        type Batch = { qty: number; price: number; date: Date | null; grNumber: string; supplier: string };
+        const pool = new Map<string, Batch[]>();
 
-        // 2. Identify all products involved to get opening balances
-        const productIds = Array.from(new Set(movements.map((m: any) => m.productId)));
-        
-        // 3. Calculate Opening Balances (Saldo Awal) for each product
-        const openingBalancesAgg = await prisma.stockMovement.groupBy({
-            by: ['productId'],
-            where: {
-                productId: { in: productIds },
-                createdAt: { lt: startDate }
-            },
-            _sum: { quantity: true }
-        });
-        
-        const openingBalanceMap = new Map<string, number>();
-        openingBalancesAgg.forEach((agg: any) => {
-            openingBalanceMap.set(agg.productId, Number(agg._sum.quantity || 0));
-        });
-
-        // 4. Fetch Transaction Details (Partner names, Prices)
-        const grRefs = movements.filter((m: any) => m.type === 'GOODS_RECEIPT' || m.type === 'PURCHASE_VOID').map((m: any) => m.reference).filter(Boolean);
-        const sdRefs = movements.filter((m: any) => m.type === 'SALE' || m.type === 'SALE_VOID' || m.type === 'SALE_DELETE').map((m: any) => m.reference).filter(Boolean);
-
-        const [receipts, deliveries] = await Promise.all([
-            prisma.goodsReceipt.findMany({
-                where: { receiptNumber: { in: grRefs } },
-                include: { items: true }
-            }),
-            prisma.salesDelivery.findMany({
-                where: { deliveryNumber: { in: sdRefs } },
-                include: { items: true }
-            })
-        ]);
-
-        const receiptMap = new Map<string, any>();
-        receipts.forEach((r: any) => receiptMap.set(r.receiptNumber, r));
-
-        const deliveryMap = new Map<string, any>();
-        deliveries.forEach((d: any) => deliveryMap.set(d.deliveryNumber, d));
-
-        // 5. Build the Report Rows
-        const runningBalances = new Map<string, number>();
-        // Initialize running balances with opening balances
-        productIds.forEach(id => runningBalances.set(id, openingBalanceMap.get(id) || 0));
-
-        const finalRows = movements.map((m: any) => {
-            const currentBal = runningBalances.get(m.productId) || 0;
-            const newBal = currentBal + Number(m.quantity);
-            runningBalances.set(m.productId, newBal);
-
-            let partner = "-";
-            let price = 0;
-            let buyPrice = Number(m.product.purchasePrice || 0);
-            let margin = 0;
-            let refNum = m.reference || "-";
-
-            // Enrich based on type
-            if (m.type === 'GOODS_RECEIPT' || m.type === 'PURCHASE_VOID') {
-                const gr = receiptMap.get(m.reference);
-                if (gr) {
-                    partner = gr.receivedFrom;
-                    const item = gr.items.find((i: any) => i.productId === m.productId);
-                    if (item) buyPrice = Number(item.purchasePrice || 0);
-                }
-            } else if (m.type === 'SALE' || m.type === 'SALE_VOID' || m.type === 'SALE_DELETE') {
-                const sd = deliveryMap.get(m.reference);
-                if (sd) {
-                    partner = sd.buyerName || sd.recipient || "UMUM";
-                    const item = sd.items.find((i: any) => i.productId === m.productId);
-                    if (item) {
-                        price = Number(item.salesPrice || 0);
-                        margin = (price - buyPrice) * Math.abs(Number(m.quantity));
-                    }
-                }
-            } else if (m.type === 'ADJUSTMENT') {
-                partner = "[STOCK ADJUSTMENT]";
+        for (const gr of receipts) {
+            for (const item of gr.items) {
+                if (!pool.has(item.productId)) pool.set(item.productId, []);
+                pool.get(item.productId)!.push({
+                    qty     : item.quantity,
+                    price   : Number(item.purchasePrice),
+                    date    : gr.date,
+                    grNumber: gr.receiptNumber,
+                    supplier: gr.receivedFrom
+                });
             }
+        }
 
-            return {
-                'Tanggal': new Date(m.createdAt).toLocaleDateString('id-ID'),
-                'Jam': new Date(m.createdAt).toLocaleTimeString('id-ID'),
-                'SKU': m.product.sku,
-                'Nama Barang': m.product.name,
-                'Tipe': m.type.replace('_', ' '),
-                'No. Ref': refNum,
-                'Partner': partner,
-                'Gudang': m.warehouse?.name || "Pusat",
-                'Masuk': Number(m.quantity) > 0 ? Number(m.quantity) : 0,
-                'Keluar': Number(m.quantity) < 0 ? Math.abs(Number(m.quantity)) : 0,
-                'Saldo Berjalan': newBal,
-                'HPP / Harga Beli': buyPrice,
-                'Harga Jual': price > 0 ? price : "-",
-                'Estimasi Margin': margin !== 0 ? Math.round(margin) : "-",
-                'Satuan': m.product.uom || "PCS"
-            };
+        // 3. Fetch Sales Deliveries in target period
+        const deliveries = await prisma.salesDelivery.findMany({
+            where: { isVoid: false, date: { gte: startDate, lte: endDate } },
+            include: {
+                items: { include: { product: { select: { sku: true, name: true, uom: true } } } },
+                order: { select: { orderNumber: true } }
+            },
+            orderBy: { date: 'asc' }
         });
 
-        // Return sorted by Date DESC (latest first for easier reading)
-        return finalRows.reverse();
+        const report: Record<string, any>[] = [];
+
+        // 4. FIFO Pairing: match each sales item to purchase batches
+        for (const sd of deliveries) {
+            for (const sdItem of sd.items) {
+                const productPool = pool.get(sdItem.productId) ?? [];
+                let remaining = sdItem.quantity;
+
+                while (remaining > 0) {
+                    // Skip exhausted batches
+                    while (productPool.length > 0 && productPool[0].qty <= 0) productPool.shift();
+
+                    if (productPool.length === 0) {
+                        // No batch available — record as unbatched row
+                        const sellPrice = Number(sdItem.salesPrice || 0);
+                        report.push({
+                            'Tgl Beli'            : '-',
+                            'No. GR (Batch Beli)' : '-',
+                            'Supplier'            : '-',
+                            'HPP Per Unit (Rp)'   : 0,
+                            'Tgl Jual'            : new Date(sd.date).toLocaleDateString('id-ID'),
+                            'No. SJ'              : sd.deliveryNumber,
+                            'No. SO'              : sd.order?.orderNumber ?? (sd as any).poNumber ?? '-',
+                            'Buyer'               : sd.buyerName || sd.recipient,
+                            'SKU'                 : sdItem.product.sku,
+                            'Nama Barang'         : sdItem.product.name,
+                            'Satuan'              : sdItem.product.uom || 'PCS',
+                            'QTY'                 : remaining,
+                            'Harga Jual Per Unit (Rp)': sellPrice,
+                            'Profit Per Unit (Rp)': 0,
+                            'Total Profit (Rp)'   : 0,
+                            'Margin %'            : '0.0%',
+                            'Status'              : 'TANPA BATCH'
+                        });
+                        remaining = 0;
+                        break;
+                    }
+
+                    const batch = productPool[0];
+                    const matched      = Math.min(remaining, batch.qty);
+                    const sellPrice    = Number(sdItem.salesPrice || 0);
+                    const profitUnit   = sellPrice - batch.price;
+                    const totalProfit  = profitUnit * matched;
+                    const marginPct    = sellPrice > 0
+                        ? Math.round(((sellPrice - batch.price) / sellPrice) * 1000) / 10
+                        : 0;
+
+                    report.push({
+                        'Tgl Beli'            : batch.date ? new Date(batch.date).toLocaleDateString('id-ID') : '-',
+                        'No. GR (Batch Beli)' : batch.grNumber,
+                        'Supplier'            : batch.supplier,
+                        'HPP Per Unit (Rp)'   : batch.price,
+                        'Tgl Jual'            : new Date(sd.date).toLocaleDateString('id-ID'),
+                        'No. SJ'              : sd.deliveryNumber,
+                        'No. SO'              : sd.order?.orderNumber ?? (sd as any).poNumber ?? '-',
+                        'Buyer'               : sd.buyerName || sd.recipient,
+                        'SKU'                 : sdItem.product.sku,
+                        'Nama Barang'         : sdItem.product.name,
+                        'Satuan'              : sdItem.product.uom || 'PCS',
+                        'QTY'                 : matched,
+                        'Harga Jual Per Unit (Rp)': sellPrice,
+                        'Profit Per Unit (Rp)': Math.round(profitUnit),
+                        'Total Profit (Rp)'   : Math.round(totalProfit),
+                        'Margin %'            : `${marginPct.toFixed(1)}%`,
+                        'Status'              : 'TERJUAL'
+                    });
+
+                    batch.qty -= matched;
+                    remaining -= matched;
+                }
+            }
+        }
+
+        return report;
 
     } catch (error: any) {
-        console.error("[getEnrichedTransactionReportService] FATAL ERROR:", error);
-        throw new Error(`Report Error: ${error.message}`);
+        console.error("[getProductTraceabilityService] ERROR:", error);
+        throw new Error(`Traceability Error: ${error.message}`);
     }
 }
-
 
 /**
  * PURCHASE RETURNS DETAIL REPORT
