@@ -459,18 +459,41 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
         );
     }
 
-    const displayReceipts = unverifiedReceipts.filter(r => !r.isVerified);
+    const [displaySearchTerm, setDisplaySearchTerm] = useState("");
+    const displayReceipts = unverifiedReceipts.filter(r => 
+        !r.isVerified && 
+        (r.receiptNumber.toLowerCase().includes(displaySearchTerm.toLowerCase()) || 
+         r.receivedFrom.toLowerCase().includes(displaySearchTerm.toLowerCase()))
+    );
 
     return (
-        <div className="space-y-4">
-            <div className="flex items-center gap-2 text-primary font-bold">
-                <Package className="h-5 w-5" />
-                <h3>Menunggu Verifikasi Checker ({displayReceipts.length})</h3>
+        <div className="space-y-6">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-3xl border-2 border-slate-100 shadow-sm">
+                <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-primary/10 rounded-xl text-primary">
+                        <Package className="h-5 w-5" />
+                    </div>
+                    <div>
+                        <h3 className="font-black text-slate-800 uppercase tracking-tight">Antrian Verifikasi Checker</h3>
+                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest opacity-70">{displayReceipts.length} LPB Menunggu Dicek</p>
+                    </div>
+                </div>
+                
+                <div className="relative w-full md:w-80">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <input
+                        value={displaySearchTerm}
+                        onChange={e => setDisplaySearchTerm(e.target.value)}
+                        placeholder="Cari No. LPB atau Supplier..."
+                        className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border-2 border-slate-100 rounded-xl text-sm focus:outline-none focus:border-primary focus:bg-white transition-all font-bold placeholder:text-slate-400"
+                    />
+                </div>
             </div>
 
             {displayReceipts.length === 0 ? (
-                <div className="p-12 text-center border-2 border-dashed rounded-xl text-slate-400 font-bold italic">
-                    Semua barang sudah diverifikasi...
+                <div className="p-20 text-center border-4 border-dashed border-slate-100 rounded-[3rem] text-slate-300 flex flex-col items-center gap-4">
+                    <Sparkles className="h-12 w-12 opacity-20" />
+                    <p className="font-black uppercase tracking-widest text-xs">Semua barang sudah diverifikasi atau tidak ditemukan</p>
                 </div>
             ) : (
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
