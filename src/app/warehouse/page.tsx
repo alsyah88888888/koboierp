@@ -26,15 +26,13 @@ export default async function WarehousePage() {
         prisma.warehouse.findMany().catch(() => [])
     ]);
 
-    // 2. Fetch Unverified Receipts
-    const unverifiedReceiptsRaw = await prisma.goodsReceipt.findMany({
-        where: { isVerified: false, isVoid: false },
+    const recentReceiptsRaw = await prisma.goodsReceipt.findMany({
+        where: { isVoid: false },
         include: { 
             items: { include: { product: true } },
             warehouse: true 
         },
-        orderBy: { createdAt: 'desc' },
-        take: 50
+        orderBy: { createdAt: 'desc' }
     }).catch(() => []);
 
     // 3. Fetch Recent Movements
@@ -67,7 +65,7 @@ export default async function WarehousePage() {
         stocks: p.stocks.map((s: any) => JSON.parse(JSON.stringify(s)))
     }));
 
-    const safeUnverifiedReceipts = unverifiedReceiptsRaw.map((r: any) => ({
+    const safeRecentReceipts = recentReceiptsRaw.map((r: any) => ({
         ...JSON.parse(JSON.stringify(r)),
         warehouse: r.warehouse ? JSON.parse(JSON.stringify(r.warehouse)) : null,
         items: r.items.map((i: any) => ({
@@ -79,7 +77,7 @@ export default async function WarehousePage() {
     return <WarehouseDashboard
         initialProducts={serializeDecimal(safeProducts)}
         warehouses={serializeDecimal(warehouses.map(w => JSON.parse(JSON.stringify(w))))}
-        unverifiedReceipts={serializeDecimal(safeUnverifiedReceipts)}
+        unverifiedReceipts={serializeDecimal(safeRecentReceipts)}
         movements={serializeDecimal(movements)}
     />;
 }

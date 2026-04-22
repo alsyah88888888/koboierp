@@ -459,20 +459,22 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
         );
     }
 
+    const displayReceipts = unverifiedReceipts.filter(r => !r.isVerified);
+
     return (
         <div className="space-y-4">
             <div className="flex items-center gap-2 text-primary font-bold">
                 <Package className="h-5 w-5" />
-                <h3>Menunggu Verifikasi Checker ({unverifiedReceipts.length})</h3>
+                <h3>Menunggu Verifikasi Checker ({displayReceipts.length})</h3>
             </div>
 
-            {unverifiedReceipts.length === 0 ? (
+            {displayReceipts.length === 0 ? (
                 <div className="p-12 text-center border-2 border-dashed rounded-xl text-slate-400 font-bold italic">
-                    Belum ada barang yang didaftarkan...
+                    Semua barang sudah diverifikasi...
                 </div>
             ) : (
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {unverifiedReceipts.map((r) => (
+                    {displayReceipts.map((r) => (
                         <div key={r.id} className="p-4 rounded-xl border bg-card hover:border-primary transition-all group shadow-sm">
                             <div className="flex justify-between items-start mb-2">
                                 <span className="font-mono text-primary font-bold">{r.receiptNumber}</span>

@@ -75,14 +75,17 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
             );
             exportToExcel(data, 'Laporan_Stok_Gudang', 'Inventory');
         } else {
+            // Updated: Export all recent receipts with their status
             const data = unverifiedReceipts.map(r => ({
-                'Tanggal': format(new Date(r.createdAt), "dd/MM/yyyy"),
-                'No. Terima': r.receiptNumber,
+                'Tanggal': format(new Date(r.createdAt), "dd/MM/yyyy HH:mm"),
+                'No. LPB': r.receiptNumber,
                 'Supplier': r.receivedFrom,
                 'Gudang': r.warehouse?.name,
-                'Jumlah Item': r.items.length
+                'Jumlah Item': r.items.length,
+                'Status': r.isVerified ? 'VERIFIED' : 'PENDING',
+                'Penerima': r.createdBy?.name || '-'
             }));
-            exportToExcel(data, 'Laporan_Penerimaan_Pending', 'Checker');
+            exportToExcel(data, 'Laporan_Status_Penerimaan_Gudang', 'Penerimaan');
         }
     };
 
@@ -104,14 +107,15 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
             setPreviewTitle("Laporan Master Stok Gudang (Berdasarkan Vendor)");
         } else {
             const data = unverifiedReceipts.map(r => ({
-                'Tanggal': format(new Date(r.createdAt), "dd/MM/yyyy"),
-                'No. Terima': r.receiptNumber,
+                'Tanggal': format(new Date(r.createdAt), "dd/MM/yyyy HH:mm"),
+                'No. LPB': r.receiptNumber,
                 'Supplier': r.receivedFrom,
                 'Gudang': r.warehouse?.name,
-                'Jumlah Item': r.items.length
+                'Jumlah Item': r.items.length,
+                'Status': r.isVerified ? 'VERIFIED' : 'PENDING'
             }));
             setPreviewData(data);
-            setPreviewTitle("Daftar Pembelian Pending (Checker)");
+            setPreviewTitle("Laporan Status Penerimaan Barang (Gudang)");
         }
         setShowPreview(true);
     };
