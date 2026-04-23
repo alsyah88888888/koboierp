@@ -129,31 +129,6 @@ export async function createGoodsReceiptService(data: any, userId: string) {
         }
         const receiptNumber = `${prefix}${String(nextNum).padStart(3, '0')}`;
 
-        const receipt = await tx.goodsReceipt.create({
-            data: {
-                receiptNumber,
-                formNumber: data.formNumber?.trim() || null,
-                receivedFrom: data.receivedFrom || "UMUM",
-                warehouse: { connect: { id: data.warehouseId } },
-                salesPerson: data.salesPerson,
-                notes: updatedNotes,
-                date: txDate,
-                createdById: userId,
-                isVerified: false, // Starts as draft for checking
-                verifiedAt: null,
-                verifiedBy: null,
-                items: {
-                    create: data.items.map((item: any) => ({
-                        productId: item.productId,
-                        quantity: item.quantity,
-                        purchasePrice: item.purchasePrice as any,
-                        discount: item.discount as any,
-                        uom: item.uom
-                    }))
-                }
-            }
-        });
-
         let grossAmount = 0;
         let totalItemDiscounts = 0;
         data.items.forEach((i: any) => {
@@ -167,29 +142,42 @@ export async function createGoodsReceiptService(data: any, userId: string) {
         const totalDiscountNominal = Math.round(Number(data.totalDiscount) || 0);
         const taxRatePercent = Number(data.taxRate) || 0;
         const dpp = subtotal - totalDiscountNominal;
-        
-        // Dynamic PPN Logic: 12% uses 11/12 Nilai Lain, 11% uses standard DPP
         const dppNilaiLain = taxRatePercent === 12 ? Math.round(dpp * (11 / 12)) : dpp;
         const taxAmount = taxRatePercent > 0 ? Math.round(dppNilaiLain * (taxRatePercent / 100)) : 0;
         const grandTotal = Math.round(dpp + taxAmount);
 
-        // Store cashback summary in notes if exists
         let updatedNotes = data.notes || "";
         if (data.cashbacks && Array.isArray(data.cashbacks)) {
             const cbSummary = data.cashbacks.map((cb: any) => `${cb.label}: ${cb.rate}%`).join(", ");
             updatedNotes = updatedNotes ? `${updatedNotes} | CB: ${cbSummary}` : `CB: ${cbSummary}`;
         }
 
-        await tx.goodsReceipt.update({
-            where: { id: receipt.id },
+        const receipt = await tx.goodsReceipt.create({
             data: {
+                receiptNumber,
+                formNumber: data.formNumber?.trim() || null,
+                receivedFrom: data.receivedFrom || "UMUM",
+                warehouse: { connect: { id: data.warehouseId } },
+                salesPerson: data.salesPerson,
+                notes: updatedNotes,
+                date: txDate,
+                createdById: userId,
                 subtotal: subtotal,
                 totalDiscount: totalDiscountNominal,
                 taxRate: taxRatePercent,
                 taxAmount: taxAmount,
                 grandTotal: grandTotal,
-                notes: updatedNotes,
-                paymentStatus: "PENDING"
+                isVerified: false,
+                paymentStatus: "PENDING",
+                items: {
+                    create: data.items.map((item: any) => ({
+                        productId: item.productId,
+                        quantity: item.quantity,
+                        purchasePrice: item.purchasePrice as any,
+                        discount: item.discount as any,
+                        uom: item.uom
+                    }))
+                }
             }
         });
 
@@ -269,32 +257,6 @@ export async function updateGoodsReceiptService(id: string, data: any, userId: s
 
         const currentReceiptNumber = oldReceipt.receiptNumber;
 
-        // 3. Update Header & Items
-        await tx.goodsReceiptItem.deleteMany({ where: { receiptId: id } });
-
-        const txDate = data.date || new Date();
-        await tx.goodsReceipt.update({
-            where: { id },
-            data: {
-                formNumber: data.formNumber?.trim() || null,
-                receivedFrom: data.receivedFrom,
-                warehouse: { connect: { id: data.warehouseId } },
-                salesPerson: data.salesPerson,
-                notes: updatedNotes,
-                date: txDate,
-                items: {
-                    create: data.items.map((item: any) => ({
-                        productId: item.productId,
-                        quantity: item.quantity,
-                        purchasePrice: item.purchasePrice as any,
-                        discount: item.discount as any,
-                        uom: item.uom
-                    }))
-                }
-            }
-        });
-
-
         // 3. Recalculate Totals (Reuse logic from create)
         let grossAmount = 0;
         let totalItemDiscounts = 0;
@@ -320,15 +282,33 @@ export async function updateGoodsReceiptService(id: string, data: any, userId: s
             updatedNotes = updatedNotes ? `${updatedNotes} | CB: ${cbSummary}` : `CB: ${cbSummary}`;
         }
 
+        // 4. Update Header & Items
+        await tx.goodsReceiptItem.deleteMany({ where: { receiptId: id } });
+
+        const txDate = data.date || new Date();
         await tx.goodsReceipt.update({
             where: { id },
             data: {
+                formNumber: data.formNumber?.trim() || null,
+                receivedFrom: data.receivedFrom,
+                warehouse: { connect: { id: data.warehouseId } },
+                salesPerson: data.salesPerson,
+                notes: updatedNotes,
+                date: txDate,
                 subtotal: subtotal,
                 totalDiscount: totalDiscountNominal,
                 taxRate: taxRatePercent,
                 taxAmount: taxAmount,
                 grandTotal: grandTotal,
-                notes: updatedNotes
+                items: {
+                    create: data.items.map((item: any) => ({
+                        productId: item.productId,
+                        quantity: item.quantity,
+                        purchasePrice: item.purchasePrice as any,
+                        discount: item.discount as any,
+                        uom: item.uom
+                    }))
+                }
             }
         });
 
