@@ -30,10 +30,23 @@ export default async function PurchaseInvoicePrintPage({ params }: { params: Pro
     const taxRate = Number(receipt.taxRate || 0);
     const grandTotal = Math.round(subTotal - totalDiscount + taxAmount);
 
+    const dpp = subTotal - totalDiscount;
+    const isPPN12 = taxRate === 12;
+    const dppNilaiLain = isPPN12 ? Math.round(dpp * (11 / 12)) : dpp;
+    
+    // Calculate cashback total from the new cashbacks JSON field
+    const cashbacksArray = Array.isArray(receipt.cashbacks) ? receipt.cashbacks : [];
+    const totalCashback = cashbacksArray.reduce((sum: number, cb: any) => {
+        const rate = Number(cb.rate) || 0;
+        return sum + Math.round(dpp * (rate / 100));
+    }, 0);
+
+    const netTransfer = grandTotal - totalCashback;
+
     return (
         <DocumentLayout
             isA5={true}
-            title="PURCHASE ORDER"
+            title="FAKTUR PEMBELIAN"
             docNumber={receipt.formNumber}
             date={format(new Date(receipt.date || receipt.createdAt), "dd MMM yyyy")}
             headerInfo={
@@ -88,31 +101,71 @@ export default async function PurchaseInvoicePrintPage({ params }: { params: Pro
                 </tbody>
             </table>
 
-            <div className="flex justify-end mt-4">
-                <div className="w-80 space-y-2 border border-slate-900 p-3 font-black">
-                    <div className="flex justify-between text-xs pb-2 border-b-2 border-slate-200">
-                        <span className="text-slate-400 uppercase">JUMLAH QTY</span>
-                        <span className="tabular-nums">{formatNumber(totalQty)}</span>
+            <div className="grid grid-cols-2 mt-4 gap-4">
+                <div className="border border-slate-900 p-3 flex flex-col justify-between">
+                    <div>
+                        <h4 className="text-[10px] font-black uppercase mb-2 border-b border-slate-200">Keterangan / Catatan</h4>
+                        <p className="text-[10px] italic text-slate-600 whitespace-pre-wrap">{receipt.notes || "-"}</p>
                     </div>
-                    <div className="flex justify-between text-xs pt-1">
-                        <span className="text-slate-400 uppercase">Total Brutto</span>
+                    {cashbacksArray.length > 0 && (
+                        <div className="mt-4 pt-2 border-t border-slate-900/10">
+                            <h4 className="text-[9px] font-black uppercase mb-1 text-slate-400">Rincian Cashback</h4>
+                            {cashbacksArray.map((cb: any, i: number) => (
+                                <div key={i} className="flex justify-between text-[10px] font-bold italic">
+                                    <span>{cb.label} ({cb.rate}%)</span>
+                                    <span>{formatCurrency(Math.round(dpp * (Number(cb.rate) / 100)))}</span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                <div className="space-y-1.5 border border-slate-900 p-3 font-black bg-slate-50/50">
+                    <div className="flex justify-between text-[10px]">
+                        <span className="text-slate-400 uppercase">Subtotal Brutto</span>
                         <span>{formatCurrency(subTotal)}</span>
                     </div>
                     {totalDiscount > 0 && (
-                        <div className="flex justify-between text-xs text-orange-600 italic">
-                            <span className="text-slate-400 uppercase font-black tracking-widest">Total Potongan</span>
+                        <div className="flex justify-between text-[10px] text-orange-600 italic">
+                            <span className="text-slate-400 uppercase">Total Diskon</span>
                             <span>- {formatCurrency(totalDiscount)}</span>
                         </div>
                     )}
+                    
+                    <div className="border-y border-slate-200 py-1 flex justify-between text-[11px] bg-slate-100/50 px-1">
+                        <span className="text-slate-900 uppercase">DPP (DASAR PENGENAAN PAJAK)</span>
+                        <span>{formatCurrency(dpp)}</span>
+                    </div>
+
+                    {isPPN12 && (
+                        <div className="flex justify-between text-[9px] italic text-slate-500 px-1">
+                            <span>DPP NILAI LAIN (11/12)</span>
+                            <span>{formatCurrency(dppNilaiLain)}</span>
+                        </div>
+                    )}
+
                     {taxAmount > 0 && (
-                        <div className="flex justify-between text-xs text-indigo-600">
-                            <span className="text-slate-400 uppercase">PPN {taxRate}%</span>
+                        <div className="flex justify-between text-[10px] text-indigo-600">
+                            <span className="text-slate-400 uppercase">PPN {taxRate}% {isPPN12 ? "(NILAI LAIN)" : ""}</span>
                             <span>+ {formatCurrency(taxAmount)}</span>
                         </div>
                     )}
-                    <div className="border-t-2 border-slate-900 pt-2 flex justify-between text-lg text-primary">
-                        <span className="uppercase">Grand Total Netto</span>
+
+                    <div className="border-t border-slate-900 pt-1 flex justify-between text-xs text-slate-900 uppercase">
+                        <span>Total Faktur (NETTO)</span>
                         <span>{formatCurrency(grandTotal)}</span>
+                    </div>
+
+                    {totalCashback > 0 && (
+                        <div className="flex justify-between text-xs text-rose-600 border-t border-slate-300 pt-1">
+                            <span className="uppercase">TOTAL CASHBACK</span>
+                            <span>- {formatCurrency(totalCashback)}</span>
+                        </div>
+                    )}
+
+                    <div className="border-t-2 border-slate-900 mt-2 pt-2 flex justify-between text-lg text-primary font-black bg-white px-2 rounded-lg border-x shadow-sm">
+                        <span className="uppercase text-sm mt-1">YANG HARUS TF</span>
+                        <span>{formatCurrency(netTransfer)}</span>
                     </div>
                 </div>
             </div>
