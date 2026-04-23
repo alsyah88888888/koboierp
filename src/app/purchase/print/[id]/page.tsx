@@ -43,6 +43,7 @@ export default async function ReceiptPrintPage({ params }: { params: Promise<{ i
 
     return (
         <DocumentLayout
+            isContinuous={true}
             title="SURAT JALAN MASUK (LPB)"
             docNumber={receipt.formNumber}
             date={format(new Date(receipt.date || receipt.createdAt), "dd MMM yyyy")}
