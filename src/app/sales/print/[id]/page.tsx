@@ -33,63 +33,57 @@ export default async function InvoicePrintPage({ params }: { params: Promise<{ i
 
     return (
         <DocumentLayout
-            isA5={true}
-            title="Faktur Penjualan"
+            isContinuous={true}
+            title="FAKTUR PENJUALAN"
             docNumber={delivery.deliveryNumber}
-            date={format(new Date(delivery.createdAt), "dd MMM yyyy")}
+            date={format(new Date(delivery.date || delivery.createdAt), "dd MMM yyyy")}
             headerInfo={
-                <div className="flex flex-col gap-4">
-                    <div className="flex justify-between items-start gap-8 text-xs font-bold uppercase italic border-2 border-slate-100 p-4 rounded-xl bg-slate-50/20">
-                        <div className="flex-1 space-y-1">
-                            <span className="text-[9px] text-slate-400 tracking-widest not-italic block mb-1">DITUJUKAN KEPADA</span>
-                            <div className="text-slate-900 text-sm leading-tight font-black tabular-nums">{delivery.buyerName}</div>
+                <div className="flex flex-col gap-2">
+                    <div className="flex justify-between items-start gap-4 text-[10px] font-bold uppercase italic border border-slate-900 p-3 bg-slate-50/20">
+                        <div className="flex-1 space-y-0.5">
+                            <span className="text-[8px] text-slate-400 tracking-widest not-italic block">PEMBELI / TOKO:</span>
+                            <div className="text-slate-900 text-xs leading-tight font-black tabular-nums">{delivery.buyerName}</div>
                         </div>
-                        <div className="flex-[1.5] space-y-1 border-l-2 border-slate-200 pl-8">
-                            <span className="text-[9px] text-slate-400 tracking-widest not-italic block mb-1">ALAMAT PENGIRIMAN</span>
-                            <div className="text-slate-600 leading-relaxed font-semibold normal-case italic">{delivery.recipient}</div>
+                        <div className="flex-[1.5] space-y-0.5 border-l border-slate-300 pl-4">
+                            <span className="text-[8px] text-slate-400 tracking-widest not-italic block">ALAMAT PENGIRIMAN:</span>
+                            <div className="text-slate-600 leading-tight font-semibold normal-case italic text-[9px]">{delivery.recipient}</div>
                         </div>
                         {delivery.salesPerson && (
-                            <div className="flex-none space-y-1 border-l-2 border-slate-200 pl-8 text-center min-w-[60px]">
-                                <span className="text-[9px] text-slate-400 tracking-widest not-italic block mb-1">SALES</span>
-                                <div className="text-primary text-sm font-black italic">{delivery.salesPerson}</div>
+                            <div className="flex-none space-y-0.5 border-l border-slate-300 pl-4 text-center">
+                                <span className="text-[8px] text-slate-400 tracking-widest not-italic block">SALES</span>
+                                <div className="text-primary text-[10px] font-black italic">{delivery.salesPerson}</div>
                             </div>
                         )}
                     </div>
-                    {delivery.poNumber && (
-                        <div className="flex items-center gap-3 px-4 py-2 bg-slate-900 text-white rounded-lg w-fit">
-                            <span className="text-[8px] font-black tracking-[0.2em] opacity-60">NO. PO BUYER:</span>
-                            <span className="text-[11px] font-black">{delivery.poNumber}</span>
-                        </div>
-                    )}
                 </div>
             }
         >
             <table className="w-full border-collapse border border-slate-900">
                 <thead>
-                    <tr className="uppercase text-[10px] font-black tracking-widest bg-slate-50">
-                        <th className="border border-slate-900 p-2 text-center w-8">No</th>
-                        <th className="border border-slate-900 p-2 text-left w-32">Barcode</th>
-                        <th className="border border-slate-900 p-2 text-left">Nama Barang</th>
-                        <th className="border border-slate-900 p-2 text-center w-16">QTY</th>
-                        <th className="border border-slate-900 p-2 text-center w-20">SATUAN</th>
-                        <th className="border border-slate-900 p-2 text-right w-32">HARGA SATUAN</th>
-                        <th className="border border-slate-900 p-2 text-right w-40">TOTAL HARGA</th>
+                    <tr className="uppercase text-[9px] font-black tracking-widest bg-slate-50">
+                        <th className="border border-slate-900 p-1.5 text-center w-8">No</th>
+                        <th className="border border-slate-900 p-1.5 text-left w-24">Barcode</th>
+                        <th className="border border-slate-900 p-1.5 text-left">Nama Barang</th>
+                        <th className="border border-slate-900 p-1.5 text-center w-12">QTY</th>
+                        <th className="border border-slate-900 p-1.5 text-center w-16">SATUAN</th>
+                        <th className="border border-slate-900 p-1.5 text-right w-28">HARGA</th>
+                        <th className="border border-slate-900 p-1.5 text-right w-32">TOTAL</th>
                     </tr>
                 </thead>
-                <tbody className="text-[10px] font-bold text-slate-800">
+                <tbody className="text-[9px] font-bold text-slate-800">
                     {delivery.items.map((item: any, idx: number) => (
                         <tr key={idx}>
-                            <td className="border border-slate-900 p-2.5 text-center font-black">{idx + 1}</td>
-                            <td className="border border-slate-900 p-2.5 text-left font-mono tracking-tighter text-[9px]">{item.product.barcode || item.product.sku || "-"}</td>
-                            <td className="border border-slate-900 p-2.5 uppercase">{item.product.name}</td>
-                            <td className="border border-slate-900 p-2.5 text-center font-black">{formatNumber(item.quantity)}</td>
-                            <td className="border border-slate-900 p-2.5 text-center uppercase tracking-tighter">{(item.uom || item.product.uom || "-").replace(/KARTOON/gi, 'KARTON')}</td>
-                            <td className="border border-slate-900 p-2.5 text-right font-medium">{formatCurrency(Number(item.salesPrice))}</td>
-                            <td className="border border-slate-900 p-2.5 text-right font-black">{formatCurrency(Number(item.quantity) * Number(item.salesPrice))}</td>
+                            <td className="border border-slate-900 p-1.5 text-center font-black">{idx + 1}</td>
+                            <td className="border border-slate-900 p-1.5 text-left font-mono tracking-tighter text-[8px]">{item.product.barcode || item.product.sku || "-"}</td>
+                            <td className="border border-slate-900 p-1.5 uppercase truncate max-w-[150px]">{item.product.name}</td>
+                            <td className="border border-slate-900 p-1.5 text-center font-black">{formatNumber(item.quantity)}</td>
+                            <td className="border border-slate-900 p-1.5 text-center uppercase tracking-tighter">{(item.uom || item.product.uom || "-").replace(/KARTOON/gi, 'KARTON')}</td>
+                            <td className="border border-slate-900 p-1.5 text-right font-medium">{formatCurrency(Number(item.salesPrice))}</td>
+                            <td className="border border-slate-900 p-1.5 text-right font-black">{formatCurrency(Number(item.quantity) * Number(item.salesPrice))}</td>
                         </tr>
                     ))}
-                    {[...Array(Math.max(0, 5 - delivery.items.length))].map((_, i) => (
-                        <tr key={`empty-${i}`} className="h-8">
+                    {[...Array(Math.max(0, 4 - delivery.items.length))].map((_, i) => (
+                        <tr key={`empty-${i}`} className="h-6">
                             <td className="border border-slate-900"></td><td className="border border-slate-900"></td>
                             <td className="border border-slate-900"></td><td className="border border-slate-900"></td>
                             <td className="border border-slate-900"></td><td className="border border-slate-900"></td>
@@ -99,31 +93,61 @@ export default async function InvoicePrintPage({ params }: { params: Promise<{ i
                 </tbody>
             </table>
 
-            <div className="flex justify-end mt-4">
-                <div className="w-80 space-y-2 border border-slate-900 p-3 font-black">
-                    <div className="flex justify-between text-xs pb-2 border-b-2 border-slate-200">
-                        <span className="text-slate-400 uppercase">JUMLAH QTY</span>
-                        <span className="tabular-nums">{formatNumber(totalQty)}</span>
+            <div className="grid grid-cols-2 mt-2 gap-4">
+                <div className="border border-slate-900 p-2 flex flex-col justify-between bg-slate-50/20">
+                    <div>
+                        <h4 className="text-[8px] font-black uppercase mb-1 border-b border-slate-200">Keterangan / Catatan</h4>
+                        <p className="text-[9px] italic text-slate-600 leading-tight">
+                            Barang yang sudah dibeli tidak dapat ditukar/dikembalikan kecuali ada perjanjian sebelumnya.
+                        </p>
                     </div>
-                    <div className="flex justify-between text-xs pt-1">
-                        <span className="text-slate-400 uppercase">Total Brutto</span>
+                    {delivery.poNumber && (
+                        <div className="mt-2 text-[9px] font-black">
+                            <span className="text-slate-400 uppercase tracking-tighter">PO BUYER: </span>
+                            <span className="text-slate-900">#{delivery.poNumber}</span>
+                        </div>
+                    )}
+                </div>
+
+                <div className="space-y-1 border border-slate-900 p-2 font-black bg-slate-50/50">
+                    <div className="flex justify-between text-[9px]">
+                        <span className="text-slate-400 uppercase">Subtotal Brutto</span>
                         <span>{formatCurrency(subTotal)}</span>
                     </div>
                     {totalDiscount > 0 && (
-                        <div className="flex justify-between text-xs text-orange-600 italic">
-                            <span className="text-slate-400 uppercase font-black tracking-widest">Total Potongan</span>
+                        <div className="flex justify-between text-[9px] text-orange-600 italic">
+                            <span className="text-slate-400 uppercase">Potongan</span>
                             <span>- {formatCurrency(totalDiscount)}</span>
                         </div>
                     )}
+                    
+                    <div className="border-y border-slate-200 py-0.5 flex justify-between text-[10px] bg-slate-100/50 px-1">
+                        <span className="text-slate-900 uppercase">DPP</span>
+                        <span>{formatCurrency(dpp)}</span>
+                    </div>
+
+                    {isPPN12 && (
+                        <div className="flex justify-between text-[8px] italic text-slate-500 px-1">
+                            <span>DPP NILAI LAIN (11/12)</span>
+                            <span>{formatCurrency(dppNilaiLain)}</span>
+                        </div>
+                    )}
+
                     {taxAmount > 0 && (
-                        <div className="flex justify-between text-xs text-indigo-600">
-                            <span className="text-slate-400 uppercase">PPN {taxRate}%</span>
+                        <div className="flex justify-between text-[9px] text-indigo-600">
+                            <span className="text-slate-400 uppercase">PPN {taxRate}% {isPPN12 ? "(N. LAIN)" : ""}</span>
                             <span>+ {formatCurrency(taxAmount)}</span>
                         </div>
                     )}
-                    <div className="border-t-2 border-slate-900 pt-2 flex justify-between text-lg text-primary">
-                        <span className="uppercase">Grand Total Netto</span>
+
+                    <div className="border-t border-slate-900 pt-1 flex justify-between text-xs text-slate-900 uppercase">
+                        <span>Total Tagihan (NETTO)</span>
                         <span>{formatCurrency(grandTotal)}</span>
+                    </div>
+
+                    <div className="border-t-2 border-slate-900 mt-1 pt-1 flex justify-between text-sm text-primary font-black bg-white px-2 rounded border-x shadow-sm">
+                        <span className="uppercase text-[10px] mt-0.5">TOTAL NETTO PEMBAYARAN</span>
+                        <span>{formatCurrency(netTransfer)}</span>
                     </div>
                 </div>
             </div>
