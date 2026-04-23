@@ -164,7 +164,7 @@ export default async function PurchaseInvoicePrintPage({ params }: { params: Pro
                     )}
 
                     <div className="border-t-2 border-slate-900 mt-2 pt-2 flex justify-between text-lg text-primary font-black bg-white px-2 rounded-lg border-x shadow-sm">
-                        <span className="uppercase text-sm mt-1">YANG HARUS TF</span>
+                        <span className="uppercase text-sm mt-1">TOTAL NETTO PEMBAYARAN</span>
                         <span>{formatCurrency(netTransfer)}</span>
                     </div>
                 </div>
