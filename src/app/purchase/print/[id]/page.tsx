@@ -147,7 +147,7 @@ export default async function ReceiptPrintPage({ params }: { params: Promise<{ i
                         </div>
                     )}
                     <div className="border-t-2 border-slate-900 mt-2 pt-2 flex justify-between items-center bg-white px-2 py-1 shadow-sm border-x">
-                        <span className="text-xs font-black uppercase text-primary">YANG HARUS TF</span>
+                        <span className="text-xs font-black uppercase text-primary">TOTAL NETTO PEMBAYARAN</span>
                         <span className="text-xl font-black text-primary">{formatCurrency(netTransfer)}</span>
                     </div>
                 </div>
