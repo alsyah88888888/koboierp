@@ -230,6 +230,7 @@ model GoodsReceipt {
   isVoid           Boolean                    @default(false)
   voidReason       String?
   notes            String?                    @default("")
+  cashbacks        Json?                      @default("[]")
   createdBy        User?                      @relation("GRCreatedBy", fields: [createdById], references: [id])
   warehouse        Warehouse                  @relation(fields: [warehouseId], references: [id])
   items            GoodsReceiptItem[]

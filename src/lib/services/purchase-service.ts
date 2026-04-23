@@ -167,6 +167,7 @@ export async function createGoodsReceiptService(data: any, userId: string) {
                 taxRate: taxRatePercent,
                 taxAmount: taxAmount,
                 grandTotal: grandTotal,
+                cashbacks: data.cashbacks || [],
                 isVerified: false,
                 paymentStatus: "PENDING",
                 items: {
@@ -213,10 +214,10 @@ export async function createGoodsReceiptService(data: any, userId: string) {
             });
         }
 
-        revalidatePath("/purchase");
-        revalidatePath("/warehouse");
-        revalidatePath("/finance");
-        revalidatePath("/");
+        revalidatePath("/purchase", "layout");
+        revalidatePath("/warehouse", "layout");
+        revalidatePath("/finance", "layout");
+        revalidatePath("/", "layout");
 
         return { success: true, receiptNumber };
     }, { timeout: 30000 });
@@ -300,6 +301,7 @@ export async function updateGoodsReceiptService(id: string, data: any, userId: s
                 taxRate: taxRatePercent,
                 taxAmount: taxAmount,
                 grandTotal: grandTotal,
+                cashbacks: data.cashbacks || [],
                 items: {
                     create: data.items.map((item: any) => ({
                         productId: item.productId,
@@ -346,12 +348,12 @@ export async function updateGoodsReceiptService(id: string, data: any, userId: s
             }
         }
 
-        revalidatePath("/purchase");
-        revalidatePath("/warehouse");
-        revalidatePath("/finance");
-        revalidatePath("/");
+        revalidatePath("/purchase", "layout");
+        revalidatePath("/warehouse", "layout");
+        revalidatePath("/finance", "layout");
+        revalidatePath("/", "layout");
 
-        return { success: true, receiptNumber: currentReceiptNumber };
+        return { success: true };
     }, { timeout: 30000 });
 }
 
