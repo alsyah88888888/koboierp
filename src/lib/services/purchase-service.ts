@@ -353,7 +353,7 @@ export async function updateGoodsReceiptService(id: string, data: any, userId: s
         revalidatePath("/finance", "layout");
         revalidatePath("/", "layout");
 
-        return { success: true };
+        return { success: true, receiptNumber: currentReceiptNumber };
     }, { timeout: 30000 });
 }
 
