@@ -161,7 +161,7 @@ export async function createGoodsReceiptService(data: any, userId: string) {
                 salesPerson: data.salesPerson,
                 notes: updatedNotes,
                 date: txDate,
-                createdById: userId,
+                createdBy: userId ? { connect: { id: userId } } : undefined,
                 subtotal: subtotal,
                 totalDiscount: totalDiscountNominal,
                 taxRate: taxRatePercent,
