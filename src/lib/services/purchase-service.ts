@@ -134,10 +134,9 @@ export async function createGoodsReceiptService(data: any, userId: string) {
                 receiptNumber,
                 formNumber: data.formNumber?.trim() || null,
                 receivedFrom: data.receivedFrom || "UMUM",
-                purchaseOrderId: data.purchaseOrderId,
-                warehouseId: data.warehouseId,
+                warehouse: { connect: { id: data.warehouseId } },
                 salesPerson: data.salesPerson,
-                notes: data.notes,
+                notes: updatedNotes,
                 date: txDate,
                 createdById: userId,
                 isVerified: false, // Starts as draft for checking
@@ -279,10 +278,9 @@ export async function updateGoodsReceiptService(id: string, data: any, userId: s
             data: {
                 formNumber: data.formNumber?.trim() || null,
                 receivedFrom: data.receivedFrom,
-                purchaseOrderId: data.purchaseOrderId,
-                warehouseId: data.warehouseId,
+                warehouse: { connect: { id: data.warehouseId } },
                 salesPerson: data.salesPerson,
-                notes: data.notes,
+                notes: updatedNotes,
                 date: txDate,
                 items: {
                     create: data.items.map((item: any) => ({
