@@ -158,7 +158,7 @@ export async function createGoodsReceiptService(data: any, userId: string) {
         let grossAmount = 0;
         let totalItemDiscounts = 0;
         data.items.forEach((i: any) => {
-            const lineGross = i.quantity * i.purchasePrice;
+            const lineGross = (Number(i.quantity) || 0) * (Number(i.purchasePrice) || 0);
             const lineDiscount = Number(i.discount || 0);
             grossAmount += lineGross;
             totalItemDiscounts += lineDiscount;
@@ -168,9 +168,18 @@ export async function createGoodsReceiptService(data: any, userId: string) {
         const totalDiscountNominal = Math.round(Number(data.totalDiscount) || 0);
         const taxRatePercent = Number(data.taxRate) || 0;
         const dpp = subtotal - totalDiscountNominal;
-        const dppNilaiLain = taxRatePercent > 0 ? Math.round(dpp * 0.916666666666667) : 0;
-        const taxAmount = taxRatePercent > 0 ? Math.round(dppNilaiLain * 0.12) : 0;
+        
+        // Dynamic PPN Logic: 12% uses 11/12 Nilai Lain, 11% uses standard DPP
+        const dppNilaiLain = taxRatePercent === 12 ? Math.round(dpp * (11 / 12)) : dpp;
+        const taxAmount = taxRatePercent > 0 ? Math.round(dppNilaiLain * (taxRatePercent / 100)) : 0;
         const grandTotal = Math.round(dpp + taxAmount);
+
+        // Store cashback summary in notes if exists
+        let updatedNotes = data.notes || "";
+        if (data.cashbacks && Array.isArray(data.cashbacks)) {
+            const cbSummary = data.cashbacks.map((cb: any) => `${cb.label}: ${cb.rate}%`).join(", ");
+            updatedNotes = updatedNotes ? `${updatedNotes} | CB: ${cbSummary}` : `CB: ${cbSummary}`;
+        }
 
         await tx.goodsReceipt.update({
             where: { id: receipt.id },
@@ -180,6 +189,7 @@ export async function createGoodsReceiptService(data: any, userId: string) {
                 taxRate: taxRatePercent,
                 taxAmount: taxAmount,
                 grandTotal: grandTotal,
+                notes: updatedNotes,
                 paymentStatus: "PENDING"
             }
         });
@@ -237,27 +247,25 @@ export async function updateGoodsReceiptService(id: string, data: any, userId: s
 
         if (!oldReceipt) throw new Error("Receipt not found");
 
-        // 1. Revert Old Stock (Only if it was already verified)
-        if (oldReceipt.isVerified) {
-            for (const item of oldReceipt.items) {
-                const vendorName = oldReceipt.receivedFrom || "UMUM";
-                await tx.stock.upsert({
-                    where: {
-                        productId_warehouseId_vendorName: {
-                            productId: item.productId,
-                            warehouseId: oldReceipt.warehouseId,
-                            vendorName: vendorName
-                        }
-                    },
-                    create: {
+        // 1. Revert Old Stock (Always needed for Option A update)
+        for (const item of oldReceipt.items) {
+            const vendorName = oldReceipt.receivedFrom || "UMUM";
+            await tx.stock.upsert({
+                where: {
+                    productId_warehouseId_vendorName: {
                         productId: item.productId,
                         warehouseId: oldReceipt.warehouseId,
-                        vendorName: vendorName,
-                        quantity: -item.quantity
-                    },
-                    update: { quantity: { decrement: item.quantity } }
-                });
-            }
+                        vendorName: vendorName
+                    }
+                },
+                create: {
+                    productId: item.productId,
+                    warehouseId: oldReceipt.warehouseId,
+                    vendorName: vendorName,
+                    quantity: -item.quantity
+                },
+                update: { quantity: { decrement: item.quantity } }
+            });
         }
 
         const currentReceiptNumber = oldReceipt.receiptNumber;
@@ -293,7 +301,7 @@ export async function updateGoodsReceiptService(id: string, data: any, userId: s
         let grossAmount = 0;
         let totalItemDiscounts = 0;
         data.items.forEach((i: any) => {
-            const lineGross = i.quantity * i.purchasePrice;
+            const lineGross = (Number(i.quantity) || 0) * (Number(i.purchasePrice) || 0);
             const lineDiscount = Number(i.discount || 0);
             grossAmount += lineGross;
             totalItemDiscounts += lineDiscount;
@@ -303,9 +311,16 @@ export async function updateGoodsReceiptService(id: string, data: any, userId: s
         const totalDiscountNominal = Math.round(Number(data.totalDiscount) || 0);
         const taxRatePercent = Number(data.taxRate) || 0;
         const dpp = subtotal - totalDiscountNominal;
-        const dppNilaiLain = taxRatePercent > 0 ? Math.round(dpp * 0.916666666666667) : 0;
-        const taxAmount = taxRatePercent > 0 ? Math.round(dppNilaiLain * 0.12) : 0;
+        const dppNilaiLain = taxRatePercent === 12 ? Math.round(dpp * (11 / 12)) : dpp;
+        const taxAmount = taxRatePercent > 0 ? Math.round(dppNilaiLain * (taxRatePercent / 100)) : 0;
         const grandTotal = Math.round(dpp + taxAmount);
+
+        // Store cashback summary in notes if exists
+        let updatedNotes = data.notes || "";
+        if (data.cashbacks && Array.isArray(data.cashbacks)) {
+            const cbSummary = data.cashbacks.map((cb: any) => `${cb.label}: ${cb.rate}%`).join(", ");
+            updatedNotes = updatedNotes ? `${updatedNotes} | CB: ${cbSummary}` : `CB: ${cbSummary}`;
+        }
 
         await tx.goodsReceipt.update({
             where: { id },
@@ -314,12 +329,13 @@ export async function updateGoodsReceiptService(id: string, data: any, userId: s
                 totalDiscount: totalDiscountNominal,
                 taxRate: taxRatePercent,
                 taxAmount: taxAmount,
-                grandTotal: grandTotal
+                grandTotal: grandTotal,
+                notes: updatedNotes
             }
         });
 
-        // 4. Apply New Stock (Only if it was already verified)
-        if (oldReceipt.isVerified) {
+        // 4. Apply New Stock (Always for Option A update)
+        if (true) {
             for (const item of data.items) {
                 const vendorName = data.receivedFrom || "UMUM";
                 await tx.stock.upsert({

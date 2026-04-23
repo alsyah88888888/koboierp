@@ -42,6 +42,7 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState("");
     const [result, setResult] = useState<any>(null);
+    const [notes, setNotes] = useState(initialData?.notes || "");
 
     // Cashback (CB) state — each CB has a label and % rate applied to DPP
     const [cashbacks, setCashbacks] = useState<{ label: string; rate: string }[]>(
@@ -193,11 +194,13 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
                 date: new Date(date),
                 warehouseId,
                 salesPerson,
-                hasTaxOrDisc: showDiscount || Number(taxRate) > 0, // Explicit flag for prefixing if tax or disc exists
+                notes,
+                hasTaxOrDisc: showDiscount || Number(taxRate) > 0,
                 taxInvoiceNumber: hasTaxInvoice ? taxInvoiceNumber : null,
                 taxInvoiceDate: (hasTaxInvoice && taxInvoiceDate) ? new Date(taxInvoiceDate) : null,
                 totalDiscount: finalDiscountNominal,
                 taxRate: Number(taxRate),
+                cashbacks: cashbacks.filter(cb => parseIndoNumber(cb.rate) > 0),
                 items: items.map(item => ({
                     productId: item.productId,
                     quantity: parseIndoNumber(item.quantity),
@@ -372,6 +375,15 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
                                             className={cn("w-28 bg-slate-50 border border-slate-200 px-2 py-1.5 rounded-lg text-[10px] font-bold outline-none", !hasTaxInvoice && "opacity-30 pointer-events-none")}
                                         />
                                     </div>
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Catatan Tambahan</label>
+                                    <textarea
+                                        value={notes}
+                                        onChange={e => setNotes(e.target.value)}
+                                        placeholder="Keterangan..."
+                                        className="w-full bg-slate-50 border border-slate-200 px-3 py-1 rounded-lg text-[11px] font-bold outline-none focus:border-primary resize-none h-11"
+                                    />
                                 </div>
                             </div>
                         </div>
