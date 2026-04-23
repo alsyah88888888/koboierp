@@ -31,6 +31,12 @@ export default async function InvoicePrintPage({ params }: { params: Promise<{ i
     const taxRate = Number(delivery.taxRate || 0);
     const grandTotal = Math.round(subTotal - totalDiscount + taxAmount);
 
+    // Tax and Financial Logic
+    const dpp = subTotal - totalDiscount;
+    const isPPN12 = taxRate === 12;
+    const dppNilaiLain = isPPN12 ? Math.round(dpp * (11 / 12)) : dpp;
+    const netTransfer = grandTotal; 
+
     return (
         <DocumentLayout
             isContinuous={true}
