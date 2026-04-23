@@ -229,6 +229,7 @@ model GoodsReceipt {
   createdById      String?
   isVoid           Boolean                    @default(false)
   voidReason       String?
+  notes            String?                    @default("")
   createdBy        User?                      @relation("GRCreatedBy", fields: [createdById], references: [id])
   warehouse        Warehouse                  @relation(fields: [warehouseId], references: [id])
   items            GoodsReceiptItem[]
