@@ -31,7 +31,7 @@ export async function createPurchaseRequestService(data: any, userId: string) {
             data: {
                 number,
                 date: txDate,
-                requestedById: userId,
+                requestedBy: { connect: { id: userId } },
                 notes: data.notes,
                 category: data.category,
                 salesPerson: data.salesPerson,
@@ -391,7 +391,7 @@ export async function createPurchaseReturnService(data: any, userId: string) {
                 returnNumber,
                 receiptId: data.receiptId,
                 notes: data.notes,
-                createdById: userId,
+                createdBy: userId ? { connect: { id: userId } } : undefined,
                 items: {
                     create: data.items.map((i: any) => ({
                         productId: i.productId,
