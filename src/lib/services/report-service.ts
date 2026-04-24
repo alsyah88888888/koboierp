@@ -21,14 +21,16 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
             orderBy: { date: 'asc' }
         });
 
-        // 2. Build Inventory Pool per product (FIFO queue)
+        // 2. Build Inventory Pool per product and vendor (Vendor-Aware FIFO)
         type Batch = { qty: number; price: number; date: Date | null; grNumber: string; supplier: string };
         const pool = new Map<string, Batch[]>();
 
         for (const gr of receipts) {
             for (const item of gr.items) {
-                if (!pool.has(item.productId)) pool.set(item.productId, []);
-                pool.get(item.productId)!.push({
+                // Key is ProductId + VendorName to ensure we match sales to the correct source
+                const key = `${item.productId}_${gr.receivedFrom || "UMUM"}`;
+                if (!pool.has(key)) pool.set(key, []);
+                pool.get(key)!.push({
                     qty     : item.quantity,
                     price   : Number(item.purchasePrice),
                     date    : gr.date,
@@ -47,7 +49,7 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
             orderBy: { date: 'asc' }
         });
 
-        // Fetch SO numbers separately (Prisma type doesn't expose 'order' include directly)
+        // Fetch SO numbers separately
         const orderIds = deliveries.map((d: any) => d.orderId).filter(Boolean) as string[];
         const salesOrders = orderIds.length > 0
             ? await (prisma as any).salesOrder.findMany({
@@ -59,23 +61,25 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
 
         const report: Record<string, any>[] = [];
 
-        // 4. FIFO Pairing: match each sales item to purchase batches
+        // 4. Vendor-Aware FIFO Pairing
         for (const sd of deliveries) {
             for (const sdItem of sd.items) {
-                const productPool = pool.get(sdItem.productId) ?? [];
+                // Match based on both Product and the Vendor selected in the Sales UI
+                const vendorKey = `${sdItem.productId}_${sdItem.vendorName || "UMUM"}`;
+                const productPool = pool.get(vendorKey) ?? [];
                 let remaining = sdItem.quantity;
 
                 while (remaining > 0) {
-                    // Skip exhausted batches
+                    // Skip exhausted batches in this vendor's pool
                     while (productPool.length > 0 && productPool[0].qty <= 0) productPool.shift();
 
                     if (productPool.length === 0) {
-                        // No batch available — record as unbatched row
+                        // Deficit or Vendor mismatch — record as unbatched row
                         const sellPrice = Number(sdItem.salesPrice || 0);
                         report.push({
                             'Tgl Beli'            : '-',
                             'No. GR (Batch Beli)' : '-',
-                            'Supplier'            : '-',
+                            'Supplier'            : sdItem.vendorName || '-',
                             'HPP Per Unit (Rp)'   : 0,
                             'Tgl Jual'            : new Date(sd.date).toLocaleDateString('id-ID'),
                             'No. SJ'              : sd.deliveryNumber,
@@ -89,7 +93,7 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
                             'Profit Per Unit (Rp)': 0,
                             'Total Profit (Rp)'   : 0,
                             'Margin %'            : '0.0%',
-                            'Status'              : 'TANPA BATCH'
+                            'Status'              : `STOK TIDAK DITEMUKAN (${sdItem.vendorName})`
                         });
                         remaining = 0;
                         break;
