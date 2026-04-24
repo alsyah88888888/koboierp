@@ -1,9 +1,9 @@
 import { getPrisma } from "@/lib/prisma";
 
 /**
- * FIFO TRACEABILITY SERVICE
- * Matches every sales item to its original purchase batch (FIFO)
- * and calculates the margin for each unit sold.
+ * FIFO TRACEABILITY SERVICE — v2 (Lot/Batch System)
+ * For sales with LotAllocations: uses hppAtTime for 100% accurate HPP.
+ * For historical sales without allocations: falls back to FIFO assumption.
  */
 export async function getProductTraceabilityService(month?: number, year?: number) {
     const prisma = getPrisma();
@@ -14,44 +14,21 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
     const endDate = new Date(filterYear, filterMonth, 0, 23, 59, 59);
 
     try {
-        // 1. Fetch ALL Goods Receipts up to end of period to build FIFO Purchase Pool
-        const receipts = await prisma.goodsReceipt.findMany({
-            where: { isVoid: false, date: { lte: endDate } },
-            include: { items: { include: { product: { select: { sku: true, name: true, uom: true } } } } },
-            orderBy: { date: 'asc' }
-        });
-
-        // 2. Build Inventory Pool per product and vendor (Vendor-Aware FIFO)
-        type Batch = { qty: number; price: number; date: Date | null; grNumber: string; supplier: string };
-        const pool = new Map<string, Batch[]>();
-
-        for (const gr of receipts) {
-            for (const item of gr.items) {
-                // Normalize supplier name: trim spaces and lowercase for reliable matching
-                const supplierName = (gr.receivedFrom || "UMUM").trim().toLowerCase();
-                const key = `${item.productId}_${supplierName}`;
-                
-                if (!pool.has(key)) pool.set(key, []);
-                pool.get(key)!.push({
-                    qty     : item.quantity,
-                    price   : Number(item.purchasePrice),
-                    date    : gr.date,
-                    grNumber: gr.receiptNumber,
-                    supplier: gr.receivedFrom
-                });
-            }
-        }
-
-        // 3. Fetch Sales Deliveries in target period
+        // ── STEP 1: Fetch sales deliveries in period ──────────────────────
         const deliveries = await prisma.salesDelivery.findMany({
             where: { isVoid: false, date: { gte: startDate, lte: endDate } },
             include: {
-                items: { include: { product: { select: { sku: true, name: true, uom: true } } } }
+                items: {
+                    include: {
+                        product: { select: { sku: true, name: true, uom: true } },
+                        lotAllocations: { include: { lot: true } }
+                    }
+                }
             },
             orderBy: { date: 'asc' }
         });
 
-        // Fetch SO numbers separately
+        // Fetch SO numbers
         const orderIds = deliveries.map((d: any) => d.orderId).filter(Boolean) as string[];
         const salesOrders = orderIds.length > 0
             ? await (prisma as any).salesOrder.findMany({
@@ -63,76 +40,99 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
 
         const report: Record<string, any>[] = [];
 
-        // 4. Vendor-Aware FIFO Pairing
+        // ── STEP 2: Process each delivery item ───────────────────────────
         for (const sd of deliveries) {
             for (const sdItem of sd.items) {
-                // Normalize sale vendor name for matching
-                const saleVendor = (sdItem.vendorName || "UMUM").trim().toLowerCase();
-                const vendorKey = `${sdItem.productId}_${saleVendor}`;
-                const productPool = pool.get(vendorKey) ?? [];
-                let remaining = sdItem.quantity;
+                const soNumber = orderNumberMap.get((sd as any).orderId ?? '') ?? (sd as any).poNumber ?? '-';
+                const buyer    = sd.buyerName || sd.recipient;
+                const tglJual  = new Date(sd.date).toLocaleDateString('id-ID');
+                const noSJ     = sd.deliveryNumber;
+                const sku      = sdItem.product.sku;
+                const nama     = sdItem.product.name;
+                const satuan   = sdItem.product.uom || 'PCS';
+                const sellPrice = Number(sdItem.salesPrice || 0);
 
-                while (remaining > 0) {
-                    // Skip exhausted batches in this vendor's pool
-                    while (productPool.length > 0 && productPool[0].qty <= 0) productPool.shift();
+                if (sdItem.lotAllocations && sdItem.lotAllocations.length > 0) {
+                    // ✅ PATH A: Lot-allocated — 100% AKURAT
+                    for (const alloc of sdItem.lotAllocations) {
+                        const hpp         = Number(alloc.hppAtTime);
+                        const profitUnit  = sellPrice - hpp;
+                        const totalProfit = profitUnit * alloc.qty;
+                        const marginPct   = sellPrice > 0
+                            ? Math.round(((sellPrice - hpp) / sellPrice) * 1000) / 10
+                            : 0;
 
-                    if (productPool.length === 0) {
-                        // Deficit or Vendor mismatch — record as unbatched row
-                        const sellPrice = Number(sdItem.salesPrice || 0);
+                        report.push({
+                            'Tgl Beli'            : alloc.lot.grDate ? new Date(alloc.lot.grDate).toLocaleDateString('id-ID') : '-',
+                            'No. GR (Batch Beli)' : alloc.lot.grNumber,
+                            'No. Lot'             : alloc.lot.lotNumber,
+                            'Supplier'            : alloc.lot.supplierName,
+                            'HPP Per Unit (Rp)'   : hpp,
+                            'Tgl Jual'            : tglJual,
+                            'No. SJ'              : noSJ,
+                            'No. SO'              : soNumber,
+                            'Buyer'               : buyer,
+                            'SKU'                 : sku,
+                            'Nama Barang'         : nama,
+                            'Satuan'              : satuan,
+                            'QTY'                 : alloc.qty,
+                            'Harga Jual Per Unit (Rp)': sellPrice,
+                            'Profit Per Unit (Rp)': Math.round(profitUnit),
+                            'Total Profit (Rp)'   : Math.round(totalProfit),
+                            'Margin %'            : `${marginPct.toFixed(1)}%`,
+                            'Status'              : 'TERJUAL (LOT)'
+                        });
+                    }
+
+                    // Handle unallocated qty within this item (edge case)
+                    const allocatedQty = sdItem.lotAllocations.reduce((s: number, a: any) => s + a.qty, 0);
+                    const unallocated  = sdItem.quantity - allocatedQty;
+                    if (unallocated > 0) {
                         report.push({
                             'Tgl Beli'            : '-',
                             'No. GR (Batch Beli)' : '-',
+                            'No. Lot'             : '-',
                             'Supplier'            : sdItem.vendorName || '-',
                             'HPP Per Unit (Rp)'   : 0,
-                            'Tgl Jual'            : new Date(sd.date).toLocaleDateString('id-ID'),
-                            'No. SJ'              : sd.deliveryNumber,
-                            'No. SO'              : orderNumberMap.get((sd as any).orderId ?? '') ?? (sd as any).poNumber ?? '-',
-                            'Buyer'               : sd.buyerName || sd.recipient,
-                            'SKU'                 : sdItem.product.sku,
-                            'Nama Barang'         : sdItem.product.name,
-                            'Satuan'              : sdItem.product.uom || 'PCS',
-                            'QTY'                 : remaining,
+                            'Tgl Jual'            : tglJual,
+                            'No. SJ'              : noSJ,
+                            'No. SO'              : soNumber,
+                            'Buyer'               : buyer,
+                            'SKU'                 : sku,
+                            'Nama Barang'         : nama,
+                            'Satuan'              : satuan,
+                            'QTY'                 : unallocated,
                             'Harga Jual Per Unit (Rp)': sellPrice,
                             'Profit Per Unit (Rp)': 0,
                             'Total Profit (Rp)'   : 0,
                             'Margin %'            : '0.0%',
-                            'Status'              : `STOK TIDAK DITEMUKAN (${sdItem.vendorName})`
+                            'Status'              : 'STOK HISTORIS (BELUM LOT)'
                         });
-                        remaining = 0;
-                        break;
                     }
 
-                    const batch = productPool[0];
-                    const matched      = Math.min(remaining, batch.qty);
-                    const sellPrice    = Number(sdItem.salesPrice || 0);
-                    const profitUnit   = sellPrice - batch.price;
-                    const totalProfit  = profitUnit * matched;
-                    const marginPct    = sellPrice > 0
-                        ? Math.round(((sellPrice - batch.price) / sellPrice) * 1000) / 10
-                        : 0;
-
+                } else {
+                    // ⚠️ PATH B: No lot allocation (data historis sebelum implementasi)
+                    // Tampilkan baris dengan flag historis, HPP = 0 supaya tidak menyesatkan
                     report.push({
-                        'Tgl Beli'            : batch.date ? new Date(batch.date).toLocaleDateString('id-ID') : '-',
-                        'No. GR (Batch Beli)' : batch.grNumber,
-                        'Supplier'            : batch.supplier,
-                        'HPP Per Unit (Rp)'   : batch.price,
-                        'Tgl Jual'            : new Date(sd.date).toLocaleDateString('id-ID'),
-                        'No. SJ'              : sd.deliveryNumber,
-                        'No. SO'              : orderNumberMap.get((sd as any).orderId ?? '') ?? (sd as any).poNumber ?? '-',
-                        'Buyer'               : sd.buyerName || sd.recipient,
-                        'SKU'                 : sdItem.product.sku,
-                        'Nama Barang'         : sdItem.product.name,
-                        'Satuan'              : sdItem.product.uom || 'PCS',
-                        'QTY'                 : matched,
+                        'Tgl Beli'            : '-',
+                        'No. GR (Batch Beli)' : '-',
+                        'No. Lot'             : '-',
+                        'Supplier'            : sdItem.vendorName || '-',
+                        'HPP Per Unit (Rp)'   : 0,
+                        'Tgl Jual'            : tglJual,
+                        'No. SJ'              : noSJ,
+                        'No. SO'              : soNumber,
+                        'Buyer'               : buyer,
+                        'SKU'                 : sku,
+                        'Nama Barang'         : nama,
+                        'Satuan'              : satuan,
+                        'QTY'                 : sdItem.quantity,
                         'Harga Jual Per Unit (Rp)': sellPrice,
-                        'Profit Per Unit (Rp)': Math.round(profitUnit),
-                        'Total Profit (Rp)'   : Math.round(totalProfit),
-                        'Margin %'            : `${marginPct.toFixed(1)}%`,
-                        'Status'              : 'TERJUAL'
+                        'Profit Per Unit (Rp)': 0,
+                        'Total Profit (Rp)'   : 0,
+                        'Margin %'            : '0.0%',
+                        'Status'              : 'DATA HISTORIS (PRE-LOT)'
                     });
-
-                    batch.qty -= matched;
-                    remaining -= matched;
                 }
             }
         }
@@ -144,6 +144,7 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
         throw new Error(`Traceability Error: ${error.message}`);
     }
 }
+
 
 /**
  * PURCHASE RETURNS DETAIL REPORT

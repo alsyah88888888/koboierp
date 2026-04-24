@@ -183,6 +183,55 @@ export async function createSalesDeliveryService(data: any, userId: string) {
             });
         }
 
+        // ─── FASE 2b: FIFO Lot Allocation ─────────────────────────────────
+        // Fetch the SalesDeliveryItems we just created (with their IDs)
+        const createdDelivery = await tx.salesDelivery.findUnique({
+            where: { id: delivery.id },
+            include: { items: true }
+        });
+
+        if (createdDelivery) {
+            for (const sdItem of createdDelivery.items) {
+                let remaining = sdItem.quantity;
+
+                // Get available lots for this product, FIFO order (oldest first)
+                const availableLots = await tx.productLot.findMany({
+                    where: {
+                        productId: sdItem.productId,
+                        remainingQty: { gt: 0 },
+                        isVoided: false
+                    },
+                    orderBy: { grDate: 'asc' }
+                });
+
+                for (const lot of availableLots) {
+                    if (remaining <= 0) break;
+                    const consume = Math.min(remaining, lot.remainingQty);
+
+                    // Create LotAllocation record
+                    await tx.lotAllocation.create({
+                        data: {
+                            lotId: lot.id,
+                            sdItemId: sdItem.id,
+                            qty: consume,
+                            hppAtTime: lot.purchasePrice
+                        }
+                    });
+
+                    // Decrement lot remaining qty
+                    await tx.productLot.update({
+                        where: { id: lot.id },
+                        data: { remainingQty: { decrement: consume } }
+                    });
+
+                    remaining -= consume;
+                }
+                // If remaining > 0: unallocated qty (stok beli belum ada / historis)
+                // This is safe — report-service will still handle it gracefully
+            }
+        }
+        // ─────────────────────────────────────────────────────────────────
+
         revalidatePath("/sales");
         revalidatePath("/warehouse");
         revalidatePath("/finance");
@@ -451,6 +500,26 @@ export async function voidSalesDeliveryService(id: string, reason: string) {
 
         if (!delivery) throw new Error("Delivery not found");
         if (delivery.isVoid) throw new Error("Delivery is already voided");
+
+        // ─── FASE 2d: Restore Lot allocations on Void ─────────────────────
+        const deliveryWithItems = await tx.salesDelivery.findUnique({
+            where: { id },
+            include: { items: { include: { lotAllocations: true } } }
+        });
+        if (deliveryWithItems) {
+            for (const sdItem of deliveryWithItems.items) {
+                for (const alloc of sdItem.lotAllocations) {
+                    // Restore remainingQty back to the lot
+                    await tx.productLot.update({
+                        where: { id: alloc.lotId },
+                        data: { remainingQty: { increment: alloc.qty } }
+                    });
+                    // Delete the allocation record
+                    await tx.lotAllocation.delete({ where: { id: alloc.id } });
+                }
+            }
+        }
+        // ─────────────────────────────────────────────────────────────────
 
         for (const item of delivery.items) {
             // Restore Stock

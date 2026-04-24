@@ -253,6 +253,7 @@ model GoodsReceiptItem {
   uom           String?
   product       Product      @relation(fields: [productId], references: [id])
   receipt       GoodsReceipt @relation(fields: [receiptId], references: [id])
+  lot           ProductLot?
 }
 
 model GoodsReceiptVerification {
@@ -390,6 +391,7 @@ model SalesDeliveryItem {
   orderItem        SalesOrderItem?   @relation(fields: [orderItemId], references: [id])
   product          Product           @relation(fields: [productId], references: [id])
   salesReturnItems SalesReturnItem[]
+  lotAllocations   LotAllocation[]
 }
 
 model SalesReturn {
@@ -454,6 +456,7 @@ model Product {
   salesReturnItems    SalesReturnItem[]
   stocks              Stock[]
   movements           StockMovement[]
+  lots                ProductLot[]
 }
 
 model Stock {
@@ -483,6 +486,50 @@ model StockMovement {
   @@index([productId])
   @@index([warehouseId])
   @@index([createdAt])
+}
+
+/**
+ * LOT/BATCH NUMBER SYSTEM
+ * Each GoodsReceiptItem generates one ProductLot.
+ * Each SalesDeliveryItem consumes lots via LotAllocation.
+ * Enables 100% deterministic FIFO traceability.
+ */
+model ProductLot {
+  id            String           @id @default(cuid())
+  lotNumber     String           @unique
+  productId     String
+  grItemId      String           @unique
+  supplierName  String
+  purchasePrice Decimal
+  grNumber      String
+  grDate        DateTime
+  initialQty    Int
+  remainingQty  Int
+  isVoided      Boolean          @default(false)
+  createdAt     DateTime         @default(now())
+
+  product       Product          @relation(fields: [productId], references: [id])
+  grItem        GoodsReceiptItem @relation(fields: [grItemId], references: [id])
+  allocations   LotAllocation[]
+
+  @@index([productId])
+  @@index([grDate])
+  @@index([remainingQty])
+}
+
+model LotAllocation {
+  id        String            @id @default(cuid())
+  lotId     String
+  sdItemId  String
+  qty       Int
+  hppAtTime Decimal
+  createdAt DateTime          @default(now())
+
+  lot       ProductLot        @relation(fields: [lotId], references: [id])
+  sdItem    SalesDeliveryItem @relation(fields: [sdItemId], references: [id])
+
+  @@index([lotId])
+  @@index([sdItemId])
 }
 
 model SystemSetting {

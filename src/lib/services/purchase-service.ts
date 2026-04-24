@@ -214,6 +214,48 @@ export async function createGoodsReceiptService(data: any, userId: string) {
             });
         }
 
+        // ─── FASE 2a: Create ProductLot for each item ───────────────────
+        // Fetch the newly created GoodsReceiptItems to get their IDs
+        const createdReceipt = await tx.goodsReceipt.findUnique({
+            where: { id: receipt.id },
+            include: { items: { include: { product: { select: { sku: true } } } } }
+        });
+
+        if (createdReceipt) {
+            // Count existing lots for this product on this date to generate sequence
+            for (const grItem of createdReceipt.items) {
+                const sku = grItem.product.sku.replace(/[^A-Z0-9]/gi, '').toUpperCase();
+                const grDateStr = txDate.toISOString().slice(0, 10).replace(/-/g, '');
+                const prefix = `LOT-${sku}-${grDateStr}-`;
+                const latestLot = await tx.productLot.findFirst({
+                    where: { lotNumber: { startsWith: prefix } },
+                    orderBy: { lotNumber: 'desc' }
+                });
+                let lotSeq = 1;
+                if (latestLot) {
+                    const parts = latestLot.lotNumber.split('-');
+                    const lastNum = parseInt(parts[parts.length - 1]);
+                    if (!isNaN(lastNum)) lotSeq = lastNum + 1;
+                }
+                const lotNumber = `${prefix}${String(lotSeq).padStart(3, '0')}`;
+
+                await tx.productLot.create({
+                    data: {
+                        lotNumber,
+                        productId: grItem.productId,
+                        grItemId: grItem.id,
+                        supplierName: data.receivedFrom || "UMUM",
+                        purchasePrice: grItem.purchasePrice,
+                        grNumber: receiptNumber,
+                        grDate: txDate,
+                        initialQty: grItem.quantity,
+                        remainingQty: grItem.quantity
+                    }
+                });
+            }
+        }
+        // ────────────────────────────────────────────────────────────────
+
         revalidatePath("/purchase", "layout");
         revalidatePath("/warehouse", "layout");
         revalidatePath("/finance", "layout");
@@ -255,6 +297,13 @@ export async function updateGoodsReceiptService(id: string, data: any, userId: s
                 update: { quantity: { decrement: item.quantity } }
             });
         }
+
+        // ─── Void old ProductLots for this GR before updating ───────────
+        await tx.productLot.updateMany({
+            where: { grNumber: oldReceipt.receiptNumber },
+            data: { isVoided: true, remainingQty: 0 }
+        });
+        // ────────────────────────────────────────────────────────────────
 
         const currentReceiptNumber = oldReceipt.receiptNumber;
 
@@ -348,6 +397,44 @@ export async function updateGoodsReceiptService(id: string, data: any, userId: s
             }
         }
 
+        // ─── Create new ProductLots for the updated items ───────────────
+        const updatedReceipt = await tx.goodsReceipt.findUnique({
+            where: { id },
+            include: { items: { include: { product: { select: { sku: true } } } } }
+        });
+        if (updatedReceipt) {
+            for (const grItem of updatedReceipt.items) {
+                const sku = grItem.product.sku.replace(/[^A-Z0-9]/gi, '').toUpperCase();
+                const grDateStr = txDate.toISOString().slice(0, 10).replace(/-/g, '');
+                const prefix = `LOT-${sku}-${grDateStr}-`;
+                const latestLot = await tx.productLot.findFirst({
+                    where: { lotNumber: { startsWith: prefix } },
+                    orderBy: { lotNumber: 'desc' }
+                });
+                let lotSeq = 1;
+                if (latestLot) {
+                    const parts = latestLot.lotNumber.split('-');
+                    const lastNum = parseInt(parts[parts.length - 1]);
+                    if (!isNaN(lastNum)) lotSeq = lastNum + 1;
+                }
+                const lotNumber = `${prefix}${String(lotSeq).padStart(3, '0')}`;
+                await tx.productLot.create({
+                    data: {
+                        lotNumber,
+                        productId: grItem.productId,
+                        grItemId: grItem.id,
+                        supplierName: data.receivedFrom || "UMUM",
+                        purchasePrice: grItem.purchasePrice,
+                        grNumber: currentReceiptNumber,
+                        grDate: txDate,
+                        initialQty: grItem.quantity,
+                        remainingQty: grItem.quantity
+                    }
+                });
+            }
+        }
+        // ────────────────────────────────────────────────────────────────
+
         revalidatePath("/purchase", "layout");
         revalidatePath("/warehouse", "layout");
         revalidatePath("/finance", "layout");
@@ -357,7 +444,9 @@ export async function updateGoodsReceiptService(id: string, data: any, userId: s
     }, { timeout: 30000 });
 }
 
+
 export async function createPurchaseReturnService(data: any, userId: string) {
+
     const { getPrisma } = require("@/lib/prisma");
     const prisma = getPrisma();
 
@@ -431,6 +520,25 @@ export async function createPurchaseReturnService(data: any, userId: string) {
                     reference: returnNumber
                 }
             });
+
+            // ─── Fase 3: Decrement lot remainingQty for purchase return ─
+            // Find the active lot for this product from this GR
+            const activeLot = await tx.productLot.findFirst({
+                where: {
+                    productId: item.productId,
+                    grNumber: receipt.receiptNumber,
+                    isVoided: false
+                },
+                orderBy: { grDate: 'asc' }
+            });
+            if (activeLot) {
+                const newRemaining = Math.max(0, activeLot.remainingQty - item.quantity);
+                await tx.productLot.update({
+                    where: { id: activeLot.id },
+                    data: { remainingQty: newRemaining }
+                });
+            }
+            // ────────────────────────────────────────────────────────────
         }
 
         revalidatePath("/purchase");
