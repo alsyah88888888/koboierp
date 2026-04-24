@@ -100,8 +100,8 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
 
                         report.push({
                             'Tgl Beli'            : lastLot ? new Date(lastLot.grDate).toLocaleDateString('id-ID') : '-',
-                            'No. GR (Batch Beli)' : '-',
-                            'No. Lot'             : '-',
+                            'No. GR (Batch Beli)' : lastLot ? lastLot.lotNumber : '-',
+                            'No. Lot'             : lastLot ? lastLot.lotNumber : '-',
                             'Supplier'            : sdItem.vendorName || '-',
                             'HPP Per Unit (Rp)'   : Math.round(hpp),
                             'Tgl Jual'            : tglJual,
@@ -118,6 +118,7 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
                             'Margin %'            : `${marginPct.toFixed(1)}%`,
                             'Status'              : 'STOK HISTORIS (BELUM LOT)'
                         });
+
                     }
 
 
@@ -135,8 +136,8 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
 
                     report.push({
                         'Tgl Beli'            : lastLot ? new Date(lastLot.grDate).toLocaleDateString('id-ID') : '-',
-                        'No. GR (Batch Beli)' : '-',
-                        'No. Lot'             : '-',
+                        'No. GR (Batch Beli)' : lastLot ? lastLot.lotNumber : '-',
+                        'No. Lot'             : lastLot ? lastLot.lotNumber : '-',
                         'Supplier'            : sdItem.vendorName || '-',
                         'HPP Per Unit (Rp)'   : Math.round(hpp),
                         'Tgl Jual'            : tglJual,
@@ -153,6 +154,7 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
                         'Margin %'            : `${marginPct.toFixed(1)}%`,
                         'Status'              : 'DATA HISTORIS (PRE-LOT)'
                     });
+
 
                 }
             }
