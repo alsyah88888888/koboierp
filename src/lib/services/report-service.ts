@@ -15,7 +15,7 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
 
     try {
         // ── STEP 1: Fetch sales deliveries in period ──────────────────────
-        const deliveries = await prisma.salesDelivery.findMany({
+        const deliveries = await (prisma as any).salesDelivery.findMany({
             where: { isVoid: false, date: { gte: startDate, lte: endDate } },
             include: {
                 items: {
@@ -26,7 +26,8 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
                 }
             },
             orderBy: { date: 'asc' }
-        });
+        }) as any[];
+
 
         // Fetch SO numbers
         const orderIds = deliveries.map((d: any) => d.orderId).filter(Boolean) as string[];
