@@ -27,8 +27,10 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
 
         for (const gr of receipts) {
             for (const item of gr.items) {
-                // Key is ProductId + VendorName to ensure we match sales to the correct source
-                const key = `${item.productId}_${gr.receivedFrom || "UMUM"}`;
+                // Normalize supplier name: trim spaces and lowercase for reliable matching
+                const supplierName = (gr.receivedFrom || "UMUM").trim().toLowerCase();
+                const key = `${item.productId}_${supplierName}`;
+                
                 if (!pool.has(key)) pool.set(key, []);
                 pool.get(key)!.push({
                     qty     : item.quantity,
@@ -64,8 +66,9 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
         // 4. Vendor-Aware FIFO Pairing
         for (const sd of deliveries) {
             for (const sdItem of sd.items) {
-                // Match based on both Product and the Vendor selected in the Sales UI
-                const vendorKey = `${sdItem.productId}_${sdItem.vendorName || "UMUM"}`;
+                // Normalize sale vendor name for matching
+                const saleVendor = (sdItem.vendorName || "UMUM").trim().toLowerCase();
+                const vendorKey = `${sdItem.productId}_${saleVendor}`;
                 const productPool = pool.get(vendorKey) ?? [];
                 let remaining = sdItem.quantity;
 

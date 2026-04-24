@@ -98,8 +98,25 @@ export async function createSalesDeliveryService(data: any, userId: string) {
             }
         }
 
+        // 4. Process items, update stock, and update PO quantities
         for (const item of data.items) {
             const vendorName = item.vendorName || "UMUM";
+            
+            // --- AUTO-LINK LOGIC ---
+            // If linked to an Order but this specific item line doesn't have an orderItemId,
+            // try to find a matching product in the order to ensure quantities are tracked.
+            let effectiveOrderItemId = item.orderItemId;
+            if (data.orderId && !effectiveOrderItemId) {
+                const matchingOrderItem = await tx.salesOrderItem.findFirst({
+                    where: { 
+                        orderId: data.orderId,
+                        productId: item.productId
+                    }
+                });
+                if (matchingOrderItem) effectiveOrderItemId = matchingOrderItem.id;
+            }
+
+            // Update Stock
             const currentStock = await tx.stock.findUnique({
                 where: {
                     productId_warehouseId_vendorName: {
@@ -137,16 +154,34 @@ export async function createSalesDeliveryService(data: any, userId: string) {
                 }
             });
 
-            // If linked to a PO, update shipped quantity
-            if (item.orderItemId) {
+            // If linked to a PO (explicitly or via Auto-Link), update shipped quantity
+            if (effectiveOrderItemId) {
+                // Update the SalesDeliveryItem record we just created to include the link
+                await tx.salesDeliveryItem.updateMany({
+                    where: { deliveryId: delivery.id, productId: item.productId, orderItemId: null },
+                    data: { orderItemId: effectiveOrderItemId }
+                });
+
                 await tx.salesOrderItem.update({
-                    where: { id: item.orderItemId },
+                    where: { id: effectiveOrderItemId },
                     data: { shippedQuantity: { increment: item.quantity } }
                 });
             }
         }
         
-        // If all items in PO are shipped, we could mark PO as CLOSED if we want
+        // 5. Update Sales Order status if all items are shipped
+        if (data.orderId) {
+            const orderItems = await tx.salesOrderItem.findMany({
+                where: { orderId: data.orderId }
+            });
+            const allShipped = orderItems.every((oi: any) => oi.shippedQuantity >= oi.quantity);
+            const someShipped = orderItems.some((oi: any) => oi.shippedQuantity > 0);
+            
+            await tx.salesOrder.update({
+                where: { id: data.orderId },
+                data: { status: allShipped ? "CLOSED" : someShipped ? "PARTIAL" : "OPEN" }
+            });
+        }
 
         revalidatePath("/sales");
         revalidatePath("/warehouse");
