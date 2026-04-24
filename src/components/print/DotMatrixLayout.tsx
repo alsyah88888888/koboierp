@@ -39,8 +39,8 @@ export const DotMatrixLayout: React.FC<DotMatrixLayoutProps> = ({ children, titl
 
         .dot-matrix-paper {
           width: 215mm;
-          height: 140mm;
-          padding: 8mm 10mm;
+          min-height: 140mm;
+          padding: 5mm 10mm;
           margin: 0 auto;
           background: white;
           font-family: 'Courier New', Courier, monospace;
@@ -48,7 +48,6 @@ export const DotMatrixLayout: React.FC<DotMatrixLayoutProps> = ({ children, titl
           border: 1px dashed #ccc;
           position: relative;
           box-sizing: border-box;
-          overflow: hidden;
         }
 
         .dot-matrix-header {

@@ -52,6 +52,10 @@ export default async function SJDotPrintPage({ params }: { params: Promise<{ id:
                             <td>: {delivery.salesPerson || "-"} / {delivery.vehicleNumber || "-"}</td>
                         </tr>
                         <tr>
+                            <td style={{ fontWeight: 'bold' }}>PO BUYER</td>
+                            <td style={{ fontWeight: 'bold' }}>: {delivery.poNumber || "-"}</td>
+                        </tr>
+                        <tr>
                             <td style={{ fontWeight: 'bold' }}>GUDANG</td>
                             <td>: {delivery.warehouse.name}</td>
                         </tr>
