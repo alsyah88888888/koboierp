@@ -21,15 +21,16 @@ export const DotMatrixLayout: React.FC<DotMatrixLayoutProps> = ({ children, titl
       <style jsx global>{`
         @media print {
           @page {
-            size: 215mm 140mm; /* Ukuran Setengah Kuarto / A5 Landscape untuk LX-310 */
-            margin: 5mm;
+            size: 215mm 140mm; /* Panjang 21.5cm, Lebar 14cm */
+            margin: 0;
           }
           body {
             background: white;
+            margin: 0;
+            padding: 0;
             color: black;
-            font-family: 'Courier New', Courier, monospace; /* Font standar dot matrix */
+            font-family: 'Courier New', Courier, monospace;
             font-size: 10pt;
-            line-height: 1.2;
           }
           .no-print {
             display: none !important;
@@ -37,15 +38,17 @@ export const DotMatrixLayout: React.FC<DotMatrixLayoutProps> = ({ children, titl
         }
 
         .dot-matrix-paper {
-          width: 210mm;
-          min-height: 100mm;
-          padding: 5mm 8mm;
+          width: 215mm;
+          height: 140mm;
+          padding: 8mm 10mm;
           margin: 0 auto;
           background: white;
           font-family: 'Courier New', Courier, monospace;
           color: black;
           border: 1px dashed #ccc;
           position: relative;
+          box-sizing: border-box;
+          overflow: hidden;
         }
 
         .dot-matrix-header {
