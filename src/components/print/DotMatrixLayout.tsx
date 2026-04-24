@@ -32,22 +32,22 @@ export const DotMatrixLayout: React.FC<DotMatrixLayoutProps> = ({ children, titl
 
         .dot-matrix-paper {
           width: 210mm;
-          min-height: 135mm;
-          padding: 10mm;
+          min-height: 100mm;
+          padding: 5mm 8mm;
           margin: 0 auto;
           background: white;
           font-family: 'Courier New', Courier, monospace;
           color: black;
-          border: 1px dashed #ccc; /* Penanda potong kertas */
+          border: 1px dashed #ccc;
           position: relative;
         }
 
         .dot-matrix-header {
           display: flex;
           justify-content: space-between;
-          border-bottom: 2px solid black;
-          padding-bottom: 5mm;
-          margin-bottom: 5mm;
+          border-bottom: 1px solid black;
+          padding-bottom: 2mm;
+          margin-bottom: 3mm;
         }
 
         .company-info h1 {
@@ -83,23 +83,23 @@ export const DotMatrixLayout: React.FC<DotMatrixLayoutProps> = ({ children, titl
         }
 
         .dot-matrix-table td {
-          padding: 1.5mm 1mm;
-          font-size: 9pt;
+          padding: 1mm 1mm;
+          font-size: 8.5pt;
           vertical-align: top;
         }
 
         .dot-matrix-footer {
-          margin-top: 10mm;
+          margin-top: 4mm;
           display: grid;
           grid-template-cols: repeat(3, 1fr);
-          gap: 10mm;
+          gap: 5mm;
           text-align: center;
         }
 
         .signature-box {
-          height: 20mm;
+          height: 12mm;
           border-bottom: 1px solid black;
-          margin-bottom: 2mm;
+          margin-bottom: 1mm;
         }
       `}</style>
 

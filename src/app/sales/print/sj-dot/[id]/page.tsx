@@ -25,8 +25,8 @@ export default async function SJDotPrintPage({ params }: { params: Promise<{ id:
             title="SURAT JALAN" 
             documentNumber={delivery.deliveryNumber}
         >
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5mm', marginBottom: '5mm' }}>
-                <div style={{ fontSize: '9pt' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2mm', marginBottom: '2mm' }}>
+                <div style={{ fontSize: '8.5pt' }}>
                     <table style={{ width: '100%' }}>
                         <tr>
                             <td style={{ width: '80px', fontWeight: 'bold' }}>PENERIMA</td>
