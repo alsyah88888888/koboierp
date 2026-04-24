@@ -100,8 +100,8 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
 
                         report.push({
                             'Tgl Beli'            : lastLot ? new Date(lastLot.grDate).toLocaleDateString('id-ID') : '-',
-                            'No. GR (Batch Beli)' : lastLot ? lastLot.lotNumber : '-',
-                            'No. Lot'             : lastLot ? lastLot.lotNumber : '-',
+                            'No. GR (Batch Beli)' : lastLot ? (lastLot.grNumber || lastLot.lotNumber) : '-',
+                            'No. Lot'             : lastLot ? (lastLot.grNumber || lastLot.lotNumber) : '-',
                             'Supplier'            : sdItem.vendorName || '-',
                             'HPP Per Unit (Rp)'   : Math.round(hpp),
                             'Tgl Jual'            : tglJual,
@@ -119,6 +119,7 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
                             'Status'              : 'STOK HISTORIS (BELUM LOT)'
                         });
 
+
                     }
 
 
@@ -134,26 +135,27 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
                     const totalProfit = profitUnit * sdItem.quantity;
                     const marginPct = sellPrice > 0 ? (profitUnit / sellPrice) * 100 : 0;
 
-                    report.push({
-                        'Tgl Beli'            : lastLot ? new Date(lastLot.grDate).toLocaleDateString('id-ID') : '-',
-                        'No. GR (Batch Beli)' : lastLot ? lastLot.lotNumber : '-',
-                        'No. Lot'             : lastLot ? lastLot.lotNumber : '-',
-                        'Supplier'            : sdItem.vendorName || '-',
-                        'HPP Per Unit (Rp)'   : Math.round(hpp),
-                        'Tgl Jual'            : tglJual,
-                        'No. SJ'              : noSJ,
-                        'No. SO'              : soNumber,
-                        'Buyer'               : buyer,
-                        'SKU'                 : sku,
-                        'Nama Barang'         : nama,
-                        'Satuan'              : satuan,
-                        'QTY'                 : sdItem.quantity,
-                        'Harga Jual Per Unit (Rp)': sellPrice,
-                        'Profit Per Unit (Rp)': Math.round(profitUnit),
-                        'Total Profit (Rp)'   : Math.round(totalProfit),
-                        'Margin %'            : `${marginPct.toFixed(1)}%`,
-                        'Status'              : 'DATA HISTORIS (PRE-LOT)'
-                    });
+                        report.push({
+                            'Tgl Beli'            : lastLot ? new Date(lastLot.grDate).toLocaleDateString('id-ID') : '-',
+                            'No. GR (Batch Beli)' : lastLot ? (lastLot.grNumber || lastLot.lotNumber) : '-',
+                            'No. Lot'             : lastLot ? (lastLot.grNumber || lastLot.lotNumber) : '-',
+                            'Supplier'            : sdItem.vendorName || '-',
+                            'HPP Per Unit (Rp)'   : Math.round(hpp),
+                            'Tgl Jual'            : tglJual,
+                            'No. SJ'              : noSJ,
+                            'No. SO'              : soNumber,
+                            'Buyer'               : buyer,
+                            'SKU'                 : sku,
+                            'Nama Barang'         : nama,
+                            'Satuan'              : satuan,
+                            'QTY'                 : sdItem.quantity,
+                            'Harga Jual Per Unit (Rp)': sellPrice,
+                            'Profit Per Unit (Rp)': Math.round(profitUnit),
+                            'Total Profit (Rp)'   : Math.round(totalProfit),
+                            'Margin %'            : `${marginPct.toFixed(1)}%`,
+                            'Status'              : 'DATA HISTORIS (PRE-LOT)'
+                        });
+
 
 
                 }
