@@ -174,6 +174,28 @@ export async function createSalesReturnAction(data: any) {
                         reference: returnNumber
                     }
                 });
+
+                // ─── FASE 3b: Restore Lot remainingQty on Sales Return ──────
+                // Find the original allocations for this item from the SJ
+                const deliveryItem = delivery.items.find((di: any) => di.productId === item.productId);
+                if (deliveryItem) {
+                    const allocations = await tx.lotAllocation.findMany({
+                        where: { sdItemId: deliveryItem.id },
+                        orderBy: { createdAt: 'desc' } // LIFO restore
+                    });
+
+                    let returnRemaining = item.quantity;
+                    for (const alloc of allocations) {
+                        if (returnRemaining <= 0) break;
+                        const restoreQty = Math.min(returnRemaining, alloc.qty);
+                        await tx.productLot.update({
+                            where: { id: alloc.lotId },
+                            data: { remainingQty: { increment: restoreQty } }
+                        });
+                        returnRemaining -= restoreQty;
+                    }
+                }
+                // ────────────────────────────────────────────────────────────
             }
         }
 
@@ -270,6 +292,28 @@ export async function deleteSalesReturnAction(id: string) {
             await tx.stockMovement.deleteMany({
                 where: { reference: ret.returnNumber, productId: item.productId }
             });
+
+            // ─── FASE 3b: Re-consume Lot on Delete Return ────────────────
+            // Because we are deleting the return, the items are effectively "sold" again.
+            const deliveryItem = ret.delivery.items.find((di: any) => di.productId === item.productId);
+            if (deliveryItem) {
+                const allocations = await tx.lotAllocation.findMany({
+                    where: { sdItemId: deliveryItem.id },
+                    orderBy: { createdAt: 'asc' } // FIFO consume
+                });
+                let reConsumeRemaining = item.quantity;
+                for (const alloc of allocations) {
+                    if (reConsumeRemaining <= 0) break;
+                    // We consume from the lots that were originally allocated
+                    const consume = Math.min(reConsumeRemaining, alloc.qty);
+                    await tx.productLot.update({
+                        where: { id: alloc.lotId },
+                        data: { remainingQty: { decrement: consume } }
+                    });
+                    reConsumeRemaining -= consume;
+                }
+            }
+            // ────────────────────────────────────────────────────────────
         }
 
         await tx.salesReturnItem.deleteMany({ where: { salesReturnId: id } });

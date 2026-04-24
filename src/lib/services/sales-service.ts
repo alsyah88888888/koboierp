@@ -271,6 +271,19 @@ export async function updateSalesDeliveryService(id: string, data: any, userId: 
                 },
                 update: { quantity: { increment: item.quantity } }
             });
+
+            // ─── FASE 3c: Revoke old Lot allocations on Update ──────────
+            const allocations = await tx.lotAllocation.findMany({
+                where: { sdItemId: item.id }
+            });
+            for (const alloc of allocations) {
+                await tx.productLot.update({
+                    where: { id: alloc.lotId },
+                    data: { remainingQty: { increment: alloc.qty } }
+                });
+                await tx.lotAllocation.delete({ where: { id: alloc.id } });
+            }
+            // ────────────────────────────────────────────────────────────
         }
 
         await tx.salesDeliveryItem.deleteMany({ where: { deliveryId: id } });
@@ -429,6 +442,34 @@ export async function updateSalesDeliveryService(id: string, data: any, userId: 
         revalidatePath("/finance");
         revalidatePath("/");
 
+        // ─── FASE 3c: Re-allocate Lots for the updated items ────────────
+        const updatedDelivery = await tx.salesDelivery.findUnique({
+            where: { id },
+            include: { items: true }
+        });
+        if (updatedDelivery) {
+            for (const sdItem of updatedDelivery.items) {
+                let remaining = sdItem.quantity;
+                const availableLots = await tx.productLot.findMany({
+                    where: { productId: sdItem.productId, remainingQty: { gt: 0 }, isVoided: false },
+                    orderBy: { grDate: 'asc' }
+                });
+                for (const lot of availableLots) {
+                    if (remaining <= 0) break;
+                    const consume = Math.min(remaining, lot.remainingQty);
+                    await tx.lotAllocation.create({
+                        data: { lotId: lot.id, sdItemId: sdItem.id, qty: consume, hppAtTime: lot.purchasePrice }
+                    });
+                    await tx.productLot.update({
+                        where: { id: lot.id },
+                        data: { remainingQty: { decrement: consume } }
+                    });
+                    remaining -= consume;
+                }
+            }
+        }
+        // ────────────────────────────────────────────────────────────────
+
         return { success: true, deliveryNumber: deliveryNumber };
     }, { timeout: 30000 });
 }
@@ -474,6 +515,19 @@ export async function deleteSalesDeliveryService(id: string) {
                     reference: delivery.deliveryNumber
                 }
             });
+
+            // ─── FASE 2d: Restore Lot allocations on Delete ────────────────
+            const allocations = await tx.lotAllocation.findMany({
+                where: { sdItemId: item.id }
+            });
+            for (const alloc of allocations) {
+                await tx.productLot.update({
+                    where: { id: alloc.lotId },
+                    data: { remainingQty: { increment: alloc.qty } }
+                });
+                await tx.lotAllocation.delete({ where: { id: alloc.id } });
+            }
+            // ──────────────────────────────────────────────────────────────
         }
 
         await tx.salesDeliveryItem.deleteMany({ where: { deliveryId: id } });
