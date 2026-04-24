@@ -89,12 +89,21 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
                     const allocatedQty = sdItem.lotAllocations.reduce((s: number, a: any) => s + a.qty, 0);
                     const unallocated  = sdItem.quantity - allocatedQty;
                     if (unallocated > 0) {
+                        const lastLot = await (prisma as any).productLot.findFirst({
+                            where: { productId: sdItem.productId },
+                            orderBy: { grDate: 'desc' }
+                        });
+                        const hpp = lastLot ? Number(lastLot.purchasePrice) : Number(sdItem.product.purchasePrice || 0);
+                        const profitUnit = sellPrice - hpp;
+                        const totalProfit = profitUnit * unallocated;
+                        const marginPct = sellPrice > 0 ? (profitUnit / sellPrice) * 100 : 0;
+
                         report.push({
-                            'Tgl Beli'            : '-',
+                            'Tgl Beli'            : lastLot ? new Date(lastLot.grDate).toLocaleDateString('id-ID') : '-',
                             'No. GR (Batch Beli)' : '-',
                             'No. Lot'             : '-',
                             'Supplier'            : sdItem.vendorName || '-',
-                            'HPP Per Unit (Rp)'   : 0,
+                            'HPP Per Unit (Rp)'   : Math.round(hpp),
                             'Tgl Jual'            : tglJual,
                             'No. SJ'              : noSJ,
                             'No. SO'              : soNumber,
@@ -104,22 +113,32 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
                             'Satuan'              : satuan,
                             'QTY'                 : unallocated,
                             'Harga Jual Per Unit (Rp)': sellPrice,
-                            'Profit Per Unit (Rp)': 0,
-                            'Total Profit (Rp)'   : 0,
-                            'Margin %'            : '0.0%',
+                            'Profit Per Unit (Rp)': Math.round(profitUnit),
+                            'Total Profit (Rp)'   : Math.round(totalProfit),
+                            'Margin %'            : `${marginPct.toFixed(1)}%`,
                             'Status'              : 'STOK HISTORIS (BELUM LOT)'
                         });
                     }
 
+
                 } else {
                     // ⚠️ PATH B: No lot allocation (data historis sebelum implementasi)
-                    // Tampilkan baris dengan flag historis, HPP = 0 supaya tidak menyesatkan
+                    // Cari harga beli terakhir produk ini untuk mengisi HPP historis
+                    const lastLot = await (prisma as any).productLot.findFirst({
+                        where: { productId: sdItem.productId },
+                        orderBy: { grDate: 'desc' }
+                    });
+                    const hpp = lastLot ? Number(lastLot.purchasePrice) : Number(sdItem.product.purchasePrice || 0);
+                    const profitUnit = sellPrice - hpp;
+                    const totalProfit = profitUnit * sdItem.quantity;
+                    const marginPct = sellPrice > 0 ? (profitUnit / sellPrice) * 100 : 0;
+
                     report.push({
-                        'Tgl Beli'            : '-',
+                        'Tgl Beli'            : lastLot ? new Date(lastLot.grDate).toLocaleDateString('id-ID') : '-',
                         'No. GR (Batch Beli)' : '-',
                         'No. Lot'             : '-',
                         'Supplier'            : sdItem.vendorName || '-',
-                        'HPP Per Unit (Rp)'   : 0,
+                        'HPP Per Unit (Rp)'   : Math.round(hpp),
                         'Tgl Jual'            : tglJual,
                         'No. SJ'              : noSJ,
                         'No. SO'              : soNumber,
@@ -129,11 +148,12 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
                         'Satuan'              : satuan,
                         'QTY'                 : sdItem.quantity,
                         'Harga Jual Per Unit (Rp)': sellPrice,
-                        'Profit Per Unit (Rp)': 0,
-                        'Total Profit (Rp)'   : 0,
-                        'Margin %'            : '0.0%',
+                        'Profit Per Unit (Rp)': Math.round(profitUnit),
+                        'Total Profit (Rp)'   : Math.round(totalProfit),
+                        'Margin %'            : `${marginPct.toFixed(1)}%`,
                         'Status'              : 'DATA HISTORIS (PRE-LOT)'
                     });
+
                 }
             }
         }
