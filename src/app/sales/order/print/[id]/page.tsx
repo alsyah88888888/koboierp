@@ -68,7 +68,15 @@ export default async function SalesOrderPrintPage({ params }: { params: Promise<
                     {order.items.map((item: any, idx: number) => (
                         <tr key={idx}>
                             <td className="border border-slate-900 p-1.5 text-center font-black">{idx + 1}</td>
-                            <td className="border border-slate-900 p-1.5 uppercase">{item.product?.name}</td>
+                            <td className="border border-slate-900 p-1.5 uppercase">
+                                <div className="font-black text-slate-900">{item.product?.name}</div>
+                                {Number(item.shippedQuantity) > 0 && (
+                                    <div className="text-[7pt] text-slate-400 font-bold italic mt-0.5 tracking-tight">
+                                        SUDAH KIRIM: <span className="text-slate-700">{formatNumber(item.shippedQuantity)}</span> | 
+                                        SISA: <span className="text-indigo-600 font-black">{formatNumber(Number(item.quantity) - Number(item.shippedQuantity))}</span>
+                                    </div>
+                                )}
+                            </td>
                             <td className="border border-slate-900 p-1.5 text-center font-black">{formatNumber(item.quantity)}</td>
                             <td className="border border-slate-900 p-1.5 text-center uppercase tracking-tighter">{item.uom || item.product?.uom || "-"}</td>
                             <td className="border border-slate-900 p-1.5 text-right font-medium">{formatCurrency(Number(item.salesPrice))}</td>
