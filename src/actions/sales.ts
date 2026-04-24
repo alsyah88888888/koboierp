@@ -33,7 +33,7 @@ export async function updateSalesDeliveryAction(id: string, data: any) {
         const session = (await getServerSession(getAuthOptions())) as any;
         if (!session?.user?.id) throw new Error("Unauthorized");
 
-        return await updateSalesDeliveryService(id, data);
+        return await updateSalesDeliveryService(id, data, session.user.id);
     } catch (err: any) {
         console.error("[updateSalesDeliveryAction] CRITICAL ERROR:", err);
         return { error: err.message || "An unexpected error occurred at the server level." };

@@ -157,7 +157,7 @@ export async function createSalesDeliveryService(data: any, userId: string) {
     }, { timeout: 30000 });
 }
 
-export async function updateSalesDeliveryService(id: string, data: any) {
+export async function updateSalesDeliveryService(id: string, data: any, userId: string) {
     const { getPrisma } = require("@/lib/prisma");
     const prisma = getPrisma();
 
@@ -169,6 +169,7 @@ export async function updateSalesDeliveryService(id: string, data: any) {
 
         if (!oldDelivery) throw new Error("Delivery not found");
 
+        // Restore Old Stock before applying new updates
         for (const item of oldDelivery.items) {
             await tx.stock.upsert({
                 where: {
@@ -191,10 +192,54 @@ export async function updateSalesDeliveryService(id: string, data: any) {
         await tx.salesDeliveryItem.deleteMany({ where: { deliveryId: id } });
 
         const txDate = data.createdAt || new Date();
+        const day = String(txDate.getDate()).padStart(2, '0');
+        const month = String(txDate.getMonth() + 1).padStart(2, '0');
+        const year = txDate.getFullYear();
+        const dateStr = `${day}${month}${year}`;
+
+        const isPKP = data.isPKP === true || (Number(data.taxRate) || 0) > 0;
+        const oldIsPKP = Number(oldDelivery.taxRate) > 0;
+        
+        let deliveryNumber = oldDelivery.deliveryNumber;
+        const oldNumber = deliveryNumber;
+
+        // REGENERATE NUMBER IF PKP STATUS CHANGED
+        if (isPKP !== oldIsPKP) {
+            const prefix = isPKP ? `KB-TRN-${dateStr}-` : `KB-TRD-${dateStr}-`;
+            const latest = await tx.salesDelivery.findFirst({
+                where: { deliveryNumber: { startsWith: prefix } },
+                orderBy: { deliveryNumber: 'desc' }
+            });
+
+            let nextNum = 1;
+            if (latest) {
+                const parts = latest.deliveryNumber.split('-');
+                const lastSeq = parseInt(parts[parts.length - 1]);
+                if (!isNaN(lastSeq)) nextNum = lastSeq + 1;
+            }
+            deliveryNumber = `${prefix}${String(nextNum).padStart(3, '0')}`;
+
+            // Create notification for audit trail
+            await tx.notification.create({
+                data: {
+                    title: "Perubahan Nomor Transaksi",
+                    message: `Nomor transaksi ${oldNumber} telah diubah menjadi ${deliveryNumber} karena perubahan status pajak (PKP: ${isPKP}).`,
+                    type: "warning",
+                    authorId: userId
+                }
+            });
+
+            // Update related stock movements reference
+            await tx.stockMovement.updateMany({
+                where: { reference: oldNumber },
+                data: { reference: deliveryNumber }
+            });
+        }
 
         await tx.salesDelivery.update({
             where: { id },
             data: {
+                deliveryNumber: deliveryNumber,
                 recipient: data.recipient,
                 buyerName: data.buyerName,
                 vehicleNumber: data.vehicleNumber,
@@ -206,12 +251,9 @@ export async function updateSalesDeliveryService(id: string, data: any) {
             }
         });
 
-        const currentDeliveryNumber = oldDelivery.deliveryNumber;
-
         for (const item of data.items) {
             const vendorName = item.vendorName || "UMUM";
 
-            // VALIDASI STOK: Cek apakah stok mencukupi sebelum mengurangi
             const currentStock = await tx.stock.findUnique({
                 where: {
                     productId_warehouseId_vendorName: {
@@ -256,7 +298,7 @@ export async function updateSalesDeliveryService(id: string, data: any) {
                     vendorName: vendorName,
                     quantity: -item.quantity,
                     type: "SALE_UPDATE",
-                    reference: currentDeliveryNumber
+                    reference: deliveryNumber
                 }
             });
         }
@@ -303,9 +345,10 @@ export async function updateSalesDeliveryService(id: string, data: any) {
         revalidatePath("/finance");
         revalidatePath("/");
 
-        return { success: true, deliveryNumber: currentDeliveryNumber };
+        return { success: true, deliveryNumber: deliveryNumber };
     }, { timeout: 30000 });
 }
+
 
 export async function deleteSalesDeliveryService(id: string) {
     const { getPrisma } = require("@/lib/prisma");
