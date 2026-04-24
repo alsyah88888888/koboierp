@@ -18,12 +18,15 @@ export default async function SJDotPrintPage({ params }: { params: Promise<{ id:
         }
     }).then((res: any) => serializeDecimal(res));
 
+    const systemSettings = await prisma.systemSetting.findUnique({ where: { id: "global" } }).then((res: any) => serializeDecimal(res));
+
     if (!delivery) return <div>Data tidak ditemukan</div>;
 
     return (
         <DotMatrixLayout 
             title="SURAT JALAN" 
             documentNumber={delivery.deliveryNumber}
+            systemSettings={systemSettings}
         >
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2mm', marginBottom: '2mm' }}>
                 <div style={{ fontSize: '8.5pt' }}>

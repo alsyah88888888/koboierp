@@ -7,9 +7,15 @@ interface DotMatrixLayoutProps {
   children: React.ReactNode;
   title: string;
   documentNumber: string;
+  systemSettings?: {
+    companyName: string;
+    address: string;
+  };
 }
 
-export const DotMatrixLayout: React.FC<DotMatrixLayoutProps> = ({ children, title, documentNumber }) => {
+export const DotMatrixLayout: React.FC<DotMatrixLayoutProps> = ({ children, title, documentNumber, systemSettings }) => {
+  const companyName = systemSettings?.companyName || "PT. KOLA BORASI INDONESIA";
+  const companyAddress = systemSettings?.address || "Jl. Arjuna IV Green Kartika Residence Blok EE NO.2, CIBINONG";
   return (
     <div className="dot-matrix-container">
       <style jsx global>{`
@@ -82,18 +88,16 @@ export const DotMatrixLayout: React.FC<DotMatrixLayoutProps> = ({ children, titl
           text-transform: uppercase;
         }
 
-        .dot-matrix-table td {
-          padding: 1mm 1mm;
-          font-size: 8.5pt;
-          vertical-align: top;
-        }
-
         .dot-matrix-footer {
           margin-top: 4mm;
-          display: grid;
-          grid-template-cols: repeat(3, 1fr);
-          gap: 5mm;
+          display: flex;
+          justify-content: flex-end;
+          gap: 12mm;
           text-align: center;
+        }
+
+        .footer-col {
+          width: 35mm;
         }
 
         .signature-box {
@@ -116,9 +120,8 @@ export const DotMatrixLayout: React.FC<DotMatrixLayoutProps> = ({ children, titl
 
         <div className="dot-matrix-header">
           <div className="company-info">
-            <h1>PT. KOLA BORASI INDONESIA</h1>
-            <p className="text-[9pt]">Jl. Raya Industri No. 123, Bogor</p>
-            <p className="text-[9pt]">Telp: (021) 8888-9999</p>
+            <h1>{companyName}</h1>
+            <p style={{ fontSize: '7.5pt', maxWidth: '400px' }}>{companyAddress}</p>
           </div>
           <div className="document-title">
             <h2>{title}</h2>
@@ -131,20 +134,20 @@ export const DotMatrixLayout: React.FC<DotMatrixLayoutProps> = ({ children, titl
         </div>
 
         <div className="dot-matrix-footer">
-          <div>
+          <div className="footer-col">
             <p className="text-[8pt] mb-8">Penerima,</p>
             <div className="signature-box"></div>
-            <p className="text-[8pt]">( .................... )</p>
+            <p className="text-[8pt]">( ................ )</p>
           </div>
-          <div>
-            <p className="text-[8pt] mb-8">Pengirim/Sopir,</p>
+          <div className="footer-col">
+            <p className="text-[8pt] mb-8">Sopir,</p>
             <div className="signature-box"></div>
-            <p className="text-[8pt]">( .................... )</p>
+            <p className="text-[8pt]">( ................ )</p>
           </div>
-          <div>
+          <div className="footer-col">
             <p className="text-[8pt] mb-8">Hormat Kami,</p>
             <div className="signature-box"></div>
-            <p className="text-[8pt]">( .................... )</p>
+            <p className="text-[8pt]">( ................ )</p>
           </div>
         </div>
         
