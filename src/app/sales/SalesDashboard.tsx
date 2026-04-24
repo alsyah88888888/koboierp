@@ -644,7 +644,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                                     <th className="w-48">No. PO Jual</th>
                                     <th>Buyer / Customer</th>
                                     <th className="w-40">Status</th>
-                                    <th className="text-right w-40">Total Item</th>
+                                    <th className="text-right w-40">Outstanding / Total</th>
                                     <th className="text-right w-40">Tgl PO</th>
                                     <th className="text-center w-32">Aksi</th>
                                 </tr>
@@ -665,7 +665,25 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                                             </span>
                                         </td>
                                         <td data-label="Total Qty" className="text-right font-black text-slate-900 md:pr-6">
-                                            {o.items?.reduce((acc: number, item: any) => acc + (Number(item.quantity) || 0), 0)} <span className="text-[10px] text-slate-400">Pcs</span>
+                                            {(() => {
+                                                const total = o.items?.reduce((acc: number, item: any) => acc + (Number(item.quantity) || 0), 0) || 0;
+                                                const shipped = o.items?.reduce((acc: number, item: any) => acc + (Number(item.shippedQuantity) || 0), 0) || 0;
+                                                const remaining = total - shipped;
+                                                
+                                                if (shipped > 0) {
+                                                    return (
+                                                        <div className="flex flex-col items-end">
+                                                            <span className={cn(remaining > 0 ? "text-indigo-600" : "text-slate-400")}>
+                                                                {remaining.toLocaleString('id-ID')} <span className="text-[10px]">Sisa</span>
+                                                            </span>
+                                                            <span className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">
+                                                                dari {total.toLocaleString('id-ID')} Pcs
+                                                            </span>
+                                                        </div>
+                                                    );
+                                                }
+                                                return <span>{total.toLocaleString('id-ID')} <span className="text-[10px] text-slate-400">Pcs</span></span>;
+                                            })()}
                                         </td>
                                         <td data-label="Tanggal" className="text-right text-xs text-slate-500 md:pr-6">
                                             {isClient ? format(new Date(o.date), "dd/MM/yyyy") : "..."}
