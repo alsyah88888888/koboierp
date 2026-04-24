@@ -567,8 +567,11 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                                         </td>
                                         <td data-label="Aksi" className="md:pr-6">
                                             <div className="flex items-center justify-end md:justify-center gap-1">
-                                                <Link href={`/sales/print/sj/${d.id}`} className="p-2.5 text-slate-400 hover:text-primary hover:bg-slate-100 rounded-xl transition-all">
+                                                <Link href={`/sales/print/sj/${d.id}`} className="p-2.5 text-slate-400 hover:text-primary hover:bg-slate-100 rounded-xl transition-all" title="Cetak Modern">
                                                     <Eye className="h-4 w-4" />
+                                                </Link>
+                                                <Link href={`/sales/print/sj-dot/${d.id}`} className="p-2.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all" title="Cetak Dot Matrix (LX-310)">
+                                                    <Truck className="h-4 w-4" />
                                                 </Link>
                                                 <Link href={`/sales/print/${d.id}`} className="p-2.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all">
                                                     <FileText className="h-4 w-4" />
