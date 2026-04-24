@@ -63,7 +63,7 @@ export default async function SJDotPrintPage({ params }: { params: Promise<{ id:
                 <thead>
                     <tr>
                         <th style={{ width: '30px' }}>NO</th>
-                        <th style={{ width: '100px' }}>SKU</th>
+                        <th style={{ width: '120px' }}>BARCODE</th>
                         <th>NAMA BARANG</th>
                         <th style={{ width: '60px', textAlign: 'center' }}>QTY</th>
                         <th style={{ width: '80px', textAlign: 'center' }}>SATUAN</th>
@@ -73,7 +73,7 @@ export default async function SJDotPrintPage({ params }: { params: Promise<{ id:
                     {delivery.items.map((item: any, idx: number) => (
                         <tr key={idx}>
                             <td style={{ textAlign: 'center' }}>{idx + 1}</td>
-                            <td>{item.product.sku}</td>
+                            <td style={{ fontSize: '7.5pt' }}>{item.product.barcode || item.product.sku}</td>
                             <td>{item.product.name}</td>
                             <td style={{ textAlign: 'center', fontWeight: 'bold' }}>{formatNumber(item.quantity)}</td>
                             <td style={{ textAlign: 'center', textTransform: 'uppercase' }}>{item.uom || item.product.uom}</td>
@@ -97,8 +97,8 @@ export default async function SJDotPrintPage({ params }: { params: Promise<{ id:
                 </tfoot>
             </table>
 
-            <div style={{ marginTop: '5mm', fontSize: '8pt', border: '1px solid #000', padding: '2mm' }}>
-                KETERANGAN: Harap barang diperiksa dengan teliti. Barang yang sudah diterima tidak dapat ditukar/dikembalikan.
+            <div style={{ marginTop: '3mm', fontSize: '7.5pt', borderTop: '1px dashed #000', paddingTop: '1mm' }}>
+                KETERANGAN: Barang yang sudah diterima tidak dapat ditukar/dikembalikan.
             </div>
         </DotMatrixLayout>
     );

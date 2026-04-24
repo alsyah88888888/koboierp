@@ -101,7 +101,7 @@ export const DotMatrixLayout: React.FC<DotMatrixLayoutProps> = ({ children, titl
         }
 
         .signature-box {
-          height: 12mm;
+          height: 8mm;
           border-bottom: 1px solid black;
           margin-bottom: 1mm;
         }
