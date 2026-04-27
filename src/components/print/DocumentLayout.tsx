@@ -66,22 +66,25 @@ export function DocumentLayout({ title, docNumber, date, children, headerInfo, i
             </div>
 
             {/* Document Container */}
-            <div className={`w-full max-w-[${pageWidth}] ${isContinuous ? 'min-h-[139mm]' : (isA5 ? 'min-h-[148mm]' : 'min-h-[270mm]')} p-[8mm] bg-white shadow-2xl printable-area flex flex-col font-sans text-slate-900 border-t-[8px] border-slate-900`}>
+            <div className={`w-full max-w-[${pageWidth}] ${isContinuous ? 'min-h-[139mm]' : (isA5 ? 'min-h-[148mm]' : 'min-h-[270mm]')} p-[8mm] bg-white shadow-2xl printable-area flex flex-col font-sans text-slate-900 border-t-[16px] border-slate-900`}>
                 {/* Header Branding */}
                 <div className={`flex justify-between items-start ${(isA5 || isContinuous) ? 'pb-1 mb-1' : 'pb-4 mb-6'}`}>
-                    <div className="flex items-start gap-4">
+                    <div className="flex items-center gap-4">
                         <div className="shrink-0">
                             <img src="/logo.png" alt="Logo Kola Borasi" className={`${(isA5 || isContinuous) ? 'h-12' : 'h-24'} w-auto object-contain`} />
                         </div>
                         <div>
                             <h1 className={`${(isA5 || isContinuous) ? 'text-lg' : 'text-3xl'} font-black tracking-tight text-slate-900 uppercase`}>PT KOLA BORASI INDONESIA</h1>
                             <div className="flex items-center gap-2 mt-0.5">
-                                <span className="bg-slate-100 px-1.5 py-0.5 rounded text-[7px] font-black text-slate-500 uppercase tracking-widest border border-slate-200">Official Document</span>
+                                <span className="bg-slate-100 px-1.5 py-0.5 rounded text-[7px] font-black text-slate-500 uppercase tracking-widest border border-slate-200">OFFICIAL DOCUMENT</span>
                                 <p className={`${(isA5 || isContinuous) ? 'text-[8px]' : 'text-xs'} font-bold text-slate-400 italic`}>Trading & Distribution ERP</p>
                             </div>
                             <div className={`${(isA5 || isContinuous) ? 'mt-1' : 'mt-3'} space-y-0.5`}>
                                 <p className={`${(isA5 || isContinuous) ? 'text-[7px]' : 'text-[10px]'} font-bold text-slate-500 leading-tight max-w-sm`}>
-                                    Jl. Arjuna IV Green Kartika Residence Blok EE NO.2, CIBINONG, KAB. BOGOR
+                                    Jl. Arjuna IV Green Kartika Residence Blok EE NO.2, CIBINONG, KAB. BOGOR - JAWA BARAT, 16911
+                                </p>
+                                <p className="text-[7pt] font-bold text-slate-400 uppercase tracking-widest">
+                                    PHONE: <span className="text-slate-500">0857-7444-4805</span> | WEB: <span className="text-slate-500">www.kolaborasi.id</span>
                                 </p>
                             </div>
                         </div>
@@ -127,17 +130,17 @@ export function DocumentLayout({ title, docNumber, date, children, headerInfo, i
                 <div className={`${(isA5 || isContinuous) ? 'mt-4' : 'mt-20'}`}>
                     <div className={`grid grid-cols-3 gap-8 text-center ${(isA5 || isContinuous) ? 'text-[9px]' : 'text-xs'} font-black uppercase tracking-widest text-slate-900`}>
                         <div className={`${(isA5 || isContinuous) ? 'space-y-8' : 'space-y-20'}`}>
-                            <p>Tanda Terima,</p>
+                            <p>TANDA TERIMA,</p>
                             <div className="border-b-2 border-slate-900 w-full mx-auto"></div>
                             <p>( ________________ )</p>
                         </div>
                         <div className={`${(isA5 || isContinuous) ? 'space-y-8' : 'space-y-20'}`}>
-                            <p>Driver,</p>
+                            <p>HORMAT KAMI,</p>
                             <div className="border-b-2 border-slate-900 w-full mx-auto"></div>
                             <p>( ________________ )</p>
                         </div>
                         <div className={`${(isA5 || isContinuous) ? 'space-y-8' : 'space-y-20'}`}>
-                            <p>Hormat Kami,</p>
+                            <p>PENGIRIM,</p>
                             <div className="border-b-2 border-slate-900 w-full mx-auto"></div>
                             <p>( ________________ )</p>
                         </div>

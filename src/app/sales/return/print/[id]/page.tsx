@@ -43,18 +43,22 @@ export default async function SalesReturnPrintPage({ params }: { params: Promise
             docNumber={salesReturn.returnNumber}
             date={format(new Date(salesReturn.date || salesReturn.createdAt), "dd MMM yyyy")}
             headerInfo={
-                <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-xs font-bold">
-                    <div className="grid grid-cols-[100px_1fr] gap-2">
-                        <span className="text-slate-400 uppercase">Buyer / Customer:</span>
-                        <span className="text-slate-900 uppercase tabular-nums">{salesReturn.delivery?.buyerName || "-"}</span>
-                        <span className="text-slate-400 uppercase">Ref. Surat Jalan:</span>
-                        <span className="text-slate-900 uppercase tabular-nums">{salesReturn.delivery?.deliveryNumber || "-"}</span>
+                <div className="flex justify-between items-start gap-4 text-[10px] font-bold uppercase italic border border-slate-900 p-3 bg-slate-50/20">
+                    <div className="flex-1 space-y-0.5">
+                        <span className="text-[8px] text-slate-400 tracking-widest not-italic block uppercase">BUYER / CUSTOMER:</span>
+                        <div className="text-slate-900 text-xs leading-tight font-black tabular-nums">{salesReturn.delivery?.buyerName || "-"}</div>
                     </div>
-                    <div className="grid grid-cols-[100px_1fr] gap-2 text-right">
-                        <span className="text-slate-400 uppercase">Gudang:</span>
-                        <span className="text-slate-900 uppercase">{salesReturn.delivery?.warehouse?.name || "-"}</span>
-                        <span className="text-slate-400 uppercase">Sales Person:</span>
-                        <span className="text-slate-900 font-black italic">{salesReturn.delivery?.salesPerson || "-"}</span>
+                    <div className="flex-[1.5] space-y-0.5 border-l border-slate-900 pl-4">
+                        <span className="text-[8px] text-slate-400 tracking-widest not-italic block uppercase">REF. SURAT JALAN:</span>
+                        <div className="text-slate-900 leading-tight font-semibold normal-case italic text-[9px]">{salesReturn.delivery?.deliveryNumber || "-"}</div>
+                    </div>
+                    <div className="flex-none space-y-0.5 border-l border-slate-900 pl-4 text-center">
+                        <span className="text-[8px] text-slate-400 tracking-widest not-italic block uppercase">GUDANG:</span>
+                        <div className="text-slate-900 text-[10px] font-black italic">{salesReturn.delivery?.warehouse?.name || "-"}</div>
+                    </div>
+                    <div className="flex-none space-y-0.5 border-l border-slate-900 pl-4 text-right">
+                        <span className="text-[8px] text-slate-400 tracking-widest not-italic block uppercase">SALES PERSON:</span>
+                        <div className="text-slate-900 text-[9px] font-black italic uppercase leading-none">{salesReturn.delivery?.salesPerson || "-"}</div>
                     </div>
                 </div>
             }
@@ -66,13 +70,13 @@ export default async function SalesReturnPrintPage({ params }: { params: Promise
             <table className="w-full border-collapse border border-slate-900 mb-4">
                 <thead>
                     <tr className="uppercase text-[9px] font-black tracking-widest bg-slate-50">
-                        <th className="border border-slate-900 p-1.5 text-center w-8">No</th>
-                        <th className="border border-slate-900 p-1.5 text-left">Nama Barang</th>
-                        <th className="border border-slate-900 p-1.5 text-center w-16">Qty</th>
-                        <th className="border border-slate-900 p-1.5 text-center w-16">Satuan</th>
-                        <th className="border border-slate-900 p-1.5 text-right w-24">Harga</th>
-                        <th className="border border-slate-900 p-1.5 text-right w-24">Total</th>
-                        <th className="border border-slate-900 p-1.5 text-left w-32">Alasan</th>
+                        <th className="border border-slate-900 p-1.5 text-center w-8">NO</th>
+                        <th className="border border-slate-900 p-1.5 text-left">NAMA / DESKRIPSI BARANG</th>
+                        <th className="border border-slate-900 p-1.5 text-center w-16">QTY</th>
+                        <th className="border border-slate-900 p-1.5 text-center w-16">SATUAN</th>
+                        <th className="border border-slate-900 p-1.5 text-right w-24">HARGA</th>
+                        <th className="border border-slate-900 p-1.5 text-right w-24">TOTAL</th>
+                        <th className="border border-slate-900 p-1.5 text-left w-32">ALASAN</th>
                     </tr>
                 </thead>
                 <tbody className="text-[10px] font-bold text-slate-800">

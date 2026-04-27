@@ -36,16 +36,16 @@ export default async function SalesOrderPrintPage({ params }: { params: Promise<
                 <div className="flex flex-col gap-2">
                     <div className="flex justify-between items-start gap-4 text-[10px] font-bold uppercase italic border border-slate-900 p-3 bg-slate-50/20">
                         <div className="flex-1 space-y-0.5">
-                            <span className="text-[8px] text-slate-400 tracking-widest not-italic block">PEMESAN (BUYER):</span>
+                            <span className="text-[8px] text-slate-400 tracking-widest not-italic block uppercase">PEMESAN (BUYER):</span>
                             <div className="text-slate-900 text-xs leading-tight font-black tabular-nums">{order.buyerName}</div>
                         </div>
-                        <div className="flex-[1.5] space-y-0.5 border-l border-slate-300 pl-4">
-                            <span className="text-[8px] text-slate-400 tracking-widest not-italic block">ALAMAT PENGIRIMAN:</span>
+                        <div className="flex-[1.5] space-y-0.5 border-l border-slate-900 pl-4">
+                            <span className="text-[8px] text-slate-400 tracking-widest not-italic block uppercase">ALAMAT PENGIRIMAN:</span>
                             <div className="text-slate-600 leading-tight font-semibold normal-case italic text-[9px]">{order.recipient || "-"}</div>
                         </div>
                         {order.salesPerson && (
-                            <div className="flex-none space-y-0.5 border-l border-slate-300 pl-4 text-center">
-                                <span className="text-[8px] text-slate-400 tracking-widest not-italic block">SALES</span>
+                            <div className="flex-none space-y-0.5 border-l border-slate-900 pl-4 text-center">
+                                <span className="text-[8px] text-slate-400 tracking-widest not-italic block uppercase">SALES:</span>
                                 <div className="text-primary text-[10px] font-black italic">{order.salesPerson}</div>
                             </div>
                         )}
@@ -56,8 +56,8 @@ export default async function SalesOrderPrintPage({ params }: { params: Promise<
             <table className="w-full border-collapse border border-slate-900">
                 <thead>
                     <tr className="uppercase text-[9px] font-black bg-slate-50">
-                        <th className="border border-slate-900 p-1.5 text-center w-8">No</th>
-                        <th className="border border-slate-900 p-1.5 text-left">Nama / Deskripsi Barang</th>
+                        <th className="border border-slate-900 p-1.5 text-center w-8">NO</th>
+                        <th className="border border-slate-900 p-1.5 text-left">NAMA / DESKRIPSI BARANG</th>
                         <th className="border border-slate-900 p-1.5 text-center w-12">QTY</th>
                         <th className="border border-slate-900 p-1.5 text-center w-20">SATUAN</th>
                         <th className="border border-slate-900 p-1.5 text-right w-28">HARGA</th>
