@@ -71,86 +71,73 @@ export function DocumentLayout({ title, docNumber, date, children, headerInfo, i
 
             {/* Document Container */}
             <div 
-                className="w-full bg-white shadow-2xl printable-area flex flex-col font-sans text-slate-900 border-t-[16px] border-slate-900 relative overflow-hidden"
+                className="w-full bg-white shadow-2xl printable-area flex flex-col font-sans text-slate-900 border-t-[16px] border-slate-900"
                 style={{ 
                     maxWidth: pageWidth, 
                     minHeight: isContinuous ? '139mm' : (isA5 ? '148mm' : '297mm')
                 }}
             >
-                {/* Decorative Accent */}
-                <div className="absolute top-0 right-0 w-32 h-32 bg-slate-50 -mr-16 -mt-16 rotate-45 pointer-events-none no-print"></div>
-
                 {/* Header Branding */}
-                <div className={`flex justify-between items-start ${(isA5 || isContinuous) ? 'p-4 mb-2' : 'p-8 mb-4'} border-b border-slate-100`}>
-                    <div className="flex items-center gap-5">
-                        <div className="shrink-0 bg-white p-1 rounded-lg border border-slate-50 shadow-sm">
+                <div className={`flex justify-between items-start ${(isA5 || isContinuous) ? 'pb-1 mb-1' : 'pb-4 mb-6'} p-[8mm]`}>
+                    <div className="flex items-center gap-4">
+                        <div className="shrink-0">
                             <img src="/logo.png" alt="Logo Kola Borasi" className={`${(isA5 || isContinuous) ? 'h-12' : 'h-24'} w-auto object-contain`} />
                         </div>
-                        <div className="space-y-1">
-                            <h1 className={`${(isA5 || isContinuous) ? 'text-xl' : 'text-4xl'} font-black tracking-tighter text-slate-900 uppercase leading-none`}>
-                                PT KOLA BORASI <span className="text-indigo-600">INDONESIA</span>
-                            </h1>
-                            <div className="flex items-center gap-2">
-                                <span className="bg-slate-900 text-white px-2 py-0.5 rounded-sm text-[8px] font-black uppercase tracking-widest">OFFICIAL DOCUMENT</span>
-                                <div className="h-1 w-1 rounded-full bg-slate-300"></div>
-                                <p className={`${(isA5 || isContinuous) ? 'text-[8px]' : 'text-[11px]'} font-bold text-slate-400 italic tracking-tight`}>
-                                    Trading & Distribution ERP System
-                                </p>
+                        <div>
+                            <h1 className={`${(isA5 || isContinuous) ? 'text-lg' : 'text-3xl'} font-black tracking-tight text-slate-900 uppercase`}>PT KOLA BORASI INDONESIA</h1>
+                            <div className="flex items-center gap-2 mt-0.5">
+                                <span className="bg-slate-100 px-1.5 py-0.5 rounded text-[7px] font-black text-slate-500 uppercase tracking-widest border border-slate-200">OFFICIAL DOCUMENT</span>
+                                <p className={`${(isA5 || isContinuous) ? 'text-[8px]' : 'text-xs'} font-bold text-slate-400 italic`}>Trading & Distribution ERP</p>
                             </div>
-                            <div className={`${(isA5 || isContinuous) ? 'mt-1' : 'mt-4'} space-y-1`}>
-                                <p className={`${(isA5 || isContinuous) ? 'text-[7px]' : 'text-[10px]'} font-bold text-slate-500 leading-tight max-w-md`}>
+                            <div className={`${(isA5 || isContinuous) ? 'mt-1' : 'mt-3'} space-y-0.5`}>
+                                <p className={`${(isA5 || isContinuous) ? 'text-[7px]' : 'text-[10px]'} font-bold text-slate-500 leading-tight max-w-sm`}>
                                     Jl. Arjuna IV Green Kartika Residence Blok EE NO.2, CIBINONG, KAB. BOGOR - JAWA BARAT, 16911
                                 </p>
-                                <div className="flex items-center gap-3 text-[8pt] font-black text-slate-400 uppercase tracking-widest">
-                                    <div className="flex items-center gap-1">
-                                        <span className="text-indigo-500">P.</span> <span className="text-slate-600">0857-7444-4805</span>
-                                    </div>
-                                    <div className="h-3 w-[1px] bg-slate-200"></div>
-                                    <div className="flex items-center gap-1">
-                                        <span className="text-indigo-500">W.</span> <span className="text-slate-600">www.kolaborasi.id</span>
-                                    </div>
-                                </div>
+                                <p className="text-[7pt] font-bold text-slate-400 uppercase tracking-widest">
+                                    PHONE: <span className="text-slate-500">0857-7444-4805</span> | WEB: <span className="text-slate-500">www.kolaborasi.id</span>
+                                </p>
                             </div>
                         </div>
                     </div>
 
                     <div className="text-right flex flex-col items-end">
-                        <div className={`relative group`}>
-                            <div className={`bg-slate-900 text-white font-black tracking-[0.15em] uppercase ${(isA5 || isContinuous) ? 'px-4 py-1.5 text-lg rounded-sm' : 'px-8 py-3 text-3xl rounded-md'} shadow-lg shadow-slate-200 relative z-10`}>
-                                {title}
-                            </div>
-                            <div className="absolute inset-0 bg-indigo-600 translate-x-1 translate-y-1 rounded-md opacity-20 no-print"></div>
+                        <div className={`bg-slate-900 text-white font-black tracking-[0.1em] uppercase ${(isA5 || isContinuous) ? 'px-3 py-1 text-base rounded' : 'px-6 py-2.5 text-3xl rounded-lg'}`}>
+                            {title}
                         </div>
 
-                        <div className="flex flex-col gap-1 items-end mt-4">
-                            <div className={`${(isA5 || isContinuous) ? 'text-[11px]' : 'text-xl'} flex gap-3 items-center justify-end w-full`}>
-                                <span className="font-bold text-slate-300 uppercase tracking-[0.2em] text-[10px]">Reference No.</span>
-                                <span className="font-black text-slate-900 bg-slate-50 px-3 py-1 rounded border border-slate-200 font-mono tracking-tighter shadow-sm">#{docNumber}</span>
+                        <div className="flex flex-col gap-0.5 items-end mt-2">
+                            <div className={`${(isA5 || isContinuous) ? 'text-[10px]' : 'text-lg'} flex gap-2 items-center justify-end w-full`}>
+                                <span className="font-bold text-slate-400 uppercase tracking-[0.1em]">No. Ref</span>
+                                <span className="font-black text-slate-900 bg-slate-50 px-2 py-0.5 rounded border border-slate-200 font-mono tracking-tighter">#{docNumber}</span>
                             </div>
-                            <div className={`${(isA5 || isContinuous) ? 'text-[9px]' : 'text-[13px]'} flex gap-3 items-center justify-end w-full`}>
-                                <span className="font-bold text-slate-200 uppercase tracking-[0.2em] text-[9px]">Document Date</span>
-                                <span className="font-black text-slate-700">{date}</span>
+                            <div className={`${(isA5 || isContinuous) ? 'text-[8px]' : 'text-xs'} flex gap-2 items-center justify-end w-full`}>
+                                <span className="font-bold text-slate-300 uppercase tracking-[0.1em]">Date</span>
+                                <span className="font-black text-slate-900">{date}</span>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div className={`flex justify-end ${(isA5 || isContinuous) ? 'px-4 mb-2' : 'px-8 mb-4'} opacity-60 hover:opacity-100 transition-opacity`}>
-                    <Barcode value={docNumber} format="CODE128" width={0.9} height={25} displayValue={false} margin={0} background="transparent" />
+                <div className={`flex justify-end ${(isA5 || isContinuous) ? 'mb-1' : 'mb-2'} px-[8mm] opacity-80`}>
+                    <Barcode value={docNumber} format="CODE128" width={0.8} height={20} displayValue={false} margin={0} background="transparent" />
+                </div>
+
+                <div className={`relative ${(isA5 || isContinuous) ? 'mb-2' : 'mb-6'} px-[8mm]`}>
+                    <div className="border-b-[2px] border-slate-900"></div>
                 </div>
 
                 {/* Sub-Header / Billing Info */}
-                <div className={`${(isA5 || isContinuous) ? 'px-4 mb-4' : 'px-8 mb-10'}`}>
+                <div className={`${(isA5 || isContinuous) ? 'mb-2 px-[8mm]' : 'mb-8 px-[8mm]'}`}>
                     {headerInfo}
                 </div>
 
                 {/* Main Content */}
-                <div className={`flex-1 ${(isA5 || isContinuous) ? 'px-4' : 'px-8'}`}>
+                <div className="flex-1 px-[8mm]">
                     {children}
                 </div>
 
                 {/* Footer Signature */}
-                <div className={`${(isA5 || isContinuous) ? 'p-4 mt-4' : 'p-8 mt-20'}`}>
+                <div className={`${(isA5 || isContinuous) ? 'mt-4 px-[8mm]' : 'mt-20 px-[8mm]'} pb-[8mm]`}>
                     <div className={`grid grid-cols-3 gap-8 text-center ${(isA5 || isContinuous) ? 'text-[9px]' : 'text-xs'} font-black uppercase tracking-widest text-slate-900`}>
                         <div className={`${(isA5 || isContinuous) ? 'space-y-8' : 'space-y-20'}`}>
                             <p>TANDA TERIMA,</p>

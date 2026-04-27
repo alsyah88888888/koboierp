@@ -46,16 +46,16 @@ export default async function InvoicePrintPage({ params }: { params: Promise<{ i
                 <div className="flex flex-col gap-2">
                     <div className="flex justify-between items-start gap-4 text-[10px] font-bold uppercase italic border border-slate-900 p-3 bg-slate-50/20">
                         <div className="flex-1 space-y-0.5">
-                            <span className="text-[8px] text-slate-400 tracking-widest not-italic block">PEMBELI / TOKO:</span>
+                            <span className="text-[8px] text-slate-400 tracking-widest not-italic block uppercase">PEMBELI / TOKO:</span>
                             <div className="text-slate-900 text-xs leading-tight font-black tabular-nums">{delivery.buyerName}</div>
                         </div>
-                        <div className="flex-[1.5] space-y-0.5 border-l border-slate-300 pl-4">
-                            <span className="text-[8px] text-slate-400 tracking-widest not-italic block">ALAMAT PENGIRIMAN:</span>
+                        <div className="flex-[1.5] space-y-0.5 border-l border-slate-900 pl-4">
+                            <span className="text-[8px] text-slate-400 tracking-widest not-italic block uppercase">ALAMAT PENGIRIMAN:</span>
                             <div className="text-slate-600 leading-tight font-semibold normal-case italic text-[9px]">{delivery.recipient}</div>
                         </div>
                         {delivery.salesPerson && (
-                            <div className="flex-none space-y-0.5 border-l border-slate-300 pl-4 text-center">
-                                <span className="text-[8px] text-slate-400 tracking-widest not-italic block">SALES</span>
+                            <div className="flex-none space-y-0.5 border-l border-slate-900 pl-4 text-center">
+                                <span className="text-[8px] text-slate-400 tracking-widest not-italic block uppercase">SALES:</span>
                                 <div className="text-primary text-[10px] font-black italic">{delivery.salesPerson}</div>
                             </div>
                         )}
@@ -65,14 +65,14 @@ export default async function InvoicePrintPage({ params }: { params: Promise<{ i
         >
             <table className="w-full border-collapse border border-slate-900">
                 <thead>
-                    <tr className="uppercase text-[9px] font-black bg-slate-900 text-white tracking-widest">
-                        <th className="border border-slate-900 p-2 text-center w-8">NO</th>
-                        <th className="border border-slate-900 p-2 text-left w-24">BARCODE</th>
-                        <th className="border border-slate-900 p-2 text-left">NAMA / DESKRIPSI BARANG</th>
-                        <th className="border border-slate-900 p-2 text-center w-12">QTY</th>
-                        <th className="border border-slate-900 p-2 text-center w-16">SATUAN</th>
-                        <th className="border border-slate-900 p-2 text-right w-28">HARGA</th>
-                        <th className="border border-slate-900 p-2 text-right w-32">TOTAL</th>
+                    <tr className="uppercase text-[9px] font-black bg-slate-50 tracking-widest text-slate-900">
+                        <th className="border border-slate-900 p-1.5 text-center w-8">NO</th>
+                        <th className="border border-slate-900 p-1.5 text-left w-24">BARCODE</th>
+                        <th className="border border-slate-900 p-1.5 text-left">NAMA / DESKRIPSI BARANG</th>
+                        <th className="border border-slate-900 p-1.5 text-center w-12">QTY</th>
+                        <th className="border border-slate-900 p-1.5 text-center w-16">SATUAN</th>
+                        <th className="border border-slate-900 p-1.5 text-right w-28">HARGA</th>
+                        <th className="border border-slate-900 p-1.5 text-right w-32">TOTAL</th>
                     </tr>
                 </thead>
                 <tbody className="text-[9px] font-bold text-slate-800">

@@ -52,15 +52,15 @@ export default async function SJPrintPage({ params }: { params: Promise<{ id: st
             }
         >
             <div className="mb-1 text-[9px] font-bold uppercase text-slate-500 italic">Harap diterima barang tersebut di bawah ini dengan baik:</div>
-            <table className="w-full border-collapse border border-slate-900">
+            <table className="w-full border-collapse border border-slate-900 mb-2">
                 <thead>
-                    <tr className="uppercase text-[9px] font-black bg-slate-900 text-white tracking-widest">
-                        <th className="border border-slate-900 p-2 text-center w-8">NO</th>
-                        <th className="border border-slate-900 p-2 text-left w-28">BARCODE</th>
-                        <th className="border border-slate-900 p-2 text-left">NAMA / DESKRIPSI BARANG</th>
-                        <th className="border border-slate-900 p-2 text-center w-16">QTY</th>
-                        <th className="border border-slate-900 p-2 text-center w-20">SATUAN</th>
-                        <th className="border border-slate-900 p-2 text-left">KETERANGAN</th>
+                    <tr className="uppercase text-[9px] font-black bg-slate-50 tracking-widest text-slate-900">
+                        <th className="border border-slate-900 p-1.5 text-center w-8">NO</th>
+                        <th className="border border-slate-900 p-1.5 text-left w-28">BARCODE</th>
+                        <th className="border border-slate-900 p-1.5 text-left">NAMA / DESKRIPSI BARANG</th>
+                        <th className="border border-slate-900 p-1.5 text-center w-16">QTY</th>
+                        <th className="border border-slate-900 p-1.5 text-center w-20">SATUAN</th>
+                        <th className="border border-slate-900 p-1.5 text-left">KETERANGAN</th>
                     </tr>
                 </thead>
                 <tbody className="text-[9px] font-bold text-slate-800">
