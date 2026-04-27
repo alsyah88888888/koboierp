@@ -305,7 +305,7 @@ export async function updateGoodsReceiptService(id: string, data: any, userId: s
         });
         // ────────────────────────────────────────────────────────────────
 
-        const currentReceiptNumber = oldReceipt.receiptNumber;
+
 
         // 3. Recalculate Totals (Reuse logic from create)
         let grossAmount = 0;
@@ -325,6 +325,35 @@ export async function updateGoodsReceiptService(id: string, data: any, userId: s
         const taxAmount = taxRatePercent > 0 ? Math.round(dppNilaiLain * (taxRatePercent / 100)) : 0;
         const grandTotal = Math.round(dpp + taxAmount);
 
+        // ─── LOGIC: Auto-update Receipt Number if PKP status changes ─────
+        let currentReceiptNumber = oldReceipt.receiptNumber;
+        const txDate = data.date ? new Date(data.date) : (oldReceipt.date || new Date());
+        
+        const hasTaxOrDisc = (taxRatePercent > 0 || totalDiscountNominal > 0 || data.items.some((i: any) => (Number(i.discount) || 0) > 0));
+        const isCurrentPKP = oldReceipt.receiptNumber.startsWith("KB-LPBD-");
+        
+        if (hasTaxOrDisc !== isCurrentPKP) {
+            const day = String(txDate.getDate()).padStart(2, '0');
+            const month = String(txDate.getMonth() + 1).padStart(2, '0');
+            const year = txDate.getFullYear();
+            const dateStr = `${day}${month}${year}`;
+            const newPrefix = hasTaxOrDisc ? `KB-LPBD-${dateStr}-` : `KB-LPB-${dateStr}-`;
+            
+            const latest = await tx.goodsReceipt.findFirst({
+                where: { receiptNumber: { startsWith: newPrefix } },
+                orderBy: { receiptNumber: 'desc' }
+            });
+
+            let nextNum = 1;
+            if (latest) {
+                const parts = latest.receiptNumber.split('-');
+                const lastSeq = parseInt(parts[parts.length - 1]);
+                if (!isNaN(lastSeq)) nextNum = lastSeq + 1;
+            }
+            currentReceiptNumber = `${newPrefix}${String(nextNum).padStart(3, '0')}`;
+        }
+        // ────────────────────────────────────────────────────────────────
+
         // Store cashback summary in notes if exists
         let updatedNotes = data.notes || "";
         if (data.cashbacks && Array.isArray(data.cashbacks)) {
@@ -335,10 +364,10 @@ export async function updateGoodsReceiptService(id: string, data: any, userId: s
         // 4. Update Header & Items
         await tx.goodsReceiptItem.deleteMany({ where: { receiptId: id } });
 
-        const txDate = data.date || new Date();
         await tx.goodsReceipt.update({
             where: { id },
             data: {
+                receiptNumber: currentReceiptNumber, // Update number if prefix changed
                 formNumber: data.formNumber?.trim() || null,
                 receivedFrom: data.receivedFrom,
                 warehouse: { connect: { id: data.warehouseId } },
