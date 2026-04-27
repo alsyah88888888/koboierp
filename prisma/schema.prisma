@@ -252,7 +252,7 @@ model GoodsReceiptItem {
   discount      Decimal      @default(0)
   uom           String?
   product       Product      @relation(fields: [productId], references: [id])
-  receipt       GoodsReceipt @relation(fields: [receiptId], references: [id])
+  receipt       GoodsReceipt @relation(fields: [receiptId], references: [id], onDelete: Cascade)
   lot           ProductLot?
 }
 
@@ -509,7 +509,7 @@ model ProductLot {
   createdAt     DateTime         @default(now())
 
   product       Product          @relation(fields: [productId], references: [id])
-  grItem        GoodsReceiptItem @relation(fields: [grItemId], references: [id])
+  grItem        GoodsReceiptItem @relation(fields: [grItemId], references: [id], onDelete: Cascade)
   allocations   LotAllocation[]
 
   @@index([productId])
@@ -525,7 +525,7 @@ model LotAllocation {
   hppAtTime Decimal
   createdAt DateTime          @default(now())
 
-  lot       ProductLot        @relation(fields: [lotId], references: [id])
+  lot       ProductLot        @relation(fields: [lotId], references: [id], onDelete: Cascade)
   sdItem    SalesDeliveryItem @relation(fields: [sdItemId], references: [id])
 
   @@index([lotId])

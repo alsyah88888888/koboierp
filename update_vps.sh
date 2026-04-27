@@ -18,6 +18,7 @@ ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_IP} "
     cd ${REMOTE_PATH} && \
     git reset --hard HEAD && \
     git pull && \
+    npx prisma db push && \
     npm run build && \
     pm2 restart erp
 "

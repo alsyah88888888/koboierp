@@ -11,7 +11,7 @@ echo.
 echo Menghubungkan ke Server (76.13.20.44)...
 echo Jika diminta Password, klik kanan (Paste) Root Password Anda lalu tekan Enter.
 echo.
-ssh -o StrictHostKeyChecking=no root@76.13.20.44 "cd ~/erp && git pull && npm run build && pm2 restart erp"
+ssh -o StrictHostKeyChecking=no root@76.13.20.44 "cd ~/erp && git reset --hard HEAD && git pull && npx prisma db push && npm run build && pm2 restart erp"
 echo.
 echo ===================================================
 echo   UPDATE SELESAI PADA SERVER PRODUCTION!
