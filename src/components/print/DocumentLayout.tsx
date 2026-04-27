@@ -35,6 +35,7 @@ export function DocumentLayout({ title, docNumber, date, children, headerInfo, i
                 @media print {
                     @page {
                         size: ${pageWidth} ${pageHeight};
+                        orientation: ${isContinuous || isA5 ? 'landscape' : 'portrait'};
                         margin: 0;
                     }
                     body {
@@ -45,7 +46,10 @@ export function DocumentLayout({ title, docNumber, date, children, headerInfo, i
                 `}
             </style>
             {/* Toolbar - No Print */}
-            <div className={`w-full max-w-[${pageWidth}] bg-white border-2 border-slate-200 rounded-2xl p-4 mb-6 flex justify-between items-center shadow-sm no-print`}>
+            <div 
+                className="w-full bg-white border-2 border-slate-200 rounded-2xl p-4 mb-6 flex justify-between items-center shadow-sm no-print"
+                style={{ maxWidth: pageWidth }}
+            >
                 <button
                     onClick={() => router.back()}
                     className="flex items-center gap-2 text-slate-600 font-bold hover:text-slate-900 transition-colors"
@@ -66,7 +70,13 @@ export function DocumentLayout({ title, docNumber, date, children, headerInfo, i
             </div>
 
             {/* Document Container */}
-            <div className={`w-full max-w-[${pageWidth}] ${isContinuous ? 'min-h-[139mm]' : (isA5 ? 'min-h-[148mm]' : 'min-h-[270mm]')} p-[8mm] bg-white shadow-2xl printable-area flex flex-col font-sans text-slate-900 border-t-[16px] border-slate-900`}>
+            <div 
+                className="w-full bg-white shadow-2xl printable-area flex flex-col font-sans text-slate-900 border-t-[16px] border-slate-900"
+                style={{ 
+                    maxWidth: pageWidth, 
+                    minHeight: isContinuous ? '139mm' : (isA5 ? '148mm' : '297mm')
+                }}
+            >
                 {/* Header Branding */}
                 <div className={`flex justify-between items-start ${(isA5 || isContinuous) ? 'pb-1 mb-1' : 'pb-4 mb-6'}`}>
                     <div className="flex items-center gap-4">
@@ -168,6 +178,7 @@ export function DocumentLayout({ title, docNumber, date, children, headerInfo, i
                     }
                     @page {
                         size: ${pageWidth} ${pageHeight};
+                        orientation: ${isContinuous || isA5 ? 'landscape' : 'portrait'};
                         margin: 0;
                     }
                 }
