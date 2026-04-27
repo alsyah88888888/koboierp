@@ -522,3 +522,19 @@ export async function updateSalesOrderAction(id: string, data: any) {
         return { error: err.message || "Failed to update sales order." };
     }
 }
+
+export async function deleteSalesOrderAction(id: string) {
+    try {
+        const { getAuthOptions } = require("@/lib/auth");
+        const { getServerSession } = require("next-auth");
+        const { deleteSalesOrderService } = require("@/lib/services/sales-service");
+
+        const session = (await getServerSession(getAuthOptions())) as any;
+        if (!session?.user?.id) throw new Error("Unauthorized");
+
+        return await deleteSalesOrderService(id);
+    } catch (err: any) {
+        console.error("[deleteSalesOrderAction] ERROR:", err);
+        return { error: err.message || "Failed to delete sales order." };
+    }
+}

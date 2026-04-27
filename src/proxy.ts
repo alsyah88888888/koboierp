@@ -46,6 +46,9 @@ export async function callAction(actionName: string, ...args: any[]) {
         case "updateSalesOrder":
             const { updateSalesOrderAction } = await import("@/actions/sales");
             return await updateSalesOrderAction(...args as [string, any]);
+        case "deleteSalesOrder":
+            const { deleteSalesOrderAction } = await import("@/actions/sales");
+            return await deleteSalesOrderAction(...args as [string]);
 
         // FINANCE
         case "createFinanceTransaction":

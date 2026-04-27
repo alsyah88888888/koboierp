@@ -738,3 +738,26 @@ export async function updateSalesOrderService(id: string, data: any) {
         return { success: true };
     });
 }
+
+export async function deleteSalesOrderService(id: string) {
+    const { getPrisma } = require("@/lib/prisma");
+    const prisma = getPrisma();
+
+    return await prisma.$transaction(async (tx: any) => {
+        const order = await tx.salesOrder.findUnique({
+            where: { id },
+            include: { deliveries: true }
+        });
+
+        if (!order) throw new Error("Order tidak ditemukan");
+        if (order.deliveries.length > 0) {
+            throw new Error("Tidak dapat menghapus PO yang sudah memiliki pengiriman (SJ). Batalkan SJ terlebih dahulu.");
+        }
+
+        await tx.salesOrderItem.deleteMany({ where: { orderId: id } });
+        await tx.salesOrder.delete({ where: { id } });
+
+        revalidatePath("/sales");
+        return { success: true };
+    }, { timeout: 30000 });
+}

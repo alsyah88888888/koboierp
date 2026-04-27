@@ -127,6 +127,35 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
         }
     };
 
+    const handleDeleteOrder = async (id: string) => {
+        const ok = await confirm({
+            title: "Hapus PO Penjualan?",
+            message: "Hapus pesanan ini? Tindakan ini tidak dapat dibatalkan. PO yang sudah memiliki pengiriman (SJ) tidak dapat dihapus.",
+            confirmText: "Hapus Sekarang",
+            type: "danger",
+            hasCountdown: true
+        });
+        if (!ok) return;
+
+        try {
+            const res = await callAction("deleteSalesOrder", id);
+            if (res.error) throw new Error(res.error);
+            
+            await alert({
+                title: "Berhasil",
+                message: "Pesanan penjualan telah dihapus.",
+                type: "success"
+            });
+            window.location.reload();
+        } catch (e: any) {
+            await alert({
+                title: "Gagal Menghapus",
+                message: e.message || "Gagal menghapus pesanan.",
+                type: "danger"
+            });
+        }
+    };
+
 
     const filteredDeliveries = initialDeliveries.filter(d =>
         d.deliveryNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -702,6 +731,11 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                                                 <button onClick={() => { setEditData(o); setShowManualModal(true); }} className="p-2.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-all" title="Edit Order">
                                                     <Edit2 className="h-4 w-4" />
                                                 </button>
+                                                {(isAdmin || userRole === "SALES") && (
+                                                    <button onClick={() => handleDeleteOrder(o.id)} className="p-2.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all" title="Hapus Order">
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </button>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>
