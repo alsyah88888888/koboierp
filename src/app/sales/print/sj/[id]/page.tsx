@@ -25,7 +25,6 @@ export default async function SJPrintPage({ params }: { params: Promise<{ id: st
 
     return (
         <DocumentLayout
-            isContinuous={true}
             title="SURAT JALAN"
             docNumber={delivery.deliveryNumber}
             date={format(new Date(delivery.createdAt), "dd MMM yyyy")}

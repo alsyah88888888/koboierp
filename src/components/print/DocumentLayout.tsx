@@ -24,9 +24,9 @@ export function DocumentLayout({ title, docNumber, date, children, headerInfo, i
         }
     }, [docNumber]);
 
-    // Dimensions for LX-310 Continuous Form (Half Page: 9.5" x 5.5")
-    const pageWidth = isContinuous ? "241mm" : (isA5 ? "210mm" : "230mm");
-    const pageHeight = isContinuous ? "139mm" : (isA5 ? "148mm" : "270mm");
+    // Dimensions for Documents
+    const pageWidth = isContinuous ? "241mm" : (isA5 ? "210mm" : "210mm");
+    const pageHeight = isContinuous ? "139mm" : (isA5 ? "148mm" : "297mm");
 
     return (
         <div className="min-h-screen bg-slate-100 p-4 md:p-8 flex flex-col items-center print:bg-white print:p-0 print:block">

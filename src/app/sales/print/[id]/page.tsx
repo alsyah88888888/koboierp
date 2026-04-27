@@ -39,7 +39,6 @@ export default async function InvoicePrintPage({ params }: { params: Promise<{ i
 
     return (
         <DocumentLayout
-            isContinuous={true}
             title="FAKTUR PENJUALAN"
             docNumber={delivery.deliveryNumber}
             date={format(new Date(delivery.date || delivery.createdAt), "dd MMM yyyy")}

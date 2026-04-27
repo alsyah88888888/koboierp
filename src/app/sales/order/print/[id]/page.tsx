@@ -28,7 +28,6 @@ export default async function SalesOrderPrintPage({ params }: { params: Promise<
 
     return (
         <DocumentLayout
-            isContinuous={true}
             title={isDraft ? "PROFORMA INVOICE (PI)" : "SALES ORDER (PO)"}
             docNumber={order.orderNumber}
             date={format(new Date(order.date), "dd MMM yyyy")}
