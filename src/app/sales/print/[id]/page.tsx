@@ -65,14 +65,14 @@ export default async function InvoicePrintPage({ params }: { params: Promise<{ i
         >
             <table className="w-full border-collapse border border-slate-900">
                 <thead>
-                    <tr className="uppercase text-[9px] font-black tracking-widest bg-slate-50">
-                        <th className="border border-slate-900 p-1.5 text-center w-8">No</th>
-                        <th className="border border-slate-900 p-1.5 text-left w-24">Barcode</th>
-                        <th className="border border-slate-900 p-1.5 text-left">Nama Barang</th>
-                        <th className="border border-slate-900 p-1.5 text-center w-12">QTY</th>
-                        <th className="border border-slate-900 p-1.5 text-center w-16">SATUAN</th>
-                        <th className="border border-slate-900 p-1.5 text-right w-28">HARGA</th>
-                        <th className="border border-slate-900 p-1.5 text-right w-32">TOTAL</th>
+                    <tr className="uppercase text-[9px] font-black bg-slate-900 text-white tracking-widest">
+                        <th className="border border-slate-900 p-2 text-center w-8">NO</th>
+                        <th className="border border-slate-900 p-2 text-left w-24">BARCODE</th>
+                        <th className="border border-slate-900 p-2 text-left">NAMA / DESKRIPSI BARANG</th>
+                        <th className="border border-slate-900 p-2 text-center w-12">QTY</th>
+                        <th className="border border-slate-900 p-2 text-center w-16">SATUAN</th>
+                        <th className="border border-slate-900 p-2 text-right w-28">HARGA</th>
+                        <th className="border border-slate-900 p-2 text-right w-32">TOTAL</th>
                     </tr>
                 </thead>
                 <tbody className="text-[9px] font-bold text-slate-800">
