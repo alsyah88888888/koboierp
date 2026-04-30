@@ -47,14 +47,14 @@ export default function WarehouseCheckerPage() {
 
     const handleBarcodeSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        const item = items.find(i => i.product.barcode === barcode || i.product.sku === barcode);
+        const item = items.find(i => i.product?.barcode === barcode || i.product?.sku === barcode);
         if (item) {
             setItems(items.map(i =>
-                (i.product.barcode === barcode || i.product.sku === barcode)
+                (i.product?.barcode === barcode || i.product?.sku === barcode)
                     ? { ...i, actualQuantity: i.actualQuantity + 1 }
                     : i
             ));
-            setStatus(`Scanned: ${item.product.name}`);
+            setStatus(`Scanned: ${item.product?.name || 'Unknown'}`);
         } else {
             setStatus("Product not found");
         }
@@ -140,8 +140,8 @@ export default function WarehouseCheckerPage() {
                     &larr; Back to List
                 </button>
                 <div className="text-right">
-                    <h2 className="font-black text-slate-900">{selectedReceipt.receiptNumber}</h2>
-                    <p className="text-xs font-bold text-primary truncate max-w-[200px]">{selectedReceipt.receivedFrom}</p>
+                    <h2 className="font-black text-slate-900">{selectedReceipt?.receiptNumber || "N/A"}</h2>
+                    <p className="text-xs font-bold text-primary truncate max-w-[200px]">{selectedReceipt?.receivedFrom || "-"}</p>
                 </div>
             </div>
 
@@ -177,8 +177,8 @@ export default function WarehouseCheckerPage() {
                     {items.map((item, idx) => (
                         <div key={idx} className="p-4 flex items-center justify-between gap-4">
                             <div className="flex-1 min-w-0">
-                                <h4 className="font-bold text-slate-800 truncate">{item.product.name}</h4>
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{item.product.sku}</p>
+                                <h4 className="font-bold text-slate-800 truncate">{item.product?.name || "Unknown"}</h4>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{item.product?.sku || "-"}</p>
                             </div>
                             <div className="flex items-center gap-6">
                                 <div className="text-center">

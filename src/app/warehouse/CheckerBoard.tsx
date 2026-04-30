@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Search, CheckCircle, AlertCircle, Barcode, Printer, Package, ChevronRight, X, AlertTriangle, Camera, CameraOff, Sparkles } from "lucide-react";
+import { Search, CheckCircle2, AlertCircle, Barcode, Printer, Package, ChevronRight, X, AlertTriangle, Camera, CameraOff, Sparkles } from "lucide-react";
 import { Html5Qrcode } from "html5-qrcode";
 import { format } from "date-fns";
 import { callAction } from "@/proxy";
@@ -70,9 +70,9 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
         const cleanBarcode = barcode.trim().toUpperCase();
 
         // Find item by barcode or SKU
-        const item = selectedReceipt.items.find((i: any) =>
-            (i.product.barcode && i.product.barcode.toUpperCase() === cleanBarcode) ||
-            (i.product.sku && i.product.sku.toUpperCase() === cleanBarcode)
+        const item = selectedReceipt?.items?.find((i: any) =>
+            (i.product?.barcode && i.product.barcode.toUpperCase() === cleanBarcode) ||
+            (i.product?.sku && i.product.sku.toUpperCase() === cleanBarcode)
         );
 
         if (item) {
@@ -114,11 +114,11 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
             if (res.success) {
 
                 // Build summary of what was received
-                const lines = selectedReceipt.items.map((item: any) => {
+                const lines = selectedReceipt?.items?.map((item: any) => {
                     const actual = checkedItems[item.id] ?? 0;
                     const remaining = item.quantity - actual;
-                    return `• ${item.product?.name}: Diterima ${actual}/${item.quantity}${remaining > 0 ? ` (sisa ${remaining} belum datang)` : ' ✓'}`;
-                });
+                    return `• ${item.product?.name || 'Unknown'}: Diterima ${actual}/${item.quantity}${remaining > 0 ? ` (sisa ${remaining} belum datang)` : ' ✓'}`;
+                }) || [];
                 alert(`Verifikasi berhasil! Stok gudang telah diperbarui.\n\nRingkasan:\n${lines.join('\n')}`);
                 setSelectedReceipt(null);
                 setCheckedItems({});
@@ -259,7 +259,7 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
                                             <td className="px-6 py-4 text-center">
                                                 <div className="flex justify-center">
                                                     {isComplete ? (
-                                                        <div className="bg-emerald-100 p-1.5 rounded-full"><CheckCircle className="h-4 w-4 text-emerald-600" /></div>
+                                                        <div className="bg-emerald-100 p-1.5 rounded-full"><CheckCircle2 className="h-4 w-4 text-emerald-600" /></div>
                                                     ) : (
                                                         <div className="bg-amber-100 p-1.5 rounded-full"><AlertCircle className="h-4 w-4 text-amber-600" /></div>
                                                     )}
@@ -416,7 +416,7 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
                                             {hasDiff ? (
                                                 <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" />
                                             ) : (
-                                                <CheckCircle className="h-5 w-5 text-emerald-600 shrink-0" />
+                                                <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
                                             )}
                                             <div>
                                                 <p className={cn("text-xs font-black", hasDiff ? "text-amber-800" : "text-emerald-800")}>
@@ -460,10 +460,10 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
     }
 
     const [displaySearchTerm, setDisplaySearchTerm] = useState("");
-    const displayReceipts = unverifiedReceipts.filter(r => 
+    const displayReceipts = (unverifiedReceipts || []).filter(r => 
         !r.isVerified && 
-        (r.receiptNumber.toLowerCase().includes(displaySearchTerm.toLowerCase()) || 
-         r.receivedFrom.toLowerCase().includes(displaySearchTerm.toLowerCase()))
+        (r.receiptNumber?.toLowerCase().includes(displaySearchTerm.toLowerCase()) || 
+         r.receivedFrom?.toLowerCase().includes(displaySearchTerm.toLowerCase()))
     );
 
     return (
