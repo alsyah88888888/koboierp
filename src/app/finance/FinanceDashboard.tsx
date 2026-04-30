@@ -148,32 +148,52 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
         if (activeTab === "ledger") {
             const data = filteredLedger.map(tx => ({
                 'Tanggal': format(new Date(tx.date), "dd/MM/yyyy"),
+                'Kas/Bank': tx.transaction?.bank || 'Kas/Bank',
                 'Deskripsi': tx.description,
-                'Ref': tx.transaction?.referenceNumber || '-',
-                'Akun': tx.account?.name,
+                'Referensi/No. Bukti': tx.transaction?.referenceNumber || '-',
+                'Akun GL': tx.account?.name,
                 'Tipe': tx.type,
-                'Nominal': Number(tx.amount)
+                'Nominal': Number(tx.amount),
+                'Operator': tx.transaction?.createdBy?.name || tx.createdBy?.name || 'System'
             }));
-            exportToExcel(data, 'Laporan_Jurnal_Keuangan', 'Ledger');
+            exportToExcel(data, `Laporan_Buku_Besar_${format(new Date(), "yyyyMMdd")}`, 'Ledger');
         } else if (activeTab === "ap") {
             const data = filteredPurchases.map(p => ({
-                'Tanggal': format(new Date(p.createdAt), "dd/MM/yyyy"),
-                'No. Terima': p.receiptNumber,
+                'Tanggal Terima': format(new Date(p.date || p.createdAt), "dd/MM/yyyy"),
+                'No. Terima (LPB)': p.receiptNumber,
+                'No. Invoice Vendor': p.formNumber || '-',
                 'Supplier': p.receivedFrom,
-                'Total': Number(p.total),
-                'Status Pembayaran': p.paymentStatus,
-                'Status Gudang': p.isVerified ? 'VERIFIED' : 'PENDING'
+                'No. Faktur Pajak': p.taxInvoiceNumber || '-',
+                'Total Tagihan': Number(p.grandTotal),
+                'Sudah Dibayar': Number(p.paidAmount || 0),
+                'Sisa Hutang': Number(p.grandTotal) - Number(p.paidAmount || 0),
+                'Status': p.paymentStatus,
+                'Sales Person Vendor': p.salesPerson || '-',
+                'Gudang': p.warehouse?.name || '-'
             }));
-            exportToExcel(data, 'Laporan_Hutang_Dagang', 'AP');
+            exportToExcel(data, `Laporan_Hutang_Dagang_Kompleks_${format(new Date(), "yyyyMMdd")}`, 'AP');
         } else if (activeTab === "ar") {
-            const data = filteredSales.map(s => ({
-                'Tanggal': format(new Date(s.createdAt), "dd/MM/yyyy"),
-                'No. SJ': s.deliveryNumber,
-                'Pelanggan': s.buyerName,
-                'Total': Number(s.total),
-                'Status Pembayaran': s.paymentStatus
-            }));
-            exportToExcel(data, 'Laporan_Piutang_Dagang', 'AR');
+            const data = filteredSales.map(s => {
+                const total = Number(s.grandTotal || 0);
+                const paid = Number(s.paidAmount || 0);
+                const remaining = total - paid;
+                const agingDays = Math.floor((new Date().getTime() - new Date(s.date || s.createdAt).getTime()) / (1000 * 3600 * 24));
+                
+                return {
+                    'Tanggal SJ': format(new Date(s.date || s.createdAt), "dd/MM/yyyy"),
+                    'No. SJ': s.deliveryNumber,
+                    'PO BUYER': s.poNumber || '-',
+                    'Pelanggan': s.buyerName,
+                    'Sales Person': s.salesPerson || '-',
+                    'Total Tagihan': total,
+                    'Sudah Dibayar': paid,
+                    'Sisa Piutang': remaining,
+                    'Status': s.paymentStatus,
+                    'Umur Piutang (Hari)': agingDays > 0 ? agingDays : 0,
+                    'Gudang Asal': s.warehouse?.name || '-'
+                };
+            });
+            exportToExcel(data, `Laporan_Piutang_Dagang_Kompleks_${format(new Date(), "yyyyMMdd")}`, 'AR');
         } else if (activeTab === "checker") {
             const data = unverifiedReceipts.map(r => ({
                 'Tanggal': format(new Date(r.createdAt), "dd/MM/yyyy"),
