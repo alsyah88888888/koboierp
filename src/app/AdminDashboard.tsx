@@ -680,15 +680,39 @@ export function AdminDashboard({
                 </div>
             </div>
 
-            {/* ═══════ TRACEABILITY REPORT SECTION ═══════ */}
+            {/* ═══════ TRACEABILITY REPORT — EXCEL STYLE ═══════ */}
             {traceabilityData && (
             <div className="space-y-6 pt-4">
-                <div className="flex items-center gap-4 px-2">
-                    <div className="h-5 w-2 bg-gradient-to-b from-cyan-500 to-blue-600 rounded-full shadow-lg shadow-cyan-200" />
-                    <div>
-                        <h2 className="text-lg font-black text-slate-900 uppercase tracking-tight">Traceability Report</h2>
-                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">Goods Movement &amp; PO Tracking (30 Days)</p>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-2">
+                    <div className="flex items-center gap-4">
+                        <div className="h-5 w-2 bg-gradient-to-b from-cyan-500 to-blue-600 rounded-full shadow-lg shadow-cyan-200" />
+                        <div>
+                            <h2 className="text-lg font-black text-slate-900 uppercase tracking-tight">Traceability Report</h2>
+                            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">Pergerakan Barang &amp; Status PO (30 Hari)</p>
+                        </div>
                     </div>
+                    <button onClick={() => {
+                        const wb = XLSX.utils.book_new();
+                        const rows = (traceabilityData.movements || []).map((mv: any, i: number) => ({
+                            'No': i + 1,
+                            'Tanggal': mv.date ? new Date(mv.date).toLocaleDateString('id-ID') : '-',
+                            'No. Dokumen': mv.ref,
+                            'Tipe': mv.type === 'IN' ? 'MASUK' : 'KELUAR',
+                            'Partner': mv.partner,
+                            'Qty': mv.qty,
+                            'Total (Rp)': mv.amount,
+                            'Status Bayar': mv.paymentStatus || '-'
+                        }));
+                        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Pergerakan Barang');
+                        const poRows = [...(traceabilityData.poSummary?.openOrders || []), ...(traceabilityData.poSummary?.partialOrders || [])].map((po: any) => ({
+                            'No. PO': po.orderNumber, 'Buyer': po.buyerName, 'Total Qty': po.totalQty, 'Terkirim': po.shippedQty, 'Progress': `${Math.round((po.shippedQty / Math.max(1, po.totalQty)) * 100)}%`
+                        }));
+                        if (poRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(poRows), 'PO Belum Close');
+                        XLSX.writeFile(wb, `Traceability_Report_${new Date().toISOString().split('T')[0]}.xlsx`);
+                    }} className="erp-btn-primary !bg-emerald-600 hover:!bg-emerald-700 !px-5 !py-2.5 shadow-emerald-200 text-xs">
+                        <FileSpreadsheet className="h-4 w-4" />
+                        <span>Export Excel</span>
+                    </button>
                 </div>
 
                 {/* PO Status Cards */}
@@ -744,106 +768,134 @@ export function AdminDashboard({
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Goods Movement Timeline */}
-                    <div className="lg:col-span-2 erp-card p-8 bg-slate-50/30 border-slate-200/40">
-                        <div className="flex items-center justify-between mb-6">
-                            <div className="space-y-1">
-                                <h3 className="text-lg font-black text-slate-900 tracking-tight">Goods Movement</h3>
-                                <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">Recent Inbound / Outbound Flow</p>
-                            </div>
-                            <Link href="/tracking" className="bg-white border-2 border-slate-100 hover:border-primary hover:text-primary px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm">Detail</Link>
-                        </div>
-                        <div className="space-y-3 max-h-[420px] overflow-y-auto pr-2 custom-scrollbar scrollbar-hide">
-                            {(traceabilityData.movements || []).map((mv: any, i: number) => (
-                                <div key={i} className="bg-white p-4 rounded-2xl flex items-center gap-4 border border-slate-100/50 hover:shadow-lg hover:border-slate-200 transition-all group/mv">
-                                    <div className={`p-3 rounded-xl shrink-0 transition-transform group-hover/mv:scale-110 ${
-                                        mv.type === 'IN' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100/50' : 'bg-blue-50 text-blue-600 border border-blue-100/50'
-                                    }`}>
-                                        {mv.type === 'IN' ? <ShoppingCart className="h-4 w-4" /> : <ShoppingBag className="h-4 w-4" />}
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 flex-wrap">
-                                            <span className="text-[12px] font-black text-slate-900 tracking-tight">{mv.ref}</span>
-                                            <span className={`text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${
-                                                mv.type === 'IN' ? 'bg-emerald-50 text-emerald-600' : 'bg-blue-50 text-blue-600'
-                                            }`}>{mv.type === 'IN' ? 'MASUK' : 'KELUAR'}</span>
-                                            <span className={`text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${
-                                                mv.paymentStatus === 'PAID' ? 'bg-emerald-50 text-emerald-600' :
-                                                mv.paymentStatus === 'CREDIT' ? 'bg-amber-50 text-amber-600' :
-                                                mv.paymentStatus === 'PARTIAL' ? 'bg-orange-50 text-orange-600' :
-                                                'bg-slate-50 text-slate-500'
-                                            }`}>{mv.paymentStatus}</span>
-                                        </div>
-                                        <p className="text-[10px] font-bold text-slate-400 truncate mt-0.5">{mv.partner} &bull; {mv.qty} pcs</p>
-                                    </div>
-                                    <div className="text-right shrink-0">
-                                        <p className="text-[11px] font-black text-slate-900 tabular-nums">Rp {isClient ? (mv.amount || 0).toLocaleString('id-ID') : '...'}</p>
-                                        <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">{isClient && mv.date ? new Date(mv.date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' }) : '-'}</p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
+                {/* Excel-Style Goods Movement Table */}
+                <div className="erp-card overflow-hidden border-slate-200/60">
+                    <div className="bg-slate-50 px-6 py-3 border-b border-slate-200 flex items-center justify-between">
+                        <span className="text-[11px] font-black text-slate-600 uppercase tracking-widest">Pergerakan Barang (Inbound / Outbound)</span>
+                        <Link href="/tracking" className="text-[10px] font-black text-primary uppercase tracking-widest hover:underline">Lihat Semua</Link>
                     </div>
-
-                    {/* Open PO List + Top Partners */}
-                    <div className="space-y-6">
-                        {/* Open/Partial PO */}
-                        <div className="erp-card p-6 border-amber-100/50 bg-gradient-to-br from-white to-amber-50/20">
-                            <div className="flex items-center gap-2 mb-4">
-                                <AlertCircle className="h-4 w-4 text-amber-600" />
-                                <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest">PO Belum Close</span>
-                            </div>
-                            <div className="space-y-3 max-h-[200px] overflow-y-auto pr-1 custom-scrollbar scrollbar-hide">
-                                {[...(traceabilityData.poSummary?.openOrders || []), ...(traceabilityData.poSummary?.partialOrders || [])].slice(0, 6).map((po: any, i: number) => (
-                                    <div key={i} className="bg-white p-3 rounded-xl border border-slate-100/50 space-y-2">
-                                        <div className="flex justify-between items-start">
-                                            <span className="text-[11px] font-black text-slate-900">{po.orderNumber}</span>
-                                            <span className="text-[8px] font-black uppercase bg-amber-50 text-amber-600 px-2 py-0.5 rounded">
-                                                {po.shippedQty}/{po.totalQty}
-                                            </span>
-                                        </div>
-                                        <p className="text-[9px] font-bold text-slate-400 truncate">{po.buyerName}</p>
-                                        <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                                            <div className="h-full bg-amber-400 rounded-full transition-all" style={{ width: `${Math.min(100, (po.shippedQty / Math.max(1, po.totalQty)) * 100)}%` }} />
-                                        </div>
-                                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-[11px]">
+                            <thead>
+                                <tr className="bg-slate-900 text-white">
+                                    <th className="px-4 py-3 text-left font-black uppercase tracking-wider w-10">No</th>
+                                    <th className="px-4 py-3 text-left font-black uppercase tracking-wider">Tanggal</th>
+                                    <th className="px-4 py-3 text-left font-black uppercase tracking-wider">No. Dokumen</th>
+                                    <th className="px-4 py-3 text-center font-black uppercase tracking-wider w-20">Tipe</th>
+                                    <th className="px-4 py-3 text-left font-black uppercase tracking-wider">Partner</th>
+                                    <th className="px-4 py-3 text-right font-black uppercase tracking-wider w-16">Qty</th>
+                                    <th className="px-4 py-3 text-right font-black uppercase tracking-wider">Total (Rp)</th>
+                                    <th className="px-4 py-3 text-center font-black uppercase tracking-wider w-24">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {(traceabilityData.movements || []).map((mv: any, i: number) => (
+                                    <tr key={i} className={`border-b border-slate-100 hover:bg-blue-50/40 transition-colors ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
+                                        <td className="px-4 py-2.5 font-bold text-slate-400 tabular-nums">{i + 1}</td>
+                                        <td className="px-4 py-2.5 font-bold text-slate-700 tabular-nums whitespace-nowrap">{isClient && mv.date ? new Date(mv.date).toLocaleDateString('id-ID') : '-'}</td>
+                                        <td className="px-4 py-2.5 font-black text-slate-900 tracking-tight">{mv.ref}</td>
+                                        <td className="px-4 py-2.5 text-center">
+                                            <span className={`inline-block px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-wider ${
+                                                mv.type === 'IN' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'
+                                            }`}>{mv.type === 'IN' ? '↓ MASUK' : '↑ KELUAR'}</span>
+                                        </td>
+                                        <td className="px-4 py-2.5 font-bold text-slate-700 truncate max-w-[200px]">{mv.partner}</td>
+                                        <td className="px-4 py-2.5 text-right font-black text-slate-900 tabular-nums">{(mv.qty || 0).toLocaleString('id-ID')}</td>
+                                        <td className="px-4 py-2.5 text-right font-black text-slate-900 tabular-nums whitespace-nowrap">{isClient ? (mv.amount || 0).toLocaleString('id-ID') : '...'}</td>
+                                        <td className="px-4 py-2.5 text-center">
+                                            <span className={`inline-block px-2 py-0.5 rounded text-[9px] font-black uppercase ${
+                                                mv.paymentStatus === 'PAID' ? 'bg-emerald-100 text-emerald-700' :
+                                                mv.paymentStatus === 'CREDIT' ? 'bg-amber-100 text-amber-700' :
+                                                mv.paymentStatus === 'PARTIAL' ? 'bg-orange-100 text-orange-700' :
+                                                'bg-slate-100 text-slate-500'
+                                            }`}>{mv.paymentStatus || 'PENDING'}</span>
+                                        </td>
+                                    </tr>
                                 ))}
-                                {(traceabilityData.poSummary?.open || 0) + (traceabilityData.poSummary?.partial || 0) === 0 && (
-                                    <p className="text-[10px] font-bold text-slate-400 text-center py-4">Semua PO sudah close ✓</p>
-                                )}
-                            </div>
-                        </div>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
 
-                        {/* Top Partners */}
-                        <div className="erp-card p-6">
-                            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Top Supplier (30d)</h4>
-                            <div className="space-y-2">
-                                {(traceabilityData.topSuppliers || []).slice(0, 3).map((s: any, i: number) => (
-                                    <div key={i} className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2 min-w-0">
-                                            <div className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" />
-                                            <span className="text-[10px] font-black text-slate-700 truncate">{s.name}</span>
-                                        </div>
-                                        <span className="text-[10px] font-black text-slate-400 tabular-nums shrink-0 ml-2">{s.count}x</span>
-                                    </div>
-                                ))}
-                            </div>
-                            <div className="border-t border-slate-100 mt-4 pt-4">
-                                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Top Buyer (30d)</h4>
-                                <div className="space-y-2">
-                                    {(traceabilityData.topBuyers || []).slice(0, 3).map((b: any, i: number) => (
-                                        <div key={i} className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2 min-w-0">
-                                                <div className="h-2 w-2 rounded-full bg-blue-500 shrink-0" />
-                                                <span className="text-[10px] font-black text-slate-700 truncate">{b.name}</span>
+                {/* PO Belum Close — Excel Table */}
+                {((traceabilityData.poSummary?.open || 0) + (traceabilityData.poSummary?.partial || 0)) > 0 && (
+                <div className="erp-card overflow-hidden border-amber-200/60">
+                    <div className="bg-amber-50 px-6 py-3 border-b border-amber-200 flex items-center gap-2">
+                        <AlertCircle className="h-4 w-4 text-amber-600" />
+                        <span className="text-[11px] font-black text-amber-700 uppercase tracking-widest">PO Belum Close</span>
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-[11px]">
+                            <thead>
+                                <tr className="bg-amber-900 text-white">
+                                    <th className="px-4 py-3 text-left font-black uppercase tracking-wider">No. PO</th>
+                                    <th className="px-4 py-3 text-left font-black uppercase tracking-wider">Buyer</th>
+                                    <th className="px-4 py-3 text-right font-black uppercase tracking-wider w-20">Total Qty</th>
+                                    <th className="px-4 py-3 text-right font-black uppercase tracking-wider w-20">Terkirim</th>
+                                    <th className="px-4 py-3 text-center font-black uppercase tracking-wider w-32">Progress</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {[...(traceabilityData.poSummary?.openOrders || []), ...(traceabilityData.poSummary?.partialOrders || [])].map((po: any, i: number) => {
+                                    const pct = Math.round((po.shippedQty / Math.max(1, po.totalQty)) * 100);
+                                    return (
+                                    <tr key={i} className={`border-b border-slate-100 hover:bg-amber-50/40 transition-colors ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
+                                        <td className="px-4 py-2.5 font-black text-slate-900">{po.orderNumber}</td>
+                                        <td className="px-4 py-2.5 font-bold text-slate-700 truncate max-w-[200px]">{po.buyerName}</td>
+                                        <td className="px-4 py-2.5 text-right font-black text-slate-900 tabular-nums">{po.totalQty}</td>
+                                        <td className="px-4 py-2.5 text-right font-black text-slate-900 tabular-nums">{po.shippedQty}</td>
+                                        <td className="px-4 py-2.5">
+                                            <div className="flex items-center gap-2">
+                                                <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                                                    <div className={`h-full rounded-full ${pct >= 100 ? 'bg-emerald-500' : pct > 50 ? 'bg-blue-500' : 'bg-amber-400'}`} style={{ width: `${Math.min(100, pct)}%` }} />
+                                                </div>
+                                                <span className="text-[10px] font-black text-slate-500 tabular-nums w-10 text-right">{pct}%</span>
                                             </div>
-                                            <span className="text-[10px] font-black text-slate-400 tabular-nums shrink-0 ml-2">{b.count}x</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
+                                        </td>
+                                    </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                )}
+
+                {/* Top Partners Row */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="erp-card overflow-hidden">
+                        <div className="bg-emerald-50 px-6 py-3 border-b border-emerald-100">
+                            <span className="text-[11px] font-black text-emerald-700 uppercase tracking-widest">Top 5 Supplier (30 Hari)</span>
                         </div>
+                        <table className="w-full text-[11px]">
+                            <tbody>
+                                {(traceabilityData.topSuppliers || []).map((s: any, i: number) => (
+                                    <tr key={i} className={`border-b border-slate-50 ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
+                                        <td className="px-4 py-2.5 font-black text-emerald-600 w-8">{i + 1}</td>
+                                        <td className="px-4 py-2.5 font-bold text-slate-900 truncate">{s.name}</td>
+                                        <td className="px-4 py-2.5 text-right font-bold text-slate-500 tabular-nums">{s.count}x transaksi</td>
+                                        <td className="px-4 py-2.5 text-right font-black text-slate-900 tabular-nums whitespace-nowrap">Rp {(s.total || 0).toLocaleString('id-ID')}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div className="erp-card overflow-hidden">
+                        <div className="bg-blue-50 px-6 py-3 border-b border-blue-100">
+                            <span className="text-[11px] font-black text-blue-700 uppercase tracking-widest">Top 5 Buyer (30 Hari)</span>
+                        </div>
+                        <table className="w-full text-[11px]">
+                            <tbody>
+                                {(traceabilityData.topBuyers || []).map((b: any, i: number) => (
+                                    <tr key={i} className={`border-b border-slate-50 ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
+                                        <td className="px-4 py-2.5 font-black text-blue-600 w-8">{i + 1}</td>
+                                        <td className="px-4 py-2.5 font-bold text-slate-900 truncate">{b.name}</td>
+                                        <td className="px-4 py-2.5 text-right font-bold text-slate-500 tabular-nums">{b.count}x transaksi</td>
+                                        <td className="px-4 py-2.5 text-right font-black text-slate-900 tabular-nums whitespace-nowrap">Rp {(b.total || 0).toLocaleString('id-ID')}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
