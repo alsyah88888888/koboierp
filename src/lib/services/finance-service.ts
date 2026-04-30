@@ -8,7 +8,7 @@ import { revalidatePath } from "next/cache";
 
 async function syncVendorBalanceAfterPayment(tx: any, vendorName: string) {
     const receipts = await tx.goodsReceipt.findMany({
-        where: { receivedFrom: vendorName },
+        where: { receivedFrom: vendorName, isVoid: false },
         select: { grandTotal: true, paidAmount: true, paymentStatus: true }
     });
     const correctBalance = receipts.reduce((sum: number, r: any) => {

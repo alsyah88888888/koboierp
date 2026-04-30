@@ -607,6 +607,11 @@ export async function voidSalesDeliveryService(id: string, reason: string) {
             });
         }
 
+        // Delete associated journal entries
+        await tx.journalEntry.deleteMany({
+            where: { description: { contains: delivery.deliveryNumber } }
+        });
+
         // Mark as Voided
         await tx.salesDelivery.update({
             where: { id },

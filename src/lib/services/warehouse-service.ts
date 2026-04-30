@@ -261,6 +261,11 @@ export async function voidGoodsReceiptService(id: string, reason: string) {
             }
         }
 
+        // Delete associated journal entries
+        await tx.journalEntry.deleteMany({
+            where: { description: { contains: receipt.receiptNumber } }
+        });
+
         // Mark as Voided
         await tx.goodsReceipt.update({
             where: { id },
