@@ -250,3 +250,148 @@ async function getWeeklyStatsService(userId: string, isAdmin: boolean) {
         };
     });
 }
+
+/**
+ * TRACEABILITY SUMMARY SERVICE
+ * Fetches PO status breakdown, recent goods movement, and top supplier/buyer activity.
+ */
+export async function getTraceabilitySummaryService() {
+    const { getPrisma } = require("@/lib/prisma");
+    const prisma = getPrisma();
+
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now);
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const [
+        salesOrders,
+        recentPurchases,
+        recentSales,
+        topSuppliers,
+        topBuyers,
+        purchaseVol30d,
+        salesVol30d
+    ] = await Promise.all([
+        // PO Status breakdown
+        prisma.salesOrder.findMany({
+            select: { id: true, orderNumber: true, status: true, buyerName: true, grandTotal: true, date: true, 
+                      items: { select: { quantity: true, shippedQuantity: true } } },
+            orderBy: { date: 'desc' },
+            take: 100
+        }),
+        // Recent 15 purchases (inbound)
+        prisma.goodsReceipt.findMany({
+            where: { isVoid: false, date: { gte: thirtyDaysAgo } },
+            select: { id: true, receiptNumber: true, receivedFrom: true, date: true, grandTotal: true, paymentStatus: true, isVerified: true,
+                      items: { select: { quantity: true } } },
+            orderBy: { date: 'desc' },
+            take: 15
+        }),
+        // Recent 15 sales (outbound)
+        prisma.salesDelivery.findMany({
+            where: { isVoid: false, date: { gte: thirtyDaysAgo } },
+            select: { id: true, deliveryNumber: true, buyerName: true, recipient: true, date: true, grandTotal: true, paymentStatus: true, orderId: true,
+                      items: { select: { quantity: true } } },
+            orderBy: { date: 'desc' },
+            take: 15
+        }),
+        // Top 5 suppliers by volume (30 days)
+        prisma.goodsReceipt.groupBy({
+            by: ['receivedFrom'],
+            where: { isVoid: false, date: { gte: thirtyDaysAgo } },
+            _sum: { grandTotal: true },
+            _count: { id: true },
+            orderBy: { _sum: { grandTotal: 'desc' } },
+            take: 5
+        }),
+        // Top 5 buyers by volume (30 days)
+        prisma.salesDelivery.groupBy({
+            by: ['buyerName'],
+            where: { isVoid: false, date: { gte: thirtyDaysAgo } },
+            _sum: { grandTotal: true },
+            _count: { id: true },
+            orderBy: { _sum: { grandTotal: 'desc' } },
+            take: 5
+        }),
+        // Total purchase volume (30 days)
+        prisma.goodsReceiptItem.aggregate({
+            where: { receipt: { isVoid: false, date: { gte: thirtyDaysAgo } } },
+            _sum: { quantity: true }
+        }),
+        // Total sales volume (30 days)
+        prisma.salesDeliveryItem.aggregate({
+            where: { delivery: { isVoid: false, date: { gte: thirtyDaysAgo } } },
+            _sum: { quantity: true }
+        })
+    ]);
+
+    // Process PO status
+    const poOpen = salesOrders.filter((o: any) => o.status === 'OPEN' || o.status === 'DRAFT' || o.status === 'CONFIRMED');
+    const poPartial = salesOrders.filter((o: any) => o.status === 'PARTIAL');
+    const poClosed = salesOrders.filter((o: any) => o.status === 'CLOSED');
+
+    // Build movement timeline (last 15 combined, sorted by date desc)
+    const movements = [
+        ...recentPurchases.map((p: any) => ({
+            type: 'IN' as const,
+            ref: p.receiptNumber,
+            partner: p.receivedFrom,
+            date: p.date,
+            amount: Number(p.grandTotal || 0),
+            qty: p.items.reduce((s: number, i: any) => s + (i.quantity || 0), 0),
+            paymentStatus: p.paymentStatus,
+            verified: p.isVerified
+        })),
+        ...recentSales.map((s: any) => ({
+            type: 'OUT' as const,
+            ref: s.deliveryNumber,
+            partner: s.buyerName || s.recipient,
+            date: s.date,
+            amount: Number(s.grandTotal || 0),
+            qty: s.items.reduce((sum: number, i: any) => sum + (i.quantity || 0), 0),
+            paymentStatus: s.paymentStatus,
+            hasOrder: !!s.orderId
+        }))
+    ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 20);
+
+    const { serializeDecimal: sd } = require("@/lib/utils");
+    return sd({
+        poSummary: {
+            open: poOpen.length,
+            partial: poPartial.length,
+            closed: poClosed.length,
+            total: salesOrders.length,
+            openOrders: poOpen.slice(0, 5).map((o: any) => ({
+                orderNumber: o.orderNumber,
+                buyerName: o.buyerName,
+                grandTotal: Number(o.grandTotal || 0),
+                date: o.date,
+                totalQty: o.items.reduce((s: number, i: any) => s + (i.quantity || 0), 0),
+                shippedQty: o.items.reduce((s: number, i: any) => s + (i.shippedQuantity || 0), 0)
+            })),
+            partialOrders: poPartial.slice(0, 5).map((o: any) => ({
+                orderNumber: o.orderNumber,
+                buyerName: o.buyerName,
+                grandTotal: Number(o.grandTotal || 0),
+                date: o.date,
+                totalQty: o.items.reduce((s: number, i: any) => s + (i.quantity || 0), 0),
+                shippedQty: o.items.reduce((s: number, i: any) => s + (i.shippedQuantity || 0), 0)
+            }))
+        },
+        movements,
+        topSuppliers: topSuppliers.map((s: any) => ({
+            name: s.receivedFrom,
+            total: Number(s._sum.grandTotal || 0),
+            count: s._count.id
+        })),
+        topBuyers: topBuyers.map((b: any) => ({
+            name: b.buyerName,
+            total: Number(b._sum.grandTotal || 0),
+            count: b._count.id
+        })),
+        volume: {
+            purchaseQty: Number(purchaseVol30d._sum?.quantity || 0),
+            salesQty: Number(salesVol30d._sum?.quantity || 0)
+        }
+    });
+}

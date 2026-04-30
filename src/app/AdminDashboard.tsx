@@ -36,7 +36,12 @@ import {
     DollarSign,
     PiggyBank,
     Receipt,
-    Target
+    Target,
+    Truck,
+    ArrowRight,
+    CheckCircle2,
+    AlertCircle,
+    BarChart3
 } from "lucide-react";
 
 import * as XLSX from 'xlsx';
@@ -68,7 +73,8 @@ export function AdminDashboard({
     totalPaidSales = 0,
     totalPaidPurchases = 0,
     totalPiutangPending = 0,
-    totalHutangPending = 0
+    totalHutangPending = 0,
+    traceabilityData
 }: any) {
     const [isClient, setIsClient] = useState(false);
 
@@ -673,6 +679,175 @@ export function AdminDashboard({
                     </div>
                 </div>
             </div>
+
+            {/* ═══════ TRACEABILITY REPORT SECTION ═══════ */}
+            {traceabilityData && (
+            <div className="space-y-6 pt-4">
+                <div className="flex items-center gap-4 px-2">
+                    <div className="h-5 w-2 bg-gradient-to-b from-cyan-500 to-blue-600 rounded-full shadow-lg shadow-cyan-200" />
+                    <div>
+                        <h2 className="text-lg font-black text-slate-900 uppercase tracking-tight">Traceability Report</h2>
+                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">Goods Movement &amp; PO Tracking (30 Days)</p>
+                    </div>
+                </div>
+
+                {/* PO Status Cards */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+                    {[{ label: 'Total PO', value: traceabilityData.poSummary?.total || 0, color: 'slate', icon: <BarChart3 className="h-5 w-5" /> },
+                      { label: 'Open', value: traceabilityData.poSummary?.open || 0, color: 'amber', icon: <AlertCircle className="h-5 w-5" /> },
+                      { label: 'Partial Shipped', value: traceabilityData.poSummary?.partial || 0, color: 'blue', icon: <Truck className="h-5 w-5" /> },
+                      { label: 'Closed', value: traceabilityData.poSummary?.closed || 0, color: 'emerald', icon: <CheckCircle2 className="h-5 w-5" /> }
+                    ].map((item, i) => (
+                        <div key={i} className={`erp-card p-6 relative overflow-hidden group hover:border-${item.color}-200/50`}>
+                            <div className={`absolute -right-6 -top-6 h-28 w-28 bg-${item.color}-100/20 rounded-full blur-2xl transition-transform group-hover:scale-150`} />
+                            <div className="relative z-10 space-y-4">
+                                <div className={`p-3 bg-${item.color}-50 text-${item.color}-600 rounded-2xl shadow-sm border border-${item.color}-100/50 w-fit`}>
+                                    {item.icon}
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{item.label}</p>
+                                    <h4 className="text-3xl font-black text-slate-900 tracking-tighter">{isClient ? item.value : '...'}</h4>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                {/* Volume Flow Banner */}
+                <div className="erp-card bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white p-8 relative overflow-hidden">
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(59,130,246,0.08),transparent_70%)]" />
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_50%,rgba(16,185,129,0.08),transparent_70%)]" />
+                    <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
+                        <div className="text-center md:text-left flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                                <div className="h-2 w-2 bg-emerald-400 rounded-full animate-pulse" />
+                                <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Inbound</span>
+                            </div>
+                            <p className="text-4xl font-black tracking-tighter tabular-nums">{isClient ? (traceabilityData.volume?.purchaseQty || 0).toLocaleString('id-ID') : '...'}</p>
+                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">Units Purchased</p>
+                        </div>
+                        <div className="flex items-center gap-3 px-8">
+                            <div className="h-px w-12 bg-slate-700" />
+                            <div className="p-3 bg-white/5 border border-white/10 rounded-2xl">
+                                <ArrowRight className="h-5 w-5 text-slate-400" />
+                            </div>
+                            <div className="h-px w-12 bg-slate-700" />
+                        </div>
+                        <div className="text-center md:text-right flex-1">
+                            <div className="flex items-center gap-2 mb-2 justify-center md:justify-end">
+                                <div className="h-2 w-2 bg-blue-400 rounded-full animate-pulse" />
+                                <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Outbound</span>
+                            </div>
+                            <p className="text-4xl font-black tracking-tighter tabular-nums">{isClient ? (traceabilityData.volume?.salesQty || 0).toLocaleString('id-ID') : '...'}</p>
+                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">Units Sold</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    {/* Goods Movement Timeline */}
+                    <div className="lg:col-span-2 erp-card p-8 bg-slate-50/30 border-slate-200/40">
+                        <div className="flex items-center justify-between mb-6">
+                            <div className="space-y-1">
+                                <h3 className="text-lg font-black text-slate-900 tracking-tight">Goods Movement</h3>
+                                <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">Recent Inbound / Outbound Flow</p>
+                            </div>
+                            <Link href="/tracking" className="bg-white border-2 border-slate-100 hover:border-primary hover:text-primary px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm">Detail</Link>
+                        </div>
+                        <div className="space-y-3 max-h-[420px] overflow-y-auto pr-2 custom-scrollbar scrollbar-hide">
+                            {(traceabilityData.movements || []).map((mv: any, i: number) => (
+                                <div key={i} className="bg-white p-4 rounded-2xl flex items-center gap-4 border border-slate-100/50 hover:shadow-lg hover:border-slate-200 transition-all group/mv">
+                                    <div className={`p-3 rounded-xl shrink-0 transition-transform group-hover/mv:scale-110 ${
+                                        mv.type === 'IN' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100/50' : 'bg-blue-50 text-blue-600 border border-blue-100/50'
+                                    }`}>
+                                        {mv.type === 'IN' ? <ShoppingCart className="h-4 w-4" /> : <ShoppingBag className="h-4 w-4" />}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <span className="text-[12px] font-black text-slate-900 tracking-tight">{mv.ref}</span>
+                                            <span className={`text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${
+                                                mv.type === 'IN' ? 'bg-emerald-50 text-emerald-600' : 'bg-blue-50 text-blue-600'
+                                            }`}>{mv.type === 'IN' ? 'MASUK' : 'KELUAR'}</span>
+                                            <span className={`text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${
+                                                mv.paymentStatus === 'PAID' ? 'bg-emerald-50 text-emerald-600' :
+                                                mv.paymentStatus === 'CREDIT' ? 'bg-amber-50 text-amber-600' :
+                                                mv.paymentStatus === 'PARTIAL' ? 'bg-orange-50 text-orange-600' :
+                                                'bg-slate-50 text-slate-500'
+                                            }`}>{mv.paymentStatus}</span>
+                                        </div>
+                                        <p className="text-[10px] font-bold text-slate-400 truncate mt-0.5">{mv.partner} &bull; {mv.qty} pcs</p>
+                                    </div>
+                                    <div className="text-right shrink-0">
+                                        <p className="text-[11px] font-black text-slate-900 tabular-nums">Rp {isClient ? (mv.amount || 0).toLocaleString('id-ID') : '...'}</p>
+                                        <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">{isClient && mv.date ? new Date(mv.date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' }) : '-'}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Open PO List + Top Partners */}
+                    <div className="space-y-6">
+                        {/* Open/Partial PO */}
+                        <div className="erp-card p-6 border-amber-100/50 bg-gradient-to-br from-white to-amber-50/20">
+                            <div className="flex items-center gap-2 mb-4">
+                                <AlertCircle className="h-4 w-4 text-amber-600" />
+                                <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest">PO Belum Close</span>
+                            </div>
+                            <div className="space-y-3 max-h-[200px] overflow-y-auto pr-1 custom-scrollbar scrollbar-hide">
+                                {[...(traceabilityData.poSummary?.openOrders || []), ...(traceabilityData.poSummary?.partialOrders || [])].slice(0, 6).map((po: any, i: number) => (
+                                    <div key={i} className="bg-white p-3 rounded-xl border border-slate-100/50 space-y-2">
+                                        <div className="flex justify-between items-start">
+                                            <span className="text-[11px] font-black text-slate-900">{po.orderNumber}</span>
+                                            <span className="text-[8px] font-black uppercase bg-amber-50 text-amber-600 px-2 py-0.5 rounded">
+                                                {po.shippedQty}/{po.totalQty}
+                                            </span>
+                                        </div>
+                                        <p className="text-[9px] font-bold text-slate-400 truncate">{po.buyerName}</p>
+                                        <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                            <div className="h-full bg-amber-400 rounded-full transition-all" style={{ width: `${Math.min(100, (po.shippedQty / Math.max(1, po.totalQty)) * 100)}%` }} />
+                                        </div>
+                                    </div>
+                                ))}
+                                {(traceabilityData.poSummary?.open || 0) + (traceabilityData.poSummary?.partial || 0) === 0 && (
+                                    <p className="text-[10px] font-bold text-slate-400 text-center py-4">Semua PO sudah close ✓</p>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Top Partners */}
+                        <div className="erp-card p-6">
+                            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Top Supplier (30d)</h4>
+                            <div className="space-y-2">
+                                {(traceabilityData.topSuppliers || []).slice(0, 3).map((s: any, i: number) => (
+                                    <div key={i} className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2 min-w-0">
+                                            <div className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" />
+                                            <span className="text-[10px] font-black text-slate-700 truncate">{s.name}</span>
+                                        </div>
+                                        <span className="text-[10px] font-black text-slate-400 tabular-nums shrink-0 ml-2">{s.count}x</span>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="border-t border-slate-100 mt-4 pt-4">
+                                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Top Buyer (30d)</h4>
+                                <div className="space-y-2">
+                                    {(traceabilityData.topBuyers || []).slice(0, 3).map((b: any, i: number) => (
+                                        <div key={i} className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2 min-w-0">
+                                                <div className="h-2 w-2 rounded-full bg-blue-500 shrink-0" />
+                                                <span className="text-[10px] font-black text-slate-700 truncate">{b.name}</span>
+                                            </div>
+                                            <span className="text-[10px] font-black text-slate-400 tabular-nums shrink-0 ml-2">{b.count}x</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            )}
 
             {/* Bottom Activity Section */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-10 pt-4">

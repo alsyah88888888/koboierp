@@ -2,6 +2,7 @@ import { getPrisma } from "@/lib/prisma";
 import { getDashboardSummaryAction, getDailyReportAction } from "@/actions/system";
 import { formatCurrency, serializeDecimal } from "@/lib/utils";
 import { AdminDashboard } from "./AdminDashboard";
+import { getTraceabilitySummaryService } from "@/lib/services/system-service";
 import {
   Wallet,
   ShoppingCart,
@@ -38,17 +39,20 @@ export default async function DashboardPage() {
   let recentActivity: any[] = [];
   let inventoryData: any[] = [];
   let lowStockProducts: any[] = [];
+  let traceabilityData: any = null;
 
   try {
-    const [summaryRes, reportRes, productsRes, recentJournal] = await Promise.all([
+    const [summaryRes, reportRes, productsRes, recentJournal, traceRes] = await Promise.all([
       getDashboardSummaryAction().then((res: any) => serializeDecimal(res)).catch((e: any) => { console.error("Summary Error:", e); return summary; }),
       getDailyReportAction().then((res: any) => serializeDecimal(res)).catch((e: any) => { console.error("Report Error:", e); return dailyReport; }),
       prisma.product.findMany({ include: { stocks: true } }).then((res: any) => serializeDecimal(res)).catch(() => []),
-      prisma.journalEntry.findMany({ take: 5, orderBy: { date: 'desc' } }).then((res: any) => serializeDecimal(res)).catch(() => [])
+      prisma.journalEntry.findMany({ take: 5, orderBy: { date: 'desc' } }).then((res: any) => serializeDecimal(res)).catch(() => []),
+      getTraceabilitySummaryService().catch((e: any) => { console.error("Traceability Error:", e); return null; })
     ]);
 
     summary = summaryRes || summary;
     dailyReport = reportRes || dailyReport;
+    traceabilityData = traceRes;
     products = productsRes || [];
 
     // 4. Group Inventory by Category & Check Low Stock
@@ -152,5 +156,6 @@ export default async function DashboardPage() {
     totalPaidPurchases={summary.totalPaidPurchases || 0}
     totalPiutangPending={summary.totalPiutangPending || 0}
     totalHutangPending={summary.totalHutangPending || 0}
+    traceabilityData={traceabilityData}
   />;
 }
