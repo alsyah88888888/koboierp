@@ -143,7 +143,7 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
                         <div>
                             <h3 className="text-xl font-black text-slate-900 tracking-tight">Verifikasi Fisik</h3>
                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">
-                                {selectedReceipt.receiptNumber} • {selectedReceipt.warehouse.name}
+                                {selectedReceipt?.receiptNumber || "N/A"} • {selectedReceipt?.warehouse?.name || "Unknown Warehouse"}
                             </p>
                         </div>
                     </div>
@@ -216,7 +216,7 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-50">
-                                {selectedReceipt.items.map((item: any) => {
+                                {selectedReceipt?.items?.map((item: any) => {
                                     const scanned = checkedItems[item.id] || 0;
                                     const isComplete = scanned === item.quantity;
                                     const isFlashing = lastScannedId === item.id;
@@ -302,7 +302,7 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
                                 <div className="flex-1">
                                     <h3 className="text-lg md:text-xl font-black text-slate-900 tracking-tight">Verifikasi Jumlah Barang</h3>
                                     <p className="text-[10px] font-black text-primary uppercase tracking-widest mt-1">
-                                        {selectedReceipt.receiptNumber} • Koreksi jumlah fisik sebelum konfirmasi
+                                        {selectedReceipt?.receiptNumber || "N/A"} • Koreksi jumlah fisik sebelum konfirmasi
                                     </p>
                                 </div>
                                 <button onClick={() => setShowDiscrepancyModal(false)} className="p-2.5 hover:bg-white hover:shadow-md rounded-2xl transition-all border border-slate-200 bg-white/50 text-slate-400 hover:text-red-500 active:scale-95">
@@ -316,7 +316,7 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
                                     <button
                                         onClick={() => {
                                             const allSet: Record<string, number> = {};
-                                            selectedReceipt.items.forEach((item: any) => { allSet[item.id] = item.quantity; });
+                                            selectedReceipt?.items?.forEach((item: any) => { allSet[item.id] = item.quantity; });
                                             setCheckedItems(allSet);
                                         }}
                                         className="px-4 py-2 bg-emerald-50 text-emerald-700 text-xs font-black rounded-xl hover:bg-emerald-100 transition-all active:scale-95 border border-emerald-200"
@@ -326,7 +326,7 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
                                     <button
                                         onClick={() => {
                                             const allZero: Record<string, number> = {};
-                                            selectedReceipt.items.forEach((item: any) => { allZero[item.id] = 0; });
+                                            selectedReceipt?.items?.forEach((item: any) => { allZero[item.id] = 0; });
                                             setCheckedItems(allZero);
                                         }}
                                         className="px-4 py-2 bg-slate-50 text-slate-500 text-xs font-black rounded-xl hover:bg-slate-100 transition-all active:scale-95 border border-slate-200"
@@ -337,7 +337,7 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
 
                                 {/* Items List - Editable */}
                                 <div className="space-y-3">
-                                    {selectedReceipt.items.map((item: any, idx: number) => {
+                                    {selectedReceipt?.items?.map((item: any, idx: number) => {
                                         const actualQty = checkedItems[item.id] ?? 0;
                                         const diff = actualQty - item.quantity;
                                         const isMatch = diff === 0;
@@ -405,8 +405,8 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
 
                                 {/* Summary */}
                                 {(() => {
-                                    const totalItems = selectedReceipt.items.length;
-                                    const matchedItems = selectedReceipt.items.filter((item: any) => (checkedItems[item.id] ?? 0) === item.quantity).length;
+                                    const totalItems = selectedReceipt?.items?.length || 0;
+                                    const matchedItems = selectedReceipt?.items?.filter((item: any) => (checkedItems[item.id] ?? 0) === item.quantity).length || 0;
                                     const hasDiff = matchedItems < totalItems;
                                     return (
                                         <div className={cn(
