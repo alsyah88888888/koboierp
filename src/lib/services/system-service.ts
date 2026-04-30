@@ -257,6 +257,7 @@ async function getWeeklyStatsService(userId: string, isAdmin: boolean) {
  */
 export async function getTraceabilitySummaryService() {
     const { getPrisma } = require("@/lib/prisma");
+    const { getProductTraceabilityService } = require("./report-service");
     const prisma = getPrisma();
 
     const now = new Date();
@@ -354,6 +355,10 @@ export async function getTraceabilitySummaryService() {
         }))
     ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 20);
 
+    // Fetch the detailed linked traceability (linked purchase + sales)
+    const detailedTraceability = await getProductTraceabilityService().catch(() => []);
+    const recentDetailed = detailedTraceability.slice(-20).reverse(); // Last 20 records
+
     const { serializeDecimal: sd } = require("@/lib/utils");
     return sd({
         poSummary: {
@@ -379,6 +384,7 @@ export async function getTraceabilitySummaryService() {
             }))
         },
         movements,
+        recentDetailed,
         topSuppliers: topSuppliers.map((s: any) => ({
             name: s.receivedFrom,
             total: Number(s._sum.grandTotal || 0),

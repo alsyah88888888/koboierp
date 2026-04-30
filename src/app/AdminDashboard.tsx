@@ -432,89 +432,79 @@ export function AdminDashboard({
                     </div>
                 </div>
 
-                {/* Unified Movement Flow — 1 Column with Status */}
-                <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-                    {/* The Main Stream (2/3 width) */}
-                    <div className="xl:col-span-2 space-y-4">
-                        <div className="flex items-center justify-between px-4 mb-2">
-                            <span className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Transaction Stream</span>
-                            <div className="flex items-center gap-4">
-                                <div className="flex items-center gap-2"><div className="h-2 w-2 bg-emerald-500 rounded-full" /><span className="text-[9px] font-black text-slate-500 uppercase">In</span></div>
-                                <div className="flex items-center gap-2"><div className="h-2 w-2 bg-blue-500 rounded-full" /><span className="text-[9px] font-black text-slate-500 uppercase">Out</span></div>
-                            </div>
-                        </div>
-
-                        <div className="space-y-4 relative">
-                            {/* Vertical Line Connector */}
-                            <div className="absolute left-[31px] top-6 bottom-6 w-0.5 bg-slate-100 hidden sm:block" />
-
-                            {(traceabilityData.movements || []).map((mv: any, i: number) => (
-                                <div key={i} className="group relative flex flex-col sm:flex-row items-start sm:items-center gap-6 p-6 bg-white border border-slate-100 rounded-[2rem] hover:shadow-2xl hover:shadow-slate-200/50 hover:border-slate-200 transition-all">
-                                    {/* Type Icon Indicator */}
-                                    <div className={cn(
-                                        "z-10 h-16 w-16 shrink-0 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110",
-                                        mv.type === 'IN' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-blue-50 text-blue-600 border border-blue-100'
-                                    )}>
-                                        {mv.type === 'IN' ? <ArrowDownRight className="h-6 w-6" /> : <ArrowUpRight className="h-6 w-6" />}
-                                    </div>
-
-                                    {/* Core Info */}
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-3 mb-1.5">
-                                            <span className="text-[10px] font-black text-slate-400 tabular-nums uppercase tracking-widest">
-                                                {isClient && mv.date ? new Date(mv.date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' }) : '-'}
-                                            </span>
-                                            <span className="h-1 w-1 bg-slate-200 rounded-full" />
-                                            <span className="text-[12px] font-black text-slate-900 tracking-tight">{mv.ref}</span>
-                                            <span className={cn(
-                                                "text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-widest",
-                                                mv.type === 'IN' ? 'bg-emerald-100/50 text-emerald-700' : 'bg-blue-100/50 text-blue-700'
-                                            )}>
-                                                {mv.type === 'IN' ? 'Inbound' : 'Outbound'}
-                                            </span>
-                                        </div>
-                                        <h4 className="text-sm font-black text-slate-900 uppercase truncate mb-1">{mv.partner || 'Unknown Partner'}</h4>
-                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                            Volume: <span className="text-slate-900">{mv.qty.toLocaleString('id-ID')} Units</span>
-                                        </p>
-                                    </div>
-
-                                    {/* Financial & Status (Unified Column) */}
-                                    <div className="flex flex-col items-end gap-2 shrink-0">
-                                        <div className="text-right">
-                                            <p className="text-lg font-black text-slate-900 tracking-tighter tabular-nums leading-none">
-                                                {isClient ? formatCurrency(mv.amount) : 'Rp ---'}
-                                            </p>
-                                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Total Transaction</p>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${
-                                                mv.paymentStatus === 'PAID' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-100' :
-                                                mv.paymentStatus === 'CREDIT' ? 'bg-amber-500 text-white shadow-lg shadow-amber-100' :
-                                                mv.paymentStatus === 'PARTIAL' ? 'bg-orange-500 text-white shadow-lg shadow-orange-100' :
-                                                'bg-slate-200 text-slate-600'
-                                            }`}>
-                                                {mv.paymentStatus || 'UNSETTLED'}
-                                            </span>
-                                            {mv.type === 'IN' && (
-                                                <span className={cn(
-                                                    "px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest",
-                                                    mv.verified ? "bg-slate-900 text-white" : "bg-rose-50 text-rose-500 border border-rose-100"
-                                                )}>
-                                                    {mv.verified ? 'Verified' : 'Pending'}
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-                                    
-                                    {/* Right Arrow Decor */}
-                                    <div className="absolute right-6 opacity-0 group-hover:opacity-100 group-hover:translate-x-2 transition-all duration-300 hidden xl:block">
-                                        <ChevronRight className="h-5 w-5 text-slate-300" />
-                                    </div>
-                                </div>
-                            ))}
+                {/* Unified Batch Traceability — Linked Purchase to Sales */}
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between px-4 mb-2">
+                        <span className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Batch Traceability Report (Live)</span>
+                        <div className="flex items-center gap-4">
+                            <span className="text-[9px] font-black text-slate-500 uppercase">Purchase → Sales Lifecycle</span>
                         </div>
                     </div>
+
+                    <div className="erp-card overflow-hidden border-slate-200/60 shadow-xl shadow-slate-100">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-[10px] border-collapse">
+                                <thead>
+                                    <tr className="bg-slate-900 text-white">
+                                        <th className="px-3 py-3 text-left font-black uppercase tracking-wider whitespace-nowrap">Tgl Beli</th>
+                                        <th className="px-3 py-3 text-left font-black uppercase tracking-wider whitespace-nowrap">No. Lot / Batch</th>
+                                        <th className="px-3 py-3 text-left font-black uppercase tracking-wider">Supplier</th>
+                                        <th className="px-3 py-3 text-left font-black uppercase tracking-wider whitespace-nowrap">Tgl Jual</th>
+                                        <th className="px-3 py-3 text-left font-black uppercase tracking-wider whitespace-nowrap">No. SJ</th>
+                                        <th className="px-3 py-3 text-left font-black uppercase tracking-wider">Buyer</th>
+                                        <th className="px-3 py-3 text-left font-black uppercase tracking-wider">SKU / Nama Barang</th>
+                                        <th className="px-3 py-3 text-right font-black uppercase tracking-wider">Qty</th>
+                                        <th className="px-3 py-3 text-right font-black uppercase tracking-wider">Harga Jual</th>
+                                        <th className="px-3 py-3 text-right font-black uppercase tracking-wider">Profit</th>
+                                        <th className="px-3 py-3 text-center font-black uppercase tracking-wider">Margin</th>
+                                        <th className="px-3 py-3 text-center font-black uppercase tracking-wider">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {(traceabilityData.recentDetailed || []).map((row: any, i: number) => {
+                                        const marginNum = parseFloat(row['Margin %']);
+                                        return (
+                                            <tr key={i} className={`hover:bg-blue-50/40 transition-colors ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'}`}>
+                                                <td className="px-3 py-2.5 font-bold text-slate-500 whitespace-nowrap">{row['Tgl Beli']}</td>
+                                                <td className="px-3 py-2.5 font-black text-slate-900 whitespace-nowrap">{row['No. Lot']}</td>
+                                                <td className="px-3 py-2.5 font-bold text-slate-700 truncate max-w-[120px]">{row['Supplier']}</td>
+                                                <td className="px-3 py-2.5 font-bold text-slate-500 whitespace-nowrap text-blue-600">{row['Tgl Jual']}</td>
+                                                <td className="px-3 py-2.5 font-black text-slate-900 whitespace-nowrap">{row['No. SJ']}</td>
+                                                <td className="px-3 py-2.5 font-bold text-slate-700 truncate max-w-[120px]">{row['Buyer']}</td>
+                                                <td className="px-3 py-2.5">
+                                                    <p className="font-black text-slate-900 leading-none">{row['SKU']}</p>
+                                                    <p className="text-[9px] font-bold text-slate-400 uppercase mt-0.5 truncate max-w-[150px]">{row['Nama Barang']}</p>
+                                                </td>
+                                                <td className="px-3 py-2.5 text-right font-black text-slate-900">{row['QTY']}</td>
+                                                <td className="px-3 py-2.5 text-right font-black text-slate-900 whitespace-nowrap">{formatCurrency(row['Harga Jual Per Unit (Rp)'])}</td>
+                                                <td className={`px-3 py-2.5 text-right font-black whitespace-nowrap ${row['Total Profit (Rp)'] >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                                    {formatCurrency(row['Total Profit (Rp)'])}
+                                                </td>
+                                                <td className="px-3 py-2.5 text-center">
+                                                    <span className={`px-2 py-0.5 rounded-md font-black ${
+                                                        marginNum > 20 ? 'bg-emerald-100 text-emerald-700' :
+                                                        marginNum > 10 ? 'bg-blue-100 text-blue-700' :
+                                                        marginNum > 0 ? 'bg-amber-100 text-amber-700' :
+                                                        'bg-rose-100 text-rose-700'
+                                                    }`}>
+                                                        {row['Margin %']}
+                                                    </span>
+                                                </td>
+                                                <td className="px-3 py-2.5 text-center">
+                                                    <span className={`text-[8px] font-black px-2 py-0.5 rounded uppercase tracking-tighter ${
+                                                        row['Status'] === 'TERJUAL (LOT)' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500'
+                                                    }`}>
+                                                        {row['Status']}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
 
                     {/* Top Partners Summary Panel (1/3 width) */}
                     <div className="space-y-8">
