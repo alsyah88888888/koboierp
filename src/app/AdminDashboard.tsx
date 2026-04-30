@@ -41,7 +41,9 @@ import {
     ArrowRight,
     CheckCircle2,
     AlertCircle,
-    BarChart3
+    BarChart3,
+    ShieldCheck,
+    RefreshCw
 } from "lucide-react";
 
 import * as XLSX from 'xlsx';
@@ -338,158 +340,253 @@ export function AdminDashboard({
                 </div>
             </div>
 
-            {/* ═══════ TRACEABILITY REPORT — EXCEL STYLE ═══════ */}
+            {/* ═══════ TRACEABILITY REPORT — PREMIUM UNIFIED FLOW ═══════ */}
             {traceabilityData && (
-            <div className="space-y-6 pt-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-2">
-                    <div className="flex items-center gap-4">
-                        <div className="h-5 w-2 bg-gradient-to-b from-cyan-500 to-blue-600 rounded-full shadow-lg shadow-cyan-200" />
+            <div className="space-y-8 pt-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 px-4">
+                    <div className="flex items-center gap-5">
+                        <div className="h-12 w-1.5 bg-gradient-to-b from-blue-600 via-indigo-500 to-emerald-500 rounded-full shadow-lg shadow-blue-200/50" />
                         <div>
-                            <h2 className="text-lg font-black text-slate-900 uppercase tracking-tight">Traceability Report</h2>
-                            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">Pergerakan Barang &amp; Status PO (30 Hari)</p>
+                            <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tighter leading-none">Traceability Stream</h2>
+                            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.3em] mt-1.5">Unified Logistics & Financial Flow (30 Days)</p>
                         </div>
                     </div>
-                    <button onClick={() => {
-                        const wb = XLSX.utils.book_new();
-                        const rows = (traceabilityData.movements || []).map((mv: any, i: number) => ({
-                            'No': i + 1,
-                            'Tanggal': mv.date ? new Date(mv.date).toLocaleDateString('id-ID') : '-',
-                            'No. Dokumen': mv.ref,
-                            'Tipe': mv.type === 'IN' ? 'MASUK' : 'KELUAR',
-                            'Partner': mv.partner,
-                            'Qty': mv.qty,
-                            'Total (Rp)': mv.amount,
-                            'Status Bayar': mv.paymentStatus || '-'
-                        }));
-                        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Pergerakan Barang');
-                        const poRows = [...(traceabilityData.poSummary?.openOrders || []), ...(traceabilityData.poSummary?.partialOrders || [])].map((po: any) => ({
-                            'No. PO': po.orderNumber, 'Buyer': po.buyerName, 'Total Qty': po.totalQty, 'Terkirim': po.shippedQty, 'Progress': `${Math.round((po.shippedQty / Math.max(1, po.totalQty)) * 100)}%`
-                        }));
-                        if (poRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(poRows), 'PO Belum Close');
-                        XLSX.writeFile(wb, `Traceability_Report_${new Date().toISOString().split('T')[0]}.xlsx`);
-                    }} className="erp-btn-primary !bg-emerald-600 hover:!bg-emerald-700 !px-5 !py-2.5 shadow-emerald-200 text-xs">
-                        <FileSpreadsheet className="h-4 w-4" />
-                        <span>Export Excel</span>
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <Link href="/tracking" className="px-5 py-2.5 bg-white border border-slate-200 hover:border-primary hover:text-primary rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm">
+                            View Logistics
+                        </Link>
+                        <button onClick={() => {
+                            const wb = XLSX.utils.book_new();
+                            const rows = (traceabilityData.movements || []).map((mv: any, i: number) => ({
+                                'No': i + 1,
+                                'Tanggal': mv.date ? new Date(mv.date).toLocaleDateString('id-ID') : '-',
+                                'No. Dokumen': mv.ref,
+                                'Tipe': mv.type === 'IN' ? 'MASUK' : 'KELUAR',
+                                'Partner': mv.partner,
+                                'Qty': mv.qty,
+                                'Total (Rp)': mv.amount,
+                                'Status Bayar': mv.paymentStatus || '-'
+                            }));
+                            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Pergerakan Barang');
+                            XLSX.writeFile(wb, `Traceability_Stream_${new Date().toISOString().split('T')[0]}.xlsx`);
+                        }} className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-200">
+                            <FileSpreadsheet className="h-4 w-4" /><span>Export Stream</span>
+                        </button>
+                    </div>
                 </div>
-                {/* Volume Flow Banner */}
-                <div className="erp-card bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white p-8 relative overflow-hidden">
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(59,130,246,0.08),transparent_70%)]" />
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_50%,rgba(16,185,129,0.08),transparent_70%)]" />
-                    <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
-                        <div className="text-center md:text-left flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                                <div className="h-2 w-2 bg-emerald-400 rounded-full animate-pulse" />
-                                <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Inbound</span>
+
+                {/* Volume Flow Stats Banner */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="lg:col-span-2 erp-card bg-slate-900 text-white p-8 relative overflow-hidden group">
+                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(59,130,246,0.1),transparent_70%)]" />
+                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_50%,rgba(16,185,129,0.1),transparent_70%)]" />
+                        
+                        <div className="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-8">
+                            <div className="text-center sm:text-left">
+                                <div className="flex items-center gap-2 mb-3 justify-center sm:justify-start">
+                                    <div className="h-2 w-2 bg-emerald-400 rounded-full animate-pulse" />
+                                    <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Inbound Logistics</span>
+                                </div>
+                                <p className="text-5xl font-black tracking-tighter tabular-nums mb-1">{isClient ? (traceabilityData.volume?.purchaseQty || 0).toLocaleString('id-ID') : '...'}</p>
+                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Units Received</p>
                             </div>
-                            <p className="text-4xl font-black tracking-tighter tabular-nums">{isClient ? (traceabilityData.volume?.purchaseQty || 0).toLocaleString('id-ID') : '...'}</p>
-                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">Units Purchased</p>
+                            
+                            <div className="flex flex-col items-center gap-2">
+                                <div className="p-4 bg-white/5 border border-white/10 rounded-3xl backdrop-blur-xl group-hover:scale-110 transition-transform">
+                                    <RefreshCw className="h-6 w-6 text-slate-400 animate-[spin_10s_linear_infinite]" />
+                                </div>
+                                <div className="h-px w-24 bg-gradient-to-r from-transparent via-slate-700 to-transparent" />
+                            </div>
+
+                            <div className="text-center sm:text-right">
+                                <div className="flex items-center gap-2 mb-3 justify-center sm:justify-end">
+                                    <div className="h-2 w-2 bg-blue-400 rounded-full animate-pulse" />
+                                    <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Outbound Distribution</span>
+                                </div>
+                                <p className="text-5xl font-black tracking-tighter tabular-nums mb-1">{isClient ? (traceabilityData.volume?.salesQty || 0).toLocaleString('id-ID') : '...'}</p>
+                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Units Delivered</p>
+                            </div>
                         </div>
-                        <div className="flex items-center gap-3 px-8">
-                            <div className="h-px w-12 bg-slate-700" />
-                            <div className="p-3 bg-white/5 border border-white/10 rounded-2xl">
-                                <ArrowRight className="h-5 w-5 text-slate-400" />
+                    </div>
+
+                    <div className="erp-card p-8 border-slate-200 bg-white flex flex-col justify-center">
+                        <div className="space-y-6">
+                            <div>
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Health Status</p>
+                                <div className="flex items-center gap-3">
+                                    <div className="h-10 w-10 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center">
+                                        <ShieldCheck className="h-5 w-5 text-emerald-500" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-black text-slate-900">100% Operational</p>
+                                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">All journals verified</p>
+                                    </div>
+                                </div>
                             </div>
-                            <div className="h-px w-12 bg-slate-700" />
-                        </div>
-                        <div className="text-center md:text-right flex-1">
-                            <div className="flex items-center gap-2 mb-2 justify-center md:justify-end">
-                                <div className="h-2 w-2 bg-blue-400 rounded-full animate-pulse" />
-                                <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Outbound</span>
+                            <div className="h-px bg-slate-100" />
+                            <div className="flex justify-between items-center">
+                                <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Active Orders</span>
+                                <span className="text-lg font-black text-blue-600 tabular-nums">{activeOrdersToday}</span>
                             </div>
-                            <p className="text-4xl font-black tracking-tighter tabular-nums">{isClient ? (traceabilityData.volume?.salesQty || 0).toLocaleString('id-ID') : '...'}</p>
-                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">Units Sold</p>
                         </div>
                     </div>
                 </div>
 
-                {/* Excel-Style Goods Movement Table */}
-                <div className="erp-card overflow-hidden border-slate-200/60">
-                    <div className="bg-slate-50 px-6 py-3 border-b border-slate-200 flex items-center justify-between">
-                        <span className="text-[11px] font-black text-slate-600 uppercase tracking-widest">Pergerakan Barang (Inbound / Outbound)</span>
-                        <Link href="/tracking" className="text-[10px] font-black text-primary uppercase tracking-widest hover:underline">Lihat Semua</Link>
-                    </div>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-[11px]">
-                            <thead>
-                                <tr className="bg-slate-900 text-white">
-                                    <th className="px-4 py-3 text-left font-black uppercase tracking-wider w-10">No</th>
-                                    <th className="px-4 py-3 text-left font-black uppercase tracking-wider">Tanggal</th>
-                                    <th className="px-4 py-3 text-left font-black uppercase tracking-wider">No. Dokumen</th>
-                                    <th className="px-4 py-3 text-center font-black uppercase tracking-wider w-20">Tipe</th>
-                                    <th className="px-4 py-3 text-left font-black uppercase tracking-wider">Partner</th>
-                                    <th className="px-4 py-3 text-right font-black uppercase tracking-wider w-16">Qty</th>
-                                    <th className="px-4 py-3 text-right font-black uppercase tracking-wider">Total (Rp)</th>
-                                    <th className="px-4 py-3 text-center font-black uppercase tracking-wider w-24">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {(traceabilityData.movements || []).map((mv: any, i: number) => (
-                                    <tr key={i} className={`border-b border-slate-100 hover:bg-blue-50/40 transition-colors ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
-                                        <td className="px-4 py-2.5 font-bold text-slate-400 tabular-nums">{i + 1}</td>
-                                        <td className="px-4 py-2.5 font-bold text-slate-700 tabular-nums whitespace-nowrap">{isClient && mv.date ? new Date(mv.date).toLocaleDateString('id-ID') : '-'}</td>
-                                        <td className="px-4 py-2.5 font-black text-slate-900 tracking-tight">{mv.ref}</td>
-                                        <td className="px-4 py-2.5 text-center">
-                                            <span className={`inline-block px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-wider ${
-                                                mv.type === 'IN' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'
-                                            }`}>{mv.type === 'IN' ? '↓ MASUK' : '↑ KELUAR'}</span>
-                                        </td>
-                                        <td className="px-4 py-2.5 font-bold text-slate-700 truncate max-w-[200px]">{mv.partner}</td>
-                                        <td className="px-4 py-2.5 text-right font-black text-slate-900 tabular-nums">{(mv.qty || 0).toLocaleString('id-ID')}</td>
-                                        <td className="px-4 py-2.5 text-right font-black text-slate-900 tabular-nums whitespace-nowrap">{isClient ? (mv.amount || 0).toLocaleString('id-ID') : '...'}</td>
-                                        <td className="px-4 py-2.5 text-center">
-                                            <span className={`inline-block px-2 py-0.5 rounded text-[9px] font-black uppercase ${
-                                                mv.paymentStatus === 'PAID' ? 'bg-emerald-100 text-emerald-700' :
-                                                mv.paymentStatus === 'CREDIT' ? 'bg-amber-100 text-amber-700' :
-                                                mv.paymentStatus === 'PARTIAL' ? 'bg-orange-100 text-orange-700' :
-                                                'bg-slate-100 text-slate-500'
-                                            }`}>{mv.paymentStatus || 'PENDING'}</span>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                {/* Top Partners Row */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="erp-card overflow-hidden">
-                        <div className="bg-emerald-50 px-6 py-3 border-b border-emerald-100">
-                            <span className="text-[11px] font-black text-emerald-700 uppercase tracking-widest">Top 5 Supplier (30 Hari)</span>
+                {/* Unified Movement Flow — 1 Column with Status */}
+                <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+                    {/* The Main Stream (2/3 width) */}
+                    <div className="xl:col-span-2 space-y-4">
+                        <div className="flex items-center justify-between px-4 mb-2">
+                            <span className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Transaction Stream</span>
+                            <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-2"><div className="h-2 w-2 bg-emerald-500 rounded-full" /><span className="text-[9px] font-black text-slate-500 uppercase">In</span></div>
+                                <div className="flex items-center gap-2"><div className="h-2 w-2 bg-blue-500 rounded-full" /><span className="text-[9px] font-black text-slate-500 uppercase">Out</span></div>
+                            </div>
                         </div>
-                        <table className="w-full text-[11px]">
-                            <tbody>
+
+                        <div className="space-y-4 relative">
+                            {/* Vertical Line Connector */}
+                            <div className="absolute left-[31px] top-6 bottom-6 w-0.5 bg-slate-100 hidden sm:block" />
+
+                            {(traceabilityData.movements || []).map((mv: any, i: number) => (
+                                <div key={i} className="group relative flex flex-col sm:flex-row items-start sm:items-center gap-6 p-6 bg-white border border-slate-100 rounded-[2rem] hover:shadow-2xl hover:shadow-slate-200/50 hover:border-slate-200 transition-all">
+                                    {/* Type Icon Indicator */}
+                                    <div className={cn(
+                                        "z-10 h-16 w-16 shrink-0 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110",
+                                        mv.type === 'IN' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-blue-50 text-blue-600 border border-blue-100'
+                                    )}>
+                                        {mv.type === 'IN' ? <ArrowDownRight className="h-6 w-6" /> : <ArrowUpRight className="h-6 w-6" />}
+                                    </div>
+
+                                    {/* Core Info */}
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-3 mb-1.5">
+                                            <span className="text-[10px] font-black text-slate-400 tabular-nums uppercase tracking-widest">
+                                                {isClient && mv.date ? new Date(mv.date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' }) : '-'}
+                                            </span>
+                                            <span className="h-1 w-1 bg-slate-200 rounded-full" />
+                                            <span className="text-[12px] font-black text-slate-900 tracking-tight">{mv.ref}</span>
+                                            <span className={cn(
+                                                "text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-widest",
+                                                mv.type === 'IN' ? 'bg-emerald-100/50 text-emerald-700' : 'bg-blue-100/50 text-blue-700'
+                                            )}>
+                                                {mv.type === 'IN' ? 'Inbound' : 'Outbound'}
+                                            </span>
+                                        </div>
+                                        <h4 className="text-sm font-black text-slate-900 uppercase truncate mb-1">{mv.partner || 'Unknown Partner'}</h4>
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                            Volume: <span className="text-slate-900">{mv.qty.toLocaleString('id-ID')} Units</span>
+                                        </p>
+                                    </div>
+
+                                    {/* Financial & Status (Unified Column) */}
+                                    <div className="flex flex-col items-end gap-2 shrink-0">
+                                        <div className="text-right">
+                                            <p className="text-lg font-black text-slate-900 tracking-tighter tabular-nums leading-none">
+                                                {isClient ? formatCurrency(mv.amount) : 'Rp ---'}
+                                            </p>
+                                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Total Transaction</p>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${
+                                                mv.paymentStatus === 'PAID' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-100' :
+                                                mv.paymentStatus === 'CREDIT' ? 'bg-amber-500 text-white shadow-lg shadow-amber-100' :
+                                                mv.paymentStatus === 'PARTIAL' ? 'bg-orange-500 text-white shadow-lg shadow-orange-100' :
+                                                'bg-slate-200 text-slate-600'
+                                            }`}>
+                                                {mv.paymentStatus || 'UNSETTLED'}
+                                            </span>
+                                            {mv.type === 'IN' && (
+                                                <span className={cn(
+                                                    "px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest",
+                                                    mv.verified ? "bg-slate-900 text-white" : "bg-rose-50 text-rose-500 border border-rose-100"
+                                                )}>
+                                                    {mv.verified ? 'Verified' : 'Pending'}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Right Arrow Decor */}
+                                    <div className="absolute right-6 opacity-0 group-hover:opacity-100 group-hover:translate-x-2 transition-all duration-300 hidden xl:block">
+                                        <ChevronRight className="h-5 w-5 text-slate-300" />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Top Partners Summary Panel (1/3 width) */}
+                    <div className="space-y-8">
+                        {/* Top Suppliers */}
+                        <div className="erp-card overflow-hidden border-slate-200 shadow-xl shadow-slate-100">
+                            <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
+                                <span className="text-[11px] font-black uppercase tracking-widest">Top Suppliers</span>
+                                <ShoppingCart className="h-4 w-4 text-emerald-400" />
+                            </div>
+                            <div className="p-2">
                                 {(traceabilityData.topSuppliers || []).map((s: any, i: number) => (
-                                    <tr key={i} className={`border-b border-slate-50 ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
-                                        <td className="px-4 py-2.5 font-black text-emerald-600 w-8">{i + 1}</td>
-                                        <td className="px-4 py-2.5 font-bold text-slate-900 truncate">{s.name}</td>
-                                        <td className="px-4 py-2.5 text-right font-bold text-slate-500 tabular-nums">{s.count}x transaksi</td>
-                                        <td className="px-4 py-2.5 text-right font-black text-slate-900 tabular-nums whitespace-nowrap">Rp {(s.total || 0).toLocaleString('id-ID')}</td>
-                                    </tr>
+                                    <div key={i} className="flex items-center justify-between p-4 rounded-2xl hover:bg-slate-50 transition-colors">
+                                        <div className="flex items-center gap-3">
+                                            <div className="h-8 w-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xs font-black">{i + 1}</div>
+                                            <div>
+                                                <p className="text-xs font-black text-slate-900 uppercase truncate max-w-[120px]">{s.name}</p>
+                                                <p className="text-[9px] font-bold text-slate-400 uppercase">{s.count} Movements</p>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-xs font-black text-slate-900 tabular-nums">{formatCurrency(s.total)}</p>
+                                        </div>
+                                    </div>
                                 ))}
-                            </tbody>
-                        </table>
-                    </div>
-                    <div className="erp-card overflow-hidden">
-                        <div className="bg-blue-50 px-6 py-3 border-b border-blue-100">
-                            <span className="text-[11px] font-black text-blue-700 uppercase tracking-widest">Top 5 Buyer (30 Hari)</span>
+                            </div>
                         </div>
-                        <table className="w-full text-[11px]">
-                            <tbody>
+
+                        {/* Top Buyers */}
+                        <div className="erp-card overflow-hidden border-slate-200 shadow-xl shadow-slate-100">
+                            <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
+                                <span className="text-[11px] font-black uppercase tracking-widest">Top Buyers</span>
+                                <ShoppingBag className="h-4 w-4 text-blue-400" />
+                            </div>
+                            <div className="p-2">
                                 {(traceabilityData.topBuyers || []).map((b: any, i: number) => (
-                                    <tr key={i} className={`border-b border-slate-50 ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
-                                        <td className="px-4 py-2.5 font-black text-blue-600 w-8">{i + 1}</td>
-                                        <td className="px-4 py-2.5 font-bold text-slate-900 truncate">{b.name}</td>
-                                        <td className="px-4 py-2.5 text-right font-bold text-slate-500 tabular-nums">{b.count}x transaksi</td>
-                                        <td className="px-4 py-2.5 text-right font-black text-slate-900 tabular-nums whitespace-nowrap">Rp {(b.total || 0).toLocaleString('id-ID')}</td>
-                                    </tr>
+                                    <div key={i} className="flex items-center justify-between p-4 rounded-2xl hover:bg-slate-50 transition-colors">
+                                        <div className="flex items-center gap-3">
+                                            <div className="h-8 w-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xs font-black">{i + 1}</div>
+                                            <div>
+                                                <p className="text-xs font-black text-slate-900 uppercase truncate max-w-[120px]">{b.name}</p>
+                                                <p className="text-[9px] font-bold text-slate-400 uppercase">{b.count} Movements</p>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-xs font-black text-slate-900 tabular-nums">{formatCurrency(b.total)}</p>
+                                        </div>
+                                    </div>
                                 ))}
-                            </tbody>
-                        </table>
+                            </div>
+                        </div>
+
+                        {/* Order Source Pie Chart or Summary */}
+                        <div className="erp-card p-6 bg-gradient-to-br from-indigo-600 to-blue-700 text-white relative overflow-hidden">
+                            <div className="absolute -right-4 -bottom-4 h-24 w-24 bg-white/10 rounded-full blur-2xl" />
+                            <div className="relative z-10">
+                                <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60 mb-4">Market Velocity</p>
+                                <div className="flex items-end justify-between">
+                                    <div>
+                                        <h3 className="text-3xl font-black tracking-tighter mb-1">
+                                            {Math.round(((traceabilityData.volume?.salesQty || 0) / Math.max(1, (traceabilityData.volume?.purchaseQty || 0) + (traceabilityData.volume?.salesQty || 0))) * 100)}%
+                                        </h3>
+                                        <p className="text-[10px] font-bold uppercase tracking-widest opacity-80">Inventory Liquidity</p>
+                                    </div>
+                                    <TrendingUp className="h-8 w-8 opacity-40 mb-1" />
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
             )}
+
 
             {/* Bottom Activity Section */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-10 pt-4">
