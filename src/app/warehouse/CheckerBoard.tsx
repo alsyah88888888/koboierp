@@ -462,8 +462,8 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
     const [displaySearchTerm, setDisplaySearchTerm] = useState("");
     const displayReceipts = (unverifiedReceipts || []).filter(r => 
         !r.isVerified && 
-        (r.receiptNumber?.toLowerCase().includes(displaySearchTerm.toLowerCase()) || 
-         r.receivedFrom?.toLowerCase().includes(displaySearchTerm.toLowerCase()))
+        ((r.receiptNumber?.toLowerCase() || "").includes(displaySearchTerm.toLowerCase()) || 
+         (r.receivedFrom?.toLowerCase() || "").includes(displaySearchTerm.toLowerCase()))
     );
 
     return (
