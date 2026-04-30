@@ -147,6 +147,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
     const handleExport = () => {
         if (activeTab === "ledger") {
             const data = filteredLedger.map(tx => ({
+                'Bulan': format(new Date(tx.date), "MMMM yyyy"),
                 'Tanggal': format(new Date(tx.date), "dd/MM/yyyy"),
                 'Kas/Bank': tx.transaction?.bank || 'Kas/Bank',
                 'Deskripsi': tx.description,
@@ -159,6 +160,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
             exportToExcel(data, `Laporan_Buku_Besar_${format(new Date(), "yyyyMMdd")}`, 'Ledger');
         } else if (activeTab === "ap") {
             const data = filteredPurchases.map(p => ({
+                'Bulan': format(new Date(p.date || p.createdAt), "MMMM yyyy"),
                 'Tanggal Terima': format(new Date(p.date || p.createdAt), "dd/MM/yyyy"),
                 'No. Terima (LPB)': p.receiptNumber,
                 'No. Invoice Vendor': p.formNumber || '-',
@@ -180,6 +182,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                 const agingDays = Math.floor((new Date().getTime() - new Date(s.date || s.createdAt).getTime()) / (1000 * 3600 * 24));
                 
                 return {
+                    'Bulan': format(new Date(s.date || s.createdAt), "MMMM yyyy"),
                     'Tanggal SJ': format(new Date(s.date || s.createdAt), "dd/MM/yyyy"),
                     'No. SJ': s.deliveryNumber,
                     'PO BUYER': s.poNumber || '-',
@@ -196,6 +199,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
             exportToExcel(data, `Laporan_Piutang_Dagang_Kompleks_${format(new Date(), "yyyyMMdd")}`, 'AR');
         } else if (activeTab === "checker") {
             const data = unverifiedReceipts.map(r => ({
+                'Bulan': format(new Date(r.createdAt), "MMMM yyyy"),
                 'Tanggal': format(new Date(r.createdAt), "dd/MM/yyyy"),
                 'No. Terima': r.receiptNumber,
                 'Supplier': r.receivedFrom,
