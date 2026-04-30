@@ -180,502 +180,160 @@ export function AdminDashboard({
             {/* Role-Specific SOP Guideline */}
             <RoleGuideline role={role} />
 
-            {/* Today's High-Level Activity */}
-            <div className="space-y-6">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 px-2">
-                    <div className="flex items-center gap-4">
-                        <div className="h-5 w-2 bg-primary rounded-full shadow-lg shadow-primary/20" />
-                        <div>
-                            <h2 className="text-lg font-black text-slate-900 uppercase tracking-tight">Live Insights</h2>
-                            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">Real-time Daily Performance</p>
-                        </div>
+            {/* ═══════ PO STATUS — PALING ATAS ═══════ */}
+            {traceabilityData && (
+            <div className="space-y-4">
+                <div className="flex items-center justify-between px-2">
+                    <div className="flex items-center gap-3">
+                        <div className="h-5 w-2 bg-gradient-to-b from-amber-400 to-amber-600 rounded-full" />
+                        <h2 className="text-lg font-black text-slate-900 uppercase tracking-tight">Status Purchase Order</h2>
                     </div>
-                    <button 
-                        onClick={handleExportExcel}
-                        className="erp-btn-primary !bg-emerald-600 hover:!bg-emerald-700 !px-6 !py-3 shadow-emerald-200 w-full sm:w-auto"
-                    >
-                        <FileSpreadsheet className="h-4 w-4" />
-                        <span>Download Report</span>
+                    <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest">
+                        <span className="flex items-center gap-1.5 text-amber-600"><AlertCircle className="h-3.5 w-3.5" /> Open: {traceabilityData.poSummary?.open || 0}</span>
+                        <span className="flex items-center gap-1.5 text-blue-600"><Truck className="h-3.5 w-3.5" /> Partial: {traceabilityData.poSummary?.partial || 0}</span>
+                        <span className="flex items-center gap-1.5 text-emerald-600"><CheckCircle2 className="h-3.5 w-3.5" /> Closed: {traceabilityData.poSummary?.closed || 0}</span>
+                    </div>
+                </div>
+                {((traceabilityData.poSummary?.open || 0) + (traceabilityData.poSummary?.partial || 0)) > 0 ? (
+                <div className="erp-card overflow-hidden border-amber-200/60">
+                    <div className="overflow-x-auto"><table className="w-full text-[11px]">
+                        <thead><tr className="bg-slate-900 text-white">
+                            <th className="px-4 py-2.5 text-left font-black uppercase tracking-wider">No. PO</th>
+                            <th className="px-4 py-2.5 text-left font-black uppercase tracking-wider">Buyer</th>
+                            <th className="px-4 py-2.5 text-right font-black uppercase tracking-wider w-20">Total Qty</th>
+                            <th className="px-4 py-2.5 text-right font-black uppercase tracking-wider w-20">Terkirim</th>
+                            <th className="px-4 py-2.5 text-center font-black uppercase tracking-wider w-28">Progress</th>
+                            <th className="px-4 py-2.5 text-center font-black uppercase tracking-wider w-20">Status</th>
+                        </tr></thead>
+                        <tbody>
+                            {[...(traceabilityData.poSummary?.openOrders || []), ...(traceabilityData.poSummary?.partialOrders || [])].map((po: any, i: number) => {
+                                const pct = Math.round((po.shippedQty / Math.max(1, po.totalQty)) * 100);
+                                return (<tr key={i} className={`border-b border-slate-100 hover:bg-amber-50/30 ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
+                                    <td className="px-4 py-2 font-black text-slate-900">{po.orderNumber}</td>
+                                    <td className="px-4 py-2 font-bold text-slate-700 truncate max-w-[200px]">{po.buyerName}</td>
+                                    <td className="px-4 py-2 text-right font-black tabular-nums">{po.totalQty}</td>
+                                    <td className="px-4 py-2 text-right font-black tabular-nums">{po.shippedQty}</td>
+                                    <td className="px-4 py-2"><div className="flex items-center gap-2"><div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden"><div className={`h-full rounded-full ${pct >= 100 ? 'bg-emerald-500' : pct > 50 ? 'bg-blue-500' : 'bg-amber-400'}`} style={{ width: `${Math.min(100, pct)}%` }} /></div><span className="text-[10px] font-black text-slate-500 tabular-nums w-8 text-right">{pct}%</span></div></td>
+                                    <td className="px-4 py-2 text-center"><span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${pct > 0 ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}`}>{pct > 0 ? 'PARTIAL' : 'OPEN'}</span></td>
+                                </tr>);
+                            })}
+                        </tbody>
+                    </table></div>
+                </div>
+                ) : (
+                <div className="erp-card p-5 text-center border-emerald-200/60 bg-emerald-50/30">
+                    <p className="text-[11px] font-black text-emerald-700 uppercase tracking-widest flex items-center justify-center gap-2"><CheckCircle2 className="h-4 w-4" /> Semua PO sudah CLOSED — {traceabilityData.poSummary?.closed || 0} PO selesai</p>
+                </div>
+                )}
+            </div>
+            )}
+
+            {/* ═══════ BUSINESS OVERVIEW — UNIFIED ═══════ */}
+            <div className="erp-card overflow-hidden border-slate-200/50">
+                <div className="bg-slate-900 text-white px-8 py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h2 className="text-xl font-black tracking-tight">Business Overview</h2>
+                        <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-1">Live Performance • Financial • Team • Stock</p>
+                    </div>
+                    <button onClick={handleExportExcel} className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all">
+                        <FileSpreadsheet className="h-4 w-4" /><span>Export Report</span>
                     </button>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
-                    {/* Today's Sales */}
-                    <div className="erp-card p-8 relative overflow-hidden group hover:border-blue-200/50">
-                        <div className="absolute -right-8 -top-8 h-40 w-40 bg-blue-100/30 rounded-full blur-3xl transition-transform group-hover:scale-125" />
-                        <div className="relative z-10 space-y-6">
-                            <div className="flex items-center justify-between">
-                                <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl shadow-sm border border-blue-100/50">
-                                    <ShoppingBag className="h-5 w-5" />
-                                </div>
-                                <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest bg-blue-50/80 px-2.5 py-1 rounded-full border border-blue-100/50">Today Sales</span>
-                            </div>
-                            <div className="space-y-2">
-                                <h4 className="text-3xl font-black text-slate-900 tracking-tighter">
-                                    {isClient ? formatCurrency(dailyStats.totalSales || 0) : "Rp ---"}
-                                </h4>
-                                <div className="flex items-center gap-2">
-                                    <span className="h-1.5 w-1.5 bg-blue-500 rounded-full animate-pulse" />
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{dailyStats.countSales || 0} Invoices Generated</p>
-                                </div>
-                            </div>
+                {/* Today Stats Row */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 border-b border-slate-100">
+                    {[
+                        { icon: <ShoppingBag className="h-4 w-4 text-blue-500" />, label: 'Penjualan Hari Ini', value: formatCurrency(dailyStats.totalSales || 0), sub: `${dailyStats.countSales || 0} Invoice`, color: 'blue' },
+                        { icon: <ShoppingCart className="h-4 w-4 text-emerald-500" />, label: 'Pembelian Hari Ini', value: formatCurrency(dailyStats.totalPurchases || 0), sub: `${dailyStats.countPurchases || 0} GR`, color: 'emerald' },
+                        { icon: <Activity className="h-4 w-4 text-amber-500" />, label: 'Operasional', value: formatCurrency(dailyStats.totalOps || 0), sub: `${dailyStats.countOps || 0} Movement`, color: 'amber' },
+                        { icon: <Package className="h-4 w-4 text-purple-500" />, label: 'Permintaan Barang', value: `${dailyStats.countRequests || 0} PRs`, sub: 'Pending', color: 'purple' }
+                    ].map((item, i) => (
+                        <div key={i} className={`p-5 ${i < 3 ? 'border-r border-slate-100' : ''} hover:bg-${item.color}-50/30 transition-colors`}>
+                            <div className="flex items-center gap-2 mb-2">{item.icon}<span className={`text-[9px] font-black text-${item.color}-500 uppercase tracking-widest`}>{item.label}</span></div>
+                            <p className="text-xl font-black text-slate-900 tracking-tighter tabular-nums">{isClient ? item.value : 'Rp ---'}</p>
+                            <p className="text-[9px] font-bold text-slate-400 mt-0.5">{item.sub}</p>
                         </div>
-                    </div>
-
-                    {/* Today's Purchases */}
-                    <div className="erp-card p-8 relative overflow-hidden group hover:border-emerald-200/50">
-                        <div className="absolute -right-8 -top-8 h-40 w-40 bg-emerald-100/30 rounded-full blur-3xl transition-transform group-hover:scale-125" />
-                        <div className="relative z-10 space-y-6">
-                            <div className="flex items-center justify-between">
-                                <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl shadow-sm border border-emerald-100/50">
-                                    <ShoppingCart className="h-5 w-5" />
-                                </div>
-                                <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-50/80 px-2.5 py-1 rounded-full border border-emerald-100/50">Purchases</span>
-                            </div>
-                            <div className="space-y-2">
-                                <h4 className="text-3xl font-black text-slate-900 tracking-tighter">
-                                    {isClient ? formatCurrency(dailyStats.totalPurchases || 0) : "Rp ---"}
-                                </h4>
-                                <div className="flex items-center gap-2">
-                                    <span className="h-1.5 w-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{dailyStats.countPurchases || 0} Goods Received</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Today's Ops */}
-                    <div className="erp-card p-8 relative overflow-hidden group hover:border-amber-200/50">
-                        <div className="absolute -right-8 -top-8 h-40 w-40 bg-amber-100/30 rounded-full blur-3xl transition-transform group-hover:scale-125" />
-                        <div className="relative z-10 space-y-6">
-                            <div className="flex items-center justify-between">
-                                <div className="p-3 bg-amber-50 text-amber-600 rounded-2xl shadow-sm border border-amber-100/50">
-                                    <Activity className="h-5 w-5" />
-                                </div>
-                                <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest bg-amber-50/80 px-2.5 py-1 rounded-full border border-amber-100/50">Operational</span>
-                            </div>
-                            <div className="space-y-2">
-                                <h4 className="text-3xl font-black text-slate-900 tracking-tighter">
-                                    {isClient ? formatCurrency(dailyStats.totalOps || 0) : "Rp ---"}
-                                </h4>
-                                <div className="flex items-center gap-2">
-                                    <span className="h-1.5 w-1.5 bg-amber-500 rounded-full animate-pulse" />
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{dailyStats.countOps || 0} Cash Movements</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Today's PR */}
-                    <div className="erp-card p-8 relative overflow-hidden group hover:border-purple-200/50">
-                        <div className="absolute -right-8 -top-8 h-40 w-40 bg-purple-100/30 rounded-full blur-3xl transition-transform group-hover:scale-125" />
-                        <div className="relative z-10 space-y-6">
-                            <div className="flex items-center justify-between">
-                                <div className="p-3 bg-purple-50 text-purple-600 rounded-2xl shadow-sm border border-purple-100/50">
-                                    <Package className="h-5 w-5" />
-                                </div>
-                                <span className="text-[10px] font-black text-purple-500 uppercase tracking-widest bg-purple-50/80 px-2.5 py-1 rounded-full border border-purple-100/50">Requests</span>
-                            </div>
-                            <div className="space-y-2">
-                                <h4 className="text-3xl font-black text-slate-900 tracking-tighter">
-                                    {dailyStats.countRequests || 0} <span className="text-sm text-slate-400">PRs</span>
-                                </h4>
-                                <div className="flex items-center gap-2">
-                                    <span className="h-1.5 w-1.5 bg-purple-500 rounded-full animate-pulse" />
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pending Verification</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    ))}
                 </div>
 
-                {/* Live Input Diary */}
-                <div className="erp-card bg-slate-50/50 border-slate-200/40 p-8 md:p-10">
-                    <div className="flex items-center justify-between mb-10">
-                        <div className="flex items-center gap-5">
-                            <div className="p-4 bg-white rounded-2xl shadow-xl shadow-slate-100 border border-slate-50 transition-transform hover:scale-110">
-                                <Activity className="h-5 w-5 text-primary" />
-                            </div>
-                            <div>
-                                <h3 className="text-xl font-black text-slate-900 tracking-tight">Live Activity Stream</h3>
-                                <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mt-1">Real-time data entry monitor</p>
+                {/* Financial KPIs Row */}
+                <div className="flex flex-wrap border-b border-slate-100">
+                    {stats.map((stat: any, i: number) => (
+                        <div key={i} className="flex-1 min-w-[140px] p-4 border-r border-slate-100 last:border-r-0 hover:bg-slate-50/50 transition-colors">
+                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 truncate">{stat.name}</p>
+                            <p className="text-base font-black text-slate-900 tracking-tighter tabular-nums leading-tight">{isClient ? stat.value : 'Rp ---'}</p>
+                            <div className={`flex items-center gap-1 mt-1 text-[8px] font-black uppercase ${stat.trend === 'up' ? 'text-emerald-600' : 'text-rose-500'}`}>
+                                {stat.trend === 'up' ? <ArrowUpRight className="h-2.5 w-2.5" /> : <ArrowDownRight className="h-2.5 w-2.5" />}{stat.change}
                             </div>
                         </div>
-                        <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100">
-                             <div className="h-2 w-2 bg-emerald-500 rounded-full animate-ping" />
-                             <span className="text-[10px] font-black uppercase tracking-widest">Active Connection</span>
-                        </div>
-                    </div>
-
-                    <div className="space-y-4 max-h-[440px] overflow-y-auto pr-4 custom-scrollbar scrollbar-hide">
-                        {(() => {
-                            const activities = [
-                                ...sales.map((s: any) => ({ ...s, activityType: 'SALE' })),
-                                ...purchases.map((p: any) => ({ ...p, activityType: 'PURCHASE' })),
-                                ...operational.map((o: any) => ({ ...o, activityType: 'FINANCE' })),
-                                ...requests.map((r: any) => ({ ...r, activityType: 'REQUEST' }))
-                            ].filter(a => a.createdAt).sort((a, b) => {
-                                try {
-                                    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-                                } catch { return 0; }
-                            });
-
-                            if (activities.length === 0) {
-                                return (
-                                    <div className="text-center py-16 opacity-40">
-                                        <div className="bg-slate-100 h-16 w-16 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-dashed border-slate-300">
-                                            <Activity className="h-6 w-6 text-slate-400" />
-                                        </div>
-                                        <p className="text-[11px] font-black text-slate-500 uppercase tracking-widest">No activities recorded today</p>
-                                    </div>
-                                );
-                            }
-
-                            return activities.map((act: any, idx: number) => (
-                            <Link 
-                                href={
-                                    act.activityType === 'SALE' ? '/sales' :
-                                    act.activityType === 'PURCHASE' ? '/purchase' :
-                                    act.activityType === 'FINANCE' ? '/finance' :
-                                    '/purchase/request'
-                                }
-                                key={idx} 
-                                className="bg-white p-5 rounded-[1.5rem] flex flex-col sm:flex-row sm:items-center justify-between gap-6 group hover:shadow-xl hover:shadow-slate-200/30 transition-all border border-transparent hover:border-slate-100 animate-fade-up"
-                            >
-                                <div className="flex items-center gap-5">
-                                    <div className={`p-4 rounded-2xl shrink-0 shadow-sm transition-all group-hover:scale-110 ${
-                                        act.activityType === 'SALE' ? 'bg-blue-50 text-blue-600 border border-blue-100/50' :
-                                        act.activityType === 'PURCHASE' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100/50' :
-                                        act.activityType === 'FINANCE' ? 'bg-amber-50 text-amber-600 border border-amber-100/50' :
-                                        'bg-purple-50 text-purple-600 border border-purple-100/50'
-                                    }`}>
-                                        {act.activityType === 'SALE' && <ShoppingBag className="h-5 w-5" />}
-                                        {act.activityType === 'PURCHASE' && <ShoppingCart className="h-5 w-5" />}
-                                        {act.activityType === 'FINANCE' && <Wallet className="h-5 w-5" />}
-                                        {act.activityType === 'REQUEST' && <Package className="h-5 w-5" />}
-                                    </div>
-                                    <div className="min-w-0 space-y-1.5">
-                                        <div className="flex items-center gap-3 flex-wrap">
-                                            <span className="text-[13px] font-black text-slate-900 tracking-tight">
-                                                {act.deliveryNumber || act.receiptNumber || act.number || act.description}
-                                            </span>
-                                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100">
-                                                {isClient ? new Date(act.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : "--:--:--"}
-                                            </span>
-                                        </div>
-                                        <p className="text-[11px] font-bold text-slate-500 flex items-center gap-2">
-                                            {act.activityType === 'SALE' ? `Transactional shipment to ${act.buyerName || '-'}` :
-                                             act.activityType === 'PURCHASE' ? `Inbound supply from ${act.receivedFrom || '-'}` :
-                                             act.activityType === 'REQUEST' ? `New stock request: ${act.notes || 'No description'}` :
-                                             `Finance movement in ${act.category || 'General'}`}
-                                        </p>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-5 sm:pl-6 sm:border-l border-slate-100">
-                                    <div className="text-left sm:text-right">
-                                        <div className="text-[11px] font-black text-slate-900 uppercase tracking-tight">
-                                            {act.createdBy?.name || act.requestedBy?.name || "Verified App"}
-                                        </div>
-                                        <div className={`text-[9px] font-black uppercase tracking-[0.2em] mt-1 ${
-                                            act.activityType === 'SALE' ? 'text-blue-500' :
-                                            act.activityType === 'PURCHASE' ? 'text-emerald-500' :
-                                            act.activityType === 'FINANCE' ? 'text-amber-500' :
-                                            'text-purple-500'
-                                        }`}>
-                                            Module: {act.activityType}
-                                        </div>
-                                    </div>
-                                    <div className="h-10 w-10 rounded-full bg-slate-50 flex items-center justify-center border border-slate-100 group-hover:bg-primary/10 transition-colors">
-                                        <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-primary transition-colors" />
-                                    </div>
-                                </div>
-                            </Link>
-                        ));
-                    })()}
-                    </div>
+                    ))}
                 </div>
-            </div>
 
-            {/* Financial Overview Card Grid */}
-            <div className="space-y-6">
-                <div className="flex items-center gap-4 px-2">
-                    <div className="h-4 w-1.5 bg-indigo-500 rounded-full" />
-                    <h2 className="text-sm font-black text-slate-900 uppercase tracking-tight">Equity & Treasury</h2>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {financialStats.map(renderStatCard)}
-                </div>
-            </div>
-
-            {/* Performance & Liabilites Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 pt-4">
-                <div className="space-y-6">
-                    <div className="flex items-center gap-4 px-2">
-                        <div className="h-4 w-1.5 bg-amber-500 rounded-full" />
-                        <h2 className="text-sm font-black text-slate-900 uppercase tracking-tight">Team Operations</h2>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                        {performanceStats.map(renderStatCard)}
-                    </div>
-                </div>
-                <div className="space-y-6">
-                    <div className="flex items-center gap-4 px-2">
-                        <div className="h-4 w-1.5 bg-rose-500 rounded-full" />
-                        <h2 className="text-sm font-black text-slate-900 uppercase tracking-tight">Accounts Payable/Receivable</h2>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                        {liabilityStats.map(renderStatCard)}
-                    </div>
-                </div>
-            </div>
-
-            {/* Charts Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-10 pt-4">
-                {/* Sales Area Chart */}
-                <div className="lg:col-span-2 erp-card p-6 md:p-10 border-slate-200/50">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-6">
-                        <div className="space-y-1">
-                            <h3 className="text-2xl font-black text-slate-900 tracking-tight">Weekly System Velocity</h3>
-                            <p className="text-slate-400 text-[11px] font-bold uppercase tracking-widest">Inbound vs Outbound Data flow</p>
-                        </div>
-                        <select className="bg-slate-50 border-2 border-slate-100 px-5 py-3 rounded-2xl text-[10px] font-black text-slate-600 uppercase tracking-widest outline-none focus:border-primary transition-all cursor-pointer">
-                            <option>Last 7 Cycles</option>
-                            <option>Last 30 Cycles</option>
-                        </select>
-                    </div>
-                    <div className="h-[360px] w-full">
-                        {isClient && (
-                            <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart data={salesData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                {/* Chart + Team + Stock Row */}
+                <div className="grid grid-cols-1 lg:grid-cols-3">
+                    {/* Weekly Chart */}
+                    <div className="p-6 border-r border-b lg:border-b-0 border-slate-100">
+                        <h3 className="text-sm font-black text-slate-900 mb-1">Weekly Velocity</h3>
+                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-4">Sales vs Purchase</p>
+                        <div className="h-[180px]">
+                            {isClient && (<ResponsiveContainer width="100%" height="100%">
+                                <AreaChart data={salesData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
                                     <defs>
-                                        <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.15} />
-                                            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                                        </linearGradient>
-                                        <linearGradient id="colorPurch" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.15} />
-                                            <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                                        </linearGradient>
+                                        <linearGradient id="gS" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#3b82f6" stopOpacity={0.15}/><stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/></linearGradient>
+                                        <linearGradient id="gP" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#10b981" stopOpacity={0.15}/><stop offset="95%" stopColor="#10b981" stopOpacity={0}/></linearGradient>
                                     </defs>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 800 }} dy={20} />
-                                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 800 }} />
-
-                                    <Tooltip
-                                        contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15)', padding: '16px 20px', backgroundColor: '#fff' }}
-                                        itemStyle={{ fontWeight: '900', fontSize: '12px' }}
-                                    />
-                                    <Area type="monotone" dataKey="sales" stroke="#3b82f6" strokeWidth={4} fillOpacity={1} fill="url(#colorSales)" dot={{ r: 5, fill: '#3b82f6', strokeWidth: 3, stroke: '#fff' }} activeDot={{ r: 8, strokeWidth: 0 }} />
-                                    <Area type="monotone" dataKey="purchases" stroke="#10b981" strokeWidth={4} fillOpacity={1} fill="url(#colorPurch)" dot={{ r: 5, fill: '#10b981', strokeWidth: 3, stroke: '#fff' }} activeDot={{ r: 8, strokeWidth: 0 }} />
+                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 9, fontWeight: 800 }} />
+                                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 9, fontWeight: 800 }} />
+                                    <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', padding: '8px 12px', fontSize: '11px' }} />
+                                    <Area type="monotone" dataKey="sales" stroke="#3b82f6" strokeWidth={2} fillOpacity={1} fill="url(#gS)" dot={false} />
+                                    <Area type="monotone" dataKey="purchases" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#gP)" dot={false} />
                                 </AreaChart>
-                            </ResponsiveContainer>
-                        )}
-                    </div>
-                </div>
-
-                {/* Team Intelligence Insight */}
-                <div className="erp-card p-10 flex flex-col group border-slate-200/40 bg-slate-900 text-white overflow-hidden relative">
-                     <div className="absolute top-0 right-0 p-10 opacity-5 group-hover:scale-110 transition-transform">
-                        <TrendingUp className="h-32 w-32" />
-                    </div>
-                    <div className="relative z-10">
-                        <div className="mb-10">
-                            <h3 className="text-xl font-black tracking-tight">Team Profitability</h3>
-                            <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] mt-1">Gross Margin Breakdown (BC vs PF)</p>
+                            </ResponsiveContainer>)}
                         </div>
-                        
-                        <div className="space-y-10">
-                            {/* BC Team */}
-                            <div className="space-y-3 font-black">
-                                <div className="flex justify-between items-end">
-                                    <span className="text-[11px] font-black uppercase tracking-widest text-slate-400">Team BC (Biru)</span>
-                                    <span className="text-lg font-black text-white">{isClient ? stats.find((s: any) => s.name === 'Margin BC')?.value : "..."}</span>
+                    </div>
+
+                    {/* Team Profitability + Settlement */}
+                    <div className="p-6 border-r border-b lg:border-b-0 border-slate-100 bg-slate-900 text-white">
+                        <h3 className="text-sm font-black mb-1">Team Profitability</h3>
+                        <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-4">Margin BC vs PF</p>
+                        <div className="space-y-4">
+                            {[{ n: 'BC', c: 'bg-blue-500' }, { n: 'PF', c: 'bg-purple-500' }].map(t => {
+                                const v = Number((stats.find((s: any) => s.name === `Margin ${t.n}`)?.value || "0").toString().replace(/[^0-9,-]+/g, "").replace(",", "."));
+                                const tot = Number((stats.find((s: any) => s.name === 'Total Revenue')?.value || "1").toString().replace(/[^0-9,-]+/g, "").replace(",", "."));
+                                const p = Math.min(100, Math.abs(v / Math.max(1, tot)) * 100);
+                                return (<div key={t.n} className="space-y-1.5">
+                                    <div className="flex justify-between"><span className="text-[10px] font-black text-slate-400 uppercase">Team {t.n}</span><span className="text-sm font-black">{isClient ? stats.find((s: any) => s.name === `Margin ${t.n}`)?.value : '...'}</span></div>
+                                    <div className="h-2 bg-white/10 rounded-full overflow-hidden"><div className={`h-full ${t.c} rounded-full transition-all duration-1000`} style={{ width: `${isClient ? p : 0}%` }} /></div>
+                                </div>);
+                            })}
+                        </div>
+                        <div className="mt-5 pt-4 border-t border-white/10 grid grid-cols-2 gap-3">
+                            <div><p className="text-[8px] font-bold text-slate-500 uppercase">Piutang</p><p className="text-sm font-black text-rose-400 tabular-nums">Rp {totalPiutangPending?.toLocaleString() || 0}</p></div>
+                            <div><p className="text-[8px] font-bold text-slate-500 uppercase">Hutang</p><p className="text-sm font-black text-amber-400 tabular-nums">Rp {totalHutangPending?.toLocaleString() || 0}</p></div>
+                        </div>
+                    </div>
+
+                    {/* Stock */}
+                    <div className="p-6">
+                        <h3 className="text-sm font-black text-slate-900 mb-1">Stock Integrity</h3>
+                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-3">By Category</p>
+                        <div className="relative h-[140px] mb-3">
+                            {isClient && (<ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={inventoryData} cx="50%" cy="50%" innerRadius={42} outerRadius={60} paddingAngle={5} dataKey="value" stroke="none">{inventoryData.map((_: any, idx: number) => (<Cell key={idx} fill={COLORS[idx % COLORS.length]} />))}</Pie></PieChart></ResponsiveContainer>)}
+                            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                <span className="text-[8px] font-black text-slate-300 uppercase">Total</span>
+                                <span className="text-lg font-black text-slate-900 tabular-nums">{isClient ? inventoryData.reduce((a: number, b: any) => a + b.value, 0).toLocaleString('id-ID') : '...'}</span>
+                            </div>
+                        </div>
+                        <div className="space-y-1.5">
+                            {inventoryData.map((item: any, i: number) => (
+                                <div key={i} className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2"><div className="h-2 w-4 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} /><span className="text-[10px] font-bold text-slate-500">{item.name}</span></div>
+                                    <span className="text-[10px] font-black text-slate-900 tabular-nums">{isClient ? item.value.toLocaleString() : '...'}</span>
                                 </div>
-                                <div className="h-3 w-full bg-white/5 rounded-full overflow-hidden">
-                                    {(() => {
-                                        const val = Number((stats.find((s: any) => s.name === 'Margin BC')?.value || "0").toString().replace(/[^0-9,-]+/g, "").replace(",", "."));
-                                        const total = Number((stats.find((s: any) => s.name === 'Total Revenue')?.value || "1").toString().replace(/[^0-9,-]+/g, "").replace(",", "."));
-                                        const pct = Math.min(100, (val / Math.max(1, total)) * 100);
-                                        return (
-                                            <div 
-                                                className="h-full bg-blue-500 rounded-full transition-all duration-1000" 
-                                                style={{ width: `${isClient ? pct : 0}%` }}
-                                            />
-                                        );
-                                    })()}
-                                </div>
-                            </div>
-
-                            {/* PF Team */}
-                            <div className="space-y-3 font-black">
-                                <div className="flex justify-between items-end">
-                                    <span className="text-[11px] font-black uppercase tracking-widest text-slate-400">Team PF (Ungu)</span>
-                                    <span className="text-lg font-black text-white">{isClient ? stats.find((s: any) => s.name === 'Margin PF')?.value : "..."}</span>
-                                </div>
-                                <div className="h-3 w-full bg-white/5 rounded-full overflow-hidden">
-                                    {(() => {
-                                        const val = Number((stats.find((s: any) => s.name === 'Margin PF')?.value || "0").toString().replace(/[^0-9,-]+/g, "").replace(",", "."));
-                                        const total = Number((stats.find((s: any) => s.name === 'Total Revenue')?.value || "1").toString().replace(/[^0-9,-]+/g, "").replace(",", "."));
-                                        const pct = Math.min(100, (val / Math.max(1, total)) * 100);
-                                        return (
-                                            <div 
-                                                className="h-full bg-purple-500 rounded-full transition-all duration-1000" 
-                                                style={{ width: `${isClient ? pct : 0}%` }}
-                                            />
-                                        );
-                                    })()}
-                                </div>
-                            </div>
+                            ))}
                         </div>
-
-                        <div className="mt-12 p-6 bg-white/5 rounded-2xl border border-white/5 backdrop-blur-sm">
-                            <div className="flex gap-4">
-                                <Activity className="h-5 w-5 text-primary shrink-0" />
-                                <p className="text-[10px] font-bold text-slate-400 leading-relaxed uppercase tracking-tight">
-                                    Analitik margin tim membantu memantau kontribusi profitabilitas setiap divisi secara real-time terhadap total Nett Margin perusahaan.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Inventory Pie Chart */}
-                <div className="erp-card p-10 flex flex-col group border-slate-200/50 bg-gradient-to-b from-white to-slate-50/30">
-                    <div className="mb-10">
-                        <h3 className="text-xl font-black text-slate-900 tracking-tight">Stock Integrity</h3>
-                        <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mt-1">Allocation by Category</p>
-                    </div>
-                    <div className="flex-1 min-h-[280px] relative">
-                        {isClient && (
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie
-                                        data={inventoryData}
-                                        cx="50%"
-                                        cy="50%"
-                                        innerRadius={80}
-                                        outerRadius={105}
-                                        paddingAngle={8}
-                                        dataKey="value"
-                                        stroke="none"
-                                    >
-                                        {inventoryData.map((entry: any, index: number) => (
-                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} className="hover:opacity-80 transition-opacity outline-none" />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip
-                                        contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15)', padding: '16px 20px' }}
-                                        itemStyle={{ fontWeight: '900', fontSize: '12px', textTransform: 'uppercase' }}
-                                    />
-                                </PieChart>
-                            </ResponsiveContainer>
-                        )}
-                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                            <span className="text-[10px] font-black text-slate-300 uppercase tracking-[0.4em] mb-1">In Stock</span>
-                            <span className="text-4xl font-black text-slate-900 tracking-tighter tabular-nums">
-                                {isClient ? inventoryData.reduce((a: number, b: any) => a + b.value, 0).toLocaleString('id-ID') : "..."}
-                            </span>
-                        </div>
-                    </div>
-                    <div className="mt-12 space-y-4">
-                        {inventoryData.map((item: any, i: number) => (
-                            <div key={i} className="flex items-center justify-between group/item">
-                                <div className="flex items-center gap-4">
-                                    <div className="h-2 w-8 rounded-full transition-all group-hover/item:w-12 shadow-sm" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                                    <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest">{item.name}</span>
-                                </div>
-                                <span className="text-[13px] font-black text-slate-900 tabular-nums">{isClient ? item.value.toLocaleString() : "..."}</span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </div>
-
-            {/* Settlement Monitoring Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-                {/* Sales Settlement */}
-                <div className="erp-card p-8 bg-gradient-to-br from-white to-emerald-50/20 border-emerald-100/50">
-                    <div className="flex justify-between items-start mb-8">
-                        <div className="space-y-1">
-                            <div className="flex items-center gap-2 text-emerald-600 mb-1">
-                                <PiggyBank className="h-4 w-4" />
-                                <span className="text-[10px] font-black uppercase tracking-wider">SALES SETTLEMENT</span>
-                            </div>
-                            <h3 className="text-xl font-black text-slate-900 uppercase italic">Monitoring Piutang</h3>
-                        </div>
-                        <div className="p-3 bg-emerald-500 text-white rounded-2xl shadow-lg shadow-emerald-200">
-                            <ArrowUpRight className="h-5 w-5" />
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-6 mb-8">
-                        <div className="space-y-1">
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Terbayar</p>
-                            <p className="text-2xl font-black text-emerald-600 font-mono">Rp {totalPaidSales?.toLocaleString() || 0}</p>
-                        </div>
-                        <div className="space-y-1 text-right">
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Sisa Piutang</p>
-                            <p className="text-2xl font-black text-rose-500 font-mono">Rp {totalPiutangPending?.toLocaleString() || 0}</p>
-                        </div>
-                    </div>
-
-                    {/* Progress Bar */}
-                    <div className="space-y-3">
-                        <div className="flex justify-between items-end">
-                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Collection Rate</span>
-                            <span className="text-sm font-black text-emerald-600">
-                                {Math.round((totalPaidSales / (totalPaidSales + totalPiutangPending || 1)) * 100)}%
-                            </span>
-                        </div>
-                        <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden shadow-inner flex">
-                            <div 
-                                className="h-full bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.4)] transition-all duration-1000"
-                                style={{ width: `${(totalPaidSales / (totalPaidSales + totalPiutangPending || 1)) * 100}%` }}
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                {/* Purchase Settlement */}
-                <div className="erp-card p-8 bg-gradient-to-br from-white to-blue-50/20 border-blue-100/50">
-                    <div className="flex justify-between items-start mb-8">
-                        <div className="space-y-1">
-                            <div className="flex items-center gap-2 text-blue-600 mb-1">
-                                <Wallet className="h-4 w-4" />
-                                <span className="text-[10px] font-black uppercase tracking-wider">PURCHASE SETTLEMENT</span>
-                            </div>
-                            <h3 className="text-xl font-black text-slate-900 uppercase italic">Monitoring Hutang</h3>
-                        </div>
-                        <div className="p-3 bg-blue-500 text-white rounded-2xl shadow-lg shadow-blue-200">
-                            <ArrowDownRight className="h-5 w-5" />
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-6 mb-8">
-                        <div className="space-y-1">
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Telah Dilunasi</p>
-                            <p className="text-2xl font-black text-blue-600 font-mono">Rp {totalPaidPurchases?.toLocaleString() || 0}</p>
-                        </div>
-                        <div className="space-y-1 text-right">
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Sisa Hutang</p>
-                            <p className="text-2xl font-black text-amber-600 font-mono">Rp {totalHutangPending?.toLocaleString() || 0}</p>
-                        </div>
-                    </div>
-
-                    {/* Progress Bar */}
-                    <div className="space-y-3">
-                        <div className="flex justify-between items-end">
-                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Payment Progress</span>
-                            <span className="text-sm font-black text-blue-600">
-                                {Math.round((totalPaidPurchases / (totalPaidPurchases + totalHutangPending || 1)) * 100)}%
-                            </span>
-                        </div>
-                        <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden shadow-inner flex">
-                            <div 
-                                className="h-full bg-blue-500 shadow-[0_0_12px_rgba(59,130,246,0.4)] transition-all duration-1000"
-                                style={{ width: `${(totalPaidPurchases / (totalPaidPurchases + totalHutangPending || 1)) * 100}%` }}
-                            />
-                        </div>
+                        {lowStockCount > 0 && (<div className="mt-3 p-2.5 bg-rose-50 rounded-lg border border-rose-100 flex items-center gap-2 text-[9px] font-black text-rose-600 uppercase tracking-widest"><div className="h-2 w-2 bg-rose-500 rounded-full animate-ping" />{lowStockCount} Low Stock</div>)}
                     </div>
                 </div>
             </div>
@@ -714,29 +372,6 @@ export function AdminDashboard({
                         <span>Export Excel</span>
                     </button>
                 </div>
-
-                {/* PO Status Cards */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-                    {[{ label: 'Total PO', value: traceabilityData.poSummary?.total || 0, color: 'slate', icon: <BarChart3 className="h-5 w-5" /> },
-                      { label: 'Open', value: traceabilityData.poSummary?.open || 0, color: 'amber', icon: <AlertCircle className="h-5 w-5" /> },
-                      { label: 'Partial Shipped', value: traceabilityData.poSummary?.partial || 0, color: 'blue', icon: <Truck className="h-5 w-5" /> },
-                      { label: 'Closed', value: traceabilityData.poSummary?.closed || 0, color: 'emerald', icon: <CheckCircle2 className="h-5 w-5" /> }
-                    ].map((item, i) => (
-                        <div key={i} className={`erp-card p-6 relative overflow-hidden group hover:border-${item.color}-200/50`}>
-                            <div className={`absolute -right-6 -top-6 h-28 w-28 bg-${item.color}-100/20 rounded-full blur-2xl transition-transform group-hover:scale-150`} />
-                            <div className="relative z-10 space-y-4">
-                                <div className={`p-3 bg-${item.color}-50 text-${item.color}-600 rounded-2xl shadow-sm border border-${item.color}-100/50 w-fit`}>
-                                    {item.icon}
-                                </div>
-                                <div>
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{item.label}</p>
-                                    <h4 className="text-3xl font-black text-slate-900 tracking-tighter">{isClient ? item.value : '...'}</h4>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-
                 {/* Volume Flow Banner */}
                 <div className="erp-card bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white p-8 relative overflow-hidden">
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(59,130,246,0.08),transparent_70%)]" />
@@ -816,51 +451,6 @@ export function AdminDashboard({
                         </table>
                     </div>
                 </div>
-
-                {/* PO Belum Close — Excel Table */}
-                {((traceabilityData.poSummary?.open || 0) + (traceabilityData.poSummary?.partial || 0)) > 0 && (
-                <div className="erp-card overflow-hidden border-amber-200/60">
-                    <div className="bg-amber-50 px-6 py-3 border-b border-amber-200 flex items-center gap-2">
-                        <AlertCircle className="h-4 w-4 text-amber-600" />
-                        <span className="text-[11px] font-black text-amber-700 uppercase tracking-widest">PO Belum Close</span>
-                    </div>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-[11px]">
-                            <thead>
-                                <tr className="bg-amber-900 text-white">
-                                    <th className="px-4 py-3 text-left font-black uppercase tracking-wider">No. PO</th>
-                                    <th className="px-4 py-3 text-left font-black uppercase tracking-wider">Buyer</th>
-                                    <th className="px-4 py-3 text-right font-black uppercase tracking-wider w-20">Total Qty</th>
-                                    <th className="px-4 py-3 text-right font-black uppercase tracking-wider w-20">Terkirim</th>
-                                    <th className="px-4 py-3 text-center font-black uppercase tracking-wider w-32">Progress</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {[...(traceabilityData.poSummary?.openOrders || []), ...(traceabilityData.poSummary?.partialOrders || [])].map((po: any, i: number) => {
-                                    const pct = Math.round((po.shippedQty / Math.max(1, po.totalQty)) * 100);
-                                    return (
-                                    <tr key={i} className={`border-b border-slate-100 hover:bg-amber-50/40 transition-colors ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
-                                        <td className="px-4 py-2.5 font-black text-slate-900">{po.orderNumber}</td>
-                                        <td className="px-4 py-2.5 font-bold text-slate-700 truncate max-w-[200px]">{po.buyerName}</td>
-                                        <td className="px-4 py-2.5 text-right font-black text-slate-900 tabular-nums">{po.totalQty}</td>
-                                        <td className="px-4 py-2.5 text-right font-black text-slate-900 tabular-nums">{po.shippedQty}</td>
-                                        <td className="px-4 py-2.5">
-                                            <div className="flex items-center gap-2">
-                                                <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
-                                                    <div className={`h-full rounded-full ${pct >= 100 ? 'bg-emerald-500' : pct > 50 ? 'bg-blue-500' : 'bg-amber-400'}`} style={{ width: `${Math.min(100, pct)}%` }} />
-                                                </div>
-                                                <span className="text-[10px] font-black text-slate-500 tabular-nums w-10 text-right">{pct}%</span>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                )}
-
                 {/* Top Partners Row */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="erp-card overflow-hidden">
