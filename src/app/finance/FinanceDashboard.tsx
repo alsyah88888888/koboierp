@@ -169,7 +169,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                 'Total Tagihan': Number(p.grandTotal),
                 'Sudah Dibayar': Number(p.paidAmount || 0),
                 'Sisa Hutang': Number(p.grandTotal) - Number(p.paidAmount || 0),
-                'Status': p.paymentStatus,
+                'Status': p.paymentStatus === 'PAID' ? 'DONE' : p.paymentStatus,
                 'Sales Person Vendor': p.salesPerson || '-',
                 'Gudang': p.warehouse?.name || '-'
             }));
@@ -191,7 +191,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                     'Total Tagihan': total,
                     'Sudah Dibayar': paid,
                     'Sisa Piutang': remaining,
-                    'Status': s.paymentStatus,
+                    'Status': s.paymentStatus === 'PAID' ? 'DONE' : s.paymentStatus,
                     'Umur Piutang (Hari)': agingDays > 0 ? agingDays : 0,
                     'Gudang Asal': s.warehouse?.name || '-'
                 };
@@ -298,7 +298,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                 'No. Terima': p.receiptNumber,
                 'Supplier': p.receivedFrom,
                 'Total': Number(p.total),
-                'Status': p.paymentStatus,
+                'Status': p.paymentStatus === 'PAID' ? 'DONE' : p.paymentStatus,
                 'Gudang': p.isVerified ? 'VERIFIED' : 'PENDING'
             }));
             setPreviewData(data);
@@ -309,7 +309,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                 'No. SJ': s.deliveryNumber,
                 'Pelanggan': s.buyerName,
                 'Total': Number(s.total),
-                'Status': s.paymentStatus
+                'Status': s.paymentStatus === 'PAID' ? 'DONE' : s.paymentStatus
             }));
             setPreviewData(data);
             setPreviewTitle("Buku Pembantu Piutang (AR)");
@@ -383,7 +383,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                     <h3 className="text-2xl font-black text-rose-600 tracking-tighter">{formatCurrency(totalHutang)}</h3>
                     <div className="mt-3 flex items-center gap-2">
                         <span className="h-1.5 w-1.5 bg-rose-500 rounded-full animate-pulse" />
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{pendingPurchases.length} Unpaid Invoices</span>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{pendingPurchases.filter((p: any) => p.paymentStatus !== 'PAID').length} Unpaid Invoices</span>
                     </div>
                 </div>
                 <div className="erp-card p-6 border-l-4 border-l-emerald-500 bg-white/50">
@@ -391,7 +391,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                     <h3 className="text-2xl font-black text-emerald-600 tracking-tighter">{formatCurrency(totalPiutang)}</h3>
                     <div className="mt-3 flex items-center gap-2">
                         <span className="h-1.5 w-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{pendingSales.length} Active Credits</span>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{pendingSales.filter((s: any) => s.paymentStatus !== 'PAID').length} Active Credits</span>
                     </div>
                 </div>
                 <div className="erp-card p-6 border-l-4 border-l-blue-500 bg-white/50">
@@ -416,11 +416,11 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                 <div className="flex overflow-x-auto whitespace-nowrap gap-2 bg-slate-100/50 p-1.5 rounded-2xl border border-slate-200/50 hide-print custom-scrollbar scrollbar-hide">
                     {[
                         { id: "ledger", label: "Ledger", icon: FileText, count: 0 },
-                        { id: "ap", label: "AP (Hutang)", icon: ArrowDownCircle, count: pendingPurchases.length + pendingReturns.length },
-                        { id: "ar", label: "AR (Piutang)", icon: ArrowUpCircle, count: pendingSales.length + pendingSalesReturns.length },
+                        { id: "ap", label: "AP (Hutang)", icon: ArrowDownCircle, count: pendingPurchases.filter((p: any) => p.paymentStatus !== 'PAID').length },
+                        { id: "ar", label: "AR (Piutang)", icon: ArrowUpCircle, count: pendingSales.filter((s: any) => s.paymentStatus !== 'PAID').length },
                         { id: "checker", label: "Checker", icon: CheckCircle2, count: unverifiedReceipts.length },
                         { id: "purchase_requests", label: "Pengajuan", icon: Wallet, count: pendingPurchaseRequests.length },
-                        { id: "history", label: "History", icon: Clock, count: 0 },
+                        { id: "history", label: "History", icon: Clock, count: (pendingPurchases.concat(pendingSales)).filter((x: any) => x.paymentStatus === 'PAID').length },
                     ].map((tab) => (
                         <button
                             key={tab.id}
@@ -630,7 +630,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                                         "flex items-center gap-1.5 font-black text-[10px] uppercase tracking-widest",
                                                         p.paymentStatus === 'PAID' ? 'text-emerald-500' : 'text-amber-500'
                                                     )}>
-                                                        <Clock className={cn("h-3 w-3", p.paymentStatus === 'PAID' ? 'hidden' : '')} /> {p.paymentStatus}
+                                                        <Clock className={cn("h-3 w-3", p.paymentStatus === 'PAID' ? 'hidden' : '')} /> {p.paymentStatus === 'PAID' ? 'DONE' : p.paymentStatus}
                                                     </span>
                                                 </div>
                                             </td>
@@ -713,7 +713,12 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                                 </div>
                                                 <div className="text-right">
                                                     <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">State</span>
-                                                    <div className="text-[10px] font-black text-amber-500 uppercase tracking-widest">{p.paymentStatus}</div>
+                                                    <div className={cn(
+                                                        "text-[10px] font-black uppercase tracking-widest",
+                                                        p.paymentStatus === 'PAID' ? "text-emerald-500" : "text-amber-500"
+                                                    )}>
+                                                        {p.paymentStatus === 'PAID' ? 'DONE' : p.paymentStatus}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -826,7 +831,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                                         "font-black text-[10px] uppercase tracking-widest",
                                                         s.paymentStatus === 'PAID' ? 'text-emerald-500' : 'text-blue-500'
                                                     )}>
-                                                        {s.paymentStatus}
+                                                        {s.paymentStatus === 'PAID' ? 'DONE' : s.paymentStatus}
                                                     </span>
                                                 </div>
                                             </td>
@@ -894,7 +899,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                                 "px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border",
                                                 s.paymentStatus === 'PAID' ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-blue-50 text-blue-600 border-blue-100"
                                             )}>
-                                                {s.paymentStatus}
+                                                {s.paymentStatus === 'PAID' ? 'DONE' : s.paymentStatus}
                                             </div>
                                         </div>
                                         <div className="mb-4">
