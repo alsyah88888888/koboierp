@@ -112,7 +112,7 @@ export function AdminDashboard({
             "Status": p.paymentStatus,
             "Waktu Input": new Date(p.createdAt).toLocaleString('id-ID'),
             "Operator": p.createdBy?.name || "System",
-            "Tgl Transaksi": p.date ? new Date(p.date).toLocaleDateString('id-ID') : "-"
+            "Tgl Transaksi": new Date(p.date).toLocaleDateString('id-ID')
         }));
         const wsPurch = XLSX.utils.json_to_sheet(purchRows);
         XLSX.utils.book_append_sheet(wb, wsPurch, "Pembelian");
@@ -183,7 +183,7 @@ export function AdminDashboard({
             <RoleGuideline role={role} />
 
             {/* ═══════ PO STATUS — PALING ATAS ═══════ */}
-            {traceabilityData && (
+            {traceabilityData ? (
             <div className="space-y-4">
                 <div className="flex items-center justify-between px-2">
                     <div className="flex items-center gap-3">
@@ -227,8 +227,8 @@ export function AdminDashboard({
                     <p className="text-[11px] font-black text-emerald-700 uppercase tracking-widest flex items-center justify-center gap-2"><CheckCircle2 className="h-4 w-4" /> Semua PO sudah CLOSED — {traceabilityData.poSummary?.closed || 0} PO selesai</p>
                 </div>
                 )}
-            </div>
-            )}
+                </div>
+            ) : null}
 
             {/* ═══════ BUSINESS OVERVIEW — UNIFIED ═══════ */}
             <div className="erp-card overflow-hidden border-slate-200/50">
@@ -375,319 +375,293 @@ export function AdminDashboard({
                     </div>
                 </div>
 
-                {/* Volume Flow Stats Banner */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div className="lg:col-span-2 erp-card bg-slate-900 text-white p-8 relative overflow-hidden group">
-                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(59,130,246,0.1),transparent_70%)]" />
-                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_50%,rgba(16,185,129,0.1),transparent_70%)]" />
+                {/* Volume Flow Stats Banner — FULL WIDTH */}
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                    <div className="lg:col-span-3 erp-card bg-slate-900 text-white p-10 relative overflow-hidden group">
+                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(59,130,246,0.15),transparent_70%)]" />
+                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_50%,rgba(16,185,129,0.15),transparent_70%)]" />
                         
-                        <div className="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-8">
-                            <div className="text-center sm:text-left">
-                                <div className="flex items-center gap-2 mb-3 justify-center sm:justify-start">
-                                    <div className="h-2 w-2 bg-emerald-400 rounded-full animate-pulse" />
-                                    <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Inbound Logistics</span>
+                        <div className="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-12">
+                            <div className="text-center sm:text-left flex-1">
+                                <div className="flex items-center gap-3 mb-4 justify-center sm:justify-start">
+                                    <div className="h-2.5 w-2.5 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_10px_rgba(52,211,153,0.5)]" />
+                                    <span className="text-[11px] font-black text-emerald-400 uppercase tracking-[0.2em]">Inbound Logistics</span>
                                 </div>
-                                <p className="text-5xl font-black tracking-tighter tabular-nums mb-1">{isClient ? (traceabilityData.volume?.purchaseQty || 0).toLocaleString('id-ID') : '...'}</p>
-                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Units Received</p>
+                                <p className="text-6xl font-black tracking-tighter tabular-nums mb-2">{isClient ? (traceabilityData.volume?.purchaseQty || 0).toLocaleString('id-ID') : '...'}</p>
+                                <p className="text-[11px] font-bold text-slate-500 uppercase tracking-[0.3em]">Total Units Received</p>
                             </div>
                             
-                            <div className="flex flex-col items-center gap-2">
-                                <div className="p-4 bg-white/5 border border-white/10 rounded-3xl backdrop-blur-xl group-hover:scale-110 transition-transform">
-                                    <RefreshCw className="h-6 w-6 text-slate-400 animate-[spin_10s_linear_infinite]" />
+                            <div className="flex flex-col items-center gap-4 py-4">
+                                <div className="p-6 bg-white/5 border border-white/10 rounded-[2rem] backdrop-blur-xl group-hover:scale-110 transition-transform shadow-2xl">
+                                    <RefreshCw className="h-8 w-8 text-slate-400 animate-[spin_12s_linear_infinite]" />
                                 </div>
-                                <div className="h-px w-24 bg-gradient-to-r from-transparent via-slate-700 to-transparent" />
+                                <div className="h-px w-32 bg-gradient-to-r from-transparent via-slate-700 to-transparent" />
                             </div>
-
-                            <div className="text-center sm:text-right">
-                                <div className="flex items-center gap-2 mb-3 justify-center sm:justify-end">
-                                    <div className="h-2 w-2 bg-blue-400 rounded-full animate-pulse" />
-                                    <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Outbound Distribution</span>
+ 
+                            <div className="text-center sm:text-right flex-1">
+                                <div className="flex items-center gap-3 mb-4 justify-center sm:justify-end">
+                                    <div className="h-2.5 w-2.5 bg-blue-400 rounded-full animate-pulse shadow-[0_0_10px_rgba(96,165,250,0.5)]" />
+                                    <span className="text-[11px] font-black text-blue-400 uppercase tracking-[0.2em]">Outbound Distribution</span>
                                 </div>
-                                <p className="text-5xl font-black tracking-tighter tabular-nums mb-1">{isClient ? (traceabilityData.volume?.salesQty || 0).toLocaleString('id-ID') : '...'}</p>
-                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Units Delivered</p>
+                                <p className="text-6xl font-black tracking-tighter tabular-nums mb-2">{isClient ? (traceabilityData.volume?.salesQty || 0).toLocaleString('id-ID') : '...'}</p>
+                                <p className="text-[11px] font-bold text-slate-500 uppercase tracking-[0.3em]">Total Units Delivered</p>
                             </div>
                         </div>
                     </div>
 
-                    <div className="erp-card p-8 border-slate-200 bg-white flex flex-col justify-center">
-                        <div className="space-y-6">
-                            <div>
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Health Status</p>
-                                <div className="flex items-center gap-3">
-                                    <div className="h-10 w-10 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center">
-                                        <ShieldCheck className="h-5 w-5 text-emerald-500" />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-black text-slate-900">100% Operational</p>
-                                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">All journals verified</p>
-                                    </div>
+                    <div className="erp-card p-10 border-slate-200 bg-white flex flex-col justify-center shadow-xl shadow-slate-100">
+                        <div className="space-y-8">
+                            <div className="flex justify-between items-end">
+                                <div>
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Traffic Today</p>
+                                    <span className="text-4xl font-black text-blue-600 tabular-nums leading-none tracking-tighter">{activeOrdersToday}</span>
+                                </div>
+                                <div className="h-12 w-12 rounded-2xl bg-blue-50 flex items-center justify-center">
+                                    <Activity className="h-6 w-6 text-blue-600" />
                                 </div>
                             </div>
                             <div className="h-px bg-slate-100" />
-                            <div className="flex justify-between items-center">
-                                <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Active Orders</span>
-                                <span className="text-lg font-black text-blue-600 tabular-nums">{activeOrdersToday}</span>
+                            <div className="flex items-center gap-3">
+                                <div className="h-10 w-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center">
+                                    <ShieldCheck className="h-5 w-5 text-emerald-500" />
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-black text-slate-900 uppercase">Operational Status</p>
+                                    <p className="text-[9px] font-bold text-emerald-600 uppercase tracking-widest">100% Verified</p>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-
-                {/* Unified Batch Traceability — Linked Purchase to Sales */}
-                <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-                    {/* Main Table (2/3) */}
-                    <div className="xl:col-span-2 space-y-4">
-                        <div className="flex items-center justify-between px-4 mb-2">
-                            <span className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Batch Traceability Report (Live)</span>
-                            <div className="flex items-center gap-4">
-                                <span className="text-[9px] font-black text-slate-500 uppercase">Purchase → Sales Lifecycle</span>
-                            </div>
+ 
+                {/* Unified Batch Traceability — FULL WIDTH TABLE */}
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between px-4 mb-2">
+                        <div className="flex items-center gap-3">
+                            <div className="h-2 w-2 bg-slate-900 rounded-full" />
+                            <span className="text-[12px] font-black text-slate-900 uppercase tracking-[0.2em]">Batch Traceability Report (Live)</span>
                         </div>
-
-                        <div className="erp-card overflow-hidden border-slate-200/60 shadow-xl shadow-slate-100">
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-[10px] border-collapse">
-                                    <thead>
-                                        <tr className="bg-slate-900 text-white">
-                                            <th className="px-3 py-3 text-left font-black uppercase tracking-wider whitespace-nowrap">Tgl Beli</th>
-                                            <th className="px-3 py-3 text-left font-black uppercase tracking-wider whitespace-nowrap">No. Lot / Batch</th>
-                                            <th className="px-3 py-3 text-left font-black uppercase tracking-wider">Supplier</th>
-                                            <th className="px-3 py-3 text-left font-black uppercase tracking-wider whitespace-nowrap">Tgl Jual</th>
-                                            <th className="px-3 py-3 text-left font-black uppercase tracking-wider whitespace-nowrap">No. SJ</th>
-                                            <th className="px-3 py-3 text-left font-black uppercase tracking-wider">Buyer</th>
-                                            <th className="px-3 py-3 text-left font-black uppercase tracking-wider">SKU / Nama Barang</th>
-                                            <th className="px-3 py-3 text-right font-black uppercase tracking-wider">Qty</th>
-                                            <th className="px-3 py-3 text-right font-black uppercase tracking-wider">Harga Jual</th>
-                                            <th className="px-3 py-3 text-right font-black uppercase tracking-wider">Profit</th>
-                                            <th className="px-3 py-3 text-center font-black uppercase tracking-wider">Margin</th>
-                                            <th className="px-3 py-3 text-center font-black uppercase tracking-wider">Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-slate-100">
-                                        {(traceabilityData.recentDetailed || []).map((row: any, i: number) => {
-                                            const marginNum = parseFloat(row['Margin %']);
-                                            return (
-                                                <tr key={i} className={`hover:bg-blue-50/40 transition-colors ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'}`}>
-                                                    <td className="px-3 py-2.5 font-bold text-slate-500 whitespace-nowrap">{row['Tgl Beli']}</td>
-                                                    <td className="px-3 py-2.5 font-black text-slate-900 whitespace-nowrap">{row['No. Lot']}</td>
-                                                    <td className="px-3 py-2.5 font-bold text-slate-700 truncate max-w-[120px]">{row['Supplier']}</td>
-                                                    <td className="px-3 py-2.5 font-bold text-slate-500 whitespace-nowrap text-blue-600">{row['Tgl Jual']}</td>
-                                                    <td className="px-3 py-2.5 font-black text-slate-900 whitespace-nowrap">{row['No. SJ']}</td>
-                                                    <td className="px-3 py-2.5 font-bold text-slate-700 truncate max-w-[120px]">{row['Buyer']}</td>
-                                                    <td className="px-3 py-2.5">
-                                                        <p className="font-black text-slate-900 leading-none">{row['SKU']}</p>
-                                                        <p className="text-[9px] font-bold text-slate-400 uppercase mt-0.5 truncate max-w-[150px]">{row['Nama Barang']}</p>
-                                                    </td>
-                                                    <td className="px-3 py-2.5 text-right font-black text-slate-900">{row['QTY']}</td>
-                                                    <td className="px-3 py-2.5 text-right font-black text-slate-900 whitespace-nowrap">{formatCurrency(row['Harga Jual Per Unit (Rp)'])}</td>
-                                                    <td className={`px-3 py-2.5 text-right font-black whitespace-nowrap ${row['Total Profit (Rp)'] >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                                                        {formatCurrency(row['Total Profit (Rp)'])}
-                                                    </td>
-                                                    <td className="px-3 py-2.5 text-center">
-                                                        <span className={`px-2 py-0.5 rounded-md font-black ${
-                                                            marginNum > 20 ? 'bg-emerald-100 text-emerald-700' :
-                                                            marginNum > 10 ? 'bg-blue-100 text-blue-700' :
-                                                            marginNum > 0 ? 'bg-amber-100 text-amber-700' :
-                                                            'bg-rose-100 text-rose-700'
-                                                        }`}>
-                                                            {row['Margin %']}
-                                                        </span>
-                                                    </td>
-                                                    <td className="px-3 py-2.5 text-center">
-                                                        <span className={`text-[8px] font-black px-2 py-0.5 rounded uppercase tracking-tighter ${
-                                                            row['Status'] === 'TERJUAL (LOT)' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500'
-                                                        }`}>
-                                                            {row['Status']}
-                                                        </span>
-                                                    </td>
-                                                </tr>
-                                            );
-                                        })}
-                                    </tbody>
-                                </table>
-                            </div>
+                        <div className="flex items-center gap-4">
+                            <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Linked Purchase → Sales Lifecycle</span>
                         </div>
                     </div>
-
-                    {/* Top Partners Summary Panel (1/3 width) */}
-                    <div className="space-y-8">
-                        {/* Top Suppliers */}
-                        <div className="erp-card overflow-hidden border-slate-200 shadow-xl shadow-slate-100">
-                            <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
-                                <span className="text-[11px] font-black uppercase tracking-widest">Top Suppliers</span>
-                                <ShoppingCart className="h-4 w-4 text-emerald-400" />
-                            </div>
-                            <div className="p-2">
-                                {(traceabilityData.topSuppliers || []).map((s: any, i: number) => (
-                                    <div key={i} className="flex items-center justify-between p-4 rounded-2xl hover:bg-slate-50 transition-colors">
-                                        <div className="flex items-center gap-3">
-                                            <div className="h-8 w-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xs font-black">{i + 1}</div>
-                                            <div>
-                                                <p className="text-xs font-black text-slate-900 uppercase truncate max-w-[120px]">{s.name}</p>
-                                                <p className="text-[9px] font-bold text-slate-400 uppercase">{s.count} Movements</p>
-                                            </div>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="text-xs font-black text-slate-900 tabular-nums">{formatCurrency(s.total)}</p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Top Buyers */}
-                        <div className="erp-card overflow-hidden border-slate-200 shadow-xl shadow-slate-100">
-                            <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
-                                <span className="text-[11px] font-black uppercase tracking-widest">Top Buyers</span>
-                                <ShoppingBag className="h-4 w-4 text-blue-400" />
-                            </div>
-                            <div className="p-2">
-                                {(traceabilityData.topBuyers || []).map((b: any, i: number) => (
-                                    <div key={i} className="flex items-center justify-between p-4 rounded-2xl hover:bg-slate-50 transition-colors">
-                                        <div className="flex items-center gap-3">
-                                            <div className="h-8 w-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xs font-black">{i + 1}</div>
-                                            <div>
-                                                <p className="text-xs font-black text-slate-900 uppercase truncate max-w-[120px]">{b.name}</p>
-                                                <p className="text-[9px] font-bold text-slate-400 uppercase">{b.count} Movements</p>
-                                            </div>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="text-xs font-black text-slate-900 tabular-nums">{formatCurrency(b.total)}</p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Market Velocity */}
-                        <div className="erp-card p-6 bg-gradient-to-br from-indigo-600 to-blue-700 text-white relative overflow-hidden">
-                            <div className="absolute -right-4 -bottom-4 h-24 w-24 bg-white/10 rounded-full blur-2xl" />
-                            <div className="relative z-10">
-                                <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60 mb-4">Market Velocity</p>
-                                <div className="flex items-end justify-between">
-                                    <div>
-                                        <h3 className="text-3xl font-black tracking-tighter mb-1">
-                                            {Math.round(((traceabilityData.volume?.salesQty || 0) / Math.max(1, (traceabilityData.volume?.purchaseQty || 0) + (traceabilityData.volume?.salesQty || 0))) * 100)}%
-                                        </h3>
-                                        <p className="text-[10px] font-bold uppercase tracking-widest opacity-80">Inventory Liquidity</p>
-                                    </div>
-                                    <TrendingUp className="h-8 w-8 opacity-40 mb-1" />
-                                </div>
-                            </div>
+ 
+                    <div className="erp-card overflow-hidden border-slate-200/60 shadow-2xl shadow-slate-200/40">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-[11px] border-collapse">
+                                <thead>
+                                    <tr className="bg-slate-900 text-white">
+                                        <th className="px-4 py-4 text-left font-black uppercase tracking-wider whitespace-nowrap">Tgl Beli</th>
+                                        <th className="px-4 py-4 text-left font-black uppercase tracking-wider whitespace-nowrap">No. Lot / Batch</th>
+                                        <th className="px-4 py-4 text-left font-black uppercase tracking-wider">Supplier</th>
+                                        <th className="px-4 py-4 text-left font-black uppercase tracking-wider whitespace-nowrap">Tgl Jual</th>
+                                        <th className="px-4 py-4 text-left font-black uppercase tracking-wider whitespace-nowrap">No. SJ</th>
+                                        <th className="px-4 py-4 text-left font-black uppercase tracking-wider">Buyer</th>
+                                        <th className="px-4 py-4 text-left font-black uppercase tracking-wider">SKU / Nama Barang</th>
+                                        <th className="px-4 py-4 text-right font-black uppercase tracking-wider">Qty</th>
+                                        <th className="px-4 py-4 text-right font-black uppercase tracking-wider">Harga Jual</th>
+                                        <th className="px-4 py-4 text-right font-black uppercase tracking-wider">Profit</th>
+                                        <th className="px-4 py-4 text-center font-black uppercase tracking-wider">Margin</th>
+                                        <th className="px-4 py-4 text-center font-black uppercase tracking-wider">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {(traceabilityData.recentDetailed || []).map((row: any, i: number) => {
+                                        const marginNum = parseFloat(row['Margin %']);
+                                        return (
+                                            <tr key={i} className={`hover:bg-blue-50/50 transition-colors ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50/20'}`}>
+                                                <td className="px-4 py-3 font-bold text-slate-500 whitespace-nowrap">{row['Tgl Beli']}</td>
+                                                <td className="px-4 py-3 font-black text-slate-900 whitespace-nowrap tracking-tight">{row['No. Lot']}</td>
+                                                <td className="px-4 py-3 font-bold text-slate-700 truncate max-w-[150px]">{row['Supplier']}</td>
+                                                <td className="px-4 py-3 font-bold text-slate-500 whitespace-nowrap text-blue-600">{row['Tgl Jual']}</td>
+                                                <td className="px-4 py-3 font-black text-slate-900 whitespace-nowrap tracking-tight">{row['No. SJ']}</td>
+                                                <td className="px-4 py-3 font-bold text-slate-700 truncate max-w-[150px]">{row['Buyer']}</td>
+                                                <td className="px-4 py-3">
+                                                    <p className="font-black text-slate-900 leading-none mb-1">{row['SKU']}</p>
+                                                    <p className="text-[10px] font-bold text-slate-400 uppercase truncate max-w-[200px]">{row['Nama Barang']}</p>
+                                                </td>
+                                                <td className="px-4 py-3 text-right font-black text-slate-900 tabular-nums">{row['QTY']}</td>
+                                                <td className="px-4 py-3 text-right font-black text-slate-900 whitespace-nowrap tabular-nums">{formatCurrency(row['Harga Jual Per Unit (Rp)'])}</td>
+                                                <td className={`px-4 py-3 text-right font-black whitespace-nowrap tabular-nums ${row['Total Profit (Rp)'] >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                                    {formatCurrency(row['Total Profit (Rp)'])}
+                                                </td>
+                                                <td className="px-4 py-3 text-center">
+                                                    <span className={`px-2.5 py-1 rounded-lg font-black text-[10px] ${
+                                                        marginNum > 20 ? 'bg-emerald-100 text-emerald-700' :
+                                                        marginNum > 10 ? 'bg-blue-100 text-blue-700' :
+                                                        marginNum > 0 ? 'bg-amber-100 text-amber-700' :
+                                                        'bg-rose-100 text-rose-700'
+                                                    }`}>
+                                                        {row['Margin %']}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-3 text-center">
+                                                    <span className={`text-[9px] font-black px-2.5 py-1 rounded-md uppercase tracking-tighter ${
+                                                        row['Status'] === 'TERJUAL (LOT)' ? 'bg-slate-900 text-white shadow-lg shadow-slate-200' : 'bg-slate-100 text-slate-500'
+                                                    }`}>
+                                                        {row['Status']}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
             </div>
             )}
-
-
-            {/* Bottom Activity Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-10 pt-4">
-                {/* Recent Activity Premium Feed */}
-                <div className="erp-card p-10 bg-slate-50/30 border-slate-200/40">
-                    <div className="flex items-center justify-between mb-10">
-                        <div className="space-y-1">
-                            <h3 className="text-xl font-black text-slate-900 tracking-tight">Ledger Operations</h3>
-                            <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">Consolidated Transaction Feed</p>
-                        </div>
-                        <Link href="/finance" className="bg-white border-2 border-slate-100 hover:border-primary hover:text-primary px-5 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm">Audit Trail</Link>
-                    </div>
-                    <div className="space-y-4">
-                        {recentActivity.map((act: any, i: number) => (
-                            <div key={i} className="flex items-center gap-6 p-5 rounded-[2rem] bg-white border border-slate-100/50 shadow-sm hover:shadow-2xl hover:shadow-slate-200/50 hover:border-slate-200 transition-all group/item">
-                                <div className={cn(
-                                    "p-4 rounded-2xl shadow-inner transition-transform group-hover/item:scale-110",
-                                    act.type === 'SALE' ? 'bg-blue-50 text-blue-600 border border-blue-100/50' : 'bg-emerald-50 text-emerald-600 border border-emerald-100/50'
-                                )}>
-                                    {act.type === 'SALE' ? <ShoppingBag className="h-5 w-5" /> : <ShoppingCart className="h-5 w-5" />}
-                                </div>
-                                <div className="flex-1 min-w-0 space-y-1">
-                                    <div className="text-[13px] font-black text-slate-900 uppercase tracking-tight truncate leading-none">{act.description}</div>
-                                    <div className="flex items-center gap-3 text-[10px] font-bold text-slate-300 uppercase tracking-[0.2em]">
-                                        <span>{isClient && act.date ? new Date(act.date).toLocaleDateString('id-ID') : "-"}</span>
-                                        <span className="h-1.5 w-1.5 rounded-full bg-slate-100" />
-                                        <span className={cn(
-                                            "capitalize px-2 py-0.5 rounded-md",
-                                            act.type === 'SALE' ? 'bg-blue-50 text-blue-500' : 'bg-emerald-50 text-emerald-500'
-                                        )}>{act.type.toLowerCase()}</span>
-                                    </div>
-                                </div>
-                                <div className="text-right">
-                                    <div className="text-sm font-black text-slate-900 font-mono">
-                                        {isClient ? (act.type === 'SALE' ? '+' : '-') + formatCurrency(act.amount) : "Rp ---"}
-                                    </div>
-                                    <div className="text-[9px] font-black text-slate-300 uppercase tracking-widest mt-1">Confirmed</div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+ 
+            {/* ═══════ CONSOLIDATED OPERATIONAL INSIGHTS — BOTTOM SECTION ═══════ */}
+            <div className="space-y-8 md:space-y-12">
+                <div className="flex items-center gap-4 px-4">
+                    <div className="h-px flex-1 bg-slate-200" />
+                    <span className="text-[11px] font-black text-slate-400 uppercase tracking-[0.4em] whitespace-nowrap">Operational Intelligence Center</span>
+                    <div className="h-px flex-1 bg-slate-200" />
                 </div>
-
-                {/* Logistics & Alerts Premium */}
-                <div className="bg-slate-900 text-white rounded-[3rem] p-10 shadow-2xl relative overflow-hidden group">
-                    <div className="relative z-10 flex flex-col h-full">
-                        <div className="flex items-center justify-between mb-12">
+ 
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 md:gap-12">
+                    {/* Recent Ledger Operations */}
+                    <div className="erp-card p-10 bg-white border-slate-200 shadow-xl shadow-slate-100/60">
+                        <div className="flex items-center justify-between mb-10">
                             <div className="space-y-1">
-                                <h3 className="text-2xl font-black tracking-tight leading-none">Warehouse Vitals</h3>
-                                <p className="text-slate-500 text-[11px] font-bold uppercase tracking-[0.3em]">Logistics & Stock Control</p>
+                                <h3 className="text-2xl font-black text-slate-900 tracking-tighter uppercase">Ledger Ops</h3>
+                                <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">Real-time Financial Flow</p>
                             </div>
-                            <div className="bg-white/5 border border-white/10 p-4 rounded-2xl backdrop-blur-md shadow-2xl">
-                                <Package className="h-6 w-6 text-primary" />
-                            </div>
+                            <Link href="/finance" className="bg-slate-50 hover:bg-slate-900 hover:text-white px-5 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all">Full Ledger</Link>
                         </div>
-
-                        <div className="grid grid-cols-2 gap-8 flex-1">
-                            <div className="bg-white/5 border border-white/10 p-8 rounded-[2.5rem] transition-all hover:bg-white/[0.08] hover:border-white/20 hover:-translate-y-1">
-                                <span className="text-[11px] font-black text-primary uppercase tracking-[0.3em] block mb-4">Traffic Today</span>
-                                <div className="text-5xl font-black tracking-tighter tabular-nums mb-4">{activeOrdersToday}</div>
-                                <div className="flex items-center gap-2 text-[10px] font-black text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-3 py-1.5 rounded-xl w-fit border border-emerald-500/20">
-                                    <TrendingUp className="h-3 w-3" /> Growth Detected
+                        <div className="space-y-4">
+                            {recentActivity.slice(0, 5).map((act: any, i: number) => (
+                                <div key={i} className="flex items-center gap-5 p-5 rounded-3xl bg-slate-50/50 border border-slate-100/50 hover:bg-white hover:shadow-xl hover:border-slate-200 transition-all group/item">
+                                    <div className={cn(
+                                        "h-12 w-12 rounded-2xl flex items-center justify-center transition-transform group-hover/item:scale-110",
+                                        act.type === 'SALE' ? 'bg-blue-100 text-blue-600' : 'bg-emerald-100 text-emerald-600'
+                                    )}>
+                                        {act.type === 'SALE' ? <ShoppingBag className="h-5 w-5" /> : <ShoppingCart className="h-5 w-5" />}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="text-[12px] font-black text-slate-900 uppercase truncate leading-none mb-1.5">{act.description}</div>
+                                        <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{isClient ? new Date(act.date).toLocaleDateString('id-ID') : '-'}</div>
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="text-sm font-black text-slate-900 font-mono tracking-tighter">
+                                            {isClient ? (act.type === 'SALE' ? '+' : '-') + formatCurrency(act.amount) : "Rp ---"}
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+ 
+                    {/* Warehouse Vitals & Stock Risks */}
+                    <div className="bg-slate-900 text-white rounded-[3rem] p-10 shadow-2xl relative overflow-hidden group">
+                        <div className="relative z-10 flex flex-col h-full">
+                            <div className="flex items-center justify-between mb-10">
+                                <div className="space-y-1">
+                                    <h3 className="text-2xl font-black tracking-tighter uppercase">Logistics Hub</h3>
+                                    <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em]">Warehouse Vitals</p>
+                                </div>
+                                <div className="bg-white/5 p-4 rounded-2xl">
+                                    <Package className="h-6 w-6 text-primary" />
                                 </div>
                             </div>
-                            <div className="bg-white/5 border border-white/10 p-8 rounded-[2.5rem] transition-all hover:bg-white/[0.08] hover:border-white/20 hover:-translate-y-1 flex flex-col justify-between">
-                                <div>
-                                    <span className="text-[11px] font-black text-rose-500 uppercase tracking-[0.3em] block mb-4">Risk Factors</span>
-                                    <div className="text-5xl font-black tracking-tighter text-rose-500 tabular-nums mb-4">{lowStockCount}</div>
-                                    <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2 mb-6">
-                                        <div className="h-2 w-2 bg-rose-500 rounded-full animate-ping" />
-                                        Refill Required
-                                    </div>
+ 
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 flex-1">
+                                <div className="bg-white/5 border border-white/10 p-8 rounded-[2.5rem]">
+                                    <span className="text-[10px] font-black text-rose-500 uppercase tracking-[0.3em] block mb-4">Stock Risks</span>
+                                    <div className="text-6xl font-black tracking-tighter text-rose-500 mb-2 tabular-nums">{lowStockCount}</div>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Items Below Threshold</p>
                                 </div>
                                 
-                                {lowStockProducts.length > 0 && (
-                                    <div className="space-y-2 mt-auto">
-                                        {lowStockProducts.slice(0, 3).map((p: any) => (
-                                            <div key={p.id} className="flex items-center justify-between bg-white/5 p-2 rounded-xl border border-white/5">
-                                                <div className="min-w-0">
-                                                    <p className="text-[9px] font-black text-slate-500 truncate uppercase">{p.name}</p>
-                                                    <p className="text-[8px] font-bold text-rose-400/60 uppercase tracking-tighter">Stock: {p.stock} / {p.threshold}</p>
-                                                </div>
-                                                <div className="h-1.5 w-1.5 bg-rose-500 rounded-full shrink-0 shadow-[0_0_5px_rgba(244,63,94,0.3)]" />
+                                <div className="space-y-3">
+                                    {lowStockProducts.slice(0, 4).map((p: any) => (
+                                        <div key={p.id} className="flex items-center justify-between bg-white/5 p-3 rounded-2xl border border-white/5">
+                                            <div className="min-w-0">
+                                                <p className="text-[10px] font-black text-slate-200 truncate uppercase leading-none mb-1">{p.name}</p>
+                                                <p className="text-[8px] font-bold text-slate-500 uppercase">Qty: {p.stock} Units</p>
                                             </div>
-                                        ))}
-                                        {lowStockProducts.length > 3 && (
-                                            <Link href="/tracking" className="text-[9px] font-black text-primary uppercase tracking-widest hover:underline block text-center pt-1">+ {lowStockProducts.length - 3} More Items</Link>
-                                        )}
+                                            <div className="h-2 w-2 bg-rose-500 rounded-full shadow-[0_0_10px_rgba(244,63,94,0.5)]" />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+ 
+                            <Link href="/warehouse" className="mt-8 flex items-center justify-between p-6 bg-primary rounded-[2rem] hover:scale-[1.02] transition-all">
+                                <span className="font-black text-sm uppercase tracking-widest">Audit Warehouse</span>
+                                <ArrowUpRight className="h-5 w-5" />
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+ 
+                {/* Partners & Market Insights */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {/* Top Suppliers */}
+                    <div className="erp-card overflow-hidden border-slate-200 bg-white">
+                        <div className="bg-slate-900 text-white px-8 py-5 flex items-center justify-between">
+                            <span className="text-[11px] font-black uppercase tracking-[0.2em]">Supply Chain</span>
+                            <ShoppingCart className="h-4 w-4 text-emerald-400" />
+                        </div>
+                        <div className="p-4 space-y-1">
+                            {(traceabilityData?.topSuppliers || []).map((s: any, i: number) => (
+                                <div key={i} className="flex items-center justify-between p-4 rounded-2xl hover:bg-slate-50 transition-colors">
+                                    <div className="flex items-center gap-3">
+                                        <div className="h-8 w-8 rounded-xl bg-slate-900 text-white flex items-center justify-center text-[10px] font-black">{i + 1}</div>
+                                        <p className="text-[11px] font-black text-slate-900 uppercase truncate max-w-[150px]">{s.name}</p>
                                     </div>
-                                )}
+                                    <p className="text-[11px] font-black text-slate-900 tabular-nums">{formatCurrency(s.total)}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+ 
+                    {/* Top Buyers */}
+                    <div className="erp-card overflow-hidden border-slate-200 bg-white">
+                        <div className="bg-slate-900 text-white px-8 py-5 flex items-center justify-between">
+                            <span className="text-[11px] font-black uppercase tracking-[0.2em]">Distribution</span>
+                            <ShoppingBag className="h-4 w-4 text-blue-400" />
+                        </div>
+                        <div className="p-4 space-y-1">
+                            {(traceabilityData?.topBuyers || []).map((b: any, i: number) => (
+                                <div key={i} className="flex items-center justify-between p-4 rounded-2xl hover:bg-slate-50 transition-colors">
+                                    <div className="flex items-center gap-3">
+                                        <div className="h-8 w-8 rounded-xl bg-blue-600 text-white flex items-center justify-center text-[10px] font-black">{i + 1}</div>
+                                        <p className="text-[11px] font-black text-slate-900 uppercase truncate max-w-[150px]">{b.name}</p>
+                                    </div>
+                                    <p className="text-[11px] font-black text-slate-900 tabular-nums">{formatCurrency(b.total)}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+ 
+                    {/* Market Velocity & Inventory Health */}
+                    <div className="space-y-8">
+                        <div className="erp-card p-8 bg-gradient-to-br from-indigo-600 via-blue-600 to-blue-700 text-white relative overflow-hidden h-[45%] flex flex-col justify-center">
+                            <div className="relative z-10">
+                                <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-60 mb-4">Market Velocity</p>
+                                <div className="flex items-end justify-between">
+                                    <div>
+                                        <h3 className="text-4xl font-black tracking-tighter leading-none mb-2">
+                                            {isClient ? Math.round(((traceabilityData?.volume?.salesQty || 0) / Math.max(1, (traceabilityData?.volume?.purchaseQty || 0) + (traceabilityData?.volume?.salesQty || 0))) * 100) : '0'}%
+                                        </h3>
+                                        <p className="text-[9px] font-bold uppercase tracking-widest opacity-80">Inventory Liquidity Index</p>
+                                    </div>
+                                    <TrendingUp className="h-10 w-10 opacity-30" />
+                                </div>
                             </div>
                         </div>
 
-                        <div className="mt-12 group/btn relative">
-                            <div className="absolute -inset-1 rounded-[2.5rem] bg-gradient-to-r from-primary to-blue-600 opacity-40 blur transition duration-500 group-hover/btn:opacity-100 group-hover/btn:duration-200" />
-                            <div className="relative flex items-center justify-between p-8 bg-primary rounded-[2.2rem] shadow-2xl transition-all hover:scale-[1.02] cursor-pointer active:scale-[0.98]">
-                                <div className="space-y-1">
-                                    <h4 className="font-black text-xl text-white tracking-tight leading-none uppercase">End-of-Month Audit</h4>
-                                    <p className="text-white/60 text-[10px] font-black uppercase tracking-[0.3em]">Module status: Finalized</p>
-                                </div>
-                                <div className="bg-white text-primary p-4 rounded-2xl shadow-2xl transform transition-transform group-hover/btn:rotate-12">
-                                    <ArrowUpRight className="h-7 w-7" />
-                                </div>
+                        <div className="erp-card p-8 bg-emerald-50 border-emerald-200 h-[45%] flex items-center gap-6">
+                            <div className="h-16 w-16 rounded-[2rem] bg-emerald-600 text-white flex items-center justify-center shadow-xl shadow-emerald-200">
+                                <ShieldCheck className="h-8 w-8" />
+                            </div>
+                            <div>
+                                <h4 className="text-lg font-black text-emerald-900 tracking-tight leading-none mb-1">Operational Health</h4>
+                                <p className="text-[10px] font-bold text-emerald-700 uppercase tracking-widest">100% Data Integrity Verified</p>
                             </div>
                         </div>
                     </div>
-
-                    <div className="absolute top-0 right-0 w-96 h-96 bg-primary/20 rounded-full -mr-48 -mt-48 blur-[120px] transition-all duration-1000 group-hover:bg-primary/30" />
-                    <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-500/10 rounded-full -ml-24 -mb-24 blur-[80px]" />
                 </div>
             </div>
         </div>
