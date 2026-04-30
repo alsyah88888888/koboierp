@@ -91,47 +91,56 @@ export function AdminDashboard({
 
         // 1. Sales Tab
         const salesRows = sales.map((s: any) => ({
+            "Bulan": new Date(s.date).toLocaleString('id-ID', { month: 'long' }),
+            "Tgl Transaksi": new Date(s.date).toLocaleDateString('id-ID'),
             "No. Transaksi": s.deliveryNumber,
+            "PO BUYER": s.poNumber || "-",
             "Buyer": s.buyerName,
             "Penerima": s.recipient,
             "Total": Number(s.grandTotal),
-            "Status": s.paymentStatus,
-            "Waktu Input": new Date(s.createdAt).toLocaleString('id-ID'),
+            "Status": s.paymentStatus === 'PAID' ? 'DONE' : (s.paymentStatus || 'PENDING'),
             "Operator": s.createdBy?.name || "System",
-            "Tgl Transaksi": new Date(s.date).toLocaleDateString('id-ID')
+            "Waktu Input": new Date(s.createdAt).toLocaleString('id-ID'),
+            "Ref Bank": `${s.deliveryNumber} - ${s.buyerName}`
         }));
         const wsSales = XLSX.utils.json_to_sheet(salesRows);
         XLSX.utils.book_append_sheet(wb, wsSales, "Penjualan");
 
         // 2. Purchases Tab
         const purchRows = purchases.map((p: any) => ({
+            "Bulan": new Date(p.date).toLocaleString('id-ID', { month: 'long' }),
+            "Tgl Transaksi": new Date(p.date).toLocaleDateString('id-ID'),
             "No. Terima": p.receiptNumber,
+            "PO BUYER": p.poNumber || "-",
             "Supplier": p.receivedFrom,
             "Gudang": p.warehouse?.name || "-",
             "Total": Number(p.grandTotal),
-            "Status": p.paymentStatus,
-            "Waktu Input": new Date(p.createdAt).toLocaleString('id-ID'),
+            "Status": p.paymentStatus === 'PAID' ? 'DONE' : (p.paymentStatus || 'PENDING'),
             "Operator": p.createdBy?.name || "System",
-            "Tgl Transaksi": new Date(p.date).toLocaleDateString('id-ID')
+            "Waktu Input": new Date(p.createdAt).toLocaleString('id-ID'),
+            "Ref Bank": `${p.receiptNumber} - ${p.receivedFrom}`
         }));
         const wsPurch = XLSX.utils.json_to_sheet(purchRows);
         XLSX.utils.book_append_sheet(wb, wsPurch, "Pembelian");
 
         // 3. Operational Tab
         const opsRows = operational.map((o: any) => ({
+            "Bulan": new Date(o.date).toLocaleString('id-ID', { month: 'long' }),
+            "Tgl Transaksi": new Date(o.date).toLocaleDateString('id-ID'),
             "Keterangan": o.description,
             "Bank/Metode": o.bank,
             "Kategori": o.category || "-",
             "Total": Number(o.amount),
-            "Waktu Input": new Date(o.createdAt).toLocaleString('id-ID'),
+            "Status": o.status === 'PAID' ? 'DONE' : (o.status || 'DONE'),
             "Operator": o.createdBy?.name || "System",
-            "Tgl Transaksi": new Date(o.date).toLocaleDateString('id-ID')
+            "Waktu Input": new Date(o.createdAt).toLocaleString('id-ID')
         }));
         const wsOps = XLSX.utils.json_to_sheet(opsRows);
         XLSX.utils.book_append_sheet(wb, wsOps, "Operasional");
 
         // 4. Purchase Requests Tab
         const reqRows = requests.map((r: any) => ({
+            "Bulan": new Date(r.createdAt).toLocaleString('id-ID', { month: 'long' }),
             "No. PR": r.number,
             "Pemohon": r.requestedBy?.name || "-",
             "Status": r.status,
