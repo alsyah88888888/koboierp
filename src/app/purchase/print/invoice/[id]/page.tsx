@@ -45,7 +45,6 @@ export default async function PurchaseInvoicePrintPage({ params }: { params: Pro
 
     return (
         <DocumentLayout
-            isContinuous={true}
             title="FAKTUR PEMBELIAN"
             docNumber={receipt.formNumber}
             date={format(new Date(receipt.date || receipt.createdAt), "dd MMM yyyy")}
