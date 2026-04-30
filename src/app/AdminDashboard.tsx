@@ -433,78 +433,80 @@ export function AdminDashboard({
                 </div>
 
                 {/* Unified Batch Traceability — Linked Purchase to Sales */}
-                <div className="space-y-4">
-                    <div className="flex items-center justify-between px-4 mb-2">
-                        <span className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Batch Traceability Report (Live)</span>
-                        <div className="flex items-center gap-4">
-                            <span className="text-[9px] font-black text-slate-500 uppercase">Purchase → Sales Lifecycle</span>
+                <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+                    {/* Main Table (2/3) */}
+                    <div className="xl:col-span-2 space-y-4">
+                        <div className="flex items-center justify-between px-4 mb-2">
+                            <span className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Batch Traceability Report (Live)</span>
+                            <div className="flex items-center gap-4">
+                                <span className="text-[9px] font-black text-slate-500 uppercase">Purchase → Sales Lifecycle</span>
+                            </div>
                         </div>
-                    </div>
 
-                    <div className="erp-card overflow-hidden border-slate-200/60 shadow-xl shadow-slate-100">
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-[10px] border-collapse">
-                                <thead>
-                                    <tr className="bg-slate-900 text-white">
-                                        <th className="px-3 py-3 text-left font-black uppercase tracking-wider whitespace-nowrap">Tgl Beli</th>
-                                        <th className="px-3 py-3 text-left font-black uppercase tracking-wider whitespace-nowrap">No. Lot / Batch</th>
-                                        <th className="px-3 py-3 text-left font-black uppercase tracking-wider">Supplier</th>
-                                        <th className="px-3 py-3 text-left font-black uppercase tracking-wider whitespace-nowrap">Tgl Jual</th>
-                                        <th className="px-3 py-3 text-left font-black uppercase tracking-wider whitespace-nowrap">No. SJ</th>
-                                        <th className="px-3 py-3 text-left font-black uppercase tracking-wider">Buyer</th>
-                                        <th className="px-3 py-3 text-left font-black uppercase tracking-wider">SKU / Nama Barang</th>
-                                        <th className="px-3 py-3 text-right font-black uppercase tracking-wider">Qty</th>
-                                        <th className="px-3 py-3 text-right font-black uppercase tracking-wider">Harga Jual</th>
-                                        <th className="px-3 py-3 text-right font-black uppercase tracking-wider">Profit</th>
-                                        <th className="px-3 py-3 text-center font-black uppercase tracking-wider">Margin</th>
-                                        <th className="px-3 py-3 text-center font-black uppercase tracking-wider">Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-100">
-                                    {(traceabilityData.recentDetailed || []).map((row: any, i: number) => {
-                                        const marginNum = parseFloat(row['Margin %']);
-                                        return (
-                                            <tr key={i} className={`hover:bg-blue-50/40 transition-colors ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'}`}>
-                                                <td className="px-3 py-2.5 font-bold text-slate-500 whitespace-nowrap">{row['Tgl Beli']}</td>
-                                                <td className="px-3 py-2.5 font-black text-slate-900 whitespace-nowrap">{row['No. Lot']}</td>
-                                                <td className="px-3 py-2.5 font-bold text-slate-700 truncate max-w-[120px]">{row['Supplier']}</td>
-                                                <td className="px-3 py-2.5 font-bold text-slate-500 whitespace-nowrap text-blue-600">{row['Tgl Jual']}</td>
-                                                <td className="px-3 py-2.5 font-black text-slate-900 whitespace-nowrap">{row['No. SJ']}</td>
-                                                <td className="px-3 py-2.5 font-bold text-slate-700 truncate max-w-[120px]">{row['Buyer']}</td>
-                                                <td className="px-3 py-2.5">
-                                                    <p className="font-black text-slate-900 leading-none">{row['SKU']}</p>
-                                                    <p className="text-[9px] font-bold text-slate-400 uppercase mt-0.5 truncate max-w-[150px]">{row['Nama Barang']}</p>
-                                                </td>
-                                                <td className="px-3 py-2.5 text-right font-black text-slate-900">{row['QTY']}</td>
-                                                <td className="px-3 py-2.5 text-right font-black text-slate-900 whitespace-nowrap">{formatCurrency(row['Harga Jual Per Unit (Rp)'])}</td>
-                                                <td className={`px-3 py-2.5 text-right font-black whitespace-nowrap ${row['Total Profit (Rp)'] >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                                                    {formatCurrency(row['Total Profit (Rp)'])}
-                                                </td>
-                                                <td className="px-3 py-2.5 text-center">
-                                                    <span className={`px-2 py-0.5 rounded-md font-black ${
-                                                        marginNum > 20 ? 'bg-emerald-100 text-emerald-700' :
-                                                        marginNum > 10 ? 'bg-blue-100 text-blue-700' :
-                                                        marginNum > 0 ? 'bg-amber-100 text-amber-700' :
-                                                        'bg-rose-100 text-rose-700'
-                                                    }`}>
-                                                        {row['Margin %']}
-                                                    </span>
-                                                </td>
-                                                <td className="px-3 py-2.5 text-center">
-                                                    <span className={`text-[8px] font-black px-2 py-0.5 rounded uppercase tracking-tighter ${
-                                                        row['Status'] === 'TERJUAL (LOT)' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500'
-                                                    }`}>
-                                                        {row['Status']}
-                                                    </span>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
+                        <div className="erp-card overflow-hidden border-slate-200/60 shadow-xl shadow-slate-100">
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-[10px] border-collapse">
+                                    <thead>
+                                        <tr className="bg-slate-900 text-white">
+                                            <th className="px-3 py-3 text-left font-black uppercase tracking-wider whitespace-nowrap">Tgl Beli</th>
+                                            <th className="px-3 py-3 text-left font-black uppercase tracking-wider whitespace-nowrap">No. Lot / Batch</th>
+                                            <th className="px-3 py-3 text-left font-black uppercase tracking-wider">Supplier</th>
+                                            <th className="px-3 py-3 text-left font-black uppercase tracking-wider whitespace-nowrap">Tgl Jual</th>
+                                            <th className="px-3 py-3 text-left font-black uppercase tracking-wider whitespace-nowrap">No. SJ</th>
+                                            <th className="px-3 py-3 text-left font-black uppercase tracking-wider">Buyer</th>
+                                            <th className="px-3 py-3 text-left font-black uppercase tracking-wider">SKU / Nama Barang</th>
+                                            <th className="px-3 py-3 text-right font-black uppercase tracking-wider">Qty</th>
+                                            <th className="px-3 py-3 text-right font-black uppercase tracking-wider">Harga Jual</th>
+                                            <th className="px-3 py-3 text-right font-black uppercase tracking-wider">Profit</th>
+                                            <th className="px-3 py-3 text-center font-black uppercase tracking-wider">Margin</th>
+                                            <th className="px-3 py-3 text-center font-black uppercase tracking-wider">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                        {(traceabilityData.recentDetailed || []).map((row: any, i: number) => {
+                                            const marginNum = parseFloat(row['Margin %']);
+                                            return (
+                                                <tr key={i} className={`hover:bg-blue-50/40 transition-colors ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'}`}>
+                                                    <td className="px-3 py-2.5 font-bold text-slate-500 whitespace-nowrap">{row['Tgl Beli']}</td>
+                                                    <td className="px-3 py-2.5 font-black text-slate-900 whitespace-nowrap">{row['No. Lot']}</td>
+                                                    <td className="px-3 py-2.5 font-bold text-slate-700 truncate max-w-[120px]">{row['Supplier']}</td>
+                                                    <td className="px-3 py-2.5 font-bold text-slate-500 whitespace-nowrap text-blue-600">{row['Tgl Jual']}</td>
+                                                    <td className="px-3 py-2.5 font-black text-slate-900 whitespace-nowrap">{row['No. SJ']}</td>
+                                                    <td className="px-3 py-2.5 font-bold text-slate-700 truncate max-w-[120px]">{row['Buyer']}</td>
+                                                    <td className="px-3 py-2.5">
+                                                        <p className="font-black text-slate-900 leading-none">{row['SKU']}</p>
+                                                        <p className="text-[9px] font-bold text-slate-400 uppercase mt-0.5 truncate max-w-[150px]">{row['Nama Barang']}</p>
+                                                    </td>
+                                                    <td className="px-3 py-2.5 text-right font-black text-slate-900">{row['QTY']}</td>
+                                                    <td className="px-3 py-2.5 text-right font-black text-slate-900 whitespace-nowrap">{formatCurrency(row['Harga Jual Per Unit (Rp)'])}</td>
+                                                    <td className={`px-3 py-2.5 text-right font-black whitespace-nowrap ${row['Total Profit (Rp)'] >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                                        {formatCurrency(row['Total Profit (Rp)'])}
+                                                    </td>
+                                                    <td className="px-3 py-2.5 text-center">
+                                                        <span className={`px-2 py-0.5 rounded-md font-black ${
+                                                            marginNum > 20 ? 'bg-emerald-100 text-emerald-700' :
+                                                            marginNum > 10 ? 'bg-blue-100 text-blue-700' :
+                                                            marginNum > 0 ? 'bg-amber-100 text-amber-700' :
+                                                            'bg-rose-100 text-rose-700'
+                                                        }`}>
+                                                            {row['Margin %']}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-3 py-2.5 text-center">
+                                                        <span className={`text-[8px] font-black px-2 py-0.5 rounded uppercase tracking-tighter ${
+                                                            row['Status'] === 'TERJUAL (LOT)' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500'
+                                                        }`}>
+                                                            {row['Status']}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
-                </div>
 
                     {/* Top Partners Summary Panel (1/3 width) */}
                     <div className="space-y-8">
@@ -556,7 +558,7 @@ export function AdminDashboard({
                             </div>
                         </div>
 
-                        {/* Order Source Pie Chart or Summary */}
+                        {/* Market Velocity */}
                         <div className="erp-card p-6 bg-gradient-to-br from-indigo-600 to-blue-700 text-white relative overflow-hidden">
                             <div className="absolute -right-4 -bottom-4 h-24 w-24 bg-white/10 rounded-full blur-2xl" />
                             <div className="relative z-10">
