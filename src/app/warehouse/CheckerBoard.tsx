@@ -1,9 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Search, CheckCircle2, AlertCircle, Barcode, Printer, Package, ChevronRight, X, AlertTriangle, Camera, CameraOff, Sparkles } from "lucide-react";
-import { Html5Qrcode } from "html5-qrcode";
-import { format } from "date-fns";
+
 import { callAction } from "@/proxy";
 
 import { useSession } from "next-auth/react";
@@ -19,7 +17,7 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
     const [showCamera, setShowCamera] = useState(false);
     const [lastScannedId, setLastScannedId] = useState<string | null>(null);
     const scanInputRef = useRef<HTMLInputElement>(null);
-    const cameraRef = useRef<Html5Qrcode | null>(null);
+    const cameraRef = useRef<any>(null);
     const [globalError, setGlobalError] = useState<string | null>(null);
 
     // Global error listener for hard crashes
@@ -42,9 +40,13 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
     // Handle Camera Scanner Lifecycle
     useEffect(() => {
         if (showCamera && selectedReceipt) {
+            let scanner: any = null;
             const startCamera = async () => {
                 try {
+                    // Dynamically import to avoid server-side issues
+                    const { Html5Qrcode } = await import("html5-qrcode");
                     const html5QrCode = new Html5Qrcode("reader");
+                    scanner = html5QrCode;
                     cameraRef.current = html5QrCode;
                     await html5QrCode.start(
                         { facingMode: "environment" },
@@ -58,21 +60,17 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
                         () => { } // Error silencer
                     );
                 } catch (err) {
-                    console.error("Failed to start camera", err);
-                    alert("Gagal mengakses kamera. Pastikan izin kamera sudah diaktifkan.");
+                    console.error("Scanner Error:", err);
                     setShowCamera(false);
                 }
             };
             startCamera();
+            return () => {
+                if (scanner && scanner.isScanning) {
+                    scanner.stop().catch(() => {});
+                }
+            };
         }
-
-        return () => {
-            if (cameraRef.current && cameraRef.current.isScanning) {
-                cameraRef.current.stop().then(() => {
-                    cameraRef.current?.clear();
-                }).catch(err => console.error("Error stopping camera", err));
-            }
-        };
     }, [showCamera, selectedReceipt]);
 
     const [scanError, setScanError] = useState<string | null>(null);
