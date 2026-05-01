@@ -20,6 +20,17 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
     const [lastScannedId, setLastScannedId] = useState<string | null>(null);
     const scanInputRef = useRef<HTMLInputElement>(null);
     const cameraRef = useRef<Html5Qrcode | null>(null);
+    const [globalError, setGlobalError] = useState<string | null>(null);
+
+    // Global error listener for hard crashes
+    useEffect(() => {
+        const handleError = (event: ErrorEvent) => {
+            setGlobalError(`Runtime Error: ${event.message}`);
+            console.error("Caught global error:", event);
+        };
+        window.addEventListener("error", handleError);
+        return () => window.removeEventListener("error", handleError);
+    }, []);
 
     // Auto-focus barcode input
     useEffect(() => {
@@ -64,15 +75,18 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
         };
     }, [showCamera, selectedReceipt]);
 
+    const [scanError, setScanError] = useState<string | null>(null);
+
     const handleScan = (barcode: string) => {
         if (!selectedReceipt || !barcode) return;
+        setScanError(null);
 
         const cleanBarcode = barcode.trim().toUpperCase();
 
         // Find item by barcode or SKU
         const item = selectedReceipt?.items?.find((i: any) =>
-            (i.product?.barcode && i.product.barcode.toUpperCase() === cleanBarcode) ||
-            (i.product?.sku && i.product.sku.toUpperCase() === cleanBarcode)
+            (i.product?.barcode && String(i.product.barcode).trim().toUpperCase() === cleanBarcode) ||
+            (i.product?.sku && String(i.product.sku).trim().toUpperCase() === cleanBarcode)
         );
 
         if (item) {
@@ -84,17 +98,16 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
             setLastScannedId(item.id);
             setTimeout(() => setLastScannedId(null), 1000);
         } else {
-            // Optional: visual error feedback instead of alert to not interrupt scanning flow
+            setScanError(`Barang "${barcode}" tidak ditemukan di LPB ini`);
             setScanBuffer("");
-            // Play error beep if possible via browser
             try {
                 const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
                 const oscillator = audioContext.createOscillator();
                 oscillator.type = 'sine';
-                oscillator.frequency.setValueAtTime(440, audioContext.currentTime);
+                oscillator.frequency.setValueAtTime(220, audioContext.currentTime);
                 oscillator.connect(audioContext.destination);
                 oscillator.start();
-                oscillator.stop(audioContext.currentTime + 0.1);
+                oscillator.stop(audioContext.currentTime + 0.2);
             } catch (e) {}
         }
     };
@@ -162,6 +175,11 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
                                 <div className="bg-emerald-500 w-2 h-2 rounded-full animate-pulse" />
                             </div>
                             <p className="text-[11px] font-bold text-slate-400 uppercase tracking-tight mt-1">Gunakan alat scanner atau kamera HP di bawah.</p>
+                            {scanError && (
+                                <div className="mt-2 text-[10px] font-black text-rose-500 bg-rose-50 px-3 py-1 rounded-lg border border-rose-100 animate-bounce">
+                                    ⚠️ {scanError}
+                                </div>
+                            )}
                         </div>
                         <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
                             <button 
@@ -494,6 +512,15 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
 
     return (
         <div className="space-y-6">
+            {globalError && (
+                <div className="bg-rose-600 text-white p-4 rounded-2xl font-black text-xs flex justify-between items-center shadow-xl shadow-rose-200 animate-bounce">
+                    <div className="flex items-center gap-3">
+                        <AlertTriangle className="h-5 w-5" />
+                        <span>SISTEM CRASH DETECTED: {globalError}</span>
+                    </div>
+                    <button onClick={() => setGlobalError(null)} className="bg-white/20 px-3 py-1 rounded-lg">Dismiss</button>
+                </div>
+            )}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-3xl border-2 border-slate-100 shadow-sm">
                 <div className="flex items-center gap-3">
                     <div className="p-2.5 bg-primary/10 rounded-xl text-primary">
@@ -539,7 +566,10 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
                                 <span className="uppercase">{r.warehouse?.name || "Unknown"}</span>
                             </div>
                             <button
-                                onClick={() => setSelectedReceipt(r)}
+                                onClick={() => {
+                                    console.log("Selecting receipt:", r);
+                                    setSelectedReceipt(r);
+                                }}
                                 className="w-full py-2 bg-primary/10 text-primary font-bold rounded-md hover:bg-primary hover:text-white transition-all flex items-center justify-center gap-2 group"
                             >
                                 Mulai Cek
