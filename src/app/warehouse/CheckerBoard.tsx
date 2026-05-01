@@ -131,7 +131,9 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
         }
     };
 
+    // Safe Render Wrapper to catch rendering-specific crashes
     if (selectedReceipt) {
+        try {
         return (
             <div className="bg-white rounded-[2.5rem] border-2 border-slate-100 shadow-2xl shadow-slate-200/50 overflow-hidden animate-in fade-in zoom-in duration-300">
                 <div className="p-8 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center relative">
@@ -216,7 +218,8 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-50">
-                                {selectedReceipt?.items?.map((item: any) => {
+                                {(selectedReceipt?.items || []).map((item: any) => {
+                                    if (!item || !item.id) return null;
                                     const scanned = checkedItems[item.id] || 0;
                                     const isComplete = scanned === item.quantity;
                                     const isFlashing = lastScannedId === item.id;
@@ -457,6 +460,29 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
                 )}
             </div>
         );
+        } catch (renderError: any) {
+            console.error("CheckerBoard Render Error:", renderError);
+            return (
+                <div className="p-12 bg-white rounded-[2.5rem] border-2 border-rose-100 text-center space-y-4 shadow-xl">
+                    <div className="w-16 h-16 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mx-auto">
+                        <AlertTriangle className="h-8 w-8" />
+                    </div>
+                    <div>
+                        <h3 className="text-xl font-black text-slate-900">Gagal Memuat Detail Checker</h3>
+                        <p className="text-sm text-slate-500 mt-2">Terjadi kesalahan teknis saat merender data LPB ini.</p>
+                        <div className="mt-4 p-3 bg-slate-50 rounded-xl text-[10px] font-mono text-rose-600 border border-slate-100 text-left overflow-auto max-h-32">
+                            {renderError.message || "Unknown rendering error"}
+                        </div>
+                    </div>
+                    <button 
+                        onClick={() => setSelectedReceipt(null)}
+                        className="px-8 py-3 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-xs active:scale-95 transition-all"
+                    >
+                        Kembali ke Daftar
+                    </button>
+                </div>
+            );
+        }
     }
 
     const [displaySearchTerm, setDisplaySearchTerm] = useState("");
