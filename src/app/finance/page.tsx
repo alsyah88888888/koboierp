@@ -43,28 +43,31 @@ export default async function FinancePage() {
     }).catch(() => []);
 
     const pendingPurchases = await (prisma.goodsReceipt as any).findMany({
+        where: { isVoid: false },
         orderBy: { createdAt: 'desc' },
         include: { items: true, warehouse: true }
     }).catch(() => []);
 
     const pendingSales = await (prisma.salesDelivery as any).findMany({
+        where: { isVoid: false },
         orderBy: { createdAt: 'desc' },
         include: { items: { include: { product: true } }, warehouse: true, order: true }
     }).catch(() => []);
 
     const unverifiedReceipts = await prisma.goodsReceipt.findMany({
-        where: { isVerified: false },
+        where: { isVerified: false, isVoid: false },
         include: { items: { include: { product: true } }, warehouse: true },
         orderBy: { createdAt: 'desc' }
     }).catch(() => []);
 
     const pendingReturns = await prisma.purchaseReturn.findMany({
-        where: { status: 'PENDING' },
+        where: { status: 'PENDING', isVoid: false },
         include: { items: { include: { product: true } }, receipt: true },
         orderBy: { createdAt: 'desc' }
     }).catch(() => []);
 
     const pendingSalesReturns = await (prisma.salesReturn as any).findMany({
+        where: { isVoid: false },
         include: { items: { include: { product: true } }, delivery: true },
         orderBy: { createdAt: 'desc' }
     }).catch(() => []);
