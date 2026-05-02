@@ -183,6 +183,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                 
                 return {
                     'Bulan': format(new Date(s.date || s.createdAt), "MMMM yyyy"),
+                    'Tanggal SO': s.order?.date ? format(new Date(s.order.date), "dd/MM/yyyy") : '-',
                     'Tanggal SJ': format(new Date(s.date || s.createdAt), "dd/MM/yyyy"),
                     'No. SJ': s.deliveryNumber,
                     'PO BUYER': s.poNumber || '-',

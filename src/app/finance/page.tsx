@@ -49,7 +49,7 @@ export default async function FinancePage() {
 
     const pendingSales = await (prisma.salesDelivery as any).findMany({
         orderBy: { createdAt: 'desc' },
-        include: { items: { include: { product: true } }, warehouse: true }
+        include: { items: { include: { product: true } }, warehouse: true, order: true }
     }).catch(() => []);
 
     const unverifiedReceipts = await prisma.goodsReceipt.findMany({
