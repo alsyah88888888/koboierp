@@ -20,80 +20,101 @@ export default async function FinancePage() {
     if (!session) {
         redirect("/api/auth/signin");
     }
-    const accounts = await getBalanceSheet().catch(() => []);
 
+    const isAdmin = session.user?.role?.toUpperCase() === "ADMIN";
+    const userFilter = isAdmin ? {} : { createdById: session.user.id };
 
-    const ledger = await prisma.journalEntry.findMany({
-        include: {
-            account: true,
-            transaction: true
-        },
-        orderBy: { date: 'desc' },
-        take: 50
-    }).catch(() => []);
+    // Fetch all data in parallel for performance
+    const [
+        accounts,
+        ledger,
+        vendors,
+        customers,
+        pendingPurchases,
+        pendingSales,
+        unverifiedReceipts,
+        pendingReturns,
+        pendingSalesReturns,
+        pendingPurchaseRequests,
+        transactions
+    ] = await Promise.all([
+        getBalanceSheet().catch(() => []),
+        prisma.journalEntry.findMany({
+            include: { account: true, transaction: true },
+            orderBy: { date: 'desc' },
+            take: 50
+        }).catch(() => []),
+        prisma.vendor.findMany({
+            orderBy: { balance: 'desc' },
+            where: { balance: { not: 0 } }
+        }).catch(() => []),
+        prisma.customer.findMany({
+            orderBy: { balance: 'desc' },
+            where: { balance: { not: 0 } }
+        }).catch(() => []),
+        prisma.goodsReceipt.findMany({
+            where: { isVoid: false, paymentStatus: { not: "PAID" } },
+            orderBy: { createdAt: 'desc' },
+            include: { items: true, warehouse: true }
+        }).catch(() => []),
+        prisma.salesDelivery.findMany({
+            where: { isVoid: false, paymentStatus: { not: "PAID" } },
+            orderBy: { createdAt: 'desc' },
+            include: { items: { include: { product: true } }, warehouse: true, order: true }
+        }).catch(() => []),
+        prisma.goodsReceipt.findMany({
+            where: { isVerified: false, isVoid: false },
+            include: { items: { include: { product: true } }, warehouse: true },
+            orderBy: { createdAt: 'desc' }
+        }).catch(() => []),
+        prisma.purchaseReturn.findMany({
+            where: { status: 'PENDING', isVoid: false },
+            include: { items: { include: { product: true } }, receipt: true },
+            orderBy: { createdAt: 'desc' }
+        }).catch(() => []),
+        prisma.salesReturn.findMany({
+            where: { status: 'PENDING', isVoid: false },
+            include: { items: { include: { product: true } }, delivery: true },
+            orderBy: { createdAt: 'desc' }
+        }).catch(() => []),
+        prisma.purchaseRequest.findMany({
+            where: { status: 'APPROVED_BY_ADMIN' },
+            include: { items: true, requestedBy: true, approvedBy: true },
+            orderBy: { createdAt: 'desc' }
+        }).catch(() => []),
+        prisma.financeTransaction.findMany({
+            where: userFilter,
+            orderBy: { date: 'desc' },
+            take: 200
+        }).catch(() => [])
+    ]);
 
-    const vendors = await (prisma.vendor as any).findMany({
-        orderBy: { balance: 'desc' },
-        where: { balance: { not: 0 } }
-    }).catch(() => []);
+    // Helper to calculate total safely without NaN
+    const calculateTotal = (grandTotal: any, items: any[], priceField: string) => {
+        const gt = Number(grandTotal || 0);
+        if (gt > 0) return gt;
+        return (items || []).reduce((sum: number, i: any) => {
+            const qty = Number(i.quantity || 0);
+            const price = Number(i[priceField] || 0);
+            const disc = Number(i.discount || 0);
+            const line = (qty * price) - disc;
+            return sum + (isNaN(line) ? 0 : line);
+        }, 0);
+    };
 
-    const customers = await (prisma.customer as any).findMany({
-        orderBy: { balance: 'desc' },
-        where: { balance: { not: 0 } }
-    }).catch(() => []);
-
-    const pendingPurchases = await (prisma.goodsReceipt as any).findMany({
-        where: { isVoid: false },
-        orderBy: { createdAt: 'desc' },
-        include: { items: true, warehouse: true }
-    }).catch(() => []);
-
-    const pendingSales = await (prisma.salesDelivery as any).findMany({
-        where: { isVoid: false },
-        orderBy: { createdAt: 'desc' },
-        include: { items: { include: { product: true } }, warehouse: true, order: true }
-    }).catch(() => []);
-
-    const unverifiedReceipts = await prisma.goodsReceipt.findMany({
-        where: { isVerified: false, isVoid: false },
-        include: { items: { include: { product: true } }, warehouse: true },
-        orderBy: { createdAt: 'desc' }
-    }).catch(() => []);
-
-    const pendingReturns = await prisma.purchaseReturn.findMany({
-        where: { status: 'PENDING', isVoid: false },
-        include: { items: { include: { product: true } }, receipt: true },
-        orderBy: { createdAt: 'desc' }
-    }).catch(() => []);
-
-    const pendingSalesReturns = await (prisma.salesReturn as any).findMany({
-        where: { isVoid: false },
-        include: { items: { include: { product: true } }, delivery: true },
-        orderBy: { createdAt: 'desc' }
-    }).catch(() => []);
-
-    const pendingPurchaseRequests = await prisma.purchaseRequest.findMany({
-        where: { status: 'APPROVED_BY_ADMIN' },
-        include: { items: true, requestedBy: true, approvedBy: true },
-        orderBy: { createdAt: 'desc' }
-    }).catch(() => []);
-
-    const transactions = await getFinanceTransactionsAction().catch((e) => { console.error("FT Error:", e); return []; });
-
-    // Serialize Decimal objects for Client Component
+    // Serialize and transform
     const serializedLedger = serializeDecimal(ledger || []);
     const serializedVendors = serializeDecimal(vendors || []);
     const serializedCustomers = serializeDecimal(customers || []);
 
-    // Add calculated totals for display
     const serializedPurchases = serializeDecimal(pendingPurchases || []).map((p: any) => ({
         ...p,
-        total: Number(p.grandTotal) > 0 ? Number(p.grandTotal) : (p.items || []).reduce((sum: number, i: any) => sum + (Number(i.quantity || 0) * Number(i.purchasePrice || 0)) - Number(i.discount || 0), 0)
+        total: calculateTotal(p.grandTotal, p.items, 'purchasePrice')
     }));
 
     const serializedSales = serializeDecimal(pendingSales || []).map((s: any) => ({
         ...s,
-        total: Number(s.grandTotal) > 0 ? Number(s.grandTotal) : (s.items || []).reduce((sum: number, i: any) => sum + (Number(i.quantity || 0) * Number(i.salesPrice || 0)) - Number(i.discount || 0), 0)
+        total: calculateTotal(s.grandTotal, s.items, 'salesPrice')
     }));
 
     const serializedUnverifiedReceipts = serializeDecimal(unverifiedReceipts || []);
