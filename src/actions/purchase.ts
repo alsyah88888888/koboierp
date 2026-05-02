@@ -288,3 +288,59 @@ export async function executePurchaseRequestAction(id: string, paymentData: any)
     }
 }
 
+export async function verifyPurchaseReturnAction(id: string) {
+    const { getAuthOptions } = require("@/lib/auth");
+    const { getServerSession } = require("next-auth");
+    const { getPrisma } = require("@/lib/prisma");
+    const prisma = getPrisma();
+
+    const session = (await getServerSession(getAuthOptions())) as any;
+    return await prisma.$transaction(async (tx: any) => {
+        const ret = await tx.purchaseReturn.findUnique({
+            where: { id },
+            include: {
+                receipt: { include: { items: true } },
+                items: true
+            }
+        });
+
+        if (!ret || ret.status !== "PENDING") throw new Error("Invalid or already verified return");
+
+        let totalValue = 0;
+        const taxRate = Number(ret.receipt.taxRate || 0);
+
+        ret.items.forEach((retItem: any) => {
+            const receiptItem = ret.receipt.items.find((i: any) => i.productId === retItem.productId);
+            if (receiptItem) {
+                const itemBase = (retItem.quantity * Number(receiptItem.purchasePrice));
+                const itemTax = Math.round(itemBase * (taxRate / 100));
+                totalValue += (itemBase + itemTax);
+            }
+        });
+
+        await tx.purchaseReturn.update({
+            where: { id },
+            data: { status: "VERIFIED_BY_FINANCE" }
+        });
+
+        const vendor = await tx.vendor.findFirst({ where: { name: ret.receipt.receivedFrom } });
+        if (vendor) {
+            await tx.vendor.update({
+                where: { id: vendor.id },
+                data: { balance: { decrement: totalValue } }
+            });
+        }
+
+        const apAccount = await tx.financeAccount.findUnique({ where: { code: '201' } });
+        const invAccount = await tx.financeAccount.findUnique({ where: { code: '104' } });
+
+        if (apAccount && invAccount) {
+            await tx.journalEntry.create({ data: { description: `Retur Pembelian (Potongan Hutang): ${ret.returnNumber}`, amount: totalValue as any, type: "DEBIT", accountId: apAccount.id, date: new Date(), createdById: session?.user?.id } });
+            await tx.journalEntry.create({ data: { description: `Retur Pembelian (Potongan Persediaan): ${ret.returnNumber}`, amount: totalValue as any, type: "CREDIT", accountId: invAccount.id, date: new Date(), createdById: session?.user?.id } });
+        }
+
+        revalidatePath("/finance");
+        revalidatePath("/");
+        return { success: true };
+    });
+}

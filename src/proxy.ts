@@ -80,6 +80,9 @@ export async function callAction(actionName: string, ...args: any[]) {
         case "deletePurchaseReturn":
             const { deletePurchaseReturnAction } = await import("@/actions/purchase");
             return await deletePurchaseReturnAction(...args as [string]);
+        case "verifyPurchaseReturn":
+            const { verifyPurchaseReturnAction } = await import("@/actions/purchase");
+            return await verifyPurchaseReturnAction(...args as [string]);
 
         case "updatePurchaseRequestStatus":
             const { updatePurchaseRequestStatusAction } = await import("@/actions/purchase");

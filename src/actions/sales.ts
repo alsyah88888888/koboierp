@@ -225,10 +225,14 @@ export async function verifySalesReturnAction(id: string) {
         if (!ret || ret.status !== "PENDING") throw new Error("Invalid or already verified return");
 
         let totalValue = 0;
+        const taxRate = Number(ret.delivery.taxRate || 0);
+
         ret.items.forEach((retItem: any) => {
             const deliveryItem = ret.delivery.items.find((i: any) => i.productId === retItem.productId);
             if (deliveryItem) {
-                totalValue += (retItem.quantity * Number(deliveryItem.salesPrice));
+                const itemBase = (retItem.quantity * Number(deliveryItem.salesPrice));
+                const itemTax = Math.round(itemBase * (taxRate / 100));
+                totalValue += (itemBase + itemTax);
             }
         });
 
