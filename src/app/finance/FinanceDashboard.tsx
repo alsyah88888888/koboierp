@@ -675,15 +675,13 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                                             PARTIAL PAY
                                                         </button>
                                                     )}
-                                                    {p.paymentStatus !== 'PAID' && (
-                                                        <button
-                                                            disabled={loading === p.id || (!p.isVerified && !isAdmin)}
-                                                            onClick={() => handleVerifyPayment("PURCHASE", p.id, "PAID")}
-                                                            className="erp-btn-primary !py-2 !text-[9px] !rounded-lg"
-                                                        >
-                                                            {loading === p.id ? "..." : (p.paymentStatus === 'PENDING' ? "FULL CASH" : "DONE")}
-                                                        </button>
-                                                    )}
+                                                    <button
+                                                        disabled={loading === p.id || (!p.isVerified && !isAdmin)}
+                                                        onClick={() => handleVerifyPayment("PURCHASE", p.id, "PAID")}
+                                                        className="erp-btn-primary !py-2 !text-[9px] !rounded-lg"
+                                                    >
+                                                        {loading === p.id ? "..." : (p.paymentStatus === 'PENDING' ? "FULL CASH" : "SETTLE BALANCE")}
+                                                    </button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -875,15 +873,13 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                                             PARTIAL PAY
                                                         </button>
                                                     )}
-                                                    {s.paymentStatus !== 'PAID' && (
-                                                        <button
-                                                            disabled={loading === s.id}
-                                                            onClick={() => handleVerifyPayment("SALE", s.id, "PAID")}
-                                                            className="erp-btn-primary !py-2 !text-[9px] !rounded-lg"
-                                                        >
-                                                            {loading === s.id ? "..." : (s.paymentStatus === 'PENDING' ? "FULL CASH" : "DONE")}
-                                                        </button>
-                                                    )}
+                                                    <button
+                                                        disabled={loading === s.id}
+                                                        onClick={() => handleVerifyPayment("SALE", s.id, "PAID")}
+                                                        className="erp-btn-primary !py-2 !text-[9px] !rounded-lg"
+                                                    >
+                                                        {loading === s.id ? "..." : (s.paymentStatus === 'PENDING' ? "FULL CASH" : "SETTLE BALANCE")}
+                                                    </button>
                                                 </div>
                                             </td>
                                         </tr>
