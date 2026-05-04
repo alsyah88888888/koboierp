@@ -15,7 +15,7 @@ import { CheckCircle2, Clock } from "lucide-react";
 import { exportToExcel } from "@/lib/excel";
 import { useRouter } from "next/navigation";
 
-export function FinanceDashboard({ accounts, ledger, vendors, customers, pendingPurchases, pendingSales, unverifiedReceipts, pendingReturns, pendingSalesReturns, pendingPurchaseRequests, transactions, settledPurchases, settledSales }: {
+export function FinanceDashboard({ accounts, ledger, vendors, customers, pendingPurchases, pendingSales, unverifiedReceipts, pendingReturns, pendingSalesReturns, pendingPurchaseRequests, transactions, settledPurchases, settledSales, totalPaidAP, totalPaidAR }: {
     accounts: any[],
     ledger: any[],
     vendors: any[],
@@ -28,7 +28,9 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
     pendingPurchaseRequests: any[],
     transactions: any[],
     settledPurchases: any[],
-    settledSales: any[]
+    settledSales: any[],
+    totalPaidAP: number,
+    totalPaidAR: number
 }) {
     const { data: session } = useSession() as any;
     const userRole = session?.user?.role?.toUpperCase() || "";
@@ -431,17 +433,29 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                 <div className="erp-card p-6 border-l-4 border-l-rose-500 bg-white/50">
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Liabilities (AP)</p>
                     <h3 className="text-2xl font-black text-rose-600 tracking-tighter">{formatCurrency(totalHutang)}</h3>
-                    <div className="mt-3 flex items-center gap-2">
-                        <span className="h-1.5 w-1.5 bg-rose-500 rounded-full animate-pulse" />
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{pendingPurchases.filter((p: any) => p.paymentStatus !== 'PAID').length} Unpaid Invoices</span>
+                    <div className="mt-3 space-y-2">
+                        <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Unpaid Invoices</span>
+                            <span className="text-[10px] font-black text-rose-500">{pendingPurchases.filter((p: any) => p.paymentStatus !== 'PAID').length} Docs</span>
+                        </div>
+                        <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Paid (Cum.)</span>
+                            <span className="text-[11px] font-black text-slate-600">{formatCurrency(totalPaidAP)}</span>
+                        </div>
                     </div>
                 </div>
                 <div className="erp-card p-6 border-l-4 border-l-emerald-500 bg-white/50">
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Receivables (AR)</p>
                     <h3 className="text-2xl font-black text-emerald-600 tracking-tighter">{formatCurrency(totalPiutang)}</h3>
-                    <div className="mt-3 flex items-center gap-2">
-                        <span className="h-1.5 w-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{pendingSales.filter((s: any) => s.paymentStatus !== 'PAID').length} Active Credits</span>
+                    <div className="mt-3 space-y-2">
+                        <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active Credits</span>
+                            <span className="text-[10px] font-black text-emerald-500">{pendingSales.filter((s: any) => s.paymentStatus !== 'PAID').length} Docs</span>
+                        </div>
+                        <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Collected</span>
+                            <span className="text-[11px] font-black text-slate-600">{formatCurrency(totalPaidAR)}</span>
+                        </div>
                     </div>
                 </div>
                 <div className="erp-card p-6 border-l-4 border-l-blue-500 bg-white/50">

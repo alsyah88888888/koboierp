@@ -38,7 +38,9 @@ export default async function FinancePage() {
         pendingPurchaseRequests,
         transactions,
         settledPurchases,
-        settledSales
+        settledSales,
+        totalPaidAPRes,
+        totalPaidARRes
     ] = await Promise.all([
         getBalanceSheet().catch(() => []),
         prisma.journalEntry.findMany({
@@ -100,7 +102,15 @@ export default async function FinancePage() {
             orderBy: { createdAt: 'desc' },
             take: 50,
             include: { items: { include: { product: true } }, warehouse: true, order: true }
-        }).catch(() => [])
+        }).catch(() => []),
+        prisma.goodsReceipt.aggregate({
+            where: { isVoid: false },
+            _sum: { paidAmount: true }
+        }).catch(() => ({ _sum: { paidAmount: 0 } })),
+        prisma.salesDelivery.aggregate({
+            where: { isVoid: false },
+            _sum: { paidAmount: true }
+        }).catch(() => ({ _sum: { paidAmount: 0 } }))
     ]);
 
     // Helper to calculate total safely without NaN
@@ -160,6 +170,8 @@ export default async function FinancePage() {
             transactions={serializedTransactions}
             settledPurchases={serializedSettledPurchases}
             settledSales={serializedSettledSales}
+            totalPaidAP={Number(totalPaidAPRes?._sum?.paidAmount || 0)}
+            totalPaidAR={Number(totalPaidARRes?._sum?.paidAmount || 0)}
         />
     );
 }
