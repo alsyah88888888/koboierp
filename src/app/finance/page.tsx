@@ -25,6 +25,16 @@ export default async function FinancePage() {
     const userFilter = isAdmin ? {} : { createdById: session.user.id };
 
     // Fetch all data in parallel for performance
+    const [
+        accounts,
+        ledger,
+        vendors,
+        customers,
+        pendingPurchases,
+        pendingSales,
+        unverifiedReceipts,
+        pendingReturns,
+        pendingSalesReturns,
         pendingPurchaseRequests,
         transactions,
         settledPurchases,
@@ -81,13 +91,13 @@ export default async function FinancePage() {
         }).catch(() => []),
         prisma.goodsReceipt.findMany({
             where: { isVoid: false, paymentStatus: "PAID" },
-            orderBy: { updatedAt: 'desc' },
+            orderBy: { createdAt: 'desc' },
             take: 50,
             include: { items: true, warehouse: true }
         }).catch(() => []),
         prisma.salesDelivery.findMany({
             where: { isVoid: false, paymentStatus: "PAID" },
-            orderBy: { updatedAt: 'desc' },
+            orderBy: { createdAt: 'desc' },
             take: 50,
             include: { items: { include: { product: true } }, warehouse: true, order: true }
         }).catch(() => [])
