@@ -392,7 +392,8 @@ export function AdminDashboard({
                                 'Harga Jual (Unit)': row['Harga Jual Per Unit (Rp)'],
                                 'Total Profit': row['Total Profit (Rp)'],
                                 'Margin': row['Margin %'],
-                                'Status Bayar': row['Status Bayar'],
+                                'Status Bayar Beli': row['Status Bayar Beli'],
+                                'Status Bayar Jual': row['Status Bayar Jual'],
                                 'Status': row['Status']
                             }));
                             XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(detailedRows), 'Traceability Detail');
@@ -492,7 +493,8 @@ export function AdminDashboard({
                                         <th className="px-4 py-4 text-right font-black uppercase tracking-wider">Harga Jual</th>
                                         <th className="px-4 py-4 text-right font-black uppercase tracking-wider">Profit</th>
                                         <th className="px-4 py-4 text-center font-black uppercase tracking-wider">Margin</th>
-                                        <th className="px-4 py-4 text-center font-black uppercase tracking-wider whitespace-nowrap">Bayar (Finance)</th>
+                                        <th className="px-4 py-4 text-center font-black uppercase tracking-wider whitespace-nowrap">Beli (F)</th>
+                                        <th className="px-4 py-4 text-center font-black uppercase tracking-wider whitespace-nowrap">Jual (F)</th>
                                         <th className="px-4 py-4 text-center font-black uppercase tracking-wider">Status</th>
                                     </tr>
                                 </thead>
@@ -528,14 +530,23 @@ export function AdminDashboard({
                                                     </span>
                                                 </td>
                                                 <td className="px-4 py-3 text-center whitespace-nowrap">
-                                                    <span className={`px-2.5 py-1 rounded-lg font-black text-[9px] uppercase tracking-widest border ${
-                                                        row['Status Bayar'] === 'PAID' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                                                        row['Status Bayar'] === 'PARTIAL' || row['Status Bayar'] === 'CREDIT' ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                                                    <span className={`px-2.5 py-1 rounded-lg font-black text-[8px] uppercase tracking-tighter border ${
+                                                        row['Status Bayar Beli'] === 'PAID' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                                                        row['Status Bayar Beli'] === 'PARTIAL' ? 'bg-amber-50 text-amber-600 border-amber-100' :
                                                         'bg-slate-50 text-slate-400 border-slate-100'
                                                     }`}>
-                                                        {row['Status Bayar'] === 'PAID' ? 'LUNAS' : 
-                                                         row['Status Bayar'] === 'PARTIAL' ? 'DP/PARTIAL' :
-                                                         row['Status Bayar'] === 'CREDIT' ? 'PIUTANG' : 'PENDING'}
+                                                        {row['Status Bayar Beli'] === 'PAID' ? 'PAID' : 'PENDING'}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-3 text-center whitespace-nowrap">
+                                                    <span className={`px-2.5 py-1 rounded-lg font-black text-[8px] uppercase tracking-tighter border ${
+                                                        row['Status Bayar Jual'] === 'PAID' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                                                        row['Status Bayar Jual'] === 'PARTIAL' || row['Status Bayar Jual'] === 'CREDIT' ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                                                        'bg-slate-50 text-slate-400 border-slate-100'
+                                                    }`}>
+                                                        {row['Status Bayar Jual'] === 'PAID' ? 'PAID' : 
+                                                         row['Status Bayar Jual'] === 'PARTIAL' ? 'PART' :
+                                                         row['Status Bayar Jual'] === 'CREDIT' ? 'CR' : 'PEND'}
                                                     </span>
                                                 </td>
                                                 <td className="px-4 py-3 text-center">

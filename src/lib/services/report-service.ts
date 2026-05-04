@@ -39,6 +39,21 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
             : [];
         const orderNumberMap = new Map<string, string>(salesOrders.map((o: any) => [o.id, o.orderNumber]));
 
+        const grNumbers = new Set<string>();
+        for (const sd of deliveries) {
+            for (const sdItem of sd.items) {
+                if (sdItem.lotAllocations) {
+                    sdItem.lotAllocations.forEach((a: any) => { if (a.lot?.grNumber) grNumbers.add(a.lot.grNumber); });
+                }
+            }
+        }
+
+        const goodsReceipts = await (prisma as any).goodsReceipt.findMany({
+            where: { receiptNumber: { in: Array.from(grNumbers) } },
+            select: { receiptNumber: true, paymentStatus: true }
+        });
+        const grPaymentMap = new Map<string, string>(goodsReceipts.map((gr: any) => [gr.receiptNumber, gr.paymentStatus]));
+
         const report: Record<string, any>[] = [];
 
         // ── STEP 2: Process each delivery item ───────────────────────────
@@ -81,7 +96,8 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
                             'Profit Per Unit (Rp)': Math.round(profitUnit),
                             'Total Profit (Rp)'   : Math.round(totalProfit),
                             'Margin %'            : `${marginPct.toFixed(1)}%`,
-                            'Status Bayar'        : sd.paymentStatus || 'PENDING',
+                            'Status Bayar Beli'   : grPaymentMap.get(alloc.lot.grNumber) || 'PAID',
+                            'Status Bayar Jual'   : sd.paymentStatus || 'PENDING',
                             'Status'              : 'TERJUAL (LOT)'
                         });
                     }
@@ -117,7 +133,8 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
                             'Profit Per Unit (Rp)': Math.round(profitUnit),
                             'Total Profit (Rp)'   : Math.round(totalProfit),
                             'Margin %'            : `${marginPct.toFixed(1)}%`,
-                            'Status Bayar'        : sd.paymentStatus || 'PENDING',
+                            'Status Bayar Beli'   : 'PAID', // Default for historical fallback
+                            'Status Bayar Jual'   : sd.paymentStatus || 'PENDING',
                             'Status'              : 'STOK HISTORIS (BELUM LOT)'
                         });
 
@@ -155,7 +172,8 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
                             'Profit Per Unit (Rp)': Math.round(profitUnit),
                             'Total Profit (Rp)'   : Math.round(totalProfit),
                             'Margin %'            : `${marginPct.toFixed(1)}%`,
-                            'Status Bayar'        : sd.paymentStatus || 'PENDING',
+                            'Status Bayar Beli'   : 'PAID', // Default for historical fallback
+                            'Status Bayar Jual'   : sd.paymentStatus || 'PENDING',
                             'Status'              : 'DATA HISTORIS (PRE-LOT)'
                         });
 
