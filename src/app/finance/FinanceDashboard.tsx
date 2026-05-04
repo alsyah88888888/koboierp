@@ -39,6 +39,8 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
     const isAdminOrFinance = isAdmin || userRole === "FINANCE";
     const [showModal, setShowModal] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
+    const [selectedHistoryItem, setSelectedHistoryItem] = useState<any>(null);
+    const [historyMonth, setHistoryMonth] = useState<string>("ALL");
     const [activeTab, setActiveTab] = useState<"ledger" | "ap" | "ar" | "checker" | "purchase_requests" | "history">("ledger");
     const [loading, setLoading] = useState<string | null>(null);
     const [isClient, setIsClient] = useState(false);
@@ -150,15 +152,23 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
         r.delivery?.buyerName.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    const filteredSettledPurchases = (settledPurchases || []).filter(p =>
-        (p.receiptNumber || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (p.receivedFrom || "").toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredSettledPurchases = (settledPurchases || []).filter(p => {
+        const matchesSearch = (p.receiptNumber || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (p.receivedFrom || "").toLowerCase().includes(searchTerm.toLowerCase());
+        
+        if (historyMonth === "ALL") return matchesSearch;
+        const pDate = p.updatedAt ? new Date(p.updatedAt) : null;
+        return matchesSearch && pDate && (pDate.getMonth() + 1).toString() === historyMonth;
+    });
 
-    const filteredSettledSales = (settledSales || []).filter(s =>
-        (s.deliveryNumber || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (s.buyerName || "").toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredSettledSales = (settledSales || []).filter(s => {
+        const matchesSearch = (s.deliveryNumber || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (s.buyerName || "").toLowerCase().includes(searchTerm.toLowerCase());
+        
+        if (historyMonth === "ALL") return matchesSearch;
+        const sDate = s.updatedAt ? new Date(s.updatedAt) : null;
+        return matchesSearch && sDate && (sDate.getMonth() + 1).toString() === historyMonth;
+    });
 
     const handleExport = () => {
         if (activeTab === "ledger") {
@@ -1218,8 +1228,28 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                         {/* Settled Invoices Section */}
                         <div className="space-y-6">
                             <div className="flex items-center gap-3 px-1">
-                                <div className="h-8 w-1 bg-emerald-500 rounded-full" />
                                 <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Pelunasan Piutang & Hutang (Recent Settlements)</h3>
+                                <div className="flex items-center gap-2 ml-auto">
+                                    <select 
+                                        value={historyMonth}
+                                        onChange={(e) => setHistoryMonth(e.target.value)}
+                                        className="text-[10px] font-black uppercase tracking-widest bg-white border border-slate-200 rounded-lg px-3 py-1.5 outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                                    >
+                                        <option value="ALL">All Months</option>
+                                        <option value="1">Januari</option>
+                                        <option value="2">Februari</option>
+                                        <option value="3">Maret</option>
+                                        <option value="4">April</option>
+                                        <option value="5">Mei</option>
+                                        <option value="6">Juni</option>
+                                        <option value="7">Juli</option>
+                                        <option value="8">Agustus</option>
+                                        <option value="9">September</option>
+                                        <option value="10">Oktober</option>
+                                        <option value="11">November</option>
+                                        <option value="12">Desember</option>
+                                    </select>
+                                </div>
                             </div>
                             <div className="overflow-x-auto custom-scrollbar">
                                 <table className="w-full text-sm text-left min-w-[1000px] table-fixed">
@@ -1235,13 +1265,17 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                     <tbody className="divide-y divide-slate-50 text-slate-700">
                                         {/* Settled Sales (AR) */}
                                         {filteredSettledSales.map((s: any) => (
-                                            <tr key={`sale-${s.id}`} className="hover:bg-slate-50/80 transition-all group/row">
+                                            <tr key={`sale-${s.id}`} onClick={() => setSelectedHistoryItem({ ...s, historyType: 'AR' })} className="hover:bg-blue-50/50 transition-all group/row cursor-pointer">
                                                 <td className="px-8 py-5 text-slate-400 font-bold tabular-nums">
                                                     {isClient && s.updatedAt ? format(new Date(s.updatedAt), "dd/MM/yy") : "..."}
                                                 </td>
                                                 <td className="px-8 py-5">
                                                     <div className="font-black text-slate-900 tracking-tight mb-1 truncate">{s.buyerName}</div>
-                                                    <div className="text-[9px] text-emerald-500 font-black uppercase tracking-widest">Customer Payment (AR)</div>
+                                                    <div className="text-[9px] text-emerald-500 font-black uppercase tracking-widest flex items-center gap-2">
+                                                        <span>Customer Payment (AR)</span>
+                                                        <span className="h-1 w-1 bg-slate-300 rounded-full" />
+                                                        <span className="text-slate-400">By: {s.createdBy?.name || 'Finance'}</span>
+                                                    </div>
                                                 </td>
                                                 <td className="px-8 py-5 font-mono text-[10px] font-bold text-slate-500">{s.deliveryNumber}</td>
                                                 <td className="px-8 py-5 text-center">
@@ -1254,13 +1288,17 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                         ))}
                                         {/* Settled Purchases (AP) */}
                                         {filteredSettledPurchases.map((p: any) => (
-                                            <tr key={`purchase-${p.id}`} className="hover:bg-slate-50/80 transition-all group/row">
+                                            <tr key={`purchase-${p.id}`} onClick={() => setSelectedHistoryItem({ ...p, historyType: 'AP' })} className="hover:bg-rose-50/50 transition-all group/row cursor-pointer">
                                                 <td className="px-8 py-5 text-slate-400 font-bold tabular-nums">
                                                     {isClient && p.updatedAt ? format(new Date(p.updatedAt), "dd/MM/yy") : "..."}
                                                 </td>
                                                 <td className="px-8 py-5">
                                                     <div className="font-black text-slate-900 tracking-tight mb-1 truncate">{p.receivedFrom}</div>
-                                                    <div className="text-[9px] text-rose-500 font-black uppercase tracking-widest">Vendor Settlement (AP)</div>
+                                                    <div className="text-[9px] text-rose-500 font-black uppercase tracking-widest flex items-center gap-2">
+                                                        <span>Vendor Settlement (AP)</span>
+                                                        <span className="h-1 w-1 bg-slate-300 rounded-full" />
+                                                        <span className="text-slate-400">By: {p.createdBy?.name || 'Finance'}</span>
+                                                    </div>
                                                 </td>
                                                 <td className="px-8 py-5 font-mono text-[10px] font-bold text-slate-500">{p.receiptNumber}</td>
                                                 <td className="px-8 py-5 text-center">

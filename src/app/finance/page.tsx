@@ -95,15 +95,15 @@ export default async function FinancePage() {
         }).catch(() => []),
         prisma.goodsReceipt.findMany({
             where: { isVoid: false, paymentStatus: "PAID" },
-            orderBy: { createdAt: 'desc' },
-            take: 50,
-            include: { items: true, warehouse: true }
+            orderBy: { updatedAt: 'desc' },
+            take: 200,
+            include: { items: { include: { product: true } }, warehouse: true, createdBy: { select: { name: true } } }
         }).catch(() => []),
         prisma.salesDelivery.findMany({
             where: { isVoid: false, paymentStatus: "PAID" },
-            orderBy: { createdAt: 'desc' },
-            take: 50,
-            include: { items: { include: { product: true } }, warehouse: true, order: true }
+            orderBy: { updatedAt: 'desc' },
+            take: 200,
+            include: { items: { include: { product: true } }, warehouse: true, order: true, createdBy: { select: { name: true } } }
         }).catch(() => []),
         prisma.goodsReceipt.aggregate({
             where: { isVoid: false },
