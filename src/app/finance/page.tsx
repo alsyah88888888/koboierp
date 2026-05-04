@@ -25,18 +25,10 @@ export default async function FinancePage() {
     const userFilter = isAdmin ? {} : { createdById: session.user.id };
 
     // Fetch all data in parallel for performance
-    const [
-        accounts,
-        ledger,
-        vendors,
-        customers,
-        pendingPurchases,
-        pendingSales,
-        unverifiedReceipts,
-        pendingReturns,
-        pendingSalesReturns,
         pendingPurchaseRequests,
-        transactions
+        transactions,
+        settledPurchases,
+        settledSales
     ] = await Promise.all([
         getBalanceSheet().catch(() => []),
         prisma.journalEntry.findMany({
@@ -86,6 +78,18 @@ export default async function FinancePage() {
             where: userFilter,
             orderBy: { date: 'desc' },
             take: 200
+        }).catch(() => []),
+        prisma.goodsReceipt.findMany({
+            where: { isVoid: false, paymentStatus: "PAID" },
+            orderBy: { updatedAt: 'desc' },
+            take: 50,
+            include: { items: true, warehouse: true }
+        }).catch(() => []),
+        prisma.salesDelivery.findMany({
+            where: { isVoid: false, paymentStatus: "PAID" },
+            orderBy: { updatedAt: 'desc' },
+            take: 50,
+            include: { items: { include: { product: true } }, warehouse: true, order: true }
         }).catch(() => [])
     ]);
 
@@ -122,6 +126,14 @@ export default async function FinancePage() {
     const serializedPendingSalesReturns = serializeDecimal(pendingSalesReturns || []);
     const serializedPendingPurchaseRequests = serializeDecimal(pendingPurchaseRequests || []);
     const serializedTransactions = serializeDecimal(transactions || []);
+    const serializedSettledPurchases = serializeDecimal(settledPurchases || []).map((p: any) => ({
+        ...p,
+        total: calculateTotal(p.grandTotal, p.items, 'purchasePrice')
+    }));
+    const serializedSettledSales = serializeDecimal(settledSales || []).map((s: any) => ({
+        ...s,
+        total: calculateTotal(s.grandTotal, s.items, 'salesPrice')
+    }));
 
     return (
         <FinanceDashboard
@@ -136,6 +148,8 @@ export default async function FinancePage() {
             pendingSalesReturns={serializedPendingSalesReturns}
             pendingPurchaseRequests={serializedPendingPurchaseRequests}
             transactions={serializedTransactions}
+            settledPurchases={serializedSettledPurchases}
+            settledSales={serializedSettledSales}
         />
     );
 }

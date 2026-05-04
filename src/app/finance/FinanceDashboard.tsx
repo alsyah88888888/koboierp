@@ -1,4 +1,5 @@
 "use client";
+import * as XLSX from 'xlsx';
 
 import { useState, useEffect, useRef } from "react";
 import { Plus, Search, Wallet, ArrowUpCircle, ArrowDownCircle, FileText, Trash2, Download, Eye, FileCode2, X, Banknote, Calendar } from "lucide-react";
@@ -14,7 +15,7 @@ import { CheckCircle2, Clock } from "lucide-react";
 import { exportToExcel } from "@/lib/excel";
 import { useRouter } from "next/navigation";
 
-export function FinanceDashboard({ accounts, ledger, vendors, customers, pendingPurchases, pendingSales, unverifiedReceipts, pendingReturns, pendingSalesReturns, pendingPurchaseRequests, transactions }: {
+export function FinanceDashboard({ accounts, ledger, vendors, customers, pendingPurchases, pendingSales, unverifiedReceipts, pendingReturns, pendingSalesReturns, pendingPurchaseRequests, transactions, settledPurchases, settledSales }: {
     accounts: any[],
     ledger: any[],
     vendors: any[],
@@ -25,7 +26,9 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
     pendingReturns: any[],
     pendingSalesReturns: any[],
     pendingPurchaseRequests: any[],
-    transactions: any[]
+    transactions: any[],
+    settledPurchases: any[],
+    settledSales: any[]
 }) {
     const { data: session } = useSession() as any;
     const userRole = session?.user?.role?.toUpperCase() || "";
@@ -144,6 +147,16 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
         r.delivery?.buyerName.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+    const filteredSettledPurchases = (settledPurchases || []).filter(p =>
+        (p.receiptNumber || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (p.receivedFrom || "").toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    const filteredSettledSales = (settledSales || []).filter(s =>
+        (s.deliveryNumber || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (s.buyerName || "").toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
     const handleExport = () => {
         if (activeTab === "ledger") {
             const data = filteredLedger.map(tx => ({
@@ -208,6 +221,42 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                 'Item Count': r.items.length
             }));
             exportToExcel(data, 'Laporan_Penerimaan_Pending_Gudang', 'Pending');
+        } else if (activeTab === "history") {
+            const wb = XLSX.utils.book_new();
+            
+            // Invoices settled (History)
+            const settlementData = [
+                ...filteredSettledSales.map(s => ({
+                    'Tanggal Lunas': format(new Date(s.updatedAt), "dd/MM/yyyy"),
+                    'Tipe': 'AR (PELUNASAN PIUTANG)',
+                    'Entity': s.buyerName,
+                    'Ref Number': s.deliveryNumber,
+                    'Nominal': Number(s.total),
+                    'Status': 'PAID'
+                })),
+                ...filteredSettledPurchases.map(p => ({
+                    'Tanggal Lunas': format(new Date(p.updatedAt), "dd/MM/yyyy"),
+                    'Tipe': 'AP (PEMBAYARAN HUTANG)',
+                    'Entity': p.receivedFrom,
+                    'Ref Number': p.receiptNumber,
+                    'Nominal': Number(p.total),
+                    'Status': 'PAID'
+                }))
+            ];
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(settlementData), 'Settlements');
+
+            // Operational transactions
+            const operationalData = (transactions || []).map(tx => ({
+                'Tanggal': format(new Date(tx.date), "dd/MM/yyyy"),
+                'Deskripsi': tx.description,
+                'Ref': tx.referenceNumber || '-',
+                'Tipe': tx.transactionType,
+                'Nominal': Number(tx.amount),
+                'User': tx.createdBy?.name || '-'
+            }));
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(operationalData), 'Operational');
+
+            XLSX.writeFile(wb, `Laporan_Riwayat_Keuangan_${format(new Date(), "yyyyMMdd")}.xlsx`);
         }
     };
 
@@ -421,7 +470,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                         { id: "ar", label: "AR (Piutang)", icon: ArrowUpCircle, count: pendingSales.filter((s: any) => s.paymentStatus !== 'PAID').length },
                         { id: "checker", label: "Checker", icon: CheckCircle2, count: unverifiedReceipts.length },
                         { id: "purchase_requests", label: "Pengajuan", icon: Wallet, count: pendingPurchaseRequests.length },
-                        { id: "history", label: "History", icon: Clock, count: (pendingPurchases.concat(pendingSales)).filter((x: any) => x.paymentStatus === 'PAID').length },
+                        { id: "history", label: "History", icon: Clock, count: (settledPurchases?.length || 0) + (settledSales?.length || 0) },
                     ].map((tab) => (
                         <button
                             key={tab.id}
@@ -1116,67 +1165,122 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                 )}
 
                 {activeTab === "history" && (
-                    <div className="overflow-x-auto custom-scrollbar">
-                        {/* Desktop View */}
-                        <table className="w-full text-sm text-left min-w-[1000px] table-fixed hidden md:table">
-                            <thead className="bg-slate-50/50 text-slate-400 border-b border-slate-100 text-[10px] uppercase tracking-[0.2em] font-black">
-                                <tr>
-                                    <th className="px-8 py-5 w-32 tracking-[0.3em]">Tgl Log</th>
-                                    <th className="px-8 py-5">Main Description</th>
-                                    <th className="px-8 py-5 w-40">Entry Type</th>
-                                    <th className="px-8 py-5 w-40 text-right">Magnitude</th>
-                                    <th className="px-8 py-5 w-48">Logged By</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-50 text-slate-700">
-                                {Array.isArray(transactions) && transactions.map((tx: any) => (
-                                    <tr key={tx.id} className="hover:bg-slate-50/80 transition-all">
-                                        <td className="px-8 py-5 text-slate-400 font-bold tabular-nums">
-                                            {isClient && tx.date ? format(new Date(tx.date), "dd/MM/yy") : "..."}
-                                        </td>
-                                        <td className="px-8 py-5">
-                                            <div className="font-black text-slate-900 tracking-tight leading-none mb-1.5 truncate max-w-[400px]">{tx.description}</div>
-                                            <div className="text-[9px] text-slate-400 font-black uppercase tracking-widest">REF: {tx.referenceNumber || 'INTERNAL'}</div>
-                                        </td>
-                                        <td className="px-8 py-5">
-                                            <span className={cn(
-                                                "px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border",
-                                                tx.amount >= 0 ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-blue-50 text-blue-600 border-blue-100"
-                                            )}>
-                                                {tx.type || (tx.amount >= 0 ? 'CR' : 'DR')}
-                                            </span>
-                                        </td>
-                                        <td className={cn(
-                                            "px-8 py-5 text-right font-black tabular-nums tracking-tighter text-base",
-                                            tx.amount >= 0 ? "text-slate-900" : "text-rose-500"
-                                        )}>
-                                            {formatCurrency(Math.abs(Number(tx.amount)))}
-                                        </td>
-                                        <td className="px-8 py-5">
-                                            <div className="text-[10px] font-black text-slate-600 uppercase tracking-widest">{tx.createdBy?.name || 'Authorized'}</div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                    <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        {/* Settled Invoices Section */}
+                        <div className="space-y-6">
+                            <div className="flex items-center gap-3 px-1">
+                                <div className="h-8 w-1 bg-emerald-500 rounded-full" />
+                                <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Pelunasan Piutang & Hutang (Recent Settlements)</h3>
+                            </div>
+                            <div className="overflow-x-auto custom-scrollbar">
+                                <table className="w-full text-sm text-left min-w-[1000px] table-fixed">
+                                    <thead className="bg-slate-50/50 text-slate-400 border-b border-slate-100 text-[10px] uppercase tracking-[0.2em] font-black">
+                                        <tr>
+                                            <th className="px-8 py-5 w-40">Tgl Lunas</th>
+                                            <th className="px-8 py-5">Entity / Counterparty</th>
+                                            <th className="px-8 py-5 w-48">Ref Number</th>
+                                            <th className="px-8 py-5 w-40 text-center">Tipe</th>
+                                            <th className="px-8 py-5 text-right w-44">Settled Amount</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-50 text-slate-700">
+                                        {/* Settled Sales (AR) */}
+                                        {filteredSettledSales.map((s: any) => (
+                                            <tr key={`sale-${s.id}`} className="hover:bg-slate-50/80 transition-all group/row">
+                                                <td className="px-8 py-5 text-slate-400 font-bold tabular-nums">
+                                                    {isClient && s.updatedAt ? format(new Date(s.updatedAt), "dd/MM/yy") : "..."}
+                                                </td>
+                                                <td className="px-8 py-5">
+                                                    <div className="font-black text-slate-900 tracking-tight mb-1 truncate">{s.buyerName}</div>
+                                                    <div className="text-[9px] text-emerald-500 font-black uppercase tracking-widest">Customer Payment (AR)</div>
+                                                </td>
+                                                <td className="px-8 py-5 font-mono text-[10px] font-bold text-slate-500">{s.deliveryNumber}</td>
+                                                <td className="px-8 py-5 text-center">
+                                                    <span className="px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border bg-emerald-50 text-emerald-600 border-emerald-100">PELUNASAN</span>
+                                                </td>
+                                                <td className="px-8 py-5 text-right font-black tabular-nums tracking-tighter text-base text-emerald-600">
+                                                    {formatCurrency(Number(s.total))}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                        {/* Settled Purchases (AP) */}
+                                        {filteredSettledPurchases.map((p: any) => (
+                                            <tr key={`purchase-${p.id}`} className="hover:bg-slate-50/80 transition-all group/row">
+                                                <td className="px-8 py-5 text-slate-400 font-bold tabular-nums">
+                                                    {isClient && p.updatedAt ? format(new Date(p.updatedAt), "dd/MM/yy") : "..."}
+                                                </td>
+                                                <td className="px-8 py-5">
+                                                    <div className="font-black text-slate-900 tracking-tight mb-1 truncate">{p.receivedFrom}</div>
+                                                    <div className="text-[9px] text-rose-500 font-black uppercase tracking-widest">Vendor Settlement (AP)</div>
+                                                </td>
+                                                <td className="px-8 py-5 font-mono text-[10px] font-bold text-slate-500">{p.receiptNumber}</td>
+                                                <td className="px-8 py-5 text-center">
+                                                    <span className="px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border bg-rose-50 text-rose-600 border-rose-100">PEMBAYARAN</span>
+                                                </td>
+                                                <td className="px-8 py-5 text-right font-black tabular-nums tracking-tighter text-base text-rose-600">
+                                                    {formatCurrency(Number(p.total))}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                        {filteredSettledSales.length === 0 && filteredSettledPurchases.length === 0 && (
+                                            <tr>
+                                                <td colSpan={5} className="px-8 py-12 text-center text-slate-400 italic font-medium uppercase tracking-widest text-[10px]">No settled invoices found in recent history</td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
 
-                        {/* Mobile view for history */}
-                        <div className="md:hidden p-4 space-y-4">
-                             {Array.isArray(transactions) && transactions.map((tx: any) => (
-                                <div key={tx.id} className="bg-white border border-slate-50 rounded-2xl p-5 shadow-sm">
-                                    <div className="flex justify-between items-start mb-4">
-                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{isClient && tx.date ? format(new Date(tx.date), "dd MMM yyyy") : "..."}</span>
-                                        <div className={cn(
-                                            "text-base font-black tracking-tighter tabular-nums",
-                                            tx.amount >= 0 ? "text-slate-900" : "text-rose-500"
-                                        )}>
-                                            {formatCurrency(Math.abs(Number(tx.amount)))}
-                                        </div>
-                                    </div>
-                                    <div className="font-bold text-slate-900 text-sm leading-tight mb-2">{tx.description}</div>
-                                    <div className="text-[9px] text-slate-400 font-black uppercase tracking-widest">Entry: {tx.createdBy?.name || 'Verified System'}</div>
-                                </div>
-                            ))}
+                        {/* Operational Transactions Section */}
+                        <div className="space-y-6 pt-6 border-t border-slate-100">
+                            <div className="flex items-center gap-3 px-1">
+                                <div className="h-8 w-1 bg-blue-500 rounded-full" />
+                                <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Operational & Cash Movements</h3>
+                            </div>
+                            <div className="overflow-x-auto custom-scrollbar">
+                                <table className="w-full text-sm text-left min-w-[1000px] table-fixed hidden md:table">
+                                    <thead className="bg-slate-50/50 text-slate-400 border-b border-slate-100 text-[10px] uppercase tracking-[0.2em] font-black">
+                                        <tr>
+                                            <th className="px-8 py-5 w-32 tracking-[0.3em]">Tgl Log</th>
+                                            <th className="px-8 py-5">Main Description</th>
+                                            <th className="px-8 py-5 w-40">Entry Type</th>
+                                            <th className="px-8 py-5 w-40 text-right">Magnitude</th>
+                                            <th className="px-8 py-5 w-48">Logged By</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-50 text-slate-700">
+                                        {Array.isArray(transactions) && transactions.map((tx: any) => (
+                                            <tr key={tx.id} className="hover:bg-slate-50/80 transition-all">
+                                                <td className="px-8 py-5 text-slate-400 font-bold tabular-nums">
+                                                    {isClient && tx.date ? format(new Date(tx.date), "dd/MM/yy") : "..."}
+                                                </td>
+                                                <td className="px-8 py-5">
+                                                    <div className="font-black text-slate-900 tracking-tight leading-none mb-1.5 truncate max-w-[400px]">{tx.description}</div>
+                                                    <div className="text-[9px] text-slate-400 font-black uppercase tracking-widest">REF: {tx.referenceNumber || 'INTERNAL'}</div>
+                                                </td>
+                                                <td className="px-8 py-5">
+                                                    <span className={cn(
+                                                        "px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border",
+                                                        tx.amount >= 0 ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-blue-50 text-blue-600 border-blue-100"
+                                                    )}>
+                                                        {tx.transactionType || (tx.amount >= 0 ? 'IN' : 'OUT')}
+                                                    </span>
+                                                </td>
+                                                <td className={cn(
+                                                    "px-8 py-5 text-right font-black tabular-nums tracking-tighter text-base",
+                                                    tx.amount >= 0 ? "text-slate-900" : "text-rose-500"
+                                                )}>
+                                                    {formatCurrency(Math.abs(Number(tx.amount)))}
+                                                </td>
+                                                <td className="px-8 py-5">
+                                                    <div className="text-[10px] font-black text-slate-600 uppercase tracking-widest">{tx.createdBy?.name || 'Authorized'}</div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 )}
