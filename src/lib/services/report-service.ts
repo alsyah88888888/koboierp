@@ -81,6 +81,7 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
                             'Profit Per Unit (Rp)': Math.round(profitUnit),
                             'Total Profit (Rp)'   : Math.round(totalProfit),
                             'Margin %'            : `${marginPct.toFixed(1)}%`,
+                            'Status Bayar'        : sd.paymentStatus || 'PENDING',
                             'Status'              : 'TERJUAL (LOT)'
                         });
                     }
@@ -116,6 +117,7 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
                             'Profit Per Unit (Rp)': Math.round(profitUnit),
                             'Total Profit (Rp)'   : Math.round(totalProfit),
                             'Margin %'            : `${marginPct.toFixed(1)}%`,
+                            'Status Bayar'        : sd.paymentStatus || 'PENDING',
                             'Status'              : 'STOK HISTORIS (BELUM LOT)'
                         });
 
@@ -153,6 +155,7 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
                             'Profit Per Unit (Rp)': Math.round(profitUnit),
                             'Total Profit (Rp)'   : Math.round(totalProfit),
                             'Margin %'            : `${marginPct.toFixed(1)}%`,
+                            'Status Bayar'        : sd.paymentStatus || 'PENDING',
                             'Status'              : 'DATA HISTORIS (PRE-LOT)'
                         });
 
