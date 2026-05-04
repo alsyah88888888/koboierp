@@ -377,6 +377,25 @@ export function AdminDashboard({
                                 'Status Bayar': mv.paymentStatus || '-'
                             }));
                             XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Pergerakan Barang');
+
+                            const detailedRows = (traceabilityData.recentDetailed || []).map((row: any) => ({
+                                'Tgl Beli': row['Tgl Beli'],
+                                'No. Lot / Batch': row['No. Lot'],
+                                'Supplier': row['Supplier'],
+                                'Tgl Jual': row['Tgl Jual'],
+                                'No. SJ': row['No. SJ'],
+                                'Buyer': row['Buyer'],
+                                'SKU': row['SKU'],
+                                'Nama Barang': row['Nama Barang'],
+                                'Qty': row['QTY'],
+                                'Harga Beli (Unit)': row['HPP Per Unit (Rp)'],
+                                'Harga Jual (Unit)': row['Harga Jual Per Unit (Rp)'],
+                                'Total Profit': row['Total Profit (Rp)'],
+                                'Margin': row['Margin %'],
+                                'Status': row['Status']
+                            }));
+                            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(detailedRows), 'Traceability Detail');
+
                             XLSX.writeFile(wb, `Traceability_Stream_${new Date().toISOString().split('T')[0]}.xlsx`);
                         }} className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-200">
                             <FileSpreadsheet className="h-4 w-4" /><span>Export Stream</span>
@@ -468,6 +487,7 @@ export function AdminDashboard({
                                         <th className="px-4 py-4 text-left font-black uppercase tracking-wider">Buyer</th>
                                         <th className="px-4 py-4 text-left font-black uppercase tracking-wider">SKU / Nama Barang</th>
                                         <th className="px-4 py-4 text-right font-black uppercase tracking-wider">Qty</th>
+                                        <th className="px-4 py-4 text-right font-black uppercase tracking-wider">Harga Beli</th>
                                         <th className="px-4 py-4 text-right font-black uppercase tracking-wider">Harga Jual</th>
                                         <th className="px-4 py-4 text-right font-black uppercase tracking-wider">Profit</th>
                                         <th className="px-4 py-4 text-center font-black uppercase tracking-wider">Margin</th>
@@ -490,6 +510,7 @@ export function AdminDashboard({
                                                     <p className="text-[10px] font-bold text-slate-400 uppercase truncate max-w-[200px]">{row['Nama Barang']}</p>
                                                 </td>
                                                 <td className="px-4 py-3 text-right font-black text-slate-900 tabular-nums">{row['QTY']}</td>
+                                                <td className="px-4 py-3 text-right font-black text-slate-500 whitespace-nowrap tabular-nums">{formatCurrency(row['HPP Per Unit (Rp)'])}</td>
                                                 <td className="px-4 py-3 text-right font-black text-slate-900 whitespace-nowrap tabular-nums">{formatCurrency(row['Harga Jual Per Unit (Rp)'])}</td>
                                                 <td className={`px-4 py-3 text-right font-black whitespace-nowrap tabular-nums ${row['Total Profit (Rp)'] >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                                                     {formatCurrency(row['Total Profit (Rp)'])}
