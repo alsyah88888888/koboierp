@@ -15,7 +15,7 @@ import { CheckCircle2, Clock } from "lucide-react";
 import { exportToExcel } from "@/lib/excel";
 import { useRouter } from "next/navigation";
 
-export function FinanceDashboard({ accounts, ledger, vendors, customers, pendingPurchases, pendingSales, unverifiedReceipts, pendingReturns, pendingSalesReturns, pendingPurchaseRequests, transactions, settledPurchases, settledSales, totalPaidAP, totalPaidAR }: {
+export function FinanceDashboard({ accounts, ledger, vendors, customers, pendingPurchases, pendingSales, unverifiedReceipts, pendingReturns, pendingSalesReturns, pendingPurchaseRequests, transactions, settledPurchases, settledSales, totalPaidAP, totalPaidAR, monthlyStats }: {
     accounts: any[],
     ledger: any[],
     vendors: any[],
@@ -30,7 +30,8 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
     settledPurchases: any[],
     settledSales: any[],
     totalPaidAP: number,
-    totalPaidAR: number
+    totalPaidAR: number,
+    monthlyStats: { label: string, ap: number, ar: number }[]
 }) {
     const { data: session } = useSession() as any;
     const userRole = session?.user?.role?.toUpperCase() || "";
@@ -476,7 +477,41 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
 
             {/* Main Content Area */}
             <div className="space-y-6">
-                {/* Navigation Tabs */}
+                {/* Monthly Performance Breakdown */}
+            <div className="erp-card p-8 bg-slate-900 text-white relative overflow-hidden group border-none shadow-2xl shadow-slate-200">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(59,130,246,0.1),transparent_70%)]" />
+                <div className="relative z-10">
+                    <div className="flex items-center justify-between mb-8">
+                        <div>
+                            <h2 className="text-sm font-black uppercase tracking-[0.2em] text-slate-400">Monthly Settlement Performance</h2>
+                            <p className="text-[10px] font-bold text-slate-500 uppercase mt-1 tracking-widest">Historical collection & payment trends (Last 6 Months)</p>
+                        </div>
+                        <div className="h-10 w-10 rounded-xl bg-slate-800 flex items-center justify-center">
+                            <Calendar className="h-5 w-5 text-blue-400" />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                        {(monthlyStats || []).map((m, idx) => (
+                            <div key={idx} className="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-5 hover:bg-slate-800/60 transition-all group/month">
+                                <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-4 border-b border-slate-700/50 pb-2 group-hover/month:text-white transition-colors">{m.label}</p>
+                                <div className="space-y-3">
+                                    <div>
+                                        <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest leading-none mb-1">Settled AR</p>
+                                        <p className="text-xs font-black text-emerald-400 tabular-nums">{formatCurrency(m.ar)}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest leading-none mb-1">Settled AP</p>
+                                        <p className="text-xs font-black text-rose-400 tabular-nums">{formatCurrency(m.ap)}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+
+            {/* Main Tabs */}
                 <div className="flex overflow-x-auto whitespace-nowrap gap-2 bg-slate-100/50 p-1.5 rounded-2xl border border-slate-200/50 hide-print custom-scrollbar scrollbar-hide">
                     {[
                         { id: "ledger", label: "Ledger", icon: FileText, count: 0 },

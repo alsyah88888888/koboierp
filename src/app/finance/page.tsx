@@ -40,7 +40,9 @@ export default async function FinancePage() {
         settledPurchases,
         settledSales,
         totalPaidAPRes,
-        totalPaidARRes
+        totalPaidARRes,
+        settledAPRaw,
+        settledARRaw
     ] = await Promise.all([
         getBalanceSheet().catch(() => []),
         prisma.journalEntry.findMany({
@@ -110,7 +112,23 @@ export default async function FinancePage() {
         prisma.salesDelivery.aggregate({
             where: { isVoid: false },
             _sum: { paidAmount: true }
-        }).catch(() => ({ _sum: { paidAmount: 0 } }))
+        }).catch(() => ({ _sum: { paidAmount: 0 } })),
+        prisma.goodsReceipt.findMany({
+            where: { 
+                isVoid: false, 
+                paymentStatus: "PAID", 
+                date: { gte: new Date(new Date().getFullYear(), new Date().getMonth() - 5, 1) } 
+            },
+            select: { date: true, paidAmount: true }
+        }).catch(() => []),
+        prisma.salesDelivery.findMany({
+            where: { 
+                isVoid: false, 
+                paymentStatus: "PAID", 
+                date: { gte: new Date(new Date().getFullYear(), new Date().getMonth() - 5, 1) } 
+            },
+            select: { date: true, paidAmount: true }
+        }).catch(() => [])
     ]);
 
     // Helper to calculate total safely without NaN
@@ -155,6 +173,26 @@ export default async function FinancePage() {
         total: calculateTotal(s.grandTotal, s.items, 'salesPrice')
     }));
 
+    // Process Monthly Stats
+    const monthlyStats = [];
+    for (let i = 5; i >= 0; i--) {
+        const d = new Date();
+        d.setMonth(d.getMonth() - i);
+        const m = d.getMonth();
+        const y = d.getFullYear();
+        const label = d.toLocaleDateString('id-ID', { month: 'short', year: '2-digit' });
+
+        const apSum = settledAPRaw
+            .filter((p: any) => p.date && new Date(p.date).getMonth() === m && new Date(p.date).getFullYear() === y)
+            .reduce((sum: number, p: any) => sum + Number(p.paidAmount || 0), 0);
+
+        const arSum = settledARRaw
+            .filter((s: any) => s.date && new Date(s.date).getMonth() === m && new Date(s.date).getFullYear() === y)
+            .reduce((sum: number, s: any) => sum + Number(s.paidAmount || 0), 0);
+
+        monthlyStats.push({ label, ap: apSum, ar: arSum });
+    }
+
     return (
         <FinanceDashboard
             accounts={accounts}
@@ -172,6 +210,7 @@ export default async function FinancePage() {
             settledSales={serializedSettledSales}
             totalPaidAP={Number(totalPaidAPRes?._sum?.paidAmount || 0)}
             totalPaidAR={Number(totalPaidARRes?._sum?.paidAmount || 0)}
+            monthlyStats={monthlyStats}
         />
     );
 }
