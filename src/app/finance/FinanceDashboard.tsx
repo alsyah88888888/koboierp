@@ -1489,6 +1489,85 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                 </div>
             )}
 
+            {selectedHistoryItem && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setSelectedHistoryItem(null)} />
+                    <div className="relative w-full max-w-4xl bg-white rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+                        <div className={cn(
+                            "p-8 border-b border-slate-100 flex items-center justify-between",
+                            selectedHistoryItem.historyType === 'AR' ? "bg-emerald-50/50" : "bg-rose-50/50"
+                        )}>
+                            <div className="flex items-center gap-4">
+                                <div className={cn(
+                                    "p-3 rounded-2xl shadow-sm border",
+                                    selectedHistoryItem.historyType === 'AR' ? "bg-white text-emerald-600 border-emerald-100" : "bg-white text-rose-600 border-rose-100"
+                                )}>
+                                    <Clock className="h-5 w-5" />
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">{selectedHistoryItem.historyType === 'AR' ? 'AR Settlement Detail' : 'AP Settlement Detail'}</h3>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Verified History Log</p>
+                                </div>
+                            </div>
+                            <button onClick={() => setSelectedHistoryItem(null)} className="p-3 hover:bg-white hover:text-rose-500 rounded-2xl transition-all"><X className="h-6 w-6" /></button>
+                        </div>
+                        
+                        <div className="p-10 space-y-8 overflow-y-auto max-h-[70vh] custom-scrollbar">
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                                <div className="space-y-1">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Doc Number</p>
+                                    <p className="font-black text-slate-900">{selectedHistoryItem.deliveryNumber || selectedHistoryItem.receiptNumber}</p>
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Counterparty</p>
+                                    <p className="font-black text-slate-900">{selectedHistoryItem.buyerName || selectedHistoryItem.receivedFrom}</p>
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Settlement Date</p>
+                                    <p className="font-black text-slate-900">{selectedHistoryItem.updatedAt ? format(new Date(selectedHistoryItem.updatedAt), "dd MMMM yyyy") : "-"}</p>
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Verified By</p>
+                                    <p className="font-black text-emerald-600">{selectedHistoryItem.createdBy?.name || 'Finance Authorized'}</p>
+                                </div>
+                            </div>
+
+                            <div className="erp-card overflow-hidden">
+                                <table className="w-full text-sm">
+                                    <thead className="bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                        <tr>
+                                            <th className="px-6 py-4 text-left">Product SKU & Name</th>
+                                            <th className="px-6 py-4 text-center">Qty</th>
+                                            <th className="px-6 py-4 text-right">Price</th>
+                                            <th className="px-6 py-4 text-right">Subtotal</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                        {selectedHistoryItem.items?.map((item: any, idx: number) => (
+                                            <tr key={idx}>
+                                                <td className="px-6 py-4">
+                                                    <div className="font-black text-slate-900 leading-none mb-1">{item.product?.sku}</div>
+                                                    <div className="text-[10px] font-bold text-slate-400 uppercase truncate max-w-[250px]">{item.product?.name}</div>
+                                                </td>
+                                                <td className="px-6 py-4 text-center font-black tabular-nums">{item.quantity} {item.uom || item.product?.uom}</td>
+                                                <td className="px-6 py-4 text-right font-black tabular-nums text-slate-500">{formatCurrency(Number(item.purchasePrice || item.salesPrice || 0))}</td>
+                                                <td className="px-6 py-4 text-right font-black tabular-nums text-slate-900">{formatCurrency(Number(item.quantity) * Number(item.purchasePrice || item.salesPrice || 0))}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                    <tfoot className="bg-slate-50/50 font-black">
+                                        <tr>
+                                            <td colSpan={3} className="px-6 py-4 text-right text-slate-500 uppercase text-[10px]">Grand Total Settled</td>
+                                            <td className="px-6 py-4 text-right text-lg tracking-tighter text-slate-900">{formatCurrency(Number(selectedHistoryItem.total || selectedHistoryItem.grandTotal || 0))}</td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Unified Professional Payment Modal */}
             {paymentModal && (() => {
                 const remaining = paymentModal.total - (paymentModal.alreadyPaid || 0);
