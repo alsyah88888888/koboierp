@@ -370,6 +370,12 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
             },
             outstandingAR: Number(totalAR || 0),
             outstandingAP: Number(totalAP || 0),
+            debug: {
+                salesCount: sales.length,
+                totalItemsInSales: sales.reduce((acc: number, s: any) => acc + (s.items?.length || 0), 0),
+                priceMapSize: Object.keys(priceMap).length,
+                productIdsProcessed: productIdsInSales.length
+            },
             details: {
                 sales: sales.map((s: any) => ({
                     id: s.id,
