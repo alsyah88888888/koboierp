@@ -160,6 +160,22 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                             </div>
                         </div>
 
+                        <div style="padding: 20px; border: 1px dashed #cbd5e1; border-radius: 12px; margin-bottom: 40px; background: #f8fafc;">
+                            <h4 style="margin: 0 0 15px; font-size: 11px; font-weight: 900; text-transform: uppercase; color: #475569;">Analisis Persediaan (Periodic Method)</h4>
+                            <div style="display: grid; grid-template-cols: 1fr 1fr; gap: 40px; font-size: 11px;">
+                                <div style="space-y: 8px;">
+                                    <div style="display: flex; justify-content: space-between;"><span>Persediaan Awal</span> <span class="font-black">${formatCurrency(closingReport.inventory?.beginning)}</span></div>
+                                    <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px;"><span>Pembelian Bersih (+)</span> <span class="font-black">${formatCurrency(closingReport.inventory?.purchases)}</span></div>
+                                    <div style="display: flex; justify-content: space-between; padding-top: 4px; color: #3b82f6;"><span>BTUD (Tersedia Dijual)</span> <span class="font-black">${formatCurrency(closingReport.inventory?.btud)}</span></div>
+                                </div>
+                                <div style="space-y: 8px;">
+                                    <div style="display: flex; justify-content: space-between;"><span>Barang Tersedia (BTUD)</span> <span class="font-black">${formatCurrency(closingReport.inventory?.btud)}</span></div>
+                                    <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px;"><span>Persediaan Akhir (-)</span> <span class="font-black">${formatCurrency(closingReport.inventory?.ending)}</span></div>
+                                    <div style="display: flex; justify-content: space-between; padding-top: 4px; color: #f43f5e;"><span>Total HPP (COGS)</span> <span class="font-black">${formatCurrency(closingReport.hpp)}</span></div>
+                                </div>
+                            </div>
+                        </div>
+
                         <h3>I. Detail Penjualan (Matching Kas Masuk BCA)</h3>
                         <table>
                             <thead>

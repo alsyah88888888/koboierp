@@ -247,32 +247,36 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
         // 1. Build a Comprehensive Price Dictionary (Kamus Harga)
         const priceMap: Record<string, number> = {};
         
-        // Step A: Load from Master Product (Baseline)
-        const allProducts = await (prisma as any).product.findMany({
-            where: { purchasePrice: { gt: 0 } },
-            select: { id: true, purchasePrice: true }
-        });
-        allProducts.forEach((p: any) => {
-            priceMap[p.id] = Number(p.purchasePrice || 0);
-        });
-
-        // Step B: Overwrite with Last Purchase Price from LPB (More Accurate)
+        // Step A: Load baseline prices from Master Product for ONLY the products sold
         const productIdsInSales = Array.from(new Set(
             sales.flatMap((s: any) => (s.items || []).map((i: any) => String(i.productId))).filter(Boolean)
         ));
 
         if (productIdsInSales.length > 0) {
-            const lastGRItems = await (prisma as any).goodsReceiptItem.findMany({
-                where: { productId: { in: productIdsInSales } },
-                orderBy: { createdAt: 'desc' },
-                select: { productId: true, purchasePrice: true }
-            });
-            lastGRItems.forEach((lgi: any) => {
-                // Since it's ordered by desc, the first one we encounter is the latest
-                if (!priceMap[lgi.productId] || priceMap[lgi.productId] === 0) {
-                    priceMap[lgi.productId] = Number(lgi.purchasePrice || 0);
-                }
-            });
+            try {
+                const soldProductsMaster = await (prisma as any).product.findMany({
+                    where: { id: { in: productIdsInSales } },
+                    select: { id: true, purchasePrice: true }
+                });
+                soldProductsMaster.forEach((p: any) => {
+                    priceMap[p.id] = Number(p.purchasePrice || 0);
+                });
+
+                // Step B: Overwrite with Last Purchase Price from LPB (More Accurate)
+                const lastGRItems = await (prisma as any).goodsReceiptItem.findMany({
+                    where: { productId: { in: productIdsInSales } },
+                    orderBy: { createdAt: 'desc' },
+                    select: { productId: true, purchasePrice: true }
+                });
+                lastGRItems.forEach((lgi: any) => {
+                    // Since it's ordered by desc, the first one we encounter is the latest
+                    if (!priceMap[lgi.productId] || priceMap[lgi.productId] === 0) {
+                        priceMap[lgi.productId] = Number(lgi.purchasePrice || 0);
+                    }
+                });
+            } catch (err) {
+                console.error("HPP Dictionary Build Error:", err);
+            }
         }
 
         // 2. Calculate Revenue & COGS (HPP)
@@ -298,8 +302,23 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
             });
         });
 
-        // Calculate Purchase Value
-        const totalPurchaseValue = purchases.reduce((acc: number, p: any) => acc + Number(p.grandTotal || 0), 0);
+        // 3. Accounting Style HPP (Periodic Method)
+        // Beginning Inventory Value (at startDate)
+        const beginningInventory = await (prisma as any).stock.findMany({
+            include: { product: { select: { purchasePrice: true } } }
+        });
+        const beginningValue = beginningInventory.reduce((acc: number, s: any) => {
+            const price = priceMap[s.productId] || Number(s.product?.purchasePrice || 0);
+            return acc + (Number(s.quantity || 0) * price);
+        }, 0);
+
+        // Net Purchases (Total LPB value in period)
+        const netPurchases = purchases.reduce((acc: number, p: any) => acc + Number(p.grandTotal || 0), 0);
+
+        // Estimated Ending Inventory (Start + Purchases - Revenue_at_Cost)
+        // For a more accurate "Ending Inventory", we would need a historical stock snapshot.
+        // Since we don't have snapshots, we use the current stock and work backwards or use the perpetual sum.
+        const endingValue = beginningValue + netPurchases - totalHpp;
 
         // Calculate Operational Expenses (Absolute value for display)
         const totalExpenses = expenses.reduce((acc: number, e: any) => acc + Math.abs(Number(e.amount || 0)), 0);
@@ -318,7 +337,12 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
             grossProfit: Number(grossProfit || 0),
             expenses: Number(totalExpenses || 0),
             netProfit: Number(netProfit || 0),
-            inventoryAddition: Number(totalPurchaseValue || 0),
+            inventory: {
+                beginning: beginningValue,
+                purchases: netPurchases,
+                ending: endingValue,
+                btud: beginningValue + netPurchases
+            },
             outstandingAR: Number(totalAR || 0),
             outstandingAP: Number(totalAP || 0),
             details: {
