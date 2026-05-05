@@ -242,14 +242,14 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
         });
 
         // Calculate Purchase Value
-        const totalPurchaseValue = purchases.reduce((acc, p) => acc + Number(p.grandTotal || 0), 0);
+        const totalPurchaseValue = purchases.reduce((acc: number, p: any) => acc + Number(p.grandTotal || 0), 0);
 
         // Calculate Operational Expenses
-        const totalExpenses = expenses.reduce((acc, e) => acc + Number(e.amount || 0), 0);
+        const totalExpenses = expenses.reduce((acc: number, e: any) => acc + Number(e.amount || 0), 0);
 
         // Calculate AR/AP Balances
-        const totalAR = arRecords.reduce((acc, r) => acc + (Number(r.grandTotal) - Number(r.paidAmount)), 0);
-        const totalAP = apRecords.reduce((acc, r) => acc + (Number(r.grandTotal) - Number(r.paidAmount)), 0);
+        const totalAR = arRecords.reduce((acc: number, r: any) => acc + (Number(r.grandTotal) - Number(r.paidAmount)), 0);
+        const totalAP = apRecords.reduce((acc: number, r: any) => acc + (Number(r.grandTotal) - Number(r.paidAmount)), 0);
 
         const grossProfit = totalRevenue - totalHpp;
         const netProfit = grossProfit - totalExpenses;
