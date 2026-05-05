@@ -1440,12 +1440,27 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                             </div>
                         </div>
 
-                        {!closingReport ? (
+                        {isFetchingClosing ? (
+                            <div className="p-32 text-center bg-white rounded-[2.5rem] border-2 border-slate-50 shadow-inner flex flex-col items-center justify-center gap-6 animate-pulse">
+                                <div className="p-4 bg-primary/5 rounded-full">
+                                    <Clock className="h-12 w-12 text-primary/30 animate-spin" />
+                                </div>
+                                <div>
+                                    <p className="font-black text-slate-900 uppercase tracking-[0.2em] text-sm">Menarik Data Closing</p>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">Mohon tunggu sebentar, sedang sinkronisasi data seluruh departemen...</p>
+                                </div>
+                            </div>
+                        ) : !closingReport ? (
                             <div className="p-20 text-center bg-white rounded-[2.5rem] border-2 border-dashed border-slate-100 text-slate-300">
                                 <p className="font-black uppercase tracking-widest text-xs">Pilih periode dan klik cari untuk memuat data closing</p>
                             </div>
+                        ) : closingReport.error ? (
+                            <div className="p-20 text-center bg-rose-50 rounded-[2.5rem] border-2 border-dashed border-rose-100 text-rose-400">
+                                <p className="font-black uppercase tracking-widest text-xs">Gagal Memuat Data: {closingReport.error}</p>
+                                <button onClick={() => fetchClosingReport(closingPeriod.month, closingPeriod.year)} className="mt-4 px-6 py-2 bg-rose-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest">Coba Lagi</button>
+                            </div>
                         ) : (
-                            <div className="space-y-8">
+                            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
                                 {/* Metric Grid */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
                                     {[
