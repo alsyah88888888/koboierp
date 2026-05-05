@@ -76,7 +76,12 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
             'Tanggal': format(new Date(p.date), 'MM/dd/yyyy'),
             'No. LPB': p.number,
             'Supplier': p.entity,
-            'Total Bayar': p.amount
+            'Subtotal': p.subtotal,
+            'Diskon': p.discount,
+            'PPN %': p.taxRate / 100, // Format 11 as 0.11
+            'Pajak Rp': p.tax,
+            'Grand Total Netto': p.grandTotal,
+            'Sudah Dibayarkan (BCA)': p.paidAmount
         }));
 
         const ws = XLSX.utils.json_to_sheet(data);

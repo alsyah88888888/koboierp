@@ -383,7 +383,12 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
                     number: p.receiptNumber,
                     date: p.date,
                     entity: p.receivedFrom,
-                    amount: Number(p.grandTotal || 0)
+                    subtotal: Number(p.subtotal || 0),
+                    discount: Number(p.totalDiscount || 0),
+                    taxRate: Number(p.taxRate || 0),
+                    tax: Number(p.taxAmount || 0),
+                    grandTotal: Number(p.grandTotal || 0),
+                    paidAmount: Number(p.paidAmount || 0)
                 })),
                 expenses: expenses.map((e: any) => ({
                     id: e.id,
