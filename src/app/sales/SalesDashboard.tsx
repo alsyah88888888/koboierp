@@ -157,11 +157,18 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
     };
 
 
-    const filteredDeliveries = initialDeliveries.filter(d =>
-        d.deliveryNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        d.recipient.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        d.buyerName.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
+    const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+
+    const filteredDeliveries = initialDeliveries.filter(d => {
+        const dDate = new Date(d.createdAt);
+        const matchesMonth = (dDate.getMonth() + 1) === selectedMonth;
+        const matchesYear = dDate.getFullYear() === selectedYear;
+        const matchesSearch = d.deliveryNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                             d.recipient.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                             d.buyerName.toLowerCase().includes(searchTerm.toLowerCase());
+        return matchesMonth && matchesYear && matchesSearch;
+    });
 
     const handleExportXMLCoretax = async () => {
         try {
@@ -201,30 +208,27 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                 const qty = Number(item.quantity) || 0;
                 const price = Number(item.salesPrice) || 0;
                 const discLine = Number(item.discount || 0);
-                const taxRate = Number(d.taxRate || 0);
                 
                 const itemTotalBrutto = qty * price;
-                const itemAfterDisc = itemTotalBrutto - discLine;
-                const itemTax = itemAfterDisc * taxRate;
-                const itemNetto = itemAfterDisc + itemTax;
 
                 exportData.push({
                     'No. Surat Jalan': d.deliveryNumber,
                     'No. PO Buyer': d.poNumber || "-",
-                    'Tanggal': format(new Date(d.createdAt), "dd/MM/yyyy HH:mm"),
+                    'Tanggal': format(new Date(d.createdAt), "MM/dd/yyyy"),
                     'Buyer / Customer': d.buyerName,
                     'Barcode / SKU': item.product?.sku || "-",
                     'Nama Barang': item.product?.name || "-",
                     'Qty': qty,
                     'Satuan': item.uom || item.product?.uom || "-",
                     'Harga Satuan': price,
-                    'Total Harga Item': itemTotalBrutto,
-                    'Potongan Item': discLine,
-                    'Tgl SJ': format(new Date(d.createdAt), "dd/MM/yyyy"),
+                    'Total Harga': itemTotalBrutto,
+                    'Potongan': discLine,
+                    'Tgl SJ': format(new Date(d.createdAt), "MM/dd/yyyy"),
                     'Gudang': d.warehouse?.name || "-",
                     'Sales Person': d.salesPerson || "-",
-                    'Hasil Jumlah Qty': Number(d.items?.reduce((acc: number, i: any) => acc + (Number(i.quantity) || 0), 0) || 0),
-                    'Hasil Total Brutto': Number(d.subtotal || 0),
+                    '': '', // Empty column separator
+                    'Hasil Jumlah Barang': Number(d.items?.reduce((acc: number, i: any) => acc + (Number(i.quantity) || 0), 0) || 0),
+                    'Hasil Total': Number(d.subtotal || 0),
                     'Hasil PPN 11%': Number(d.taxAmount || 0),
                     'Hasil Grand Total Netto': Number(d.grandTotal || 0)
                 });
@@ -242,7 +246,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
             
             const exportData = rawData.map((item: any) => ({
                 'No. Retur': item.salesReturn.returnNumber,
-                'Tanggal': format(new Date(item.salesReturn.date), "dd/MM/yyyy"),
+                'Tanggal': format(new Date(item.salesReturn.date), "MM/dd/yyyy"),
                 'Buyer': item.salesReturn.delivery?.buyerName || "-",
                 'Ref. SJ': item.salesReturn.delivery?.deliveryNumber || "-",
                 'SKU': item.product.sku,
@@ -532,14 +536,36 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                             PO Penjualan
                         </button>
                     </div>
-                    <div className="relative w-full md:w-96 group">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
-                        <input
-                            value={searchTerm}
-                            onChange={e => setSearchTerm(e.target.value)}
-                            placeholder="Cari No. SJ / Buyer / Penerima..."
-                            className="w-full pl-11 pr-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-2xl text-sm font-bold focus:outline-none focus:border-primary focus:bg-white transition-all ring-primary/5 focus:ring-4"
-                        />
+                    <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
+                        <div className="flex items-center gap-2 w-full md:w-auto">
+                            <select 
+                                value={selectedMonth}
+                                onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                                className="w-full md:w-40 px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-2xl text-xs font-black uppercase tracking-widest focus:outline-none focus:border-primary transition-all"
+                            >
+                                {["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"].map((m, i) => (
+                                    <option key={m} value={i + 1}>{m}</option>
+                                ))}
+                            </select>
+                            <select 
+                                value={selectedYear}
+                                onChange={(e) => setSelectedYear(Number(e.target.value))}
+                                className="w-full md:w-28 px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-2xl text-xs font-black uppercase tracking-widest focus:outline-none focus:border-primary transition-all"
+                            >
+                                {[2024, 2025, 2026].map(y => (
+                                    <option key={y} value={y}>{y}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="relative w-full md:w-80 group">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
+                            <input
+                                value={searchTerm}
+                                onChange={e => setSearchTerm(e.target.value)}
+                                placeholder="Cari No. SJ / Buyer / Penerima..."
+                                className="w-full pl-11 pr-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-2xl text-sm font-bold focus:outline-none focus:border-primary focus:bg-white transition-all ring-primary/5 focus:ring-4"
+                            />
+                        </div>
                     </div>
                 </div>
 
