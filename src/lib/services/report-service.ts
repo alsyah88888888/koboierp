@@ -244,20 +244,35 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
             })
         ]);
 
+        // Pre-fetch last purchase prices for products sold (fallback for missing lot data)
+        const productIds = Array.from(new Set(sales.flatMap((s: any) => s.items.map((i: any) => i.productId))));
+        const lastPurchases = await (prisma as any).goodsReceiptItem.findMany({
+            where: { productId: { in: productIds } },
+            orderBy: { createdAt: 'desc' },
+            select: { productId: true, purchasePrice: true }
+        });
+
+        // Create a map for quick lookup
+        const priceMap: Record<string, number> = {};
+        lastPurchases.forEach((lp: any) => {
+            if (!priceMap[lp.productId]) priceMap[lp.productId] = Number(lp.purchasePrice || 0);
+        });
+
         // Calculate Revenue & COGS (HPP)
         let totalRevenue = 0;
         let totalHpp = 0;
         sales.forEach((s: any) => {
             totalRevenue += Number(s.grandTotal || 0);
             s.items.forEach((item: any) => {
-                // Sum up HPP from lot allocations
-                item.lotAllocations?.forEach((alloc: any) => {
-                    totalHpp += (Number(alloc.quantity) * Number(alloc.hppAtTime || 0));
-                });
-                
-                // Fallback: If no lot allocations (old data), use purchasePrice from Product Master
-                if (!item.lotAllocations || item.lotAllocations.length === 0) {
-                    totalHpp += (Number(item.quantity || 0) * Number(item.product?.purchasePrice || 0));
+                // 1. Primary: Use specific lot allocations (FIFO/Batch)
+                if (item.lotAllocations && item.lotAllocations.length > 0) {
+                    item.lotAllocations.forEach((alloc: any) => {
+                        totalHpp += (Number(alloc.quantity) * Number(alloc.hppAtTime || 0));
+                    });
+                } else {
+                    // 2. Fallback: Use last purchase price from LPB or Master Product
+                    const fallbackPrice = priceMap[item.productId] || Number(item.product?.purchasePrice || 0);
+                    totalHpp += (Number(item.quantity || 0) * fallbackPrice);
                 }
             });
         });
