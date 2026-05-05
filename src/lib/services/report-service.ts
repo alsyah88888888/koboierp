@@ -293,7 +293,8 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
                     });
                 } else {
                     // 2. Fallback: Use last purchase price from LPB or Master Product
-                    const fallbackPrice = priceMap[item.productId] || Number(item.product?.purchasePrice || 0);
+                    const productId = String(item.productId);
+                    const fallbackPrice = priceMap[productId] || Number(item.product?.purchasePrice || 0);
                     totalHpp += (Number(item.quantity || 0) * fallbackPrice);
                 }
             });
