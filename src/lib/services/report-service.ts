@@ -315,14 +315,20 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
         });
 
         // 3. Accounting Style (Cash Basis)
-        // Beginning Inventory Value remains the same as it's a snapshot
-        const beginningInventory = await (prisma as any).stock.findMany({
-            include: { product: { select: { purchasePrice: true } } }
-        });
-        const beginningValue = beginningInventory.reduce((acc: number, s: any) => {
-            const price = priceMap[s.productId] || Number(s.product?.purchasePrice || 0);
-            return acc + (Number(s.quantity || 0) * price);
-        }, 0);
+        let beginningValue = 0;
+        try {
+            // Beginning Inventory Value remains the same as it's a snapshot
+            const beginningInventory = await (prisma as any).stock.findMany({
+                include: { product: { select: { purchasePrice: true } } }
+            });
+            beginningValue = beginningInventory.reduce((acc: number, s: any) => {
+                const price = priceMap[s.productId] || Number(s.product?.purchasePrice || 0);
+                return acc + (Number(s.quantity || 0) * price);
+            }, 0);
+        } catch (invErr) {
+            console.error("Inventory Valuation Error:", invErr);
+            beginningValue = 0; // Fallback to 0 to prevent total crash
+        }
 
         // Net Purchases - CASH BASIS (Only count paid amount to suppliers)
         const netPurchases = purchases.reduce((acc: number, p: any) => acc + Number(p.paidAmount || 0), 0);
