@@ -1574,6 +1574,11 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                 <div>
                                     <h3 className="text-2xl font-black text-slate-900 tracking-tight">Period Closing Report</h3>
                                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Consolidated Financial Review</p>
+                                    {closingReport?.debug && (
+                                        <p className="text-[8px] font-mono text-slate-300 mt-2">
+                                            DEBUG: Sales({closingReport.debug.salesCount}) Items({closingReport.debug.totalItemsInSales}) Prices({closingReport.debug.priceMapSize})
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                             <div className="flex items-center gap-3 bg-slate-50 p-2 rounded-2xl border border-slate-100">
