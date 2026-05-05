@@ -14,6 +14,7 @@ import { callAction } from "@/proxy";
 import { format } from "date-fns";
 import { exportToExcel } from "@/lib/excel";
 import { ReportPreviewModal } from "@/components/ReportPreviewModal";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import Link from "next/link";
 
 export function WarehouseDashboard({ initialProducts, warehouses, unverifiedReceipts, movements }: {
@@ -217,7 +218,9 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
             <DashboardStats />
             
             {activeTab === "checker" ? (
-                <CheckerBoard unverifiedReceipts={unverifiedReceipts} />
+                <ErrorBoundary fallbackTitle="Checker Module Error">
+                    <CheckerBoard unverifiedReceipts={unverifiedReceipts} />
+                </ErrorBoundary>
             ) : (
                 <>
                     <div className="grid gap-6 md:grid-cols-4">

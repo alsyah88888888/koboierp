@@ -20,6 +20,11 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
     const scanInputRef = useRef<HTMLInputElement>(null);
     const cameraRef = useRef<any>(null);
     const [globalError, setGlobalError] = useState<string | null>(null);
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
 
     // Global error listener for hard crashes
     useEffect(() => {
@@ -144,7 +149,7 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
     };
 
     // Safe Render Wrapper to catch rendering-specific crashes
-    if (selectedReceipt) {
+    if (selectedReceipt && isClient) {
         try {
         return (
             <div className="bg-white rounded-[2.5rem] border-2 border-slate-100 shadow-2xl shadow-slate-200/50 overflow-hidden animate-in fade-in zoom-in duration-300">
@@ -509,6 +514,15 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
          (r.receivedFrom?.toLowerCase() || "").includes(displaySearchTerm.toLowerCase()))
     );
 
+    if (!isClient) {
+        return (
+            <div className="p-12 text-center animate-pulse">
+                <div className="w-12 h-12 bg-slate-100 rounded-full mx-auto mb-4" />
+                <div className="h-4 bg-slate-100 w-48 mx-auto rounded" />
+            </div>
+        );
+    }
+
     return (
         <div className="space-y-6">
             {globalError && (
@@ -558,7 +572,7 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
                             <p className="text-sm font-bold truncate mb-1">{r.receivedFrom}</p>
                             <p className="text-xs text-slate-500 font-bold flex items-center gap-1 mb-4 uppercase tracking-widest">
                                 <Package className="h-3 w-3" />
-                                {r.items.length} Jenis Barang
+                                {r.items?.length || 0} Jenis Barang
                             </p>
                             <div className="flex justify-between items-center text-[10px] text-slate-400 font-black uppercase mb-4">
                                 <span>{r.createdAt ? format(new Date(r.createdAt), "dd MMM yyyy") : "-"}</span>
