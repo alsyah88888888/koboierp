@@ -54,15 +54,13 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
     const [isFetchingClosing, setIsFetchingClosing] = useState(false);
 
     const fetchClosingReport = async (m: number, y: number) => {
-        console.log(`[DEBUG] Fetching Closing Report for ${m}/${y}...`);
         setIsFetchingClosing(true);
-        setClosingReport(null); // Reset state to trigger loading UI
+        setClosingReport(null);
         try {
             const data = await callAction("getMonthlyClosingReport", m, y);
-            console.log("[DEBUG] Data Received:", data);
             setClosingReport(data);
         } catch (err) {
-            console.error("[DEBUG] Fetch Failed:", err);
+            console.error("Fetch Failed:", err);
             setClosingReport({ error: "Koneksi terputus atau server sibuk." });
         } finally {
             setIsFetchingClosing(false);

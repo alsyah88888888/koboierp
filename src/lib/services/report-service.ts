@@ -252,6 +252,7 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
 
         if (productIds.length > 0) {
             try {
+                // Try Goods Receipt first (Most accurate: What we actually paid)
                 const lastPurchases = await (prisma as any).goodsReceiptItem.findMany({
                     where: { productId: { in: productIds } },
                     orderBy: { createdAt: 'desc' },
@@ -261,6 +262,19 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
                 lastPurchases.forEach((lp: any) => {
                     if (!priceMap[lp.productId]) priceMap[lp.productId] = Number(lp.purchasePrice || 0);
                 });
+
+                // Try Purchase Orders for products still missing (Second best: What we agreed to pay)
+                const missingIds = productIds.filter(id => !priceMap[id]);
+                if (missingIds.length > 0) {
+                    const lastPOItems = await (prisma as any).purchaseOrderItem.findMany({
+                        where: { productId: { in: missingIds } },
+                        orderBy: { createdAt: 'desc' },
+                        select: { productId: true, price: true }
+                    });
+                    lastPOItems.forEach((poi: any) => {
+                        if (!priceMap[poi.productId]) priceMap[poi.productId] = Number(poi.price || 0);
+                    });
+                }
             } catch (e) {
                 console.error("HPP Fallback Fetch Error:", e);
             }
