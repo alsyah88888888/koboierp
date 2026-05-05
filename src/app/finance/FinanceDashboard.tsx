@@ -73,7 +73,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
         if (!closingReport?.details?.purchases) return;
         
         const data = closingReport.details.purchases.map((p: any) => ({
-            'Tanggal': format(new Date(p.date), 'dd/MM/yyyy'),
+            'Tanggal': format(new Date(p.date), 'MM/dd/yyyy'),
             'No. LPB': p.number,
             'Supplier': p.entity,
             'Total Bayar': p.amount
