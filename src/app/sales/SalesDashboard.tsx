@@ -210,11 +210,9 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                 const discLine = Number(item.discount || 0);
                 
                 const itemTotalBrutto = qty * price;
-                const itemNettoBeforeTax = itemTotalBrutto - discLine;
                 const taxRate = Number(d.taxRate || 0);
-                const displayTaxRate = taxRate > 0 ? 0.11 : 0;
-                const itemTaxValue = itemNettoBeforeTax * displayTaxRate;
-                const itemNettoTotal = itemNettoBeforeTax - itemTaxValue; // Following user's minus formula
+                const itemTax = taxRate > 0 ? (itemTotalBrutto * 0.11) : 0;
+                const itemNettoTotal = itemTotalBrutto - discLine - itemTax; // Following user's literal formula
 
                 exportData.push({
                     'No. Surat Jalan': d.deliveryNumber,
@@ -232,7 +230,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                     'Gudang': d.warehouse?.name || "-",
                     'Sales Person': d.salesPerson || "-",
                     '': '', // Empty separator
-                    'Hasil PPN 11%': displayTaxRate,
+                    'Hasil PPN 11%': itemTax,
                     'Hasil Grand Total Netto': itemNettoTotal,
                     'Status': d.isVoid ? 'VOID' : (d.isVerified ? 'VERIFIED' : 'PENDING')
                 });
