@@ -226,6 +226,53 @@ export async function verifyGoodsReceiptService(receiptId: string, verifiedBy: s
     }, { timeout: 30000 });
 }
 
+export async function bulkVerifyGoodsReceiptsService(verifiedBy: string) {
+    const { getPrisma } = require("@/lib/prisma");
+    const prisma = getPrisma();
+
+    return await prisma.$transaction(async (tx: any) => {
+        const pending = await tx.goodsReceipt.findMany({
+            where: { isVerified: false, isVoid: false },
+            include: { items: true }
+        });
+
+        if (pending.length === 0) return { success: true, count: 0 };
+
+        for (const receipt of pending) {
+            await tx.goodsReceipt.update({
+                where: { id: receipt.id },
+                data: {
+                    isVerified: true,
+                    verifiedBy,
+                    verifiedAt: new Date()
+                }
+            });
+
+            for (const item of receipt.items) {
+                await tx.goodsReceiptVerification.create({
+                    data: {
+                        receiptId: receipt.id,
+                        productId: item.productId,
+                        expectedQuantity: item.quantity,
+                        actualQuantity: item.quantity,
+                        expectedPrice: item.purchasePrice,
+                        actualPrice: item.purchasePrice,
+                        verifiedBy,
+                        notes: "Bulk Verified: Match 100%"
+                    }
+                });
+            }
+        }
+
+        revalidatePath("/warehouse");
+        revalidatePath("/purchase");
+        revalidatePath("/tracking");
+        revalidatePath("/");
+        
+        return { success: true, count: pending.length };
+    }, { timeout: 120000 });
+}
+
 export async function voidGoodsReceiptService(id: string, reason: string) {
     const { getPrisma } = require("@/lib/prisma");
     const prisma = getPrisma();

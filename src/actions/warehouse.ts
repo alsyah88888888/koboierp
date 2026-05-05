@@ -131,6 +131,11 @@ export async function voidGoodsReceiptAction(id: string, reason: string) {
     return await voidGoodsReceiptService(id, reason);
 }
 
+export async function bulkVerifyGoodsReceiptAction(verifiedBy: string) {
+    const { bulkVerifyGoodsReceiptsService } = require("@/lib/services/warehouse-service");
+    return await bulkVerifyGoodsReceiptsService(verifiedBy);
+}
+
 export async function runStockAuditAction() {
     const { runStockAuditService } = require("@/lib/services/warehouse-service");
     return await runStockAuditService();

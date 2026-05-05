@@ -555,14 +555,40 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
                     </div>
                 </div>
                 
-                <div className="relative w-full md:w-80">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                    <input
-                        value={displaySearchTerm}
-                        onChange={e => setDisplaySearchTerm(e.target.value)}
-                        placeholder="Cari No. LPB atau Supplier..."
-                        className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border-2 border-slate-100 rounded-xl text-sm focus:outline-none focus:border-primary focus:bg-white transition-all font-bold placeholder:text-slate-400"
-                    />
+                <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                    {session?.user?.role?.toUpperCase() === "ADMIN" && displayReceipts.length > 0 && (
+                        <button
+                            onClick={async () => {
+                                if (confirm(`Apakah Anda yakin ingin memverifikasi SEMUA (${displayReceipts.length}) antrian LPB ini sekaligus?\n\nSistem akan menganggap semua fisik barang SESUAI 100% dan tidak akan menambah stok ganda.`)) {
+                                    try {
+                                        setIsVerifying(true);
+                                        const res = await callAction("bulkVerifyGoodsReceipt", session?.user?.name || "Admin");
+                                        if (res.success) {
+                                            alert(`Berhasil memverifikasi ${res.count} LPB secara masal!`);
+                                            window.location.reload();
+                                        }
+                                    } catch (err: any) {
+                                        alert(err.message || "Gagal verifikasi masal");
+                                    } finally {
+                                        setIsVerifying(false);
+                                    }
+                                }
+                            }}
+                            className="px-4 py-2 bg-emerald-600 text-white font-black rounded-xl text-[10px] uppercase tracking-widest hover:bg-emerald-700 transition-all active:scale-95 flex items-center gap-2 shadow-lg shadow-emerald-100"
+                        >
+                            <CheckCircle2 className="h-4 w-4" />
+                            Selesaikan Semua Antrian
+                        </button>
+                    )}
+                    <div className="relative w-full md:w-80">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                        <input
+                            value={displaySearchTerm}
+                            onChange={e => setDisplaySearchTerm(e.target.value)}
+                            placeholder="Cari No. LPB atau Supplier..."
+                            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border-2 border-slate-100 rounded-xl text-sm focus:outline-none focus:border-primary focus:bg-white transition-all font-bold placeholder:text-slate-400"
+                        />
+                    </div>
                 </div>
             </div>
 
