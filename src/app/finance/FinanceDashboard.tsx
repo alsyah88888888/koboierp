@@ -2,7 +2,7 @@
 import * as XLSX from 'xlsx';
 
 import { useState, useEffect, useRef } from "react";
-import { Plus, Search, Wallet, ArrowUpCircle, ArrowDownCircle, FileText, Trash2, Download, Eye, FileCode2, X, Banknote, Calendar, Printer, Sparkles, ShoppingCart } from "lucide-react";
+import { Plus, Search, Wallet, ArrowUpCircle, ArrowDownCircle, FileText, Trash2, Download, Eye, FileCode2, X, Banknote, Calendar, Printer, Sparkles, ShoppingCart, AlertCircle } from "lucide-react";
 import { ReportPreviewModal } from "@/components/ReportPreviewModal";
 import { formatCurrency, cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -15,7 +15,7 @@ import { CheckCircle2, Clock } from "lucide-react";
 import { exportToExcel } from "@/lib/excel";
 import { useRouter } from "next/navigation";
 
-export function FinanceDashboard({ accounts, ledger, vendors, customers, pendingPurchases, pendingSales, unverifiedReceipts, pendingReturns, pendingSalesReturns, pendingPurchaseRequests, transactions, settledPurchases, settledSales, totalPaidAP, totalPaidAR, currentMonthPaidAP = 0, currentMonthPaidAR = 0, monthlyStats, paymentHistory = [] }: {
+export function FinanceDashboard({ accounts, ledger, vendors, customers, pendingPurchases, pendingSales, unverifiedReceipts, pendingReturns, pendingSalesReturns, pendingPurchaseRequests, transactions, settledPurchases, settledSales, totalPaidAP, totalPaidAR, currentMonthPaidAP = 0, currentMonthPaidAR = 0, dueSoonAP = 0, overdueAR = 0, monthlyStats, paymentHistory = [] }: {
     accounts: any[],
     ledger: any[],
     vendors: any[],
@@ -33,6 +33,8 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
     totalPaidAR: number,
     currentMonthPaidAP?: number,
     currentMonthPaidAR?: number,
+    dueSoonAP?: number,
+    overdueAR?: number,
     monthlyStats: { label: string, ap: number, ar: number }[],
     paymentHistory?: any[]
 }) {
@@ -700,46 +702,74 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
 
             {/* Quick Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="erp-card p-6 border-l-4 border-l-rose-500 bg-white/50">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Liabilities (AP)</p>
-                    <h3 className="text-2xl font-black text-rose-600 tracking-tighter">{formatCurrency(totalHutang)}</h3>
-                    <div className="mt-3 space-y-2">
-                        <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Unpaid Invoices</span>
-                            <span className="text-[10px] font-black text-rose-500">{pendingPurchases.filter((p: any) => p.paymentStatus !== 'PAID').length} Docs</span>
-                        </div>
-                        <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Paid ({format(new Date(), "MMM")})</span>
-                            <span className="text-[11px] font-black text-slate-600">{formatCurrency(currentMonthPaidAP)}</span>
+                <div className="erp-card p-6 border-l-4 border-l-rose-500 bg-white shadow-xl shadow-slate-100 relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:scale-110 transition-transform">
+                        <ArrowDownCircle className="h-16 w-16" />
+                    </div>
+                    <div className="relative z-10">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Outstanding AP (Hutang)</p>
+                        <h3 className="text-2xl font-black text-slate-900 tracking-tighter">{formatCurrency(totalHutang)}</h3>
+                        <div className="mt-4 space-y-2">
+                            <div className="flex items-center justify-between p-2 bg-amber-50 rounded-lg border border-amber-100">
+                                <div className="flex items-center gap-1.5">
+                                    <AlertCircle className="h-3 w-3 text-amber-600" />
+                                    <span className="text-[9px] font-bold text-amber-900 uppercase">Jatuh Tempo (14hr+)</span>
+                                </div>
+                                <span className="text-[10px] font-black text-amber-700">{formatCurrency(dueSoonAP)}</span>
+                            </div>
+                            <div className="flex items-center justify-between px-2 pt-1">
+                                <span className="text-[9px] font-bold text-slate-400 uppercase">Paid this month ({format(new Date(), "MMM")})</span>
+                                <span className="text-[10px] font-black text-rose-600">{formatCurrency(currentMonthPaidAP)}</span>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div className="erp-card p-6 border-l-4 border-l-emerald-500 bg-white/50">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Receivables (AR)</p>
-                    <h3 className="text-2xl font-black text-emerald-600 tracking-tighter">{formatCurrency(totalPiutang)}</h3>
-                    <div className="mt-3 space-y-2">
-                        <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active Credits</span>
-                            <span className="text-[10px] font-black text-emerald-500">{pendingSales.filter((s: any) => s.paymentStatus !== 'PAID').length} Docs</span>
-                        </div>
-                        <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Collected ({format(new Date(), "MMM")})</span>
-                            <span className="text-[11px] font-black text-slate-600">{formatCurrency(currentMonthPaidAR)}</span>
+
+                <div className="erp-card p-6 border-l-4 border-l-emerald-500 bg-white shadow-xl shadow-slate-100 relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:scale-110 transition-transform">
+                        <ArrowUpCircle className="h-16 w-16" />
+                    </div>
+                    <div className="relative z-10">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Outstanding AR (Piutang)</p>
+                        <h3 className="text-2xl font-black text-slate-900 tracking-tighter">{formatCurrency(totalPiutang)}</h3>
+                        <div className="mt-4 space-y-2">
+                            <div className="flex items-center justify-between p-2 bg-rose-50 rounded-lg border border-rose-100">
+                                <div className="flex items-center gap-1.5">
+                                    <Clock className="h-3 w-3 text-rose-600" />
+                                    <span className="text-[9px] font-bold text-rose-900 uppercase tracking-tight">Overdue (30hr+)</span>
+                                </div>
+                                <span className="text-[10px] font-black text-rose-700">{formatCurrency(overdueAR)}</span>
+                            </div>
+                            <div className="flex items-center justify-between px-2 pt-1">
+                                <span className="text-[9px] font-bold text-slate-400 uppercase">Collected this month ({format(new Date(), "MMM")})</span>
+                                <span className="text-[10px] font-black text-emerald-600">{formatCurrency(currentMonthPaidAR)}</span>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div className="erp-card p-6 border-l-4 border-l-blue-500 bg-white/50">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Logistics Pendings</p>
-                    <h3 className="text-2xl font-black text-blue-600 tracking-tighter">{unverifiedReceipts.length} <span className="text-xs text-slate-400 font-bold ml-1">Receipts</span></h3>
-                    <div className="mt-3 flex items-center gap-2 underline underline-offset-4 decoration-blue-100 cursor-pointer" onClick={() => setActiveTab("checker")}>
-                        <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Verify Goods Receipt</span>
+                <div className="erp-card p-6 border-l-4 border-l-blue-500 bg-white shadow-xl shadow-slate-100 relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:scale-110 transition-transform">
+                        <FileText className="h-16 w-16" />
+                    </div>
+                    <div className="relative z-10">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Logistics Pendings</p>
+                        <h3 className="text-2xl font-black text-blue-600 tracking-tighter">{unverifiedReceipts.length} <span className="text-xs text-slate-400 font-bold ml-1">Receipts</span></h3>
+                        <div className="mt-4 flex items-center gap-2 underline underline-offset-4 decoration-blue-100 cursor-pointer hover:text-blue-700 transition-colors" onClick={() => setActiveTab("checker")}>
+                            <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Verify Goods Receipt</span>
+                        </div>
                     </div>
                 </div>
-                <div className="erp-card p-6 border-l-4 border-l-amber-500 bg-white/50">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Pengajuan (Draft)</p>
-                    <h3 className="text-2xl font-black text-amber-600 tracking-tighter">{pendingPurchaseRequests.length} <span className="text-xs text-slate-400 font-bold ml-1">Dokumen</span></h3>
-                    <div className="mt-3 flex items-center gap-2 underline underline-offset-4 decoration-amber-100 cursor-pointer" onClick={() => setActiveTab("purchase_requests")}>
-                        <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest">Open Approvals</span>
+
+                <div className="erp-card p-6 border-l-4 border-l-amber-500 bg-white shadow-xl shadow-slate-100 relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:scale-110 transition-transform">
+                        <ShoppingCart className="h-16 w-16" />
+                    </div>
+                    <div className="relative z-10">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Pengajuan (Draft)</p>
+                        <h3 className="text-2xl font-black text-amber-600 tracking-tighter">{pendingPurchaseRequests.length} <span className="text-xs text-slate-400 font-bold ml-1">Docs</span></h3>
+                        <div className="mt-4 flex items-center gap-2 underline underline-offset-4 decoration-amber-100 cursor-pointer hover:text-amber-700 transition-colors" onClick={() => setActiveTab("purchase_requests")}>
+                            <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest">Open Approvals</span>
+                        </div>
                     </div>
                 </div>
             </div>

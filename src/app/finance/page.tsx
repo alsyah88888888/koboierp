@@ -45,7 +45,9 @@ export default async function FinancePage() {
         settledARRaw,
         paymentHistory,
         currentMonthPaidAPRes,
-        currentMonthPaidARRes
+        currentMonthPaidARRes,
+        dueSoonAPRes,
+        overdueARRes
     ] = await Promise.all([
         getBalanceSheet().catch(() => []),
         prisma.journalEntry.findMany({
@@ -159,7 +161,23 @@ export default async function FinancePage() {
                 } 
             },
             _sum: { paidAmount: true }
-        }).catch(() => ({ _sum: { paidAmount: 0 } }))
+        }).catch(() => ({ _sum: { paidAmount: 0 } })),
+        prisma.goodsReceipt.aggregate({
+            where: { 
+                isVoid: false, 
+                paymentStatus: { not: "PAID" },
+                date: { lt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000) }
+            },
+            _sum: { grandTotal: true, paidAmount: true }
+        }).catch(() => ({ _sum: { grandTotal: 0, paidAmount: 0 } })),
+        prisma.salesDelivery.aggregate({
+            where: { 
+                isVoid: false, 
+                paymentStatus: { not: "PAID" },
+                date: { lt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) }
+            },
+            _sum: { grandTotal: true, paidAmount: true }
+        }).catch(() => ({ _sum: { grandTotal: 0, paidAmount: 0 } }))
     ]);
 
     // Helper to calculate total safely without NaN
@@ -243,6 +261,8 @@ export default async function FinancePage() {
             totalPaidAR={Number(totalPaidARRes?._sum?.paidAmount || 0)}
             currentMonthPaidAP={Number(currentMonthPaidAPRes?._sum?.paidAmount || 0)}
             currentMonthPaidAR={Number(currentMonthPaidARRes?._sum?.paidAmount || 0)}
+            dueSoonAP={Number(dueSoonAPRes?._sum?.grandTotal || 0) - Number(dueSoonAPRes?._sum?.paidAmount || 0)}
+            overdueAR={Number(overdueARRes?._sum?.grandTotal || 0) - Number(overdueARRes?._sum?.paidAmount || 0)}
             monthlyStats={monthlyStats}
             paymentHistory={serializeDecimal(paymentHistory || [])}
         />
