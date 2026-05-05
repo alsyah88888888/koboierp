@@ -179,6 +179,16 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
                                 <div className="bg-emerald-500 w-2 h-2 rounded-full animate-pulse" />
                             </div>
                             <p className="text-[11px] font-bold text-slate-400 uppercase tracking-tight mt-1">Gunakan alat scanner atau kamera HP di bawah.</p>
+                            <button 
+                                onClick={() => {
+                                    const allSet: Record<string, number> = {};
+                                    selectedReceipt?.items?.forEach((item: any) => { allSet[item.id] = item.quantity; });
+                                    setCheckedItems(allSet);
+                                }}
+                                className="mt-2 px-3 py-1 bg-emerald-50 text-emerald-700 text-[9px] font-black rounded-lg hover:bg-emerald-100 transition-all border border-emerald-100 uppercase tracking-widest"
+                            >
+                                ✓ Set Semua Sesuai Dokumen
+                            </button>
                             {scanError && (
                                 <div className="mt-2 text-[10px] font-black text-rose-500 bg-rose-50 px-3 py-1 rounded-lg border border-rose-100 animate-bounce">
                                     ⚠️ {scanError}

@@ -197,16 +197,49 @@ export async function verifyGoodsReceiptService(receiptId: string, verifiedBy: s
             }
         });
 
-        // 2. Mark items as checked (Option A: No stock update here)
-        // We could log checked items in the future, but currently we just mark as verified.
+        // 2. Update Stock and Create Movements for each item
+        for (const item of receipt.items) {
+            // Use checked quantity from checker, fallback to 0 if not scanned
+            const actualQty = Number(checkedItems[item.id] ?? 0);
+            
+            if (actualQty > 0) {
+                const vendorName = receipt.receivedFrom || "UMUM";
+                
+                // Upsert into Stock table
+                await tx.stock.upsert({
+                    where: {
+                        productId_warehouseId_vendorName: {
+                            productId: item.productId,
+                            warehouseId: receipt.warehouseId,
+                            vendorName: vendorName
+                        }
+                    },
+                    update: { quantity: { increment: actualQty } },
+                    create: {
+                        productId: item.productId,
+                        warehouseId: receipt.warehouseId,
+                        vendorName: vendorName,
+                        quantity: actualQty
+                    }
+                });
+
+                // Create Stock Movement record
+                await tx.stockMovement.create({
+                    data: {
+                        productId: item.productId,
+                        warehouseId: receipt.warehouseId,
+                        vendorName: vendorName,
+                        quantity: actualQty,
+                        type: "GOODS_RECEIPT",
+                        reference: receipt.receiptNumber
+                    }
+                });
+            }
+        }
         
         revalidatePath("/warehouse");
         revalidatePath("/purchase");
-        revalidatePath("/");
-        return { success: true };
-
-        revalidatePath("/warehouse");
-        revalidatePath("/purchase");
+        revalidatePath("/tracking");
         revalidatePath("/");
         return { success: true };
     }, { timeout: 30000 });
