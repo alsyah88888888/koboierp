@@ -204,7 +204,7 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
 
     try {
         const [sales, purchases, expenses, arRecords, apRecords] = await Promise.all([
-            // 1. Total Sales (Revenue)
+            // 1. Total Sales (Revenue) - From Deliveries (Invoices)
             (prisma as any).salesDelivery.findMany({
                 where: { isVoid: false, date: { gte: startDate, lte: endDate } },
                 include: { items: { include: { lotAllocations: true } } }
@@ -213,16 +213,24 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
             (prisma as any).goodsReceipt.findMany({
                 where: { isVoid: false, date: { gte: startDate, lte: endDate } }
             }),
-            // 3. Operational Expenses (Finance Transactions)
+            // 3. Operational Expenses (Money Out)
             (prisma as any).financeTransaction.findMany({
-                where: { transactionType: "PAYMENT", date: { gte: startDate, lte: endDate } }
+                where: { 
+                    date: { gte: startDate, lte: endDate },
+                    // Assuming negative amount or specific types like PAYMENT/EXPENSE are money out
+                    OR: [
+                        { transactionType: "PAYMENT" },
+                        { transactionType: "EXPENSE" },
+                        { amount: { lt: 0 } }
+                    ]
+                }
             }),
-            // 4. Accounts Receivable (Unpaid Invoices) - Outstanding until now
-            (prisma as any).salesOrder.findMany({
-                where: { paymentStatus: { in: ["PENDING", "PARTIAL"] } },
+            // 4. Accounts Receivable (Unpaid Deliveries)
+            (prisma as any).salesDelivery.findMany({
+                where: { isVoid: false, paymentStatus: { in: ["PENDING", "PARTIAL"] } },
                 select: { grandTotal: true, paidAmount: true }
             }),
-            // 5. Accounts Payable (Unpaid LPB) - Outstanding until now
+            // 5. Accounts Payable (Unpaid LPB)
             (prisma as any).goodsReceipt.findMany({
                 where: { isVoid: false, paymentStatus: { in: ["PENDING", "PARTIAL"] } },
                 select: { grandTotal: true, paidAmount: true }
@@ -233,19 +241,25 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
         let totalRevenue = 0;
         let totalHpp = 0;
         sales.forEach((s: any) => {
-            totalRevenue += Number(s.totalAmount || 0);
+            totalRevenue += Number(s.grandTotal || 0);
             s.items.forEach((item: any) => {
-                item.lotAllocations.forEach((alloc: any) => {
-                    totalHpp += (alloc.quantity * Number(alloc.hppAtTime || 0));
+                // Sum up HPP from lot allocations
+                item.lotAllocations?.forEach((alloc: any) => {
+                    totalHpp += (Number(alloc.quantity) * Number(alloc.hppAtTime || 0));
                 });
+                
+                // Fallback: If no lot allocations (old data), use purchasePrice as estimate
+                if (!item.lotAllocations || item.lotAllocations.length === 0) {
+                    totalHpp += (Number(item.quantity) * Number(item.purchasePrice || 0));
+                }
             });
         });
 
         // Calculate Purchase Value
         const totalPurchaseValue = purchases.reduce((acc: number, p: any) => acc + Number(p.grandTotal || 0), 0);
 
-        // Calculate Operational Expenses
-        const totalExpenses = expenses.reduce((acc: number, e: any) => acc + Number(e.amount || 0), 0);
+        // Calculate Operational Expenses (Absolute value for display)
+        const totalExpenses = expenses.reduce((acc: number, e: any) => acc + Math.abs(Number(e.amount || 0)), 0);
 
         // Calculate AR/AP Balances
         const totalAR = arRecords.reduce((acc: number, r: any) => acc + (Number(r.grandTotal) - Number(r.paidAmount)), 0);
