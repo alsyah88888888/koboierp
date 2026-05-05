@@ -107,11 +107,18 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
         }
     };
 
-    const filteredReceipts = initialReceipts.filter(r =>
-        r.receiptNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.receivedFrom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.formNumber?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
+    const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+
+    const filteredReceipts = initialReceipts.filter(r => {
+        const rDate = new Date(r.date || r.createdAt);
+        const matchesMonth = (rDate.getMonth() + 1) === selectedMonth;
+        const matchesYear = rDate.getFullYear() === selectedYear;
+        const matchesSearch = r.receiptNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                             r.receivedFrom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                             r.formNumber?.toLowerCase().includes(searchTerm.toLowerCase());
+        return matchesMonth && matchesYear && matchesSearch;
+    });
 
     const handleExport = () => {
         const exportData: any[] = [];
@@ -132,7 +139,7 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
                 exportData.push({
                     'No. Terima': r.receiptNumber,
                     'No. Form': r.formNumber || "-",
-                    'Tanggal': format(new Date(r.date || r.createdAt), "dd/MM/yyyy HH:mm"),
+                    'Tanggal': format(new Date(r.date || r.createdAt), "MM/dd/yyyy"),
                     'Terima Dari': r.receivedFrom,
                     'Barcode': item.product?.barcode || item.product?.sku || "-",
                     'SKU': item.product?.sku || "-",
@@ -142,13 +149,10 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
                     'Harga Beli': buyPrice,
                     'Potongan Item': discLine,
                     'Total Brutto (Row)': itemTotalBrutto,
-                    'PPN 11% (Row)': itemTax,
+                    'PPN 11% (Row)': taxRate > 1 ? taxRate / 100 : taxRate, // Ensure 0.11 format
                     'Grand Total Netto (Row)': itemNettoTotal,
                     'Gudang': r.warehouse?.name || "-",
                     'Sales Person': r.salesPerson || "-",
-                    'Total Dokumen (Brutto)': Number(r.subtotal || 0),
-                    'Total Dokumen (PPN)': Number(r.taxAmount || 0),
-                    'Total Dokumen (Netto)': Number(r.grandTotal || 0),
                     'Status': r.isVoid ? 'VOID' : (r.isVerified ? 'VERIFIED' : 'PENDING')
                 });
             });
@@ -165,7 +169,7 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
             
             const exportData = rawData.map((item: any) => ({
                 'No. Retur': item.purchaseReturn.returnNumber,
-                'Tanggal': format(new Date(item.purchaseReturn.date), "dd/MM/yyyy"),
+                'Tanggal': format(new Date(item.purchaseReturn.date), "MM/dd/yyyy"),
                 'Supplier': item.purchaseReturn.receipt?.receivedFrom || "-",
                 'Ref. LPB': item.purchaseReturn.receipt?.receiptNumber || "-",
                 'SKU': item.product.sku,
@@ -320,14 +324,36 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
                             {activeTab === "LPB" ? "Daftar Penerimaan Barang" : "Daftar Retur Pembelian"}
                         </h2>
                     </div>
-                    <div className="relative w-full md:w-96">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                        <input
-                            value={searchTerm}
-                            onChange={e => setSearchTerm(e.target.value)}
-                            placeholder={activeTab === "LPB" ? "Cari No. Form, Supplier, atau No. SJ..." : "Cari No. Retur atau Vendor..."}
-                            className="erp-input pl-12 h-12"
-                        />
+                    <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
+                        <div className="flex items-center gap-2 w-full md:w-auto">
+                            <select 
+                                value={selectedMonth}
+                                onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                                className="erp-input h-12 w-full md:w-40 font-bold uppercase text-[10px]"
+                            >
+                                {["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"].map((m, i) => (
+                                    <option key={m} value={i + 1}>{m}</option>
+                                ))}
+                            </select>
+                            <select 
+                                value={selectedYear}
+                                onChange={(e) => setSelectedYear(Number(e.target.value))}
+                                className="erp-input h-12 w-full md:w-28 font-bold uppercase text-[10px]"
+                            >
+                                {[2024, 2025, 2026].map(y => (
+                                    <option key={y} value={y}>{y}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="relative w-full md:w-80">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                            <input
+                                value={searchTerm}
+                                onChange={e => setSearchTerm(e.target.value)}
+                                placeholder={activeTab === "LPB" ? "Cari No. Form, Supplier, atau No. SJ..." : "Cari No. Retur atau Vendor..."}
+                                className="erp-input pl-12 h-12"
+                            />
+                        </div>
                     </div>
                 </div>
 
