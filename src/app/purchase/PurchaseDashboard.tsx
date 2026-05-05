@@ -133,8 +133,8 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
 
                 const itemTotalBrutto = qty * buyPrice;
                 const itemNettoBeforeTax = itemTotalBrutto - discLine;
-                const itemTax = itemNettoBeforeTax * taxRate;
-                const itemNettoTotal = itemNettoBeforeTax + itemTax;
+                const itemTaxCalculated = itemTotalBrutto * 0.11;
+                const itemNettoTotal = itemNettoBeforeTax + itemTaxCalculated;
 
                 exportData.push({
                     'No. Terima': r.receiptNumber,
@@ -149,7 +149,7 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
                     'Harga Beli': buyPrice,
                     'Potongan Item': discLine,
                     'Total Brutto (Row)': itemTotalBrutto,
-                    'PPN 11% (Row)': taxRate > 1 ? taxRate / 100 : taxRate, // Ensure 0.11 format
+                    'PPN 11% (Row)': itemTaxCalculated,
                     'Grand Total Netto (Row)': itemNettoTotal,
                     'Gudang': r.warehouse?.name || "-",
                     'Sales Person': r.salesPerson || "-",
