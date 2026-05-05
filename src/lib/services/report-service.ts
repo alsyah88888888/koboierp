@@ -244,65 +244,56 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
             })
         ]);
 
-        // Pre-fetch last purchase prices for products sold (fallback for missing lot data)
+        // 1. Build a Comprehensive Price Dictionary (Kamus Harga)
         const priceMap: Record<string, number> = {};
-        const productIds: string[] = Array.from(new Set(
+        
+        // Step A: Load from Master Product (Baseline)
+        const allProducts = await (prisma as any).product.findMany({
+            where: { purchasePrice: { gt: 0 } },
+            select: { id: true, purchasePrice: true }
+        });
+        allProducts.forEach((p: any) => {
+            priceMap[p.id] = Number(p.purchasePrice || 0);
+        });
+
+        // Step B: Overwrite with Last Purchase Price from LPB (More Accurate)
+        const productIdsInSales = Array.from(new Set(
             sales.flatMap((s: any) => (s.items || []).map((i: any) => String(i.productId))).filter(Boolean)
         ));
 
-        if (productIds.length > 0) {
-            console.log(`[HPP-TRACE] Checking prices for ${productIds.length} products...`);
-            try {
-                // Try Goods Receipt first (Most accurate: What we actually paid)
-                const lastPurchases = await (prisma as any).goodsReceiptItem.findMany({
-                    where: { productId: { in: productIds } },
-                    orderBy: { createdAt: 'desc' },
-                    select: { productId: true, purchasePrice: true }
-                });
-
-                console.log(`[HPP-TRACE] Found ${lastPurchases.length} GR records.`);
-
-                lastPurchases.forEach((lp: any) => {
-                    if (!priceMap[lp.productId]) {
-                        priceMap[lp.productId] = Number(lp.purchasePrice || 0);
-                        console.log(`[HPP-TRACE] Mapped ${lp.productId} -> ${priceMap[lp.productId]}`);
-                    }
-                });
-                
-                // Try Purchase Orders for products still missing (Second best: What we agreed to pay)
-                const missingIds = productIds.filter((id: string) => !priceMap[id]);
-                if (missingIds.length > 0) {
-                    console.log(`[HPP-TRACE] ${missingIds.length} products still missing price. Checking POs...`);
-                    const lastPOItems = await (prisma as any).purchaseOrderItem.findMany({
-                        where: { productId: { in: missingIds } },
-                        orderBy: { createdAt: 'desc' },
-                        select: { productId: true, price: true }
-                    });
-                    lastPOItems.forEach((poi: any) => {
-                        if (!priceMap[poi.productId]) priceMap[poi.productId] = Number(poi.price || 0);
-                    });
+        if (productIdsInSales.length > 0) {
+            const lastGRItems = await (prisma as any).goodsReceiptItem.findMany({
+                where: { productId: { in: productIdsInSales } },
+                orderBy: { createdAt: 'desc' },
+                select: { productId: true, purchasePrice: true }
+            });
+            lastGRItems.forEach((lgi: any) => {
+                // Since it's ordered by desc, the first one we encounter is the latest
+                if (!priceMap[lgi.productId] || priceMap[lgi.productId] === 0) {
+                    priceMap[lgi.productId] = Number(lgi.purchasePrice || 0);
                 }
-            } catch (e) {
-                console.error("HPP Fallback Fetch Error:", e);
-            }
+            });
         }
 
-        // Calculate Revenue & COGS (HPP)
+        // 2. Calculate Revenue & COGS (HPP)
         let totalRevenue = 0;
         let totalHpp = 0;
+        
         sales.forEach((s: any) => {
             totalRevenue += Number(s.grandTotal || 0);
             (s.items || []).forEach((item: any) => {
-                // 1. Primary: Use specific lot allocations (FIFO/Batch)
+                const qty = Number(item.quantity || 0);
+                
+                // Priority 1: FIFO / Lot Allocation (Real cost used)
                 if (item.lotAllocations && item.lotAllocations.length > 0) {
                     item.lotAllocations.forEach((alloc: any) => {
                         totalHpp += (Number(alloc.quantity || 0) * Number(alloc.hppAtTime || 0));
                     });
-                } else {
-                    // 2. Fallback: Use last purchase price from LPB or Master Product
-                    const productId = String(item.productId);
-                    const fallbackPrice = priceMap[productId] || Number(item.product?.purchasePrice || 0);
-                    totalHpp += (Number(item.quantity || 0) * fallbackPrice);
+                } 
+                else {
+                    // Priority 2: Last Purchase Price or Master Price
+                    const unitCost = priceMap[String(item.productId)] || 0;
+                    totalHpp += (qty * unitCost);
                 }
             });
         });
