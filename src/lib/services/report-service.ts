@@ -269,16 +269,22 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
             })
         ]);
 
-        // 1. Fetch Latest Purchase Prices for ALL Products
-        // This is the most reliable way: Get the latest price for every product ever bought
-        const lastGRPrices = await (prisma as any).goodsReceiptItem.findMany({
-            orderBy: { createdAt: 'desc' },
-            select: { productId: true, purchasePrice: true }
-        });
+        // 1. Build an efficient Price Dictionary for SOLD products only
+        const productIdsInSales = Array.from(new Set(
+            sales.flatMap((s: any) => (s.items || []).map((i: any) => String(i.productId))).filter(Boolean)
+        ));
+
         const priceMap: Record<string, number> = {};
-        lastGRPrices.forEach((lp: any) => {
-            if (!priceMap[lp.productId]) priceMap[lp.productId] = Number(lp.purchasePrice || 0);
-        });
+        if (productIdsInSales.length > 0) {
+            const lastGRPrices = await (prisma as any).goodsReceiptItem.findMany({
+                where: { productId: { in: productIdsInSales } },
+                orderBy: { createdAt: 'desc' },
+                select: { productId: true, purchasePrice: true }
+            });
+            lastGRPrices.forEach((lp: any) => {
+                if (!priceMap[lp.productId]) priceMap[lp.productId] = Number(lp.purchasePrice || 0);
+            });
+        }
 
         // 2. Calculate Revenue & COGS (HPP)
         let totalRevenue = 0;
