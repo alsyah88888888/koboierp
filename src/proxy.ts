@@ -66,6 +66,9 @@ export async function callAction(actionName: string, ...args: any[]) {
         case "getAccountingData":
             const { getAccountingDataAction } = await import("@/actions/finance");
             return await getAccountingDataAction();
+        case "getMonthlyClosingReport":
+            const { getMonthlyClosingReportAction } = await import("@/actions/finance");
+            return await getMonthlyClosingReportAction(...args as [number, number]);
 
         // PURCHASE
         case "createGoodsReceipt":
@@ -232,6 +235,9 @@ export async function callAction(actionName: string, ...args: any[]) {
         case "getStockCardAction":
             const { getStockCardAction } = await import("@/actions/warehouse");
             return await getStockCardAction(...args as [string, string, string, string]);
+        case "bulkVerifyGoodsReceipt":
+            const { bulkVerifyGoodsReceiptAction } = await import("@/actions/warehouse");
+            return await bulkVerifyGoodsReceiptAction();
 
         case "executePurchaseRequest":
             const { executePurchaseRequestAction } = await import("@/actions/purchase");
