@@ -278,6 +278,29 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
             inventoryAddition: Number(totalPurchaseValue || 0),
             outstandingAR: Number(totalAR || 0),
             outstandingAP: Number(totalAP || 0),
+            details: {
+                sales: sales.map((s: any) => ({
+                    id: s.id,
+                    number: s.deliveryNumber,
+                    date: s.date,
+                    entity: s.buyerName || s.recipient,
+                    amount: Number(s.grandTotal || 0)
+                })),
+                purchases: purchases.map((p: any) => ({
+                    id: p.id,
+                    number: p.receiptNumber,
+                    date: p.date,
+                    entity: p.supplierName,
+                    amount: Number(p.grandTotal || 0)
+                })),
+                expenses: expenses.map((e: any) => ({
+                    id: e.id,
+                    date: e.date,
+                    description: e.description,
+                    category: e.category || e.transactionType,
+                    amount: Number(e.amount || 0)
+                }))
+            },
             stats: {
                 salesCount: sales.length,
                 purchaseCount: purchases.length,

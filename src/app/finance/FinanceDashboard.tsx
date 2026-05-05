@@ -99,7 +99,164 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
     const [previewTitle, setPreviewTitle] = useState("");
 
     const handlePrint = () => {
-        window.print();
+        if (activeTab === "closing" && closingReport) {
+            const printWindow = window.open('', '_blank');
+            if (!printWindow) return;
+
+            const html = `
+                <html>
+                    <head>
+                        <title>Laporan Closing Bulanan - ${closingReport.period}</title>
+                        <style>
+                            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+                            body { font-family: 'Inter', sans-serif; padding: 40px; color: #1e293b; line-height: 1.5; }
+                            .header { border-bottom: 4px solid #0f172a; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end; }
+                            .header h1 { margin: 0; font-weight: 900; text-transform: uppercase; letter-spacing: -1px; font-size: 32px; color: #0f172a; }
+                            .summary-grid { display: grid; grid-template-cols: repeat(4, 1fr); gap: 20px; margin-bottom: 40px; }
+                            .summary-card { padding: 15px; border: 1px solid #e2e8f0; border-radius: 12px; background: #fff; }
+                            .summary-card p { margin: 0; font-size: 10px; font-weight: 900; text-transform: uppercase; color: #64748b; letter-spacing: 1px; }
+                            .summary-card h2 { margin: 5px 0 0; font-size: 18px; font-weight: 900; letter-spacing: -0.5px; }
+                            h3 { font-weight: 900; text-transform: uppercase; font-size: 14px; border-left: 4px solid #3b82f6; padding-left: 12px; margin-top: 40px; margin-bottom: 15px; color: #0f172a; }
+                            table { width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 11px; }
+                            th { background: #f8fafc; padding: 12px; text-align: left; font-weight: 900; text-transform: uppercase; font-size: 9px; border-bottom: 2px solid #e2e8f0; color: #475569; }
+                            td { padding: 10px 12px; border-bottom: 1px solid #f1f5f9; color: #334155; }
+                            .text-right { text-align: right; }
+                            .font-black { font-weight: 900; color: #0f172a; }
+                            .footer-sig { margin-top: 80px; display: grid; grid-template-cols: 1fr 1fr; text-align: center; gap: 40px; }
+                            .sig-box { border-top: 1px solid #cbd5e1; padding-top: 10px; font-weight: 900; font-size: 12px; margin: 0 auto; width: 220px; }
+                            @media print { 
+                                body { padding: 0; }
+                                .summary-card { border: 1px solid #000; }
+                                h3 { border-left: 4px solid #000; }
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="header">
+                            <div>
+                                <p style="font-weight: 900; color: #3b82f6; margin: 0; font-size: 11px; letter-spacing: 2px;">KOBOI ERP - FINANCIAL MODULE</p>
+                                <h1>Closing Report</h1>
+                                <p style="margin: 5px 0 0; font-weight: 700; color: #64748b; font-size: 14px;">Periode: ${closingReport.period}</p>
+                            </div>
+                            <div class="text-right">
+                                <p style="font-size: 9px; font-weight: 900; color: #94a3b8; text-transform: uppercase;">Generated at: ${format(new Date(), "dd MMM yyyy HH:mm")}</p>
+                            </div>
+                        </div>
+
+                        <div class="summary-grid">
+                            <div class="summary-card">
+                                <p>Total Revenue</p>
+                                <h2>${formatCurrency(closingReport.revenue)}</h2>
+                            </div>
+                            <div class="summary-card">
+                                <p>Total COGS (HPP)</p>
+                                <h2>${formatCurrency(closingReport.hpp)}</h2>
+                            </div>
+                            <div class="summary-card">
+                                <p>Operational Expenses</p>
+                                <h2>${formatCurrency(closingReport.expenses)}</h2>
+                            </div>
+                            <div class="summary-card" style="background: #f8fafc; border: 1px solid #3b82f6;">
+                                <p style="color: #3b82f6;">Net Profit / Loss</p>
+                                <h2 style="color: ${closingReport.netProfit >= 0 ? '#059669' : '#dc2626'}">${formatCurrency(closingReport.netProfit)}</h2>
+                            </div>
+                        </div>
+
+                        <h3>I. Detail Penjualan (Matching Kas Masuk BCA)</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width: 15%;">Tanggal</th>
+                                    <th style="width: 25%;">No. Invoice / SJ</th>
+                                    <th style="width: 40%;">Nama Customer / Keterangan</th>
+                                    <th style="width: 20%;" class="text-right">Nilai Transaksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${closingReport.details?.sales?.map((s: any) => `
+                                    <tr>
+                                        <td>${format(new Date(s.date), "dd/MM/yyyy")}</td>
+                                        <td class="font-black">${s.number}</td>
+                                        <td>${s.entity || '-'}</td>
+                                        <td class="text-right font-black">${formatCurrency(s.amount)}</td>
+                                    </tr>
+                                `).join('') || '<tr><td colspan="4" style="text-align:center">Tidak ada transaksi penjualan dalam periode ini</td></tr>'}
+                            </tbody>
+                        </table>
+
+                        <h3>II. Detail Biaya Operasional (Matching Kas Keluar BCA)</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width: 15%;">Tanggal</th>
+                                    <th style="width: 20%;">Kategori</th>
+                                    <th style="width: 45%;">Deskripsi Biaya</th>
+                                    <th style="width: 20%;" class="text-right">Nominal</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${closingReport.details?.expenses?.map((e: any) => `
+                                    <tr>
+                                        <td>${format(new Date(e.date), "dd/MM/yyyy")}</td>
+                                        <td>${e.category || 'OPR'}</td>
+                                        <td>${e.description}</td>
+                                        <td class="text-right font-black">${formatCurrency(Math.abs(e.amount))}</td>
+                                    </tr>
+                                `).join('') || '<tr><td colspan="4" style="text-align:center">Tidak ada pengeluaran operasional dalam periode ini</td></tr>'}
+                            </tbody>
+                        </table>
+
+                        <div style="page-break-before: always;"></div>
+
+                        <h3>III. Detail Pembelian Barang (Inventory Admission)</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width: 15%;">Tanggal</th>
+                                    <th style="width: 25%;">No. LPB / GR</th>
+                                    <th style="width: 40%;">Nama Supplier</th>
+                                    <th style="width: 20%;" class="text-right">Total Tagihan</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${closingReport.details?.purchases?.map((p: any) => `
+                                    <tr>
+                                        <td>${format(new Date(p.date), "dd/MM/yyyy")}</td>
+                                        <td class="font-black">${p.number}</td>
+                                        <td>${p.entity || '-'}</td>
+                                        <td class="text-right font-black">${formatCurrency(p.amount)}</td>
+                                    </tr>
+                                `).join('') || '<tr><td colspan="4" style="text-align:center">Tidak ada transaksi pembelian dalam periode ini</td></tr>'}
+                            </tbody>
+                        </table>
+
+                        <div class="footer-sig">
+                            <div>
+                                <p style="font-size: 10px; font-weight: 900; color: #64748b; margin-bottom: 70px; text-transform: uppercase;">Prepared By (Finance)</p>
+                                <div class="sig-box">ADMIN FINANCE</div>
+                            </div>
+                            <div>
+                                <p style="font-size: 10px; font-weight: 900; color: #64748b; margin-bottom: 70px; text-transform: uppercase;">Approved By (Management)</p>
+                                <div class="sig-box">DIRECTOR / OWNER</div>
+                            </div>
+                        </div>
+
+                        <script>
+                            window.onload = () => { 
+                                setTimeout(() => {
+                                    window.print(); 
+                                }, 500);
+                            };
+                        </script>
+                    </body>
+                </html>
+            `;
+
+            printWindow.document.write(html);
+            printWindow.document.close();
+        } else {
+            window.print();
+        }
     };
 
     const handleVerifyPayment = async (type: "PURCHASE" | "SALE", id: string, status: "PAID" | "CREDIT" | "PENDING" | "PARTIAL", partialAmount?: number, pDate?: Date) => {
