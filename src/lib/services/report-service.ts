@@ -397,9 +397,9 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
                 expenseCount: expenses.length
             }
         };
-    } catch (err) {
-        console.error("Monthly Closing Report Error:", err);
-        return { error: "Failed to generate monthly closing report" };
+    } catch (error: any) {
+        console.error("[getMonthlyClosingReportService] ERROR:", error);
+        return { error: error.message || "Failed to generate monthly closing report" };
     }
 }
 
