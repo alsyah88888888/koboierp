@@ -651,12 +651,9 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
         setShowPreview(true);
     };
 
-    const apAccount = accounts.find((a: any) => a.code === '201');
-    const arAccount = accounts.find((a: any) => a.code === '105');
-
-    // We display absolute numeric value from the ledger (GL balances). Liability is technically credit-normal so it is positive in our UI since we handle subtraction under the hood or we Math.abs it, same for AR.
-    const totalHutang = Math.abs(apAccount ? apAccount.balance : 0);
-    const totalPiutang = Math.abs(arAccount ? arAccount.balance : 0);
+    // Calculate outstanding from documents (LPB/SD) instead of Ledger for better accuracy
+    const totalHutang = pendingPurchases.reduce((acc: number, p: any) => acc + (Number(p.grandTotal) - Number(p.paidAmount || 0)), 0);
+    const totalPiutang = pendingSales.reduce((acc: number, s: any) => acc + (Number(s.grandTotal) - Number(s.paidAmount || 0)), 0);
 
     return (
         <div className="space-y-8 pb-16 animate-fade-up">
