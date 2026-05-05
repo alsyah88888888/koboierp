@@ -269,40 +269,16 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
             })
         ]);
 
-        // 1. Build a Comprehensive Price Dictionary (Kamus Harga)
+        // 1. Fetch Latest Purchase Prices for ALL Products
+        // This is the most reliable way: Get the latest price for every product ever bought
+        const lastGRPrices = await (prisma as any).goodsReceiptItem.findMany({
+            orderBy: { createdAt: 'desc' },
+            select: { productId: true, purchasePrice: true }
+        });
         const priceMap: Record<string, number> = {};
-        
-        // Step A: Load baseline prices from Master Product for ONLY the products sold
-        const productIdsInSales = Array.from(new Set(
-            sales.flatMap((s: any) => (s.items || []).map((i: any) => String(i.productId))).filter(Boolean)
-        ));
-
-        if (productIdsInSales.length > 0) {
-            try {
-                const soldProductsMaster = await (prisma as any).product.findMany({
-                    where: { id: { in: productIdsInSales } },
-                    select: { id: true, purchasePrice: true }
-                });
-                soldProductsMaster.forEach((p: any) => {
-                    priceMap[p.id] = Number(p.purchasePrice || 0);
-                });
-
-                // Step B: Overwrite with Last Purchase Price from LPB (More Accurate)
-                const lastGRItems = await (prisma as any).goodsReceiptItem.findMany({
-                    where: { productId: { in: productIdsInSales } },
-                    orderBy: { createdAt: 'desc' },
-                    select: { productId: true, purchasePrice: true }
-                });
-                lastGRItems.forEach((lgi: any) => {
-                    // Since it's ordered by desc, the first one we encounter is the latest
-                    if (!priceMap[lgi.productId] || priceMap[lgi.productId] === 0) {
-                        priceMap[lgi.productId] = Number(lgi.purchasePrice || 0);
-                    }
-                });
-            } catch (err) {
-                console.error("HPP Dictionary Build Error:", err);
-            }
-        }
+        lastGRPrices.forEach((lp: any) => {
+            if (!priceMap[lp.productId]) priceMap[lp.productId] = Number(lp.purchasePrice || 0);
+        });
 
         // 2. Calculate Revenue & COGS (HPP)
         let totalRevenue = 0;
@@ -312,16 +288,18 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
             totalRevenue += Number(s.grandTotal || 0);
             (s.items || []).forEach((item: any) => {
                 const qty = Number(item.quantity || 0);
-                
-                // Priority 1: FIFO / Lot Allocation (Real cost used)
+                let unitCost = 0;
+
+                // Priority 1: FIFO / Lot Allocation
                 if (item.lotAllocations && item.lotAllocations.length > 0) {
                     item.lotAllocations.forEach((alloc: any) => {
-                        totalHpp += (Number(alloc.quantity || 0) * Number(alloc.hppAtTime || 0));
+                        unitCost = Number(alloc.hppAtTime || 0);
+                        totalHpp += (Number(alloc.quantity || 0) * unitCost);
                     });
                 } 
                 else {
-                    // Priority 2: Last Purchase Price or Master Price
-                    const unitCost = priceMap[String(item.productId)] || 0;
+                    // Priority 2: Historical LPB Price or Master Price
+                    unitCost = priceMap[item.productId] || Number(item.product?.purchasePrice || 0);
                     totalHpp += (qty * unitCost);
                 }
             });

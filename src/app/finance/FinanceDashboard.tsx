@@ -2,7 +2,7 @@
 import * as XLSX from 'xlsx';
 
 import { useState, useEffect, useRef } from "react";
-import { Plus, Search, Wallet, ArrowUpCircle, ArrowDownCircle, FileText, Trash2, Download, Eye, FileCode2, X, Banknote, Calendar, Printer, Sparkles } from "lucide-react";
+import { Plus, Search, Wallet, ArrowUpCircle, ArrowDownCircle, FileText, Trash2, Download, Eye, FileCode2, X, Banknote, Calendar, Printer, Sparkles, ShoppingCart } from "lucide-react";
 import { ReportPreviewModal } from "@/components/ReportPreviewModal";
 import { formatCurrency, cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -145,36 +145,24 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
 
                         <div class="summary-grid">
                             <div class="summary-card">
-                                <p>Total Revenue</p>
+                                <p>Penjualan</p>
                                 <h2>${formatCurrency(closingReport.revenue)}</h2>
                             </div>
                             <div class="summary-card">
-                                <p>Total COGS (HPP)</p>
-                                <h2>${formatCurrency(closingReport.hpp)}</h2>
+                                <p>Pembelian</p>
+                                <h2>${formatCurrency(closingReport.inventory?.purchases || 0)}</h2>
                             </div>
                             <div class="summary-card">
-                                <p>Operational Expenses</p>
+                                <p>Operasional</p>
                                 <h2>${formatCurrency(closingReport.expenses)}</h2>
                             </div>
-                            <div class="summary-card" style="background: #f8fafc; border: 1px solid #3b82f6;">
-                                <p style="color: #3b82f6;">Net Profit / Loss</p>
-                                <h2 style="color: ${closingReport.netProfit >= 0 ? '#059669' : '#dc2626'}">${formatCurrency(closingReport.netProfit)}</h2>
+                            <div class="summary-card">
+                                <p>Gross Margin</p>
+                                <h2>${formatCurrency(closingReport.grossProfit)}</h2>
                             </div>
-                        </div>
-
-                        <div style="padding: 20px; border: 1px dashed #cbd5e1; border-radius: 12px; margin-bottom: 40px; background: #f8fafc;">
-                            <h4 style="margin: 0 0 15px; font-size: 11px; font-weight: 900; text-transform: uppercase; color: #475569;">Analisis Persediaan (Periodic Method)</h4>
-                            <div style="display: grid; grid-template-cols: 1fr 1fr; gap: 40px; font-size: 11px;">
-                                <div style="space-y: 8px;">
-                                    <div style="display: flex; justify-content: space-between;"><span>Persediaan Awal</span> <span class="font-black">${formatCurrency(closingReport.inventory?.beginning)}</span></div>
-                                    <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px;"><span>Pembelian Bersih (+)</span> <span class="font-black">${formatCurrency(closingReport.inventory?.purchases)}</span></div>
-                                    <div style="display: flex; justify-content: space-between; padding-top: 4px; color: #3b82f6;"><span>BTUD (Tersedia Dijual)</span> <span class="font-black">${formatCurrency(closingReport.inventory?.btud)}</span></div>
-                                </div>
-                                <div style="space-y: 8px;">
-                                    <div style="display: flex; justify-content: space-between;"><span>Barang Tersedia (BTUD)</span> <span class="font-black">${formatCurrency(closingReport.inventory?.btud)}</span></div>
-                                    <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px;"><span>Persediaan Akhir (-)</span> <span class="font-black">${formatCurrency(closingReport.inventory?.ending)}</span></div>
-                                    <div style="display: flex; justify-content: space-between; padding-top: 4px; color: #f43f5e;"><span>Total HPP (COGS)</span> <span class="font-black">${formatCurrency(closingReport.hpp)}</span></div>
-                                </div>
+                            <div class="summary-card" style="background: #f8fafc; border: 1px solid #3b82f6;">
+                                <p style="color: #3b82f6;">Profit</p>
+                                <h2 style="color: ${closingReport.netProfit >= 0 ? '#059669' : '#dc2626'}">${formatCurrency(closingReport.netProfit)}</h2>
                             </div>
                         </div>
 
@@ -1650,20 +1638,22 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                 {/* Metric Grid */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
                                     {[
-                                        { label: "Revenue", value: closingReport.revenue, color: "text-emerald-500", icon: ArrowUpCircle },
-                                        { label: "COGS / HPP", value: closingReport.hpp, color: "text-rose-400", icon: ArrowDownCircle },
-                                        { label: "Gross Profit", value: closingReport.grossProfit, color: "text-emerald-600", icon: Sparkles },
-                                        { label: "Expenses", value: closingReport.expenses, color: "text-amber-500", icon: Wallet },
-                                        { label: "Net Profit", value: closingReport.netProfit, color: "text-indigo-600", icon: Banknote },
+                                        { label: "Penjualan", value: closingReport.revenue, color: "text-emerald-500", icon: ArrowUpCircle },
+                                        { label: "Pembelian", value: closingReport.inventory?.purchases || 0, color: "text-blue-500", icon: ShoppingCart },
+                                        { label: "Operasional", value: closingReport.expenses, color: "text-amber-500", icon: Wallet },
+                                        { label: "Gross Margin", value: closingReport.grossProfit, color: "text-emerald-600", icon: Sparkles },
+                                        { label: "Profit", value: closingReport.netProfit, color: "text-indigo-600", icon: Banknote },
                                     ].map((card, i) => (
                                         <div key={i} className="bg-white p-6 rounded-3xl border-2 border-slate-50 shadow-sm hover:shadow-md transition-all group">
                                             <div className="flex justify-between items-start mb-4">
-                                                <div className="p-2 bg-slate-50 rounded-xl text-slate-400 group-hover:bg-primary/5 group-hover:text-primary transition-colors">
+                                                <div className={cn("p-2 bg-slate-50 rounded-xl transition-colors group-hover:bg-primary/5", card.color.replace('text-', 'text-opacity-20 '))}>
                                                     <card.icon className="h-4 w-4" />
                                                 </div>
                                             </div>
                                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{card.label}</p>
-                                            <p className={cn("text-xl font-black tabular-nums tracking-tighter", card.color)}>{formatCurrency(card.value)}</p>
+                                            <p className={cn("text-xl font-black tabular-nums tracking-tighter", card.color)}>
+                                                {formatCurrency(card.value)}
+                                            </p>
                                         </div>
                                     ))}
                                 </div>
