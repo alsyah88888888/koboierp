@@ -197,44 +197,25 @@ export async function verifyGoodsReceiptService(receiptId: string, verifiedBy: s
             }
         });
 
-        // 2. Update Stock and Create Movements for each item
+        // 2. Create Audit Records (Verification) for each item
         for (const item of receipt.items) {
             // Use checked quantity from checker, fallback to 0 if not scanned
             const actualQty = Number(checkedItems[item.id] ?? 0);
+            const expectedQty = item.quantity;
             
-            if (actualQty > 0) {
-                const vendorName = receipt.receivedFrom || "UMUM";
-                
-                // Upsert into Stock table
-                await tx.stock.upsert({
-                    where: {
-                        productId_warehouseId_vendorName: {
-                            productId: item.productId,
-                            warehouseId: receipt.warehouseId,
-                            vendorName: vendorName
-                        }
-                    },
-                    update: { quantity: { increment: actualQty } },
-                    create: {
-                        productId: item.productId,
-                        warehouseId: receipt.warehouseId,
-                        vendorName: vendorName,
-                        quantity: actualQty
-                    }
-                });
-
-                // Create Stock Movement record
-                await tx.stockMovement.create({
-                    data: {
-                        productId: item.productId,
-                        warehouseId: receipt.warehouseId,
-                        vendorName: vendorName,
-                        quantity: actualQty,
-                        type: "GOODS_RECEIPT",
-                        reference: receipt.receiptNumber
-                    }
-                });
-            }
+            // Record the audit result in GoodsReceiptVerification table
+            await tx.goodsReceiptVerification.create({
+                data: {
+                    receiptId: receiptId,
+                    productId: item.productId,
+                    expectedQuantity: expectedQty,
+                    actualQuantity: actualQty,
+                    expectedPrice: item.purchasePrice,
+                    actualPrice: item.purchasePrice, // Currently we assume price matches
+                    verifiedBy: verifiedBy,
+                    notes: actualQty === expectedQty ? "Match" : `Discrepancy: Found ${actualQty} of ${expectedQty}`
+                }
+            });
         }
         
         revalidatePath("/warehouse");
