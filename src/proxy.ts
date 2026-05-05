@@ -237,7 +237,7 @@ export async function callAction(actionName: string, ...args: any[]) {
             return await getStockCardAction(...args as [string, string, string, string]);
         case "bulkVerifyGoodsReceipt":
             const { bulkVerifyGoodsReceiptAction } = await import("@/actions/warehouse");
-            return await bulkVerifyGoodsReceiptAction();
+            return await bulkVerifyGoodsReceiptAction(...args as [string]);
 
         case "executePurchaseRequest":
             const { executePurchaseRequestAction } = await import("@/actions/purchase");
