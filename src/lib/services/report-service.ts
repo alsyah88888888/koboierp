@@ -286,12 +286,15 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
             });
         }
 
-        // 2. Calculate Revenue & COGS (HPP)
+        // 2. Calculate Revenue & COGS (HPP) - CASH BASIS
         let totalRevenue = 0;
         let totalHpp = 0;
         
         sales.forEach((s: any) => {
-            totalRevenue += Number(s.grandTotal || 0);
+            // Only count what has actually been PAID to match BCA
+            totalRevenue += Number(s.paidAmount || 0);
+            
+            // For HPP, we calculate it proportionally to the quantity sold
             (s.items || []).forEach((item: any) => {
                 const qty = Number(item.quantity || 0);
                 let unitCost = 0;
@@ -311,8 +314,8 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
             });
         });
 
-        // 3. Accounting Style HPP (Periodic Method)
-        // Beginning Inventory Value (at startDate)
+        // 3. Accounting Style (Cash Basis)
+        // Beginning Inventory Value remains the same as it's a snapshot
         const beginningInventory = await (prisma as any).stock.findMany({
             include: { product: { select: { purchasePrice: true } } }
         });
@@ -321,8 +324,8 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
             return acc + (Number(s.quantity || 0) * price);
         }, 0);
 
-        // Net Purchases (Total LPB value in period)
-        const netPurchases = purchases.reduce((acc: number, p: any) => acc + Number(p.grandTotal || 0), 0);
+        // Net Purchases - CASH BASIS (Only count paid amount to suppliers)
+        const netPurchases = purchases.reduce((acc: number, p: any) => acc + Number(p.paidAmount || 0), 0);
 
         // Estimated Ending Inventory (Start + Purchases - Revenue_at_Cost)
         // For a more accurate "Ending Inventory", we would need a historical stock snapshot.
