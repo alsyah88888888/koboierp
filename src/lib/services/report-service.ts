@@ -371,7 +371,12 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
                     number: s.deliveryNumber,
                     date: s.date,
                     entity: s.buyerName || s.recipient,
-                    amount: Number(s.grandTotal || 0)
+                    totalQty: (s.items || []).reduce((acc: number, item: any) => acc + Number(item.quantity || 0), 0),
+                    subtotal: Number(s.subtotal || 0),
+                    discount: Number(s.totalDiscount || 0),
+                    tax: Number(s.taxAmount || 0),
+                    grandTotal: Number(s.grandTotal || 0),
+                    paidAmount: Number(s.paidAmount || 0)
                 })),
                 purchases: purchases.map((p: any) => ({
                     id: p.id,
