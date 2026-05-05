@@ -251,6 +251,7 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
         ));
 
         if (productIds.length > 0) {
+            console.log(`[HPP-TRACE] Checking prices for ${productIds.length} products...`);
             try {
                 // Try Goods Receipt first (Most accurate: What we actually paid)
                 const lastPurchases = await (prisma as any).goodsReceiptItem.findMany({
@@ -259,13 +260,19 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
                     select: { productId: true, purchasePrice: true }
                 });
 
-                lastPurchases.forEach((lp: any) => {
-                    if (!priceMap[lp.productId]) priceMap[lp.productId] = Number(lp.purchasePrice || 0);
-                });
+                console.log(`[HPP-TRACE] Found ${lastPurchases.length} GR records.`);
 
+                lastPurchases.forEach((lp: any) => {
+                    if (!priceMap[lp.productId]) {
+                        priceMap[lp.productId] = Number(lp.purchasePrice || 0);
+                        console.log(`[HPP-TRACE] Mapped ${lp.productId} -> ${priceMap[lp.productId]}`);
+                    }
+                });
+                
                 // Try Purchase Orders for products still missing (Second best: What we agreed to pay)
                 const missingIds = productIds.filter((id: string) => !priceMap[id]);
                 if (missingIds.length > 0) {
+                    console.log(`[HPP-TRACE] ${missingIds.length} products still missing price. Checking POs...`);
                     const lastPOItems = await (prisma as any).purchaseOrderItem.findMany({
                         where: { productId: { in: missingIds } },
                         orderBy: { createdAt: 'desc' },
