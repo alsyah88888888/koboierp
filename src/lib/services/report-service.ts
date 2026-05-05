@@ -278,7 +278,7 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
         if (productIdsInSales.length > 0) {
             const lastGRPrices = await (prisma as any).goodsReceiptItem.findMany({
                 where: { productId: { in: productIdsInSales } },
-                orderBy: { createdAt: 'desc' },
+                orderBy: { id: 'desc' }, // Use id as fallback for latest record
                 select: { productId: true, purchasePrice: true }
             });
             lastGRPrices.forEach((lp: any) => {
