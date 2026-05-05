@@ -15,7 +15,7 @@ import { CheckCircle2, Clock } from "lucide-react";
 import { exportToExcel } from "@/lib/excel";
 import { useRouter } from "next/navigation";
 
-export function FinanceDashboard({ accounts, ledger, vendors, customers, pendingPurchases, pendingSales, unverifiedReceipts, pendingReturns, pendingSalesReturns, pendingPurchaseRequests, transactions, settledPurchases, settledSales, totalPaidAP, totalPaidAR, monthlyStats, paymentHistory = [] }: {
+export function FinanceDashboard({ accounts, ledger, vendors, customers, pendingPurchases, pendingSales, unverifiedReceipts, pendingReturns, pendingSalesReturns, pendingPurchaseRequests, transactions, settledPurchases, settledSales, totalPaidAP, totalPaidAR, currentMonthPaidAP = 0, currentMonthPaidAR = 0, monthlyStats, paymentHistory = [] }: {
     accounts: any[],
     ledger: any[],
     vendors: any[],
@@ -31,6 +31,8 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
     settledSales: any[],
     totalPaidAP: number,
     totalPaidAR: number,
+    currentMonthPaidAP?: number,
+    currentMonthPaidAR?: number,
     monthlyStats: { label: string, ap: number, ar: number }[],
     paymentHistory?: any[]
 }) {
@@ -707,8 +709,8 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                             <span className="text-[10px] font-black text-rose-500">{pendingPurchases.filter((p: any) => p.paymentStatus !== 'PAID').length} Docs</span>
                         </div>
                         <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Paid (Cum.)</span>
-                            <span className="text-[11px] font-black text-slate-600">{formatCurrency(totalPaidAP)}</span>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Paid ({format(new Date(), "MMM")})</span>
+                            <span className="text-[11px] font-black text-slate-600">{formatCurrency(currentMonthPaidAP)}</span>
                         </div>
                     </div>
                 </div>
@@ -721,8 +723,8 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                             <span className="text-[10px] font-black text-emerald-500">{pendingSales.filter((s: any) => s.paymentStatus !== 'PAID').length} Docs</span>
                         </div>
                         <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Collected</span>
-                            <span className="text-[11px] font-black text-slate-600">{formatCurrency(totalPaidAR)}</span>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Collected ({format(new Date(), "MMM")})</span>
+                            <span className="text-[11px] font-black text-slate-600">{formatCurrency(currentMonthPaidAR)}</span>
                         </div>
                     </div>
                 </div>

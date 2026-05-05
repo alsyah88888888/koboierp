@@ -43,7 +43,9 @@ export default async function FinancePage() {
         totalPaidARRes,
         settledAPRaw,
         settledARRaw,
-        paymentHistory
+        paymentHistory,
+        currentMonthPaidAPRes,
+        currentMonthPaidARRes
     ] = await Promise.all([
         getBalanceSheet().catch(() => []),
         prisma.journalEntry.findMany({
@@ -137,7 +139,27 @@ export default async function FinancePage() {
             include: { account: true },
             orderBy: { date: 'desc' },
             take: 500
-        }).catch(() => [])
+        }).catch(() => []),
+        prisma.goodsReceipt.aggregate({
+            where: { 
+                isVoid: false, 
+                date: { 
+                    gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+                    lt: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1)
+                } 
+            },
+            _sum: { paidAmount: true }
+        }).catch(() => ({ _sum: { paidAmount: 0 } })),
+        prisma.salesDelivery.aggregate({
+            where: { 
+                isVoid: false, 
+                date: { 
+                    gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+                    lt: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1)
+                } 
+            },
+            _sum: { paidAmount: true }
+        }).catch(() => ({ _sum: { paidAmount: 0 } }))
     ]);
 
     // Helper to calculate total safely without NaN
@@ -219,6 +241,8 @@ export default async function FinancePage() {
             settledSales={serializedSettledSales}
             totalPaidAP={Number(totalPaidAPRes?._sum?.paidAmount || 0)}
             totalPaidAR={Number(totalPaidARRes?._sum?.paidAmount || 0)}
+            currentMonthPaidAP={Number(currentMonthPaidAPRes?._sum?.paidAmount || 0)}
+            currentMonthPaidAR={Number(currentMonthPaidARRes?._sum?.paidAmount || 0)}
             monthlyStats={monthlyStats}
             paymentHistory={serializeDecimal(paymentHistory || [])}
         />
