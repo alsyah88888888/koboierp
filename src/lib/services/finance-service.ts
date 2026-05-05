@@ -29,7 +29,8 @@ export async function updatePaymentStatusService(
     status: "PAID" | "CREDIT" | "PENDING" | "PARTIAL", 
     partialAmount?: number, 
     paymentDate?: Date,
-    userId?: string
+    userId?: string,
+    bankAccountId?: string
 ) {
     const { getPrisma } = require("@/lib/prisma");
     const prisma = getPrisma();
@@ -71,7 +72,9 @@ export async function updatePaymentStatusService(
             });
 
             const invAccount = await tx.financeAccount.findUnique({ where: { code: '104' } });
-            const bankAccount = await tx.financeAccount.findUnique({ where: { code: '102' } });
+            const bankAccount = bankAccountId 
+                ? await tx.financeAccount.findUnique({ where: { id: bankAccountId } })
+                : await tx.financeAccount.findUnique({ where: { code: '102' } });
             const apAccount = await tx.financeAccount.findUnique({ where: { code: '201' } });
             const taxAccount = await tx.financeAccount.findUnique({ where: { code: '106' } });
             const discAccount = await tx.financeAccount.findUnique({ where: { code: '502' } });
@@ -166,7 +169,9 @@ export async function updatePaymentStatusService(
             });
 
             const arAccount = await tx.financeAccount.findUnique({ where: { code: '105' } });
-            const bankAccount = await tx.financeAccount.findUnique({ where: { code: '102' } });
+            const bankAccount = bankAccountId 
+                ? await tx.financeAccount.findUnique({ where: { id: bankAccountId } })
+                : await tx.financeAccount.findUnique({ where: { code: '102' } });
             const salesAccount = await tx.financeAccount.findUnique({ where: { code: '401' } });
             const taxAccountRef = await tx.financeAccount.findUnique({ where: { code: '202' } });
             const discountAccount = await tx.financeAccount.findUnique({ where: { code: '402' } });

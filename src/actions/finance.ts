@@ -13,16 +13,17 @@ export async function updatePaymentStatusAction(
     id: string, 
     status: "PAID" | "CREDIT" | "PENDING" | "PARTIAL", 
     partialAmount?: number, 
-    paymentDate?: Date
+    paymentDate?: Date,
+    bankAccountId?: string
 ) {
     const { getAuthOptions } = require("@/lib/auth");
     const { getServerSession } = require("next-auth");
     const { updatePaymentStatusService } = require("@/lib/services/finance-service");
-
+ 
     const session = (await getServerSession(getAuthOptions())) as any;
     if (!session?.user?.id) throw new Error("Unauthorized");
-
-    return await updatePaymentStatusService(type, id, status, partialAmount, paymentDate, session.user.id);
+ 
+    return await updatePaymentStatusService(type, id, status, partialAmount, paymentDate, session.user.id, bankAccountId);
 }
 
 export async function createFinanceTransactionAction(data: any) {

@@ -205,7 +205,7 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
     const isAll = !prefix || prefix === 'ALL';
 
     try {
-        const [sales, purchases, expenses, arRecords, apRecords] = await Promise.all([
+        const [sales, purchases, expenses, arRecords, apRecords, bankJournals] = await Promise.all([
             // 1. Total Sales (Revenue) - From Deliveries (Invoices)
             (prisma as any).salesDelivery.findMany({
                 where: { 
@@ -234,13 +234,11 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
             (prisma as any).financeTransaction.findMany({
                 where: {
                     date: { gte: startDate, lte: endDate },
-                    // Assuming negative amount or specific types like PAYMENT/EXPENSE are money out
                     OR: [
                         { transactionType: "PAYMENT" },
                         { transactionType: "EXPENSE" },
                         { amount: { lt: 0 } }
                     ],
-                    // For expenses, we check if the description contains the prefix
                     ...(isAll ? {} : { 
                         description: { contains: prefix, mode: 'insensitive' }
                     })
@@ -263,6 +261,15 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
                     ...(isAll ? {} : { receiptNumber: { startsWith: prefix } })
                 },
                 select: { grandTotal: true, paidAmount: true }
+            }),
+            // 6. Fetch Journal Entries for Bank Info mapping
+            (prisma as any).journalEntry.findMany({
+                where: {
+                    date: { gte: startDate, lte: endDate },
+                    type: { in: ["DEBIT", "CREDIT"] },
+                    account: { code: { in: ["101", "102", "106", "107", "108"] } }
+                },
+                include: { account: true }
             })
         ]);
 
@@ -366,30 +373,40 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
                 priceMapSize: Object.keys(priceMap).length
             },
             details: {
-                sales: sales.map((s: any) => ({
-                    id: s.id,
-                    number: s.deliveryNumber,
-                    date: s.date,
-                    entity: s.buyerName || s.recipient,
-                    totalQty: (s.items || []).reduce((acc: number, item: any) => acc + Number(item.quantity || 0), 0),
-                    subtotal: Number(s.subtotal || 0),
-                    discount: Number(s.totalDiscount || 0),
-                    tax: Number(s.taxAmount || 0),
-                    grandTotal: Number(s.grandTotal || 0),
-                    paidAmount: Number(s.paidAmount || 0)
-                })),
-                purchases: purchases.map((p: any) => ({
-                    id: p.id,
-                    number: p.receiptNumber,
-                    date: p.date,
-                    entity: p.receivedFrom,
-                    subtotal: Number(p.subtotal || 0),
-                    discount: Number(p.totalDiscount || 0),
-                    taxRate: Number(p.taxRate || 0),
-                    tax: Number(p.taxAmount || 0),
-                    grandTotal: Number(p.grandTotal || 0),
-                    paidAmount: Number(p.paidAmount || 0)
-                })),
+                sales: sales.map((s: any) => {
+                    const relatedBank = bankJournals.find((j: any) => j.description.includes(s.deliveryNumber));
+                    return {
+                        id: s.id,
+                        number: s.deliveryNumber,
+                        date: s.date,
+                        entity: s.buyerName || s.recipient,
+                        totalQty: (s.items || []).reduce((acc: number, item: any) => acc + Number(item.quantity || 0), 0),
+                        subtotal: Number(s.subtotal || 0),
+                        discount: Number(s.totalDiscount || 0),
+                        tax: Number(s.taxAmount || 0),
+                        grandTotal: Number(s.grandTotal || 0),
+                        paidAmount: Number(s.paidAmount || 0),
+                        bankCode: relatedBank?.account?.code || "-",
+                        paymentDate: relatedBank?.date ? relatedBank.date : null
+                    };
+                }),
+                purchases: purchases.map((p: any) => {
+                    const relatedBank = bankJournals.find((j: any) => j.description.includes(p.receiptNumber));
+                    return {
+                        id: p.id,
+                        number: p.receiptNumber,
+                        date: p.date,
+                        entity: p.receivedFrom,
+                        subtotal: Number(p.subtotal || 0),
+                        discount: Number(p.totalDiscount || 0),
+                        taxRate: Number(p.taxRate || 0),
+                        tax: Number(p.taxAmount || 0),
+                        grandTotal: Number(p.grandTotal || 0),
+                        paidAmount: Number(p.paidAmount || 0),
+                        bankCode: relatedBank?.account?.code || "-",
+                        paymentDate: relatedBank?.date ? relatedBank.date : null
+                    };
+                }),
                 expenses: expenses.map((e: any) => ({
                     id: e.id,
                     date: e.date,

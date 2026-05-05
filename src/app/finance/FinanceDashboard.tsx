@@ -15,7 +15,7 @@ import { CheckCircle2, Clock } from "lucide-react";
 import { exportToExcel } from "@/lib/excel";
 import { useRouter } from "next/navigation";
 
-export function FinanceDashboard({ accounts, ledger, vendors, customers, pendingPurchases, pendingSales, unverifiedReceipts, pendingReturns, pendingSalesReturns, pendingPurchaseRequests, transactions, settledPurchases, settledSales, totalPaidAP, totalPaidAR, monthlyStats }: {
+export function FinanceDashboard({ accounts, ledger, vendors, customers, pendingPurchases, pendingSales, unverifiedReceipts, pendingReturns, pendingSalesReturns, pendingPurchaseRequests, transactions, settledPurchases, settledSales, totalPaidAP, totalPaidAR, monthlyStats, paymentHistory = [] }: {
     accounts: any[],
     ledger: any[],
     vendors: any[],
@@ -31,7 +31,8 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
     settledSales: any[],
     totalPaidAP: number,
     totalPaidAR: number,
-    monthlyStats: { label: string, ap: number, ar: number }[]
+    monthlyStats: { label: string, ap: number, ar: number }[],
+    paymentHistory?: any[]
 }) {
     const { data: session } = useSession() as any;
     const userRole = session?.user?.role?.toUpperCase() || "";
@@ -128,7 +129,18 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
     } | null>(null);
     const [paymentAmount, setPaymentAmount] = useState("");
     const [paymentDate, setPaymentDate] = useState(format(new Date(), "yyyy-MM-dd"));
+    const [selectedBankId, setSelectedBankId] = useState("");
     const paymentInputRef = useRef<HTMLInputElement>(null);
+ 
+    const getBankInfo = (refNumber: string) => {
+        if (!refNumber || !paymentHistory) return null;
+        const entry = paymentHistory.find(j => j.description && j.description.includes(refNumber));
+        if (!entry) return null;
+        return {
+            code: entry.account?.code || "-",
+            date: entry.date
+        };
+    };
 
     useEffect(() => {
         setIsClient(true);
@@ -212,10 +224,12 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                         <table>
                             <thead>
                                 <tr>
-                                    <th style="width: 15%;">Tanggal</th>
-                                    <th style="width: 25%;">No. Invoice / SJ</th>
-                                    <th style="width: 40%;">Nama Customer / Keterangan</th>
-                                    <th style="width: 20%;" class="text-right">Nilai Transaksi</th>
+                                    <th style="width: 12%;">Tanggal SJ</th>
+                                    <th style="width: 20%;">No. Invoice / SJ</th>
+                                    <th style="width: 30%;">Nama Customer</th>
+                                    <th style="width: 12%;">Bank</th>
+                                    <th style="width: 12%;">Tgl Bayar</th>
+                                    <th style="width: 14%;" class="text-right">Nilai Transaksi</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -224,9 +238,11 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                         <td>${format(new Date(s.date), "dd/MM/yyyy")}</td>
                                         <td class="font-black">${s.number}</td>
                                         <td>${s.entity || '-'}</td>
-                                        <td class="text-right font-black">${formatCurrency(s.amount)}</td>
+                                        <td class="font-black" style="color: #3b82f6;">${s.bankCode}</td>
+                                        <td>${s.paymentDate ? format(new Date(s.paymentDate), "dd/MM/yyyy") : '-'}</td>
+                                        <td class="text-right font-black">${formatCurrency(s.grandTotal)}</td>
                                     </tr>
-                                `).join('') || '<tr><td colspan="4" style="text-align:center">Tidak ada transaksi penjualan dalam periode ini</td></tr>'}
+                                `).join('') || '<tr><td colspan="6" style="text-align:center">Tidak ada transaksi penjualan dalam periode ini</td></tr>'}
                             </tbody>
                         </table>
 
@@ -258,10 +274,12 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                         <table>
                             <thead>
                                 <tr>
-                                    <th style="width: 15%;">Tanggal</th>
-                                    <th style="width: 25%;">No. LPB / GR</th>
-                                    <th style="width: 40%;">Nama Supplier</th>
-                                    <th style="width: 20%;" class="text-right">Total Tagihan</th>
+                                    <th style="width: 12%;">Tanggal LPB</th>
+                                    <th style="width: 20%;">No. LPB / GR</th>
+                                    <th style="width: 30%;">Nama Supplier</th>
+                                    <th style="width: 12%;">Bank</th>
+                                    <th style="width: 12%;">Tgl Bayar</th>
+                                    <th style="width: 14%;" class="text-right">Total Tagihan</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -270,9 +288,11 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                         <td>${format(new Date(p.date), "dd/MM/yyyy")}</td>
                                         <td class="font-black">${p.number}</td>
                                         <td>${p.entity || '-'}</td>
-                                        <td class="text-right font-black">${formatCurrency(p.amount)}</td>
+                                        <td class="font-black" style="color: #ef4444;">${p.bankCode}</td>
+                                        <td>${p.paymentDate ? format(new Date(p.paymentDate), "dd/MM/yyyy") : '-'}</td>
+                                        <td class="text-right font-black">${formatCurrency(p.grandTotal)}</td>
                                     </tr>
-                                `).join('') || '<tr><td colspan="4" style="text-align:center">Tidak ada transaksi pembelian dalam periode ini</td></tr>'}
+                                `).join('') || '<tr><td colspan="6" style="text-align:center">Tidak ada transaksi pembelian dalam periode ini</td></tr>'}
                             </tbody>
                         </table>
 
@@ -305,7 +325,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
         }
     };
 
-    const handleVerifyPayment = async (type: "PURCHASE" | "SALE", id: string, status: "PAID" | "CREDIT" | "PENDING" | "PARTIAL", partialAmount?: number, pDate?: Date) => {
+    const handleVerifyPayment = async (type: "PURCHASE" | "SALE", id: string, status: "PAID" | "CREDIT" | "PENDING" | "PARTIAL", partialAmount?: number, pDate?: Date, bankAccountId?: string) => {
         const msg = status === "PAID"
             ? `Konfirmasi pelunasan transaksi ini? ${pDate ? "Tanggal: " + format(pDate, "dd/MM/yyyy") : "Saldo Kas/Bank BCA akan otomatis terupdate."}`
             : status === "PARTIAL"
@@ -315,7 +335,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
         if (!confirm(msg)) return;
         setLoading(id);
         try {
-            await callAction("updatePaymentStatus", type, id, status, partialAmount, pDate);
+            await callAction("updatePaymentStatus", type, id, status, partialAmount, pDate, bankAccountId);
             alert("Verifikasi berhasil.");
             router.refresh();
         } catch (e) {
@@ -341,9 +361,13 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
             alert("Jumlah tidak valid atau melebihi sisa pembayaran.");
             return;
         }
+        if (!selectedBankId) {
+            alert("Pilih Akun Bank BCA terlebih dahulu.");
+            return;
+        }
         const pDate = paymentDate ? new Date(paymentDate) : new Date();
         setPaymentModal(null);
-        handleVerifyPayment(paymentModal.type, paymentModal.id, amount === remaining ? "PAID" : "PARTIAL", amount, pDate);
+        handleVerifyPayment(paymentModal.type, paymentModal.id, amount === remaining ? "PAID" : "PARTIAL", amount, pDate, selectedBankId);
     };
 
     const handleDelete = async (id: string, isManual: boolean) => {
@@ -946,8 +970,9 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                         <th className="px-8 py-5 w-44">Timeline / Ref</th>
                                         <th className="px-8 py-5">Creditor Entity</th>
                                         <th className="px-8 py-5 w-40">Payment State</th>
-                                        <th className="px-8 py-5 text-right w-44">Gross Value</th>
-                                        <th className="px-8 py-5 text-right w-44">Due Balance</th>
+                                        <th className="px-8 py-5 w-32 text-center">Bank / Tgl</th>
+                                        <th className="px-8 py-5 text-right w-40">Gross Value</th>
+                                        <th className="px-8 py-5 text-right w-40">Due Balance</th>
                                         <th className="px-8 py-5 text-center w-48 tracking-[0.3em]">Validation</th>
                                     </tr>
                                 </thead>
@@ -1149,8 +1174,9 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                         <th className="px-8 py-5 w-44">Timeline / Ref</th>
                                         <th className="px-8 py-5">Customer Profile</th>
                                         <th className="px-8 py-5 w-40">Credit State</th>
-                                        <th className="px-8 py-5 text-right w-44">Gross Value</th>
-                                        <th className="px-8 py-5 text-right w-44">Current Unpaid</th>
+                                        <th className="px-8 py-5 w-32 text-center">Bank / Tgl</th>
+                                        <th className="px-8 py-5 text-right w-40">Gross Value</th>
+                                        <th className="px-8 py-5 text-right w-40">Current Unpaid</th>
                                         <th className="px-8 py-5 text-center w-48 tracking-[0.3em]">Validation</th>
                                     </tr>
                                 </thead>
@@ -1177,6 +1203,18 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                                         {s.paymentStatus === 'PAID' ? 'DONE' : s.paymentStatus}
                                                     </span>
                                                 </div>
+                                            </td>
+                                            <td className="px-8 py-5 text-center">
+                                                {(() => {
+                                                    const info = getBankInfo(s.deliveryNumber);
+                                                    if (!info) return <span className="text-[10px] text-slate-300 font-bold">-</span>;
+                                                    return (
+                                                        <div className="flex flex-col gap-1">
+                                                            <span className="text-[10px] font-black text-emerald-500 uppercase">{info.code}</span>
+                                                            <span className="text-[8px] font-black text-slate-400">{isClient && info.date ? format(new Date(info.date), "dd/MM") : ""}</span>
+                                                        </div>
+                                                    );
+                                                })()}
                                             </td>
                                             <td className="px-8 py-5 text-right">
                                                 <div className="font-black text-slate-900 tabular-nums tracking-tighter text-base">{formatCurrency(s.total)}</div>
@@ -2059,6 +2097,20 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                                 {pct === 1 ? 'MAX' : `${pct * 100}%`}
                                             </button>
                                         ))}
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Akun Bank BCA</label>
+                                        <select 
+                                            value={selectedBankId} 
+                                            onChange={e => setSelectedBankId(e.target.value)}
+                                            className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 text-[11px] font-black text-slate-900 uppercase tracking-[0.1em] outline-none focus:border-primary transition-all"
+                                        >
+                                            <option value="">-- Pilih Rekening BCA --</option>
+                                            {accounts.filter(a => ['106', '107', '108'].includes(a.code)).map(acc => (
+                                                <option key={acc.id} value={acc.id}>{acc.name} ({acc.code})</option>
+                                            ))}
+                                        </select>
                                     </div>
 
                                     <div className="space-y-2">

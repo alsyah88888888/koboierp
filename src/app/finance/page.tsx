@@ -42,13 +42,14 @@ export default async function FinancePage() {
         totalPaidAPRes,
         totalPaidARRes,
         settledAPRaw,
-        settledARRaw
+        settledARRaw,
+        paymentHistory
     ] = await Promise.all([
         getBalanceSheet().catch(() => []),
         prisma.journalEntry.findMany({
             include: { account: true, transaction: true },
             orderBy: { date: 'desc' },
-            take: 50
+            take: 200
         }).catch(() => []),
         prisma.vendor.findMany({
             orderBy: { balance: 'desc' },
@@ -128,6 +129,14 @@ export default async function FinancePage() {
                 date: { gte: new Date(new Date().getFullYear(), new Date().getMonth() - 5, 1) } 
             },
             select: { date: true, paidAmount: true }
+        }).catch(() => []),
+        prisma.journalEntry.findMany({
+            where: {
+                account: { code: { in: ["101", "102", "106", "107", "108"] } }
+            },
+            include: { account: true },
+            orderBy: { date: 'desc' },
+            take: 500
         }).catch(() => [])
     ]);
 
@@ -211,6 +220,7 @@ export default async function FinancePage() {
             totalPaidAP={Number(totalPaidAPRes?._sum?.paidAmount || 0)}
             totalPaidAR={Number(totalPaidARRes?._sum?.paidAmount || 0)}
             monthlyStats={monthlyStats}
+            paymentHistory={serializeDecimal(paymentHistory || [])}
         />
     );
 }
