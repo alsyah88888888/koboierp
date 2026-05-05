@@ -270,14 +270,14 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
 
         return {
             period: `${filterMonth}/${filterYear}`,
-            revenue: totalRevenue,
-            hpp: totalHpp,
-            grossProfit,
-            expenses: totalExpenses,
-            netProfit,
-            inventoryAddition: totalPurchaseValue,
-            outstandingAR: totalAR,
-            outstandingAP: totalAP,
+            revenue: Number(totalRevenue || 0),
+            hpp: Number(totalHpp || 0),
+            grossProfit: Number(grossProfit || 0),
+            expenses: Number(totalExpenses || 0),
+            netProfit: Number(netProfit || 0),
+            inventoryAddition: Number(totalPurchaseValue || 0),
+            outstandingAR: Number(totalAR || 0),
+            outstandingAP: Number(totalAP || 0),
             stats: {
                 salesCount: sales.length,
                 purchaseCount: purchases.length,
