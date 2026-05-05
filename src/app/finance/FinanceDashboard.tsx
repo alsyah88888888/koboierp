@@ -69,6 +69,22 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
         }
     };
 
+    const downloadPurchasesExcel = () => {
+        if (!closingReport?.details?.purchases) return;
+        
+        const data = closingReport.details.purchases.map((p: any) => ({
+            'Tanggal': format(new Date(p.date), 'dd/MM/yyyy'),
+            'No. LPB': p.number,
+            'Supplier': p.entity,
+            'Total Bayar': p.amount
+        }));
+
+        const ws = XLSX.utils.json_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Pembelian");
+        XLSX.writeFile(wb, `Laporan_Pembelian_${closingPeriod.month}_${closingPeriod.year}.xlsx`);
+    };
+
     useEffect(() => {
         if (activeTab === "closing") {
             fetchClosingReport(closingPeriod.month, closingPeriod.year);
@@ -1718,6 +1734,13 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                             >
                                                 <Printer className="h-4 w-4" />
                                                 Cetak Laporan Closing
+                                            </button>
+                                            <button 
+                                                onClick={downloadPurchasesExcel}
+                                                className="w-full py-4 bg-emerald-500 text-white font-black rounded-2xl hover:bg-emerald-600 transition-all active:scale-95 text-xs uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg"
+                                            >
+                                                <Download className="h-4 w-4" />
+                                                Download Excel Pembelian
                                             </button>
                                         </div>
                                     </div>
