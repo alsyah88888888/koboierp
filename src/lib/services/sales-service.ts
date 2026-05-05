@@ -713,6 +713,9 @@ export async function updateSalesOrderService(id: string, data: any) {
 
         await tx.salesOrderItem.deleteMany({ where: { orderId: id } });
 
+        const oldOrder = await tx.salesOrder.findUnique({ where: { id } });
+        const newRevision = (oldOrder?.revision || 0) + 1;
+
         const order = await tx.salesOrder.update({
             where: { id },
             data: {
@@ -727,6 +730,8 @@ export async function updateSalesOrderService(id: string, data: any) {
                 taxRate: taxRatePercent,
                 taxAmount,
                 grandTotal,
+                revision: newRevision,
+                revisionNote: data.revisionNote || null,
                 items: {
                     create: data.items.map((item: any) => ({
                         productId: item.productId,

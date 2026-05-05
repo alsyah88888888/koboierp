@@ -159,6 +159,11 @@ export default function SalesOrderModal({ products, customers, warehouses, initi
                         </div>
                     </div>
                     <button onClick={onClose} className="p-3 hover:bg-rose-50 hover:text-rose-500 rounded-2xl transition-all group">
+                        {initialData?.revision > 0 && (
+                            <div className="absolute right-20 top-8 bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-amber-200">
+                                Revisi #{initialData.revision}
+                            </div>
+                        )}
                         <X className="h-6 w-6 text-slate-300 group-hover:rotate-90 transition-transform duration-300" />
                     </button>
                 </div>

@@ -712,7 +712,14 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                             <tbody>
                                 {Array.isArray(filteredOrders) && filteredOrders.map((o: any) => (
                                     <tr key={o.id}>
-                                        <td data-label="No. PO" className="font-mono text-indigo-700 font-bold md:pl-6">{o.orderNumber}</td>
+                                        <td data-label="No. PO" className="font-mono text-indigo-700 font-bold md:pl-6">
+                                            {o.orderNumber}
+                                            {o.revision > 0 && (
+                                                <span className="ml-2 text-[10px] text-amber-600 font-black italic bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100">
+                                                    R{o.revision}
+                                                </span>
+                                            )}
+                                        </td>
                                         <td data-label="Buyer" className="font-bold">{o.buyerName}</td>
                                         <td data-label="Status" className="text-center md:text-left">
                                             <span className={cn(
