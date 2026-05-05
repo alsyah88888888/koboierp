@@ -187,7 +187,92 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
 
     } catch (error: any) {
         console.error("[getProductTraceabilityService] ERROR:", error);
-        throw new Error(`Traceability Error: ${error.message}`);
+        return { error: (error as Error).message || "Failed to fetch traceability report" };
+    }
+}
+
+/**
+ * MONTHLY CLOSING REPORT SERVICE
+ * Provides a consolidated view of Sales, Purchases, Expenses, and Profit/Loss for a specific period.
+ */
+export async function getMonthlyClosingReportService(month?: number, year?: number) {
+    const prisma = getPrisma();
+    const filterYear = year || new Date().getFullYear();
+    const filterMonth = month || (new Date().getMonth() + 1);
+    const startDate = new Date(filterYear, filterMonth - 1, 1);
+    const endDate = new Date(filterYear, filterMonth, 0, 23, 59, 59);
+
+    try {
+        const [sales, purchases, expenses, arRecords, apRecords] = await Promise.all([
+            // 1. Total Sales (Revenue)
+            (prisma as any).salesDelivery.findMany({
+                where: { isVoid: false, date: { gte: startDate, lte: endDate } },
+                include: { items: { include: { lotAllocations: true } } }
+            }),
+            // 2. Total Purchases (Inventory Additions)
+            (prisma as any).goodsReceipt.findMany({
+                where: { isVoid: false, date: { gte: startDate, lte: endDate } }
+            }),
+            // 3. Operational Expenses (Finance Transactions)
+            (prisma as any).financeTransaction.findMany({
+                where: { transactionType: "PAYMENT", date: { gte: startDate, lte: endDate } }
+            }),
+            // 4. Accounts Receivable (Unpaid Invoices) - Outstanding until now
+            (prisma as any).salesOrder.findMany({
+                where: { paymentStatus: { in: ["PENDING", "PARTIAL"] } },
+                select: { grandTotal: true, paidAmount: true }
+            }),
+            // 5. Accounts Payable (Unpaid LPB) - Outstanding until now
+            (prisma as any).goodsReceipt.findMany({
+                where: { isVoid: false, paymentStatus: { in: ["PENDING", "PARTIAL"] } },
+                select: { grandTotal: true, paidAmount: true }
+            })
+        ]);
+
+        // Calculate Revenue & COGS (HPP)
+        let totalRevenue = 0;
+        let totalHpp = 0;
+        sales.forEach((s: any) => {
+            totalRevenue += Number(s.totalAmount || 0);
+            s.items.forEach((item: any) => {
+                item.lotAllocations.forEach((alloc: any) => {
+                    totalHpp += (alloc.quantity * Number(alloc.hppAtTime || 0));
+                });
+            });
+        });
+
+        // Calculate Purchase Value
+        const totalPurchaseValue = purchases.reduce((acc, p) => acc + Number(p.grandTotal || 0), 0);
+
+        // Calculate Operational Expenses
+        const totalExpenses = expenses.reduce((acc, e) => acc + Number(e.amount || 0), 0);
+
+        // Calculate AR/AP Balances
+        const totalAR = arRecords.reduce((acc, r) => acc + (Number(r.grandTotal) - Number(r.paidAmount)), 0);
+        const totalAP = apRecords.reduce((acc, r) => acc + (Number(r.grandTotal) - Number(r.paidAmount)), 0);
+
+        const grossProfit = totalRevenue - totalHpp;
+        const netProfit = grossProfit - totalExpenses;
+
+        return {
+            period: `${filterMonth}/${filterYear}`,
+            revenue: totalRevenue,
+            hpp: totalHpp,
+            grossProfit,
+            expenses: totalExpenses,
+            netProfit,
+            inventoryAddition: totalPurchaseValue,
+            outstandingAR: totalAR,
+            outstandingAP: totalAP,
+            stats: {
+                salesCount: sales.length,
+                purchaseCount: purchases.length,
+                expenseCount: expenses.length
+            }
+        };
+    } catch (err) {
+        console.error("Monthly Closing Report Error:", err);
+        return { error: "Failed to generate monthly closing report" };
     }
 }
 

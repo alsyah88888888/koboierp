@@ -2,7 +2,7 @@
 import * as XLSX from 'xlsx';
 
 import { useState, useEffect, useRef } from "react";
-import { Plus, Search, Wallet, ArrowUpCircle, ArrowDownCircle, FileText, Trash2, Download, Eye, FileCode2, X, Banknote, Calendar } from "lucide-react";
+import { Plus, Search, Wallet, ArrowUpCircle, ArrowDownCircle, FileText, Trash2, Download, Eye, FileCode2, X, Banknote, Calendar, Printer, Sparkles } from "lucide-react";
 import { ReportPreviewModal } from "@/components/ReportPreviewModal";
 import { formatCurrency, cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -41,9 +41,35 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedHistoryItem, setSelectedHistoryItem] = useState<any>(null);
     const [historyMonth, setHistoryMonth] = useState<string>("ALL");
-    const [activeTab, setActiveTab] = useState<"ledger" | "ap" | "ar" | "checker" | "purchase_requests" | "history">("ledger");
+    const [activeTab, setActiveTab] = useState<"ledger" | "ap" | "ar" | "checker" | "purchase_requests" | "history" | "closing">("ledger");
     const [loading, setLoading] = useState<string | null>(null);
     const [isClient, setIsClient] = useState(false);
+
+    // Closing Report State
+    const [closingReport, setClosingReport] = useState<any>(null);
+    const [closingPeriod, setClosingPeriod] = useState({ 
+        month: new Date().getMonth() + 1, 
+        year: new Date().getFullYear() 
+    });
+    const [isFetchingClosing, setIsFetchingClosing] = useState(false);
+
+    const fetchClosingReport = async (m: number, y: number) => {
+        setIsFetchingClosing(true);
+        try {
+            const data = await callAction("getMonthlyClosingReport", m, y);
+            setClosingReport(data);
+        } catch (err) {
+            console.error("Failed to fetch closing report:", err);
+        } finally {
+            setIsFetchingClosing(false);
+        }
+    };
+
+    useEffect(() => {
+        if (activeTab === "closing") {
+            fetchClosingReport(closingPeriod.month, closingPeriod.year);
+        }
+    }, [activeTab, closingPeriod]);
 
     // Payment Modal State
     const [paymentModal, setPaymentModal] = useState<{
@@ -530,6 +556,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                         { id: "checker", label: "Checker", icon: CheckCircle2, count: unverifiedReceipts.length },
                         { id: "purchase_requests", label: "Pengajuan", icon: Wallet, count: pendingPurchaseRequests.length },
                         { id: "history", label: "History", icon: Clock, count: (settledPurchases?.length || 0) + (settledSales?.length || 0) },
+                        { id: "closing", label: "Closing Bulanan", icon: FileCode2, count: 0 },
                     ].map((tab) => (
                         <button
                             key={tab.id}
@@ -1369,6 +1396,138 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                 </table>
                             </div>
                         </div>
+                    </div>
+                )}
+
+                {activeTab === "closing" && (
+                    <div className="space-y-8 animate-in fade-in zoom-in duration-500">
+                        <div className="bg-white p-8 rounded-[2.5rem] border-2 border-slate-100 shadow-sm flex flex-col md:flex-row justify-between items-center gap-6">
+                            <div className="flex items-center gap-4">
+                                <div className="p-4 bg-primary/10 rounded-[1.5rem] text-primary">
+                                    <Calendar className="h-8 w-8" />
+                                </div>
+                                <div>
+                                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">Period Closing Report</h3>
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Consolidated Financial Review</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3 bg-slate-50 p-2 rounded-2xl border border-slate-100">
+                                <select 
+                                    value={closingPeriod.month}
+                                    onChange={(e) => setClosingPeriod(prev => ({ ...prev, month: parseInt(e.target.value) }))}
+                                    className="bg-transparent font-black text-sm outline-none px-4 py-2"
+                                >
+                                    {Array.from({ length: 12 }).map((_, i) => (
+                                        <option key={i+1} value={i+1}>{format(new Date(2024, i, 1), "MMMM")}</option>
+                                    ))}
+                                </select>
+                                <select 
+                                    value={closingPeriod.year}
+                                    onChange={(e) => setClosingPeriod(prev => ({ ...prev, year: parseInt(e.target.value) }))}
+                                    className="bg-transparent font-black text-sm outline-none px-4 py-2"
+                                >
+                                    {[2024, 2025, 2026].map(y => (
+                                        <option key={y} value={y}>{y}</option>
+                                    ))}
+                                </select>
+                                <button 
+                                    onClick={() => fetchClosingReport(closingPeriod.month, closingPeriod.year)}
+                                    disabled={isFetchingClosing}
+                                    className="p-2 bg-white rounded-xl shadow-sm hover:shadow-md transition-all active:scale-95 text-primary"
+                                >
+                                    <Search className={cn("h-5 w-5", isFetchingClosing && "animate-spin")} />
+                                </button>
+                            </div>
+                        </div>
+
+                        {!closingReport ? (
+                            <div className="p-20 text-center bg-white rounded-[2.5rem] border-2 border-dashed border-slate-100 text-slate-300">
+                                <p className="font-black uppercase tracking-widest text-xs">Pilih periode dan klik cari untuk memuat data closing</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-8">
+                                {/* Metric Grid */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+                                    {[
+                                        { label: "Revenue", value: closingReport.revenue, color: "text-emerald-500", icon: ArrowUpCircle },
+                                        { label: "COGS / HPP", value: closingReport.hpp, color: "text-rose-400", icon: ArrowDownCircle },
+                                        { label: "Gross Profit", value: closingReport.grossProfit, color: "text-emerald-600", icon: Sparkles },
+                                        { label: "Expenses", value: closingReport.expenses, color: "text-amber-500", icon: Wallet },
+                                        { label: "Net Profit", value: closingReport.netProfit, color: "text-indigo-600", icon: Banknote },
+                                    ].map((card, i) => (
+                                        <div key={i} className="bg-white p-6 rounded-3xl border-2 border-slate-50 shadow-sm hover:shadow-md transition-all group">
+                                            <div className="flex justify-between items-start mb-4">
+                                                <div className="p-2 bg-slate-50 rounded-xl text-slate-400 group-hover:bg-primary/5 group-hover:text-primary transition-colors">
+                                                    <card.icon className="h-4 w-4" />
+                                                </div>
+                                            </div>
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{card.label}</p>
+                                            <p className={cn("text-xl font-black tabular-nums tracking-tighter", card.color)}>{formatCurrency(card.value)}</p>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                                    <div className="lg:col-span-2 space-y-6">
+                                        <div className="bg-white rounded-[2.5rem] border-2 border-slate-100 overflow-hidden">
+                                            <div className="p-8 border-b border-slate-50 bg-slate-50/50">
+                                                <h4 className="font-black text-slate-900 uppercase tracking-tight">Outstanding Balances (End of Period)</h4>
+                                            </div>
+                                            <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+                                                <div className="space-y-4">
+                                                    <div className="flex justify-between items-end">
+                                                        <div>
+                                                            <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Total Piutang (AR)</p>
+                                                            <p className="text-2xl font-black text-slate-900 tabular-nums tracking-tighter">{formatCurrency(closingReport.outstandingAR)}</p>
+                                                        </div>
+                                                        <ArrowUpCircle className="h-8 w-8 text-emerald-100" />
+                                                    </div>
+                                                    <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                                                        <div className="h-full bg-emerald-500 w-[65%]" />
+                                                    </div>
+                                                    <p className="text-[10px] text-slate-400 font-bold uppercase">Menunggu penagihan dari customer aktif</p>
+                                                </div>
+                                                <div className="space-y-4">
+                                                    <div className="flex justify-between items-end">
+                                                        <div>
+                                                            <p className="text-[10px] font-black text-rose-600 uppercase tracking-widest">Total Hutang (AP)</p>
+                                                            <p className="text-2xl font-black text-slate-900 tabular-nums tracking-tighter">{formatCurrency(closingReport.outstandingAP)}</p>
+                                                        </div>
+                                                        <ArrowDownCircle className="h-8 w-8 text-rose-100" />
+                                                    </div>
+                                                    <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                                                        <div className="h-full bg-rose-500 w-[45%]" />
+                                                    </div>
+                                                    <p className="text-[10px] text-slate-400 font-bold uppercase">Hutang berjalan ke supplier barang</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white relative overflow-hidden flex flex-col justify-between">
+                                        <div className="absolute top-0 right-0 p-8 opacity-10">
+                                            <Sparkles className="h-32 w-32" />
+                                        </div>
+                                        <div className="relative z-10">
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Operational Insight</p>
+                                            <h4 className="text-2xl font-black tracking-tight">Closing Efficiency</h4>
+                                            <p className="text-sm text-slate-400 mt-4 leading-relaxed">
+                                                Periode ini memiliki <strong>{closingReport.stats.salesCount}</strong> transaksi penjualan dan <strong>{closingReport.stats.purchaseCount}</strong> penerimaan barang.
+                                            </p>
+                                        </div>
+                                        <div className="relative z-10 mt-12 space-y-4">
+                                            <button 
+                                                onClick={() => handlePrint()}
+                                                className="w-full py-4 bg-white text-slate-900 font-black rounded-2xl hover:bg-slate-100 transition-all active:scale-95 text-xs uppercase tracking-widest flex items-center justify-center gap-2"
+                                            >
+                                                <Printer className="h-4 w-4" />
+                                                Cetak Laporan Closing
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>

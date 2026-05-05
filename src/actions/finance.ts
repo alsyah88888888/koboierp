@@ -151,3 +151,8 @@ export async function createJournalEntryAction(data: {
     revalidatePath("/finance");
     revalidatePath("/");
 }
+
+export async function getMonthlyClosingReportAction(month?: number, year?: number) {
+    const { getMonthlyClosingReportService } = require("@/lib/services/report-service");
+    return await getMonthlyClosingReportService(month, year);
+}
