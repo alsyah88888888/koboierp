@@ -21,6 +21,13 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
     const cameraRef = useRef<any>(null);
     const [globalError, setGlobalError] = useState<string | null>(null);
     const [isClient, setIsClient] = useState(false);
+    const [displaySearchTerm, setDisplaySearchTerm] = useState("");
+
+    const displayReceipts = (unverifiedReceipts || []).filter(r => 
+        !r.isVerified && 
+        ((r.receiptNumber?.toLowerCase() || "").includes(displaySearchTerm.toLowerCase()) || 
+         (r.receivedFrom?.toLowerCase() || "").includes(displaySearchTerm.toLowerCase()))
+    );
 
     useEffect(() => {
         setIsClient(true);
@@ -516,13 +523,6 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
             );
         }
     }
-
-    const [displaySearchTerm, setDisplaySearchTerm] = useState("");
-    const displayReceipts = (unverifiedReceipts || []).filter(r => 
-        !r.isVerified && 
-        ((r.receiptNumber?.toLowerCase() || "").includes(displaySearchTerm.toLowerCase()) || 
-         (r.receivedFrom?.toLowerCase() || "").includes(displaySearchTerm.toLowerCase()))
-    );
 
     if (!isClient) {
         return (
