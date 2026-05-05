@@ -264,7 +264,7 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
                 });
 
                 // Try Purchase Orders for products still missing (Second best: What we agreed to pay)
-                const missingIds = productIds.filter(id => !priceMap[id]);
+                const missingIds = productIds.filter((id: string) => !priceMap[id]);
                 if (missingIds.length > 0) {
                     const lastPOItems = await (prisma as any).purchaseOrderItem.findMany({
                         where: { productId: { in: missingIds } },
