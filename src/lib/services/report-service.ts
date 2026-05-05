@@ -195,18 +195,24 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
  * MONTHLY CLOSING REPORT SERVICE
  * Provides a consolidated view of Sales, Purchases, Expenses, and Profit/Loss for a specific period.
  */
-export async function getMonthlyClosingReportService(month?: number, year?: number) {
+export async function getMonthlyClosingReportService(month?: number, year?: number, prefix?: 'PF' | 'BC' | 'ALL') {
     const prisma = getPrisma();
     const filterYear = year || new Date().getFullYear();
     const filterMonth = month || (new Date().getMonth() + 1);
     const startDate = new Date(filterYear, filterMonth - 1, 1);
     const endDate = new Date(filterYear, filterMonth, 0, 23, 59, 59);
 
+    const isAll = !prefix || prefix === 'ALL';
+
     try {
         const [sales, purchases, expenses, arRecords, apRecords] = await Promise.all([
             // 1. Total Sales (Revenue) - From Deliveries (Invoices)
             (prisma as any).salesDelivery.findMany({
-                where: { isVoid: false, date: { gte: startDate, lte: endDate } },
+                where: { 
+                    isVoid: false, 
+                    date: { gte: startDate, lte: endDate },
+                    ...(isAll ? {} : { deliveryNumber: { startsWith: prefix } })
+                },
                 include: {
                     items: {
                         include: {
@@ -218,7 +224,11 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
             }),
             // 2. Total Purchases (Inventory Additions)
             (prisma as any).goodsReceipt.findMany({
-                where: { isVoid: false, date: { gte: startDate, lte: endDate } }
+                where: { 
+                    isVoid: false, 
+                    date: { gte: startDate, lte: endDate },
+                    ...(isAll ? {} : { receiptNumber: { startsWith: prefix } })
+                }
             }),
             // 3. Operational Expenses (Money Out)
             (prisma as any).financeTransaction.findMany({
@@ -229,17 +239,32 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
                         { transactionType: "PAYMENT" },
                         { transactionType: "EXPENSE" },
                         { amount: { lt: 0 } }
-                    ]
+                    ],
+                    // For expenses, we check if the reference or description contains the prefix
+                    ...(isAll ? {} : { 
+                        OR: [
+                            { description: { contains: prefix, mode: 'insensitive' } },
+                            { reference: { contains: prefix, mode: 'insensitive' } }
+                        ]
+                    })
                 }
             }),
             // 4. Accounts Receivable (Unpaid Deliveries)
             (prisma as any).salesDelivery.findMany({
-                where: { isVoid: false, paymentStatus: { in: ["PENDING", "PARTIAL"] } },
+                where: { 
+                    isVoid: false, 
+                    paymentStatus: { in: ["PENDING", "PARTIAL"] },
+                    ...(isAll ? {} : { deliveryNumber: { startsWith: prefix } })
+                },
                 select: { grandTotal: true, paidAmount: true }
             }),
             // 5. Accounts Payable (Unpaid LPB)
             (prisma as any).goodsReceipt.findMany({
-                where: { isVoid: false, paymentStatus: { in: ["PENDING", "PARTIAL"] } },
+                where: { 
+                    isVoid: false, 
+                    paymentStatus: { in: ["PENDING", "PARTIAL"] },
+                    ...(isAll ? {} : { receiptNumber: { startsWith: prefix } })
+                },
                 select: { grandTotal: true, paidAmount: true }
             })
         ]);

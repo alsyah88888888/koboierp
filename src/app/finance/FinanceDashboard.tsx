@@ -53,11 +53,13 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
     });
     const [isFetchingClosing, setIsFetchingClosing] = useState(false);
 
-    const fetchClosingReport = async (m: number, y: number) => {
+    const [closingPrefix, setClosingPrefix] = useState<'PF' | 'BC' | 'ALL'>('ALL');
+
+    const fetchClosingReport = async (m: number, y: number, pref: 'PF' | 'BC' | 'ALL' = 'ALL') => {
         setIsFetchingClosing(true);
         setClosingReport(null);
         try {
-            const data = await callAction("getMonthlyClosingReport", m, y);
+            const data = await callAction("getMonthlyClosingReport", m, y, pref);
             setClosingReport(data);
         } catch (err) {
             console.error("Fetch Failed:", err);
@@ -1588,6 +1590,15 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                             </div>
                             <div className="flex items-center gap-3 bg-slate-50 p-2 rounded-2xl border border-slate-100">
                                 <select 
+                                    value={closingPrefix}
+                                    onChange={(e) => setClosingPrefix(e.target.value as any)}
+                                    className="bg-transparent font-black text-sm outline-none px-4 py-2 border-r border-slate-200"
+                                >
+                                    <option value="ALL">ALL DIV</option>
+                                    <option value="PF">PF DIV</option>
+                                    <option value="BC">BC DIV</option>
+                                </select>
+                                <select 
                                     value={closingPeriod.month}
                                     onChange={(e) => setClosingPeriod(prev => ({ ...prev, month: parseInt(e.target.value) }))}
                                     className="bg-transparent font-black text-sm outline-none px-4 py-2"
@@ -1606,7 +1617,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                     ))}
                                 </select>
                                 <button 
-                                    onClick={() => fetchClosingReport(closingPeriod.month, closingPeriod.year)}
+                                    onClick={() => fetchClosingReport(closingPeriod.month, closingPeriod.year, closingPrefix)}
                                     disabled={isFetchingClosing}
                                     className="p-2 bg-white rounded-xl shadow-sm hover:shadow-md transition-all active:scale-95 text-primary"
                                 >
