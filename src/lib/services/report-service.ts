@@ -290,7 +290,7 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
                     id: p.id,
                     number: p.receiptNumber,
                     date: p.date,
-                    entity: p.supplierName,
+                    entity: p.receivedFrom,
                     amount: Number(p.grandTotal || 0)
                 })),
                 expenses: expenses.map((e: any) => ({
