@@ -240,12 +240,9 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
                         { transactionType: "EXPENSE" },
                         { amount: { lt: 0 } }
                     ],
-                    // For expenses, we check if the reference or description contains the prefix
+                    // For expenses, we check if the description contains the prefix
                     ...(isAll ? {} : { 
-                        OR: [
-                            { description: { contains: prefix, mode: 'insensitive' } },
-                            { reference: { contains: prefix, mode: 'insensitive' } }
-                        ]
+                        description: { contains: prefix, mode: 'insensitive' }
                     })
                 }
             }),
