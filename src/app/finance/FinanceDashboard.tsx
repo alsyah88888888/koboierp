@@ -85,6 +85,22 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
         XLSX.writeFile(wb, `Laporan_Pembelian_${closingPeriod.month}_${closingPeriod.year}.xlsx`);
     };
 
+    const downloadSalesExcel = () => {
+        if (!closingReport?.details?.sales) return;
+        
+        const data = closingReport.details.sales.map((s: any) => ({
+            'Tanggal': format(new Date(s.date), 'MM/dd/yyyy'),
+            'No. Invoice': s.number,
+            'Customer': s.entity,
+            'Total Bayar': s.amount
+        }));
+
+        const ws = XLSX.utils.json_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Penjualan");
+        XLSX.writeFile(wb, `Laporan_Penjualan_${closingPeriod.month}_${closingPeriod.year}.xlsx`);
+    };
+
     useEffect(() => {
         if (activeTab === "closing") {
             fetchClosingReport(closingPeriod.month, closingPeriod.year);
@@ -1741,6 +1757,13 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                             >
                                                 <Download className="h-4 w-4" />
                                                 Download Excel Pembelian
+                                            </button>
+                                            <button 
+                                                onClick={downloadSalesExcel}
+                                                className="w-full py-4 bg-blue-500 text-white font-black rounded-2xl hover:bg-blue-600 transition-all active:scale-95 text-xs uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg"
+                                            >
+                                                <Download className="h-4 w-4" />
+                                                Download Excel Penjualan
                                             </button>
                                         </div>
                                     </div>
