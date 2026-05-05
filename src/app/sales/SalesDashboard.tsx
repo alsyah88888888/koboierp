@@ -210,10 +210,6 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                 const discLine = Number(item.discount || 0);
                 
                 const itemTotalBrutto = qty * price;
-                const itemNettoBeforeTax = itemTotalBrutto - discLine;
-                const taxRate = Number(d.taxRate || 0);
-                const itemTax = itemNettoBeforeTax * taxRate;
-                const itemNettoTotal = itemNettoBeforeTax + itemTax;
 
                 exportData.push({
                     'No. Surat Jalan': d.deliveryNumber,
@@ -230,8 +226,11 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                     'Tgl SJ': format(new Date(d.createdAt), "MM/dd/yyyy"),
                     'Gudang': d.warehouse?.name || "-",
                     'Sales Person': d.salesPerson || "-",
-                    'PPN 11% (Row)': itemTax,
-                    'Grand Total Netto (Row)': itemNettoTotal,
+                    '': '', // Empty column separator
+                    'Hasil Jumlah Barang': Number(d.items?.reduce((acc: number, i: any) => acc + (Number(i.quantity) || 0), 0) || 0),
+                    'Hasil Total': Number(d.subtotal || 0),
+                    'Hasil PPN 11%': Number(d.taxAmount || 0),
+                    'Hasil Grand Total Netto': Number(d.grandTotal || 0),
                     'Status': d.isVoid ? 'VOID' : (d.isVerified ? 'VERIFIED' : 'PENDING')
                 });
             });
