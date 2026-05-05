@@ -207,7 +207,14 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
             // 1. Total Sales (Revenue) - From Deliveries (Invoices)
             (prisma as any).salesDelivery.findMany({
                 where: { isVoid: false, date: { gte: startDate, lte: endDate } },
-                include: { items: { include: { lotAllocations: true } } }
+                include: { 
+                    items: { 
+                        include: { 
+                            lotAllocations: true,
+                            product: { select: { purchasePrice: true } }
+                        } 
+                    } 
+                }
             }),
             // 2. Total Purchases (Inventory Additions)
             (prisma as any).goodsReceipt.findMany({
@@ -248,9 +255,9 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
                     totalHpp += (Number(alloc.quantity) * Number(alloc.hppAtTime || 0));
                 });
                 
-                // Fallback: If no lot allocations (old data), use purchasePrice as estimate
+                // Fallback: If no lot allocations (old data), use purchasePrice from Product Master
                 if (!item.lotAllocations || item.lotAllocations.length === 0) {
-                    totalHpp += (Number(item.quantity) * Number(item.purchasePrice || 0));
+                    totalHpp += (Number(item.quantity || 0) * Number(item.product?.purchasePrice || 0));
                 }
             });
         });
