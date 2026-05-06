@@ -17,7 +17,10 @@ export async function createSalesDeliveryAction(data: any) {
         const session = (await getServerSession(getAuthOptions())) as any;
         if (!session?.user?.id) throw new Error("Unauthorized");
 
-        return await createSalesDeliveryService(data, session.user.id);
+        const result = await createSalesDeliveryService(data, session.user.id);
+        revalidatePath("/sales");
+        revalidatePath(`/sales/print/${result.id}`);
+        return result;
     } catch (err: any) {
         console.error("[createSalesDeliveryAction] CRITICAL ERROR:", err);
         return { error: err.message || "An unexpected error occurred at the server level." };
@@ -33,7 +36,10 @@ export async function updateSalesDeliveryAction(id: string, data: any) {
         const session = (await getServerSession(getAuthOptions())) as any;
         if (!session?.user?.id) throw new Error("Unauthorized");
 
-        return await updateSalesDeliveryService(id, data, session.user.id);
+        const result = await updateSalesDeliveryService(id, data, session.user.id);
+        revalidatePath("/sales");
+        revalidatePath(`/sales/print/${id}`);
+        return result;
     } catch (err: any) {
         console.error("[updateSalesDeliveryAction] CRITICAL ERROR:", err);
         return { error: err.message || "An unexpected error occurred at the server level." };
