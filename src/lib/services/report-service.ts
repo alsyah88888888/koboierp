@@ -248,6 +248,7 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
             (prisma as any).salesDelivery.findMany({
                 where: { 
                     isVoid: false, 
+                    date: { lte: endDate },
                     paymentStatus: { in: ["PENDING", "PARTIAL"] },
                     ...(isAll ? {} : { deliveryNumber: { startsWith: prefix } })
                 },
@@ -257,6 +258,7 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
             (prisma as any).goodsReceipt.findMany({
                 where: { 
                     isVoid: false, 
+                    date: { lte: endDate },
                     paymentStatus: { in: ["PENDING", "PARTIAL"] },
                     ...(isAll ? {} : { receiptNumber: { startsWith: prefix } })
                 },
@@ -267,7 +269,7 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
                 where: {
                     date: { gte: startDate, lte: endDate },
                     type: { in: ["DEBIT", "CREDIT"] },
-                    account: { code: { in: ["101", "102", "106", "107", "108"] } }
+                    account: { code: { in: ["101", "102", "106", "107", "108", "109", "110"] } }
                 },
                 include: { account: true }
             })
@@ -295,8 +297,9 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
         let totalHpp = 0;
         
         sales.forEach((s: any) => {
-            // Only count what has actually been PAID to match BCA
-            totalRevenue += Number(s.paidAmount || 0);
+            // Standard Accounting (Accrual Basis) for Monthly Closing: 
+            // Revenue is the total value of invoices issued in that month.
+            totalRevenue += Number(s.grandTotal || 0);
             
             // For HPP, we calculate it proportionally to the quantity sold
             (s.items || []).forEach((item: any) => {
@@ -334,8 +337,8 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
             beginningValue = 0; // Fallback to 0 to prevent total crash
         }
 
-        // Net Purchases - CASH BASIS (Only count paid amount to suppliers)
-        const netPurchases = purchases.reduce((acc: number, p: any) => acc + Number(p.paidAmount || 0), 0);
+        // Net Purchases - Accrual Basis (Total value of goods received in month)
+        const netPurchases = purchases.reduce((acc: number, p: any) => acc + Number(p.grandTotal || 0), 0);
 
         // Estimated Ending Inventory (Start + Purchases - Revenue_at_Cost)
         // For a more accurate "Ending Inventory", we would need a historical stock snapshot.
