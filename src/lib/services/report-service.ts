@@ -220,7 +220,8 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
                             product: { select: { purchasePrice: true } }
                         }
                     }
-                }
+                },
+                orderBy: { date: 'asc' }
             }),
             // 2. Total Purchases (Inventory Additions)
             (prisma as any).goodsReceipt.findMany({
@@ -228,7 +229,8 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
                     isVoid: false, 
                     receiptNumber: { contains: `${filterMonth.toString().padStart(2, '0')}${filterYear}-` },
                     ...(isAll ? {} : { receiptNumber: { startsWith: prefix } })
-                }
+                },
+                orderBy: { date: 'asc' }
             }),
             // 3. Operational Expenses (Money Out)
             (prisma as any).financeTransaction.findMany({
@@ -242,7 +244,8 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
                     ...(isAll ? {} : { 
                         description: { contains: prefix, mode: 'insensitive' }
                     })
-                }
+                },
+                orderBy: { date: 'asc' }
             }),
             // 4. Accounts Receivable (Unpaid Deliveries)
             (prisma as any).salesDelivery.findMany({
@@ -271,7 +274,8 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
                     type: { in: ["DEBIT", "CREDIT"] },
                     account: { code: { in: ["101", "102", "106", "107", "108", "109", "110"] } }
                 },
-                include: { account: true }
+                include: { account: true },
+                orderBy: { date: 'asc' }
             })
         ]);
 
