@@ -2129,14 +2129,14 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                     </div>
 
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Akun Bank BCA</label>
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Pilih Metode / Akun Pembayaran</label>
                                         <select 
                                             value={selectedBankId} 
                                             onChange={e => setSelectedBankId(e.target.value)}
                                             className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 text-[11px] font-black text-slate-900 uppercase tracking-[0.1em] outline-none focus:border-primary transition-all"
                                         >
-                                            <option value="">-- Pilih Rekening BCA --</option>
-                                            {accounts.filter(a => ['106', '107', '108'].includes(a.code)).map(acc => (
+                                            <option value="">-- Pilih Rekening / Kas --</option>
+                                            {accounts.filter(a => ['101', '102', '106', '107', '108', '109', '110'].includes(a.code)).map(acc => (
                                                 <option key={acc.id} value={acc.id}>{acc.name} ({acc.code})</option>
                                             ))}
                                         </select>
