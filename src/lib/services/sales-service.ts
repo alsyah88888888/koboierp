@@ -75,7 +75,7 @@ export async function createSalesDeliveryService(data: any, userId: string) {
         const taxRatePercent = Number(data.taxRate) || 0;
         const dpp = subtotal - totalDiscountNominal;
         const dppNilaiLain = taxRatePercent > 0 ? Math.round(dpp * 0.916666666666667) : 0;
-        const taxAmount = taxRatePercent > 0 ? Math.round(dppNilaiLain * 0.12) : 0;
+        const taxAmount = taxRatePercent > 0 ? Math.floor(dppNilaiLain * 0.12) : 0;
         const grandTotal = Math.round(dpp + taxAmount);
 
         await tx.salesDelivery.update({
@@ -414,7 +414,7 @@ export async function updateSalesDeliveryService(id: string, data: any, userId: 
         const taxRatePercent = Number(data.taxRate) || 0;
         const dpp = subtotal - totalDiscountNominal;
         const dppNilaiLain = taxRatePercent > 0 ? Math.round(dpp * 0.916666666666667) : 0;
-        const taxAmount = taxRatePercent > 0 ? Math.round(dppNilaiLain * 0.12) : 0;
+        const taxAmount = taxRatePercent > 0 ? Math.floor(dppNilaiLain * 0.12) : 0;
         const grandTotal = Math.round(dpp + taxAmount);
 
         await tx.salesDelivery.update({
@@ -663,7 +663,7 @@ export async function createSalesOrderService(data: any, userId: string) {
         const dpp = subtotal - totalDiscountNominal;
         const taxRatePercent = Number(data.taxRate) || 0;
         const dppNilaiLain = taxRatePercent > 0 ? Math.round(dpp * 0.916666666666667) : 0;
-        const taxAmount = taxRatePercent > 0 ? Math.round(dppNilaiLain * 0.12) : 0;
+        const taxAmount = taxRatePercent > 0 ? Math.floor(dppNilaiLain * 0.12) : 0;
         const grandTotal = Math.round(dpp + taxAmount);
 
         const order = await tx.salesOrder.create({
@@ -708,7 +708,7 @@ export async function updateSalesOrderService(id: string, data: any) {
         const dpp = subtotal - totalDiscountNominal;
         const taxRatePercent = Number(data.taxRate) || 0;
         const dppNilaiLain = taxRatePercent > 0 ? Math.round(dpp * 0.916666666666667) : 0;
-        const taxAmount = taxRatePercent > 0 ? Math.round(dppNilaiLain * 0.12) : 0;
+        const taxAmount = taxRatePercent > 0 ? Math.floor(dppNilaiLain * 0.12) : 0;
         const grandTotal = Math.round(dpp + taxAmount);
 
         await tx.salesOrderItem.deleteMany({ where: { orderId: id } });
