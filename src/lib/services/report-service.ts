@@ -210,7 +210,7 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
             (prisma as any).salesDelivery.findMany({
                 where: { 
                     isVoid: false, 
-                    date: { gte: startDate, lte: endDate },
+                    deliveryNumber: { contains: `${filterMonth.toString().padStart(2, '0')}${filterYear}-` },
                     ...(isAll ? {} : { deliveryNumber: { startsWith: prefix } })
                 },
                 include: {
@@ -226,7 +226,7 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
             (prisma as any).goodsReceipt.findMany({
                 where: { 
                     isVoid: false, 
-                    date: { gte: startDate, lte: endDate },
+                    receiptNumber: { contains: `${filterMonth.toString().padStart(2, '0')}${filterYear}-` },
                     ...(isAll ? {} : { receiptNumber: { startsWith: prefix } })
                 }
             }),
