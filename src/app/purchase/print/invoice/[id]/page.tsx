@@ -28,7 +28,7 @@ export default async function PurchaseInvoicePrintPage({ params }: { params: Pro
     const totalDiscount = Number(receipt.totalDiscount || 0);
     const taxAmount = Number(receipt.taxAmount || 0);
     const taxRate = Number(receipt.taxRate || 0);
-    const grandTotal = Math.round(subTotal - totalDiscount + taxAmount);
+    const grandTotal = Number(receipt.grandTotal || 0);
 
     const dpp = subTotal - totalDiscount;
     const isPPN12 = taxRate === 12;

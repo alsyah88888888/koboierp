@@ -29,7 +29,7 @@ export default async function InvoicePrintPage({ params }: { params: Promise<{ i
     const totalDiscount = Number(delivery.totalDiscount || 0);
     const taxAmount = Number(delivery.taxAmount || 0);
     const taxRate = Number(delivery.taxRate || 0);
-    const grandTotal = Math.round(subTotal - totalDiscount + taxAmount);
+    const grandTotal = Number(delivery.grandTotal || 0);
 
     // Tax and Financial Logic
     const dpp = subTotal - totalDiscount;
