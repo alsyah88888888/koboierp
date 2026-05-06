@@ -76,7 +76,7 @@ export async function createSalesDeliveryService(data: any, userId: string) {
         const dpp = subtotal - totalDiscountNominal;
         const dppNilaiLain = taxRatePercent > 0 ? Math.round(dpp * 0.916666666666667) : 0;
         const taxAmount = taxRatePercent > 0 ? Math.floor(dppNilaiLain * 0.12) : 0;
-        const grandTotal = Math.round(dpp + taxAmount);
+        const grandTotal = Math.round((dpp + taxAmount) / 1000) * 1000;
 
         await tx.salesDelivery.update({
             where: { id: delivery.id },
@@ -415,7 +415,7 @@ export async function updateSalesDeliveryService(id: string, data: any, userId: 
         const dpp = subtotal - totalDiscountNominal;
         const dppNilaiLain = taxRatePercent > 0 ? Math.round(dpp * 0.916666666666667) : 0;
         const taxAmount = taxRatePercent > 0 ? Math.floor(dppNilaiLain * 0.12) : 0;
-        const grandTotal = Math.round(dpp + taxAmount);
+        const grandTotal = Math.round((dpp + taxAmount) / 1000) * 1000;
 
         await tx.salesDelivery.update({
             where: { id },
@@ -664,7 +664,7 @@ export async function createSalesOrderService(data: any, userId: string) {
         const taxRatePercent = Number(data.taxRate) || 0;
         const dppNilaiLain = taxRatePercent > 0 ? Math.round(dpp * 0.916666666666667) : 0;
         const taxAmount = taxRatePercent > 0 ? Math.floor(dppNilaiLain * 0.12) : 0;
-        const grandTotal = Math.round(dpp + taxAmount);
+        const grandTotal = Math.round((dpp + taxAmount) / 1000) * 1000;
 
         const order = await tx.salesOrder.create({
             data: {
@@ -709,7 +709,7 @@ export async function updateSalesOrderService(id: string, data: any) {
         const taxRatePercent = Number(data.taxRate) || 0;
         const dppNilaiLain = taxRatePercent > 0 ? Math.round(dpp * 0.916666666666667) : 0;
         const taxAmount = taxRatePercent > 0 ? Math.floor(dppNilaiLain * 0.12) : 0;
-        const grandTotal = Math.round(dpp + taxAmount);
+        const grandTotal = Math.round((dpp + taxAmount) / 1000) * 1000;
 
         await tx.salesOrderItem.deleteMany({ where: { orderId: id } });
 

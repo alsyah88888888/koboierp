@@ -77,7 +77,7 @@ export default function SalesOrderModal({ products, customers, warehouses, initi
     const dpp = subtotal - totalDiscountNominal;
     const dppNilaiLain = taxRate > 0 ? Math.round(dpp * 0.916666666666667) : 0;
     const taxAmount = taxRate > 0 ? Math.floor(dppNilaiLain * 0.12) : 0;
-    const grandTotal = Math.round(dpp + taxAmount);
+    const grandTotal = Math.round((dpp + taxAmount) / 1000) * 1000;
     const totalQty = items.reduce((acc, item) => acc + Number(item.quantity || 0), 0);
 
     useEffect(() => {
