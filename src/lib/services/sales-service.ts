@@ -658,7 +658,7 @@ export async function createSalesOrderService(data: any, userId: string) {
         }
         const orderNumber = `${prefix}${String(nextNum).padStart(3, '0')}`;
 
-        const subtotal = data.items.reduce((acc: number, i: any) => acc + (i.quantity * i.salesPrice) - (i.discount || 0), 0);
+        const subtotal = Math.round(data.items.reduce((acc: number, i: any) => acc + (i.quantity * i.salesPrice) - (i.discount || 0), 0));
         const totalDiscountNominal = Math.round(Number(data.totalDiscount) || 0);
         const dpp = subtotal - totalDiscountNominal;
         const taxRatePercent = Number(data.taxRate) || 0;
@@ -703,7 +703,7 @@ export async function updateSalesOrderService(id: string, data: any) {
     const prisma = getPrisma();
 
     return await prisma.$transaction(async (tx: any) => {
-        const subtotal = data.items.reduce((acc: number, i: any) => acc + (i.quantity * i.salesPrice) - (i.discount || 0), 0);
+        const subtotal = Math.round(data.items.reduce((acc: number, i: any) => acc + (i.quantity * i.salesPrice) - (i.discount || 0), 0));
         const totalDiscountNominal = Math.round(Number(data.totalDiscount) || 0);
         const dpp = subtotal - totalDiscountNominal;
         const taxRatePercent = Number(data.taxRate) || 0;

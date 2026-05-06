@@ -192,7 +192,7 @@ export default function SalesModal({ products, warehouses, customers, orders = [
         return sum + parseIndoNumber(item.discount);
     }, 0);
 
-    const subtotal = grossAmount - itemDiscounts;
+    const subtotal = Math.round(grossAmount - itemDiscounts);
 
     const finalDiscountNominal = useMemo(() => {
         if (totalDiscountPercent !== "" && Number(totalDiscountPercent) > 0) {
