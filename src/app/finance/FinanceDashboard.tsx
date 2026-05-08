@@ -77,43 +77,87 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
     const downloadPurchasesExcel = () => {
         if (!closingReport?.details?.purchases) return;
         
-        const data = closingReport.details.purchases.map((p: any) => ({
-            'Tanggal': format(new Date(p.date), 'MM/dd/yyyy'),
-            'No. LPB': p.number,
-            'Supplier': p.entity,
-            'Subtotal': p.subtotal,
-            'Diskon': p.discount,
-            'PPN %': p.taxRate / 100, // Format 11 as 0.11
-            'Pajak Rp': p.tax,
-            'Grand Total Netto': p.grandTotal,
-            'Sudah Dibayarkan (BCA)': p.paidAmount
-        }));
+        const data: any[] = [];
+        closingReport.details.purchases.forEach((p: any) => {
+            if (p.items && p.items.length > 0) {
+                p.items.forEach((item: any) => {
+                    data.push({
+                        'Tanggal': format(new Date(p.date), 'MM/dd/yyyy'),
+                        'No. LPB': p.number,
+                        'Supplier': p.entity,
+                        'SKU': item.sku || "-",
+                        'Nama Barang': item.name || "-",
+                        'Qty': item.qty,
+                        'UOM': item.uom || "-",
+                        'Harga Beli': item.price,
+                        'Diskon Item': item.discount || 0,
+                        'Subtotal Item': (item.qty * item.price) - (item.discount || 0),
+                        'Grand Total LPB': p.grandTotal,
+                        'Sudah Dibayarkan (BCA)': p.paidAmount
+                    });
+                });
+            } else {
+                data.push({
+                    'Tanggal': format(new Date(p.date), 'MM/dd/yyyy'),
+                    'No. LPB': p.number,
+                    'Supplier': p.entity,
+                    'Subtotal': p.subtotal,
+                    'Diskon': p.discount,
+                    'PPN %': p.taxRate / 100,
+                    'Pajak Rp': p.tax,
+                    'Grand Total Netto': p.grandTotal,
+                    'Sudah Dibayarkan (BCA)': p.paidAmount
+                });
+            }
+        });
 
         const ws = XLSX.utils.json_to_sheet(data);
         const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Pembelian");
-        XLSX.writeFile(wb, `Laporan_Pembelian_${closingPeriod.month}_${closingPeriod.year}.xlsx`);
+        XLSX.utils.book_append_sheet(wb, ws, "Pembelian Detail");
+        XLSX.writeFile(wb, `Laporan_Pembelian_Detail_${closingPeriod.month}_${closingPeriod.year}.xlsx`);
     };
 
     const downloadSalesExcel = () => {
         if (!closingReport?.details?.sales) return;
         
-        const data = closingReport.details.sales.map((s: any) => ({
-            'Tanggal': format(new Date(s.date), 'MM/dd/yyyy'),
-            'No. Invoice': s.number,
-            'Customer': s.entity,
-            'Qty': s.totalQty,
-            'Subtotal': s.subtotal,
-            'Diskon': s.discount,
-            'Pajak': s.tax,
-            'Grand Total Netto': s.grandTotal,
-            'Sudah Dibayar (BCA)': s.paidAmount
-        }));
+        const data: any[] = [];
+        closingReport.details.sales.forEach((s: any) => {
+            if (s.items && s.items.length > 0) {
+                s.items.forEach((item: any) => {
+                    data.push({
+                        'Tanggal': format(new Date(s.date), 'MM/dd/yyyy'),
+                        'No. Invoice': s.number,
+                        'Customer': s.entity,
+                        'SKU': item.sku || "-",
+                        'Nama Barang': item.name || "-",
+                        'Qty': item.qty,
+                        'UOM': item.uom || "-",
+                        'Harga Satuan': item.price,
+                        'Diskon Item': item.discount || 0,
+                        'Subtotal Item': (item.qty * item.price) - (item.discount || 0),
+                        'Grand Total Invoice': s.grandTotal,
+                        'Sudah Dibayar (BCA)': s.paidAmount
+                    });
+                });
+            } else {
+                data.push({
+                    'Tanggal': format(new Date(s.date), 'MM/dd/yyyy'),
+                    'No. Invoice': s.number,
+                    'Customer': s.entity,
+                    'Qty': s.totalQty,
+                    'Subtotal': s.subtotal,
+                    'Diskon': s.discount,
+                    'Pajak': s.tax,
+                    'Grand Total Netto': s.grandTotal,
+                    'Sudah Dibayar (BCA)': s.paidAmount
+                });
+            }
+        });
 
         const ws = XLSX.utils.json_to_sheet(data);
         const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Penjualan");
-        XLSX.writeFile(wb, `Laporan_Penjualan_${closingPeriod.month}_${closingPeriod.year}.xlsx`);
+        XLSX.utils.book_append_sheet(wb, ws, "Penjualan Detail");
+        XLSX.writeFile(wb, `Laporan_Penjualan_Detail_${closingPeriod.month}_${closingPeriod.year}.xlsx`);
     };
 
     useEffect(() => {

@@ -89,37 +89,60 @@ export function AdminDashboard({
     const handleExportExcel = () => {
         const wb = XLSX.utils.book_new();
 
-        // 1. Sales Tab
-        const salesRows = sales.map((s: any) => ({
-            "Bulan": new Date(s.date).toLocaleString('id-ID', { month: 'long' }),
-            "Tgl Transaksi": new Date(s.date).toLocaleDateString('id-ID'),
-            "No. Transaksi": s.deliveryNumber,
-            "PO BUYER": s.poNumber || "-",
-            "Buyer": s.buyerName,
-            "Penerima": s.recipient,
-            "Total": Number(s.grandTotal),
-            "Status": s.paymentStatus === 'PAID' ? 'DONE' : (s.paymentStatus || 'PENDING'),
-            "Operator": s.createdBy?.name || "System",
-            "Waktu Input": new Date(s.createdAt).toLocaleString('id-ID'),
-            "Ref Bank": `${s.deliveryNumber} - ${s.buyerName}`
-        }));
+        // 1. Sales Tab - Itemized
+        const salesRows: any[] = [];
+        sales.forEach((s: any) => {
+            (s.items || []).forEach((item: any) => {
+                salesRows.push({
+                    "Bulan": new Date(s.date).toLocaleString('id-ID', { month: 'long' }),
+                    "Tgl Transaksi": new Date(s.date).toLocaleDateString('id-ID'),
+                    "No. Transaksi": s.deliveryNumber,
+                    "PO BUYER": s.poNumber || "-",
+                    "Buyer": s.buyerName,
+                    "Penerima": s.recipient,
+                    "SKU": item.product?.sku || "-",
+                    "Nama Barang": item.product?.name || "-",
+                    "Qty": Number(item.quantity),
+                    "UOM": item.product?.uom || "-",
+                    "Harga Satuan": Number(item.salesPrice),
+                    "Diskon Item": Number(item.discount || 0),
+                    "Subtotal Item": (Number(item.quantity) * Number(item.salesPrice)) - Number(item.discount || 0),
+                    "Total Invoice": Number(s.grandTotal),
+                    "Status": s.paymentStatus === 'PAID' ? 'DONE' : (s.paymentStatus || 'PENDING'),
+                    "Operator": s.createdBy?.name || "System",
+                    "Waktu Input": new Date(s.createdAt).toLocaleString('id-ID'),
+                    "Ref Bank": `${s.deliveryNumber} - ${s.buyerName}`
+                });
+            });
+        });
         const wsSales = XLSX.utils.json_to_sheet(salesRows);
         XLSX.utils.book_append_sheet(wb, wsSales, "Penjualan");
 
-        // 2. Purchases Tab
-        const purchRows = purchases.map((p: any) => ({
-            "Bulan": new Date(p.date).toLocaleString('id-ID', { month: 'long' }),
-            "Tgl Transaksi": new Date(p.date).toLocaleDateString('id-ID'),
-            "No. Terima": p.receiptNumber,
-            "PO BUYER": p.poNumber || "-",
-            "Supplier": p.receivedFrom,
-            "Gudang": p.warehouse?.name || "-",
-            "Total": Number(p.grandTotal),
-            "Status": p.paymentStatus === 'PAID' ? 'DONE' : (p.paymentStatus || 'PENDING'),
-            "Operator": p.createdBy?.name || "System",
-            "Waktu Input": new Date(p.createdAt).toLocaleString('id-ID'),
-            "Ref Bank": `${p.receiptNumber} - ${p.receivedFrom}`
-        }));
+        // 2. Purchases Tab - Itemized
+        const purchRows: any[] = [];
+        purchases.forEach((p: any) => {
+            (p.items || []).forEach((item: any) => {
+                purchRows.push({
+                    "Bulan": new Date(p.date).toLocaleString('id-ID', { month: 'long' }),
+                    "Tgl Transaksi": new Date(p.date).toLocaleDateString('id-ID'),
+                    "No. Terima": p.receiptNumber,
+                    "PO BUYER": p.poNumber || "-",
+                    "Supplier": p.receivedFrom,
+                    "SKU": item.product?.sku || "-",
+                    "Nama Barang": item.product?.name || "-",
+                    "Qty": Number(item.quantity),
+                    "UOM": item.product?.uom || "-",
+                    "Harga Beli": Number(item.purchasePrice),
+                    "Diskon Item": Number(item.discount || 0),
+                    "Subtotal Item": (Number(item.quantity) * Number(item.purchasePrice)) - Number(item.discount || 0),
+                    "Total GR": Number(p.grandTotal),
+                    "Status": p.paymentStatus === 'PAID' ? 'DONE' : (p.paymentStatus || 'PENDING'),
+                    "Operator": p.createdBy?.name || "System",
+                    "Waktu Input": new Date(p.createdAt).toLocaleString('id-ID'),
+                    "Ref Bank": `${p.receiptNumber} - ${p.receivedFrom}`
+                });
+            });
+        });
         const wsPurch = XLSX.utils.json_to_sheet(purchRows);
         XLSX.utils.book_append_sheet(wb, wsPurch, "Pembelian");
 

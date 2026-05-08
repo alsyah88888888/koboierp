@@ -394,7 +394,15 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
                         grandTotal: Number(s.grandTotal || 0),
                         paidAmount: Number(s.paidAmount || 0),
                         bankCode: relatedBank?.account?.code || "-",
-                        paymentDate: relatedBank?.date ? relatedBank.date : null
+                        paymentDate: relatedBank?.date ? relatedBank.date : null,
+                        items: (s.items || []).map((item: any) => ({
+                            sku: item.product?.sku,
+                            name: item.product?.name,
+                            qty: Number(item.quantity),
+                            uom: item.product?.uom,
+                            price: Number(item.salesPrice),
+                            discount: Number(item.discount || 0)
+                        }))
                     };
                 }),
                 purchases: purchases.map((p: any) => {
@@ -411,7 +419,15 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
                         grandTotal: Number(p.grandTotal || 0),
                         paidAmount: Number(p.paidAmount || 0),
                         bankCode: relatedBank?.account?.code || "-",
-                        paymentDate: relatedBank?.date ? relatedBank.date : null
+                        paymentDate: relatedBank?.date ? relatedBank.date : null,
+                        items: (p.items || []).map((item: any) => ({
+                            sku: item.product?.sku,
+                            name: item.product?.name,
+                            qty: Number(item.quantity),
+                            uom: item.product?.uom,
+                            price: Number(item.purchasePrice),
+                            discount: Number(item.discount || 0)
+                        }))
                     };
                 }),
                 expenses: expenses.map((e: any) => ({
