@@ -202,8 +202,13 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
     const handleExport = () => {
         const exportData: any[] = [];
         
-        filteredDeliveries.forEach(d => {
-            if (d.isVoid) return; // Skip voided transactions
+        // Filter out any VOIDed transactions explicitly
+        const activeDeliveries = filteredDeliveries.filter(d => {
+            const isVoided = d.isVoid === true || String(d.isVoid).toLowerCase() === "true";
+            return !isVoided;
+        });
+        
+        activeDeliveries.forEach(d => {
             const items = d.items || [];
             items.forEach((item: any) => {
                 const qty = Number(item.quantity) || 0;

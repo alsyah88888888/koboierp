@@ -89,8 +89,9 @@ export function AdminDashboard({
     const handleExportExcel = () => {
         const wb = XLSX.utils.book_new();
 
-        // 1. Sales Tab
-        const salesRows = sales.map((s: any) => ({
+        // 1. Sales Tab (Filter out voided transactions)
+        const activeSales = sales.filter((s: any) => !s.isVoid && String(s.isVoid).toLowerCase() !== "true");
+        const salesRows = activeSales.map((s: any) => ({
             "Bulan": new Date(s.date).toLocaleString('id-ID', { month: 'long' }),
             "Tgl Transaksi": new Date(s.date).toLocaleDateString('id-ID'),
             "No. Transaksi": s.deliveryNumber,
