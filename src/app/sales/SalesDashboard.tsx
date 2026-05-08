@@ -238,7 +238,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                     '': '', // Empty separator
                     'Hasil PPN 11%': itemTax,
                     'Hasil Grand Total Netto': itemNettoTotal,
-                    'Status': d.isVoid ? 'VOID' : (d.isVerified ? 'VERIFIED' : 'PENDING')
+                    'Status Pembayaran': d.paymentStatus === 'PAID' ? 'PAID / DONE' : 'PENDING'
                 });
             });
         });
