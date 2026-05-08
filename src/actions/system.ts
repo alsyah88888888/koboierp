@@ -202,18 +202,12 @@ export async function getDailyReportAction() {
     const [sales, purchases, operational, requests] = await Promise.all([
         prisma.salesDelivery.findMany({
             where: { ...userFilter, createdAt: { gte: today, lt: tomorrow } },
-            include: { 
-                createdBy: { select: { name: true } },
-                items: { include: { product: { select: { sku: true, name: true, uom: true } } } }
-            },
+            include: { createdBy: { select: { name: true } } },
             orderBy: { createdAt: 'desc' }
         }),
         prisma.goodsReceipt.findMany({
             where: { ...userFilter, createdAt: { gte: today, lt: tomorrow } },
-            include: { 
-                createdBy: { select: { name: true } },
-                items: { include: { product: { select: { sku: true, name: true, uom: true } } } }
-            },
+            include: { createdBy: { select: { name: true } } },
             orderBy: { createdAt: 'desc' }
         }),
         prisma.financeTransaction.findMany({
