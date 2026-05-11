@@ -20,8 +20,24 @@ export default async function SalesOrderPrintPage({ params }: { params: Promise<
 
     if (!order) return <div className="p-10 text-center font-black">ORDER NOT FOUND</div>;
 
+    const groupedItemsMap = order.items.reduce((acc: any, item: any) => {
+        const key = item.productId || item.product?.id || item.product?.name;
+        if (!acc[key]) {
+            acc[key] = { 
+                ...item, 
+                quantity: Number(item.quantity),
+                shippedQuantity: Number(item.shippedQuantity || 0)
+            };
+        } else {
+            acc[key].quantity += Number(item.quantity);
+            acc[key].shippedQuantity += Number(item.shippedQuantity || 0);
+        }
+        return acc;
+    }, {});
+    const groupedItems = Object.values(groupedItemsMap) as any[];
+
     const isDraft = order.status === "DRAFT";
-    const totalQty = order.items.reduce((acc: number, item: any) => acc + (Number(item.quantity) || 0), 0);
+    const totalQty = groupedItems.reduce((acc: number, item: any) => acc + (Number(item.quantity) || 0), 0);
     const subTotal = Number(order.subtotal || 0);
     const taxAmount = Number(order.taxAmount || 0);
     const grandTotal = Number(order.grandTotal || 0);
@@ -64,7 +80,7 @@ export default async function SalesOrderPrintPage({ params }: { params: Promise<
                     </tr>
                 </thead>
                 <tbody className="text-[9px] font-bold text-slate-800">
-                    {order.items.map((item: any, idx: number) => (
+                    {groupedItems.map((item: any, idx: number) => (
                         <tr key={idx}>
                             <td className="border border-slate-900 p-1.5 text-center font-black">{idx + 1}</td>
                             <td className="border border-slate-900 p-1.5 uppercase">
@@ -82,14 +98,21 @@ export default async function SalesOrderPrintPage({ params }: { params: Promise<
                             <td className="border border-slate-900 p-1.5 text-right font-black">{formatCurrency(Number(item.quantity) * Number(item.salesPrice))}</td>
                         </tr>
                     ))}
-                    {[...Array(Math.max(0, 4 - order.items.length))].map((_, i) => (
+                    {[...Array(Math.max(0, 4 - groupedItems.length))].map((_, i) => (
                         <tr key={`empty-${i}`} className="h-6">
                             <td className="border border-slate-900"></td><td className="border border-slate-900"></td>
                             <td className="border border-slate-900"></td><td className="border border-slate-900"></td>
                             <td className="border border-slate-900"></td><td className="border border-slate-900"></td>
                         </tr>
                     ))}
-                </tbody>
+                                </tbody>
+                <tfoot>
+                    <tr className="bg-slate-50 font-black text-[9px]">
+                        <td colSpan={2} className="border border-slate-900 p-1.5 text-right uppercase tracking-widest">TOTAL QTY KESELURUHAN:</td>
+                        <td className="border border-slate-900 p-1.5 text-center">{formatNumber(totalQty)}</td>
+                        <td colSpan={3} className="border border-slate-900"></td>
+                    </tr>
+                </tfoot>
             </table>
 
             <div className="grid grid-cols-2 mt-4 gap-4">
