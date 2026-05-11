@@ -22,6 +22,17 @@ export default async function SJDotPrintPage({ params }: { params: Promise<{ id:
 
     if (!delivery) return <div>Data tidak ditemukan</div>;
 
+    const groupedItemsMap = delivery.items.reduce((acc: any, item: any) => {
+        const key = item.productId || item.product?.id || item.product?.name;
+        if (!acc[key]) {
+            acc[key] = { ...item, quantity: Number(item.quantity) };
+        } else {
+            acc[key].quantity += Number(item.quantity);
+        }
+        return acc;
+    }, {});
+    const groupedItems = Object.values(groupedItemsMap) as any[];
+
     return (
         <DotMatrixLayout 
             title="SURAT JALAN" 
@@ -74,7 +85,7 @@ export default async function SJDotPrintPage({ params }: { params: Promise<{ id:
                     </tr>
                 </thead>
                 <tbody>
-                    {delivery.items.map((item: any, idx: number) => (
+                    {groupedItems.map((item: any, idx: number) => (
                         <tr key={idx}>
                             <td style={{ textAlign: 'center' }}>{idx + 1}</td>
                             <td style={{ fontSize: '7.5pt' }}>{item.product.barcode || item.product.sku}</td>
@@ -84,7 +95,7 @@ export default async function SJDotPrintPage({ params }: { params: Promise<{ id:
                         </tr>
                     ))}
                     {/* Baris kosong untuk menjaga tinggi form agar tetap konsisten */}
-                    {[...Array(Math.max(0, 5 - delivery.items.length))].map((_, i) => (
+                    {[...Array(Math.max(0, 5 - groupedItems.length))].map((_, i) => (
                         <tr key={i} style={{ height: '6mm' }}>
                             <td>&nbsp;</td><td></td><td></td><td></td><td></td>
                         </tr>
@@ -94,7 +105,7 @@ export default async function SJDotPrintPage({ params }: { params: Promise<{ id:
                     <tr>
                         <td colSpan={3} style={{ borderTop: '1px solid black', textAlign: 'right', fontWeight: 'bold', padding: '2mm' }}>TOTAL QTY :</td>
                         <td style={{ borderTop: '1px solid black', textAlign: 'center', fontWeight: 'bold', padding: '2mm' }}>
-                            {formatNumber(delivery.items.reduce((acc: number, i: any) => acc + (Number(i.quantity) || 0), 0))}
+                            {formatNumber(groupedItems.reduce((acc: number, i: any) => acc + (Number(i.quantity) || 0), 0))}
                         </td>
                         <td style={{ borderTop: '1px solid black' }}></td>
                     </tr>

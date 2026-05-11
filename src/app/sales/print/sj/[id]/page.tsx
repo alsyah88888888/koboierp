@@ -23,6 +23,17 @@ export default async function SJPrintPage({ params }: { params: Promise<{ id: st
 
     if (!delivery) return <div>Data not found</div>;
 
+    const groupedItemsMap = delivery.items.reduce((acc: any, item: any) => {
+        const key = item.productId || item.product?.id || item.product?.name;
+        if (!acc[key]) {
+            acc[key] = { ...item, quantity: Number(item.quantity) };
+        } else {
+            acc[key].quantity += Number(item.quantity);
+        }
+        return acc;
+    }, {});
+    const groupedItems = Object.values(groupedItemsMap) as any[];
+
     return (
         <DocumentLayout
             title="SURAT JALAN"
@@ -64,7 +75,7 @@ export default async function SJPrintPage({ params }: { params: Promise<{ id: st
                     </tr>
                 </thead>
                 <tbody className="text-[9px] font-bold text-slate-800">
-                    {delivery.items.map((item: any, idx: number) => (
+                    {groupedItems.map((item: any, idx: number) => (
                         <tr key={idx}>
                             <td className="border border-slate-900 p-1.5 text-center font-black">{idx + 1}</td>
                             <td className="border border-slate-900 p-1.5 text-left font-mono tracking-tighter text-[8px]">{item.product.barcode || item.product.sku || "-"}</td>
@@ -74,7 +85,7 @@ export default async function SJPrintPage({ params }: { params: Promise<{ id: st
                             <td className="border border-slate-900 p-1.5"></td>
                         </tr>
                     ))}
-                    {[...Array(Math.max(0, 4 - delivery.items.length))].map((_, i) => (
+                    {[...Array(Math.max(0, 4 - groupedItems.length))].map((_, i) => (
                         <tr key={i} className="h-6">
                             <td className="border border-slate-900"></td><td className="border border-slate-900"></td>
                             <td className="border border-slate-900"></td><td className="border border-slate-900"></td>
@@ -85,7 +96,7 @@ export default async function SJPrintPage({ params }: { params: Promise<{ id: st
                 <tfoot>
                     <tr className="bg-slate-50 font-black text-[9px]">
                         <td colSpan={3} className="border border-slate-900 p-1.5 text-right uppercase tracking-widest">JUMLAH QTY:</td>
-                        <td className="border border-slate-900 p-1.5 text-center">{formatNumber(delivery.items.reduce((acc: number, i: any) => acc + (Number(i.quantity) || 0), 0))}</td>
+                        <td className="border border-slate-900 p-1.5 text-center">{formatNumber(groupedItems.reduce((acc: number, i: any) => acc + (Number(i.quantity) || 0), 0))}</td>
                         <td colSpan={2} className="border border-slate-900"></td>
                     </tr>
                 </tfoot>

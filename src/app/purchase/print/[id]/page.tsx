@@ -23,6 +23,19 @@ export default async function ReceiptPrintPage({ params }: { params: Promise<{ i
 
     if (!receipt) return <div>Data not found</div>;
 
+    const groupedItemsMap = receipt.items.reduce((acc: any, item: any) => {
+        const key = item.productId || item.product?.id || item.product?.name;
+        if (!acc[key]) {
+            acc[key] = { ...item, quantity: Number(item.quantity) };
+        } else {
+            acc[key].quantity += Number(item.quantity);
+        }
+        return acc;
+    }, {});
+    const groupedItems = Object.values(groupedItemsMap) as any[];
+
+    
+    const totalQty = groupedItems.reduce((acc: number, item: any) => acc + item.quantity, 0);
     const subTotal = Number(receipt.subtotal || 0);
     const totalDiscount = Number(receipt.totalDiscount || 0);
     const taxAmount = Number(receipt.taxAmount || 0);
@@ -77,7 +90,7 @@ export default async function ReceiptPrintPage({ params }: { params: Promise<{ i
                     </tr>
                 </thead>
                 <tbody className="text-[10px] font-bold text-slate-800">
-                    {receipt.items.map((item: any, idx: number) => (
+                    {groupedItems.map((item: any, idx: number) => (
                         <tr key={idx}>
                             <td className="border border-slate-900 p-2.5 text-center font-black">{idx + 1}</td>
                             <td className="border border-slate-900 p-2.5 text-left font-mono tracking-tighter text-[9px]">{item.product.barcode || item.product.sku || "-"}</td>
@@ -88,7 +101,7 @@ export default async function ReceiptPrintPage({ params }: { params: Promise<{ i
                             <td className="border border-slate-900 p-2.5 text-right font-black">{formatCurrency(Number(item.quantity) * Number(item.purchasePrice))}</td>
                         </tr>
                     ))}
-                    {[...Array(Math.max(0, 5 - receipt.items.length))].map((_, i) => (
+                    {[...Array(Math.max(0, 5 - groupedItems.length))].map((_, i) => (
                         <tr key={`empty-${i}`} className="h-8">
                             <td className="border border-slate-900"></td><td className="border border-slate-900"></td>
                             <td className="border border-slate-900"></td><td className="border border-slate-900"></td>
@@ -96,7 +109,14 @@ export default async function ReceiptPrintPage({ params }: { params: Promise<{ i
                             <td className="border border-slate-900"></td>
                         </tr>
                     ))}
-                </tbody>
+                                </tbody>
+                <tfoot>
+                    <tr className="bg-slate-50 font-black text-[10px] text-slate-900">
+                        <td colSpan={3} className="border border-slate-900 p-2.5 text-right uppercase tracking-widest">TOTAL QTY KESELURUHAN:</td>
+                        <td className="border border-slate-900 p-2.5 text-center">{formatNumber(totalQty)}</td>
+                        <td colSpan={3} className="border border-slate-900"></td>
+                    </tr>
+                </tfoot>
             </table>
 
             <div className="grid grid-cols-2 mt-4 gap-4">
