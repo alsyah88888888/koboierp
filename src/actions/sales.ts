@@ -292,6 +292,9 @@ export async function deleteSalesReturnAction(id: string) {
     const { getPrisma } = require("@/lib/prisma");
     const prisma = getPrisma();
 
+    const { getAuthOptions } = require("@/lib/auth");
+    const { getServerSession } = require("next-auth");
+
     const session = (await getServerSession(getAuthOptions())) as any;
     const role = session?.user?.role?.toUpperCase();
     if (role !== "ADMIN" && role !== "SALES") throw new Error("Unauthorized: Only Admin or Sales can delete returns");
