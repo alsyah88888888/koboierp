@@ -121,6 +121,10 @@ export async function getDashboardSummaryService(userId: string, prefix: string,
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
 
+    const monthStart = new Date();
+    monthStart.setDate(1);
+    monthStart.setHours(0, 0, 0, 0);
+
     const [deliveries, receipts, expenses, countRequests, countDeliveries, purchaseVolRes, salesPaidRes, purchasePaidRes] = await Promise.all([
         prisma.salesDelivery.findMany({ 
             where: userFilter,
@@ -143,7 +147,7 @@ export async function getDashboardSummaryService(userId: string, prefix: string,
         prisma.salesDelivery.count({ where: { ...userFilter, createdAt: { gte: todayStart } } }),
         prisma.goodsReceiptItem.aggregate({
             _sum: { quantity: true },
-            where: { receipt: { ...userFilter, createdAt: { gte: todayStart } } }
+            where: { receipt: { ...userFilter, date: { gte: monthStart } } }
         }),
         prisma.salesDelivery.aggregate({
             where: userFilter,

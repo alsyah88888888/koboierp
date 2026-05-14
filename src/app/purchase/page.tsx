@@ -67,13 +67,25 @@ export default async function PurchasePage() {
         orderBy: { createdAt: 'desc' }
     }).catch(() => []));
 
+    const purchaseRequests = serializeDecimal(await prisma.purchaseRequest.findMany({
+        where: isAdmin ? {} : { requestedById: session?.user?.id },
+        include: { requestedBy: true, items: true, approvedBy: true, verifiedBy: true },
+        orderBy: { createdAt: 'desc' }
+    }).catch(() => []));
+
+    const coa = serializeDecimal(await prisma.financeAccount.findMany({
+        orderBy: { code: 'asc' }
+    }).catch(() => []));
+
     return (
         <PurchaseDashboard
             initialReceipts={receipts}
             initialReturns={returns}
+            initialRequests={purchaseRequests}
             products={products}
             warehouses={warehouses}
             vendors={vendors}
+            coa={coa}
         />
     );
 }

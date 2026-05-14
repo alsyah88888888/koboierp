@@ -20,12 +20,18 @@ import { SupplierModal } from "@/components/modals/SupplierModal";
 import { BuyerModal } from "@/components/modals/BuyerModal";
 import { ProductModal } from "@/components/modals/ProductModal";
 
-export function PurchaseDashboard({ initialReceipts, initialReturns, products, warehouses, vendors }: {
+import { PurchaseRequestTab } from "./PurchaseRequestTab";
+import { PurchaseRequestModal } from "./PurchaseRequestModal";
+import { formatCurrency } from "@/lib/utils";
+
+export function PurchaseDashboard({ initialReceipts, initialReturns, initialRequests, products, warehouses, vendors, coa }: {
     initialReceipts: any[],
     initialReturns: any[],
+    initialRequests: any[],
     products: any[],
     warehouses: any[],
-    vendors: any[]
+    vendors: any[],
+    coa: any[]
 }) {
     const { confirm, alert } = useDialog();
     const { data: session } = useSession() as any;
@@ -40,8 +46,9 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
     const [previewData, setPreviewData] = useState<any[]>([]);
     const [previewTitle, setPreviewTitle] = useState("");
 
-    const [activeTab, setActiveTab] = useState<"LPB" | "RETUR">("LPB");
+    const [activeTab, setActiveTab] = useState<"LPB" | "RETUR" | "REQUEST">("LPB");
     const [showReturnModal, setShowReturnModal] = useState(false);
+    const [showRequestModal, setShowRequestModal] = useState(false);
     const [isClient, setIsClient] = useState(false);
     const [showVoidModal, setShowVoidModal] = useState(false);
     const [voidId, setVoidId] = useState<string | null>(null);
@@ -235,6 +242,15 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
                             Pembelian
                         </button>
                         <button
+                            onClick={() => setActiveTab("REQUEST")}
+                            className={cn(
+                                "flex-1 sm:flex-none px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                                activeTab === "REQUEST" ? "bg-indigo-600 text-white shadow-md shadow-indigo-200" : "text-slate-500 hover:bg-slate-50"
+                            )}
+                        >
+                            Pengajuan
+                        </button>
+                        <button
                             onClick={() => setActiveTab("RETUR")}
                             className={cn(
                                 "flex-1 sm:flex-none px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
@@ -247,14 +263,20 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
 
                     <div className="flex items-center gap-2 w-full sm:w-auto">
                         <button
-                            onClick={activeTab === "LPB" ? () => setShowReceiptModal(true) : () => setShowReturnModal(true)}
+                            onClick={() => {
+                                if (activeTab === "LPB") setShowReceiptModal(true);
+                                else if (activeTab === "RETUR") setShowReturnModal(true);
+                                else setShowRequestModal(true);
+                            }}
                             className={cn(
                                 "flex-1 sm:flex-none px-6 py-3 rounded-2xl flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95 font-black text-[10px] uppercase tracking-widest",
-                                activeTab === "LPB" ? "bg-primary text-white shadow-primary/20" : "bg-rose-600 text-white shadow-rose-200"
+                                activeTab === "LPB" ? "bg-primary text-white shadow-primary/20" : 
+                                activeTab === "REQUEST" ? "bg-indigo-600 text-white shadow-indigo-200" :
+                                "bg-rose-600 text-white shadow-rose-200"
                             )}
                         >
                             <Plus className="h-4 w-4" />
-                            <span>{activeTab === "LPB" ? "Input LPB" : "Input Retur"}</span>
+                            <span>{activeTab === "LPB" ? "Input LPB" : activeTab === "REQUEST" ? "Buat Pengajuan" : "Input Retur"}</span>
                         </button>
                         <button
                             onClick={activeTab === "LPB" ? handleExport : handleExportReturn}
@@ -297,6 +319,13 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
                                 </div>
                                 <ChevronRight className="h-3 w-3 text-slate-600" />
                             </button>
+                            <button onClick={() => setShowRequestModal(true)} className="w-full flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all border border-white/5 group/btn">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-indigo-500/20 rounded-lg text-indigo-400 group-hover/btn:scale-110 transition-transform"><Plus className="h-3 w-3" /></div>
+                                    <span className="text-xs font-bold">Buat Pengajuan (PR)</span>
+                                </div>
+                                <ChevronRight className="h-3 w-3 text-slate-600" />
+                            </button>
                         </div>
                     </div>
 
@@ -321,7 +350,7 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
                             <FileText className="h-5 w-5" />
                         </div>
                         <h2 className="text-lg font-black text-slate-800 uppercase tracking-tight">
-                            {activeTab === "LPB" ? "Daftar Penerimaan Barang" : "Daftar Retur Pembelian"}
+                            {activeTab === "LPB" ? "Daftar Penerimaan Barang" : activeTab === "REQUEST" ? "Daftar Pengajuan (PR)" : "Daftar Retur Pembelian"}
                         </h2>
                     </div>
                     <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
@@ -350,7 +379,7 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
                             <input
                                 value={searchTerm}
                                 onChange={e => setSearchTerm(e.target.value)}
-                                placeholder={activeTab === "LPB" ? "Cari No. Form, Supplier, atau No. SJ..." : "Cari No. Retur atau Vendor..."}
+                                placeholder={activeTab === "LPB" ? "Cari No. Form, Supplier, atau No. SJ..." : activeTab === "REQUEST" ? "Cari PR / Pemohon..." : "Cari No. Retur atau Vendor..."}
                                 className="erp-input pl-12 h-12"
                             />
                         </div>
@@ -368,8 +397,15 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
                                     <th className="text-center">No. Terima</th>
                                     <th className="text-center">Gudang</th>
                                     <th className="text-right">Qty</th>
+                                    <th className="text-right">Total Harga</th>
                                     <th className="text-right">Tanggal</th>
                                     <th className="text-center w-40">Aksi</th>
+                                </tr>
+                            ) : activeTab === "REQUEST" ? (
+                                <tr>
+                                    <th colSpan={8} className="p-0">
+                                        {/* PurchaseRequestTab will render its own table structure inside */}
+                                    </th>
                                 </tr>
                             ) : (
                                 <tr>
@@ -419,6 +455,9 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
                                             <td className="text-right font-black text-slate-900">
                                                 {r.items.reduce((acc: number, i: any) => acc + i.quantity, 0)}
                                             </td>
+                                            <td className="text-right font-black text-primary">
+                                                {formatCurrency(r.items.reduce((acc: number, i: any) => acc + (i.quantity * (Number(i.purchasePrice) || 0)), 0))}
+                                            </td>
                                             <td className="text-right text-slate-500 whitespace-nowrap">
                                                 {isClient ? format(new Date(r.date || r.createdAt), "dd MMM yyyy") : "..."}
                                             </td>
@@ -467,6 +506,24 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
                                         </tr>
                                     ))
                                 )
+                            ) : activeTab === "REQUEST" ? (
+                                <tr>
+                                    <td colSpan={9} className="p-0">
+                                        <PurchaseRequestTab
+                                            requests={initialRequests.filter(r => 
+                                                r.number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                                r.requestedBy?.name?.toLowerCase().includes(searchTerm.toLowerCase())
+                                            )}
+                                            userRole={userRole}
+                                            userId={session?.user?.id}
+                                            coa={coa}
+                                            onEdit={(pr) => {
+                                                setEditData(pr);
+                                                setShowRequestModal(true);
+                                            }}
+                                        />
+                                    </td>
+                                </tr>
                             ) : (
                                 filteredReturns.length === 0 ? (
                                     <tr>
@@ -555,6 +612,16 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, products, w
                         setShowReturnModal(false);
                         setEditData(null);
                     }}
+                />
+            )}
+
+            {showRequestModal && (
+                <PurchaseRequestModal
+                    onClose={() => {
+                        setShowRequestModal(false);
+                        setEditData(null);
+                    }}
+                    initialPr={editData}
                 />
             )}
 

@@ -16,8 +16,13 @@ export function DashboardStats() {
     useEffect(() => {
         setIsClient(true);
         const loadStats = async () => {
-            const data = await callAction("getDashboardSummary");
-            setStats(data);
+            try {
+                const data = await callAction("getDashboardSummary");
+                setStats(data);
+            } catch (err) {
+                console.error("Dashboard Stats Error:", err);
+                setStats({});
+            }
         };
 
         loadStats();
@@ -26,7 +31,7 @@ export function DashboardStats() {
     if (!stats) return (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 animate-pulse">
             {[1, 2, 3, 4].map(i => (
-                <div key={i} className="h-24 bg-muted rounded-xl" />
+                <div key={i} className="h-32 bg-slate-100 rounded-2xl border border-slate-200" />
             ))}
         </div>
     );
@@ -49,7 +54,7 @@ export function DashboardStats() {
             border: "border-blue-100"
         },
         {
-            label: "Purchase Volume",
+            label: "Purchases (This Month)",
             value: isClient ? Number(stats?.purchaseVol || 0).toLocaleString() : "...",
             icon: ShoppingCart,
             color: "text-amber-600",
