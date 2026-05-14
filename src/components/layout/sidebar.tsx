@@ -159,7 +159,14 @@ export function Sidebar() {
                 {/* Logout / Footer Section */}
                 <div className="p-6 mt-auto border-t border-white/5 bg-black/20 backdrop-blur-xl">
                     <button
-                        onClick={() => signOut({ callbackUrl: "/auth/signin" })}
+                        onClick={async () => {
+                            try {
+                                await signOut({ redirect: true, callbackUrl: "/auth/signin" });
+                            } catch (e) {
+                                console.error("SignOut failed:", e);
+                                window.location.href = "/auth/signin";
+                            }
+                        }}
                         className="group flex items-center justify-center w-full px-4 py-4 text-[10px] font-black text-rose-500 hover:text-white bg-rose-500/5 hover:bg-rose-500 rounded-2xl transition-all duration-500 border border-rose-500/10 hover:border-rose-500 shadow-xl hover:shadow-rose-500/20 uppercase tracking-[0.2em]"
                     >
                         <LogOut className="mr-3 h-4 w-4 group-hover:-translate-x-1 transition-transform" />
