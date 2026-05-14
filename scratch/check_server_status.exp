@@ -1,0 +1,17 @@
+#!/usr/bin/expect -f
+set timeout 30
+set password "dE2NJ/Xr+4KBif5"
+spawn ssh -o StrictHostKeyChecking=no root@76.13.20.44
+expect "*?assword:*" {
+    send "$password\r"
+}
+expect -re "(#|\\$)" {
+    send "pm2 status\r"
+}
+expect -re "(#|\\$)" {
+    send "df -h\r"
+}
+expect -re "(#|\\$)" {
+    send "exit\r"
+}
+expect eof
