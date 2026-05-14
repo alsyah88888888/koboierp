@@ -322,6 +322,12 @@ export async function voidGoodsReceiptService(id: string, reason: string) {
             }
         }
 
+        // Void associated ProductLots
+        await tx.productLot.updateMany({
+            where: { grNumber: receipt.receiptNumber },
+            data: { isVoided: true, remainingQty: 0 }
+        });
+
         // Delete associated journal entries
         await tx.journalEntry.deleteMany({
             where: { description: { contains: receipt.receiptNumber } }

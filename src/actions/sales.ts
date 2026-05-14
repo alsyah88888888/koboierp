@@ -48,7 +48,8 @@ export async function updateSalesDeliveryAction(id: string, data: any) {
         const { updateSalesDeliveryService } = require("@/lib/services/sales-service");
 
         const session = (await getServerSession(getAuthOptions())) as any;
-        if (!session?.user?.id) throw new Error("Unauthorized");
+        const role = session?.user?.role?.toUpperCase();
+        if (role !== "ADMIN" && role !== "SALES") throw new Error("Unauthorized: Only Admin or Sales can update deliveries");
 
         const result = await updateSalesDeliveryService(id, data, session.user.id);
         revalidatePath("/sales");
@@ -66,7 +67,8 @@ export async function deleteSalesDeliveryAction(id: string) {
     const { deleteSalesDeliveryService } = require("@/lib/services/sales-service");
 
     const session = (await getServerSession(getAuthOptions())) as any;
-    if (!session?.user?.id) throw new Error("Unauthorized");
+    const role = session?.user?.role?.toUpperCase();
+    if (role !== "ADMIN" && role !== "SALES") throw new Error("Unauthorized: Only Admin or Sales can delete deliveries");
 
     return await deleteSalesDeliveryService(id);
 }
@@ -233,6 +235,9 @@ export async function verifySalesReturnAction(id: string) {
     const prisma = getPrisma();
 
     const session = (await getServerSession(getAuthOptions())) as any;
+    const role = session?.user?.role?.toUpperCase();
+    if (role !== "ADMIN" && role !== "FINANCE") throw new Error("Unauthorized: Only Admin or Finance can verify returns");
+
     return await prisma.$transaction(async (tx: any) => {
         const ret = await tx.salesReturn.findUnique({
             where: { id },
@@ -286,6 +291,10 @@ export async function verifySalesReturnAction(id: string) {
 export async function deleteSalesReturnAction(id: string) {
     const { getPrisma } = require("@/lib/prisma");
     const prisma = getPrisma();
+
+    const session = (await getServerSession(getAuthOptions())) as any;
+    const role = session?.user?.role?.toUpperCase();
+    if (role !== "ADMIN" && role !== "SALES") throw new Error("Unauthorized: Only Admin or Sales can delete returns");
 
     return await prisma.$transaction(async (tx: any) => {
         const ret = await tx.salesReturn.findUnique({
@@ -506,7 +515,8 @@ export async function voidSalesDeliveryAction(id: string, reason: string) {
         const { voidSalesDeliveryService } = require("@/lib/services/sales-service");
 
         const session = (await getServerSession(getAuthOptions())) as any;
-        if (!session?.user?.id) throw new Error("Unauthorized");
+        const role = session?.user?.role?.toUpperCase();
+        if (role !== "ADMIN" && role !== "SALES") throw new Error("Unauthorized: Only Admin or Sales can void deliveries");
 
         return await voidSalesDeliveryService(id, reason);
     } catch (err: any) {

@@ -108,6 +108,13 @@ export async function deleteGoodsReceiptAction(id: string) {
         }
 
         await tx.goodsReceiptItem.deleteMany({ where: { receiptId: id } });
+        
+        // Void associated ProductLots
+        await tx.productLot.updateMany({
+            where: { grNumber: receipt.receiptNumber },
+            data: { isVoided: true, remainingQty: 0 }
+        });
+
         await tx.goodsReceipt.delete({ where: { id } });
 
         revalidatePath("/purchase");
@@ -187,7 +194,10 @@ export async function deletePurchaseRequestAction(id: string) {
                 // Find associated transactions by searching for the PR number in description
                 const transactions = await tx.financeTransaction.findMany({
                     where: {
-                        description: { contains: pr.number }
+                        OR: [
+                            { referenceNumber: pr.number },
+                            { description: { startsWith: `Payment for PR: ${pr.number}` } }
+                        ]
                     }
                 });
 
@@ -254,7 +264,13 @@ export async function createPurchaseReturnAction(data: any) {
 }
 
 export async function deletePurchaseReturnAction(id: string) {
+    const { getAuthOptions } = require("@/lib/auth");
+    const { getServerSession } = require("next-auth");
     const { deletePurchaseReturnService } = require("@/lib/services/purchase-service");
+
+    const session = (await getServerSession(getAuthOptions())) as any;
+    if (session?.user?.role !== "ADMIN" && session?.user?.role !== "PURCHASE") throw new Error("Unauthorized: Only Admin or Purchase can delete returns");
+
     return await deletePurchaseReturnService(id);
 }
 
@@ -264,7 +280,13 @@ export async function updatePurchaseRequestStatusAction(id: string, status: stri
     const { updatePurchaseRequestStatusService } = require("@/lib/services/purchase-service");
 
     const session = (await getServerSession(getAuthOptions())) as any;
+    const role = session?.user?.role?.toUpperCase();
+    
     if (!session?.user?.id) throw new Error("Unauthorized");
+    
+    // Strict Role Validation
+    if (status === "APPROVED_BY_ADMIN" && role !== "ADMIN") throw new Error("Hanya ADMIN yang bisa menyetujui pengajuan ini");
+    if (status === "VERIFIED_BY_FINANCE" && role !== "FINANCE" && role !== "ADMIN") throw new Error("Hanya FINANCE yang bisa memverifikasi pengajuan ini");
 
     return await updatePurchaseRequestStatusService(id, status, session.user.id);
 }
@@ -309,6 +331,9 @@ export async function verifyPurchaseReturnAction(id: string) {
     const prisma = getPrisma();
 
     const session = (await getServerSession(getAuthOptions())) as any;
+    const role = session?.user?.role?.toUpperCase();
+    if (role !== "ADMIN" && role !== "FINANCE") throw new Error("Unauthorized: Only Admin or Finance can verify returns");
+
     return await prisma.$transaction(async (tx: any) => {
         const ret = await tx.purchaseReturn.findUnique({
             where: { id },

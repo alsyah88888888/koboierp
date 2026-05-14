@@ -296,6 +296,17 @@ export async function updateGoodsReceiptService(id: string, data: any, userId: s
                 },
                 update: { quantity: { decrement: item.quantity } }
             });
+
+            await tx.stockMovement.create({
+                data: {
+                    productId: item.productId,
+                    warehouseId: oldReceipt.warehouseId,
+                    vendorName: vendorName,
+                    quantity: -item.quantity,
+                    type: "PURCHASE_UPDATE_REVERT",
+                    reference: oldReceipt.receiptNumber
+                }
+            });
         }
 
         // ─── Void old ProductLots for this GR before updating ───────────
@@ -721,6 +732,21 @@ export async function deletePurchaseReturnService(id: string) {
                     reference: ret.returnNumber
                 }
             });
+
+            // Restore Lot Quantity
+            const activeLot = await tx.productLot.findFirst({
+                where: {
+                    productId: item.productId,
+                    grNumber: ret.receipt.receiptNumber,
+                    isVoided: false
+                }
+            });
+            if (activeLot) {
+                await tx.productLot.update({
+                    where: { id: activeLot.id },
+                    data: { remainingQty: { increment: item.quantity } }
+                });
+            }
         }
 
         await tx.purchaseReturnItem.deleteMany({ where: { purchaseReturnId: id } });
