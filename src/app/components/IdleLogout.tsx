@@ -3,7 +3,7 @@
 import { useEffect, useCallback, useRef } from "react";
 import { signOut, useSession } from "next-auth/react";
 
-const IDLE_TIMEOUT = 2 * 60 * 60 * 1000; // 2 Jam (2 Hours)
+const IDLE_TIMEOUT = 10 * 60 * 1000; // 10 Menit (10 Minutes)
 
 export function IdleLogout() {
     const { data: session } = useSession();
