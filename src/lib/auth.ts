@@ -54,6 +54,15 @@ export function getAuthOptions(): AuthOptions {
                         const isValid = await (bcrypt as any).compare(credentials.password, user.password || "");
                         if (!isValid) throw new Error("Password Salah");
 
+                        const { logAction } = require("./audit");
+                        await logAction({
+                            userId: user.id,
+                            action: "LOGIN",
+                            resource: "User",
+                            resourceId: user.id,
+                            details: { email: user.email }
+                        });
+
                         return {
                             id: user.id,
                             name: user.name,

@@ -14,10 +14,24 @@ export async function createSalesDeliveryAction(data: any) {
         const { getServerSession } = require("next-auth");
         const { createSalesDeliveryService } = require("@/lib/services/sales-service");
 
+        const { SalesDeliverySchema } = require("@/lib/schemas");
+        const { logAction } = require("@/lib/audit");
+
         const session = (await getServerSession(getAuthOptions())) as any;
         if (!session?.user?.id) throw new Error("Unauthorized");
 
-        const result = await createSalesDeliveryService(data, session.user.id);
+        // Validate data
+        const validated = SalesDeliverySchema.parse(data);
+
+        const result = await createSalesDeliveryService(validated, session.user.id);
+        
+        await logAction({
+            userId: session.user.id,
+            action: "CREATE_SALES_DELIVERY",
+            resource: "SalesDelivery",
+            resourceId: result.id,
+            details: { deliveryNumber: result.deliveryNumber, grandTotal: result.grandTotal }
+        });
         revalidatePath("/sales");
         revalidatePath(`/sales/print/${result.id}`);
         return result;
@@ -507,10 +521,25 @@ export async function createSalesOrderAction(data: any) {
         const { getServerSession } = require("next-auth");
         const { createSalesOrderService } = require("@/lib/services/sales-service");
 
+        const { SalesOrderSchema } = require("@/lib/schemas");
+        const { logAction } = require("@/lib/audit");
+
         const session = (await getServerSession(getAuthOptions())) as any;
         if (!session?.user?.id) throw new Error("Unauthorized");
 
-        return await createSalesOrderService(data, session.user.id);
+        const validated = SalesOrderSchema.parse(data);
+
+        const res = await createSalesOrderService(validated, session.user.id);
+
+        await logAction({
+            userId: session.user.id,
+            action: "CREATE_SALES_ORDER",
+            resource: "SalesOrder",
+            resourceId: res.id,
+            details: { orderNumber: res.orderNumber, grandTotal: res.grandTotal }
+        });
+
+        return res;
     } catch (err: any) {
         console.error("[createSalesOrderAction] ERROR:", err);
         return { error: err.message || "Failed to create sales order." };

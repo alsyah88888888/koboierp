@@ -46,10 +46,24 @@ export async function createGoodsReceiptAction(data: any) {
         const { getServerSession } = require("next-auth");
         const { createGoodsReceiptService } = require("@/lib/services/purchase-service");
 
+        const { GoodsReceiptSchema } = require("@/lib/schemas");
         const session = (await getServerSession(getAuthOptions())) as any;
         if (!session?.user?.id) throw new Error("Unauthorized");
 
-        return await createGoodsReceiptService(data, session.user.id);
+        const validated = GoodsReceiptSchema.parse(data);
+
+        const res = await createGoodsReceiptService(validated, session.user.id);
+        
+        const { logAction } = require("@/lib/audit");
+        await logAction({
+            userId: session.user.id,
+            action: "CREATE_GOODS_RECEIPT",
+            resource: "GoodsReceipt",
+            resourceId: res.id,
+            details: { receiptNumber: res.receiptNumber, grandTotal: res.grandTotal }
+        });
+
+        return res;
     } catch (err: any) {
         console.error("[createGoodsReceiptAction] ERROR:", err);
         return { error: err.message || "An unexpected error occurred while creating the goods receipt." };

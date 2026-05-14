@@ -33,6 +33,7 @@ model User {
   salesReturns      SalesReturn[]        @relation("SRCreatedBy")
   sessions          Session[]
   vendors           Vendor[]             @relation("VendorCreatedBy")
+  auditLogs         AuditLog[]
 }
 
 model Account {
@@ -562,4 +563,21 @@ model NotificationRead {
   notification   Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
 
   @@unique([notificationId, userId])
+}
+model AuditLog {
+  id          String   @id @default(cuid())
+  userId      String?
+  action      String   // e.g., "CREATE_PURCHASE", "LOGIN", "VOID_RECEIPT"
+  resource    String   // e.g., "GoodsReceipt", "User"
+  resourceId  String?
+  details     Json?    // Store old/new values or extra info
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  user        User?    @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([action])
 }
