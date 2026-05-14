@@ -156,8 +156,13 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, initialRequ
                     'Harga Beli': buyPrice,
                     'Potongan Item': discLine,
                     'Total Brutto (Row)': itemTotalBrutto,
-                    'PPN 11% (Row)': itemTaxCalculated,
-                    'Grand Total Netto (Row)': itemNettoTotal,
+                    'PPN (Header %)': taxRate,
+                    'Total Netto Pembayaran (Header)': (() => {
+                        const dpp = Number(r.subtotal || 0) - Number(r.totalDiscount || 0);
+                        const cbs = Array.isArray(r.cashbacks) ? r.cashbacks : [];
+                        const totalCb = cbs.reduce((acc: number, cb: any) => acc + Math.floor(dpp * (Number(cb.rate || 0) / 100)), 0);
+                        return Number(r.grandTotal || 0) - totalCb;
+                    })(),
                     'Gudang': r.warehouse?.name || "-",
                     'Sales Person': r.salesPerson || "-",
                     'Status': r.isVoid ? 'VOID' : (r.isVerified ? 'VERIFIED' : 'PENDING')
@@ -208,7 +213,12 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, initialRequ
             'Gudang': r.warehouse?.name || "-",
             'Sales Person': r.salesPerson,
             'Qty': r.items?.reduce((acc: number, i: any) => acc + (Number(i.quantity) || 0), 0) || 0,
-            'Total Harga': Number(r.items?.reduce((acc: number, i: any) => acc + (Number(i.quantity) * Number(i.purchasePrice || 0)), 0) || 0),
+            'Total Netto': (() => {
+                const dpp = Number(r.subtotal || 0) - Number(r.totalDiscount || 0);
+                const cbs = Array.isArray(r.cashbacks) ? r.cashbacks : [];
+                const totalCb = cbs.reduce((acc: number, cb: any) => acc + Math.floor(dpp * (Number(cb.rate || 0) / 100)), 0);
+                return Number(r.grandTotal || 0) - totalCb;
+            })(),
             'Status': r.isVerified ? 'VERIFIED' : 'PENDING'
         }));
         setPreviewData(data);
@@ -397,8 +407,8 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, initialRequ
                                     <th className="text-center">No. Terima</th>
                                     <th className="text-center">Gudang</th>
                                     <th className="text-right">Qty</th>
-                                    <th className="text-right">Total Harga</th>
-                                    <th className="text-right">Tanggal</th>
+                                    <th className="text-right">Total Netto</th>
+                                    <th className="text-right">Tgl</th>
                                     <th className="text-center w-40">Aksi</th>
                                 </tr>
                             ) : activeTab === "REQUEST" ? (
@@ -456,7 +466,16 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, initialRequ
                                                 {r.items.reduce((acc: number, i: any) => acc + i.quantity, 0)}
                                             </td>
                                             <td className="text-right font-black text-primary whitespace-nowrap">
-                                                {formatCurrency(Number(r.grandTotal || 0))}
+                                                {(() => {
+                                                    const dpp = Number(r.subtotal || 0) - Number(r.totalDiscount || 0);
+                                                    const cashbacks = Array.isArray(r.cashbacks) ? r.cashbacks : [];
+                                                    const totalCb = cashbacks.reduce((acc: number, cb: any) => {
+                                                        const rate = Number(cb.rate || 0);
+                                                        return acc + Math.floor(dpp * (rate / 100));
+                                                    }, 0);
+                                                    const netTransfer = Number(r.grandTotal || 0) - totalCb;
+                                                    return formatCurrency(netTransfer);
+                                                })()}
                                             </td>
                                             <td className="text-right text-slate-500 whitespace-nowrap">
                                                 {isClient ? format(new Date(r.date || r.createdAt), "dd MMM yyyy") : "..."}
