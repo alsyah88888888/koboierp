@@ -13,6 +13,7 @@ export function getAuthOptions(): AuthOptions {
         secret: process.env.NEXTAUTH_SECRET,
         session: {
             strategy: "jwt",
+            maxAge: 4 * 60 * 60, // 4 hours
         },
         callbacks: {
             async session({ session, token }) {
