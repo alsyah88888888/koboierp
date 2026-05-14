@@ -455,8 +455,8 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, initialRequ
                                             <td className="text-right font-black text-slate-900">
                                                 {r.items.reduce((acc: number, i: any) => acc + i.quantity, 0)}
                                             </td>
-                                            <td className="text-right font-black text-primary">
-                                                {formatCurrency(r.items.reduce((acc: number, i: any) => acc + (i.quantity * (Number(i.purchasePrice) || 0)), 0))}
+                                            <td className="text-right font-black text-primary whitespace-nowrap">
+                                                {formatCurrency(Number(r.grandTotal || 0))}
                                             </td>
                                             <td className="text-right text-slate-500 whitespace-nowrap">
                                                 {isClient ? format(new Date(r.date || r.createdAt), "dd MMM yyyy") : "..."}
