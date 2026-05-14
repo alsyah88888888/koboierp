@@ -29,7 +29,7 @@ export default async function RootLayout({
   
   return (
     <html lang="en" className="dark">
-      <body className={`${inter.className} bg-background text-foreground antialiased`}>
+      <body className={`${inter.className} bg-background text-foreground antialiased`} suppressHydrationWarning>
         <Providers session={session}>
           <div className="flex min-h-screen bg-slate-50/50">
             <Sidebar />
