@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const SalesDeliverySchema = z.object({
-    deliveryNumber: z.string().min(1, "Nomor jalan wajib diisi"),
+    deliveryNumber: z.string().optional(),
     buyerName: z.string().min(1, "Nama pembeli wajib diisi"),
     recipient: z.string().min(1, "Penerima wajib diisi"),
     warehouseId: z.string().min(1, "Gudang wajib dipilih"),
@@ -16,7 +16,7 @@ export const SalesDeliverySchema = z.object({
 });
 
 export const SalesOrderSchema = z.object({
-    orderNumber: z.string().min(1, "Nomor pesanan wajib diisi"),
+    orderNumber: z.string().optional(),
     buyerName: z.string().min(1, "Nama pembeli wajib diisi"),
     recipient: z.string().min(1, "Penerima wajib diisi"),
     warehouseId: z.string().min(1, "Gudang wajib dipilih"),
@@ -29,7 +29,7 @@ export const SalesOrderSchema = z.object({
 });
 
 export const GoodsReceiptSchema = z.object({
-    receiptNumber: z.string().min(1),
+    receiptNumber: z.string().optional(),
     receivedFrom: z.string().min(1),
     warehouseId: z.string().min(1),
     items: z.array(z.object({
@@ -38,3 +38,4 @@ export const GoodsReceiptSchema = z.object({
         purchasePrice: z.number().min(0),
     })).min(1),
 });
+
