@@ -2,16 +2,25 @@ import { z } from "zod";
 
 export const SalesDeliverySchema = z.object({
     deliveryNumber: z.string().optional(),
+    orderId: z.string().optional().nullable(),
     buyerName: z.string().min(1, "Nama pembeli wajib diisi"),
     recipient: z.string().min(1, "Penerima wajib diisi"),
     warehouseId: z.string().min(1, "Gudang wajib dipilih"),
     salesPerson: z.string().optional(),
     vehicleNumber: z.string().optional(),
+    poNumber: z.string().optional(),
+    isPKP: z.boolean().optional(),
+    taxRate: z.number().optional(),
+    totalDiscount: z.number().optional(),
+    createdAt: z.date().optional().or(z.string().transform(val => new Date(val))),
     items: z.array(z.object({
         productId: z.string().min(1),
         quantity: z.number().positive("Jumlah harus lebih dari 0"),
         salesPrice: z.number().optional(),
+        discount: z.number().optional(),
         uom: z.string().optional(),
+        vendorName: z.string().optional(),
+        orderItemId: z.string().optional().nullable(),
     })).min(1, "Minimal harus ada satu barang"),
 });
 
@@ -20,11 +29,18 @@ export const SalesOrderSchema = z.object({
     buyerName: z.string().min(1, "Nama pembeli wajib diisi"),
     recipient: z.string().min(1, "Penerima wajib diisi"),
     warehouseId: z.string().min(1, "Gudang wajib dipilih"),
+    salesPerson: z.string().optional(),
+    date: z.date().optional().or(z.string().transform(val => new Date(val))),
+    status: z.string().optional(),
+    taxRate: z.number().optional(),
+    totalDiscount: z.number().optional(),
     items: z.array(z.object({
         productId: z.string().min(1),
         quantity: z.number().positive(),
         salesPrice: z.number().positive(),
+        discount: z.number().optional(),
         uom: z.string().optional(),
+        vendorName: z.string().optional(),
     })).min(1),
 });
 
@@ -32,10 +48,12 @@ export const GoodsReceiptSchema = z.object({
     receiptNumber: z.string().optional(),
     receivedFrom: z.string().min(1),
     warehouseId: z.string().min(1),
+    date: z.date().optional().or(z.string().transform(val => new Date(val))),
     items: z.array(z.object({
         productId: z.string().min(1),
         quantity: z.number().positive(),
         purchasePrice: z.number().min(0),
+        uom: z.string().optional(),
     })).min(1),
 });
 
