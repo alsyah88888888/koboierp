@@ -276,6 +276,48 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
         }
     };
 
+    const handleExportPO = () => {
+        const exportData: any[] = [];
+        
+        filteredOrders.forEach((o: any) => {
+            const items = o.items || [];
+            if (items.length === 0) {
+                 exportData.push({
+                    'No. PO Jual': o.orderNumber,
+                    'Tgl PO': format(new Date(o.date || o.createdAt), "MM/dd/yyyy"),
+                    'Buyer / Customer': o.buyerName,
+                    'Status': o.status,
+                    'Barcode / SKU': "-",
+                    'Nama Barang': "-",
+                    'Qty Pesan': 0,
+                    'Qty Terkirim': 0,
+                    'Sisa Belum Kirim': 0,
+                    'Satuan': "-"
+                });
+            } else {
+                items.forEach((item: any) => {
+                    const qty = Number(item.quantity) || 0;
+                    const shipped = Number(item.shippedQuantity) || 0;
+                    
+                    exportData.push({
+                        'No. PO Jual': o.orderNumber,
+                        'Tgl PO': format(new Date(o.date || o.createdAt), "MM/dd/yyyy"),
+                        'Buyer / Customer': o.buyerName,
+                        'Status': o.status,
+                        'Barcode / SKU': item.product?.sku || "-",
+                        'Nama Barang': item.product?.name || "-",
+                        'Qty Pesan': qty,
+                        'Qty Terkirim': shipped,
+                        'Sisa Belum Kirim': qty - shipped,
+                        'Satuan': item.product?.uom || "-"
+                    });
+                });
+            }
+        });
+
+        exportToExcel(exportData, `Laporan_PO_Penjualan_${format(new Date(), "yyyyMMdd")}`, 'PO_Penjualan');
+    };
+
     const handlePreview = () => {
         const data = filteredDeliveries.map(d => ({
             'No. SJ': d.deliveryNumber,
@@ -360,7 +402,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                            <button onClick={handlePreview} className="p-3 bg-white border border-slate-200 rounded-2xl hover:border-primary hover:text-primary transition-all shadow-sm group" title="Preview Report">
                                <Eye className="h-5 w-5 text-slate-400 group-hover:text-primary" />
                            </button>
-                           <button onClick={activeTab === "SJ" ? handleExport : handleExportReturn} className="p-3 bg-white border border-slate-200 rounded-2xl hover:border-emerald-500 hover:text-emerald-500 transition-all shadow-sm group" title="Export Excel">
+                           <button onClick={() => { if (activeTab === "SJ") handleExport(); else if (activeTab === "RETURNS") handleExportReturn(); else handleExportPO(); }} className="p-3 bg-white border border-slate-200 rounded-2xl hover:border-emerald-500 hover:text-emerald-500 transition-all shadow-sm group" title="Export Excel">
                                <Download className="h-5 w-5 text-slate-400 group-hover:text-emerald-500" />
                            </button>
                         </div>
