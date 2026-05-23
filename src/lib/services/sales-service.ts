@@ -198,8 +198,14 @@ export async function createSalesDeliveryService(data: any, userId: string) {
                 const availableLots = await tx.productLot.findMany({
                     where: {
                         productId: sdItem.productId,
+                        supplierName: sdItem.vendorName,
                         remainingQty: { gt: 0 },
-                        isVoided: false
+                        isVoided: false,
+                        grItem: {
+                            receipt: {
+                                warehouseId: createdDelivery.warehouseId
+                            }
+                        }
                     },
                     orderBy: { grDate: 'asc' }
                 });
@@ -451,7 +457,17 @@ export async function updateSalesDeliveryService(id: string, data: any, userId: 
             for (const sdItem of updatedDelivery.items) {
                 let remaining = sdItem.quantity;
                 const availableLots = await tx.productLot.findMany({
-                    where: { productId: sdItem.productId, remainingQty: { gt: 0 }, isVoided: false },
+                    where: {
+                        productId: sdItem.productId,
+                        supplierName: sdItem.vendorName,
+                        remainingQty: { gt: 0 },
+                        isVoided: false,
+                        grItem: {
+                            receipt: {
+                                warehouseId: updatedDelivery.warehouseId
+                            }
+                        }
+                    },
                     orderBy: { grDate: 'asc' }
                 });
                 for (const lot of availableLots) {
