@@ -70,13 +70,15 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                     'Gudang': warehouses.find(w => w.id === s.warehouseId)?.name || 'Unknown',
                     'Satuan': p.uom,
                     'Total Stok': s.quantity,
+                    'HPP per Unit': Number(p.purchasePrice) || 0,
+                    'Total Nilai HPP': (s.quantity || 0) * (Number(p.purchasePrice) || 0),
                     'Threshold': p.lowStockThreshold,
                     'Status': s.quantity <= p.lowStockThreshold ? 'LOW' : 'NORMAL'
                 }))
             );
             exportToExcel(data, 'Laporan_Stok_Gudang', 'Inventory');
         } else {
-            // Detailed LPB Export: Exports each receipt item, its quantity, and UOM/Unit
+            // Detailed LPB Export: Exports each receipt item, its quantity, and UOM/Unit, including HPP
             const data: any[] = [];
             unverifiedReceipts.forEach(r => {
                 const items = r.items || [];
@@ -90,6 +92,8 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                         'Nama Barang': item.product?.name || "-",
                         'Qty': item.quantity || 0,
                         'Satuan': item.uom || item.product?.uom || "-",
+                        'HPP per Unit': Number(item.purchasePrice) || 0,
+                        'Total Nilai HPP': (item.quantity || 0) * (Number(item.purchasePrice) || 0),
                         'Status': r.isVerified ? 'VERIFIED' : 'PENDING',
                         'Penerima': r.createdBy?.name || '-'
                     });
@@ -109,6 +113,8 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                     'Gudang': warehouses.find(w => w.id === s.warehouseId)?.name || 'Unknown',
                     'Satuan': p.uom,
                     'Total Stok': s.quantity,
+                    'HPP per Unit': Number(p.purchasePrice) || 0,
+                    'Total Nilai HPP': (s.quantity || 0) * (Number(p.purchasePrice) || 0),
                     'Threshold': p.lowStockThreshold,
                     'Status': s.quantity <= p.lowStockThreshold ? 'LOW' : 'NORMAL'
                 }))
@@ -116,7 +122,7 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
             setPreviewData(data);
             setPreviewTitle("Laporan Master Stok Gudang (Berdasarkan Vendor)");
         } else {
-            // Detailed Preview for receipts
+            // Detailed Preview for receipts, including HPP
             const data: any[] = [];
             unverifiedReceipts.forEach(r => {
                 const items = r.items || [];
@@ -130,6 +136,8 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                         'Nama Barang': item.product?.name || "-",
                         'Qty': item.quantity || 0,
                         'Satuan': item.uom || item.product?.uom || "-",
+                        'HPP per Unit': Number(item.purchasePrice) || 0,
+                        'Total Nilai HPP': (item.quantity || 0) * (Number(item.purchasePrice) || 0),
                         'Status': r.isVerified ? 'VERIFIED' : 'PENDING'
                     });
                 });
