@@ -68,7 +68,7 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                     'Nama Barang': p.name,
                     'Vendor / PT': s.vendorName || "UMUM",
                     'Gudang': warehouses.find(w => w.id === s.warehouseId)?.name || 'Unknown',
-                    'UOM': p.uom,
+                    'Satuan': p.uom,
                     'Total Stok': s.quantity,
                     'Threshold': p.lowStockThreshold,
                     'Status': s.quantity <= p.lowStockThreshold ? 'LOW' : 'NORMAL'
@@ -76,17 +76,26 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
             );
             exportToExcel(data, 'Laporan_Stok_Gudang', 'Inventory');
         } else {
-            // Updated: Export all recent receipts with their status
-            const data = unverifiedReceipts.map(r => ({
-                'Tanggal': format(new Date(r.createdAt), "dd/MM/yyyy HH:mm"),
-                'No. LPB': r.receiptNumber,
-                'Supplier': r.receivedFrom,
-                'Gudang': r.warehouse?.name,
-                'Jumlah Item': r.items.length,
-                'Status': r.isVerified ? 'VERIFIED' : 'PENDING',
-                'Penerima': r.createdBy?.name || '-'
-            }));
-            exportToExcel(data, 'Laporan_Status_Penerimaan_Gudang', 'Penerimaan');
+            // Detailed LPB Export: Exports each receipt item, its quantity, and UOM/Unit
+            const data: any[] = [];
+            unverifiedReceipts.forEach(r => {
+                const items = r.items || [];
+                items.forEach((item: any) => {
+                    data.push({
+                        'Tanggal': format(new Date(r.createdAt), "yyyy-MM-dd HH:mm"),
+                        'No. LPB': r.receiptNumber,
+                        'Supplier': r.receivedFrom,
+                        'Gudang': r.warehouse?.name || "-",
+                        'SKU': item.product?.sku || "-",
+                        'Nama Barang': item.product?.name || "-",
+                        'Qty': item.quantity || 0,
+                        'Satuan': item.uom || item.product?.uom || "-",
+                        'Status': r.isVerified ? 'VERIFIED' : 'PENDING',
+                        'Penerima': r.createdBy?.name || '-'
+                    });
+                });
+            });
+            exportToExcel(data, 'Laporan_Penerimaan_Barang_Detail_Gudang', 'Penerimaan');
         }
     };
 
@@ -98,7 +107,7 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                     'Nama Barang': p.name,
                     'Vendor / PT': s.vendorName || "UMUM",
                     'Gudang': warehouses.find(w => w.id === s.warehouseId)?.name || 'Unknown',
-                    'UOM': p.uom,
+                    'Satuan': p.uom,
                     'Total Stok': s.quantity,
                     'Threshold': p.lowStockThreshold,
                     'Status': s.quantity <= p.lowStockThreshold ? 'LOW' : 'NORMAL'
@@ -107,16 +116,26 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
             setPreviewData(data);
             setPreviewTitle("Laporan Master Stok Gudang (Berdasarkan Vendor)");
         } else {
-            const data = unverifiedReceipts.map(r => ({
-                'Tanggal': format(new Date(r.createdAt), "dd/MM/yyyy HH:mm"),
-                'No. LPB': r.receiptNumber,
-                'Supplier': r.receivedFrom,
-                'Gudang': r.warehouse?.name,
-                'Jumlah Item': r.items.length,
-                'Status': r.isVerified ? 'VERIFIED' : 'PENDING'
-            }));
+            // Detailed Preview for receipts
+            const data: any[] = [];
+            unverifiedReceipts.forEach(r => {
+                const items = r.items || [];
+                items.forEach((item: any) => {
+                    data.push({
+                        'Tanggal': format(new Date(r.createdAt), "yyyy-MM-dd HH:mm"),
+                        'No. LPB': r.receiptNumber,
+                        'Supplier': r.receivedFrom,
+                        'Gudang': r.warehouse?.name || "-",
+                        'SKU': item.product?.sku || "-",
+                        'Nama Barang': item.product?.name || "-",
+                        'Qty': item.quantity || 0,
+                        'Satuan': item.uom || item.product?.uom || "-",
+                        'Status': r.isVerified ? 'VERIFIED' : 'PENDING'
+                    });
+                });
+            });
             setPreviewData(data);
-            setPreviewTitle("Laporan Status Penerimaan Barang (Gudang)");
+            setPreviewTitle("Laporan Detail Penerimaan Barang (Gudang)");
         }
         setShowPreview(true);
     };
