@@ -223,7 +223,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                 exportData.push({
                     'No. Surat Jalan': d.deliveryNumber,
                     'No. PO Buyer': d.poNumber || "-",
-                    'Tanggal': format(new Date(d.createdAt), "MM/dd/yyyy"),
+                    'Tanggal': format(new Date(d.createdAt), "yyyy-MM-dd"),
                     'Buyer / Customer': d.buyerName,
                     'Barcode / SKU': item.product?.sku || "-",
                     'Nama Barang': item.product?.name || "-",
@@ -232,7 +232,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                     'Harga Satuan': price,
                     'Total Harga': itemSubtotal,
                     'Potongan Item': discLine,
-                    'Tgl SJ': format(new Date(d.createdAt), "MM/dd/yyyy"),
+                    'Tgl SJ': format(new Date(d.createdAt), "yyyy-MM-dd"),
                     'Gudang': d.warehouse?.name || "-",
                     'Sales Person': d.salesPerson || "-",
                     '': '', // Empty separator
@@ -254,7 +254,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
             
             const exportData = rawData.map((item: any) => ({
                 'No. Retur': item.salesReturn.returnNumber,
-                'Tanggal': format(new Date(item.salesReturn.date), "MM/dd/yyyy"),
+                'Tanggal': format(new Date(item.salesReturn.date), "yyyy-MM-dd"),
                 'Buyer': item.salesReturn.delivery?.buyerName || "-",
                 'Ref. SJ': item.salesReturn.delivery?.deliveryNumber || "-",
                 'SKU': item.product.sku,
@@ -284,7 +284,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
             if (items.length === 0) {
                  exportData.push({
                     'No. PO Jual': o.orderNumber,
-                    'Tgl PO': format(new Date(o.date || o.createdAt), "MM/dd/yyyy"),
+                    'Tgl PO': format(new Date(o.date || o.createdAt), "yyyy-MM-dd"),
                     'Buyer / Customer': o.buyerName,
                     'Status': o.status,
                     'Barcode / SKU': "-",
@@ -301,7 +301,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                     
                     exportData.push({
                         'No. PO Jual': o.orderNumber,
-                        'Tgl PO': format(new Date(o.date || o.createdAt), "MM/dd/yyyy"),
+                        'Tgl PO': format(new Date(o.date || o.createdAt), "yyyy-MM-dd"),
                         'Buyer / Customer': o.buyerName,
                         'Status': o.status,
                         'Barcode / SKU': item.product?.sku || "-",

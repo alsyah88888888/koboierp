@@ -146,7 +146,7 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, initialRequ
                 exportData.push({
                     'No. Terima': r.receiptNumber,
                     'No. Form': r.formNumber || "-",
-                    'Tanggal': format(new Date(r.date || r.createdAt), "MM/dd/yyyy"),
+                    'Tanggal': format(new Date(r.date || r.createdAt), "yyyy-MM-dd"),
                     'Terima Dari': r.receivedFrom,
                     'Barcode': item.product?.barcode || item.product?.sku || "-",
                     'SKU': item.product?.sku || "-",
@@ -181,7 +181,7 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, initialRequ
             
             const exportData = rawData.map((item: any) => ({
                 'No. Retur': item.purchaseReturn.returnNumber,
-                'Tanggal': format(new Date(item.purchaseReturn.date), "MM/dd/yyyy"),
+                'Tanggal': format(new Date(item.purchaseReturn.date), "yyyy-MM-dd"),
                 'Supplier': item.purchaseReturn.receipt?.receivedFrom || "-",
                 'Ref. LPB': item.purchaseReturn.receipt?.receiptNumber || "-",
                 'SKU': item.product.sku,
