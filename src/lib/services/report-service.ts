@@ -190,6 +190,48 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
             }
         }
 
+        // ── STEP 3: Fetch and append Goods Receipts (Pembelian) in period ─────
+        const receipts = await (prisma as any).goodsReceipt.findMany({
+            where: { isVoid: false, date: { gte: startDate, lte: endDate } },
+            include: {
+                items: {
+                    include: {
+                        product: { select: { sku: true, name: true, uom: true } }
+                    }
+                }
+            },
+            orderBy: { date: 'asc' }
+        }) as any[];
+
+        for (const gr of receipts) {
+            for (const grItem of gr.items) {
+                report.push({
+                    'Tgl Beli': gr.date ? new Date(gr.date).toLocaleDateString('id-ID') : '-',
+                    'No. GR (Batch Beli)': gr.receiptNumber,
+                    'No. Lot': '-',
+                    'Supplier': gr.receivedFrom || '-',
+                    'HPP Per Unit (Rp)': Number(grItem.purchasePrice || 0),
+                    'Tgl Jual': '-',
+                    'No. SJ': '-',
+                    'No. SO': '-',
+                    'Buyer': '-',
+                    'SKU': grItem.product.sku,
+                    'Nama Barang': grItem.product.name,
+                    'Satuan': grItem.product.uom || 'PCS',
+                    'QTY': grItem.quantity,
+                    'Harga Jual Per Unit (Rp)': 0,
+                    'Profit Per Unit (Rp)': 0,
+                    'Total Profit (Rp)': 0,
+                    'Margin %': '0.0%',
+                    'Status Bayar Beli': gr.paymentStatus || 'PENDING',
+                    'Status Bayar Jual': '-',
+                    'Sales Person Beli': gr.salesPerson || 'UMUM',
+                    'Sales Person Jual': '-',
+                    'Status': 'MASUK (STOK)'
+                });
+            }
+        }
+
         return report;
 
     } catch (error: any) {
