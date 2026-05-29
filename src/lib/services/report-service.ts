@@ -50,9 +50,10 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
 
         const goodsReceipts = await (prisma as any).goodsReceipt.findMany({
             where: { receiptNumber: { in: Array.from(grNumbers) } },
-            select: { receiptNumber: true, paymentStatus: true }
+            select: { receiptNumber: true, paymentStatus: true, salesPerson: true }
         });
         const grPaymentMap = new Map<string, string>(goodsReceipts.map((gr: any) => [gr.receiptNumber, gr.paymentStatus]));
+        const grSalesPersonMap = new Map<string, string>(goodsReceipts.map((gr: any) => [gr.receiptNumber, gr.salesPerson || 'UMUM']));
 
         const report: Record<string, any>[] = [];
 
@@ -98,6 +99,8 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
                             'Margin %': `${marginPct.toFixed(1)}%`,
                             'Status Bayar Beli': grPaymentMap.get(alloc.lot.grNumber) || 'PAID',
                             'Status Bayar Jual': sd.paymentStatus || 'PENDING',
+                            'Sales Person Beli': grSalesPersonMap.get(alloc.lot.grNumber) || 'UMUM',
+                            'Sales Person Jual': sd.salesPerson || 'UMUM',
                             'Status': 'TERJUAL (LOT)'
                         });
                     }
@@ -135,6 +138,8 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
                             'Margin %': `${marginPct.toFixed(1)}%`,
                             'Status Bayar Beli': 'PAID', // Default for historical fallback
                             'Status Bayar Jual': sd.paymentStatus || 'PENDING',
+                            'Sales Person Beli': lastLot ? (grSalesPersonMap.get(lastLot.grNumber) || 'UMUM') : 'UMUM',
+                            'Sales Person Jual': sd.salesPerson || 'UMUM',
                             'Status': 'STOK HISTORIS (BELUM LOT)'
                         });
 
@@ -174,6 +179,8 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
                         'Margin %': `${marginPct.toFixed(1)}%`,
                         'Status Bayar Beli': 'PAID', // Default for historical fallback
                         'Status Bayar Jual': sd.paymentStatus || 'PENDING',
+                        'Sales Person Beli': lastLot ? (grSalesPersonMap.get(lastLot.grNumber) || 'UMUM') : 'UMUM',
+                        'Sales Person Jual': sd.salesPerson || 'UMUM',
                         'Status': 'DATA HISTORIS (PRE-LOT)'
                     });
 
