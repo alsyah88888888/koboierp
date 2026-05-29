@@ -72,7 +72,12 @@ async function rebuild() {
                     supplierName: item.vendorName,
                     remainingQty: { gt: 0 },
                     isVoided: false,
-                    grItem: { receipt: { warehouseId: sd.warehouseId } }
+                    grItem: {
+                        receipt: {
+                            warehouseId: sd.warehouseId,
+                            salesPerson: sd.salesPerson || null
+                        }
+                    }
                 },
                 orderBy: { grDate: 'asc' }
             });

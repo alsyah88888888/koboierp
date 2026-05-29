@@ -203,7 +203,8 @@ export async function createSalesDeliveryService(data: any, userId: string) {
                         isVoided: false,
                         grItem: {
                             receipt: {
-                                warehouseId: createdDelivery.warehouseId
+                                warehouseId: createdDelivery.warehouseId,
+                                salesPerson: createdDelivery.salesPerson || null
                             }
                         }
                     },
@@ -464,7 +465,8 @@ export async function updateSalesDeliveryService(id: string, data: any, userId: 
                         isVoided: false,
                         grItem: {
                             receipt: {
-                                warehouseId: updatedDelivery.warehouseId
+                                warehouseId: updatedDelivery.warehouseId,
+                                salesPerson: updatedDelivery.salesPerson || null
                             }
                         }
                     },
