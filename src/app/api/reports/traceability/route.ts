@@ -26,6 +26,10 @@ export async function GET(req: NextRequest) {
         
         const data = await getProductTraceabilityService(month, year);
 
+        if (data && 'error' in (data as any)) {
+            return NextResponse.json({ error: (data as any).error }, { status: 500 });
+        }
+
         return NextResponse.json(data);
     } catch (error: any) {
         console.error("[API_TRACEABILITY] FATAL ERROR:", error);

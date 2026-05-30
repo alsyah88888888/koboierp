@@ -137,6 +137,9 @@ export function TrackingDashboard({ initialProducts, userEmail, userRole }: Trac
             }
             
             const data = await response.json();
+            if (data && (data.error || !Array.isArray(data))) {
+                throw new Error(data.error || "Format data traceability tidak valid");
+            }
             exportToExcel(data, `Laporan_Traceability_${reportMonth}_${reportYear}`, 'Traceability');
         } catch (err: any) {
             console.error("Export Traceability failed:", err);
@@ -190,6 +193,9 @@ export function TrackingDashboard({ initialProducts, userEmail, userRole }: Trac
             const res = await fetch(`/api/reports/batch-traceability?${params}`);
             if (!res.ok) throw new Error('Gagal mengambil data untuk export');
             const data = await res.json();
+            if (data && (data.error || !Array.isArray(data))) {
+                throw new Error(data.error || "Format data batch traceability tidak valid");
+            }
             exportToExcel(
                 data,
                 `Batch_Traceability_${batchMonth}_${batchYear}`,
