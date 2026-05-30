@@ -190,9 +190,21 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
 
                     const sellPriceWithTax = Math.round(sellPrice * (1 + taxRate / 100));
                     const totalBeli = Math.round(hpp * qty);
-                    const totalJual = Math.round(sellPriceWithTax * qty);
-                    const dpp       = calcDPP(totalJual, taxRate);
-                    const ppn       = totalJual - dpp;
+                    
+                    // Hitung diskon proporsional untuk alokasi lot ini (nominal diskon garis dibagi per kuantitas)
+                    const allocDiscount = sdItem.quantity > 0 
+                        ? (qty / sdItem.quantity) * discount 
+                        : 0;
+
+                    // DPP (Dasar Pengenaan Pajak / Omzet Jual Bersih) = (Harga Jual per unit * qty) - Diskon
+                    const dpp = Math.round((sellPrice * qty) - allocDiscount);
+
+                    // PPN = DPP * taxRate / 100
+                    const ppn = Math.round(dpp * taxRate / 100);
+
+                    // Total Jual (Termasuk PPN) = DPP + PPN
+                    const totalJual = dpp + ppn;
+
                     const margin    = dpp - totalBeli;
                     const marginPct = dpp > 0 ? (margin / dpp * 100) : 0;
 
