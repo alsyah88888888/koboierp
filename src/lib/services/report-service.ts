@@ -198,7 +198,6 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
                             'NO. PAJAK'        : grInfo.taxInvoiceNumber || '-',
                             // ─ PAYMENT ─
                             'PAYMENT'          : sd.paymentStatus || 'PENDING',
-                            'DATE'             : tglJual,
                             'PER/CT'           : perCt,
                         });
                     }
@@ -246,7 +245,6 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
                             'NO. FAKTUR'       : grInfo.formNumber || fifoLot?.grNumber || '-',
                             'NO. PAJAK'        : grInfo.taxInvoiceNumber || '-',
                             'PAYMENT'          : sd.paymentStatus || 'PENDING',
-                            'DATE'             : tglJual,
                             'PER/CT'           : perCt,
                         });
                     }
@@ -293,7 +291,6 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
                         'NO. FAKTUR'       : grInfo.formNumber || fifoLot?.grNumber || '-',
                         'NO. PAJAK'        : grInfo.taxInvoiceNumber || '-',
                         'PAYMENT'          : sd.paymentStatus || 'PENDING',
-                        'DATE'             : tglJual,
                         'PER/CT'           : perCt,
                     });
                 }
@@ -356,7 +353,6 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
                     'NO. FAKTUR'       : gr.formNumber || '-',
                     'NO. PAJAK'        : gr.taxInvoiceNumber || '-',
                     'PAYMENT'          : gr.paymentStatus || 'PENDING',
-                    'DATE'             : tglBeli,
                     'PER/CT'           : grItem.product.uom || 'PCS',
                 });
             }
@@ -417,7 +413,6 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
                     'NO. FAKTUR'       : pr.receipt?.formNumber || '-',
                     'NO. PAJAK'        : pr.receipt?.taxInvoiceNumber || '-',
                     'PAYMENT'          : pr.receipt?.paymentStatus || '-',
-                    'DATE'             : tglRetur,
                     'PER/CT'           : prItem.product.uom || 'PCS',
                 });
             }
@@ -456,7 +451,7 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
                     'NO'               : rowNo,
                     'TANGGAL'          : tglRetur,
                     'F. PAJAK'         : '-',
-                    'NOMOR'            : sr.delivery?.deliveryNumber || '-',
+                    'NOMOR'            : sr.returnNumber,
                     'TGL BELI'         : '-',
                     'NAMA PEMBELI'     : sr.delivery?.buyerName || sr.delivery?.recipient || '-',
                     'BARCODE'          : barcode,
@@ -476,10 +471,9 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
                     'PPH'              : 0,
                     'TOTAL'            : 0,
                     'NO. PO'           : sr.delivery?.poNumber || '-',
-                    'NO. FAKTUR'       : '-',
+                    'NO. FAKTUR'       : sr.delivery?.deliveryNumber || '-',
                     'NO. PAJAK'        : '-',
                     'PAYMENT'          : sr.delivery?.paymentStatus || '-',
-                    'DATE'             : tglRetur,
                     'PER/CT'           : srItem.product.uom || 'PCS',
                 });
             }
