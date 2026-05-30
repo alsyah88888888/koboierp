@@ -60,14 +60,13 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
                 }
             }
         }
-        // Fetch full GR data for PATH A (need taxInvoiceDate, taxInvoiceNumber, formNumber)
         const grDataPathA = grNumbersPathA.size > 0
             ? await (prisma as any).goodsReceipt.findMany({
                 where: { receiptNumber: { in: [...grNumbersPathA] } },
                 select: {
                     receiptNumber: true, paymentStatus: true, salesPerson: true,
                     formNumber: true, taxInvoiceDate: true, taxInvoiceNumber: true,
-                    discount: true, totalDiscount: true
+                    totalDiscount: true
                 }
             })
             : [];
