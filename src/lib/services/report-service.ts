@@ -529,3 +529,174 @@ export async function getSalesReturnsDetailService() {
         orderBy: { salesReturn: { date: 'desc' } }
     });
 }
+
+/**
+ * BATCH TRACEABILITY REPORT SERVICE
+ * Perspektif: per Lot/Batch (GR Number), bukan per SJ.
+ * Setiap baris adalah satu alokasi penjualan dari lot tersebut.
+ * Jika lot belum pernah dijual, tetap muncul 1 baris dengan info lot saja.
+ * Filter: berdasarkan GR Date (tanggal masuk lot), per bulan/tahun.
+ * Akses: ADMIN, PURCHASE, FINANCE
+ */
+export async function getBatchTraceabilityService(filters: {
+    month?: number;
+    year?: number;
+    status?: string;   // AKTIF | HABIS | VOID | ALL
+    sku?: string;
+    supplier?: string;
+}) {
+    const prisma = getPrisma();
+
+    const filterYear  = filters.year  || new Date().getFullYear();
+    const filterMonth = filters.month || (new Date().getMonth() + 1);
+    const startDate   = new Date(filterYear, filterMonth - 1, 1);
+    const endDate     = new Date(filterYear, filterMonth, 0, 23, 59, 59);
+
+    // ── Build where clause for ProductLot ────────────────────────────────
+    const lotWhere: any = {
+        grDate: { gte: startDate, lte: endDate }
+    };
+
+    // Status filter
+    if (filters.status === 'AKTIF') {
+        lotWhere.isVoided = false;
+        lotWhere.remainingQty = { gt: 0 };
+    } else if (filters.status === 'HABIS') {
+        lotWhere.isVoided = false;
+        lotWhere.remainingQty = 0;
+    } else if (filters.status === 'VOID') {
+        lotWhere.isVoided = true;
+    }
+    // ALL → tidak ada filter status tambahan
+
+    if (filters.supplier) {
+        lotWhere.supplierName = { contains: filters.supplier, mode: 'insensitive' };
+    }
+
+    if (filters.sku) {
+        lotWhere.product = { sku: { contains: filters.sku, mode: 'insensitive' } };
+    }
+
+    try {
+        // ── Fetch semua lot yang masuk di periode ini ─────────────────────
+        const lots = await (prisma as any).productLot.findMany({
+            where: lotWhere,
+            include: {
+                product: { select: { sku: true, name: true, uom: true } },
+                allocations: {
+                    include: {
+                        sdItem: {
+                            include: {
+                                delivery: {
+                                    select: {
+                                        deliveryNumber: true,
+                                        date: true,
+                                        buyerName: true,
+                                        recipient: true,
+                                        salesPerson: true,
+                                        paymentStatus: true,
+                                        orderId: true
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            orderBy: [{ grDate: 'asc' }, { lotNumber: 'asc' }]
+        }) as any[];
+
+        // ── Ambil SO number mapping untuk orderId ─────────────────────────
+        const orderIds = Array.from(new Set(
+            lots.flatMap((lot: any) =>
+                lot.allocations
+                    .map((a: any) => a.sdItem?.delivery?.orderId)
+                    .filter(Boolean)
+            )
+        )) as string[];
+
+        const salesOrders = orderIds.length > 0
+            ? await (prisma as any).salesOrder.findMany({
+                where: { id: { in: orderIds } },
+                select: { id: true, orderNumber: true }
+              })
+            : [];
+        const orderNumberMap = new Map<string, string>(
+            salesOrders.map((o: any) => [o.id, o.orderNumber])
+        );
+
+        // ── Build report rows ─────────────────────────────────────────────
+        const report: Record<string, any>[] = [];
+
+        for (const lot of lots) {
+            const hpp        = Number(lot.purchasePrice);
+            const sisaQty    = Number(lot.remainingQty);
+            const initialQty = Number(lot.initialQty);
+            const terjualQty = lot.allocations.reduce((s: number, a: any) => s + Number(a.qty), 0);
+            const nilaiSisa  = Math.round(sisaQty * hpp);
+
+            let statusLot = 'AKTIF';
+            if (lot.isVoided)       statusLot = 'VOID';
+            else if (sisaQty <= 0)  statusLot = 'HABIS';
+
+            const baseRow = {
+                'No. Lot'            : lot.lotNumber,
+                'No. GR (Batch Beli)': lot.grNumber,
+                'Tgl Masuk (GR Date)': lot.grDate ? new Date(lot.grDate).toLocaleDateString('id-ID') : '-',
+                'Supplier'           : lot.supplierName || '-',
+                'SKU'                : lot.product.sku,
+                'Nama Barang'        : lot.product.name,
+                'Satuan'             : lot.product.uom || 'PCS',
+                'QTY Masuk'          : initialQty,
+                'QTY Terjual (Total)': terjualQty,
+                'QTY Sisa'           : sisaQty,
+                'HPP Per Unit (Rp)'  : hpp,
+                'Nilai Sisa (Rp)'    : nilaiSisa,
+                'Status Lot'         : statusLot,
+            };
+
+            if (lot.allocations.length === 0) {
+                // Lot belum dijual — 1 baris kosong bagian penjualan
+                report.push({
+                    ...baseRow,
+                    'Tgl Jual'          : '-',
+                    'No. SJ'            : '-',
+                    'No. SO'            : '-',
+                    'Buyer'             : '-',
+                    'Sales Person Jual' : '-',
+                    'QTY Alokasi'       : 0,
+                    'HPP Saat Jual (Rp)': hpp,
+                    'Status Bayar Jual' : '-',
+                });
+            } else {
+                // Satu row per alokasi penjualan
+                for (const alloc of lot.allocations) {
+                    const delivery  = alloc.sdItem?.delivery;
+                    const soNumber  = delivery?.orderId
+                        ? (orderNumberMap.get(delivery.orderId) ?? '-')
+                        : '-';
+
+                    report.push({
+                        ...baseRow,
+                        'Tgl Jual'          : delivery?.date
+                            ? new Date(delivery.date).toLocaleDateString('id-ID')
+                            : '-',
+                        'No. SJ'            : delivery?.deliveryNumber || '-',
+                        'No. SO'            : soNumber,
+                        'Buyer'             : delivery?.buyerName || delivery?.recipient || '-',
+                        'Sales Person Jual' : delivery?.salesPerson || 'UMUM',
+                        'QTY Alokasi'       : Number(alloc.qty),
+                        'HPP Saat Jual (Rp)': Number(alloc.hppAtTime),
+                        'Status Bayar Jual' : delivery?.paymentStatus || '-',
+                    });
+                }
+            }
+        }
+
+        return report;
+
+    } catch (error: any) {
+        console.error('[getBatchTraceabilityService] ERROR:', error);
+        throw new Error(error.message || 'Failed to generate batch traceability report');
+    }
+}

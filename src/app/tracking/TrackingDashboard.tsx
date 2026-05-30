@@ -23,7 +23,12 @@ import {
     AlertTriangle,
     RefreshCw,
     RotateCcw,
-    CheckCircle
+    CheckCircle,
+    Layers,
+    Tag,
+    Building2,
+    ChevronDown,
+    Loader2
 } from "lucide-react";
 import { callAction } from "@/proxy";
 import { cn } from "@/lib/utils";
@@ -53,8 +58,21 @@ export function TrackingDashboard({ initialProducts, userEmail, userRole }: Trac
     const [filterMonth, setFilterMonth] = useState("");
     const [filterYear, setFilterYear] = useState("");
 
+    // ── Batch Traceability Report State ──────────────────────────────────
+    const [showBatchReport, setShowBatchReport] = useState(false);
+    const [batchData, setBatchData] = useState<any[]>([]);
+    const [loadingBatch, setLoadingBatch] = useState(false);
+    const [batchExporting, setBatchExporting] = useState(false);
+    const [batchMonth, setBatchMonth] = useState((new Date().getMonth() + 1).toString());
+    const [batchYear, setBatchYear] = useState(new Date().getFullYear().toString());
+    const [batchStatus, setBatchStatus] = useState("ALL");
+    const [batchSku, setBatchSku] = useState("");
+    const [batchSupplier, setBatchSupplier] = useState("");
+    const [expandedLots, setExpandedLots] = useState<Set<string>>(new Set());
+
     // Permission Logic
-    const canExport = userRole === "ADMIN" || userEmail === "ferza@kolaborasi.id";
+    const canExport     = userRole === "ADMIN" || userEmail === "ferza@kolaborasi.id";
+    const canBatchReport = ["ADMIN", "PURCHASE", "FINANCE"].includes(userRole?.toUpperCase());
 
     // Data Processing: Aggregate stock levels
     const processedProducts = useMemo(() => {
@@ -125,6 +143,114 @@ export function TrackingDashboard({ initialProducts, userEmail, userRole }: Trac
             alert(`Gagal menarik data: ${err.message || "Ukuran data mungkin terlalu besar"}`);
         }
     };
+
+    // ── Batch Traceability Handlers ──────────────────────────────────────
+    const handleOpenBatchReport = async () => {
+        setShowBatchReport(true);
+        setExpandedLots(new Set());
+        await fetchBatchData();
+    };
+
+    const fetchBatchData = async () => {
+        setLoadingBatch(true);
+        setBatchData([]);
+        try {
+            const params = new URLSearchParams({
+                month: batchMonth,
+                year: batchYear,
+                status: batchStatus,
+                ...(batchSku      ? { sku: batchSku }           : {}),
+                ...(batchSupplier ? { supplier: batchSupplier } : {}),
+            });
+            const res = await fetch(`/api/reports/batch-traceability?${params}`);
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.error || 'Gagal mengambil data');
+            }
+            const data = await res.json();
+            setBatchData(data);
+        } catch (err: any) {
+            console.error('Batch Report fetch failed:', err);
+            alert(`Gagal memuat Batch Report: ${err.message}`);
+        } finally {
+            setLoadingBatch(false);
+        }
+    };
+
+    const handleExportBatchExcel = async () => {
+        setBatchExporting(true);
+        try {
+            const params = new URLSearchParams({
+                month: batchMonth,
+                year: batchYear,
+                status: batchStatus,
+                ...(batchSku      ? { sku: batchSku }           : {}),
+                ...(batchSupplier ? { supplier: batchSupplier } : {}),
+            });
+            const res = await fetch(`/api/reports/batch-traceability?${params}`);
+            if (!res.ok) throw new Error('Gagal mengambil data untuk export');
+            const data = await res.json();
+            exportToExcel(
+                data,
+                `Batch_Traceability_${batchMonth}_${batchYear}`,
+                'Batch Traceability'
+            );
+        } catch (err: any) {
+            alert(`Gagal export: ${err.message}`);
+        } finally {
+            setBatchExporting(false);
+        }
+    };
+
+    const toggleLotExpand = (lotNumber: string) => {
+        setExpandedLots(prev => {
+            const next = new Set(prev);
+            if (next.has(lotNumber)) next.delete(lotNumber);
+            else next.add(lotNumber);
+            return next;
+        });
+    };
+
+    // Group batchData by lot number for display
+    const groupedBatchData = useMemo(() => {
+        const groups: Record<string, { lot: any; allocations: any[] }> = {};
+        for (const row of batchData) {
+            const key = row['No. Lot'];
+            if (!groups[key]) {
+                groups[key] = {
+                    lot: {
+                        lotNumber  : row['No. Lot'],
+                        grNumber   : row['No. GR (Batch Beli)'],
+                        tglMasuk   : row['Tgl Masuk (GR Date)'],
+                        supplier   : row['Supplier'],
+                        sku        : row['SKU'],
+                        namaBarang : row['Nama Barang'],
+                        satuan     : row['Satuan'],
+                        qtyMasuk   : row['QTY Masuk'],
+                        qtyTerjual : row['QTY Terjual (Total)'],
+                        qtySisa    : row['QTY Sisa'],
+                        hpp        : row['HPP Per Unit (Rp)'],
+                        nilaiSisa  : row['Nilai Sisa (Rp)'],
+                        statusLot  : row['Status Lot'],
+                    },
+                    allocations: []
+                };
+            }
+            if (row['No. SJ'] !== '-') {
+                groups[key].allocations.push({
+                    tglJual       : row['Tgl Jual'],
+                    noSJ          : row['No. SJ'],
+                    noSO          : row['No. SO'],
+                    buyer         : row['Buyer'],
+                    salesPerson   : row['Sales Person Jual'],
+                    qty           : row['QTY Alokasi'],
+                    hppJual       : row['HPP Saat Jual (Rp)'],
+                    statusBayar   : row['Status Bayar Jual'],
+                });
+            }
+        }
+        return Object.values(groups);
+    }, [batchData]);
 
     const getDocUrl = (record: any) => {
         if (!record.parentId) return "#";
@@ -268,6 +394,15 @@ export function TrackingDashboard({ initialProducts, userEmail, userRole }: Trac
                                 <History className="h-3.5 w-3.5" />
                                 Traceability Report
                             </button>
+                            {canBatchReport && (
+                                <button 
+                                    onClick={handleOpenBatchReport}
+                                    className="flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-violet-600/20 active:scale-95"
+                                >
+                                    <Layers className="h-3.5 w-3.5" />
+                                    Batch Report
+                                </button>
+                            )}
                             <button 
                                 onClick={handleExport}
                                 className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-600/20 active:scale-95"
@@ -786,6 +921,366 @@ export function TrackingDashboard({ initialProducts, userEmail, userRole }: Trac
                                     className="px-6 py-3 bg-emerald-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl active:scale-95 transition-all flex items-center gap-2"
                                 >
                                     <Download className="h-4 w-4" />
+                                    Export Excel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ════════════════════════════════════════════════════════════
+                BATCH TRACEABILITY REPORT MODAL (LIVE)
+            ════════════════════════════════════════════════════════════ */}
+            {showBatchReport && (
+                <div className="fixed inset-0 z-[160] flex items-center justify-center p-4">
+                    <div
+                        className="absolute inset-0 bg-slate-900/70 backdrop-blur-md animate-in fade-in"
+                        onClick={() => setShowBatchReport(false)}
+                    />
+                    <div className="relative w-full max-w-[95vw] xl:max-w-7xl bg-white rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[92vh] animate-in zoom-in-95 duration-300">
+
+                        {/* ── Header ── */}
+                        <div className="p-6 lg:p-8 border-b border-slate-100 bg-gradient-to-r from-violet-50 to-white flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 bg-violet-600 text-white rounded-2xl shadow-lg shadow-violet-600/25">
+                                    <Layers className="h-6 w-6" />
+                                </div>
+                                <div>
+                                    <h2 className="text-2xl font-black text-slate-900 leading-none">Batch Traceability Report</h2>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">
+                                        Live — Perspektif Lot/Batch Pembelian
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setShowBatchReport(false)}
+                                className="p-3 hover:bg-slate-100 rounded-2xl transition-all self-start"
+                            >
+                                <X className="h-5 w-5 text-slate-400" />
+                            </button>
+                        </div>
+
+                        {/* ── Filter Bar ── */}
+                        <div className="px-6 lg:px-8 py-4 border-b border-slate-100 bg-slate-50/50">
+                            <div className="flex flex-wrap items-center gap-3">
+                                {/* Bulan */}
+                                <div className="flex items-center gap-1.5 px-3 py-2 bg-white border border-slate-200 rounded-xl shadow-sm">
+                                    <Filter className="h-3 w-3 text-slate-400" />
+                                    <select
+                                        value={batchMonth}
+                                        onChange={(e) => setBatchMonth(e.target.value)}
+                                        className="bg-transparent text-[10px] font-black uppercase tracking-widest outline-none cursor-pointer text-slate-700 pr-1"
+                                    >
+                                        {months.map((m, i) => (
+                                            <option key={i} value={i+1}>{m}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                {/* Tahun */}
+                                <div className="flex items-center gap-1.5 px-3 py-2 bg-white border border-slate-200 rounded-xl shadow-sm">
+                                    <select
+                                        value={batchYear}
+                                        onChange={(e) => setBatchYear(e.target.value)}
+                                        className="bg-transparent text-[10px] font-black uppercase tracking-widest outline-none cursor-pointer text-slate-700"
+                                    >
+                                        {years.map(y => (
+                                            <option key={y} value={y}>{y}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                {/* Status */}
+                                <div className="flex items-center gap-1.5 px-3 py-2 bg-white border border-slate-200 rounded-xl shadow-sm">
+                                    <Tag className="h-3 w-3 text-slate-400" />
+                                    <select
+                                        value={batchStatus}
+                                        onChange={(e) => setBatchStatus(e.target.value)}
+                                        className="bg-transparent text-[10px] font-black uppercase tracking-widest outline-none cursor-pointer text-slate-700"
+                                    >
+                                        <option value="ALL">Semua Status</option>
+                                        <option value="AKTIF">Aktif (Ada Sisa)</option>
+                                        <option value="HABIS">Habis</option>
+                                        <option value="VOID">Void</option>
+                                    </select>
+                                </div>
+                                {/* SKU */}
+                                <div className="flex items-center gap-1.5 px-3 py-2 bg-white border border-slate-200 rounded-xl shadow-sm min-w-[140px]">
+                                    <Package className="h-3 w-3 text-slate-400 shrink-0" />
+                                    <input
+                                        type="text"
+                                        placeholder="Filter SKU..."
+                                        value={batchSku}
+                                        onChange={(e) => setBatchSku(e.target.value)}
+                                        className="bg-transparent text-[10px] font-bold outline-none text-slate-700 placeholder:text-slate-300 w-full"
+                                    />
+                                </div>
+                                {/* Supplier */}
+                                <div className="flex items-center gap-1.5 px-3 py-2 bg-white border border-slate-200 rounded-xl shadow-sm min-w-[160px]">
+                                    <Building2 className="h-3 w-3 text-slate-400 shrink-0" />
+                                    <input
+                                        type="text"
+                                        placeholder="Filter Supplier..."
+                                        value={batchSupplier}
+                                        onChange={(e) => setBatchSupplier(e.target.value)}
+                                        className="bg-transparent text-[10px] font-bold outline-none text-slate-700 placeholder:text-slate-300 w-full"
+                                    />
+                                </div>
+                                {/* Search Button */}
+                                <button
+                                    onClick={fetchBatchData}
+                                    disabled={loadingBatch}
+                                    className="flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-violet-600/20 active:scale-95 disabled:opacity-60"
+                                >
+                                    {loadingBatch
+                                        ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                        : <Search className="h-3.5 w-3.5" />
+                                    }
+                                    Tampilkan
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* ── Summary Strip ── */}
+                        {!loadingBatch && groupedBatchData.length > 0 && (
+                            <div className="px-6 lg:px-8 py-3 border-b border-slate-100 bg-white flex flex-wrap items-center gap-6">
+                                <div className="flex items-center gap-2">
+                                    <div className="h-2 w-2 rounded-full bg-violet-500"></div>
+                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                        {groupedBatchData.length} Lot / Batch
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <div className="h-2 w-2 rounded-full bg-emerald-500"></div>
+                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                        {groupedBatchData.filter(g => g.lot.statusLot === 'AKTIF').length} Aktif
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <div className="h-2 w-2 rounded-full bg-slate-400"></div>
+                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                        {groupedBatchData.filter(g => g.lot.statusLot === 'HABIS').length} Habis
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <div className="h-2 w-2 rounded-full bg-rose-400"></div>
+                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                        {groupedBatchData.filter(g => g.lot.statusLot === 'VOID').length} Void
+                                    </span>
+                                </div>
+                                <div className="ml-auto">
+                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                        Total Nilai Sisa:&nbsp;
+                                        <span className="text-violet-700">
+                                            {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(
+                                                groupedBatchData.reduce((acc, g) => acc + (g.lot.nilaiSisa || 0), 0)
+                                            )}
+                                        </span>
+                                    </span>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ── Table Content ── */}
+                        <div className="flex-1 overflow-auto custom-scrollbar">
+                            {loadingBatch ? (
+                                <div className="flex flex-col items-center justify-center py-24 space-y-4">
+                                    <div className="relative">
+                                        <div className="h-16 w-16 rounded-full border-4 border-violet-100"></div>
+                                        <Loader2 className="h-8 w-8 text-violet-600 animate-spin absolute inset-4" />
+                                    </div>
+                                    <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Memuat data batch...</p>
+                                </div>
+                            ) : groupedBatchData.length === 0 ? (
+                                <div className="py-24 text-center">
+                                    <Layers className="h-16 w-16 text-slate-100 mx-auto mb-4" />
+                                    <p className="text-sm font-black text-slate-300 uppercase tracking-[0.2em]">Tidak ada data lot pada periode ini</p>
+                                </div>
+                            ) : (
+                                <table className="w-full text-left border-collapse">
+                                    <thead className="sticky top-0 z-10">
+                                        <tr className="bg-slate-50 border-b border-slate-200">
+                                            <th className="px-4 py-3.5 text-[9px] font-black text-slate-400 uppercase tracking-widest w-8"></th>
+                                            <th className="px-4 py-3.5 text-[9px] font-black text-slate-400 uppercase tracking-widest">No. Lot / GR</th>
+                                            <th className="px-4 py-3.5 text-[9px] font-black text-slate-400 uppercase tracking-widest">Tgl Masuk</th>
+                                            <th className="px-4 py-3.5 text-[9px] font-black text-slate-400 uppercase tracking-widest">Supplier</th>
+                                            <th className="px-4 py-3.5 text-[9px] font-black text-slate-400 uppercase tracking-widest">SKU / Barang</th>
+                                            <th className="px-4 py-3.5 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right">Masuk</th>
+                                            <th className="px-4 py-3.5 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right">Terjual</th>
+                                            <th className="px-4 py-3.5 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right">Sisa</th>
+                                            <th className="px-4 py-3.5 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right">HPP/Unit</th>
+                                            <th className="px-4 py-3.5 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right">Nilai Sisa</th>
+                                            <th className="px-4 py-3.5 text-[9px] font-black text-slate-400 uppercase tracking-widest text-center">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {groupedBatchData.map(({ lot, allocations }) => {
+                                            const isExpanded = expandedLots.has(lot.lotNumber);
+                                            const hasAllocations = allocations.length > 0;
+                                            return (
+                                                <>
+                                                    {/* ── Lot Row ── */}
+                                                    <tr
+                                                        key={lot.lotNumber}
+                                                        onClick={() => hasAllocations && toggleLotExpand(lot.lotNumber)}
+                                                        className={cn(
+                                                            "border-b border-slate-100 transition-colors group",
+                                                            hasAllocations ? "cursor-pointer hover:bg-violet-50/50" : "cursor-default",
+                                                            isExpanded && "bg-violet-50/40"
+                                                        )}
+                                                    >
+                                                        {/* Expand toggle */}
+                                                        <td className="px-4 py-3.5">
+                                                            {hasAllocations && (
+                                                                <div className={cn(
+                                                                    "h-5 w-5 rounded-md bg-violet-100 text-violet-600 flex items-center justify-center transition-transform",
+                                                                    isExpanded && "rotate-180 bg-violet-600 text-white"
+                                                                )}>
+                                                                    <ChevronDown className="h-3 w-3" />
+                                                                </div>
+                                                            )}
+                                                        </td>
+                                                        {/* No. Lot / GR */}
+                                                        <td className="px-4 py-3.5">
+                                                            <p className="text-[10px] font-black text-slate-900 font-mono">{lot.lotNumber}</p>
+                                                            <p className="text-[9px] text-slate-400 font-mono italic mt-0.5">{lot.grNumber}</p>
+                                                        </td>
+                                                        {/* Tgl Masuk */}
+                                                        <td className="px-4 py-3.5">
+                                                            <span className="text-[10px] font-bold text-slate-600">{lot.tglMasuk}</span>
+                                                        </td>
+                                                        {/* Supplier */}
+                                                        <td className="px-4 py-3.5">
+                                                            <span className="text-[10px] font-bold text-slate-700 uppercase">{lot.supplier}</span>
+                                                        </td>
+                                                        {/* SKU + Nama */}
+                                                        <td className="px-4 py-3.5">
+                                                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{lot.sku}</p>
+                                                            <p className="text-[10px] font-black text-slate-900 uppercase leading-tight">{lot.namaBarang}</p>
+                                                        </td>
+                                                        {/* QTY Masuk */}
+                                                        <td className="px-4 py-3.5 text-right">
+                                                            <span className="text-sm font-black font-mono text-slate-900">{lot.qtyMasuk?.toLocaleString('id-ID')}</span>
+                                                            <p className="text-[8px] text-slate-400 uppercase">{lot.satuan}</p>
+                                                        </td>
+                                                        {/* QTY Terjual */}
+                                                        <td className="px-4 py-3.5 text-right">
+                                                            <span className={cn(
+                                                                "text-sm font-black font-mono",
+                                                                lot.qtyTerjual > 0 ? "text-indigo-600" : "text-slate-300"
+                                                            )}>{lot.qtyTerjual?.toLocaleString('id-ID')}</span>
+                                                        </td>
+                                                        {/* QTY Sisa */}
+                                                        <td className="px-4 py-3.5 text-right">
+                                                            <span className={cn(
+                                                                "text-sm font-black font-mono",
+                                                                lot.qtySisa > 0 ? "text-emerald-600" : "text-slate-300"
+                                                            )}>{lot.qtySisa?.toLocaleString('id-ID')}</span>
+                                                        </td>
+                                                        {/* HPP */}
+                                                        <td className="px-4 py-3.5 text-right">
+                                                            <span className="text-[10px] font-bold text-slate-600">
+                                                                {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(lot.hpp)}
+                                                            </span>
+                                                        </td>
+                                                        {/* Nilai Sisa */}
+                                                        <td className="px-4 py-3.5 text-right">
+                                                            <span className={cn(
+                                                                "text-[10px] font-black",
+                                                                lot.nilaiSisa > 0 ? "text-violet-700" : "text-slate-300"
+                                                            )}>
+                                                                {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(lot.nilaiSisa)}
+                                                            </span>
+                                                        </td>
+                                                        {/* Status */}
+                                                        <td className="px-4 py-3.5 text-center">
+                                                            <span className={cn(
+                                                                "text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border",
+                                                                lot.statusLot === 'AKTIF' ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
+                                                                lot.statusLot === 'HABIS' ? "bg-slate-100 text-slate-500 border-slate-200" :
+                                                                "bg-rose-50 text-rose-600 border-rose-200"
+                                                            )}>
+                                                                {lot.statusLot}
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+
+                                                    {/* ── Allocation Sub-rows ── */}
+                                                    {isExpanded && allocations.map((alloc, ai) => (
+                                                        <tr key={`${lot.lotNumber}-alloc-${ai}`} className="bg-violet-50/60 border-b border-violet-100/60">
+                                                            <td className="pl-8 pr-2 py-2.5">
+                                                                <div className="h-full flex items-center justify-center">
+                                                                    <ArrowDownRight className="h-3.5 w-3.5 text-violet-400" />
+                                                                </div>
+                                                            </td>
+                                                            {/* Tgl Jual + No SJ */}
+                                                            <td className="px-4 py-2.5" colSpan={2}>
+                                                                <p className="text-[9px] font-black text-violet-700 font-mono">{alloc.noSJ}</p>
+                                                                <p className="text-[9px] text-slate-400 font-mono">{alloc.noSO !== '-' ? `SO: ${alloc.noSO}` : ''}</p>
+                                                            </td>
+                                                            {/* Buyer */}
+                                                            <td className="px-4 py-2.5" colSpan={2}>
+                                                                <div className="flex items-center gap-1.5">
+                                                                    <User className="h-3 w-3 text-slate-400 shrink-0" />
+                                                                    <span className="text-[10px] font-bold text-slate-700 uppercase truncate max-w-[200px]">{alloc.buyer}</span>
+                                                                </div>
+                                                                <p className="text-[9px] text-slate-400 mt-0.5">
+                                                                    {alloc.tglJual} &bull; {alloc.salesPerson}
+                                                                </p>
+                                                            </td>
+                                                            {/* spacer */}
+                                                            <td className="px-4 py-2.5 text-right">
+                                                                <span className="text-sm font-black font-mono text-violet-700">-{alloc.qty?.toLocaleString('id-ID')}</span>
+                                                            </td>
+                                                            <td className="px-4 py-2.5 text-right">
+                                                                <span className="text-sm font-black font-mono text-indigo-600">{alloc.qty?.toLocaleString('id-ID')}</span>
+                                                            </td>
+                                                            <td colSpan={2} className="px-4 py-2.5 text-right">
+                                                                <span className={cn(
+                                                                    "text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border",
+                                                                    alloc.statusBayar === 'PAID' ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
+                                                                    alloc.statusBayar === 'PARTIAL' ? "bg-yellow-50 text-yellow-700 border-yellow-200" :
+                                                                    "bg-slate-100 text-slate-500 border-slate-200"
+                                                                )}>
+                                                                    {alloc.statusBayar}
+                                                                </span>
+                                                            </td>
+                                                            <td></td>
+                                                        </tr>
+                                                    ))}
+                                                </>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            )}
+                        </div>
+
+                        {/* ── Footer ── */}
+                        <div className="p-6 lg:p-8 bg-slate-900 text-white flex flex-wrap items-center justify-between gap-4">
+                            <div className="flex items-center gap-3">
+                                <Layers className="h-5 w-5 text-violet-400" />
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                    Data berdasarkan GR Date (Tanggal Masuk Lot) &bull; Klik baris untuk melihat detail penjualan
+                                </p>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <button
+                                    onClick={fetchBatchData}
+                                    disabled={loadingBatch}
+                                    className="px-5 py-2.5 bg-slate-700 hover:bg-slate-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 flex items-center gap-2 disabled:opacity-50"
+                                >
+                                    <RefreshCw className={cn("h-3.5 w-3.5", loadingBatch && "animate-spin")} />
+                                    Refresh
+                                </button>
+                                <button
+                                    onClick={handleExportBatchExcel}
+                                    disabled={batchExporting || groupedBatchData.length === 0}
+                                    className="px-5 py-2.5 bg-violet-600 hover:bg-violet-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-xl active:scale-95 flex items-center gap-2 disabled:opacity-50"
+                                >
+                                    {batchExporting
+                                        ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                        : <Download className="h-3.5 w-3.5" />
+                                    }
                                     Export Excel
                                 </button>
                             </div>
