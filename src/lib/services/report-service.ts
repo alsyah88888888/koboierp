@@ -186,7 +186,7 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
                             // ─ JUAL ─
                             'NAMA SUPPLIER'    : alloc.lot.supplierName || '-',
                             'QTY JUAL'         : qty,
-                            'HARGA JUAL'       : sellPrice,
+                            'HARGA JUAL'       : Math.round(sellPrice * (1 + taxRate / 100)),
                             'TOTAL JUAL'       : totalJual,
                             // ─ KALKULASI ─
                             'MARGIN'           : margin,
@@ -238,7 +238,7 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
                             'TOTAL BELI'       : totalBeli,
                             'NAMA SUPPLIER'    : fifoLot?.supplierName || '-',
                             'QTY JUAL'         : unallocated,
-                            'HARGA JUAL'       : sellPrice,
+                            'HARGA JUAL'       : Math.round(sellPrice * (1 + taxRate / 100)),
                             'TOTAL JUAL'       : totalJual,
                             'MARGIN'           : margin,
                             'MARGIN %'         : `${marginPct.toFixed(1)}%`,
@@ -286,7 +286,7 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
                         'TOTAL BELI'       : totalBeli,
                         'NAMA SUPPLIER'    : fifoLot?.supplierName || '-',
                         'QTY JUAL'         : qty,
-                        'HARGA JUAL'       : sellPrice,
+                        'HARGA JUAL'       : Math.round(sellPrice * (1 + taxRate / 100)),
                         'TOTAL JUAL'       : totalJual,
                         'MARGIN'           : margin,
                         'MARGIN %'         : `${marginPct.toFixed(1)}%`,
