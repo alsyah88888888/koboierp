@@ -120,10 +120,27 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
             : [];
         const grMapFifo = new Map<string, any>(grDataFifo.map((g: any) => [g.receiptNumber, g]));
 
-        // Helper: FIFO lot untuk produk pada tanggal tertentu
+        // Helper: FIFO lot untuk produk pada tanggal tertentu dengan Prioritas Bulan yang Sama (Rule 1)
         const getFifoLot = (productId: string, saleDate: Date): any | null => {
             const lots = fifoLotsByProduct.get(productId) ?? [];
             const eligible = lots.filter((l: any) => new Date(l.grDate) <= saleDate);
+            
+            // Cari apakah ada pembelian di bulan dan tahun yang sama dengan tanggal penjualan
+            const saleD = new Date(saleDate);
+            const saleYear = saleD.getFullYear();
+            const saleMonth = saleD.getMonth();
+            
+            const sameMonthLots = eligible.filter((l: any) => {
+                const grD = new Date(l.grDate);
+                return grD.getFullYear() === saleYear && grD.getMonth() === saleMonth;
+            });
+            
+            // Jika ada pembelian di bulan yang sama, prioritaskan lot tersebut
+            if (sameMonthLots.length > 0) {
+                return sameMonthLots[0];
+            }
+            
+            // Fallback ke FIFO standar (ambil stok tertua) jika tidak ada pembelian di bulan yang sama
             return eligible[0] ?? lots[0] ?? null;
         };
 
