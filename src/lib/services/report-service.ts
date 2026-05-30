@@ -205,8 +205,10 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
                     // Total Jual (Termasuk PPN) = DPP + PPN
                     const totalJual = dpp + ppn;
 
-                    const margin    = dpp - totalBeli;
-                    const marginPct = dpp > 0 ? (margin / dpp * 100) : 0;
+                    // Margin dihitung dari Total Jual (kolom Excel) dikurangi Total Beli (kolom Excel)
+                    // agar laporan konsisten secara visual untuk pembaca laporan Excel
+                    const margin    = totalJual - totalBeli;
+                    const marginPct = totalJual > 0 ? (margin / totalJual * 100) : 0;
 
                     rowNo++;
                     rows.push({
