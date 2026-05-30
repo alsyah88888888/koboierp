@@ -1,26 +1,34 @@
 import { getPrisma } from "@/lib/prisma";
 
 /**
- * FIFO TRACEABILITY SERVICE — v2 (Lot/Batch System)
- * For sales with LotAllocations: uses hppAtTime for 100% accurate HPP.
- * For historical sales without allocations: falls back to FIFO assumption.
+ * FIFO TRACEABILITY SERVICE — v3 (Full Accuracy)
+ * Fix #1: PATH B pakai FIFO (lot tertua ≤ tgl jual), bukan lot terbaru
+ * Fix #2: Baris PEMBELIAN sekarang include No. Lot dari ProductLot
+ * Fix #3: Kolom Total Nilai Beli & Total Nilai Jual ditambahkan
+ * Fix #4: Sales Person Beli PATH B diambil dari GR yang benar
+ * Fix #5: Semua baris disortir kronologis (PEMBELIAN & PENJUALAN campur)
+ * Fix #6: Retur Beli & Retur Jual diikutsertakan dalam laporan
  */
 export async function getProductTraceabilityService(month?: number, year?: number) {
     const prisma = getPrisma();
 
-    const filterYear = year || new Date().getFullYear();
+    const filterYear  = year  || new Date().getFullYear();
     const filterMonth = month || (new Date().getMonth() + 1);
-    const startDate = new Date(filterYear, filterMonth - 1, 1);
-    const endDate = new Date(filterYear, filterMonth, 0, 23, 59, 59);
+    const startDate   = new Date(filterYear, filterMonth - 1, 1);
+    const endDate     = new Date(filterYear, filterMonth, 0, 23, 59, 59);
 
     try {
-        // ── STEP 1: Fetch sales deliveries in period ──────────────────────
+        const rows: Record<string, any>[] = [];
+
+        // ════════════════════════════════════════════════════════════
+        // PRE-FETCH: SalesDeliveries + SO map + PATH A GR map
+        // ════════════════════════════════════════════════════════════
         const deliveries = await (prisma as any).salesDelivery.findMany({
             where: { isVoid: false, date: { gte: startDate, lte: endDate } },
             include: {
                 items: {
                     include: {
-                        product: { select: { sku: true, name: true, uom: true } },
+                        product: { select: { sku: true, name: true, uom: true, purchasePrice: true } },
                         lotAllocations: { include: { lot: true } }
                     }
                 }
@@ -28,175 +36,240 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
             orderBy: { date: 'asc' }
         }) as any[];
 
-
-        // Fetch SO numbers
-        const orderIds = deliveries.map((d: any) => d.orderId).filter(Boolean) as string[];
+        // SO number map
+        const orderIds = [...new Set(
+            deliveries.map((d: any) => d.orderId).filter(Boolean)
+        )] as string[];
         const salesOrders = orderIds.length > 0
             ? await (prisma as any).salesOrder.findMany({
                 where: { id: { in: orderIds } },
                 select: { id: true, orderNumber: true }
             })
             : [];
-        const orderNumberMap = new Map<string, string>(salesOrders.map((o: any) => [o.id, o.orderNumber]));
+        const soMap = new Map<string, string>(salesOrders.map((o: any) => [o.id, o.orderNumber]));
 
-        const grNumbers = new Set<string>();
+        // PATH A: collect GR numbers from lot allocations for payment/salesperson lookup
+        const grNumbersPathA = new Set<string>();
         for (const sd of deliveries) {
             for (const sdItem of sd.items) {
-                if (sdItem.lotAllocations) {
-                    sdItem.lotAllocations.forEach((a: any) => { if (a.lot?.grNumber) grNumbers.add(a.lot.grNumber); });
+                for (const alloc of sdItem.lotAllocations ?? []) {
+                    if (alloc.lot?.grNumber) grNumbersPathA.add(alloc.lot.grNumber);
+                }
+            }
+        }
+        const grDataPathA = grNumbersPathA.size > 0
+            ? await (prisma as any).goodsReceipt.findMany({
+                where: { receiptNumber: { in: [...grNumbersPathA] } },
+                select: { receiptNumber: true, paymentStatus: true, salesPerson: true }
+            })
+            : [];
+        const grPaymentMapA  = new Map<string, string>(grDataPathA.map((g: any) => [g.receiptNumber, g.paymentStatus]));
+        const grSalesPersonA = new Map<string, string>(grDataPathA.map((g: any) => [g.receiptNumber, g.salesPerson || 'UMUM']));
+
+        // PATH B / edge-case: pre-fetch FIFO lots (Fix #1 — batch, no N+1)
+        const productIdsNeedFifo = new Set<string>();
+        for (const sd of deliveries) {
+            for (const sdItem of sd.items) {
+                const hasAlloc = sdItem.lotAllocations?.length > 0;
+                if (!hasAlloc) {
+                    productIdsNeedFifo.add(sdItem.productId);
+                } else {
+                    const allocQty = sdItem.lotAllocations.reduce((s: number, a: any) => s + a.qty, 0);
+                    if (sdItem.quantity > allocQty) productIdsNeedFifo.add(sdItem.productId);
                 }
             }
         }
 
-        const goodsReceipts = await (prisma as any).goodsReceipt.findMany({
-            where: { receiptNumber: { in: Array.from(grNumbers) } },
-            select: { receiptNumber: true, paymentStatus: true, salesPerson: true }
-        });
-        const grPaymentMap = new Map<string, string>(goodsReceipts.map((gr: any) => [gr.receiptNumber, gr.paymentStatus]));
-        const grSalesPersonMap = new Map<string, string>(goodsReceipts.map((gr: any) => [gr.receiptNumber, gr.salesPerson || 'UMUM']));
+        // Map: productId → lots[] sorted by grDate ASC (oldest first = FIFO)
+        const fifoLotsByProduct = new Map<string, any[]>();
+        if (productIdsNeedFifo.size > 0) {
+            const allFifoLots = await (prisma as any).productLot.findMany({
+                where: { productId: { in: [...productIdsNeedFifo] }, isVoided: false },
+                orderBy: { grDate: 'asc' }
+            });
+            for (const lot of allFifoLots) {
+                if (!fifoLotsByProduct.has(lot.productId)) fifoLotsByProduct.set(lot.productId, []);
+                fifoLotsByProduct.get(lot.productId)!.push(lot);
+            }
+        }
 
-        const report: Record<string, any>[] = [];
+        // Batch-fetch GR salesPerson for FIFO lots (Fix #4)
+        const grNumbersFifo = new Set<string>();
+        for (const lots of fifoLotsByProduct.values()) {
+            for (const lot of lots) if (lot.grNumber) grNumbersFifo.add(lot.grNumber);
+        }
+        const grDataFifo = grNumbersFifo.size > 0
+            ? await (prisma as any).goodsReceipt.findMany({
+                where: { receiptNumber: { in: [...grNumbersFifo] } },
+                select: { receiptNumber: true, paymentStatus: true, salesPerson: true }
+            })
+            : [];
+        const grSalesPersonFifo = new Map<string, string>(grDataFifo.map((g: any) => [g.receiptNumber, g.salesPerson || 'UMUM']));
 
-        // ── STEP 2: Process each delivery item ───────────────────────────
+        // Helper: FIFO lot untuk produk pada tanggal tertentu
+        const getFifoLot = (productId: string, saleDate: Date): any | null => {
+            const lots = fifoLotsByProduct.get(productId) ?? [];
+            // Ambil lot tertua yang grDate-nya ≤ tanggal jual
+            const eligible = lots.filter((l: any) => new Date(l.grDate) <= saleDate);
+            return eligible[0] ?? lots[0] ?? null; // fallback: lot tertua yang ada
+        };
+
+        // ════════════════════════════════════════════════════════════
+        // STEP 1: PENJUALAN
+        // ════════════════════════════════════════════════════════════
         for (const sd of deliveries) {
+            const soNumber = soMap.get(sd.orderId ?? '') ?? sd.poNumber ?? '-';
+            const buyer    = sd.buyerName || sd.recipient;
+            const tglJual  = new Date(sd.date).toLocaleDateString('id-ID');
+            const spJual   = sd.salesPerson || 'UMUM';
+
             for (const sdItem of sd.items) {
-                const soNumber = orderNumberMap.get((sd as any).orderId ?? '') ?? (sd as any).poNumber ?? '-';
-                const buyer = sd.buyerName || sd.recipient;
-                const tglJual = new Date(sd.date).toLocaleDateString('id-ID');
-                const noSJ = sd.deliveryNumber;
-                const sku = sdItem.product.sku;
-                const nama = sdItem.product.name;
-                const satuan = sdItem.product.uom || 'PCS';
+                const sku       = sdItem.product.sku;
+                const nama      = sdItem.product.name;
+                const satuan    = sdItem.product.uom || 'PCS';
                 const sellPrice = Number(sdItem.salesPrice || 0);
 
-                if (sdItem.lotAllocations && sdItem.lotAllocations.length > 0) {
-                    // ✅ PATH A: Lot-allocated — 100% AKURAT
+                if (sdItem.lotAllocations?.length > 0) {
+                    // ── PATH A: LOT ALLOCATED — 100% Akurat ──────────────
                     for (const alloc of sdItem.lotAllocations) {
-                        const hpp = Number(alloc.hppAtTime);
-                        const profitUnit = sellPrice - hpp;
-                        const totalProfit = profitUnit * alloc.qty;
-                        const marginPct = sellPrice > 0
-                            ? Math.round(((sellPrice - hpp) / sellPrice) * 1000) / 10
-                            : 0;
+                        const hpp         = Number(alloc.hppAtTime);
+                        const profitUnit  = sellPrice - hpp;
+                        const totalProfit = Math.round(profitUnit * alloc.qty);
+                        const nilaiJual   = Math.round(sellPrice * alloc.qty);
+                        const nilaiBeli   = Math.round(hpp * alloc.qty);
+                        const marginPct   = sellPrice > 0 ? ((sellPrice - hpp) / sellPrice * 100) : 0;
 
-                        report.push({
-                            'Tgl Beli': alloc.lot.grDate ? new Date(alloc.lot.grDate).toLocaleDateString('id-ID') : '-',
-                            'No. GR (Batch Beli)': alloc.lot.grNumber,
-                            'No. Lot': alloc.lot.lotNumber,
-                            'Supplier': alloc.lot.supplierName,
-                            'HPP Per Unit (Rp)': hpp,
-                            'Tgl Jual': tglJual,
-                            'No. SJ': noSJ,
-                            'No. SO': soNumber,
-                            'Buyer': buyer,
-                            'SKU': sku,
-                            'Nama Barang': nama,
-                            'Satuan': satuan,
-                            'QTY': alloc.qty,
-                            'Harga Jual Per Unit (Rp)': sellPrice,
-                            'Profit Per Unit (Rp)': Math.round(profitUnit),
-                            'Total Profit (Rp)': Math.round(totalProfit),
-                            'Margin %': `${marginPct.toFixed(1)}%`,
-                            'Status Bayar Beli': grPaymentMap.get(alloc.lot.grNumber) || 'PAID',
-                            'Status Bayar Jual': sd.paymentStatus || 'PENDING',
-                            'Sales Person Beli': grSalesPersonMap.get(alloc.lot.grNumber) || 'UMUM',
-                            'Sales Person Jual': sd.salesPerson || 'UMUM',
-                            'Status': 'TERJUAL (LOT)'
+                        rows.push({
+                            _sortDate               : sd.date,
+                            'Tipe Transaksi'        : 'PENJUALAN',
+                            'Tanggal'               : tglJual,
+                            'Tgl Beli'              : alloc.lot.grDate ? new Date(alloc.lot.grDate).toLocaleDateString('id-ID') : '-',
+                            'No. GR (Batch Beli)'   : alloc.lot.grNumber || '-',
+                            'No. Lot'               : alloc.lot.lotNumber || '-',
+                            'No. Faktur Supplier'   : '-',
+                            'Supplier'              : alloc.lot.supplierName || '-',
+                            'HPP Per Unit (Rp)'     : hpp,
+                            'Total Nilai Beli (Rp)' : nilaiBeli,
+                            'Tgl Jual'              : tglJual,
+                            'No. SJ'                : sd.deliveryNumber,
+                            'No. SO'                : soNumber,
+                            'Buyer'                 : buyer,
+                            'SKU'                   : sku,
+                            'Nama Barang'           : nama,
+                            'Satuan'                : satuan,
+                            'QTY'                   : alloc.qty,
+                            'Harga Jual Per Unit (Rp)' : sellPrice,
+                            'Total Nilai Jual (Rp)' : nilaiJual,
+                            'Profit Per Unit (Rp)'  : Math.round(profitUnit),
+                            'Total Profit (Rp)'     : totalProfit,
+                            'Margin %'              : `${marginPct.toFixed(1)}%`,
+                            'Status Bayar Beli'     : grPaymentMapA.get(alloc.lot.grNumber) || 'PAID',
+                            'Status Bayar Jual'     : sd.paymentStatus || 'PENDING',
+                            'Sales Person Beli'     : grSalesPersonA.get(alloc.lot.grNumber) || 'UMUM',
+                            'Sales Person Jual'     : spJual,
+                            'Akurasi HPP'           : 'LOT AKURAT',
                         });
                     }
 
-                    // Handle unallocated qty within this item (edge case)
-                    const allocatedQty = sdItem.lotAllocations.reduce((s: number, a: any) => s + a.qty, 0);
-                    const unallocated = sdItem.quantity - allocatedQty;
+                    // Edge-case: qty terjual > total alokasi lot
+                    const allocQty    = sdItem.lotAllocations.reduce((s: number, a: any) => s + a.qty, 0);
+                    const unallocated = sdItem.quantity - allocQty;
                     if (unallocated > 0) {
-                        const lastLot = await (prisma as any).productLot.findFirst({
-                            where: { productId: sdItem.productId },
-                            orderBy: { grDate: 'desc' }
-                        });
-                        const hpp = lastLot ? Number(lastLot.purchasePrice) : Number(sdItem.product.purchasePrice || 0);
+                        const fifoLot    = getFifoLot(sdItem.productId, sd.date);
+                        const hpp        = fifoLot ? Number(fifoLot.purchasePrice) : Number(sdItem.product.purchasePrice || 0);
                         const profitUnit = sellPrice - hpp;
-                        const totalProfit = profitUnit * unallocated;
-                        const marginPct = sellPrice > 0 ? (profitUnit / sellPrice) * 100 : 0;
+                        const nilaiJual  = Math.round(sellPrice * unallocated);
+                        const nilaiBeli  = Math.round(hpp * unallocated);
+                        const marginPct  = sellPrice > 0 ? (profitUnit / sellPrice * 100) : 0;
+                        const spBeli     = fifoLot?.grNumber ? (grSalesPersonFifo.get(fifoLot.grNumber) || 'UMUM') : 'UMUM';
 
-                        report.push({
-                            'Tgl Beli': lastLot ? new Date(lastLot.grDate).toLocaleDateString('id-ID') : '-',
-                            'No. GR (Batch Beli)': lastLot ? (lastLot.grNumber || lastLot.lotNumber) : '-',
-                            'No. Lot': lastLot ? (lastLot.grNumber || lastLot.lotNumber) : '-',
-                            'Supplier': sdItem.vendorName || '-',
-                            'HPP Per Unit (Rp)': Math.round(hpp),
-                            'Tgl Jual': tglJual,
-                            'No. SJ': noSJ,
-                            'No. SO': soNumber,
-                            'Buyer': buyer,
-                            'SKU': sku,
-                            'Nama Barang': nama,
-                            'Satuan': satuan,
-                            'QTY': unallocated,
-                            'Harga Jual Per Unit (Rp)': sellPrice,
-                            'Profit Per Unit (Rp)': Math.round(profitUnit),
-                            'Total Profit (Rp)': Math.round(totalProfit),
-                            'Margin %': `${marginPct.toFixed(1)}%`,
-                            'Status Bayar Beli': 'PAID', // Default for historical fallback
-                            'Status Bayar Jual': sd.paymentStatus || 'PENDING',
-                            'Sales Person Beli': lastLot ? (grSalesPersonMap.get(lastLot.grNumber) || 'UMUM') : 'UMUM',
-                            'Sales Person Jual': sd.salesPerson || 'UMUM',
-                            'Status': 'STOK HISTORIS (BELUM LOT)'
+                        rows.push({
+                            _sortDate               : sd.date,
+                            'Tipe Transaksi'        : 'PENJUALAN',
+                            'Tanggal'               : tglJual,
+                            'Tgl Beli'              : fifoLot?.grDate ? new Date(fifoLot.grDate).toLocaleDateString('id-ID') : '-',
+                            'No. GR (Batch Beli)'   : fifoLot?.grNumber || '-',
+                            'No. Lot'               : fifoLot?.lotNumber || '-',
+                            'No. Faktur Supplier'   : '-',
+                            'Supplier'              : fifoLot?.supplierName || '-',
+                            'HPP Per Unit (Rp)'     : Math.round(hpp),
+                            'Total Nilai Beli (Rp)' : nilaiBeli,
+                            'Tgl Jual'              : tglJual,
+                            'No. SJ'                : sd.deliveryNumber,
+                            'No. SO'                : soNumber,
+                            'Buyer'                 : buyer,
+                            'SKU'                   : sku,
+                            'Nama Barang'           : nama,
+                            'Satuan'                : satuan,
+                            'QTY'                   : unallocated,
+                            'Harga Jual Per Unit (Rp)' : sellPrice,
+                            'Total Nilai Jual (Rp)' : nilaiJual,
+                            'Profit Per Unit (Rp)'  : Math.round(profitUnit),
+                            'Total Profit (Rp)'     : Math.round(profitUnit * unallocated),
+                            'Margin %'              : `${marginPct.toFixed(1)}%`,
+                            'Status Bayar Beli'     : 'PAID',
+                            'Status Bayar Jual'     : sd.paymentStatus || 'PENDING',
+                            'Sales Person Beli'     : spBeli,
+                            'Sales Person Jual'     : spJual,
+                            'Akurasi HPP'           : 'FIFO ESTIMASI',
                         });
-
-
                     }
-
 
                 } else {
-                    // ⚠️ PATH B: No lot allocation (data historis sebelum implementasi)
-                    // Cari harga beli terakhir produk ini untuk mengisi HPP historis
-                    const lastLot = await (prisma as any).productLot.findFirst({
-                        where: { productId: sdItem.productId },
-                        orderBy: { grDate: 'desc' }
-                    });
-                    const hpp = lastLot ? Number(lastLot.purchasePrice) : Number(sdItem.product.purchasePrice || 0);
+                    // ── PATH B: TANPA LOT — FIFO ESTIMATE (Fix #1) ───────
+                    const fifoLot    = getFifoLot(sdItem.productId, sd.date);
+                    const hpp        = fifoLot ? Number(fifoLot.purchasePrice) : Number(sdItem.product.purchasePrice || 0);
                     const profitUnit = sellPrice - hpp;
-                    const totalProfit = profitUnit * sdItem.quantity;
-                    const marginPct = sellPrice > 0 ? (profitUnit / sellPrice) * 100 : 0;
+                    const nilaiJual  = Math.round(sellPrice * sdItem.quantity);
+                    const nilaiBeli  = Math.round(hpp * sdItem.quantity);
+                    const marginPct  = sellPrice > 0 ? (profitUnit / sellPrice * 100) : 0;
+                    const spBeli     = fifoLot?.grNumber ? (grSalesPersonFifo.get(fifoLot.grNumber) || 'UMUM') : 'UMUM';
+                    const akurasi    = fifoLot ? 'FIFO ESTIMASI' : 'MASTER PRICE';
 
-                    report.push({
-                        'Tgl Beli': lastLot ? new Date(lastLot.grDate).toLocaleDateString('id-ID') : '-',
-                        'No. GR (Batch Beli)': lastLot ? (lastLot.grNumber || lastLot.lotNumber) : '-',
-                        'No. Lot': lastLot ? (lastLot.grNumber || lastLot.lotNumber) : '-',
-                        'Supplier': sdItem.vendorName || '-',
-                        'HPP Per Unit (Rp)': Math.round(hpp),
-                        'Tgl Jual': tglJual,
-                        'No. SJ': noSJ,
-                        'No. SO': soNumber,
-                        'Buyer': buyer,
-                        'SKU': sku,
-                        'Nama Barang': nama,
-                        'Satuan': satuan,
-                        'QTY': sdItem.quantity,
-                        'Harga Jual Per Unit (Rp)': sellPrice,
-                        'Profit Per Unit (Rp)': Math.round(profitUnit),
-                        'Total Profit (Rp)': Math.round(totalProfit),
-                        'Margin %': `${marginPct.toFixed(1)}%`,
-                        'Status Bayar Beli': 'PAID', // Default for historical fallback
-                        'Status Bayar Jual': sd.paymentStatus || 'PENDING',
-                        'Sales Person Beli': lastLot ? (grSalesPersonMap.get(lastLot.grNumber) || 'UMUM') : 'UMUM',
-                        'Sales Person Jual': sd.salesPerson || 'UMUM',
-                        'Status': 'DATA HISTORIS (PRE-LOT)'
+                    rows.push({
+                        _sortDate               : sd.date,
+                        'Tipe Transaksi'        : 'PENJUALAN',
+                        'Tanggal'               : tglJual,
+                        'Tgl Beli'              : fifoLot?.grDate ? new Date(fifoLot.grDate).toLocaleDateString('id-ID') : '-',
+                        'No. GR (Batch Beli)'   : fifoLot?.grNumber || '-',
+                        'No. Lot'               : fifoLot?.lotNumber || '-',
+                        'No. Faktur Supplier'   : '-',
+                        'Supplier'              : fifoLot?.supplierName || '-',
+                        'HPP Per Unit (Rp)'     : Math.round(hpp),
+                        'Total Nilai Beli (Rp)' : nilaiBeli,
+                        'Tgl Jual'              : tglJual,
+                        'No. SJ'                : sd.deliveryNumber,
+                        'No. SO'                : soNumber,
+                        'Buyer'                 : buyer,
+                        'SKU'                   : sku,
+                        'Nama Barang'           : nama,
+                        'Satuan'                : satuan,
+                        'QTY'                   : sdItem.quantity,
+                        'Harga Jual Per Unit (Rp)' : sellPrice,
+                        'Total Nilai Jual (Rp)' : nilaiJual,
+                        'Profit Per Unit (Rp)'  : Math.round(profitUnit),
+                        'Total Profit (Rp)'     : Math.round(profitUnit * sdItem.quantity),
+                        'Margin %'              : `${marginPct.toFixed(1)}%`,
+                        'Status Bayar Beli'     : 'PAID',
+                        'Status Bayar Jual'     : sd.paymentStatus || 'PENDING',
+                        'Sales Person Beli'     : spBeli,
+                        'Sales Person Jual'     : spJual,
+                        'Akurasi HPP'           : akurasi,
                     });
-
-
-
                 }
             }
         }
 
-        // ── STEP 3: Fetch and append Goods Receipts (Pembelian) in period ─────
+        // ════════════════════════════════════════════════════════════
+        // STEP 2: PEMBELIAN — include No. Lot & Total Nilai Beli (Fix #2, #3)
+        // ════════════════════════════════════════════════════════════
         const receipts = await (prisma as any).goodsReceipt.findMany({
             where: { isVoid: false, date: { gte: startDate, lte: endDate } },
             include: {
                 items: {
                     include: {
-                        product: { select: { sku: true, name: true, uom: true } }
+                        product: { select: { sku: true, name: true, uom: true } },
+                        lot: true   // Fix #2: include relasi lot
                     }
                 }
             },
@@ -204,39 +277,170 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
         }) as any[];
 
         for (const gr of receipts) {
+            const tglBeli = gr.date ? new Date(gr.date).toLocaleDateString('id-ID') : '-';
             for (const grItem of gr.items) {
-                report.push({
-                    'Tgl Beli': gr.date ? new Date(gr.date).toLocaleDateString('id-ID') : '-',
-                    'No. GR (Batch Beli)': gr.receiptNumber,
-                    'No. Lot': '-',
-                    'Supplier': gr.receivedFrom || '-',
-                    'HPP Per Unit (Rp)': Number(grItem.purchasePrice || 0),
-                    'Tgl Jual': '-',
-                    'No. SJ': '-',
-                    'No. SO': '-',
-                    'Buyer': '-',
-                    'SKU': grItem.product.sku,
-                    'Nama Barang': grItem.product.name,
-                    'Satuan': grItem.product.uom || 'PCS',
-                    'QTY': grItem.quantity,
-                    'Harga Jual Per Unit (Rp)': 0,
-                    'Profit Per Unit (Rp)': 0,
-                    'Total Profit (Rp)': 0,
-                    'Margin %': '0.0%',
-                    'Status Bayar Beli': gr.paymentStatus || 'PENDING',
-                    'Status Bayar Jual': '-',
-                    'Sales Person Beli': gr.salesPerson || 'UMUM',
-                    'Sales Person Jual': '-',
-                    'Status': 'MASUK (STOK)'
+                const hpp      = Number(grItem.purchasePrice || 0);
+                const qty      = grItem.quantity;
+                const nilaiBeli = Math.round(hpp * qty);
+
+                rows.push({
+                    _sortDate               : gr.date ?? gr.createdAt,
+                    'Tipe Transaksi'        : 'PEMBELIAN',
+                    'Tanggal'               : tglBeli,
+                    'Tgl Beli'              : tglBeli,
+                    'No. GR (Batch Beli)'   : gr.receiptNumber,
+                    'No. Lot'               : grItem.lot?.lotNumber || '-',   // Fix #2
+                    'No. Faktur Supplier'   : gr.formNumber || '-',
+                    'Supplier'              : gr.receivedFrom || '-',
+                    'HPP Per Unit (Rp)'     : hpp,
+                    'Total Nilai Beli (Rp)' : nilaiBeli,                      // Fix #3
+                    'Tgl Jual'              : '-',
+                    'No. SJ'                : '-',
+                    'No. SO'                : '-',
+                    'Buyer'                 : '-',
+                    'SKU'                   : grItem.product.sku,
+                    'Nama Barang'           : grItem.product.name,
+                    'Satuan'                : grItem.product.uom || 'PCS',
+                    'QTY'                   : qty,
+                    'Harga Jual Per Unit (Rp)' : 0,
+                    'Total Nilai Jual (Rp)' : 0,
+                    'Profit Per Unit (Rp)'  : 0,
+                    'Total Profit (Rp)'     : 0,
+                    'Margin %'              : '-',
+                    'Status Bayar Beli'     : gr.paymentStatus || 'PENDING',
+                    'Status Bayar Jual'     : '-',
+                    'Sales Person Beli'     : gr.salesPerson || 'UMUM',
+                    'Sales Person Jual'     : '-',
+                    'Akurasi HPP'           : 'AKTUAL BELI',
                 });
             }
         }
 
-        return report;
+        // ════════════════════════════════════════════════════════════
+        // STEP 3: RETUR BELI (Fix #6)
+        // ════════════════════════════════════════════════════════════
+        const purchaseReturns = await (prisma as any).purchaseReturn.findMany({
+            where: { isVoid: false, date: { gte: startDate, lte: endDate } },
+            include: {
+                items: {
+                    include: {
+                        product: { select: { sku: true, name: true, uom: true } }
+                    }
+                },
+                receipt: {
+                    select: {
+                        receiptNumber: true, receivedFrom: true,
+                        salesPerson: true, formNumber: true, paymentStatus: true
+                    }
+                }
+            },
+            orderBy: { date: 'asc' }
+        }) as any[];
+
+        for (const pr of purchaseReturns) {
+            const tglRetur = new Date(pr.date).toLocaleDateString('id-ID');
+            for (const prItem of pr.items) {
+                rows.push({
+                    _sortDate               : pr.date,
+                    'Tipe Transaksi'        : 'RETUR BELI',
+                    'Tanggal'               : tglRetur,
+                    'Tgl Beli'              : tglRetur,
+                    'No. GR (Batch Beli)'   : pr.receipt?.receiptNumber || '-',
+                    'No. Lot'               : '-',
+                    'No. Faktur Supplier'   : pr.receipt?.formNumber || '-',
+                    'Supplier'              : pr.receipt?.receivedFrom || '-',
+                    'HPP Per Unit (Rp)'     : 0,
+                    'Total Nilai Beli (Rp)' : 0,
+                    'Tgl Jual'              : '-',
+                    'No. SJ'                : pr.returnNumber,
+                    'No. SO'                : '-',
+                    'Buyer'                 : '-',
+                    'SKU'                   : prItem.product.sku,
+                    'Nama Barang'           : prItem.product.name,
+                    'Satuan'                : prItem.product.uom || 'PCS',
+                    'QTY'                   : prItem.quantity,
+                    'Harga Jual Per Unit (Rp)' : 0,
+                    'Total Nilai Jual (Rp)' : 0,
+                    'Profit Per Unit (Rp)'  : 0,
+                    'Total Profit (Rp)'     : 0,
+                    'Margin %'              : '-',
+                    'Status Bayar Beli'     : pr.receipt?.paymentStatus || '-',
+                    'Status Bayar Jual'     : '-',
+                    'Sales Person Beli'     : pr.receipt?.salesPerson || 'UMUM',
+                    'Sales Person Jual'     : '-',
+                    'Akurasi HPP'           : '-',
+                });
+            }
+        }
+
+        // ════════════════════════════════════════════════════════════
+        // STEP 4: RETUR JUAL (Fix #6)
+        // ════════════════════════════════════════════════════════════
+        const salesReturns = await (prisma as any).salesReturn.findMany({
+            where: { isVoid: false, date: { gte: startDate, lte: endDate } },
+            include: {
+                items: {
+                    include: {
+                        product: { select: { sku: true, name: true, uom: true } }
+                    }
+                },
+                delivery: {
+                    select: {
+                        deliveryNumber: true, buyerName: true,
+                        recipient: true, salesPerson: true, paymentStatus: true
+                    }
+                }
+            },
+            orderBy: { date: 'asc' }
+        }) as any[];
+
+        for (const sr of salesReturns) {
+            const tglRetur = new Date(sr.date).toLocaleDateString('id-ID');
+            for (const srItem of sr.items) {
+                rows.push({
+                    _sortDate               : sr.date,
+                    'Tipe Transaksi'        : 'RETUR JUAL',
+                    'Tanggal'               : tglRetur,
+                    'Tgl Beli'              : '-',
+                    'No. GR (Batch Beli)'   : '-',
+                    'No. Lot'               : '-',
+                    'No. Faktur Supplier'   : '-',
+                    'Supplier'              : '-',
+                    'HPP Per Unit (Rp)'     : 0,
+                    'Total Nilai Beli (Rp)' : 0,
+                    'Tgl Jual'              : tglRetur,
+                    'No. SJ'                : sr.delivery?.deliveryNumber || '-',
+                    'No. SO'                : '-',
+                    'Buyer'                 : sr.delivery?.buyerName || sr.delivery?.recipient || '-',
+                    'SKU'                   : srItem.product.sku,
+                    'Nama Barang'           : srItem.product.name,
+                    'Satuan'                : srItem.product.uom || 'PCS',
+                    'QTY'                   : srItem.quantity,
+                    'Harga Jual Per Unit (Rp)' : 0,
+                    'Total Nilai Jual (Rp)' : 0,
+                    'Profit Per Unit (Rp)'  : 0,
+                    'Total Profit (Rp)'     : 0,
+                    'Margin %'              : '-',
+                    'Status Bayar Beli'     : '-',
+                    'Status Bayar Jual'     : sr.delivery?.paymentStatus || '-',
+                    'Sales Person Beli'     : '-',
+                    'Sales Person Jual'     : sr.delivery?.salesPerson || 'UMUM',
+                    'Akurasi HPP'           : '-',
+                });
+            }
+        }
+
+        // ════════════════════════════════════════════════════════════
+        // STEP 5: Sort semua baris secara kronologis (Fix #5)
+        // ════════════════════════════════════════════════════════════
+        rows.sort((a, b) => new Date(a._sortDate).getTime() - new Date(b._sortDate).getTime());
+
+        // Hapus field internal sebelum return
+        return rows.map(({ _sortDate, ...rest }) => rest);
 
     } catch (error: any) {
-        console.error("[getProductTraceabilityService] ERROR:", error);
-        return { error: (error as Error).message || "Failed to fetch traceability report" };
+        console.error('[getProductTraceabilityService] ERROR:', error);
+        return { error: (error as Error).message || 'Failed to fetch traceability report' };
     }
 }
 
