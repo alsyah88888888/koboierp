@@ -157,12 +157,13 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
                         const qty       = alloc.qty;
                         const opsDisc   = Number(grInfo.totalDiscount || 0) > 0
                                           ? Math.round(Number(grInfo.totalDiscount || 0) / qty) : 0;
+                        const sellPriceWithTax = Math.round(sellPrice * (1 + taxRate / 100));
                         const totalBeli = Math.round(hpp * qty);
-                        const totalJual = Math.round(sellPrice * qty);
-                        const margin    = totalJual - totalBeli;
-                        const marginPct = totalJual > 0 ? (margin / totalJual * 100) : 0;
+                        const totalJual = Math.round(sellPriceWithTax * qty);
                         const dpp       = calcDPP(totalJual, taxRate);
                         const ppn       = totalJual - dpp;
+                        const margin    = dpp - totalBeli;
+                        const marginPct = dpp > 0 ? (margin / dpp * 100) : 0;
 
                         rowNo++;
                         rows.push({
@@ -186,7 +187,7 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
                             // ─ JUAL ─
                             'NAMA SUPPLIER'    : alloc.lot.supplierName || '-',
                             'QTY JUAL'         : qty,
-                            'HARGA JUAL'       : Math.round(sellPrice * (1 + taxRate / 100)),
+                            'HARGA JUAL'       : sellPriceWithTax,
                             'TOTAL JUAL'       : totalJual,
                             // ─ KALKULASI ─
                             'MARGIN'           : margin,
@@ -211,12 +212,13 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
                         const fifoLot   = getFifoLot(sdItem.productId, sd.date);
                         const grInfo    = fifoLot?.grNumber ? (grMapFifo.get(fifoLot.grNumber) || {}) : {};
                         const hpp       = fifoLot ? Number(fifoLot.purchasePrice) : Number(sdItem.product.purchasePrice || 0);
+                        const sellPriceWithTax = Math.round(sellPrice * (1 + taxRate / 100));
                         const totalBeli = Math.round(hpp * unallocated);
-                        const totalJual = Math.round(sellPrice * unallocated);
-                        const margin    = totalJual - totalBeli;
-                        const marginPct = totalJual > 0 ? (margin / totalJual * 100) : 0;
+                        const totalJual = Math.round(sellPriceWithTax * unallocated);
                         const dpp       = calcDPP(totalJual, taxRate);
                         const ppn       = totalJual - dpp;
+                        const margin    = dpp - totalBeli;
+                        const marginPct = dpp > 0 ? (margin / dpp * 100) : 0;
 
                         rowNo++;
                         rows.push({
@@ -238,7 +240,7 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
                             'TOTAL BELI'       : totalBeli,
                             'NAMA SUPPLIER'    : fifoLot?.supplierName || '-',
                             'QTY JUAL'         : unallocated,
-                            'HARGA JUAL'       : Math.round(sellPrice * (1 + taxRate / 100)),
+                            'HARGA JUAL'       : sellPriceWithTax,
                             'TOTAL JUAL'       : totalJual,
                             'MARGIN'           : margin,
                             'MARGIN %'         : `${marginPct.toFixed(1)}%`,
@@ -259,12 +261,13 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
                     const grInfo    = fifoLot?.grNumber ? (grMapFifo.get(fifoLot.grNumber) || {}) : {};
                     const hpp       = fifoLot ? Number(fifoLot.purchasePrice) : Number(sdItem.product.purchasePrice || 0);
                     const qty       = sdItem.quantity;
+                    const sellPriceWithTax = Math.round(sellPrice * (1 + taxRate / 100));
                     const totalBeli = Math.round(hpp * qty);
-                    const totalJual = Math.round(sellPrice * qty);
-                    const margin    = totalJual - totalBeli;
-                    const marginPct = totalJual > 0 ? (margin / totalJual * 100) : 0;
+                    const totalJual = Math.round(sellPriceWithTax * qty);
                     const dpp       = calcDPP(totalJual, taxRate);
                     const ppn       = totalJual - dpp;
+                    const margin    = dpp - totalBeli;
+                    const marginPct = dpp > 0 ? (margin / dpp * 100) : 0;
 
                     rowNo++;
                     rows.push({
@@ -286,7 +289,7 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
                         'TOTAL BELI'       : totalBeli,
                         'NAMA SUPPLIER'    : fifoLot?.supplierName || '-',
                         'QTY JUAL'         : qty,
-                        'HARGA JUAL'       : Math.round(sellPrice * (1 + taxRate / 100)),
+                        'HARGA JUAL'       : sellPriceWithTax,
                         'TOTAL JUAL'       : totalJual,
                         'MARGIN'           : margin,
                         'MARGIN %'         : `${marginPct.toFixed(1)}%`,
