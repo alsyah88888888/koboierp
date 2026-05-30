@@ -195,38 +195,40 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
                 rows.push({
                     _sortDate          : sd.date,
                     'NO'               : rowNo,
-                    'TANGGAL JUAL'     : tglJual,
-                    'F. PAJAK'         : fmtDate(grInfo.taxInvoiceDate),
-                    'NOMOR LPB'        : fifoLot?.grNumber || '-',
-                    'NOMOR SJ'         : sd.deliveryNumber,
-                    'NOMOR RETUR'      : '-',
-                    'TANGGAL BELI'     : fmtDate(fifoLot?.grDate),
-                    'NAMA PEMBELI'     : buyer,
                     'BARCODE'          : barcode,
                     'KETERANGAN ITEM'  : namaItem,
-                    'SALES'            : spJual,
-                    // ─ BELI ─
+                    'PER/CT'           : perCt,
+                    
+                    // ─ PEMBELIAN (COLUMNS FIRST) ─
+                    'TANGGAL BELI'     : fmtDate(fifoLot?.grDate),
+                    'NOMOR LPB'        : fifoLot?.grNumber || '-',
+                    'NAMA SUPPLIER'    : fifoLot?.supplierName || '-',
                     'QTY BELI'         : qty,
                     'HARGA BELI'       : Math.round(hpp),
                     'OPS'              : 0,
                     'TOTAL BELI'       : totalBeli,
-                    // ─ JUAL ─
-                    'NAMA SUPPLIER'    : fifoLot?.supplierName || '-',
+                    'F. PAJAK'         : fmtDate(grInfo.taxInvoiceDate),
+                    'NO. FAKTUR'       : grInfo.formNumber || fifoLot?.grNumber || '-',
+                    'NO. PAJAK'        : grInfo.taxInvoiceNumber || '-',
+                    
+                    // ─ PENJUALAN (COLUMNS SECOND) ─
+                    'TANGGAL JUAL'     : tglJual,
+                    'NOMOR SJ'         : sd.deliveryNumber,
+                    'NAMA PEMBELI'     : buyer,
+                    'SALES'            : spJual,
                     'QTY JUAL'         : qty,
                     'HARGA JUAL'       : sellPriceWithTax,
                     'TOTAL JUAL'       : totalJual,
-                    // ─ KALKULASI ─
-                    'MARGIN'           : margin,
-                    'MARGIN %'         : `${marginPct.toFixed(1)}%`,
                     'DPP'              : dpp,
                     'PPH'              : ppn,
                     'TOTAL'            : totalJual,
-                    // ─ REFERENSI ─
                     'NO. PO'           : soNumber,
-                    'NO. FAKTUR'       : grInfo.formNumber || fifoLot?.grNumber || '-',
-                    'NO. PAJAK'        : grInfo.taxInvoiceNumber || '-',
                     'PAYMENT'          : sd.paymentStatus || 'PENDING',
-                    'PER/CT'           : perCt,
+                    
+                    // ─ KALKULASI & RETUR ─
+                    'MARGIN'           : margin,
+                    'MARGIN %'         : `${marginPct.toFixed(1)}%`,
+                    'NOMOR RETUR'      : '-',
                 });
             }
         }
