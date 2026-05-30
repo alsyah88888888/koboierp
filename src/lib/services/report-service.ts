@@ -114,27 +114,37 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
             : [];
         const grMapFifo = new Map<string, any>(grDataFifo.map((g: any) => [g.receiptNumber, g]));
 
-        // Helper: FIFO lot untuk produk pada tanggal tertentu dengan Prioritas Bulan yang Sama (Rule 1)
+        // Helper: FIFO lot untuk produk pada tanggal tertentu dengan Prioritas Bulan yang Sama dan Sisa Stok Aktif (Rule 1)
         const getFifoLot = (productId: string, saleDate: Date): any | null => {
             const lots = fifoLotsByProduct.get(productId) ?? [];
-            const eligible = lots.filter((l: any) => new Date(l.grDate) <= saleDate);
             
-            // Cari apakah ada pembelian di bulan dan tahun yang sama dengan tanggal penjualan
+            // 1. Ambil lot yang masih memiliki sisa stok aktif di gudang (remainingQty > 0)
+            // agar lot yang sudah habis terjual tidak dikaitkan kembali secara fiktif
+            const activeLots = lots.filter((l: any) => l.remainingQty > 0);
+            
+            // 2. Cari apakah ada pembelian di bulan dan tahun yang sama dengan tanggal penjualan pada lot aktif
             const saleD = new Date(saleDate);
             const saleYear = saleD.getFullYear();
             const saleMonth = saleD.getMonth();
             
-            const sameMonthLots = eligible.filter((l: any) => {
+            const sameMonthLots = activeLots.filter((l: any) => {
                 const grD = new Date(l.grDate);
                 return grD.getFullYear() === saleYear && grD.getMonth() === saleMonth;
             });
             
-            // Jika ada pembelian di bulan yang sama, prioritaskan lot tersebut
+            // Jika ada pembelian aktif di bulan yang sama, prioritaskan lot tersebut
             if (sameMonthLots.length > 0) {
                 return sameMonthLots[0];
             }
             
-            // Fallback ke FIFO standar (ambil stok tertua) jika tidak ada pembelian di bulan yang sama
+            // 3. Cari stok aktif tertua yang masuk sebelum tanggal penjualan (FIFO stok rill)
+            const eligibleActive = activeLots.filter((l: any) => new Date(l.grDate) <= saleDate);
+            if (eligibleActive.length > 0) {
+                return eligibleActive[0];
+            }
+            
+            // 4. Fallback jika semua stok aktif sudah habis / kosong secara fisik: gunakan database lot terawal
+            const eligible = lots.filter((l: any) => new Date(l.grDate) <= saleDate);
             return eligible[0] ?? lots[0] ?? null;
         };
 
