@@ -170,7 +170,9 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
                             'NO'               : rowNo,
                             'TANGGAL JUAL'     : tglJual,
                             'F. PAJAK'         : fmtDate(grInfo.taxInvoiceDate),
-                            'NOMOR'            : sd.deliveryNumber,
+                            'NOMOR LPB'        : alloc.lot.grNumber || '-',
+                            'NOMOR SJ'         : sd.deliveryNumber,
+                            'NOMOR RETUR'      : '-',
                             'TANGGAL BELI'     : fmtDate(alloc.lot.grDate),
                             'NAMA PEMBELI'     : buyer,
                             'BARCODE'          : barcode,
@@ -222,7 +224,9 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
                             'NO'               : rowNo,
                             'TANGGAL JUAL'     : tglJual,
                             'F. PAJAK'         : fmtDate(grInfo.taxInvoiceDate),
-                            'NOMOR'            : sd.deliveryNumber,
+                            'NOMOR LPB'        : fifoLot?.grNumber || '-',
+                            'NOMOR SJ'         : sd.deliveryNumber,
+                            'NOMOR RETUR'      : '-',
                             'TANGGAL BELI'     : fmtDate(fifoLot?.grDate),
                             'NAMA PEMBELI'     : buyer,
                             'BARCODE'          : barcode,
@@ -268,7 +272,9 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
                         'NO'               : rowNo,
                         'TANGGAL JUAL'     : tglJual,
                         'F. PAJAK'         : fmtDate(grInfo.taxInvoiceDate),
-                        'NOMOR'            : sd.deliveryNumber,
+                        'NOMOR LPB'        : fifoLot?.grNumber || '-',
+                        'NOMOR SJ'         : sd.deliveryNumber,
+                        'NOMOR RETUR'      : '-',
                         'TANGGAL BELI'     : fmtDate(fifoLot?.grDate),
                         'NAMA PEMBELI'     : buyer,
                         'BARCODE'          : barcode,
@@ -297,187 +303,7 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
             }
         }
 
-        // ════════════════════════════════════════════════════════════
-        // STEP 2: PEMBELIAN rows (MASUK STOK)
-        // ════════════════════════════════════════════════════════════
-        const receipts = await (prisma as any).goodsReceipt.findMany({
-            where: { isVoid: false, date: { gte: startDate, lte: endDate } },
-            include: {
-                items: {
-                    include: {
-                        product: {
-                            select: { sku: true, name: true, uom: true, barcode: true }
-                        },
-                        lot: true
-                    }
-                }
-            },
-            orderBy: { date: 'asc' }
-        }) as any[];
 
-        for (const gr of receipts) {
-            const tglBeli = fmtDate(gr.date);
-            const fPajak  = fmtDate(gr.taxInvoiceDate);
-            for (const grItem of gr.items) {
-                const hpp      = Number(grItem.purchasePrice || 0);
-                const qty      = grItem.quantity;
-                const totalBeli = Math.round(hpp * qty);
-                const barcode  = grItem.product.barcode || grItem.product.sku;
-
-                rowNo++;
-                rows.push({
-                    _sortDate          : gr.date ?? gr.createdAt,
-                    'NO'               : rowNo,
-                    'TANGGAL JUAL'     : '-',
-                    'F. PAJAK'         : fPajak,
-                    'NOMOR'            : gr.receiptNumber,
-                    'TANGGAL BELI'     : tglBeli,
-                    'NAMA PEMBELI'     : '-',
-                    'BARCODE'          : barcode,
-                    'KETERANGAN ITEM'  : grItem.product.name,
-                    'SALES'            : gr.salesPerson || '-',
-                    'QTY BELI'         : qty,
-                    'HARGA BELI'       : hpp,
-                    'OPS'              : 0,
-                    'TOTAL BELI'       : totalBeli,
-                    'NAMA SUPPLIER'    : gr.receivedFrom || '-',
-                    'QTY JUAL'         : 0,
-                    'HARGA JUAL'       : 0,
-                    'TOTAL JUAL'       : 0,
-                    'MARGIN'           : 0,
-                    'MARGIN %'         : '-',
-                    'DPP'              : 0,
-                    'PPH'              : 0,
-                    'TOTAL'            : totalBeli,
-                    'NO. PO'           : '-',
-                    'NO. FAKTUR'       : gr.formNumber || '-',
-                    'NO. PAJAK'        : gr.taxInvoiceNumber || '-',
-                    'PAYMENT'          : gr.paymentStatus || 'PENDING',
-                    'PER/CT'           : grItem.product.uom || 'PCS',
-                });
-            }
-        }
-
-        // ════════════════════════════════════════════════════════════
-        // STEP 3: RETUR BELI
-        // ════════════════════════════════════════════════════════════
-        const purchaseReturns = await (prisma as any).purchaseReturn.findMany({
-            where: { isVoid: false, date: { gte: startDate, lte: endDate } },
-            include: {
-                items: {
-                    include: {
-                        product: { select: { sku: true, name: true, uom: true, barcode: true } }
-                    }
-                },
-                receipt: {
-                    select: {
-                        receiptNumber: true, receivedFrom: true, salesPerson: true,
-                        formNumber: true, taxInvoiceNumber: true, taxInvoiceDate: true,
-                        paymentStatus: true
-                    }
-                }
-            },
-            orderBy: { date: 'asc' }
-        }) as any[];
-
-        for (const pr of purchaseReturns) {
-            const tglRetur = fmtDate(pr.date);
-            for (const prItem of pr.items) {
-                const barcode = prItem.product.barcode || prItem.product.sku;
-                rowNo++;
-                rows.push({
-                    _sortDate          : pr.date,
-                    'NO'               : rowNo,
-                    'TANGGAL JUAL'     : '-',
-                    'F. PAJAK'         : fmtDate(pr.receipt?.taxInvoiceDate),
-                    'NOMOR'            : pr.returnNumber,
-                    'TANGGAL BELI'     : tglRetur,
-                    'NAMA PEMBELI'     : '-',
-                    'BARCODE'          : barcode,
-                    'KETERANGAN ITEM'  : prItem.product.name,
-                    'SALES'            : pr.receipt?.salesPerson || '-',
-                    'QTY BELI'         : -prItem.quantity,   // negatif = retur keluar
-                    'HARGA BELI'       : 0,
-                    'OPS'              : 0,
-                    'TOTAL BELI'       : 0,
-                    'NAMA SUPPLIER'    : pr.receipt?.receivedFrom || '-',
-                    'QTY JUAL'         : 0,
-                    'HARGA JUAL'       : 0,
-                    'TOTAL JUAL'       : 0,
-                    'MARGIN'           : 0,
-                    'MARGIN %'         : '-',
-                    'DPP'              : 0,
-                    'PPH'              : 0,
-                    'TOTAL'            : 0,
-                    'NO. PO'           : '-',
-                    'NO. FAKTUR'       : pr.receipt?.formNumber || '-',
-                    'NO. PAJAK'        : pr.receipt?.taxInvoiceNumber || '-',
-                    'PAYMENT'          : pr.receipt?.paymentStatus || '-',
-                    'PER/CT'           : prItem.product.uom || 'PCS',
-                });
-            }
-        }
-
-        // ════════════════════════════════════════════════════════════
-        // STEP 4: RETUR JUAL
-        // ════════════════════════════════════════════════════════════
-        const salesReturns = await (prisma as any).salesReturn.findMany({
-            where: { isVoid: false, date: { gte: startDate, lte: endDate } },
-            include: {
-                items: {
-                    include: {
-                        product: { select: { sku: true, name: true, uom: true, barcode: true } }
-                    }
-                },
-                delivery: {
-                    select: {
-                        deliveryNumber: true, buyerName: true, recipient: true,
-                        salesPerson: true, paymentStatus: true, poNumber: true,
-                        taxRate: true, date: true
-                    }
-                }
-            },
-            orderBy: { date: 'asc' }
-        }) as any[];
-
-        for (const sr of salesReturns) {
-            const tglRetur = fmtDate(sr.date);
-            for (const srItem of sr.items) {
-                const barcode  = srItem.product.barcode || srItem.product.sku;
-                const taxRate  = Number(sr.delivery?.taxRate || 0);
-                rowNo++;
-                rows.push({
-                    _sortDate          : sr.date,
-                    'NO'               : rowNo,
-                    'TANGGAL JUAL'     : tglRetur,
-                    'F. PAJAK'         : '-',
-                    'NOMOR'            : sr.returnNumber,
-                    'TANGGAL BELI'     : '-',
-                    'NAMA PEMBELI'     : sr.delivery?.buyerName || sr.delivery?.recipient || '-',
-                    'BARCODE'          : barcode,
-                    'KETERANGAN ITEM'  : srItem.product.name,
-                    'SALES'            : sr.delivery?.salesPerson || '-',
-                    'QTY BELI'         : 0,
-                    'HARGA BELI'       : 0,
-                    'OPS'              : 0,
-                    'TOTAL BELI'       : 0,
-                    'NAMA SUPPLIER'    : '-',
-                    'QTY JUAL'         : -srItem.quantity,  // negatif = retur masuk
-                    'HARGA JUAL'       : 0,
-                    'TOTAL JUAL'       : 0,
-                    'MARGIN'           : 0,
-                    'MARGIN %'         : '-',
-                    'DPP'              : 0,
-                    'PPH'              : 0,
-                    'TOTAL'            : 0,
-                    'NO. PO'           : sr.delivery?.poNumber || '-',
-                    'NO. FAKTUR'       : sr.delivery?.deliveryNumber || '-',
-                    'NO. PAJAK'        : '-',
-                    'PAYMENT'          : sr.delivery?.paymentStatus || '-',
-                    'PER/CT'           : srItem.product.uom || 'PCS',
-                });
-            }
-        }
 
         // ════════════════════════════════════════════════════════════
         // STEP 5: Sort kronologis, re-number NO setelah sort
