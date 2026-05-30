@@ -10,10 +10,13 @@ import { getPrisma } from "@/lib/prisma";
 export async function getProductTraceabilityService(month?: number, year?: number) {
     const prisma = getPrisma();
 
-    const filterYear  = year  || new Date().getFullYear();
-    const filterMonth = month || (new Date().getMonth() + 1);
-    const startDate   = new Date(filterYear, filterMonth - 1, 1);
-    const endDate     = new Date(filterYear, filterMonth, 0, 23, 59, 59);
+    // Sesuaikan penarikan data secara presisi dengan Zona Waktu Indonesia WIB (UTC+7)
+    // agar transaksi akhir/awal bulan tidak tergeser zona waktu UTC server
+    const startDate = new Date(Date.UTC(filterYear, filterMonth - 1, 1, 0, 0, 0));
+    startDate.setUTCHours(startDate.getUTCHours() - 7);
+
+    const endDate = new Date(Date.UTC(filterYear, filterMonth, 0, 23, 59, 59, 999));
+    endDate.setUTCHours(endDate.getUTCHours() - 7);
 
     try {
         const rows: Record<string, any>[] = [];
