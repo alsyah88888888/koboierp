@@ -176,60 +176,66 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
                 const sellPrice = Number(sdItem.salesPrice || 0);
                 const discount  = Number(sdItem.discount || 0);
 
-                // Cari lot terbaik secara dinamis menggunakan Rule 1 (Prioritas Bulan yang Sama)
-                // secara global untuk semua produk demi akurasi penanggalan rill per bulannya
-                const fifoLot   = getFifoLot(sdItem.productId, sd.date);
-                const grInfo    = fifoLot?.grNumber ? (grMapFifo.get(fifoLot.grNumber) || {}) : {};
-                const hpp       = fifoLot ? Number(fifoLot.purchasePrice) : Number(sdItem.product.purchasePrice || 0);
-                const qty       = sdItem.quantity;
+                // Gunakan alokasi lot riil dari database jika ada untuk akurasi 100%,
+                // jika kosong baru gunakan fallback getFifoLot secara dinamis (Rule 1)
+                const allocations = sdItem.lotAllocations && sdItem.lotAllocations.length > 0
+                    ? sdItem.lotAllocations
+                    : [null];
 
-                const sellPriceWithTax = Math.round(sellPrice * (1 + taxRate / 100));
-                const totalBeli = Math.round(hpp * qty);
-                const totalJual = Math.round(sellPriceWithTax * qty);
-                const dpp       = calcDPP(totalJual, taxRate);
-                const ppn       = totalJual - dpp;
-                const margin    = dpp - totalBeli;
-                const marginPct = dpp > 0 ? (margin / dpp * 100) : 0;
+                for (const alloc of allocations) {
+                    const fifoLot = alloc ? alloc.lot : getFifoLot(sdItem.productId, sd.date);
+                    const grInfo  = fifoLot?.grNumber ? (grMapFifo.get(fifoLot.grNumber) || grMapA.get(fifoLot.grNumber) || {}) : {};
+                    const hpp     = alloc ? Number(alloc.hppAtTime || fifoLot?.purchasePrice || 0) : (fifoLot ? Number(fifoLot.purchasePrice) : Number(sdItem.product.purchasePrice || 0));
+                    const qty     = alloc ? alloc.qty : sdItem.quantity;
 
-                rowNo++;
-                rows.push({
-                    _sortDate          : sd.date,
-                    'NO'               : rowNo,
-                    'BARCODE'          : barcode,
-                    'KETERANGAN ITEM'  : namaItem,
-                    'PER/CT'           : perCt,
-                    
-                    // ─ PEMBELIAN (COLUMNS FIRST) ─
-                    'TANGGAL BELI'     : fmtDate(fifoLot?.grDate),
-                    'NOMOR LPB'        : fifoLot?.grNumber || '-',
-                    'NAMA SUPPLIER'    : fifoLot?.supplierName || '-',
-                    'QTY BELI'         : qty,
-                    'HARGA BELI'       : Math.round(hpp),
-                    'OPS'              : 0,
-                    'TOTAL BELI'       : totalBeli,
-                    'F. PAJAK'         : fmtDate(grInfo.taxInvoiceDate),
-                    'NO. FAKTUR'       : grInfo.formNumber || fifoLot?.grNumber || '-',
-                    'NO. PAJAK'        : grInfo.taxInvoiceNumber || '-',
-                    
-                    // ─ PENJUALAN (COLUMNS SECOND) ─
-                    'TANGGAL JUAL'     : tglJual,
-                    'NOMOR SJ'         : sd.deliveryNumber,
-                    'NAMA PEMBELI'     : buyer,
-                    'SALES'            : spJual,
-                    'QTY JUAL'         : qty,
-                    'HARGA JUAL'       : sellPriceWithTax,
-                    'TOTAL JUAL'       : totalJual,
-                    'DPP'              : dpp,
-                    'PPH'              : ppn,
-                    'TOTAL'            : totalJual,
-                    'NO. PO'           : soNumber,
-                    'PAYMENT'          : sd.paymentStatus || 'PENDING',
-                    
-                    // ─ KALKULASI & RETUR ─
-                    'MARGIN'           : margin,
-                    'MARGIN %'         : `${marginPct.toFixed(1)}%`,
-                    'NOMOR RETUR'      : '-',
-                });
+                    const sellPriceWithTax = Math.round(sellPrice * (1 + taxRate / 100));
+                    const totalBeli = Math.round(hpp * qty);
+                    const totalJual = Math.round(sellPriceWithTax * qty);
+                    const dpp       = calcDPP(totalJual, taxRate);
+                    const ppn       = totalJual - dpp;
+                    const margin    = dpp - totalBeli;
+                    const marginPct = dpp > 0 ? (margin / dpp * 100) : 0;
+
+                    rowNo++;
+                    rows.push({
+                        _sortDate          : sd.date,
+                        'NO'               : rowNo,
+                        'BARCODE'          : barcode,
+                        'KETERANGAN ITEM'  : namaItem,
+                        'PER/CT'           : perCt,
+                        
+                        // ─ PEMBELIAN (COLUMNS FIRST) ─
+                        'TANGGAL BELI'     : fmtDate(fifoLot?.grDate),
+                        'NOMOR LPB'        : fifoLot?.grNumber || '-',
+                        'NAMA SUPPLIER'    : fifoLot?.supplierName || '-',
+                        'QTY BELI'         : qty,
+                        'HARGA BELI'       : Math.round(hpp),
+                        'OPS'              : 0,
+                        'TOTAL BELI'       : totalBeli,
+                        'F. PAJAK'         : fmtDate(grInfo.taxInvoiceDate),
+                        'NO. FAKTUR'       : grInfo.formNumber || fifoLot?.grNumber || '-',
+                        'NO. PAJAK'        : grInfo.taxInvoiceNumber || '-',
+                        
+                        // ─ PENJUALAN (COLUMNS SECOND) ─
+                        'TANGGAL JUAL'     : tglJual,
+                        'NOMOR SJ'         : sd.deliveryNumber,
+                        'NAMA PEMBELI'     : buyer,
+                        'SALES'            : spJual,
+                        'QTY JUAL'         : qty,
+                        'HARGA JUAL'       : sellPriceWithTax,
+                        'TOTAL JUAL'       : totalJual,
+                        'DPP'              : dpp,
+                        'PPH'              : ppn,
+                        'TOTAL'            : totalJual,
+                        'NO. PO'           : soNumber,
+                        'PAYMENT'          : sd.paymentStatus || 'PENDING',
+                        
+                        // ─ KALKULASI & RETUR ─
+                        'MARGIN'           : margin,
+                        'MARGIN %'         : `${marginPct.toFixed(1)}%`,
+                        'NOMOR RETUR'      : '-',
+                    });
+                }
             }
         }
 
