@@ -10,6 +10,9 @@ import { getPrisma } from "@/lib/prisma";
 export async function getProductTraceabilityService(month?: number, year?: number) {
     const prisma = getPrisma();
 
+    const filterYear  = year  || new Date().getFullYear();
+    const filterMonth = month || (new Date().getMonth() + 1);
+
     // Sesuaikan penarikan data secara presisi dengan Zona Waktu Indonesia WIB (UTC+7)
     // agar transaksi akhir/awal bulan tidak tergeser zona waktu UTC server
     const startDate = new Date(Date.UTC(filterYear, filterMonth - 1, 1, 0, 0, 0));
