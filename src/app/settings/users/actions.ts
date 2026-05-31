@@ -150,7 +150,31 @@ export async function deleteUserAction(id: string) {
     throw new Error("Gagal: Anda tidak bisa menghapus akun Anda sendiri.");
   }
 
-  await prisma.user.delete({ where: { id } });
+  const userId = id;
+
+  // Dissociate all references to avoid Prisma / PostgreSQL foreign key constraints
+  await prisma.customer.updateMany({ where: { createdById: userId }, data: { createdById: null } });
+  await prisma.financeTransaction.updateMany({ where: { createdById: userId }, data: { createdById: null } });
+  await prisma.goodsReceipt.updateMany({ where: { createdById: userId }, data: { createdById: null } });
+  await prisma.journalEntry.updateMany({ where: { createdById: userId }, data: { createdById: null } });
+  await prisma.notification.updateMany({ where: { authorId: userId }, data: { authorId: null } });
+  await prisma.product.updateMany({ where: { createdById: userId }, data: { createdById: null } });
+  await prisma.purchaseRequest.updateMany({ where: { approvedById: userId }, data: { approvedById: null } });
+  await prisma.purchaseRequest.updateMany({ where: { verifiedById: userId }, data: { verifiedById: null } });
+  await prisma.purchaseRequest.updateMany({ where: { requestedById: userId }, data: { requestedById: session.user.id } }); // Transfer required field to the performing Admin
+  await prisma.purchaseReturn.updateMany({ where: { createdById: userId }, data: { createdById: null } });
+  await prisma.salesDelivery.updateMany({ where: { createdById: userId }, data: { createdById: null } });
+  await prisma.salesOrder.updateMany({ where: { createdById: userId }, data: { createdById: null } });
+  await prisma.salesReturn.updateMany({ where: { createdById: userId }, data: { createdById: null } });
+  await prisma.vendor.updateMany({ where: { createdById: userId }, data: { createdById: null } });
+  await prisma.auditLog.updateMany({ where: { userId }, data: { userId: null } });
+
+  // Delete all nextauth accounts and sessions associated with the user
+  await prisma.account.deleteMany({ where: { userId } });
+  await prisma.session.deleteMany({ where: { userId } });
+
+  // Now safely delete the user from database
+  await prisma.user.delete({ where: { id: userId } });
 
   revalidatePath("/settings/users");
   return { success: true };
