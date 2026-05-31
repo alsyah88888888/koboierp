@@ -29,6 +29,7 @@ const AVAILABLE_PERMISSIONS = [
   { key: "OPERATIONAL", label: "Operasional (Biaya)" },
   { key: "WAREHOUSE", label: "Gudang (Stok/Checker)" },
   { key: "ACCOUNTING", label: "Akuntansi (Jurnal)" },
+  { key: "TAX", label: "Perpajakan (PPN/Faktur)" },
   { key: "MASTER", label: "Master Data (Barang/Supplier)" },
   { key: "SETTINGS", label: "Pengaturan (User/System)" },
 ];
@@ -57,7 +58,7 @@ export default function UsersDashboard() {
     if (r === "ADMIN") {
       defaultPerms = AVAILABLE_PERMISSIONS.map(p => p.key);
     } else if (r === "FINANCE") {
-      defaultPerms = ["DASHBOARD", "FINANCE", "OPERATIONAL", "ACCOUNTING", "TRACKING"];
+      defaultPerms = ["DASHBOARD", "FINANCE", "OPERATIONAL", "ACCOUNTING", "TAX", "TRACKING"];
     } else if (r === "PURCHASE") {
       defaultPerms = ["DASHBOARD", "PURCHASE", "PURCHASE_REQUEST", "WAREHOUSE", "MASTER", "TRACKING"];
     } else if (r === "SALES") {

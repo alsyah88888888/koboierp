@@ -32,6 +32,7 @@ const navigation = [
     { name: "Operasional", href: "/operational", icon: Wallet, permissionKey: "OPERATIONAL", roles: ["ADMIN", "FINANCE", "SALES", "PURCHASE"] },
     { name: "Gudang", href: "/warehouse", icon: Warehouse, permissionKey: "WAREHOUSE", roles: ["ADMIN", "WAREHOUSE", "PURCHASE"] },
     { name: "Akuntansi", href: "/accounting", icon: FileText, permissionKey: "ACCOUNTING", roles: ["ADMIN", "FINANCE"] },
+    { name: "Perpajakan", href: "/tax", icon: FileText, permissionKey: "TAX", roles: ["ADMIN", "FINANCE"] },
     { name: "Master Data", href: "/master-data", icon: Database, permissionKey: "MASTER", roles: ["ADMIN", "PURCHASE"] },
     { name: "Settings", href: "/settings", icon: Settings, permissionKey: "SETTINGS", roles: ["ADMIN"] },
 ];

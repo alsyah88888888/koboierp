@@ -369,6 +369,8 @@ model SalesDelivery {
   voidReason     String?
   vehicleNumber  String?
   orderId        String?
+  taxInvoiceNumber String?
+  taxInvoiceDate   DateTime?
   createdBy      User?               @relation("SDCreatedBy", fields: [createdById], references: [id])
   order          SalesOrder?         @relation(fields: [orderId], references: [id])
   warehouse      Warehouse           @relation(fields: [warehouseId], references: [id])
