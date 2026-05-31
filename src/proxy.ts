@@ -247,6 +247,18 @@ export async function callAction(actionName: string, ...args: any[]) {
         case "getProductTraceability":
             const { getProductTraceabilityAction } = await import("@/actions/reports");
             return await getProductTraceabilityAction();
+
+        // TAX
+        case "getTaxDataAction":
+            const { getTaxDataAction } = await import("@/app/tax/actions");
+            return await getTaxDataAction(...args as [number, number]);
+        case "updateSalesTaxInvoiceAction":
+            const { updateSalesTaxInvoiceAction } = await import("@/app/tax/actions");
+            return await updateSalesTaxInvoiceAction(...args as [string, string | null, string | null]);
+        case "updatePurchaseTaxInvoiceAction":
+            const { updatePurchaseTaxInvoiceAction } = await import("@/app/tax/actions");
+            return await updatePurchaseTaxInvoiceAction(...args as [string, string | null, string | null]);
+
         default:
             throw new Error(`Action ${actionName} not found in proxy.`);
     }
