@@ -68,7 +68,7 @@ export function getAuthOptions(): AuthOptions {
  
                         let parsedPermissions: string[] = [];
                         try {
-                            parsedPermissions = user.permissions ? JSON.parse(user.permissions) : [];
+                            parsedPermissions = (user as any).permissions ? JSON.parse((user as any).permissions) : [];
                         } catch (e) {
                             parsedPermissions = [];
                         }
