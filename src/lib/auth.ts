@@ -20,12 +20,14 @@ export function getAuthOptions(): AuthOptions {
                 if (token && session.user) {
                     (session.user as any).role = token.role;
                     (session.user as any).id = token.sub;
+                    (session.user as any).permissions = token.permissions || [];
                 }
                 return session;
             },
             async jwt({ token, user }) {
                 if (user) {
                     token.role = (user as any).role;
+                    token.permissions = (user as any).permissions || [];
                 }
                 return token;
             },
@@ -43,18 +45,18 @@ export function getAuthOptions(): AuthOptions {
                         if (!credentials?.email || !credentials?.password) {
                             throw new Error("Missing credentials");
                         }
-
+ 
                         const bcrypt = require("bcryptjs");
-
+ 
                         const user = await db.user.findUnique({
                             where: { email: credentials.email }
                         });
-
+ 
                         if (!user) throw new Error("User Salah");
-
+ 
                         const isValid = await (bcrypt as any).compare(credentials.password, user.password || "");
                         if (!isValid) throw new Error("Password Salah");
-
+ 
                         const { logAction } = require("./audit");
                         await logAction({
                             userId: user.id,
@@ -63,12 +65,20 @@ export function getAuthOptions(): AuthOptions {
                             resourceId: user.id,
                             details: { email: user.email }
                         });
+ 
+                        let parsedPermissions: string[] = [];
+                        try {
+                            parsedPermissions = user.permissions ? JSON.parse(user.permissions) : [];
+                        } catch (e) {
+                            parsedPermissions = [];
+                        }
 
                         return {
                             id: user.id,
                             name: user.name,
                             email: user.email,
-                            role: user.role
+                            role: user.role,
+                            permissions: parsedPermissions
                         } as any;
                     }
                 });

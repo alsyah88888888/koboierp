@@ -23,17 +23,17 @@ import { signOut, useSession } from "next-auth/react";
 import { useSidebar } from "./SidebarContext";
 
 const navigation = [
-    { name: "Dashboard", href: "/", icon: LayoutDashboard, roles: ["ADMIN", "FINANCE", "PURCHASE", "SALES", "WAREHOUSE"] },
-    { name: "Keuangan", href: "/finance", icon: Wallet, roles: ["ADMIN", "FINANCE"] },
-    { name: "Pembelian", href: "/purchase", icon: ShoppingCart, roles: ["ADMIN", "PURCHASE", "SALES"] },
-    { name: "Pengajuan", href: "/purchase/request", icon: FileText, roles: ["ADMIN", "PURCHASE", "FINANCE"] },
-    { name: "Penjualan", href: "/sales", icon: ShoppingBag, roles: ["ADMIN", "SALES", "PURCHASE"] },
-    { name: "Tracking Item", href: "/tracking", icon: Search, roles: ["ADMIN", "FINANCE", "PURCHASE", "SALES", "WAREHOUSE"] },
-    { name: "Operasional", href: "/operational", icon: Wallet, roles: ["ADMIN", "FINANCE", "SALES", "PURCHASE"] },
-    { name: "Gudang", href: "/warehouse", icon: Warehouse, roles: ["ADMIN", "WAREHOUSE", "PURCHASE"] },
-    { name: "Akuntansi", href: "/accounting", icon: FileText, roles: ["ADMIN", "FINANCE"] },
-    { name: "Master Data", href: "/master-data", icon: Database, roles: ["ADMIN", "PURCHASE"] },
-    { name: "Settings", href: "/settings", icon: Settings, roles: ["ADMIN"] },
+    { name: "Dashboard", href: "/", icon: LayoutDashboard, permissionKey: "DASHBOARD", roles: ["ADMIN", "FINANCE", "PURCHASE", "SALES", "WAREHOUSE"] },
+    { name: "Keuangan", href: "/finance", icon: Wallet, permissionKey: "FINANCE", roles: ["ADMIN", "FINANCE"] },
+    { name: "Pembelian", href: "/purchase", icon: ShoppingCart, permissionKey: "PURCHASE", roles: ["ADMIN", "PURCHASE", "SALES"] },
+    { name: "Pengajuan", href: "/purchase/request", icon: FileText, permissionKey: "PURCHASE_REQUEST", roles: ["ADMIN", "PURCHASE", "FINANCE"] },
+    { name: "Penjualan", href: "/sales", icon: ShoppingBag, permissionKey: "SALES", roles: ["ADMIN", "SALES", "PURCHASE"] },
+    { name: "Tracking Item", href: "/tracking", icon: Search, permissionKey: "TRACKING", roles: ["ADMIN", "FINANCE", "PURCHASE", "SALES", "WAREHOUSE"] },
+    { name: "Operasional", href: "/operational", icon: Wallet, permissionKey: "OPERATIONAL", roles: ["ADMIN", "FINANCE", "SALES", "PURCHASE"] },
+    { name: "Gudang", href: "/warehouse", icon: Warehouse, permissionKey: "WAREHOUSE", roles: ["ADMIN", "WAREHOUSE", "PURCHASE"] },
+    { name: "Akuntansi", href: "/accounting", icon: FileText, permissionKey: "ACCOUNTING", roles: ["ADMIN", "FINANCE"] },
+    { name: "Master Data", href: "/master-data", icon: Database, permissionKey: "MASTER", roles: ["ADMIN", "PURCHASE"] },
+    { name: "Settings", href: "/settings", icon: Settings, permissionKey: "SETTINGS", roles: ["ADMIN"] },
 ];
 
 export function Sidebar() {
@@ -123,7 +123,11 @@ export function Sidebar() {
                 <nav className="flex-1 px-5 pb-6 space-y-1 overflow-y-auto custom-scrollbar">
                     <p className="px-4 text-[9px] font-black text-slate-600 uppercase tracking-[0.3em] mb-4 mt-2">Management</p>
                     {navigation.map((item) => {
-                        if (!item.roles.includes(userRole)) return null;
+                        const isMainAdmin = userRole === "ADMIN";
+                        const userPermissions = (session?.user as any)?.permissions || [];
+                        const hasAccess = isMainAdmin || userPermissions.includes(item.permissionKey);
+
+                        if (!hasAccess) return null;
 
                         const isActive = pathname === item.href;
                         return (

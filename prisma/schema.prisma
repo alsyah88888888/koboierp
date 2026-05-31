@@ -15,6 +15,7 @@ model User {
   image             String?
   role              String               @default("USER")
   password          String?
+  permissions       String?              @default("[]")
   createdAt         DateTime             @default(now())
   updatedAt         DateTime             @updatedAt
   accounts          Account[]

@@ -19,6 +19,20 @@ import Link from "next/link";
 import { callAction } from "@/proxy";
 
 
+const AVAILABLE_PERMISSIONS = [
+  { key: "DASHBOARD", label: "Dashboard Utama" },
+  { key: "FINANCE", label: "Keuangan (Bank/Coa)" },
+  { key: "PURCHASE", label: "Pembelian (PO/LPB)" },
+  { key: "PURCHASE_REQUEST", label: "Pengajuan Permintaan" },
+  { key: "SALES", label: "Penjualan (SJ/Order)" },
+  { key: "TRACKING", label: "Tracking Item / Lot" },
+  { key: "OPERATIONAL", label: "Operasional (Biaya)" },
+  { key: "WAREHOUSE", label: "Gudang (Stok/Checker)" },
+  { key: "ACCOUNTING", label: "Akuntansi (Jurnal)" },
+  { key: "MASTER", label: "Master Data (Barang/Supplier)" },
+  { key: "SETTINGS", label: "Pengaturan (User/System)" },
+];
+
 export default function UsersDashboard() {
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,7 +48,25 @@ export default function UsersDashboard() {
     email: "",
     role: "USER",
     password: "",
+    permissions: [] as string[],
   });
+
+  const handleRoleChange = (role: string) => {
+    let defaultPerms: string[] = ["DASHBOARD"];
+    const r = role.toUpperCase();
+    if (r === "ADMIN") {
+      defaultPerms = AVAILABLE_PERMISSIONS.map(p => p.key);
+    } else if (r === "FINANCE") {
+      defaultPerms = ["DASHBOARD", "FINANCE", "OPERATIONAL", "ACCOUNTING", "TRACKING"];
+    } else if (r === "PURCHASE") {
+      defaultPerms = ["DASHBOARD", "PURCHASE", "PURCHASE_REQUEST", "WAREHOUSE", "MASTER", "TRACKING"];
+    } else if (r === "SALES") {
+      defaultPerms = ["DASHBOARD", "SALES", "PURCHASE", "OPERATIONAL", "TRACKING"];
+    } else if (r === "WAREHOUSE") {
+      defaultPerms = ["DASHBOARD", "WAREHOUSE", "TRACKING"];
+    }
+    setForm(prev => ({ ...prev, role, permissions: defaultPerms }));
+  };
 
   const loadUsers = async () => {
     try {
@@ -60,7 +92,7 @@ export default function UsersDashboard() {
       alert("Pengguna berhasil dibuat!");
 
       setShowModal(null);
-      setForm({ name: "", email: "", role: "USER", password: "" });
+      setForm({ name: "", email: "", role: "USER", password: "", permissions: ["DASHBOARD"] });
       loadUsers();
     } catch (err: any) {
       alert(err.message);
@@ -74,6 +106,7 @@ export default function UsersDashboard() {
         name: form.name,
         email: form.email,
         role: form.role,
+        permissions: form.permissions,
       });
 
       alert("Data berhasil diperbarui!");
@@ -130,7 +163,7 @@ export default function UsersDashboard() {
         
         <button 
           onClick={() => {
-            setForm({ name: "", email: "", role: "USER", password: "password123" });
+            setForm({ name: "", email: "", role: "USER", password: "password123", permissions: ["DASHBOARD"] });
             setShowModal("create");
           }}
           className="bg-primary text-white pl-4 pr-6 py-3 rounded-2xl font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all active:scale-95 flex items-center gap-2"
@@ -224,8 +257,20 @@ export default function UsersDashboard() {
                       </button>
                       <button 
                         onClick={() => {
+                          let parsedPerms = [];
+                          try {
+                            parsedPerms = user.permissions ? JSON.parse(user.permissions) : [];
+                          } catch (e) {
+                            parsedPerms = [];
+                          }
                           setCurrentUser(user);
-                          setForm({ name: user.name || "", email: user.email, role: user.role, password: "" });
+                          setForm({ 
+                            name: user.name || "", 
+                            email: user.email, 
+                            role: user.role, 
+                            password: "", 
+                            permissions: parsedPerms 
+                          });
                           setShowModal("edit");
                         }}
                         className="p-2 hover:bg-blue-100 text-blue-500 rounded-lg transition-all"
@@ -252,7 +297,7 @@ export default function UsersDashboard() {
       {/* Modal Backdrop */}
       {showModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-[2.5rem] p-8 md:p-10 w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200 border-2 border-white/20">
+          <div className="bg-white rounded-[2.5rem] p-8 md:p-10 w-full max-w-xl shadow-2xl animate-in zoom-in-95 duration-200 border-2 border-white/20">
             <div className="flex justify-between items-center mb-8">
               <div>
                 <h3 className="text-xl font-black uppercase tracking-tight text-slate-900">
@@ -303,7 +348,7 @@ export default function UsersDashboard() {
                         id="user-role-select"
                         name="role"
                         value={form.role}
-                        onChange={e => setForm({...form, role: e.target.value})}
+                        onChange={e => handleRoleChange(e.target.value)}
                         className="w-full bg-slate-50 border-2 border-slate-100 pl-12 pr-5 py-4 rounded-2xl outline-none focus:border-primary font-bold text-slate-800 transition-all appearance-none"
                         required
                       >
@@ -314,6 +359,36 @@ export default function UsersDashboard() {
                         <option value="SALES">SALES PERSON</option>
                         <option value="WAREHOUSE">GUDANG / WH</option>
                       </select>
+                    </div>
+                  </div>
+
+                  {/* Granular Permissions Section */}
+                  <div className="space-y-3 bg-slate-50 p-6 rounded-3xl border-2 border-slate-100 max-h-60 overflow-y-auto custom-scrollbar">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Akses Menu Khusus (Granular)</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
+                      {AVAILABLE_PERMISSIONS.map((perm) => {
+                        const isChecked = form.permissions?.includes(perm.key);
+                        return (
+                          <label key={perm.key} className="flex items-center gap-3 p-2 hover:bg-white rounded-xl cursor-pointer transition-colors border border-transparent hover:border-slate-100">
+                            <input 
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={(e) => {
+                                const checked = e.target.checked;
+                                setForm(prev => {
+                                  const list = prev.permissions || [];
+                                  const updated = checked 
+                                    ? [...list, perm.key]
+                                    : list.filter(k => k !== perm.key);
+                                  return { ...prev, permissions: updated };
+                                });
+                              }}
+                              className="rounded text-primary focus:ring-primary h-4 w-4 border-slate-300"
+                            />
+                            <span className="text-xs font-bold text-slate-600 uppercase tracking-tight leading-none">{perm.label}</span>
+                          </label>
+                        );
+                      })}
                     </div>
                   </div>
                 </>

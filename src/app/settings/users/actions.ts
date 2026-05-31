@@ -22,6 +22,7 @@ export async function getUsersAction() {
       name: true,
       email: true,
       role: true,
+      permissions: true,
       createdAt: true,
     },
     orderBy: { createdAt: "desc" },
@@ -36,6 +37,7 @@ export async function createUserAction(data: {
   email: string;
   role: string;
   password: string;
+  permissions?: string[];
 }) {
   const { getPrisma } = require("@/lib/prisma");
   const prisma = getPrisma();
@@ -58,6 +60,7 @@ export async function createUserAction(data: {
       email: data.email,
       role: data.role.toUpperCase(),
       password: hashedPassword,
+      permissions: JSON.stringify(data.permissions || []),
     },
   });
 
@@ -72,6 +75,7 @@ export async function updateUserAction(id: string, data: {
   name: string;
   email: string;
   role: string;
+  permissions?: string[];
 }) {
   const { getPrisma } = require("@/lib/prisma");
   const prisma = getPrisma();
@@ -91,6 +95,7 @@ export async function updateUserAction(id: string, data: {
       name: data.name,
       email: data.email,
       role: data.role.toUpperCase(),
+      permissions: JSON.stringify(data.permissions || []),
     },
   });
 
