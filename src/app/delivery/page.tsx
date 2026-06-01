@@ -1,5 +1,5 @@
 import { getPrisma } from "@/lib/prisma";
-import DeliveryDashboard from "@/app/delivery/DeliveryDashboard";
+import DeliveryDashboard from "./DeliveryDashboard";
 import { serializeDecimal } from "@/lib/utils";
 
 import { headers } from "next/headers";
