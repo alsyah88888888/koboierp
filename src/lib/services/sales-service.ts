@@ -163,6 +163,22 @@ export async function createSalesDeliveryService(data: any, userId: string) {
                 if (matchingOrderItem) effectiveOrderItemId = matchingOrderItem.id;
             }
 
+            // --- OUTSTANDING QUANTITY VALIDATION ---
+            if (effectiveOrderItemId) {
+                const orderItem = await tx.salesOrderItem.findUnique({
+                    where: { id: effectiveOrderItemId }
+                });
+                if (orderItem) {
+                    const outstanding = Number(orderItem.quantity) - Number(orderItem.shippedQuantity || 0);
+                    if (item.quantity > outstanding) {
+                        const product = await tx.product.findUnique({ where: { id: item.productId } });
+                        throw new Error(
+                            `Jumlah pengiriman (${item.quantity}) melebihi sisa pesanan (outstanding: ${outstanding}) untuk produk ${product?.name || item.productId}`
+                        );
+                    }
+                }
+            }
+
             // Update Stock
             const currentStock = await tx.stock.findUnique({
                 where: {

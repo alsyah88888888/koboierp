@@ -105,6 +105,20 @@ export default function SalesModal({ products, warehouses, customers, orders = [
             const userDisplayValue = String(value).replace(/[^0-9,.]/g, '');
             (newItems[index] as any)[field] = userDisplayValue;
 
+            if (field === 'quantity' && selectedOrderId && newItems[index].orderItemId) {
+                const order = orders.find(o => o.id === selectedOrderId);
+                const orderItem = order?.items.find((i: any) => i.id === newItems[index].orderItemId);
+                if (orderItem) {
+                    const outstanding = Number(orderItem.quantity) - Number(orderItem.shippedQuantity || 0);
+                    const parsedQty = parseIndoNumber(userDisplayValue);
+                    if (parsedQty > outstanding) {
+                        setError(`Jumlah pengiriman (${parsedQty}) melebihi sisa pesanan (outstanding: ${outstanding}) untuk ${orderItem.product?.name || newItems[index].sku}`);
+                    } else {
+                        setError("");
+                    }
+                }
+            }
+
             if (field !== 'discount' && newItems[index].discountPercent !== "" && newItems[index].discountPercent !== undefined) {
                 const qty = parseIndoNumber(newItems[index].quantity);
                 const price = parseIndoNumber(newItems[index].salesPrice);
@@ -215,6 +229,27 @@ export default function SalesModal({ products, warehouses, customers, orders = [
         if (!recipient || !buyerName || hasEmptyItems) {
             setError("Mohon lengkapi semua data dan isi qty.");
             return;
+        }
+
+        // Check for outstanding quantities validation
+        if (selectedOrderId) {
+            const order = orders.find(o => o.id === selectedOrderId);
+            if (order) {
+                for (const item of items) {
+                    if (item.orderItemId) {
+                        const orderItem = order.items.find((i: any) => i.id === item.orderItemId);
+                        if (orderItem) {
+                            const outstanding = Number(orderItem.quantity) - Number(orderItem.shippedQuantity || 0);
+                            const parsedQty = parseIndoNumber(item.quantity);
+                            if (parsedQty > outstanding) {
+                                const prodName = orderItem.product?.name || item.sku;
+                                setError(`Jumlah pengiriman (${parsedQty}) untuk ${prodName} melebihi sisa pesanan (outstanding: ${outstanding}).`);
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         setLoading(true);
@@ -494,6 +529,25 @@ export default function SalesModal({ products, warehouses, customers, orders = [
                                                     <option key={p.id} value={p.sku}>{p.name} - {p.uom}</option>
                                                 ))}
                                             </datalist>
+                                            {(() => {
+                                                if (selectedOrderId && item.orderItemId) {
+                                                    const order = orders.find(o => o.id === selectedOrderId);
+                                                    const orderItem = order?.items.find((i: any) => i.id === item.orderItemId);
+                                                    if (orderItem) {
+                                                        const total = Number(orderItem.quantity);
+                                                        const shipped = Number(orderItem.shippedQuantity || 0);
+                                                        const outstanding = total - shipped;
+                                                        return (
+                                                            <div className="mt-1.5 flex flex-wrap gap-1.5 items-center text-[10px] font-bold">
+                                                                <span className="bg-sky-50 text-sky-600 px-1.5 py-0.5 rounded border border-sky-100/80">PO: {total}</span>
+                                                                <span className="bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded border border-emerald-100/80">Kirim: {shipped}</span>
+                                                                <span className="bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded border border-amber-100/80">Sisa: {outstanding}</span>
+                                                            </div>
+                                                        );
+                                                    }
+                                                }
+                                                return null;
+                                            })()}
                                         </div>
                                     </div>
 
