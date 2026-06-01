@@ -17,7 +17,8 @@ import {
     ChevronRight,
     Activity,
     Shield,
-    Search
+    Search,
+    Truck
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { useSidebar } from "./SidebarContext";
@@ -28,6 +29,7 @@ const navigation = [
     { name: "Pembelian", href: "/purchase", icon: ShoppingCart, permissionKey: "PURCHASE", roles: ["ADMIN", "PURCHASE", "SALES"] },
     { name: "Pengajuan", href: "/purchase/request", icon: FileText, permissionKey: "PURCHASE_REQUEST", roles: ["ADMIN", "PURCHASE", "FINANCE"] },
     { name: "Penjualan", href: "/sales", icon: ShoppingBag, permissionKey: "SALES", roles: ["ADMIN", "SALES", "PURCHASE"] },
+    { name: "Surat Jalan", href: "/delivery", icon: Truck, permissionKey: "DELIVERY", roles: ["ADMIN", "WAREHOUSE", "SALES", "PURCHASE"] },
     { name: "Tracking Item", href: "/tracking", icon: Search, permissionKey: "TRACKING", roles: ["ADMIN", "FINANCE", "PURCHASE", "SALES", "WAREHOUSE"] },
     { name: "Operasional", href: "/operational", icon: Wallet, permissionKey: "OPERATIONAL", roles: ["ADMIN", "FINANCE", "SALES", "PURCHASE"] },
     { name: "Gudang", href: "/warehouse", icon: Warehouse, permissionKey: "WAREHOUSE", roles: ["ADMIN", "WAREHOUSE", "PURCHASE"] },
@@ -126,7 +128,13 @@ export function Sidebar() {
                     {navigation.map((item) => {
                         const isMainAdmin = userRole === "ADMIN";
                         const userPermissions = (session?.user as any)?.permissions || [];
-                        const hasAccess = isMainAdmin || userPermissions.includes(item.permissionKey);
+                        const hasAccess = isMainAdmin || 
+                                          userPermissions.includes(item.permissionKey) ||
+                                          (item.permissionKey === "DELIVERY" && (
+                                              userPermissions.includes("SALES") || 
+                                              userPermissions.includes("WAREHOUSE") || 
+                                              userPermissions.includes("PURCHASE")
+                                          ));
 
                         if (!hasAccess) return null;
 
