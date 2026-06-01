@@ -25,6 +25,7 @@ export function OperationalModal({ isOpen, onClose, coa }: OperationalModalProps
         accountId: "", // The Expense Account
         bankAccountId: "", // The Bank Account
         salesPerson: "", // Tag to salesperson (BC, PF, etc)
+        invoiceNumber: "", // Tautan nomor invoice
     });
 
     if (!isOpen) return null;
@@ -178,22 +179,35 @@ export function OperationalModal({ isOpen, onClose, coa }: OperationalModalProps
                         </select>
                     </div>
 
-                    <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Sales Context (Opsional)</label>
-                        <select
-                            className="w-full bg-accent/50 border-none rounded-xl py-2 px-3 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all"
-                            value={formData.salesPerson}
-                            onChange={(e) => setFormData({ ...formData, salesPerson: e.target.value })}
-                        >
-                            <option value="">Umum / Nonsales</option>
-                            <option value="BC">Sales BC</option>
-                            <option value="PF">Sales PF</option>
-                        </select>
-                        <div className="px-2">
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Sales Context (Opsional)</label>
+                            <select
+                                className="w-full bg-accent/50 border-none rounded-xl py-2 px-3 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all"
+                                value={formData.salesPerson}
+                                onChange={(e) => setFormData({ ...formData, salesPerson: e.target.value })}
+                            >
+                                <option value="">Umum / Nonsales</option>
+                                <option value="BC">Sales BC</option>
+                                <option value="PF">Sales PF</option>
+                            </select>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">No. Invoice (Opsional)</label>
+                            <input
+                                type="text"
+                                placeholder="No. Invoice / SJ"
+                                className="w-full bg-accent/50 border-none rounded-xl py-2 px-3 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all"
+                                value={formData.invoiceNumber}
+                                onChange={(e) => setFormData({ ...formData, invoiceNumber: e.target.value })}
+                            />
+                        </div>
+                    </div>
+                    
+                    <div className="px-2">
                         <p className="text-[9px] text-slate-400 ml-1 font-medium mt-1 uppercase italic">
                             *Jika dipilih, transaksi ini akan otomatis memotong Nett Margin Sales.
                         </p>
-                        </div>
                     </div>
 
                     <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10">

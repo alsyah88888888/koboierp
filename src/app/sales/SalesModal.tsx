@@ -31,6 +31,7 @@ export default function SalesModal({ products, warehouses, customers, orders = [
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
     const [salesPerson, setSalesPerson] = useState("BC");
     const [poNumber, setPoNumber] = useState("");
+    const [invoiceNumber, setInvoiceNumber] = useState("");
     const [vehicleNumber, setVehicleNumber] = useState("");
     const [isManualBuyer, setIsManualBuyer] = useState(false);
     const [selectedOrderId, setSelectedOrderId] = useState(initialData?.orderId || "");
@@ -61,6 +62,7 @@ export default function SalesModal({ products, warehouses, customers, orders = [
             setSalesPerson(initialData.salesPerson || "BC");
             setDate(new Date(initialData.createdAt).toISOString().split('T')[0]);
             setPoNumber(initialData.poNumber || "");
+            setInvoiceNumber(initialData.invoiceNumber || "");
             setTotalDiscount(Number(initialData.totalDiscount || 0));
             const initTax = Number(initialData.taxRate || 0);
             setTaxRate(initTax);
@@ -162,6 +164,7 @@ export default function SalesModal({ products, warehouses, customers, orders = [
             setWarehouseId(order.warehouseId);
             setSalesPerson(order.salesPerson);
             setIsPKP(Number(order.taxRate) > 0);
+            setPoNumber(order.poNumber || "");
             
             const newItems = order.items.map((i: any) => ({
                 productId: i.productId,
@@ -223,6 +226,7 @@ export default function SalesModal({ products, warehouses, customers, orders = [
                 recipient,
                 buyerName,
                 poNumber,
+                invoiceNumber: invoiceNumber || null,
                 vehicleNumber,
                 warehouseId,
                 salesPerson,
@@ -377,14 +381,26 @@ export default function SalesModal({ products, warehouses, customers, orders = [
                                 </div>
 
                                 <div className="space-y-1">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">No. Kendaraan</label>
-                                    <input
-                                        list="vehicle-list-sales"
-                                        value={vehicleNumber}
-                                        onChange={e => setVehicleNumber(e.target.value)}
-                                        placeholder="F 0000 XX"
-                                        className="w-full bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg text-sm font-bold focus:border-primary outline-none transition-all placeholder:text-slate-300"
-                                    />
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">No. Kendaraan & Invoice</label>
+                                    <div className="flex gap-1">
+                                        <div className="flex-[2] min-w-0">
+                                            <input
+                                                list="vehicle-list-sales"
+                                                value={vehicleNumber}
+                                                onChange={e => setVehicleNumber(e.target.value)}
+                                                placeholder="F 0000 XX"
+                                                className="w-full bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg text-sm font-bold focus:border-primary outline-none transition-all placeholder:text-slate-300"
+                                            />
+                                        </div>
+                                        <div className="flex-[2] min-w-0">
+                                            <input
+                                                value={invoiceNumber}
+                                                onChange={e => setInvoiceNumber(e.target.value)}
+                                                placeholder="No. Invoice"
+                                                className="w-full bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg text-sm font-bold focus:border-primary outline-none transition-all placeholder:text-slate-300"
+                                            />
+                                        </div>
+                                    </div>
                                     <datalist id="vehicle-list-sales">
                                         <option value="F 8440 GY - Karno" />
                                         <option value="F 8744 GY - Rahmat/imam" />

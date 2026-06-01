@@ -99,6 +99,7 @@ model FinanceTransaction {
   amount          Decimal
   category        String?
   salesPerson     String?
+  invoiceNumber   String?        // Tautan nomor invoice untuk perhitungan margin bersih
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
   createdById     String?
@@ -365,6 +366,7 @@ model SalesDelivery {
   updatedAt      DateTime            @updatedAt
   createdById    String?
   poNumber       String?
+  invoiceNumber  String?             // Nomor Invoice Penjualan (bisa sama untuk SJ Parsial)
   isVoid         Boolean             @default(false)
   voidReason     String?
   vehicleNumber  String?
