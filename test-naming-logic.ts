@@ -14,21 +14,29 @@ Module.prototype.require = function (id: any) {
 const { PrismaClient } = require('@prisma/client');
 const { createSalesDeliveryService } = require('./src/lib/services/sales-service');
 
-const prisma = new PrismaClient();
+const testPrisma = new PrismaClient();
 
 async function runTest() {
     console.log("\n=== MULAI PENGUJIAN OTOMATISASI PENOMORAN SJ & INVOICE ===");
     
+    // Cari user aktif untuk pengujian
+    const user = await testPrisma.user.findFirst();
+    if (!user) {
+        throw new Error("User tidak ditemukan untuk pengujian!");
+    }
+    const userId = user.id;
+    console.log(`Menggunakan User: ${user.name || user.email} (ID: ${userId})`);
+
     // 1. Membuat data master bayangan untuk pengujian
     console.log("1. Membuat data master bayangan (Customer & Produk)...");
-    const customer = await prisma.customer.create({
+    const customer = await testPrisma.customer.create({
         data: {
             name: "TEST BUYER AUTOMATION",
             code: "TBA-" + Date.now(),
         }
     });
     
-    const product = await prisma.product.create({
+    const product = await testPrisma.product.create({
         data: {
             name: "TEST PRODUCT OREO",
             sku: "TEST-OREO-" + Date.now(),
@@ -39,13 +47,13 @@ async function runTest() {
     });
     
     // Cari warehouse untuk pengujian
-    const warehouse = await prisma.warehouse.findFirst();
+    const warehouse = await testPrisma.warehouse.findFirst();
     if (!warehouse) {
         throw new Error("Gudang tidak ditemukan untuk pengujian!");
     }
     
     // Tambahkan stok awal agar transaksi berhasil
-    await prisma.stock.create({
+    await testPrisma.stock.create({
         data: {
             productId: product.id,
             warehouseId: warehouse.id,
@@ -57,7 +65,7 @@ async function runTest() {
     // 2. Membuat PO (Sales Order) bayangan
     console.log("2. Membuat PO Penjualan Bayangan...");
     const orderNumber = `TEST-PO-${Date.now()}`;
-    const order = await prisma.salesOrder.create({
+    const order = await testPrisma.salesOrder.create({
         data: {
             orderNumber,
             buyerName: customer.name,
@@ -100,13 +108,13 @@ async function runTest() {
             vendorName: "UMUM",
             orderItemId: order.items[0].id
         }]
-    }, "system-test-user");
+    }, userId);
     
     console.log("Hasil Pengiriman Pertama:");
     console.log(`- Status: ${firstDeliveryRes.success ? "SUKSES" : "GAGAL"}`);
     console.log(`- No. Surat Jalan (deliveryNumber): ${firstDeliveryRes.deliveryNumber}`);
     
-    const delivery1 = await prisma.salesDelivery.findUnique({
+    const delivery1 = await testPrisma.salesDelivery.findUnique({
         where: { deliveryNumber: firstDeliveryRes.deliveryNumber }
     });
     console.log(`- No. Penagihan / Invoice: ${delivery1?.invoiceNumber}`);
@@ -133,13 +141,13 @@ async function runTest() {
             vendorName: "UMUM",
             orderItemId: order.items[0].id
         }]
-    }, "system-test-user");
+    }, userId);
     
     console.log("Hasil Pengiriman Kedua:");
     console.log(`- Status: ${secondDeliveryRes.success ? "SUKSES" : "GAGAL"}`);
     console.log(`- No. Surat Jalan (deliveryNumber): ${secondDeliveryRes.deliveryNumber}`);
     
-    const delivery2 = await prisma.salesDelivery.findUnique({
+    const delivery2 = await testPrisma.salesDelivery.findUnique({
         where: { deliveryNumber: secondDeliveryRes.deliveryNumber }
     });
     console.log(`- No. Penagihan / Invoice: ${delivery2?.invoiceNumber}`);
@@ -161,28 +169,49 @@ async function runTest() {
     
     // 6. Pembersihan data pengujian dari database
     console.log("\n6. Membersihkan kembali data pengujian dari database...");
-    await prisma.lotAllocation.deleteMany({
+    
+    // Hapus alokasi lot
+    await testPrisma.lotAllocation.deleteMany({
         where: { sdItem: { delivery: { orderId: order.id } } }
     });
-    await prisma.salesDeliveryItem.deleteMany({
+    
+    // Hapus item pengiriman
+    await testPrisma.salesDeliveryItem.deleteMany({
         where: { delivery: { orderId: order.id } }
     });
-    await prisma.salesDelivery.deleteMany({
+    
+    // Hapus pengiriman sales delivery
+    await testPrisma.salesDelivery.deleteMany({
         where: { orderId: order.id }
     });
-    await prisma.salesOrderItem.deleteMany({
+    
+    // Hapus sales order items
+    await testPrisma.salesOrderItem.deleteMany({
         where: { orderId: order.id }
     });
-    await prisma.salesOrder.delete({
+    
+    // Hapus sales order
+    await testPrisma.salesOrder.delete({
         where: { id: order.id }
     });
-    await prisma.stock.deleteMany({
+    
+    // Hapus pergerakan stok (StockMovement)
+    await testPrisma.stockMovement.deleteMany({
         where: { productId: product.id }
     });
-    await prisma.product.delete({
+    
+    // Hapus stok produk
+    await testPrisma.stock.deleteMany({
+        where: { productId: product.id }
+    });
+    
+    // Hapus produk
+    await testPrisma.product.delete({
         where: { id: product.id }
     });
-    await prisma.customer.delete({
+    
+    // Hapus customer
+    await testPrisma.customer.delete({
         where: { id: customer.id }
     });
     
@@ -191,4 +220,4 @@ async function runTest() {
 
 runTest()
     .catch(e => console.error("Pengujian gagal dengan error:", e))
-    .finally(() => prisma.$disconnect());
+    .finally(() => testPrisma.$disconnect());

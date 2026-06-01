@@ -1,3 +1,6 @@
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
+
 function revalidatePath(path: string) {
     try {
         const { revalidatePath: nextRevalidatePath } = require("next/cache");
