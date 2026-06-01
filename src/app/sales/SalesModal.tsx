@@ -176,7 +176,7 @@ export default function SalesModal({ products, warehouses, customers, orders = [
             setBuyerName(order.buyerName);
             setRecipient(order.recipient);
             setWarehouseId(order.warehouseId);
-            setSalesPerson(order.salesPerson);
+            setSalesPerson(order.salesPerson || "BC");
             setIsPKP(Number(order.taxRate) > 0);
             setPoNumber(order.poNumber || "");
             
