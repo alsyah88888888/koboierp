@@ -34,6 +34,37 @@ export async function createSalesDeliveryService(data: any, userId: string) {
         }
         const deliveryNumber = `${prefix}${String(nextNum).padStart(3, '0')}`;
 
+        // --- AUTO-GENERATED INVOICE NUMBER LOGIC ---
+        let invoiceNumber = data.invoiceNumber || null;
+        if (!invoiceNumber) {
+            // 1. If linked to an order, check if any existing delivery under this order already has an invoiceNumber
+            if (data.orderId) {
+                const existingDelivery = await tx.salesDelivery.findFirst({
+                    where: { orderId: data.orderId, NOT: [{ invoiceNumber: null }, { invoiceNumber: "" }] },
+                    select: { invoiceNumber: true }
+                });
+                if (existingDelivery) {
+                    invoiceNumber = existingDelivery.invoiceNumber;
+                }
+            }
+
+            // 2. If still no invoiceNumber (brand new PO or manual delivery), generate a new one automatically
+            if (!invoiceNumber) {
+                const invPrefix = `KB-INV-${dateStr}-`;
+                const latestInv = await tx.salesDelivery.findFirst({
+                    where: { invoiceNumber: { startsWith: invPrefix } },
+                    orderBy: { invoiceNumber: 'desc' }
+                });
+                let nextInvNum = 1;
+                if (latestInv && latestInv.invoiceNumber) {
+                    const invParts = latestInv.invoiceNumber.split('-');
+                    const lastInvSeq = parseInt(invParts[invParts.length - 1]);
+                    if (!isNaN(lastInvSeq)) nextInvNum = lastInvSeq + 1;
+                }
+                invoiceNumber = `${invPrefix}${String(nextInvNum).padStart(3, '0')}`;
+            }
+        }
+
         const delivery = await tx.salesDelivery.create({
             data: {
                 deliveryNumber: deliveryNumber,
@@ -42,7 +73,7 @@ export async function createSalesDeliveryService(data: any, userId: string) {
                 buyerName: data.buyerName,
                 vehicleNumber: data.vehicleNumber,
                 poNumber: data.poNumber,
-                invoiceNumber: data.invoiceNumber || null,
+                invoiceNumber: invoiceNumber,
                 warehouseId: data.warehouseId,
                 salesPerson: data.salesPerson,
                 date: txDate,
