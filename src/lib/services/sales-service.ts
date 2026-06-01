@@ -1,5 +1,11 @@
-
-import { revalidatePath } from "next/cache";
+function revalidatePath(path: string) {
+    try {
+        const { revalidatePath: nextRevalidatePath } = require("next/cache");
+        nextRevalidatePath(path);
+    } catch (e) {
+        // Silently ignore when next/cache is not available (e.g. testing)
+    }
+}
 
 /**
  * SALES SERVICES
