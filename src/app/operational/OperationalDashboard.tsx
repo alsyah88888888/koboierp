@@ -114,13 +114,22 @@ export function OperationalDashboard({
                     <h1 className="text-2xl font-black text-primary uppercase tracking-tighter">Hasil Operasional</h1>
                     <p className="text-muted-foreground text-[10px] md:text-xs uppercase font-bold tracking-widest text-emerald-600">Akumulasi Realisasi Kegiatan (Terbayar)</p>
                 </div>
-                <button
-                    onClick={handleExport}
-                    className="w-full sm:w-auto bg-emerald-600 text-white px-6 py-2 rounded-full flex items-center justify-center gap-2 hover:bg-emerald-700 shadow-lg shadow-emerald-200 transition-all active:scale-95 font-black uppercase text-[10px] tracking-widest"
-                >
-                    <Download className="h-4 w-4" />
-                    <span>Excel</span>
-                </button>
+                <div className="flex gap-2 w-full sm:w-auto">
+                    <button
+                        onClick={() => setIsModalOpen(true)}
+                        className="flex-1 sm:flex-none bg-primary text-white px-6 py-2 rounded-full flex items-center justify-center gap-2 hover:bg-slate-800 shadow-lg shadow-primary/20 transition-all active:scale-95 font-black uppercase text-[10px] tracking-widest"
+                    >
+                        <Plus className="h-4 w-4" />
+                        <span>Input Operasional</span>
+                    </button>
+                    <button
+                        onClick={handleExport}
+                        className="flex-1 sm:flex-none bg-emerald-600 text-white px-6 py-2 rounded-full flex items-center justify-center gap-2 hover:bg-emerald-700 shadow-lg shadow-emerald-200 transition-all active:scale-95 font-black uppercase text-[10px] tracking-widest"
+                    >
+                        <Download className="h-4 w-4" />
+                        <span>Excel</span>
+                    </button>
+                </div>
             </div>
 
             {/* Nett Margin Cards for Sales */}
