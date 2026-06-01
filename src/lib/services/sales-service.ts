@@ -19,21 +19,6 @@ export async function createSalesDeliveryService(data: any, userId: string) {
     return await prisma.$transaction(async (tx: any) => {
         const isPKP = data.isPKP === true || (Number(data.taxRate) || 0) > 0;
 
-        const prefix = isPKP ? `KB-TRN-${dateStr}-` : `KB-TRD-${dateStr}-`;
-
-        const latest = await tx.salesDelivery.findFirst({
-            where: { deliveryNumber: { startsWith: prefix } },
-            orderBy: { deliveryNumber: 'desc' }
-        });
-
-        let nextNum = 1;
-        if (latest) {
-            const parts = latest.deliveryNumber.split('-');
-            const lastSeq = parseInt(parts[parts.length - 1]);
-            if (!isNaN(lastSeq)) nextNum = lastSeq + 1;
-        }
-        const deliveryNumber = `${prefix}${String(nextNum).padStart(3, '0')}`;
-
         // --- AUTO-GENERATED INVOICE NUMBER LOGIC ---
         let invoiceNumber = data.invoiceNumber || null;
         if (!invoiceNumber) {
@@ -50,7 +35,7 @@ export async function createSalesDeliveryService(data: any, userId: string) {
 
             // 2. If still no invoiceNumber (brand new PO or manual delivery), generate a new one automatically
             if (!invoiceNumber) {
-                const invPrefix = `KB-INV-${dateStr}-`;
+                const invPrefix = isPKP ? `KB-TRN-${dateStr}-` : `KB-TRD-${dateStr}-`;
                 const latestInv = await tx.salesDelivery.findFirst({
                     where: { invoiceNumber: { startsWith: invPrefix } },
                     orderBy: { invoiceNumber: 'desc' }
@@ -63,6 +48,27 @@ export async function createSalesDeliveryService(data: any, userId: string) {
                 }
                 invoiceNumber = `${invPrefix}${String(nextInvNum).padStart(3, '0')}`;
             }
+        }
+
+        // --- AUTO-GENERATED SURAT JALAN NUMBER (deliveryNumber) ---
+        let deliveryNumber = "";
+        const partialDeliveries = await tx.salesDelivery.findMany({
+            where: { invoiceNumber: invoiceNumber },
+            orderBy: { createdAt: 'asc' }
+        });
+
+        if (partialDeliveries.length > 0) {
+            // Reuse the random number and date from the first delivery under this invoice
+            const firstDelivery = partialDeliveries[0];
+            const parts = firstDelivery.deliveryNumber.split('-');
+            const randomNum = parts[1] || String(Math.floor(100 + Math.random() * 900));
+            const firstDateStr = parts[2] || dateStr;
+            const nextSeq = partialDeliveries.length + 1;
+            deliveryNumber = `SJ-${randomNum}-${firstDateStr}-${String(nextSeq).padStart(3, '0')}`;
+        } else {
+            // Brand new shipment: generate a new 3-digit random number
+            const randomNum = Math.floor(100 + Math.random() * 900);
+            deliveryNumber = `SJ-${randomNum}-${dateStr}-001`;
         }
 
         const delivery = await tx.salesDelivery.create({
