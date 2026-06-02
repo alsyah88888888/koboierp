@@ -8,11 +8,28 @@ import { revalidatePath } from "next/cache";
  * It is only imported by Server Actions or Server Components.
  */
 
-export async function getDashboardSummaryService(userId: string, prefix: string, isAdmin: boolean) {
+export async function getDashboardSummaryService(userId: string, prefix: string, isAdmin: boolean, month?: number, year?: number) {
     const { getPrisma } = require("@/lib/prisma");
     const prisma = getPrisma();
 
     const userFilter = isAdmin ? {} : { createdById: userId };
+
+    const startOfMonth = month && year ? new Date(year, month - 1, 1) : null;
+    const endOfMonth = month && year ? new Date(year, month, 0, 23, 59, 59, 999) : null;
+
+    const dateFilter = startOfMonth && endOfMonth ? {
+        createdAt: {
+            gte: startOfMonth,
+            lte: endOfMonth
+        }
+    } : {};
+
+    const txDateFilter = startOfMonth && endOfMonth ? {
+        date: {
+            gte: startOfMonth,
+            lte: endOfMonth
+        }
+    } : {};
 
     const fetchJournals = async (criteria: any) => {
         const journals = await prisma.journalEntry.findMany({
@@ -70,22 +87,30 @@ export async function getDashboardSummaryService(userId: string, prefix: string,
             account: { code: '105' }
         }),
         prisma.salesDelivery.aggregate({
-            where: isAdmin ? {} : { 
-                OR: [
-                    { salesPerson: prefix || null },
-                    { salesPerson: null }
-                ]
+            where: {
+                ...(isAdmin ? {} : { 
+                    OR: [
+                        { salesPerson: prefix || null },
+                        { salesPerson: null }
+                    ]
+                }),
+                ...dateFilter
             },
             _sum: { subtotal: true, totalDiscount: true }
         }),
         prisma.goodsReceipt.aggregate({
-            where: { ...userFilter, isVerified: true },
+            where: { 
+                ...userFilter, 
+                isVerified: true,
+                ...dateFilter 
+            },
             _sum: { subtotal: true }
         }),
         prisma.financeTransaction.aggregate({
             where: {
                 ...userFilter,
-                journals: { some: { account: { code: { startsWith: '6' } } } }
+                journals: { some: { account: { code: { startsWith: '6' } } } },
+                ...txDateFilter
             },
             _sum: { amount: true }
         })
@@ -121,21 +146,35 @@ export async function getDashboardSummaryService(userId: string, prefix: string,
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
 
-    const monthStart = new Date();
-    monthStart.setDate(1);
-    monthStart.setHours(0, 0, 0, 0);
+    const monthStart = startOfMonth || new Date();
+    if (!startOfMonth) {
+        monthStart.setDate(1);
+        monthStart.setHours(0, 0, 0, 0);
+    }
+    const monthEnd = endOfMonth || new Date();
 
     const [deliveries, receipts, expenses, countRequests, countDeliveries, purchaseVolRes, salesPaidRes, purchasePaidRes] = await Promise.all([
         prisma.salesDelivery.findMany({ 
-            where: userFilter,
+            where: {
+                ...userFilter,
+                ...dateFilter
+            },
             select: { subtotal: true, totalDiscount: true, salesPerson: true } 
         }),
         prisma.goodsReceipt.findMany({
-            where: { ...userFilter, isVerified: true },
+            where: { 
+                ...userFilter, 
+                isVerified: true,
+                ...dateFilter
+            },
             select: { subtotal: true, salesPerson: true }
         }),
         prisma.financeTransaction.findMany({
-            where: { ...userFilter, journals: { some: { account: { code: { startsWith: '6' } } } } },
+            where: { 
+                ...userFilter, 
+                journals: { some: { account: { code: { startsWith: '6' } } } },
+                ...txDateFilter
+            },
             select: { amount: true, transactionType: true, salesPerson: true }
         }),
         prisma.purchaseRequest.count({ 
@@ -147,14 +186,26 @@ export async function getDashboardSummaryService(userId: string, prefix: string,
         prisma.salesDelivery.count({ where: { ...userFilter, createdAt: { gte: todayStart } } }),
         prisma.goodsReceiptItem.aggregate({
             _sum: { quantity: true },
-            where: { receipt: { ...userFilter, date: { gte: monthStart } } }
+            where: { 
+                receipt: { 
+                    ...userFilter, 
+                    date: startOfMonth && endOfMonth ? { gte: monthStart, lte: monthEnd } : { gte: monthStart } 
+                } 
+            }
         }),
         prisma.salesDelivery.aggregate({
-            where: userFilter,
+            where: {
+                ...userFilter,
+                ...dateFilter
+            },
             _sum: { paidAmount: true }
         }),
         prisma.goodsReceipt.aggregate({
-            where: { ...userFilter, isVerified: true },
+            where: { 
+                ...userFilter, 
+                isVerified: true,
+                ...dateFilter
+            },
             _sum: { paidAmount: true }
         })
     ]);

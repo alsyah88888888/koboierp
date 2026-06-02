@@ -155,7 +155,7 @@ export async function callAction(actionName: string, ...args: any[]) {
         // SYSTEM
         case "getDashboardSummary":
             const { getDashboardSummaryAction } = await import("@/actions/system");
-            return await getDashboardSummaryAction();
+            return await getDashboardSummaryAction(...args as [number?, number?]);
         case "getSystemSettings":
             const { getSystemSettingsAction } = await import("@/actions/system");
             return await getSystemSettingsAction();

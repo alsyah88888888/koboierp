@@ -7,7 +7,7 @@ import { callAction } from "@/proxy";
 import { formatCurrency, cn } from "@/lib/utils";
 import { useSession } from "next-auth/react";
 
-export function DashboardStats() {
+export function DashboardStats({ month, year }: { month?: number; year?: number }) {
     const [stats, setStats] = useState<any>(null);
     const [isClient, setIsClient] = useState(false);
     const { data: session } = useSession();
@@ -17,7 +17,7 @@ export function DashboardStats() {
         setIsClient(true);
         const loadStats = async () => {
             try {
-                const data = await callAction("getDashboardSummary");
+                const data = await callAction("getDashboardSummary", month, year);
                 setStats(data);
             } catch (err) {
                 console.error("Dashboard Stats Error:", err);
@@ -26,7 +26,7 @@ export function DashboardStats() {
         };
 
         loadStats();
-    }, []);
+    }, [month, year]);
 
     if (!stats) return (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 animate-pulse">

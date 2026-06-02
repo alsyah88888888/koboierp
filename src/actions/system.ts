@@ -10,13 +10,13 @@ import { getDashboardSummaryService } from "@/lib/services/system-service";
 /**
  * DASHBOARD & ANALYTICS: Summary Stats
  */
-export async function getDashboardSummaryAction() {
+export async function getDashboardSummaryAction(month?: number, year?: number) {
     const session = (await getServerSession(getAuthOptions())) as any;
     if (!session?.user?.id) throw new Error("Unauthorized");
 
     const isAdmin = session.user.role?.toUpperCase() === "ADMIN";
     try {
-        return await getDashboardSummaryService(session.user.id, session.user.prefix || "", isAdmin);
+        return await getDashboardSummaryService(session.user.id, session.user.prefix || "", isAdmin, month, year);
     } catch (e) {
         console.error("Dashboard Service Error:", e);
         return { totalRevenue: 0, nettMarginSales: 0, nettMarginBC: 0, nettMarginPF: 0, cashBalance: 0, totalHutang: 0, totalPiutang: 0, lowStockCount: 0, activeOrdersToday: 0, weeklyStats: [] };
