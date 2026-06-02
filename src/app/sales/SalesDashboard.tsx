@@ -42,6 +42,8 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
     const [isClient, setIsClient] = useState(false);
     const [showVoidModal, setShowVoidModal] = useState(false);
     const [voidId, setVoidId] = useState<string | null>(null);
+    const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
+    const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
 
     useEffect(() => {
         setIsClient(true);
@@ -162,8 +164,6 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
     };
 
 
-    const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
-    const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
 
     const filteredDeliveries = initialDeliveries.filter(d => {
         const dDate = new Date(d.createdAt);
