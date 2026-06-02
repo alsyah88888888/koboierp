@@ -624,7 +624,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                         <table className="table-erp table-to-cards min-w-full md:min-w-[1000px]">
                             <thead className="hidden md:table-header-group">
                                 <tr>
-                                    <th className="w-48">No. Pengiriman</th>
+                                    <th className="w-48">No. Penjualan</th>
                                     <th className="w-60">Buyer / Penerima</th>
                                     <th>Alamat</th>
                                     <th className="w-40">Gudang</th>
@@ -642,9 +642,9 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                                             d.isVoid && "bg-slate-50/80 opacity-60"
                                         )}
                                     >
-                                        <td data-label="No. SJ" className="font-mono text-primary font-bold md:pl-6">
+                                        <td data-label="No. Penjualan" className="font-mono text-primary font-bold md:pl-6">
                                             <div className="flex items-center gap-2">
-                                                <span className={cn(d.isVoid && "line-through text-slate-400")}>{d.deliveryNumber}</span>
+                                                <span className={cn(d.isVoid && "line-through text-slate-400")}>{d.invoiceNumber || d.deliveryNumber}</span>
                                                 {d.isVoid && (
                                                     <span className="bg-rose-100 text-rose-600 text-[8px] px-1.5 py-0.5 rounded-md font-black uppercase tracking-tighter">BATAL</span>
                                                 )}
