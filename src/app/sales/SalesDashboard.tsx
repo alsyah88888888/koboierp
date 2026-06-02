@@ -47,9 +47,14 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
         setIsClient(true);
     }, []);
 
+    const deliveriesForSelectedMonth = initialDeliveries.filter(d => {
+        const dDate = new Date(d.createdAt);
+        return (dDate.getMonth() + 1) === selectedMonth && dDate.getFullYear() === selectedYear;
+    });
+
     // Calculate Performance for BC & PF
     const getStats = (id: string) => {
-        const sales = initialDeliveries.filter(d => d.salesPerson === id);
+        const sales = deliveriesForSelectedMonth.filter(d => d.salesPerson === id);
 
         // Saring 3 pengiriman terbaru
         const recentDeliveries = [...sales].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 3);
@@ -411,7 +416,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
             </div>
 
             <div className="hide-print">
-                <DashboardStats />
+                <DashboardStats month={selectedMonth} year={selectedYear} />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-[1400px]">
@@ -542,7 +547,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                         <p className="erp-label">Total Penjualan</p>
                         <BarChart3 className="h-4 w-4 text-primary opacity-20" />
                     </div>
-                    <h3 className="text-3xl font-black mt-1 text-primary">{initialDeliveries.length}</h3>
+                    <h3 className="text-3xl font-black mt-1 text-primary">{deliveriesForSelectedMonth.length}</h3>
                 </div>
                 <div className="erp-card p-5">
                     <div className="flex justify-between items-center">
