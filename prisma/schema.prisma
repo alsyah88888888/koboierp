@@ -307,6 +307,7 @@ model SalesOrder {
   orderNumber    String           @unique
   proformaNumber String?          @unique
   poNumber       String?
+  invoiceNumber  String?          // Locked Invoice Number when confirmed (KB-TRN or KB-TRD)
   status         String           @default("OPEN")
   recipient      String
   buyerName      String
@@ -330,6 +331,7 @@ model SalesOrder {
 
   @@index([orderNumber])
   @@index([proformaNumber])
+  @@index([invoiceNumber])
   @@index([createdAt])
 }
 

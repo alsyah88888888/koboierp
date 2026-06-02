@@ -31,14 +31,22 @@ export async function createSalesDeliveryService(data: any, userId: string) {
         // --- AUTO-GENERATED INVOICE NUMBER LOGIC ---
         let invoiceNumber = data.invoiceNumber || null;
         if (!invoiceNumber) {
-            // 1. If linked to an order, check if any existing delivery under this order already has an invoiceNumber
+            // 1. If linked to an order, check if the SalesOrder itself has a locked invoiceNumber
             if (data.orderId) {
-                const existingDelivery = await tx.salesDelivery.findFirst({
-                    where: { orderId: data.orderId, NOT: [{ invoiceNumber: null }, { invoiceNumber: "" }] },
+                const linkedOrder = await tx.salesOrder.findUnique({
+                    where: { id: data.orderId },
                     select: { invoiceNumber: true }
                 });
-                if (existingDelivery) {
-                    invoiceNumber = existingDelivery.invoiceNumber;
+                if (linkedOrder && linkedOrder.invoiceNumber) {
+                    invoiceNumber = linkedOrder.invoiceNumber;
+                } else {
+                    const existingDelivery = await tx.salesDelivery.findFirst({
+                        where: { orderId: data.orderId, NOT: [{ invoiceNumber: null }, { invoiceNumber: "" }] },
+                        select: { invoiceNumber: true }
+                    });
+                    if (existingDelivery) {
+                        invoiceNumber = existingDelivery.invoiceNumber;
+                    }
                 }
             }
 
@@ -49,12 +57,22 @@ export async function createSalesDeliveryService(data: any, userId: string) {
                     where: { invoiceNumber: { startsWith: invPrefix } },
                     orderBy: { invoiceNumber: 'desc' }
                 });
-                let nextInvNum = 1;
+                const latestSOInv = await tx.salesOrder.findFirst({
+                    where: { invoiceNumber: { startsWith: invPrefix } },
+                    orderBy: { invoiceNumber: 'desc' }
+                });
+                let maxSeq = 0;
                 if (latestInv && latestInv.invoiceNumber) {
                     const invParts = latestInv.invoiceNumber.split('-');
                     const lastInvSeq = parseInt(invParts[invParts.length - 1]);
-                    if (!isNaN(lastInvSeq)) nextInvNum = lastInvSeq + 1;
+                    if (!isNaN(lastInvSeq) && lastInvSeq > maxSeq) maxSeq = lastInvSeq;
                 }
+                if (latestSOInv && latestSOInv.invoiceNumber) {
+                    const invParts = latestSOInv.invoiceNumber.split('-');
+                    const lastInvSeq = parseInt(invParts[invParts.length - 1]);
+                    if (!isNaN(lastInvSeq) && lastInvSeq > maxSeq) maxSeq = lastInvSeq;
+                }
+                const nextInvNum = maxSeq + 1;
                 invoiceNumber = `${invPrefix}${String(nextInvNum).padStart(3, '0')}`;
             }
         }
@@ -766,9 +784,36 @@ export async function createSalesOrderService(data: any, userId: string) {
         const taxAmount = taxRatePercent > 0 ? Math.floor(dppNilaiLain * 0.12) : 0;
         const grandTotal = Math.ceil((dpp + taxAmount) / 100) * 100;
 
+        let invoiceNumber = null;
+        if (isConfirm) {
+            const invPrefix = taxRatePercent > 0 ? `KB-TRN-${dateStr}-` : `KB-TRD-${dateStr}-`;
+            const latestInv = await tx.salesDelivery.findFirst({
+                where: { invoiceNumber: { startsWith: invPrefix } },
+                orderBy: { invoiceNumber: 'desc' }
+            });
+            const latestSOInv = await tx.salesOrder.findFirst({
+                where: { invoiceNumber: { startsWith: invPrefix } },
+                orderBy: { invoiceNumber: 'desc' }
+            });
+            let maxSeq = 0;
+            if (latestInv && latestInv.invoiceNumber) {
+                const invParts = latestInv.invoiceNumber.split('-');
+                const lastInvSeq = parseInt(invParts[invParts.length - 1]);
+                if (!isNaN(lastInvSeq) && lastInvSeq > maxSeq) maxSeq = lastInvSeq;
+            }
+            if (latestSOInv && latestSOInv.invoiceNumber) {
+                const invParts = latestSOInv.invoiceNumber.split('-');
+                const lastInvSeq = parseInt(invParts[invParts.length - 1]);
+                if (!isNaN(lastInvSeq) && lastInvSeq > maxSeq) maxSeq = lastInvSeq;
+            }
+            const nextInvNum = maxSeq + 1;
+            invoiceNumber = `${invPrefix}${String(nextInvNum).padStart(3, '0')}`;
+        }
+
         const order = await tx.salesOrder.create({
             data: {
                 orderNumber,
+                invoiceNumber,
                 status: data.status || "DRAFT",
                 buyerName: data.buyerName,
                 recipient: data.recipient,
@@ -814,17 +859,81 @@ export async function updateSalesOrderService(id: string, data: any) {
         await tx.salesOrderItem.deleteMany({ where: { orderId: id } });
 
         const oldOrder = await tx.salesOrder.findUnique({ where: { id } });
-        const newRevision = (oldOrder?.revision || 0) + 1;
+        if (!oldOrder) throw new Error("Order tidak ditemukan");
+
+        const txDate = new Date(data.date || oldOrder.date || new Date());
+        const day = String(txDate.getDate()).padStart(2, '0');
+        const month = String(txDate.getMonth() + 1).padStart(2, '0');
+        const year = txDate.getFullYear();
+        const dateStr = `${day}${month}${year}`;
+
+        // 1. Generate KB-PO- orderNumber if transitioning from DRAFT to CONFIRMED
+        let orderNumber = oldOrder.orderNumber;
+        if (oldOrder.status === "DRAFT" && data.status === "CONFIRMED" && orderNumber.startsWith("KB-PI-")) {
+            const prefix = `KB-PO-${dateStr}-`;
+            const latest = await tx.salesOrder.findFirst({
+                where: { orderNumber: { startsWith: prefix } },
+                orderBy: { orderNumber: 'desc' }
+            });
+
+            let nextNum = 1;
+            if (latest) {
+                const parts = latest.orderNumber.split('-');
+                const lastSeq = parseInt(parts[parts.length - 1]);
+                if (!isNaN(lastSeq)) nextNum = lastSeq + 1;
+            }
+            orderNumber = `${prefix}${String(nextNum).padStart(3, '0')}`;
+        }
+
+        // 2. Generate and lock invoiceNumber if confirmed
+        let invoiceNumber = oldOrder.invoiceNumber;
+        const isConfirm = data.status === "CONFIRMED";
+        const oldIsPKP = (Number(oldOrder.taxRate) || 0) > 0;
+        const isPKP = taxRatePercent > 0;
+
+        if (isConfirm) {
+            if (!invoiceNumber || oldIsPKP !== isPKP) {
+                const invPrefix = isPKP ? `KB-TRN-${dateStr}-` : `KB-TRD-${dateStr}-`;
+                const latestInv = await tx.salesDelivery.findFirst({
+                    where: { invoiceNumber: { startsWith: invPrefix } },
+                    orderBy: { invoiceNumber: 'desc' }
+                });
+                const latestSOInv = await tx.salesOrder.findFirst({
+                    where: { invoiceNumber: { startsWith: invPrefix } },
+                    orderBy: { invoiceNumber: 'desc' }
+                });
+                let maxSeq = 0;
+                if (latestInv && latestInv.invoiceNumber) {
+                    const invParts = latestInv.invoiceNumber.split('-');
+                    const lastInvSeq = parseInt(invParts[invParts.length - 1]);
+                    if (!isNaN(lastInvSeq) && lastInvSeq > maxSeq) maxSeq = lastInvSeq;
+                }
+                if (latestSOInv && latestSOInv.invoiceNumber) {
+                    const invParts = latestSOInv.invoiceNumber.split('-');
+                    const lastInvSeq = parseInt(invParts[invParts.length - 1]);
+                    if (!isNaN(lastInvSeq) && lastInvSeq > maxSeq) maxSeq = lastInvSeq;
+                }
+                const nextInvNum = maxSeq + 1;
+                invoiceNumber = `${invPrefix}${String(nextInvNum).padStart(3, '0')}`;
+            }
+        } else {
+            // If reverted back to DRAFT or OPEN, clear the invoice number
+            invoiceNumber = null;
+        }
+
+        const newRevision = (oldOrder.revision || 0) + 1;
 
         const order = await tx.salesOrder.update({
             where: { id },
             data: {
+                orderNumber,
+                invoiceNumber,
                 status: data.status,
                 buyerName: data.buyerName,
                 recipient: data.recipient,
                 warehouseId: data.warehouseId,
                 salesPerson: data.salesPerson,
-                date: new Date(data.date),
+                date: txDate,
                 subtotal,
                 totalDiscount: totalDiscountNominal,
                 taxRate: taxRatePercent,
@@ -843,6 +952,14 @@ export async function updateSalesOrderService(id: string, data: any) {
                 }
             }
         });
+
+        // 3. Propagate updated invoice number to all linked deliveries
+        if (invoiceNumber !== oldOrder.invoiceNumber) {
+            await tx.salesDelivery.updateMany({
+                where: { orderId: id },
+                data: { invoiceNumber: invoiceNumber }
+            });
+        }
 
         revalidatePath("/sales");
         return { success: true };
