@@ -9,16 +9,16 @@ export function formatCurrency(amount: number) {
     // Manually handle hydration-safe currency formatting
     const formatted = new Intl.NumberFormat("id-ID", {
         minimumFractionDigits: 0,
-        maximumFractionDigits: 2,
-    }).format(Math.abs(amount));
+        maximumFractionDigits: 0,
+    }).format(Math.round(Math.abs(amount)));
     return `Rp ${formatted}`;
 }
 
 export function formatNumber(amount: number) {
     return new Intl.NumberFormat("id-ID", {
         minimumFractionDigits: 0,
-        maximumFractionDigits: 2,
-    }).format(amount).replace(/\u00A0/g, " ");
+        maximumFractionDigits: 0,
+    }).format(Math.round(amount)).replace(/\u00A0/g, " ");
 }
 
 /**

@@ -50,7 +50,7 @@ export default async function InvoicePrintPage({ params }: { params: Promise<{ i
 
     return (
         <DocumentLayout
-            title="FAKTUR PENJUALAN"
+            title="Faktur Penjualan"
             docNumber={delivery.invoiceNumber || delivery.deliveryNumber}
             date={format(new Date(delivery.date || delivery.createdAt), "dd MMM yyyy")}
             headerInfo={

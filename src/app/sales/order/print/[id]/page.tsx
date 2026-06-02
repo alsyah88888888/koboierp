@@ -44,7 +44,7 @@ export default async function SalesOrderPrintPage({ params }: { params: Promise<
 
     return (
         <DocumentLayout
-            title={isDraft ? "PROFORMA INVOICE (PI)" : "SALES ORDER (PO)"}
+            title={isDraft ? "Proforma Invoice (PI)" : "Sales Order (PO)"}
             docNumber={order.orderNumber}
             date={format(new Date(order.date), "dd MMM yyyy")}
             headerInfo={
