@@ -368,7 +368,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                                 activeTab === "SJ" ? "bg-primary text-white shadow-md shadow-primary/20" : "text-slate-500 hover:bg-slate-50"
                             )}
                         >
-                            Pengiriman
+                            Riwayat Penjualan
                         </button>
                         <button
                             onClick={() => setActiveTab("RETURNS")}
@@ -386,7 +386,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                                 activeTab === "PO" ? "bg-indigo-600 text-white shadow-md shadow-indigo-200" : "text-slate-500 hover:bg-slate-50"
                             )}
                         >
-                            PO Penjualan
+                            Proforma Invoice
                         </button>
                     </div>
 
@@ -401,7 +401,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                             )}
                         >
                             <Plus className="h-4 w-4" />
-                            <span>{activeTab === "SJ" ? "Input Surat Jalan (SJ)" : activeTab === "RETURNS" ? "Input Retur" : "Input PI / PO Penjualan"}</span>
+                            <span>{activeTab === "SJ" ? "Input Surat Jalan (SJ)" : activeTab === "RETURNS" ? "Input Retur" : "Input Proforma Invoice"}</span>
                         </button>
                         <div className="flex gap-2">
                            <button onClick={handlePreview} className="p-3 bg-white border border-slate-200 rounded-2xl hover:border-primary hover:text-primary transition-all shadow-sm group" title="Preview Report">
@@ -558,6 +558,30 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                         {isClient ? initialDeliveries.filter(d => new Date(d.createdAt).toDateString() === new Date().toDateString()).length : "0"}
                     </h3>
                 </div>
+                <div className="erp-card p-5">
+                    <div className="flex justify-between items-center">
+                        <p className="erp-label">PI Penjualan (Draft)</p>
+                        <FileText className="h-4 w-4 text-amber-600 opacity-20" />
+                    </div>
+                    <h3 className="text-3xl font-black mt-1 text-amber-600">
+                        {isClient ? initialSalesOrders.filter(o => {
+                            const oDate = new Date(o.date);
+                            return (oDate.getMonth() + 1) === selectedMonth && oDate.getFullYear() === selectedYear && o.status === "DRAFT";
+                        }).length : "0"}
+                    </h3>
+                </div>
+                <div className="erp-card p-5">
+                    <div className="flex justify-between items-center">
+                        <p className="erp-label">PO Penjualan (Confirm)</p>
+                        <FileText className="h-4 w-4 text-indigo-600 opacity-20" />
+                    </div>
+                    <h3 className="text-3xl font-black mt-1 text-indigo-600">
+                        {isClient ? initialSalesOrders.filter(o => {
+                            const oDate = new Date(o.date);
+                            return (oDate.getMonth() + 1) === selectedMonth && oDate.getFullYear() === selectedYear && o.status === "CONFIRMED";
+                        }).length : "0"}
+                    </h3>
+                </div>
             </div>
 
             <div className="table-container">
@@ -570,7 +594,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                                 activeTab === "SJ" ? "text-primary border-primary" : "text-slate-300 border-transparent hover:text-slate-400"
                             )}
                         >
-                            Riwayat Pengiriman
+                            Riwayat Penjualan
                         </button>
                         <button
                             onClick={() => setActiveTab("RETURNS")}
@@ -588,7 +612,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                                 activeTab === "PO" ? "text-indigo-600 border-indigo-600" : "text-slate-300 border-transparent hover:text-slate-400"
                             )}
                         >
-                            PO Penjualan
+                            Proforma Invoice
                         </button>
                     </div>
                     <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
@@ -748,7 +772,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                         <table className="table-erp table-to-cards min-w-full md:min-w-[1000px]">
                             <thead className="hidden md:table-header-group">
                                 <tr>
-                                    <th className="w-48">No. PO Jual</th>
+                                    <th className="w-48">No. Proforma / PO</th>
                                     <th>Buyer / Customer</th>
                                     <th className="w-40">Status</th>
                                     <th className="text-right w-40">Outstanding / Total</th>
