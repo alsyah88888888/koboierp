@@ -483,13 +483,6 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, initialRequ
                                             <td>
                                                 <div className="flex items-center justify-center gap-2">
                                                     <Link
-                                                        href={`/purchase/print/${r.id}`}
-                                                        className="p-2 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-xl transition-all"
-                                                        title="Cetak LPB"
-                                                    >
-                                                        <Eye className="h-4 w-4" />
-                                                    </Link>
-                                                    <Link
                                                         href={`/purchase/print/invoice/${r.id}`}
                                                         className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
                                                         title="Cetak Invoice"
