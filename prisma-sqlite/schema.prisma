@@ -97,6 +97,8 @@ model FinanceTransaction {
   amount          Decimal
   category        String?
   salesPerson     String?
+  invoiceNumber   String?
+  receiptNumber   String?
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
   createdById     String?

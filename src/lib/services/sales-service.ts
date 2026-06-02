@@ -307,7 +307,7 @@ export async function createSalesDeliveryService(data: any, userId: string) {
                             lotId: lot.id,
                             sdItemId: sdItem.id,
                             qty: consume,
-                            hppAtTime: lot.purchasePrice
+                            hppAtTime: lot.landedCost ?? lot.purchasePrice
                         }
                     });
 
@@ -558,7 +558,7 @@ export async function updateSalesDeliveryService(id: string, data: any, userId: 
                     if (remaining <= 0) break;
                     const consume = Math.min(remaining, lot.remainingQty);
                     await tx.lotAllocation.create({
-                        data: { lotId: lot.id, sdItemId: sdItem.id, qty: consume, hppAtTime: lot.purchasePrice }
+                        data: { lotId: lot.id, sdItemId: sdItem.id, qty: consume, hppAtTime: lot.landedCost ?? lot.purchasePrice }
                     });
                     await tx.productLot.update({
                         where: { id: lot.id },

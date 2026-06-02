@@ -266,9 +266,36 @@ export async function createFinanceTransactionService(data: any, userId: string)
                 amount: data.amount as any,
                 createdById: userId,
                 salesPerson: data.salesPerson,
-                invoiceNumber: data.invoiceNumber || null
+                invoiceNumber: data.invoiceNumber || null,
+                receiptNumber: data.receiptNumber || null
             }
         });
+
+        // Allocating Landed Cost if linked to a Purchase Goods Receipt
+        if (data.receiptNumber && data.transactionType === "PAYMENT") {
+            const goodsReceipt = await tx.goodsReceipt.findUnique({
+                where: { receiptNumber: data.receiptNumber },
+                include: { items: true }
+            });
+            if (goodsReceipt && goodsReceipt.items.length > 0) {
+                const totalQty = goodsReceipt.items.reduce((sum: number, item: any) => sum + item.quantity, 0);
+                if (totalQty > 0) {
+                    const extraCostPerUnit = Number(data.amount) / totalQty;
+                    const lots = await tx.productLot.findMany({
+                        where: { grNumber: data.receiptNumber }
+                    });
+                    for (const lot of lots) {
+                        const currentLandedCost = Number(lot.landedCost || lot.purchasePrice);
+                        await tx.productLot.update({
+                            where: { id: lot.id },
+                            data: {
+                                landedCost: currentLandedCost + extraCostPerUnit
+                            }
+                        });
+                    }
+                }
+            }
+        }
 
         const isPayment = data.transactionType === "PAYMENT";
         const isMutation = data.transactionType === "MUTATION";

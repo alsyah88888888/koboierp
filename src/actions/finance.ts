@@ -98,6 +98,36 @@ export async function deleteFinanceTransactionAction(id: string) {
     const prisma = getPrisma();
 
     return await prisma.$transaction(async (tx: any) => {
+        const oldTx = await tx.financeTransaction.findUnique({
+            where: { id },
+            select: { receiptNumber: true, amount: true, transactionType: true }
+        });
+
+        if (oldTx && oldTx.receiptNumber && oldTx.transactionType === "PAYMENT") {
+            const goodsReceipt = await tx.goodsReceipt.findUnique({
+                where: { receiptNumber: oldTx.receiptNumber },
+                include: { items: true }
+            });
+            if (goodsReceipt && goodsReceipt.items.length > 0) {
+                const totalQty = goodsReceipt.items.reduce((sum: number, item: any) => sum + item.quantity, 0);
+                if (totalQty > 0) {
+                    const extraCostPerUnit = Number(oldTx.amount) / totalQty;
+                    const lots = await tx.productLot.findMany({
+                        where: { grNumber: oldTx.receiptNumber }
+                    });
+                    for (const lot of lots) {
+                        const currentLandedCost = Number(lot.landedCost || lot.purchasePrice);
+                        await tx.productLot.update({
+                            where: { id: lot.id },
+                            data: {
+                                landedCost: Math.max(Number(lot.purchasePrice), currentLandedCost - extraCostPerUnit)
+                            }
+                        });
+                    }
+                }
+            }
+        }
+
         await tx.journalEntry.deleteMany({
             where: { transactionId: id }
         });

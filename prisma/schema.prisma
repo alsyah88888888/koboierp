@@ -100,6 +100,7 @@ model FinanceTransaction {
   category        String?
   salesPerson     String?
   invoiceNumber   String?        // Tautan nomor invoice untuk perhitungan margin bersih
+  receiptNumber   String?        // Tautan nomor LPB untuk perhitungan landed cost HPP
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
   createdById     String?
@@ -509,6 +510,7 @@ model ProductLot {
   grItemId      String           @unique
   supplierName  String
   purchasePrice Decimal
+  landedCost    Decimal?
   grNumber      String
   grDate        DateTime
   initialQty    Int
