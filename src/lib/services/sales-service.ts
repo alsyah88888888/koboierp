@@ -865,9 +865,17 @@ export async function deleteSalesOrderService(id: string) {
         });
 
         if (!order) throw new Error("Order tidak ditemukan");
-        if (order.deliveries.length > 0) {
-            throw new Error("Tidak dapat menghapus PO yang sudah memiliki pengiriman (SJ). Batalkan SJ terlebih dahulu.");
+        
+        const activeDeliveries = order.deliveries.filter((d: any) => !d.isVoid);
+        if (activeDeliveries.length > 0) {
+            throw new Error("Tidak dapat menghapus PO yang sudah memiliki pengiriman (SJ) aktif. Batalkan SJ terlebih dahulu.");
         }
+
+        // Unlink any voided deliveries so we can delete the SalesOrder without foreign key issues
+        await tx.salesDelivery.updateMany({
+            where: { orderId: id },
+            data: { orderId: null }
+        });
 
         await tx.salesOrderItem.deleteMany({ where: { orderId: id } });
         await tx.salesOrder.delete({ where: { id } });
