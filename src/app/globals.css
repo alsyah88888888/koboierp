@@ -76,40 +76,40 @@ body {
 
 /* ERP Utility Components */
 @utility erp-card {
-  @apply bg-white border border-slate-200/60 shadow-sm overflow-hidden transition-all duration-300;
+  @apply bg-white border border-slate-200/50 shadow-sm overflow-hidden transition-all duration-500 ease-out;
   box-shadow: var(--shadow-airy);
   border-radius: var(--radius-erp);
   &:hover {
     box-shadow: var(--shadow-airy-hover);
-    @apply border-slate-300/60;
+    @apply border-slate-300/80 scale-[1.01];
   }
 }
 
 @utility erp-card-header {
-  @apply px-6 py-5 border-b border-slate-100 bg-slate-50/30 flex items-center justify-between;
+  @apply px-6 py-5 border-b border-slate-100 bg-slate-50/40 flex items-center justify-between backdrop-blur-sm;
 }
 
 @utility erp-input {
   @apply w-full bg-white border-2 border-slate-200/80 px-4 py-2.5 rounded-xl text-sm font-medium outline-none 
-         focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all h-11;
+         focus:border-primary focus:ring-4 focus:ring-primary/10 hover:border-slate-300 focus:shadow-md transition-all duration-300 h-11;
 }
 
 @utility erp-label {
-  @apply text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-2 block ml-1;
+  @apply text-[11px] font-black uppercase tracking-widest text-slate-500/80 mb-2 block ml-1;
 }
 
 @utility erp-btn-primary {
   @apply bg-primary text-white px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 
-         hover:bg-slate-900 shadow-xl shadow-primary/10 active:scale-95 transition-all;
+         hover:bg-slate-900 shadow-xl shadow-primary/10 active:scale-95 hover:scale-[1.02] transition-all duration-300;
 }
 
 @utility erp-btn-secondary {
   @apply bg-white text-slate-700 border border-slate-200 px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 
-         hover:bg-slate-50 active:scale-95 transition-all;
+         hover:bg-slate-50 active:scale-95 hover:scale-[1.02] transition-all duration-300;
 }
 
 @utility badge-status {
-  @apply px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter;
+  @apply px-3.5 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-sm transition-all duration-300;
 }
 
 /* Table Card View (Mobile) */
@@ -132,7 +132,7 @@ body {
 
 /* Advanced Table Responsive */
 @utility table-container {
-  @apply relative overflow-hidden rounded-2xl border border-slate-200/60 bg-white;
+  @apply relative overflow-hidden rounded-2xl border border-slate-200/50 bg-white transition-all duration-500;
   box-shadow: var(--shadow-airy);
 }
 
@@ -148,11 +148,11 @@ body {
   }
   
   & th {
-    @apply px-6 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400;
+    @apply px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400/90;
   }
   
   & td {
-    @apply px-6 py-5 border-b border-slate-50 transition-colors text-slate-600;
+    @apply px-6 py-5 border-b border-slate-50 transition-all duration-300 text-slate-600;
   }
   
   & tr:last-child td {
@@ -160,7 +160,7 @@ body {
   }
   
   & tr:hover td {
-    @apply bg-slate-50/40 text-slate-900;
+    @apply bg-slate-50/70 text-slate-900;
   }
 }
 
@@ -176,9 +176,9 @@ body {
 }
 
 @utility erp-stat-card {
-  @apply erp-card p-6 md:p-8 relative overflow-hidden transition-all duration-300;
+  @apply erp-card p-6 md:p-8 relative overflow-hidden transition-all duration-500;
   &:hover {
-    @apply scale-[1.02];
+    @apply scale-[1.03] shadow-airy-hover;
   }
 }
 
