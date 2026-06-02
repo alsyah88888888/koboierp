@@ -169,9 +169,12 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
         const dDate = new Date(d.createdAt);
         const matchesMonth = (dDate.getMonth() + 1) === selectedMonth;
         const matchesYear = dDate.getFullYear() === selectedYear;
+        const piNum = d.order?.proformaNumber || (d.order?.orderNumber?.startsWith("KB-PI-") ? d.order.orderNumber : null);
         const matchesSearch = d.deliveryNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
                              d.recipient.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                             d.buyerName.toLowerCase().includes(searchTerm.toLowerCase());
+                             d.buyerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                             (d.invoiceNumber && d.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                             (piNum && piNum.toLowerCase().includes(searchTerm.toLowerCase()));
         return matchesMonth && matchesYear && matchesSearch;
     });
 
@@ -679,6 +682,17 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                                                     <span className="bg-rose-100 text-rose-600 text-[8px] px-1.5 py-0.5 rounded-md font-black uppercase tracking-tighter">BATAL</span>
                                                 )}
                                             </div>
+                                            {(() => {
+                                                const piNum = d.order?.proformaNumber || (d.order?.orderNumber?.startsWith("KB-PI-") ? d.order.orderNumber : null);
+                                                if (piNum) {
+                                                    return (
+                                                        <div className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">
+                                                            PI: {piNum}
+                                                        </div>
+                                                    );
+                                                }
+                                                return null;
+                                            })()}
                                         </td>
                                         <td data-label="Buyer">
                                             <div className="font-black text-slate-900">{d.buyerName}</div>

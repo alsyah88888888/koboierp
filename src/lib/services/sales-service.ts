@@ -813,6 +813,7 @@ export async function createSalesOrderService(data: any, userId: string) {
         const order = await tx.salesOrder.create({
             data: {
                 orderNumber,
+                proformaNumber: orderNumber.startsWith("KB-PI-") ? orderNumber : null,
                 invoiceNumber,
                 status: data.status || "DRAFT",
                 buyerName: data.buyerName,
@@ -869,7 +870,9 @@ export async function updateSalesOrderService(id: string, data: any) {
 
         // 1. Generate KB-PO- orderNumber if transitioning from DRAFT to CONFIRMED
         let orderNumber = oldOrder.orderNumber;
+        let proformaNumber = oldOrder.proformaNumber || (orderNumber.startsWith("KB-PI-") ? orderNumber : null);
         if (oldOrder.status === "DRAFT" && data.status === "CONFIRMED" && orderNumber.startsWith("KB-PI-")) {
+            proformaNumber = oldOrder.orderNumber; // Save the old PI number!
             const prefix = `KB-PO-${dateStr}-`;
             const latest = await tx.salesOrder.findFirst({
                 where: { orderNumber: { startsWith: prefix } },
@@ -927,6 +930,7 @@ export async function updateSalesOrderService(id: string, data: any) {
             where: { id },
             data: {
                 orderNumber,
+                proformaNumber,
                 invoiceNumber,
                 status: data.status,
                 buyerName: data.buyerName,

@@ -40,7 +40,11 @@ export default async function SalesPage() {
 
     const deliveries = serializeDecimal(await prisma.salesDelivery.findMany({
         where: userFilter,
-        include: { warehouse: true, items: { include: { product: true } } },
+        include: { 
+            warehouse: true, 
+            items: { include: { product: true } },
+            order: true
+        },
         orderBy: { createdAt: 'desc' }
     }).catch(() => []));
 
