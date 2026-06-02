@@ -391,18 +391,19 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                     </div>
 
                     <div className="flex items-center gap-2 w-full sm:w-auto">
-                        <button
-                            onClick={activeTab === "SJ" ? () => setShowSalesModal(true) : activeTab === "RETURNS" ? () => setShowReturnModal(true) : () => setShowManualModal(true)}
-                            className={cn(
-                                "flex-1 sm:flex-none px-8 py-3 rounded-2xl flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95 font-black text-[10px] uppercase tracking-widest",
-                                activeTab === "SJ" ? "bg-primary text-white shadow-primary/20" : 
-                                activeTab === "RETURNS" ? "bg-rose-600 text-white shadow-rose-200" :
-                                "bg-indigo-600 text-white shadow-indigo-200"
-                            )}
-                        >
-                            <Plus className="h-4 w-4" />
-                            <span>{activeTab === "SJ" ? "Input Surat Jalan (SJ)" : activeTab === "RETURNS" ? "Input Retur" : "Input Proforma Invoice"}</span>
-                        </button>
+                        {activeTab !== "SJ" && (
+                            <button
+                                onClick={activeTab === "RETURNS" ? () => setShowReturnModal(true) : () => setShowManualModal(true)}
+                                className={cn(
+                                    "flex-1 sm:flex-none px-8 py-3 rounded-2xl flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95 font-black text-[10px] uppercase tracking-widest",
+                                    activeTab === "RETURNS" ? "bg-rose-600 text-white shadow-rose-200" :
+                                    "bg-indigo-600 text-white shadow-indigo-200"
+                                )}
+                            >
+                                <Plus className="h-4 w-4" />
+                                <span>{activeTab === "RETURNS" ? "Input Retur" : "Input Proforma Invoice"}</span>
+                            </button>
+                        )}
                         <div className="flex gap-2">
                            <button onClick={handlePreview} className="p-3 bg-white border border-slate-200 rounded-2xl hover:border-primary hover:text-primary transition-all shadow-sm group" title="Preview Report">
                                <Eye className="h-5 w-5 text-slate-400 group-hover:text-primary" />
@@ -704,14 +705,6 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                                                 <Link href={`/sales/print/${d.id}`} className="p-2.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all" title="Cetak Penjualan">
                                                     <Printer className="h-4 w-4" />
                                                 </Link>
-                                                <button onClick={() => { setEditData(d); setShowSalesModal(true); }} className="p-2.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-all">
-                                                    <Edit2 className="h-4 w-4" />
-                                                </button>
-                                                {(isAdmin || userRole === "SALES") && !d.isVoid && (
-                                                    <button onClick={() => handleVoid(d.id)} className="p-2.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all" title="Void Transaction">
-                                                        <XCircle className="h-4 w-4" />
-                                                    </button>
-                                                )}
                                                 {d.isVoid && (
                                                     <div className="px-3 py-1 bg-slate-100 text-slate-400 text-[8px] font-black italic rounded-lg" title={d.voidReason}>
                                                         VOIDED: {d.voidReason}
