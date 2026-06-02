@@ -390,51 +390,46 @@ export async function updateSalesDeliveryService(id: string, data: any, userId: 
         const isPKP = data.isPKP === true || (Number(data.taxRate) || 0) > 0;
         const oldIsPKP = Number(oldDelivery.taxRate) > 0;
         
-        let deliveryNumber = oldDelivery.deliveryNumber;
-        const oldNumber = deliveryNumber;
+        const deliveryNumber = oldDelivery.deliveryNumber;
+        let invoiceNumber = data.invoiceNumber || oldDelivery.invoiceNumber;
+        const oldInvoiceNumber = invoiceNumber;
 
-        // REGENERATE NUMBER IF PKP STATUS CHANGED
-        if (isPKP !== oldIsPKP) {
+        // REGENERATE INVOICE NUMBER IF PKP STATUS CHANGED
+        if (isPKP !== oldIsPKP || !invoiceNumber) {
             const prefix = isPKP ? `KB-TRN-${dateStr}-` : `KB-TRD-${dateStr}-`;
             const latest = await tx.salesDelivery.findFirst({
-                where: { deliveryNumber: { startsWith: prefix } },
-                orderBy: { deliveryNumber: 'desc' }
+                where: { invoiceNumber: { startsWith: prefix } },
+                orderBy: { invoiceNumber: 'desc' }
             });
 
             let nextNum = 1;
-            if (latest) {
-                const parts = latest.deliveryNumber.split('-');
+            if (latest && latest.invoiceNumber) {
+                const parts = latest.invoiceNumber.split('-');
                 const lastSeq = parseInt(parts[parts.length - 1]);
                 if (!isNaN(lastSeq)) nextNum = lastSeq + 1;
             }
-            deliveryNumber = `${prefix}${String(nextNum).padStart(3, '0')}`;
+            invoiceNumber = `${prefix}${String(nextNum).padStart(3, '0')}`;
 
             // Create notification for audit trail
             await tx.notification.create({
                 data: {
-                    title: "Perubahan Nomor Transaksi",
-                    message: `Nomor transaksi ${oldNumber} telah diubah menjadi ${deliveryNumber} karena perubahan status pajak (PKP: ${isPKP}).`,
+                    title: "Perubahan Nomor Invoice",
+                    message: `Nomor invoice untuk Surat Jalan ${oldDelivery.deliveryNumber} telah diubah dari ${oldInvoiceNumber || 'kosong'} menjadi ${invoiceNumber} karena perubahan status pajak (PKP: ${isPKP}).`,
                     type: "warning",
                     authorId: userId
                 }
-            });
-
-            // Update related stock movements reference
-            await tx.stockMovement.updateMany({
-                where: { reference: oldNumber },
-                data: { reference: deliveryNumber }
             });
         }
 
         await tx.salesDelivery.update({
             where: { id },
             data: {
-                deliveryNumber: deliveryNumber,
+                deliveryNumber: oldDelivery.deliveryNumber, // Never change deliveryNumber (Surat Jalan number)
                 recipient: data.recipient,
                 buyerName: data.buyerName,
                 vehicleNumber: data.vehicleNumber,
                 poNumber: data.poNumber,
-                invoiceNumber: data.invoiceNumber || null,
+                invoiceNumber: invoiceNumber,
                 warehouseId: data.warehouseId,
                 salesPerson: data.salesPerson,
                 date: txDate,
