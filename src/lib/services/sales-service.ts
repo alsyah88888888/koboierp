@@ -61,24 +61,47 @@ export async function createSalesDeliveryService(data: any, userId: string) {
 
         // --- AUTO-GENERATED SURAT JALAN NUMBER (deliveryNumber) ---
         let deliveryNumber = "";
-        const partialDeliveries = await tx.salesDelivery.findMany({
+        
+        // 1. Get the sequential number for this day across all deliveries
+        const startOfDay = new Date(txDate);
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(txDate);
+        endOfDay.setHours(23, 59, 59, 999);
+
+        const latestDayDelivery = await tx.salesDelivery.findFirst({
+            where: {
+                createdAt: {
+                    gte: startOfDay,
+                    lte: endOfDay
+                }
+            },
+            orderBy: { deliveryNumber: 'desc' }
+        });
+
+        let nextSeq = 1;
+        if (latestDayDelivery && latestDayDelivery.deliveryNumber) {
+            const parts = latestDayDelivery.deliveryNumber.split('-');
+            const lastSeq = parseInt(parts[parts.length - 1]);
+            if (!isNaN(lastSeq)) {
+                nextSeq = lastSeq + 1;
+            }
+        }
+
+        // 2. Determine the random number (reuse if this is a partial delivery under the same invoice)
+        let randomNum = "";
+        const existingDelivery = await tx.salesDelivery.findFirst({
             where: { invoiceNumber: invoiceNumber },
             orderBy: { createdAt: 'asc' }
         });
 
-        if (partialDeliveries.length > 0) {
-            // Reuse the random number and date from the first delivery under this invoice
-            const firstDelivery = partialDeliveries[0];
-            const parts = firstDelivery.deliveryNumber.split('-');
-            const randomNum = parts[1] || String(Math.floor(100 + Math.random() * 900));
-            const firstDateStr = parts[2] || dateStr;
-            const nextSeq = partialDeliveries.length + 1;
-            deliveryNumber = `SJ-${randomNum}-${firstDateStr}-${String(nextSeq).padStart(3, '0')}`;
+        if (existingDelivery) {
+            const parts = existingDelivery.deliveryNumber.split('-');
+            randomNum = parts[1] || String(Math.floor(100 + Math.random() * 900));
         } else {
-            // Brand new shipment: generate a new 3-digit random number
-            const randomNum = Math.floor(100 + Math.random() * 900);
-            deliveryNumber = `SJ-${randomNum}-${dateStr}-001`;
+            randomNum = String(Math.floor(100 + Math.random() * 900));
         }
+
+        deliveryNumber = `SJ-${randomNum}-${dateStr}-${String(nextSeq).padStart(3, '0')}`;
 
         const delivery = await tx.salesDelivery.create({
             data: {
