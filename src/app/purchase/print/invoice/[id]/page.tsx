@@ -56,7 +56,7 @@ export default async function PurchaseInvoicePrintPage({ params }: { params: Pro
 
     return (
         <DocumentLayout
-            title="FAKTUR PEMBELIAN"
+            title="PURCHASE ORDER"
             docNumber={receipt.formNumber}
             date={format(new Date(receipt.date || receipt.createdAt), "dd MMM yyyy")}
             headerInfo={
