@@ -230,6 +230,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
 
                 exportData.push({
                     'No. Surat Jalan': d.deliveryNumber,
+                    'No. Penjualan': d.invoiceNumber || "-",
                     'No. PO Buyer': d.poNumber || "-",
                     'Tanggal': format(new Date(d.createdAt), "yyyy-MM-dd"),
                     'Buyer / Customer': d.buyerName,
