@@ -177,6 +177,7 @@ export default function TaxDashboard({ systemSettings }: TaxDashboardProps) {
         "No": idx + 1,
         "Tanggal Transaksi": format(new Date(item.date || item.createdAt), "dd/MM/yyyy"),
         "Nomor Dokumen": isKeluaran ? item.deliveryNumber : item.receiptNumber,
+        "Nomor Penjualan (Invoice)": isKeluaran ? (item.invoiceNumber || "-") : "-",
         "Keterangan Pihak Kedua": isKeluaran ? item.buyerName : item.receivedFrom,
         "DPP (Omzet Bersih)": Number(item.subtotal),
         "Tarif PPN": `${(Number(item.taxRate || 0) * 100).toFixed(0)}%`,
@@ -431,7 +432,12 @@ export default function TaxDashboard({ systemSettings }: TaxDashboardProps) {
                         {format(new Date(docDate), "dd MMM yyyy")}
                       </td>
                       <td className="px-8 py-5 font-mono text-xs font-black text-primary uppercase">
-                        {isKeluaran ? item.deliveryNumber : item.receiptNumber}
+                        <div>{isKeluaran ? item.deliveryNumber : item.receiptNumber}</div>
+                        {isKeluaran && item.invoiceNumber && (
+                          <div className="text-[10px] text-slate-400 font-bold uppercase tracking-tight mt-0.5">
+                            {item.invoiceNumber}
+                          </div>
+                        )}
                       </td>
                       <td className="px-8 py-5">
                         <div className="font-black text-slate-800 text-xs">
