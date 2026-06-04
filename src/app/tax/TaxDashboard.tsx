@@ -35,6 +35,14 @@ export default function TaxDashboard({ systemSettings }: TaxDashboardProps) {
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   
+  // Custom Date range
+  const [startDateStr, setStartDateStr] = useState<string>(
+    format(new Date(new Date().getFullYear(), new Date().getMonth(), 1), "yyyy-MM-dd")
+  );
+  const [endDateStr, setEndDateStr] = useState<string>(
+    format(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0), "yyyy-MM-dd")
+  );
+  
   // Modal states
   const [showEditModal, setShowEditModal] = useState(false);
   const [editItem, setEditItem] = useState<any>(null);
@@ -47,7 +55,7 @@ export default function TaxDashboard({ systemSettings }: TaxDashboardProps) {
   const loadTaxData = async () => {
     try {
       setLoading(true);
-      const res = await callAction("getTaxDataAction", selectedMonth, selectedYear);
+      const res = await callAction("getTaxDataAction", undefined, undefined, startDateStr, endDateStr);
       if (res.success) {
         setSalesDeliveries(res.salesDeliveries || []);
         setGoodsReceipts(res.goodsReceipts || []);
@@ -62,8 +70,15 @@ export default function TaxDashboard({ systemSettings }: TaxDashboardProps) {
   };
 
   useEffect(() => {
-    loadTaxData();
+    const firstDay = format(new Date(selectedYear, selectedMonth - 1, 1), "yyyy-MM-dd");
+    const lastDay = format(new Date(selectedYear, selectedMonth, 0), "yyyy-MM-dd");
+    setStartDateStr(firstDay);
+    setEndDateStr(lastDay);
   }, [selectedMonth, selectedYear]);
+
+  useEffect(() => {
+    loadTaxData();
+  }, [startDateStr, endDateStr]);
 
   // Calculations
   const totalKeluaran = salesDeliveries.reduce((sum, item) => sum + Number(item.taxAmount || 0), 0);
@@ -143,7 +158,7 @@ export default function TaxDashboard({ systemSettings }: TaxDashboardProps) {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `Coretax_EFaktur_Keluaran_${selectedMonth}_${selectedYear}.xml`;
+      a.download = `Coretax_EFaktur_Keluaran_${startDateStr}_to_${endDateStr}.xml`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -173,8 +188,8 @@ export default function TaxDashboard({ systemSettings }: TaxDashboardProps) {
     });
 
     const filename = activeTab === "KELUARAN" 
-      ? `Laporan_PPN_Keluaran_${selectedMonth}_${selectedYear}`
-      : `Laporan_PPN_Masukan_${selectedMonth}_${selectedYear}`;
+      ? `Laporan_PPN_Keluaran_${startDateStr}_to_${endDateStr}`
+      : `Laporan_PPN_Masukan_${startDateStr}_to_${endDateStr}`;
       
     exportToExcel(exportData, filename, activeTab === "KELUARAN" ? "PPN_Keluaran" : "PPN_Masukan");
   };
@@ -195,6 +210,7 @@ export default function TaxDashboard({ systemSettings }: TaxDashboardProps) {
 
         {/* Filters */}
         <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+          {/* Quick Month/Year Select */}
           <div className="flex bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm w-full sm:w-auto">
             <select
               value={selectedMonth}
@@ -214,6 +230,28 @@ export default function TaxDashboard({ systemSettings }: TaxDashboardProps) {
                 <option key={y} value={y}>{y}</option>
               ))}
             </select>
+          </div>
+
+          {/* Precise Date Range Picker */}
+          <div className="flex bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm items-center gap-2 w-full sm:w-auto">
+            <div className="flex items-center gap-1.5 px-2">
+              <Calendar className="h-4 w-4 text-slate-400" />
+              <input
+                type="date"
+                value={startDateStr}
+                onChange={(e) => setStartDateStr(e.target.value)}
+                className="bg-transparent border-0 text-xs font-black focus:outline-none cursor-pointer text-slate-700"
+              />
+            </div>
+            <span className="text-slate-300 font-bold text-xs">s/d</span>
+            <div className="flex items-center gap-1.5 px-2">
+              <input
+                type="date"
+                value={endDateStr}
+                onChange={(e) => setEndDateStr(e.target.value)}
+                className="bg-transparent border-0 text-xs font-black focus:outline-none cursor-pointer text-slate-700"
+              />
+            </div>
           </div>
 
           <button 

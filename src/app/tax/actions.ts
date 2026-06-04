@@ -25,19 +25,32 @@ async function checkTaxAuth() {
 /**
  * Mendapatkan data perpajakan (PPN Keluaran dan PPN Masukan) untuk periode tertentu
  */
-export async function getTaxDataAction(month?: number, year?: number) {
+export async function getTaxDataAction(month?: number, year?: number, startDateStr?: string, endDateStr?: string) {
   await checkTaxAuth();
   const prisma = getPrisma();
   
-  const filterYear = year || new Date().getFullYear();
-  const filterMonth = month || (new Date().getMonth() + 1);
-  
-  // Hitung batas awal dan akhir bulan dalam zona waktu lokal/WIB (UTC+7)
-  const startDate = new Date(Date.UTC(filterYear, filterMonth - 1, 1, 0, 0, 0));
-  startDate.setUTCHours(startDate.getUTCHours() - 7);
-  
-  const endDate = new Date(Date.UTC(filterYear, filterMonth, 0, 23, 59, 59, 999));
-  endDate.setUTCHours(endDate.getUTCHours() - 7);
+  let startDate: Date;
+  let endDate: Date;
+
+  if (startDateStr && endDateStr) {
+    const startParts = startDateStr.split("-").map(Number);
+    const endParts = endDateStr.split("-").map(Number);
+    
+    startDate = new Date(Date.UTC(startParts[0], startParts[1] - 1, startParts[2], 0, 0, 0, 0));
+    startDate.setUTCHours(startDate.getUTCHours() - 7);
+    
+    endDate = new Date(Date.UTC(endParts[0], endParts[1] - 1, endParts[2], 23, 59, 59, 999));
+    endDate.setUTCHours(endDate.getUTCHours() - 7);
+  } else {
+    const filterYear = year || new Date().getFullYear();
+    const filterMonth = month || (new Date().getMonth() + 1);
+    
+    startDate = new Date(Date.UTC(filterYear, filterMonth - 1, 1, 0, 0, 0));
+    startDate.setUTCHours(startDate.getUTCHours() - 7);
+    
+    endDate = new Date(Date.UTC(filterYear, filterMonth, 0, 23, 59, 59, 999));
+    endDate.setUTCHours(endDate.getUTCHours() - 7);
+  }
   
   try {
     const [salesDeliveries, goodsReceipts] = await Promise.all([
