@@ -85,8 +85,8 @@ export default function TaxDashboard({ systemSettings }: TaxDashboardProps) {
   const totalMasukan = goodsReceipts.reduce((sum, item) => sum + Number(item.taxAmount || 0), 0);
   const netPPN = totalKeluaran - totalMasukan;
   
-  const dppKeluaran = salesDeliveries.reduce((sum, item) => sum + (Number(item.subtotal || 0) - Number(item.totalDiscount || 0)), 0);
-  const dppMasukan = goodsReceipts.reduce((sum, item) => sum + (Number(item.subtotal || 0) - Number(item.totalDiscount || 0)), 0);
+  const dppKeluaran = salesDeliveries.reduce((sum, item) => sum + Number(item.subtotal || 0), 0);
+  const dppMasukan = goodsReceipts.reduce((sum, item) => sum + Number(item.subtotal || 0), 0);
 
   // Search filter
   const filteredKeluaran = salesDeliveries.filter(d => 
