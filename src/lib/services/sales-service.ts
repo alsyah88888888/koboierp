@@ -763,18 +763,33 @@ export async function createSalesOrderService(data: any, userId: string) {
         const isConfirm = data.status === "CONFIRMED";
         const prefix = isConfirm ? `KB-PO-${dateStr}-` : `KB-PI-${dateStr}-`;
 
-        const latest = await tx.salesOrder.findFirst({
-            where: { orderNumber: { startsWith: prefix } },
-            orderBy: { orderNumber: 'desc' }
+        const matchingOrders = await tx.salesOrder.findMany({
+            where: {
+                OR: [
+                    { orderNumber: { startsWith: prefix } },
+                    { proformaNumber: { startsWith: prefix } }
+                ]
+            },
+            select: {
+                orderNumber: true,
+                proformaNumber: true
+            }
         });
 
-        let nextNum = 1;
-        if (latest) {
-            const parts = latest.orderNumber.split('-');
-            const lastSeq = parseInt(parts[parts.length - 1]);
-            if (!isNaN(lastSeq)) nextNum = lastSeq + 1;
+        let maxSeq = 0;
+        for (const order of matchingOrders) {
+            if (order.orderNumber && order.orderNumber.startsWith(prefix)) {
+                const parts = order.orderNumber.split('-');
+                const seq = parseInt(parts[parts.length - 1]);
+                if (!isNaN(seq) && seq > maxSeq) maxSeq = seq;
+            }
+            if (order.proformaNumber && order.proformaNumber.startsWith(prefix)) {
+                const parts = order.proformaNumber.split('-');
+                const seq = parseInt(parts[parts.length - 1]);
+                if (!isNaN(seq) && seq > maxSeq) maxSeq = seq;
+            }
         }
-        const orderNumber = `${prefix}${String(nextNum).padStart(3, '0')}`;
+        const orderNumber = `${prefix}${String(maxSeq + 1).padStart(3, '0')}`;
 
         const subtotal = Math.round(data.items.reduce((acc: number, i: any) => acc + (i.quantity * i.salesPrice) - (i.discount || 0), 0));
         const totalDiscountNominal = Math.round(Number(data.totalDiscount) || 0);
@@ -874,18 +889,33 @@ export async function updateSalesOrderService(id: string, data: any) {
         if (oldOrder.status === "DRAFT" && data.status === "CONFIRMED" && orderNumber.startsWith("KB-PI-")) {
             proformaNumber = oldOrder.orderNumber; // Save the old PI number!
             const prefix = `KB-PO-${dateStr}-`;
-            const latest = await tx.salesOrder.findFirst({
-                where: { orderNumber: { startsWith: prefix } },
-                orderBy: { orderNumber: 'desc' }
+            const matchingOrders = await tx.salesOrder.findMany({
+                where: {
+                    OR: [
+                        { orderNumber: { startsWith: prefix } },
+                        { proformaNumber: { startsWith: prefix } }
+                    ]
+                },
+                select: {
+                    orderNumber: true,
+                    proformaNumber: true
+                }
             });
 
-            let nextNum = 1;
-            if (latest) {
-                const parts = latest.orderNumber.split('-');
-                const lastSeq = parseInt(parts[parts.length - 1]);
-                if (!isNaN(lastSeq)) nextNum = lastSeq + 1;
+            let maxSeq = 0;
+            for (const order of matchingOrders) {
+                if (order.orderNumber && order.orderNumber.startsWith(prefix)) {
+                    const parts = order.orderNumber.split('-');
+                    const seq = parseInt(parts[parts.length - 1]);
+                    if (!isNaN(seq) && seq > maxSeq) maxSeq = seq;
+                }
+                if (order.proformaNumber && order.proformaNumber.startsWith(prefix)) {
+                    const parts = order.proformaNumber.split('-');
+                    const seq = parseInt(parts[parts.length - 1]);
+                    if (!isNaN(seq) && seq > maxSeq) maxSeq = seq;
+                }
             }
-            orderNumber = `${prefix}${String(nextNum).padStart(3, '0')}`;
+            orderNumber = `${prefix}${String(maxSeq + 1).padStart(3, '0')}`;
         }
 
         // 2. Generate and lock invoiceNumber if confirmed
