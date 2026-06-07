@@ -1,0 +1,1327 @@
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import {
+    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+    AreaChart, Area, PieChart, Pie, Cell, Legend
+} from "recharts";
+import {
+    Calendar, TrendingUp, TrendingDown, ShoppingBag, ShoppingCart,
+    Wallet, Package, ArrowUpRight, ArrowDownRight, FileSpreadsheet,
+    Activity, BarChart3, RefreshCw, Clock, CreditCard, AlertCircle,
+    CheckCircle2, ArrowRight, Printer, ChevronLeft, ChevronRight,
+    DollarSign, Receipt, Truck, RotateCcw, Shield, Users, Building
+} from "lucide-react";
+import * as XLSX from "xlsx";
+import { formatCurrency, cn } from "@/lib/utils";
+import {
+    getComprehensiveDailyReportAction,
+    getComprehensiveWeeklyReportAction,
+    getComprehensiveMonthlyReportAction
+} from "@/actions/reports";
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TYPES
+// ═══════════════════════════════════════════════════════════════════════════
+type ReportTab = "daily" | "weekly" | "monthly";
+
+const CHART_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
+const PAYMENT_BADGE: Record<string, string> = {
+    PAID: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+    PARTIAL: 'bg-amber-50 text-amber-700 border-amber-100',
+    PENDING: 'bg-slate-50 text-slate-500 border-slate-100',
+    CREDIT: 'bg-blue-50 text-blue-700 border-blue-100',
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// COMPONENT
+// ═══════════════════════════════════════════════════════════════════════════
+export function ReportsDashboard() {
+    const [activeTab, setActiveTab] = useState<ReportTab>("daily");
+    const [isLoading, setIsLoading] = useState(false);
+    const [isClient, setIsClient] = useState(false);
+
+    // Period controls
+    const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split('T')[0]);
+    const [selectedWeekStart, setSelectedWeekStart] = useState(() => {
+        const d = new Date();
+        const day = d.getDay();
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+        d.setDate(diff);
+        return d.toISOString().split('T')[0];
+    });
+    const [selectedMonth, setSelectedMonth] = useState(() => new Date().getMonth() + 1);
+    const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
+
+    // Data
+    const [dailyData, setDailyData] = useState<any>(null);
+    const [weeklyData, setWeeklyData] = useState<any>(null);
+    const [monthlyData, setMonthlyData] = useState<any>(null);
+
+    useEffect(() => { setIsClient(true); }, []);
+
+    // ── Data Fetching ─────────────────────────────────────────────────────
+    const fetchDaily = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const data = await getComprehensiveDailyReportAction(selectedDate);
+            setDailyData(data);
+        } catch (e) { console.error(e); }
+        setIsLoading(false);
+    }, [selectedDate]);
+
+    const fetchWeekly = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const data = await getComprehensiveWeeklyReportAction(selectedWeekStart);
+            setWeeklyData(data);
+        } catch (e) { console.error(e); }
+        setIsLoading(false);
+    }, [selectedWeekStart]);
+
+    const fetchMonthly = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const data = await getComprehensiveMonthlyReportAction(selectedMonth, selectedYear);
+            setMonthlyData(data);
+        } catch (e) { console.error(e); }
+        setIsLoading(false);
+    }, [selectedMonth, selectedYear]);
+
+    useEffect(() => {
+        if (activeTab === 'daily') fetchDaily();
+        else if (activeTab === 'weekly') fetchWeekly();
+        else if (activeTab === 'monthly') fetchMonthly();
+    }, [activeTab, fetchDaily, fetchWeekly, fetchMonthly]);
+
+    // ── Helpers ───────────────────────────────────────────────────────────
+    const fmtDate = (d: any) => d ? new Date(d).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
+    const fmtShortDate = (d: any) => d ? new Date(d).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' }) : '-';
+
+    const navigateDate = (dir: number) => {
+        const d = new Date(selectedDate);
+        d.setDate(d.getDate() + dir);
+        setSelectedDate(d.toISOString().split('T')[0]);
+    };
+
+    const navigateWeek = (dir: number) => {
+        const d = new Date(selectedWeekStart);
+        d.setDate(d.getDate() + (dir * 7));
+        setSelectedWeekStart(d.toISOString().split('T')[0]);
+    };
+
+    const navigateMonth = (dir: number) => {
+        let m = selectedMonth + dir;
+        let y = selectedYear;
+        if (m > 12) { m = 1; y++; }
+        if (m < 1) { m = 12; y--; }
+        setSelectedMonth(m);
+        setSelectedYear(y);
+    };
+
+    const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+
+    // ── Export Excel ──────────────────────────────────────────────────────
+    const handleExportExcel = () => {
+        const wb = XLSX.utils.book_new();
+        const data = activeTab === 'daily' ? dailyData : activeTab === 'weekly' ? weeklyData : monthlyData;
+        if (!data) return;
+
+        if (activeTab === 'daily' && data.details) {
+            // Sales sheet
+            if (data.details.sales?.length) {
+                const rows = data.details.sales.map((s: any, i: number) => ({
+                    'No': i + 1, 'No. SJ': s.number, 'Tanggal': fmtDate(s.date),
+                    'Buyer': s.buyer, 'Sales': s.salesPerson || '-',
+                    'Qty': s.totalQty, 'Subtotal': s.subtotal, 'Diskon': s.discount,
+                    'PPN': s.tax, 'Grand Total': s.grandTotal,
+                    'Dibayar': s.paidAmount, 'Status': s.paymentStatus,
+                    'Operator': s.operator
+                }));
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Penjualan');
+            }
+            // Purchase sheet
+            if (data.details.purchases?.length) {
+                const rows = data.details.purchases.map((p: any, i: number) => ({
+                    'No': i + 1, 'No. LPB': p.number, 'Tanggal': fmtDate(p.date),
+                    'Supplier': p.supplier, 'Gudang': p.warehouse || '-',
+                    'Qty': p.totalQty, 'Subtotal': p.subtotal, 'Diskon': p.discount,
+                    'PPN': p.tax, 'Grand Total': p.grandTotal,
+                    'Dibayar': p.paidAmount, 'Status': p.paymentStatus,
+                    'Operator': p.operator
+                }));
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Pembelian');
+            }
+            // Operational sheet
+            if (data.details.operational?.length) {
+                const rows = data.details.operational.map((o: any, i: number) => ({
+                    'No': i + 1, 'Tanggal': fmtDate(o.date), 'Keterangan': o.description,
+                    'Bank': o.bank, 'Kategori': o.category, 'Jumlah': o.amount,
+                    'Sales': o.salesPerson || '-', 'Operator': o.operator
+                }));
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Operasional');
+            }
+            // Stock Movements sheet
+            if (data.details.stockMovements?.length) {
+                const rows = data.details.stockMovements.map((m: any, i: number) => ({
+                    'No': i + 1, 'Waktu': fmtDate(m.date), 'SKU': m.sku,
+                    'Produk': m.productName, 'Gudang': m.warehouse,
+                    'Tipe': m.type, 'Qty': m.quantity, 'Referensi': m.reference
+                }));
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Pergerakan Stok');
+            }
+        }
+
+        if (activeTab === 'weekly' && data.dailyBreakdown) {
+            const rows = data.dailyBreakdown.map((d: any) => ({
+                'Tanggal': d.dateLabel, 'Hari': d.dayName,
+                'Penjualan': d.sales, 'Pembelian': d.purchases,
+                'Biaya Ops': d.opsExpense,
+                'Jml SJ': d.salesCount, 'Jml LPB': d.purchaseCount,
+                'Qty Jual': d.salesQty, 'Qty Beli': d.purchaseQty
+            }));
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Breakdown Harian');
+            if (data.topBuyers?.length)
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data.topBuyers), 'Top Buyer');
+            if (data.topSuppliers?.length)
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data.topSuppliers), 'Top Supplier');
+        }
+
+        if (activeTab === 'monthly' && data.profitLoss) {
+            // P&L sheet
+            const plRows = [
+                { 'Keterangan': 'PENDAPATAN (Revenue)', 'Jumlah (Rp)': data.profitLoss.revenue },
+                { 'Keterangan': '  Subtotal Penjualan', 'Jumlah (Rp)': data.profitLoss.revenueSubtotal },
+                { 'Keterangan': '  Diskon', 'Jumlah (Rp)': -data.profitLoss.discount },
+                { 'Keterangan': '  PPN', 'Jumlah (Rp)': data.profitLoss.salesTax },
+                { 'Keterangan': '', 'Jumlah (Rp)': '' },
+                { 'Keterangan': 'HARGA POKOK PENJUALAN (HPP)', 'Jumlah (Rp)': data.profitLoss.hpp },
+                { 'Keterangan': '', 'Jumlah (Rp)': '' },
+                { 'Keterangan': 'LABA KOTOR', 'Jumlah (Rp)': data.profitLoss.grossProfit },
+                { 'Keterangan': `  Margin Kotor (${data.profitLoss.grossMarginPct}%)`, 'Jumlah (Rp)': '' },
+                { 'Keterangan': '', 'Jumlah (Rp)': '' },
+                { 'Keterangan': 'BIAYA OPERASIONAL', 'Jumlah (Rp)': data.profitLoss.expenses },
+                ...(data.profitLoss.expenseByCategory || []).map((c: any) => ({
+                    'Keterangan': `  ${c.name}`, 'Jumlah (Rp)': c.value
+                })),
+                { 'Keterangan': '', 'Jumlah (Rp)': '' },
+                { 'Keterangan': 'LABA BERSIH', 'Jumlah (Rp)': data.profitLoss.netProfit },
+                { 'Keterangan': `  Margin Bersih (${data.profitLoss.netMarginPct}%)`, 'Jumlah (Rp)': '' },
+            ];
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(plRows), 'Laba Rugi');
+
+            // Details
+            if (data.details?.sales?.length) {
+                const rows = data.details.sales.map((s: any, i: number) => ({
+                    'No': i + 1, 'No. SJ': s.number, 'Tanggal': fmtDate(s.date),
+                    'Buyer': s.buyer, 'Sales': s.salesPerson || '-', 'Qty': s.totalQty,
+                    'Grand Total': s.grandTotal, 'Status': s.paymentStatus
+                }));
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Detail Penjualan');
+            }
+            if (data.details?.purchases?.length) {
+                const rows = data.details.purchases.map((p: any, i: number) => ({
+                    'No': i + 1, 'No. LPB': p.number, 'Tanggal': fmtDate(p.date),
+                    'Supplier': p.supplier, 'Grand Total': p.grandTotal, 'Status': p.paymentStatus
+                }));
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Detail Pembelian');
+            }
+            if (data.details?.operational?.length) {
+                const rows = data.details.operational.map((o: any, i: number) => ({
+                    'No': i + 1, 'Tanggal': fmtDate(o.date), 'Keterangan': o.description,
+                    'Bank': o.bank, 'Kategori': o.category, 'Jumlah': o.amount
+                }));
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Detail Operasional');
+            }
+            // AR
+            if (data.arAging?.items?.length) {
+                const rows = data.arAging.items.map((r: any, i: number) => ({
+                    'No': i + 1, 'No. SJ': r.number, 'Buyer': r.partner,
+                    'Tanggal': fmtDate(r.date), 'Grand Total': r.grandTotal,
+                    'Dibayar': r.paidAmount, 'Outstanding': r.outstanding,
+                    'Hari': r.days, 'Aging': r.bucket
+                }));
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Piutang (AR)');
+            }
+            // AP
+            if (data.apAging?.items?.length) {
+                const rows = data.apAging.items.map((r: any, i: number) => ({
+                    'No': i + 1, 'No. LPB': r.number, 'Supplier': r.partner,
+                    'Tanggal': fmtDate(r.date), 'Grand Total': r.grandTotal,
+                    'Dibayar': r.paidAmount, 'Outstanding': r.outstanding,
+                    'Hari': r.days, 'Aging': r.bucket
+                }));
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Hutang (AP)');
+            }
+        }
+
+        const tabLabel = activeTab === 'daily' ? `Harian_${selectedDate}` : activeTab === 'weekly' ? `Mingguan_${selectedWeekStart}` : `Bulanan_${monthNames[selectedMonth - 1]}_${selectedYear}`;
+        XLSX.writeFile(wb, `Laporan_${tabLabel}.xlsx`);
+    };
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // RENDER
+    // ═══════════════════════════════════════════════════════════════════════
+    return (
+        <div className="space-y-8 pb-16 animate-fade-up">
+            {/* ── HEADER ────────────────────────────────────────────── */}
+            <div className="erp-card overflow-hidden">
+                <div className="bg-slate-900 text-white px-8 py-6 relative overflow-hidden">
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_50%,rgba(59,130,246,0.15),transparent_60%)]" />
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_50%,rgba(16,185,129,0.1),transparent_60%)]" />
+                    <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
+                            <div className="flex items-center gap-3 mb-2">
+                                <div className="h-10 w-10 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center">
+                                    <BarChart3 className="h-5 w-5 text-blue-400" />
+                                </div>
+                                <div>
+                                    <h1 className="text-2xl font-black tracking-tight uppercase">Pusat Laporan</h1>
+                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.3em]">Reporting Center — Semua Modul</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={() => window.print()}
+                                className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-white/10"
+                            >
+                                <Printer className="h-4 w-4" /><span>Print</span>
+                            </button>
+                            <button
+                                onClick={handleExportExcel}
+                                disabled={isLoading}
+                                className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50"
+                            >
+                                <FileSpreadsheet className="h-4 w-4" /><span>Export Excel</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* ── TAB NAVIGATION ─────────────────────────────────── */}
+                <div className="flex border-b border-slate-100">
+                    {([
+                        { key: 'daily' as ReportTab, label: 'Harian', icon: Calendar },
+                        { key: 'weekly' as ReportTab, label: 'Mingguan', icon: Activity },
+                        { key: 'monthly' as ReportTab, label: 'Bulanan', icon: BarChart3 },
+                    ]).map(tab => (
+                        <button
+                            key={tab.key}
+                            onClick={() => setActiveTab(tab.key)}
+                            className={cn(
+                                "flex-1 py-4 px-6 flex items-center justify-center gap-2 text-[11px] font-black uppercase tracking-widest transition-all border-b-2 relative",
+                                activeTab === tab.key
+                                    ? "border-slate-900 text-slate-900 bg-slate-50/50"
+                                    : "border-transparent text-slate-400 hover:text-slate-600 hover:bg-slate-50/30"
+                            )}
+                        >
+                            <tab.icon className="h-4 w-4" />
+                            {tab.label}
+                        </button>
+                    ))}
+                </div>
+
+                {/* ── PERIOD PICKER ──────────────────────────────────── */}
+                <div className="px-6 py-4 bg-slate-50/30 flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                        <button onClick={() => {
+                            if (activeTab === 'daily') navigateDate(-1);
+                            else if (activeTab === 'weekly') navigateWeek(-1);
+                            else navigateMonth(-1);
+                        }} className="h-9 w-9 rounded-xl bg-white border border-slate-200 flex items-center justify-center hover:bg-slate-100 transition-colors">
+                            <ChevronLeft className="h-4 w-4 text-slate-600" />
+                        </button>
+
+                        {activeTab === 'daily' && (
+                            <input
+                                type="date"
+                                value={selectedDate}
+                                onChange={e => setSelectedDate(e.target.value)}
+                                className="erp-input !w-auto !h-9 !py-1 !text-xs font-black"
+                            />
+                        )}
+                        {activeTab === 'weekly' && (
+                            <div className="bg-white border-2 border-slate-200/80 px-4 py-1.5 rounded-xl text-xs font-black text-slate-900">
+                                {weeklyData?.period?.label || `Minggu ${fmtShortDate(selectedWeekStart)}`}
+                            </div>
+                        )}
+                        {activeTab === 'monthly' && (
+                            <div className="flex items-center gap-2">
+                                <select
+                                    value={selectedMonth}
+                                    onChange={e => setSelectedMonth(Number(e.target.value))}
+                                    className="erp-input !w-auto !h-9 !py-1 !text-xs font-black"
+                                >
+                                    {monthNames.map((m, i) => (
+                                        <option key={i} value={i + 1}>{m}</option>
+                                    ))}
+                                </select>
+                                <select
+                                    value={selectedYear}
+                                    onChange={e => setSelectedYear(Number(e.target.value))}
+                                    className="erp-input !w-auto !h-9 !py-1 !text-xs font-black"
+                                >
+                                    {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i).map(y => (
+                                        <option key={y} value={y}>{y}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+
+                        <button onClick={() => {
+                            if (activeTab === 'daily') navigateDate(1);
+                            else if (activeTab === 'weekly') navigateWeek(1);
+                            else navigateMonth(1);
+                        }} className="h-9 w-9 rounded-xl bg-white border border-slate-200 flex items-center justify-center hover:bg-slate-100 transition-colors">
+                            <ChevronRight className="h-4 w-4 text-slate-600" />
+                        </button>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        {isLoading && (
+                            <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                <RefreshCw className="h-3.5 w-3.5 animate-spin" /> Memuat...
+                            </div>
+                        )}
+                        <button
+                            onClick={() => {
+                                if (activeTab === 'daily') fetchDaily();
+                                else if (activeTab === 'weekly') fetchWeekly();
+                                else fetchMonthly();
+                            }}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-100 transition-colors"
+                        >
+                            <RefreshCw className="h-3 w-3" /> Refresh
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {/* ── CONTENT ───────────────────────────────────────────── */}
+            {isLoading && !dailyData && !weeklyData && !monthlyData ? (
+                <div className="erp-card p-20 flex flex-col items-center justify-center gap-4">
+                    <RefreshCw className="h-8 w-8 text-slate-300 animate-spin" />
+                    <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Mengambil data laporan...</p>
+                </div>
+            ) : (
+                <>
+                    {activeTab === 'daily' && dailyData && <DailyReport data={dailyData} isClient={isClient} fmtDate={fmtDate} />}
+                    {activeTab === 'weekly' && weeklyData && <WeeklyReport data={weeklyData} isClient={isClient} fmtDate={fmtDate} />}
+                    {activeTab === 'monthly' && monthlyData && <MonthlyReport data={monthlyData} isClient={isClient} fmtDate={fmtDate} />}
+                </>
+            )}
+        </div>
+    );
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// DAILY REPORT SUB-COMPONENT
+// ═══════════════════════════════════════════════════════════════════════════
+function DailyReport({ data, isClient, fmtDate }: { data: any; isClient: boolean; fmtDate: (d: any) => string }) {
+    if (data.error) return <ErrorCard message={data.error} />;
+    const s = data.summary || {};
+    const d = data.details || {};
+
+    return (
+        <div className="space-y-8">
+            {/* KPI Cards */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+                <KPICard icon={<ShoppingBag className="h-5 w-5 text-blue-500" />} label="Penjualan" value={formatCurrency(s.totalSales || 0)} sub={`${s.salesCount || 0} Invoice • ${s.totalSalesQty || 0} Unit`} color="blue" isClient={isClient} />
+                <KPICard icon={<ShoppingCart className="h-5 w-5 text-emerald-500" />} label="Pembelian" value={formatCurrency(s.totalPurchases || 0)} sub={`${s.purchaseCount || 0} LPB • ${s.totalPurchaseQty || 0} Unit`} color="emerald" isClient={isClient} />
+                <KPICard icon={<Wallet className="h-5 w-5 text-amber-500" />} label="Biaya Operasional" value={formatCurrency(s.totalExpense || 0)} sub={`${s.opsCount || 0} Transaksi`} color="amber" isClient={isClient} />
+                <KPICard icon={<TrendingUp className="h-5 w-5 text-purple-500" />} label="Estimasi Laba Bersih" value={formatCurrency(s.netProfit || 0)} sub={`Laba Kotor: ${formatCurrency(s.grossProfit || 0)}`} color="purple" trend={s.netProfit >= 0 ? 'up' : 'down'} isClient={isClient} />
+            </div>
+
+            {/* Payment Status Summary */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+                <MiniStat label="SJ Lunas" value={s.salesPaid || 0} icon={<CheckCircle2 className="h-4 w-4 text-emerald-500" />} />
+                <MiniStat label="SJ Pending" value={s.salesPending || 0} icon={<Clock className="h-4 w-4 text-amber-500" />} />
+                <MiniStat label="LPB Lunas" value={s.purchasePaid || 0} icon={<CheckCircle2 className="h-4 w-4 text-emerald-500" />} />
+                <MiniStat label="LPB Pending" value={s.purchasePending || 0} icon={<Clock className="h-4 w-4 text-amber-500" />} />
+            </div>
+
+            {/* Sales Table */}
+            {d.sales?.length > 0 && (
+                <ReportTable
+                    title="Detail Penjualan" icon={<ShoppingBag className="h-4 w-4 text-blue-500" />}
+                    count={d.sales.length} totalLabel="Total Penjualan" totalValue={formatCurrency(s.totalSales || 0)}
+                    headers={['No. SJ', 'Buyer', 'Sales', 'Qty', 'Grand Total', 'Dibayar', 'Status', 'Operator']}
+                    rows={d.sales.map((row: any) => [
+                        <span className="font-black text-slate-900">{row.number}</span>,
+                        <span className="truncate max-w-[140px] block">{row.buyer}</span>,
+                        row.salesPerson || '-',
+                        <span className="tabular-nums font-black">{row.totalQty}</span>,
+                        <span className="tabular-nums font-black">{isClient ? formatCurrency(row.grandTotal) : '...'}</span>,
+                        <span className="tabular-nums">{isClient ? formatCurrency(row.paidAmount) : '...'}</span>,
+                        <PaymentBadge status={row.paymentStatus} />,
+                        <span className="text-slate-400">{row.operator}</span>
+                    ])}
+                    isClient={isClient}
+                />
+            )}
+
+            {/* Purchase Table */}
+            {d.purchases?.length > 0 && (
+                <ReportTable
+                    title="Detail Pembelian" icon={<ShoppingCart className="h-4 w-4 text-emerald-500" />}
+                    count={d.purchases.length} totalLabel="Total Pembelian" totalValue={formatCurrency(s.totalPurchases || 0)}
+                    headers={['No. LPB', 'Supplier', 'Gudang', 'Qty', 'Grand Total', 'Dibayar', 'Status', 'Operator']}
+                    rows={d.purchases.map((row: any) => [
+                        <span className="font-black text-slate-900">{row.number}</span>,
+                        <span className="truncate max-w-[140px] block">{row.supplier}</span>,
+                        row.warehouse || '-',
+                        <span className="tabular-nums font-black">{row.totalQty}</span>,
+                        <span className="tabular-nums font-black">{isClient ? formatCurrency(row.grandTotal) : '...'}</span>,
+                        <span className="tabular-nums">{isClient ? formatCurrency(row.paidAmount) : '...'}</span>,
+                        <PaymentBadge status={row.paymentStatus} />,
+                        <span className="text-slate-400">{row.operator}</span>
+                    ])}
+                    isClient={isClient}
+                />
+            )}
+
+            {/* Operational Table */}
+            {d.operational?.length > 0 && (
+                <ReportTable
+                    title="Detail Operasional" icon={<Wallet className="h-4 w-4 text-amber-500" />}
+                    count={d.operational.length}
+                    headers={['Keterangan', 'Bank', 'Kategori', 'Sales', 'Jumlah', 'Operator']}
+                    rows={d.operational.map((row: any) => [
+                        <span className="truncate max-w-[200px] block font-bold">{row.description}</span>,
+                        row.bank || '-',
+                        <span className="text-[9px] font-black uppercase px-2 py-0.5 bg-slate-100 rounded">{row.category}</span>,
+                        row.salesPerson || '-',
+                        <span className={cn("tabular-nums font-black", row.amount >= 0 ? "text-emerald-600" : "text-rose-600")}>
+                            {isClient ? formatCurrency(row.amount) : '...'}
+                        </span>,
+                        <span className="text-slate-400">{row.operator}</span>
+                    ])}
+                    isClient={isClient}
+                />
+            )}
+
+            {/* Stock Movements */}
+            {d.stockMovements?.length > 0 && (
+                <ReportTable
+                    title="Pergerakan Stok" icon={<Package className="h-4 w-4 text-purple-500" />}
+                    count={d.stockMovements.length}
+                    headers={['SKU', 'Produk', 'Gudang', 'Tipe', 'Qty', 'Referensi']}
+                    rows={d.stockMovements.map((row: any) => [
+                        <span className="font-black">{row.sku}</span>,
+                        <span className="truncate max-w-[160px] block">{row.productName}</span>,
+                        row.warehouse,
+                        <span className={cn("text-[9px] font-black uppercase px-2 py-0.5 rounded",
+                            row.type === 'IN' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
+                        )}>{row.type === 'IN' ? 'MASUK' : 'KELUAR'}</span>,
+                        <span className="tabular-nums font-black">{row.quantity}</span>,
+                        <span className="text-slate-400 truncate max-w-[120px] block">{row.reference || '-'}</span>
+                    ])}
+                    isClient={isClient}
+                />
+            )}
+
+            {/* Returns + Audit */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {(d.returnsPurchase?.length > 0 || d.returnsSales?.length > 0) && (
+                    <div className="erp-card p-6">
+                        <div className="flex items-center gap-2 mb-4">
+                            <RotateCcw className="h-4 w-4 text-rose-500" />
+                            <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Retur Hari Ini</h3>
+                        </div>
+                        {d.returnsPurchase?.length > 0 && (
+                            <div className="mb-3">
+                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Retur Pembelian ({d.returnsPurchase.length})</p>
+                                {d.returnsPurchase.map((r: any, i: number) => (
+                                    <div key={i} className="flex justify-between py-1.5 border-b border-slate-50 text-[11px]">
+                                        <span className="font-black">{r.returnNumber}</span>
+                                        <span className="text-slate-500">{r.supplier}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        {d.returnsSales?.length > 0 && (
+                            <div>
+                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Retur Penjualan ({d.returnsSales.length})</p>
+                                {d.returnsSales.map((r: any, i: number) => (
+                                    <div key={i} className="flex justify-between py-1.5 border-b border-slate-50 text-[11px]">
+                                        <span className="font-black">{r.returnNumber}</span>
+                                        <span className="text-slate-500">{r.buyer}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {d.auditLogs?.length > 0 && (
+                    <div className="erp-card p-6">
+                        <div className="flex items-center gap-2 mb-4">
+                            <Shield className="h-4 w-4 text-indigo-500" />
+                            <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Audit Log</h3>
+                            <span className="text-[9px] font-bold text-slate-400 ml-auto">{d.auditLogs.length} aktivitas</span>
+                        </div>
+                        <div className="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar">
+                            {d.auditLogs.map((a: any, i: number) => (
+                                <div key={i} className="flex items-start gap-3 py-2 border-b border-slate-50 text-[11px]">
+                                    <div className="h-7 w-7 rounded-lg bg-slate-100 flex items-center justify-center shrink-0 mt-0.5">
+                                        <Users className="h-3.5 w-3.5 text-slate-400" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-black text-slate-900">{a.user}</span>
+                                            <span className="text-[8px] font-bold text-slate-400 uppercase">{a.action}</span>
+                                        </div>
+                                        <p className="text-[10px] text-slate-400 truncate">{a.resource} {a.resourceId ? `(${a.resourceId.slice(-6)})` : ''}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Empty State */}
+            {!d.sales?.length && !d.purchases?.length && !d.operational?.length && (
+                <EmptyState message="Belum ada transaksi pada tanggal ini" />
+            )}
+        </div>
+    );
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// WEEKLY REPORT SUB-COMPONENT
+// ═══════════════════════════════════════════════════════════════════════════
+function WeeklyReport({ data, isClient, fmtDate }: { data: any; isClient: boolean; fmtDate: (d: any) => string }) {
+    if (data.error) return <ErrorCard message={data.error} />;
+    const s = data.summary || {};
+    const breakdown = data.dailyBreakdown || [];
+
+    return (
+        <div className="space-y-8">
+            {/* KPI Cards */}
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-5">
+                <KPICard icon={<ShoppingBag className="h-5 w-5 text-blue-500" />} label="Total Penjualan" value={formatCurrency(s.totalSales || 0)} sub={`${s.salesCount || 0} Invoice`} color="blue" isClient={isClient} />
+                <KPICard icon={<ShoppingCart className="h-5 w-5 text-emerald-500" />} label="Total Pembelian" value={formatCurrency(s.totalPurchases || 0)} sub={`${s.purchaseCount || 0} LPB`} color="emerald" isClient={isClient} />
+                <KPICard icon={<Wallet className="h-5 w-5 text-amber-500" />} label="Biaya Operasional" value={formatCurrency(s.totalExpenses || 0)} sub={`${s.opsCount || 0} Transaksi`} color="amber" isClient={isClient} />
+                <KPICard icon={<TrendingUp className="h-5 w-5 text-purple-500" />} label="Laba Kotor" value={formatCurrency(s.grossProfit || 0)} sub="Revenue - HPP" color="purple" trend={s.grossProfit >= 0 ? 'up' : 'down'} isClient={isClient} />
+                <KPICard icon={<DollarSign className="h-5 w-5 text-indigo-500" />} label="Laba Bersih" value={formatCurrency(s.netProfit || 0)} sub="Kotor - Ops" color="indigo" trend={s.netProfit >= 0 ? 'up' : 'down'} isClient={isClient} />
+            </div>
+
+            {/* Charts Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Bar Chart — Sales vs Purchase */}
+                <div className="erp-card p-6">
+                    <div className="flex items-center justify-between mb-5">
+                        <div>
+                            <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Penjualan vs Pembelian</h3>
+                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Per Hari (7 Hari)</p>
+                        </div>
+                    </div>
+                    <div className="h-[250px]">
+                        {isClient && (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={breakdown} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                    <XAxis dataKey="dateLabel" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 800 }} />
+                                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 9, fontWeight: 800 }} tickFormatter={(v: number) => `${(v / 1000000).toFixed(0)}jt`} />
+                                    <Tooltip
+                                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', padding: '8px 12px', fontSize: '11px' }}
+                                        formatter={(value: any) => [formatCurrency(Number(value || 0)), '']}
+                                    />
+                                    <Bar dataKey="sales" name="Penjualan" fill="#3b82f6" radius={[6, 6, 0, 0]} />
+                                    <Bar dataKey="purchases" name="Pembelian" fill="#10b981" radius={[6, 6, 0, 0]} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        )}
+                    </div>
+                </div>
+
+                {/* Sales by Team Pie */}
+                <div className="erp-card p-6 bg-slate-900 text-white">
+                    <div className="flex items-center justify-between mb-5">
+                        <div>
+                            <h3 className="text-sm font-black uppercase tracking-tight">Penjualan per Tim</h3>
+                            <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">Komposisi Revenue</p>
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-6">
+                        <div className="h-[200px]">
+                            {isClient && s.salesByTeam && (
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie
+                                            data={[
+                                                { name: 'BC', value: s.salesByTeam.BC || 0 },
+                                                { name: 'PF', value: s.salesByTeam.PF || 0 },
+                                                { name: 'Lainnya', value: s.salesByTeam.Other || 0 }
+                                            ].filter(d => d.value > 0)}
+                                            cx="50%" cy="50%" innerRadius={50} outerRadius={75}
+                                            paddingAngle={5} dataKey="value" stroke="none"
+                                        >
+                                            {[CHART_COLORS[0], CHART_COLORS[4], CHART_COLORS[2]].map((c, i) => (
+                                                <Cell key={i} fill={c} />
+                                            ))}
+                                        </Pie>
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            )}
+                        </div>
+                        <div className="flex flex-col justify-center space-y-4">
+                            {[
+                                { name: 'Team BC', value: s.salesByTeam?.BC || 0, color: CHART_COLORS[0] },
+                                { name: 'Team PF', value: s.salesByTeam?.PF || 0, color: CHART_COLORS[4] },
+                                { name: 'Lainnya', value: s.salesByTeam?.Other || 0, color: CHART_COLORS[2] },
+                            ].map(t => (
+                                <div key={t.name} className="flex items-center justify-between gap-3">
+                                    <div className="flex items-center gap-2">
+                                        <div className="h-2.5 w-5 rounded-full" style={{ backgroundColor: t.color }} />
+                                        <span className="text-[10px] font-black text-slate-400 uppercase">{t.name}</span>
+                                    </div>
+                                    <span className="text-xs font-black tabular-nums">{isClient ? formatCurrency(t.value) : '...'}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Daily Breakdown Table */}
+            <ReportTable
+                title="Breakdown Harian" icon={<Calendar className="h-4 w-4 text-blue-500" />}
+                count={breakdown.length}
+                headers={['Hari', 'Tanggal', 'Penjualan', 'Pembelian', 'Ops', 'SJ', 'LPB', 'Qty Jual', 'Qty Beli']}
+                rows={breakdown.map((row: any) => [
+                    <span className="font-black">{row.dayName}</span>,
+                    row.dateLabel,
+                    <span className="tabular-nums font-black text-blue-600">{isClient ? formatCurrency(row.sales) : '...'}</span>,
+                    <span className="tabular-nums font-black text-emerald-600">{isClient ? formatCurrency(row.purchases) : '...'}</span>,
+                    <span className="tabular-nums text-amber-600">{isClient ? formatCurrency(row.opsExpense) : '...'}</span>,
+                    <span className="tabular-nums font-black">{row.salesCount}</span>,
+                    <span className="tabular-nums font-black">{row.purchaseCount}</span>,
+                    <span className="tabular-nums">{row.salesQty}</span>,
+                    <span className="tabular-nums">{row.purchaseQty}</span>
+                ])}
+                isClient={isClient}
+            />
+
+            {/* Top Buyers + Top Suppliers */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {data.topBuyers?.length > 0 && (
+                    <div className="erp-card p-6">
+                        <div className="flex items-center gap-2 mb-4">
+                            <Building className="h-4 w-4 text-blue-500" />
+                            <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Top Buyer</h3>
+                        </div>
+                        <div className="space-y-3">
+                            {data.topBuyers.map((b: any, i: number) => {
+                                const maxVal = data.topBuyers[0]?.total || 1;
+                                return (
+                                    <div key={i} className="space-y-1.5">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-[11px] font-bold text-slate-700 truncate max-w-[200px]">{b.name}</span>
+                                            <span className="text-[11px] font-black tabular-nums">{isClient ? formatCurrency(b.total) : '...'}</span>
+                                        </div>
+                                        <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                            <div className="h-full bg-blue-500 rounded-full transition-all" style={{ width: `${(b.total / maxVal) * 100}%` }} />
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+                {data.topSuppliers?.length > 0 && (
+                    <div className="erp-card p-6">
+                        <div className="flex items-center gap-2 mb-4">
+                            <Truck className="h-4 w-4 text-emerald-500" />
+                            <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Top Supplier</h3>
+                        </div>
+                        <div className="space-y-3">
+                            {data.topSuppliers.map((s: any, i: number) => {
+                                const maxVal = data.topSuppliers[0]?.total || 1;
+                                return (
+                                    <div key={i} className="space-y-1.5">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-[11px] font-bold text-slate-700 truncate max-w-[200px]">{s.name}</span>
+                                            <span className="text-[11px] font-black tabular-nums">{isClient ? formatCurrency(s.total) : '...'}</span>
+                                        </div>
+                                        <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                            <div className="h-full bg-emerald-500 rounded-full transition-all" style={{ width: `${(s.total / maxVal) * 100}%` }} />
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Expense by Category */}
+            {data.expenseByCategory?.length > 0 && (
+                <div className="erp-card p-6">
+                    <div className="flex items-center gap-2 mb-4">
+                        <CreditCard className="h-4 w-4 text-amber-500" />
+                        <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Biaya per Kategori</h3>
+                    </div>
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                        {data.expenseByCategory.map((cat: any, i: number) => (
+                            <div key={i} className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 truncate">{cat.name}</p>
+                                <p className="text-lg font-black text-slate-900 tabular-nums tracking-tighter">{isClient ? formatCurrency(cat.value) : '...'}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// MONTHLY REPORT SUB-COMPONENT
+// ═══════════════════════════════════════════════════════════════════════════
+function MonthlyReport({ data, isClient, fmtDate }: { data: any; isClient: boolean; fmtDate: (d: any) => string }) {
+    if (data.error) return <ErrorCard message={data.error} />;
+    const pl = data.profitLoss || {};
+    const stats = data.stats || {};
+
+    return (
+        <div className="space-y-8">
+            {/* KPI Cards */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+                <KPICard icon={<ShoppingBag className="h-5 w-5 text-blue-500" />} label="Total Revenue" value={formatCurrency(pl.revenue || 0)} sub={`${stats.salesCount || 0} Invoice • ${stats.totalSalesQty || 0} Unit`} color="blue" isClient={isClient} />
+                <KPICard icon={<Receipt className="h-5 w-5 text-rose-500" />} label="HPP (COGS)" value={formatCurrency(pl.hpp || 0)} sub={`Harga Pokok Penjualan`} color="rose" isClient={isClient} />
+                <KPICard icon={<TrendingUp className="h-5 w-5 text-emerald-500" />} label="Laba Kotor" value={formatCurrency(pl.grossProfit || 0)} sub={`Margin: ${pl.grossMarginPct || 0}%`} color="emerald" trend={pl.grossProfit >= 0 ? 'up' : 'down'} isClient={isClient} />
+                <KPICard icon={<DollarSign className="h-5 w-5 text-purple-500" />} label="Laba Bersih" value={formatCurrency(pl.netProfit || 0)} sub={`Margin: ${pl.netMarginPct || 0}%`} color="purple" trend={pl.netProfit >= 0 ? 'up' : 'down'} isClient={isClient} />
+            </div>
+
+            {/* P&L Statement */}
+            <div className="erp-card overflow-hidden">
+                <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <DollarSign className="h-5 w-5 text-emerald-400" />
+                        <div>
+                            <h3 className="text-sm font-black uppercase tracking-tight">Laporan Laba Rugi</h3>
+                            <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{data.period?.label || '-'}</p>
+                        </div>
+                    </div>
+                </div>
+                <div className="p-6">
+                    <div className="max-w-2xl mx-auto space-y-1">
+                        <PLRow label="PENDAPATAN (Revenue)" value={pl.revenue} bold isClient={isClient} />
+                        <PLRow label="  Subtotal Penjualan" value={pl.revenueSubtotal} sub isClient={isClient} />
+                        <PLRow label="  Diskon Penjualan" value={-pl.discount} sub isClient={isClient} />
+                        <PLRow label="  PPN Keluaran" value={pl.salesTax} sub isClient={isClient} />
+                        <div className="h-3" />
+                        <PLRow label="HARGA POKOK PENJUALAN (HPP)" value={pl.hpp} bold negative isClient={isClient} />
+                        <div className="border-t-2 border-slate-900 my-3" />
+                        <PLRow label="LABA KOTOR" value={pl.grossProfit} bold highlight={pl.grossProfit >= 0 ? 'green' : 'red'} isClient={isClient} />
+                        <PLRow label={`  Margin Kotor`} valueStr={`${pl.grossMarginPct || 0}%`} sub isClient={isClient} />
+                        <div className="h-3" />
+                        <PLRow label="BIAYA OPERASIONAL" value={pl.expenses} bold negative isClient={isClient} />
+                        {(pl.expenseByCategory || []).map((cat: any, i: number) => (
+                            <PLRow key={i} label={`  ${cat.name}`} value={cat.value} sub isClient={isClient} />
+                        ))}
+                        <div className="border-t-2 border-slate-900 my-3" />
+                        <PLRow label="LABA BERSIH" value={pl.netProfit} bold highlight={pl.netProfit >= 0 ? 'green' : 'red'} isClient={isClient} />
+                        <PLRow label={`  Margin Bersih`} valueStr={`${pl.netMarginPct || 0}%`} sub isClient={isClient} />
+                    </div>
+                </div>
+            </div>
+
+            {/* Monthly Chart */}
+            {data.dailyBreakdown?.length > 0 && (
+                <div className="erp-card p-6">
+                    <div className="flex items-center justify-between mb-5">
+                        <div>
+                            <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Trend Harian</h3>
+                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{data.period?.label}</p>
+                        </div>
+                    </div>
+                    <div className="h-[280px]">
+                        {isClient && (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart data={data.dailyBreakdown} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                                    <defs>
+                                        <linearGradient id="gSales" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.15} />
+                                            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                                        </linearGradient>
+                                        <linearGradient id="gPurchase" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.15} />
+                                            <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                    <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 9, fontWeight: 800 }} />
+                                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 9, fontWeight: 800 }} tickFormatter={(v: number) => `${(v / 1000000).toFixed(0)}jt`} />
+                                    <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', padding: '8px 12px', fontSize: '11px' }} formatter={(value: any) => [formatCurrency(Number(value || 0)), '']} />
+                                    <Area type="monotone" dataKey="sales" name="Penjualan" stroke="#3b82f6" strokeWidth={2} fillOpacity={1} fill="url(#gSales)" dot={false} />
+                                    <Area type="monotone" dataKey="purchases" name="Pembelian" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#gPurchase)" dot={false} />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* Sales by Team + Expense Category */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Sales by Team */}
+                <div className="erp-card p-6 bg-slate-900 text-white">
+                    <div className="flex items-center gap-2 mb-5">
+                        <Users className="h-4 w-4 text-blue-400" />
+                        <h3 className="text-sm font-black uppercase tracking-tight">Revenue per Tim</h3>
+                    </div>
+                    <div className="space-y-4">
+                        {[
+                            { name: 'Team BC', value: data.salesByTeam?.BC || 0, color: 'bg-blue-500' },
+                            { name: 'Team PF', value: data.salesByTeam?.PF || 0, color: 'bg-purple-500' },
+                            { name: 'Lainnya', value: data.salesByTeam?.Other || 0, color: 'bg-slate-500' },
+                        ].map(t => {
+                            const total = (data.salesByTeam?.BC || 0) + (data.salesByTeam?.PF || 0) + (data.salesByTeam?.Other || 0);
+                            const pct = total > 0 ? (t.value / total * 100) : 0;
+                            return (
+                                <div key={t.name} className="space-y-2">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[10px] font-black text-slate-400 uppercase">{t.name}</span>
+                                        <span className="text-sm font-black tabular-nums">{isClient ? formatCurrency(t.value) : '...'}</span>
+                                    </div>
+                                    <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                                        <div className={`h-full ${t.color} rounded-full transition-all`} style={{ width: `${pct}%` }} />
+                                    </div>
+                                    <p className="text-[9px] font-bold text-slate-600 text-right">{pct.toFixed(1)}%</p>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                {/* Expense Pie */}
+                {pl.expenseByCategory?.length > 0 && (
+                    <div className="erp-card p-6">
+                        <div className="flex items-center gap-2 mb-5">
+                            <CreditCard className="h-4 w-4 text-amber-500" />
+                            <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Komposisi Biaya Operasional</h3>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="h-[200px]">
+                                {isClient && (
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <PieChart>
+                                            <Pie data={pl.expenseByCategory} cx="50%" cy="50%" innerRadius={45} outerRadius={75} paddingAngle={3} dataKey="value" stroke="none">
+                                                {pl.expenseByCategory.map((_: any, i: number) => (
+                                                    <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                                                ))}
+                                            </Pie>
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                )}
+                            </div>
+                            <div className="flex flex-col justify-center space-y-2">
+                                {pl.expenseByCategory.slice(0, 6).map((cat: any, i: number) => (
+                                    <div key={i} className="flex items-center gap-2">
+                                        <div className="h-2 w-4 rounded-full shrink-0" style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }} />
+                                        <span className="text-[10px] font-bold text-slate-500 truncate">{cat.name}</span>
+                                        <span className="text-[10px] font-black tabular-nums ml-auto">{isClient ? formatCurrency(cat.value) : '...'}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* AR/AP Aging */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Piutang (AR) */}
+                <div className="erp-card overflow-hidden">
+                    <div className="bg-blue-600 text-white px-6 py-3 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <ArrowUpRight className="h-4 w-4" />
+                            <h3 className="text-xs font-black uppercase tracking-widest">Piutang (Accounts Receivable)</h3>
+                        </div>
+                        <span className="text-lg font-black tabular-nums">{isClient ? formatCurrency(data.arAging?.buckets?.total || 0) : '...'}</span>
+                    </div>
+                    <div className="p-5">
+                        {data.arAging?.buckets && (
+                            <div className="grid grid-cols-5 gap-2 mb-4">
+                                {[
+                                    { key: 'current', label: 'Current' },
+                                    { key: 'd30', label: '1-30 Hari' },
+                                    { key: 'd60', label: '31-60 Hari' },
+                                    { key: 'd90', label: '61-90 Hari' },
+                                    { key: 'over90', label: '> 90 Hari' },
+                                ].map(b => (
+                                    <div key={b.key} className="p-2 bg-slate-50 rounded-lg text-center">
+                                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">{b.label}</p>
+                                        <p className="text-xs font-black tabular-nums text-slate-900">{isClient ? formatCurrency((data.arAging.buckets as any)[b.key] || 0) : '...'}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        {data.arAging?.items?.length > 0 && (
+                            <div className="max-h-[200px] overflow-y-auto custom-scrollbar space-y-1">
+                                {data.arAging.items.slice(0, 10).map((r: any, i: number) => (
+                                    <div key={i} className="flex items-center justify-between py-1.5 px-2 border-b border-slate-50 text-[11px] hover:bg-slate-50 rounded">
+                                        <div className="flex items-center gap-3 min-w-0">
+                                            <span className="font-black text-slate-900 shrink-0">{r.number}</span>
+                                            <span className="text-slate-500 truncate">{r.partner}</span>
+                                        </div>
+                                        <div className="flex items-center gap-3 shrink-0">
+                                            <span className="text-[9px] font-bold text-slate-400">{r.days}d</span>
+                                            <span className="font-black tabular-nums text-blue-600">{isClient ? formatCurrency(r.outstanding) : '...'}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Hutang (AP) */}
+                <div className="erp-card overflow-hidden">
+                    <div className="bg-amber-600 text-white px-6 py-3 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <ArrowDownRight className="h-4 w-4" />
+                            <h3 className="text-xs font-black uppercase tracking-widest">Hutang (Accounts Payable)</h3>
+                        </div>
+                        <span className="text-lg font-black tabular-nums">{isClient ? formatCurrency(data.apAging?.buckets?.total || 0) : '...'}</span>
+                    </div>
+                    <div className="p-5">
+                        {data.apAging?.buckets && (
+                            <div className="grid grid-cols-5 gap-2 mb-4">
+                                {[
+                                    { key: 'current', label: 'Current' },
+                                    { key: 'd30', label: '1-30 Hari' },
+                                    { key: 'd60', label: '31-60 Hari' },
+                                    { key: 'd90', label: '61-90 Hari' },
+                                    { key: 'over90', label: '> 90 Hari' },
+                                ].map(b => (
+                                    <div key={b.key} className="p-2 bg-slate-50 rounded-lg text-center">
+                                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">{b.label}</p>
+                                        <p className="text-xs font-black tabular-nums text-slate-900">{isClient ? formatCurrency((data.apAging.buckets as any)[b.key] || 0) : '...'}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        {data.apAging?.items?.length > 0 && (
+                            <div className="max-h-[200px] overflow-y-auto custom-scrollbar space-y-1">
+                                {data.apAging.items.slice(0, 10).map((r: any, i: number) => (
+                                    <div key={i} className="flex items-center justify-between py-1.5 px-2 border-b border-slate-50 text-[11px] hover:bg-slate-50 rounded">
+                                        <div className="flex items-center gap-3 min-w-0">
+                                            <span className="font-black text-slate-900 shrink-0">{r.number}</span>
+                                            <span className="text-slate-500 truncate">{r.partner}</span>
+                                        </div>
+                                        <div className="flex items-center gap-3 shrink-0">
+                                            <span className="text-[9px] font-bold text-slate-400">{r.days}d</span>
+                                            <span className="font-black tabular-nums text-amber-600">{isClient ? formatCurrency(r.outstanding) : '...'}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* Top Buyers + Top Suppliers */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {data.topBuyers?.length > 0 && (
+                    <div className="erp-card p-6">
+                        <div className="flex items-center gap-2 mb-4">
+                            <Building className="h-4 w-4 text-blue-500" />
+                            <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Top 10 Buyer</h3>
+                        </div>
+                        <div className="space-y-3">
+                            {data.topBuyers.map((b: any, i: number) => {
+                                const maxVal = data.topBuyers[0]?.total || 1;
+                                return (
+                                    <div key={i} className="space-y-1">
+                                        <div className="flex items-center justify-between text-[11px]">
+                                            <span className="font-bold text-slate-700 truncate max-w-[200px]">{b.name}</span>
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-[9px] font-bold text-slate-400">{b.count} inv</span>
+                                                <span className="font-black tabular-nums">{isClient ? formatCurrency(b.total) : '...'}</span>
+                                            </div>
+                                        </div>
+                                        <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                            <div className="h-full bg-blue-500 rounded-full" style={{ width: `${(b.total / maxVal) * 100}%` }} />
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+                {data.topSuppliers?.length > 0 && (
+                    <div className="erp-card p-6">
+                        <div className="flex items-center gap-2 mb-4">
+                            <Truck className="h-4 w-4 text-emerald-500" />
+                            <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Top 10 Supplier</h3>
+                        </div>
+                        <div className="space-y-3">
+                            {data.topSuppliers.map((s: any, i: number) => {
+                                const maxVal = data.topSuppliers[0]?.total || 1;
+                                return (
+                                    <div key={i} className="space-y-1">
+                                        <div className="flex items-center justify-between text-[11px]">
+                                            <span className="font-bold text-slate-700 truncate max-w-[200px]">{s.name}</span>
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-[9px] font-bold text-slate-400">{s.count} LPB</span>
+                                                <span className="font-black tabular-nums">{isClient ? formatCurrency(s.total) : '...'}</span>
+                                            </div>
+                                        </div>
+                                        <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                            <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${(s.total / maxVal) * 100}%` }} />
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Returns Summary */}
+            {(data.returnPurchaseSummary?.count > 0 || data.returnSalesSummary?.count > 0) && (
+                <div className="erp-card p-6">
+                    <div className="flex items-center gap-2 mb-4">
+                        <RotateCcw className="h-4 w-4 text-rose-500" />
+                        <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Ringkasan Retur Bulan Ini</h3>
+                    </div>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {data.returnPurchaseSummary?.count > 0 && (
+                            <div>
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Retur Pembelian — {data.returnPurchaseSummary.count} retur, {data.returnPurchaseSummary.totalQty} unit</p>
+                                {data.returnPurchaseSummary.items.map((r: any, i: number) => (
+                                    <div key={i} className="flex items-center justify-between py-2 border-b border-slate-50 text-[11px]">
+                                        <div><span className="font-black">{r.returnNumber}</span> <span className="text-slate-400">• {r.supplier}</span></div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="tabular-nums">{r.totalQty} unit</span>
+                                            <span className={cn("text-[8px] font-black uppercase px-1.5 py-0.5 rounded",
+                                                r.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                                            )}>{r.status}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        {data.returnSalesSummary?.count > 0 && (
+                            <div>
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Retur Penjualan — {data.returnSalesSummary.count} retur, {data.returnSalesSummary.totalQty} unit</p>
+                                {data.returnSalesSummary.items.map((r: any, i: number) => (
+                                    <div key={i} className="flex items-center justify-between py-2 border-b border-slate-50 text-[11px]">
+                                        <div><span className="font-black">{r.returnNumber}</span> <span className="text-slate-400">• {r.buyer}</span></div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="tabular-nums">{r.totalQty} unit</span>
+                                            <span className={cn("text-[8px] font-black uppercase px-1.5 py-0.5 rounded",
+                                                r.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                                            )}>{r.status}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* Sales Detail Table */}
+            {data.details?.sales?.length > 0 && (
+                <ReportTable
+                    title="Detail Penjualan" icon={<ShoppingBag className="h-4 w-4 text-blue-500" />}
+                    count={data.details.sales.length} totalLabel="Total Revenue" totalValue={formatCurrency(pl.revenue || 0)}
+                    headers={['No. SJ', 'Tanggal', 'Buyer', 'Sales', 'Qty', 'Grand Total', 'Dibayar', 'Status']}
+                    rows={data.details.sales.map((row: any) => [
+                        <span className="font-black text-slate-900">{row.number}</span>,
+                        fmtDate(row.date),
+                        <span className="truncate max-w-[140px] block">{row.buyer}</span>,
+                        row.salesPerson || '-',
+                        <span className="tabular-nums font-black">{row.totalQty}</span>,
+                        <span className="tabular-nums font-black">{isClient ? formatCurrency(row.grandTotal) : '...'}</span>,
+                        <span className="tabular-nums">{isClient ? formatCurrency(row.paidAmount) : '...'}</span>,
+                        <PaymentBadge status={row.paymentStatus} />
+                    ])}
+                    isClient={isClient}
+                />
+            )}
+
+            {/* Purchase Detail Table */}
+            {data.details?.purchases?.length > 0 && (
+                <ReportTable
+                    title="Detail Pembelian" icon={<ShoppingCart className="h-4 w-4 text-emerald-500" />}
+                    count={data.details.purchases.length} totalLabel="Total Pembelian" totalValue={formatCurrency(data.purchases?.total || 0)}
+                    headers={['No. LPB', 'Tanggal', 'Supplier', 'Sales', 'Grand Total', 'Dibayar', 'Status']}
+                    rows={data.details.purchases.map((row: any) => [
+                        <span className="font-black text-slate-900">{row.number}</span>,
+                        fmtDate(row.date),
+                        <span className="truncate max-w-[140px] block">{row.supplier}</span>,
+                        row.salesPerson || '-',
+                        <span className="tabular-nums font-black">{isClient ? formatCurrency(row.grandTotal) : '...'}</span>,
+                        <span className="tabular-nums">{isClient ? formatCurrency(row.paidAmount) : '...'}</span>,
+                        <PaymentBadge status={row.paymentStatus} />
+                    ])}
+                    isClient={isClient}
+                />
+            )}
+
+            {/* Operational Detail Table */}
+            {data.details?.operational?.length > 0 && (
+                <ReportTable
+                    title="Detail Operasional" icon={<Wallet className="h-4 w-4 text-amber-500" />}
+                    count={data.details.operational.length} totalLabel="Total Biaya Ops" totalValue={formatCurrency(pl.expenses || 0)}
+                    headers={['Tanggal', 'Keterangan', 'Bank', 'Kategori', 'Sales', 'Jumlah']}
+                    rows={data.details.operational.map((row: any) => [
+                        fmtDate(row.date),
+                        <span className="truncate max-w-[200px] block font-bold">{row.description}</span>,
+                        row.bank || '-',
+                        <span className="text-[9px] font-black uppercase px-2 py-0.5 bg-slate-100 rounded">{row.category}</span>,
+                        row.salesPerson || '-',
+                        <span className={cn("tabular-nums font-black", row.amount >= 0 ? "text-emerald-600" : "text-rose-600")}>
+                            {isClient ? formatCurrency(row.amount) : '...'}
+                        </span>
+                    ])}
+                    isClient={isClient}
+                />
+            )}
+        </div>
+    );
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// REUSABLE SUB-COMPONENTS
+// ═══════════════════════════════════════════════════════════════════════════
+
+function KPICard({ icon, label, value, sub, color, trend, isClient }: any) {
+    return (
+        <div className="erp-card p-5 relative group">
+            <div className={`absolute -right-4 -top-4 h-24 w-24 rounded-full bg-${color}-500/5 blur-2xl group-hover:scale-150 transition-all`} />
+            <div className="relative space-y-3">
+                <div className="flex items-center justify-between">
+                    <div className={`p-2.5 rounded-xl bg-${color}-50 border border-${color}-100/50`}>{icon}</div>
+                    {trend && (
+                        <span className={cn("flex items-center gap-1 text-[9px] font-black px-2 py-1 rounded-full",
+                            trend === 'up' ? 'text-emerald-700 bg-emerald-50' : 'text-rose-700 bg-rose-50'
+                        )}>
+                            {trend === 'up' ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+                        </span>
+                    )}
+                </div>
+                <div>
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">{label}</p>
+                    <p className="text-xl font-black text-slate-900 tracking-tighter tabular-nums leading-tight">{isClient ? value : 'Rp ---'}</p>
+                    {sub && <p className="text-[9px] font-bold text-slate-400 mt-1">{sub}</p>}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function MiniStat({ label, value, icon }: any) {
+    return (
+        <div className="erp-card p-4 flex items-center gap-3">
+            {icon}
+            <div>
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{label}</p>
+                <p className="text-lg font-black text-slate-900 tabular-nums">{value}</p>
+            </div>
+        </div>
+    );
+}
+
+function PaymentBadge({ status }: { status: string }) {
+    return (
+        <span className={cn("text-[8px] font-black uppercase px-2 py-0.5 rounded border", PAYMENT_BADGE[status] || PAYMENT_BADGE.PENDING)}>
+            {status}
+        </span>
+    );
+}
+
+function PLRow({ label, value, valueStr, bold, sub, negative, highlight, isClient }: any) {
+    return (
+        <div className={cn("flex items-center justify-between py-2 px-3 rounded-lg",
+            bold && !highlight ? "bg-slate-50" : "",
+            highlight === 'green' ? "bg-emerald-50 border border-emerald-100" : "",
+            highlight === 'red' ? "bg-rose-50 border border-rose-100" : ""
+        )}>
+            <span className={cn("text-[12px]",
+                bold ? "font-black text-slate-900 uppercase" : "",
+                sub ? "font-bold text-slate-500 text-[11px]" : "font-bold text-slate-700"
+            )}>{label}</span>
+            <span className={cn("text-[12px] tabular-nums",
+                bold ? "font-black" : "font-bold",
+                highlight === 'green' ? "text-emerald-700" : "",
+                highlight === 'red' ? "text-rose-700" : "",
+                negative ? "text-rose-600" : "text-slate-900"
+            )}>
+                {valueStr || (isClient ? (value !== undefined ? formatCurrency(value) : '') : 'Rp ---')}
+            </span>
+        </div>
+    );
+}
+
+function ReportTable({ title, icon, count, totalLabel, totalValue, headers, rows, isClient }: any) {
+    return (
+        <div className="erp-card overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/40">
+                <div className="flex items-center gap-2">
+                    {icon}
+                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">{title}</h3>
+                    <span className="text-[9px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">{count}</span>
+                </div>
+                {totalLabel && (
+                    <div className="text-right">
+                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{totalLabel}</p>
+                        <p className="text-sm font-black text-slate-900 tabular-nums">{isClient ? totalValue : 'Rp ---'}</p>
+                    </div>
+                )}
+            </div>
+            <div className="overflow-x-auto">
+                <table className="w-full text-[11px]">
+                    <thead>
+                        <tr className="bg-slate-900 text-white">
+                            {headers.map((h: string, i: number) => (
+                                <th key={i} className="px-4 py-3 text-left font-black uppercase tracking-wider whitespace-nowrap text-[10px]">{h}</th>
+                            ))}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {rows.map((row: any[], i: number) => (
+                            <tr key={i} className={cn("border-b border-slate-50 hover:bg-blue-50/30 transition-colors", i % 2 === 0 ? 'bg-white' : 'bg-slate-50/30')}>
+                                {row.map((cell: any, j: number) => (
+                                    <td key={j} className="px-4 py-2.5 text-slate-700 whitespace-nowrap">{cell}</td>
+                                ))}
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+}
+
+function ErrorCard({ message }: { message: string }) {
+    return (
+        <div className="erp-card p-8 text-center border-rose-200">
+            <AlertCircle className="h-8 w-8 text-rose-400 mx-auto mb-3" />
+            <p className="text-sm font-black text-slate-900">Gagal Memuat Laporan</p>
+            <p className="text-[11px] text-slate-500 mt-1">{message}</p>
+        </div>
+    );
+}
+
+function EmptyState({ message }: { message: string }) {
+    return (
+        <div className="erp-card p-12 text-center">
+            <Package className="h-10 w-10 text-slate-200 mx-auto mb-4" />
+            <p className="text-sm font-black text-slate-400 uppercase tracking-widest">{message}</p>
+        </div>
+    );
+}

@@ -731,3 +731,698 @@ export async function getBatchTraceabilityService(filters: {
         throw new Error(error.message || 'Failed to generate batch traceability report');
     }
 }
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// COMPREHENSIVE REPORTING CENTER SERVICES
+// ════════════════════════════════════════════════════════════════════════════
+
+/**
+ * COMPREHENSIVE DAILY REPORT SERVICE
+ * Returns all transaction data for a single date across all modules
+ */
+export async function getComprehensiveDailyReportService(date?: string) {
+    const prisma = getPrisma();
+
+    const targetDate = date ? new Date(date) : new Date();
+    const dayStart = new Date(targetDate);
+    dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(targetDate);
+    dayEnd.setHours(23, 59, 59, 999);
+
+    try {
+        const [
+            sales, purchases, operational, returns_purchase, returns_sales,
+            stockMovements, auditLogs
+        ] = await Promise.all([
+            // Sales Deliveries
+            (prisma as any).salesDelivery.findMany({
+                where: { isVoid: false, date: { gte: dayStart, lte: dayEnd } },
+                include: {
+                    createdBy: { select: { name: true } },
+                    items: { include: { product: { select: { sku: true, name: true } } } }
+                },
+                orderBy: { date: 'asc' }
+            }),
+            // Goods Receipts
+            (prisma as any).goodsReceipt.findMany({
+                where: { isVoid: false, date: { gte: dayStart, lte: dayEnd } },
+                include: {
+                    createdBy: { select: { name: true } },
+                    warehouse: { select: { name: true } },
+                    items: { include: { product: { select: { sku: true, name: true } } } }
+                },
+                orderBy: { date: 'asc' }
+            }),
+            // Operational / Finance Transactions
+            (prisma as any).financeTransaction.findMany({
+                where: { date: { gte: dayStart, lte: dayEnd } },
+                include: { createdBy: { select: { name: true } } },
+                orderBy: { date: 'asc' }
+            }),
+            // Purchase Returns
+            (prisma as any).purchaseReturn.findMany({
+                where: { isVoid: false, date: { gte: dayStart, lte: dayEnd } },
+                include: {
+                    items: { include: { product: { select: { sku: true, name: true } } } },
+                    receipt: { select: { receiptNumber: true, receivedFrom: true } }
+                }
+            }),
+            // Sales Returns
+            (prisma as any).salesReturn.findMany({
+                where: { isVoid: false, date: { gte: dayStart, lte: dayEnd } },
+                include: {
+                    items: { include: { product: { select: { sku: true, name: true } } } },
+                    delivery: { select: { deliveryNumber: true, buyerName: true } }
+                }
+            }),
+            // Stock Movements
+            (prisma as any).stockMovement.findMany({
+                where: { createdAt: { gte: dayStart, lte: dayEnd } },
+                include: {
+                    product: { select: { sku: true, name: true } },
+                    warehouse: { select: { name: true } }
+                },
+                orderBy: { createdAt: 'asc' }
+            }),
+            // Audit Logs
+            (prisma as any).auditLog.findMany({
+                where: { createdAt: { gte: dayStart, lte: dayEnd } },
+                include: { user: { select: { name: true, email: true } } },
+                orderBy: { createdAt: 'desc' },
+                take: 50
+            })
+        ]);
+
+        // Calculate summaries
+        const totalSales = sales.reduce((s: number, d: any) => s + Number(d.grandTotal || 0), 0);
+        const totalPurchases = purchases.reduce((s: number, d: any) => s + Number(d.grandTotal || 0), 0);
+        const totalSalesQty = sales.reduce((s: number, d: any) =>
+            s + (d.items || []).reduce((q: number, i: any) => q + Number(i.quantity || 0), 0), 0);
+        const totalPurchaseQty = purchases.reduce((s: number, d: any) =>
+            s + (d.items || []).reduce((q: number, i: any) => q + Number(i.quantity || 0), 0), 0);
+
+        // Separate income vs expense transactions
+        const incomeTransactions = operational.filter((o: any) =>
+            o.transactionType === 'RECEIPT' || Number(o.amount) > 0
+        );
+        const expenseTransactions = operational.filter((o: any) =>
+            o.transactionType === 'PAYMENT' || o.transactionType === 'EXPENSE' || Number(o.amount) < 0
+        );
+        const totalIncome = incomeTransactions.reduce((s: number, o: any) => s + Math.abs(Number(o.amount || 0)), 0);
+        const totalExpense = expenseTransactions.reduce((s: number, o: any) => s + Math.abs(Number(o.amount || 0)), 0);
+
+        // Payment status breakdown
+        const salesPaid = sales.filter((s: any) => s.paymentStatus === 'PAID').length;
+        const salesPending = sales.filter((s: any) => s.paymentStatus !== 'PAID').length;
+        const purchasePaid = purchases.filter((p: any) => p.paymentStatus === 'PAID').length;
+        const purchasePending = purchases.filter((p: any) => p.paymentStatus !== 'PAID').length;
+
+        // Simple daily P&L estimate (Revenue - Cost - Ops Expense)
+        const estimatedHPP = purchases.reduce((s: number, p: any) => s + Number(p.subtotal || 0), 0);
+        const grossProfit = totalSales - estimatedHPP;
+        const netProfit = grossProfit - totalExpense;
+
+        return {
+            date: dayStart.toISOString(),
+            summary: {
+                totalSales, totalPurchases, totalIncome, totalExpense,
+                totalSalesQty, totalPurchaseQty,
+                salesCount: sales.length, purchaseCount: purchases.length,
+                opsCount: operational.length,
+                salesPaid, salesPending, purchasePaid, purchasePending,
+                grossProfit, netProfit,
+                returnPurchaseCount: returns_purchase.length,
+                returnSalesCount: returns_sales.length,
+                stockMovementCount: stockMovements.length
+            },
+            details: {
+                sales: sales.map((s: any) => ({
+                    id: s.id, number: s.deliveryNumber, date: s.date,
+                    buyer: s.buyerName || s.recipient, salesPerson: s.salesPerson,
+                    subtotal: Number(s.subtotal || 0), discount: Number(s.totalDiscount || 0),
+                    tax: Number(s.taxAmount || 0), grandTotal: Number(s.grandTotal || 0),
+                    paidAmount: Number(s.paidAmount || 0), paymentStatus: s.paymentStatus,
+                    operator: s.createdBy?.name || 'System',
+                    itemCount: (s.items || []).length,
+                    totalQty: (s.items || []).reduce((q: number, i: any) => q + Number(i.quantity || 0), 0)
+                })),
+                purchases: purchases.map((p: any) => ({
+                    id: p.id, number: p.receiptNumber, date: p.date,
+                    supplier: p.receivedFrom, warehouse: p.warehouse?.name,
+                    salesPerson: p.salesPerson,
+                    subtotal: Number(p.subtotal || 0), discount: Number(p.totalDiscount || 0),
+                    tax: Number(p.taxAmount || 0), grandTotal: Number(p.grandTotal || 0),
+                    paidAmount: Number(p.paidAmount || 0), paymentStatus: p.paymentStatus,
+                    operator: p.createdBy?.name || 'System',
+                    totalQty: (p.items || []).reduce((q: number, i: any) => q + Number(i.quantity || 0), 0)
+                })),
+                operational: operational.map((o: any) => ({
+                    id: o.id, date: o.date, description: o.description,
+                    bank: o.bank, category: o.category || o.transactionType,
+                    amount: Number(o.amount || 0), salesPerson: o.salesPerson,
+                    referenceNumber: o.referenceNumber,
+                    operator: o.createdBy?.name || 'System'
+                })),
+                returnsPurchase: returns_purchase.map((r: any) => ({
+                    returnNumber: r.returnNumber, date: r.date, status: r.status,
+                    receiptNumber: r.receipt?.receiptNumber, supplier: r.receipt?.receivedFrom,
+                    items: (r.items || []).map((i: any) => ({
+                        sku: i.product?.sku, name: i.product?.name, qty: i.quantity, reason: i.reason
+                    }))
+                })),
+                returnsSales: returns_sales.map((r: any) => ({
+                    returnNumber: r.returnNumber, date: r.date, status: r.status,
+                    deliveryNumber: r.delivery?.deliveryNumber, buyer: r.delivery?.buyerName,
+                    items: (r.items || []).map((i: any) => ({
+                        sku: i.product?.sku, name: i.product?.name, qty: i.quantity, reason: i.reason
+                    }))
+                })),
+                stockMovements: stockMovements.map((m: any) => ({
+                    date: m.createdAt, type: m.type, reference: m.reference,
+                    sku: m.product?.sku, productName: m.product?.name,
+                    warehouse: m.warehouse?.name, quantity: m.quantity, vendorName: m.vendorName
+                })),
+                auditLogs: auditLogs.map((a: any) => ({
+                    action: a.action, resource: a.resource, resourceId: a.resourceId,
+                    user: a.user?.name || a.user?.email || 'System',
+                    date: a.createdAt, details: a.details
+                }))
+            }
+        };
+    } catch (error: any) {
+        console.error('[getComprehensiveDailyReportService] ERROR:', error);
+        return { error: error.message || 'Failed to generate daily report' };
+    }
+}
+
+
+/**
+ * COMPREHENSIVE WEEKLY REPORT SERVICE
+ * Returns aggregated data for 7 days with daily breakdowns
+ */
+export async function getComprehensiveWeeklyReportService(weekStartDate?: string) {
+    const prisma = getPrisma();
+
+    const startDate = weekStartDate ? new Date(weekStartDate) : new Date();
+    if (!weekStartDate) {
+        // Default to Monday of current week
+        const day = startDate.getDay();
+        const diff = startDate.getDate() - day + (day === 0 ? -6 : 1);
+        startDate.setDate(diff);
+    }
+    startDate.setHours(0, 0, 0, 0);
+
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + 6);
+    endDate.setHours(23, 59, 59, 999);
+
+    try {
+        const [sales, purchases, operational, stockMovements] = await Promise.all([
+            (prisma as any).salesDelivery.findMany({
+                where: { isVoid: false, date: { gte: startDate, lte: endDate } },
+                include: {
+                    items: { select: { quantity: true, salesPrice: true, discount: true } }
+                },
+                orderBy: { date: 'asc' }
+            }),
+            (prisma as any).goodsReceipt.findMany({
+                where: { isVoid: false, date: { gte: startDate, lte: endDate } },
+                include: {
+                    items: { select: { quantity: true, purchasePrice: true } }
+                },
+                orderBy: { date: 'asc' }
+            }),
+            (prisma as any).financeTransaction.findMany({
+                where: { date: { gte: startDate, lte: endDate } },
+                orderBy: { date: 'asc' }
+            }),
+            (prisma as any).stockMovement.findMany({
+                where: { createdAt: { gte: startDate, lte: endDate } },
+                include: { product: { select: { sku: true, name: true } } },
+                orderBy: { createdAt: 'asc' }
+            })
+        ]);
+
+        // Build daily breakdown for the 7 days
+        const dailyBreakdown = [];
+        for (let i = 0; i < 7; i++) {
+            const dayStart = new Date(startDate);
+            dayStart.setDate(dayStart.getDate() + i);
+            dayStart.setHours(0, 0, 0, 0);
+            const dayEnd = new Date(dayStart);
+            dayEnd.setHours(23, 59, 59, 999);
+
+            const daySales = sales.filter((s: any) => new Date(s.date) >= dayStart && new Date(s.date) <= dayEnd);
+            const dayPurchases = purchases.filter((p: any) => {
+                const d = p.date ? new Date(p.date) : null;
+                return d && d >= dayStart && d <= dayEnd;
+            });
+            const dayOps = operational.filter((o: any) => new Date(o.date) >= dayStart && new Date(o.date) <= dayEnd);
+
+            const salesTotal = daySales.reduce((s: number, d: any) => s + Number(d.grandTotal || 0), 0);
+            const purchaseTotal = dayPurchases.reduce((s: number, d: any) => s + Number(d.grandTotal || 0), 0);
+            const opsExpense = dayOps.filter((o: any) => o.transactionType === 'PAYMENT' || o.transactionType === 'EXPENSE' || Number(o.amount) < 0)
+                .reduce((s: number, o: any) => s + Math.abs(Number(o.amount || 0)), 0);
+
+            dailyBreakdown.push({
+                date: dayStart.toISOString(),
+                dayName: dayStart.toLocaleDateString('id-ID', { weekday: 'long' }),
+                shortName: dayStart.toLocaleDateString('id-ID', { weekday: 'short' }),
+                dateLabel: dayStart.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' }),
+                sales: salesTotal,
+                purchases: purchaseTotal,
+                opsExpense,
+                salesCount: daySales.length,
+                purchaseCount: dayPurchases.length,
+                salesQty: daySales.reduce((s: number, d: any) =>
+                    s + (d.items || []).reduce((q: number, i: any) => q + Number(i.quantity || 0), 0), 0),
+                purchaseQty: dayPurchases.reduce((s: number, d: any) =>
+                    s + (d.items || []).reduce((q: number, i: any) => q + Number(i.quantity || 0), 0), 0)
+            });
+        }
+
+        // Top buyers (by total grandTotal)
+        const buyerMap: Record<string, { total: number; count: number }> = {};
+        sales.forEach((s: any) => {
+            const name = s.buyerName || s.recipient || 'Unknown';
+            if (!buyerMap[name]) buyerMap[name] = { total: 0, count: 0 };
+            buyerMap[name].total += Number(s.grandTotal || 0);
+            buyerMap[name].count += 1;
+        });
+        const topBuyers = Object.entries(buyerMap)
+            .map(([name, data]) => ({ name, ...data }))
+            .sort((a, b) => b.total - a.total)
+            .slice(0, 5);
+
+        // Top suppliers
+        const supplierMap: Record<string, { total: number; count: number }> = {};
+        purchases.forEach((p: any) => {
+            const name = p.receivedFrom || 'Unknown';
+            if (!supplierMap[name]) supplierMap[name] = { total: 0, count: 0 };
+            supplierMap[name].total += Number(p.grandTotal || 0);
+            supplierMap[name].count += 1;
+        });
+        const topSuppliers = Object.entries(supplierMap)
+            .map(([name, data]) => ({ name, ...data }))
+            .sort((a, b) => b.total - a.total)
+            .slice(0, 5);
+
+        // Expense by category
+        const categoryMap: Record<string, number> = {};
+        operational.forEach((o: any) => {
+            if (o.transactionType === 'PAYMENT' || o.transactionType === 'EXPENSE' || Number(o.amount) < 0) {
+                const cat = o.category || o.transactionType || 'Lainnya';
+                categoryMap[cat] = (categoryMap[cat] || 0) + Math.abs(Number(o.amount || 0));
+            }
+        });
+        const expenseByCategory = Object.entries(categoryMap)
+            .map(([name, value]) => ({ name, value }))
+            .sort((a, b) => b.value - a.value);
+
+        // Totals
+        const totalSales = sales.reduce((s: number, d: any) => s + Number(d.grandTotal || 0), 0);
+        const totalPurchases = purchases.reduce((s: number, d: any) => s + Number(d.grandTotal || 0), 0);
+        const totalExpenses = operational
+            .filter((o: any) => o.transactionType === 'PAYMENT' || o.transactionType === 'EXPENSE' || Number(o.amount) < 0)
+            .reduce((s: number, o: any) => s + Math.abs(Number(o.amount || 0)), 0);
+        const estimatedHPP = purchases.reduce((s: number, p: any) => s + Number(p.subtotal || 0), 0);
+
+        // Sales by Team
+        let salesBC = 0, salesPF = 0, salesOther = 0;
+        sales.forEach((s: any) => {
+            const v = Number(s.grandTotal || 0);
+            if (s.salesPerson === 'BC') salesBC += v;
+            else if (s.salesPerson === 'PF') salesPF += v;
+            else salesOther += v;
+        });
+
+        return {
+            period: {
+                start: startDate.toISOString(),
+                end: endDate.toISOString(),
+                label: `${startDate.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })} - ${endDate.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}`
+            },
+            summary: {
+                totalSales, totalPurchases, totalExpenses,
+                grossProfit: totalSales - estimatedHPP,
+                netProfit: totalSales - estimatedHPP - totalExpenses,
+                salesCount: sales.length,
+                purchaseCount: purchases.length,
+                opsCount: operational.length,
+                totalSalesQty: sales.reduce((s: number, d: any) =>
+                    s + (d.items || []).reduce((q: number, i: any) => q + Number(i.quantity || 0), 0), 0),
+                totalPurchaseQty: purchases.reduce((s: number, d: any) =>
+                    s + (d.items || []).reduce((q: number, i: any) => q + Number(i.quantity || 0), 0), 0),
+                salesByTeam: { BC: salesBC, PF: salesPF, Other: salesOther }
+            },
+            dailyBreakdown,
+            topBuyers,
+            topSuppliers,
+            expenseByCategory
+        };
+    } catch (error: any) {
+        console.error('[getComprehensiveWeeklyReportService] ERROR:', error);
+        return { error: error.message || 'Failed to generate weekly report' };
+    }
+}
+
+
+/**
+ * COMPREHENSIVE MONTHLY REPORT SERVICE
+ * Full P&L, AR/AP aging, inventory valuation, top partner analysis
+ */
+export async function getComprehensiveMonthlyReportService(month?: number, year?: number) {
+    const prisma = getPrisma();
+    const filterYear = year || new Date().getFullYear();
+    const filterMonth = month || (new Date().getMonth() + 1);
+    const startDate = new Date(filterYear, filterMonth - 1, 1);
+    const endDate = new Date(filterYear, filterMonth, 0, 23, 59, 59, 999);
+
+    try {
+        const [
+            sales, purchases, allOperational, arRecords, apRecords,
+            returnsPurchase, returnsSales, stockMovements
+        ] = await Promise.all([
+            // Sales
+            (prisma as any).salesDelivery.findMany({
+                where: { isVoid: false, date: { gte: startDate, lte: endDate } },
+                include: {
+                    items: {
+                        include: {
+                            product: { select: { sku: true, name: true, purchasePrice: true } },
+                            lotAllocations: true
+                        }
+                    }
+                },
+                orderBy: { date: 'asc' }
+            }),
+            // Purchases
+            (prisma as any).goodsReceipt.findMany({
+                where: { isVoid: false, date: { gte: startDate, lte: endDate } },
+                orderBy: { date: 'asc' }
+            }),
+            // All Finance Transactions
+            (prisma as any).financeTransaction.findMany({
+                where: { date: { gte: startDate, lte: endDate } },
+                orderBy: { date: 'asc' }
+            }),
+            // AR — unpaid sales deliveries up to end of month
+            (prisma as any).salesDelivery.findMany({
+                where: {
+                    isVoid: false, date: { lte: endDate },
+                    paymentStatus: { in: ['PENDING', 'PARTIAL'] }
+                },
+                select: {
+                    deliveryNumber: true, buyerName: true, recipient: true, date: true,
+                    grandTotal: true, paidAmount: true, paymentStatus: true
+                },
+                orderBy: { date: 'asc' }
+            }),
+            // AP — unpaid goods receipts up to end of month
+            (prisma as any).goodsReceipt.findMany({
+                where: {
+                    isVoid: false, date: { lte: endDate },
+                    paymentStatus: { in: ['PENDING', 'PARTIAL'] }
+                },
+                select: {
+                    receiptNumber: true, receivedFrom: true, date: true,
+                    grandTotal: true, paidAmount: true, paymentStatus: true
+                },
+                orderBy: { date: 'asc' }
+            }),
+            // Purchase Returns
+            (prisma as any).purchaseReturn.findMany({
+                where: { isVoid: false, date: { gte: startDate, lte: endDate } },
+                include: {
+                    items: { include: { product: { select: { sku: true, name: true } } } },
+                    receipt: { select: { receiptNumber: true, receivedFrom: true } }
+                }
+            }),
+            // Sales Returns
+            (prisma as any).salesReturn.findMany({
+                where: { isVoid: false, date: { gte: startDate, lte: endDate } },
+                include: {
+                    items: { include: { product: { select: { sku: true, name: true } } } },
+                    delivery: { select: { deliveryNumber: true, buyerName: true } }
+                }
+            }),
+            // Stock Movements
+            (prisma as any).stockMovement.findMany({
+                where: { createdAt: { gte: startDate, lte: endDate } },
+                include: { product: { select: { sku: true, name: true } } },
+                orderBy: { createdAt: 'asc' }
+            })
+        ]);
+
+        // ── P&L Calculation ──────────────────────────────────────────────
+        // Revenue
+        const totalRevenue = sales.reduce((s: number, d: any) => s + Number(d.grandTotal || 0), 0);
+        const totalRevenueSubtotal = sales.reduce((s: number, d: any) => s + Number(d.subtotal || 0), 0);
+        const totalDiscount = sales.reduce((s: number, d: any) => s + Number(d.totalDiscount || 0), 0);
+        const totalSalesTax = sales.reduce((s: number, d: any) => s + Number(d.taxAmount || 0), 0);
+
+        // COGS / HPP — from lot allocations if available, fallback to product purchasePrice
+        let totalHPP = 0;
+        const productIdsInSales = new Set<string>();
+        sales.forEach((s: any) => {
+            (s.items || []).forEach((item: any) => {
+                productIdsInSales.add(item.productId);
+                const qty = Number(item.quantity || 0);
+                if (item.lotAllocations && item.lotAllocations.length > 0) {
+                    item.lotAllocations.forEach((alloc: any) => {
+                        totalHPP += Number(alloc.qty || 0) * Number(alloc.hppAtTime || 0);
+                    });
+                } else {
+                    totalHPP += qty * Number(item.product?.purchasePrice || 0);
+                }
+            });
+        });
+
+        // Gross Profit
+        const grossProfit = totalRevenue - totalHPP;
+        const grossMarginPct = totalRevenue > 0 ? (grossProfit / totalRevenue * 100) : 0;
+
+        // Operating Expenses
+        const expenses = allOperational.filter((o: any) =>
+            o.transactionType === 'PAYMENT' || o.transactionType === 'EXPENSE' || Number(o.amount) < 0
+        );
+        const totalExpenses = expenses.reduce((s: number, o: any) => s + Math.abs(Number(o.amount || 0)), 0);
+
+        // Net Profit
+        const netProfit = grossProfit - totalExpenses;
+        const netMarginPct = totalRevenue > 0 ? (netProfit / totalRevenue * 100) : 0;
+
+        // Net Purchases
+        const netPurchases = purchases.reduce((s: number, p: any) => s + Number(p.grandTotal || 0), 0);
+        const netPurchasesSubtotal = purchases.reduce((s: number, p: any) => s + Number(p.subtotal || 0), 0);
+
+        // ── Sales by Team ────────────────────────────────────────────────
+        let salesBC = 0, salesPF = 0, salesOther = 0;
+        let hppBC = 0, hppPF = 0;
+        sales.forEach((s: any) => {
+            const v = Number(s.grandTotal || 0);
+            if (s.salesPerson === 'BC') salesBC += v;
+            else if (s.salesPerson === 'PF') salesPF += v;
+            else salesOther += v;
+        });
+
+        // ── Expense by Category ──────────────────────────────────────────
+        const categoryMap: Record<string, number> = {};
+        expenses.forEach((o: any) => {
+            const cat = o.category || o.transactionType || 'Lainnya';
+            categoryMap[cat] = (categoryMap[cat] || 0) + Math.abs(Number(o.amount || 0));
+        });
+        const expenseByCategory = Object.entries(categoryMap)
+            .map(([name, value]) => ({ name, value }))
+            .sort((a, b) => b.value - a.value);
+
+        // ── Top Buyers ───────────────────────────────────────────────────
+        const buyerMap: Record<string, { total: number; count: number; totalQty: number }> = {};
+        sales.forEach((s: any) => {
+            const name = s.buyerName || s.recipient || 'Unknown';
+            const qty = (s.items || []).reduce((q: number, i: any) => q + Number(i.quantity || 0), 0);
+            if (!buyerMap[name]) buyerMap[name] = { total: 0, count: 0, totalQty: 0 };
+            buyerMap[name].total += Number(s.grandTotal || 0);
+            buyerMap[name].count += 1;
+            buyerMap[name].totalQty += qty;
+        });
+        const topBuyers = Object.entries(buyerMap)
+            .map(([name, data]) => ({ name, ...data }))
+            .sort((a, b) => b.total - a.total)
+            .slice(0, 10);
+
+        // ── Top Suppliers ────────────────────────────────────────────────
+        const supplierMap: Record<string, { total: number; count: number }> = {};
+        purchases.forEach((p: any) => {
+            const name = p.receivedFrom || 'Unknown';
+            if (!supplierMap[name]) supplierMap[name] = { total: 0, count: 0 };
+            supplierMap[name].total += Number(p.grandTotal || 0);
+            supplierMap[name].count += 1;
+        });
+        const topSuppliers = Object.entries(supplierMap)
+            .map(([name, data]) => ({ name, ...data }))
+            .sort((a, b) => b.total - a.total)
+            .slice(0, 10);
+
+        // ── AR/AP Aging ──────────────────────────────────────────────────
+        const now = new Date();
+        const agingBuckets = (records: any[], dateField: string) => {
+            const buckets = { current: 0, d30: 0, d60: 0, d90: 0, over90: 0, total: 0 };
+            const items: any[] = [];
+            records.forEach((r: any) => {
+                const outstanding = Number(r.grandTotal || 0) - Number(r.paidAmount || 0);
+                if (outstanding <= 0) return;
+                const days = Math.floor((now.getTime() - new Date(r[dateField] || r.date).getTime()) / (1000 * 60 * 60 * 24));
+                let bucket = 'current';
+                if (days > 90) bucket = 'over90';
+                else if (days > 60) bucket = 'd90';
+                else if (days > 30) bucket = 'd60';
+                else if (days > 0) bucket = 'd30';
+                (buckets as any)[bucket] += outstanding;
+                buckets.total += outstanding;
+                items.push({
+                    number: r.deliveryNumber || r.receiptNumber,
+                    partner: r.buyerName || r.recipient || r.receivedFrom,
+                    date: r.date,
+                    grandTotal: Number(r.grandTotal || 0),
+                    paidAmount: Number(r.paidAmount || 0),
+                    outstanding,
+                    days,
+                    bucket,
+                    status: r.paymentStatus
+                });
+            });
+            return { buckets, items: items.sort((a, b) => b.outstanding - a.outstanding) };
+        };
+
+        const arAging = agingBuckets(arRecords, 'date');
+        const apAging = agingBuckets(apRecords, 'date');
+
+        // ── Daily Breakdown (for chart) ──────────────────────────────────
+        const daysInMonth = new Date(filterYear, filterMonth, 0).getDate();
+        const dailyBreakdown = [];
+        for (let d = 1; d <= daysInMonth; d++) {
+            const dayStart = new Date(filterYear, filterMonth - 1, d, 0, 0, 0);
+            const dayEnd = new Date(filterYear, filterMonth - 1, d, 23, 59, 59, 999);
+            const daySales = sales.filter((s: any) => {
+                const dt = new Date(s.date);
+                return dt >= dayStart && dt <= dayEnd;
+            });
+            const dayPurchases = purchases.filter((p: any) => {
+                const dt = p.date ? new Date(p.date) : null;
+                return dt && dt >= dayStart && dt <= dayEnd;
+            });
+            dailyBreakdown.push({
+                day: d,
+                label: `${d}`,
+                sales: daySales.reduce((s: number, x: any) => s + Number(x.grandTotal || 0), 0),
+                purchases: dayPurchases.reduce((s: number, x: any) => s + Number(x.grandTotal || 0), 0),
+                salesCount: daySales.length,
+                purchaseCount: dayPurchases.length
+            });
+        }
+
+        // ── Return Summaries ─────────────────────────────────────────────
+        const returnPurchaseSummary = {
+            count: returnsPurchase.length,
+            totalQty: returnsPurchase.reduce((s: number, r: any) =>
+                s + (r.items || []).reduce((q: number, i: any) => q + Number(i.quantity || 0), 0), 0),
+            items: returnsPurchase.map((r: any) => ({
+                returnNumber: r.returnNumber, date: r.date, status: r.status,
+                supplier: r.receipt?.receivedFrom, receiptNumber: r.receipt?.receiptNumber,
+                totalQty: (r.items || []).reduce((q: number, i: any) => q + Number(i.quantity || 0), 0)
+            }))
+        };
+        const returnSalesSummary = {
+            count: returnsSales.length,
+            totalQty: returnsSales.reduce((s: number, r: any) =>
+                s + (r.items || []).reduce((q: number, i: any) => q + Number(i.quantity || 0), 0), 0),
+            items: returnsSales.map((r: any) => ({
+                returnNumber: r.returnNumber, date: r.date, status: r.status,
+                buyer: r.delivery?.buyerName, deliveryNumber: r.delivery?.deliveryNumber,
+                totalQty: (r.items || []).reduce((q: number, i: any) => q + Number(i.quantity || 0), 0)
+            }))
+        };
+
+        // ── Sales Detail Table ───────────────────────────────────────────
+        const salesDetail = sales.map((s: any) => ({
+            number: s.deliveryNumber, date: s.date,
+            buyer: s.buyerName || s.recipient, salesPerson: s.salesPerson,
+            subtotal: Number(s.subtotal || 0), discount: Number(s.totalDiscount || 0),
+            tax: Number(s.taxAmount || 0), grandTotal: Number(s.grandTotal || 0),
+            paidAmount: Number(s.paidAmount || 0), paymentStatus: s.paymentStatus,
+            totalQty: (s.items || []).reduce((q: number, i: any) => q + Number(i.quantity || 0), 0)
+        }));
+
+        // ── Purchase Detail Table ────────────────────────────────────────
+        const purchaseDetail = purchases.map((p: any) => ({
+            number: p.receiptNumber, date: p.date,
+            supplier: p.receivedFrom, salesPerson: p.salesPerson,
+            subtotal: Number(p.subtotal || 0), discount: Number(p.totalDiscount || 0),
+            tax: Number(p.taxAmount || 0), grandTotal: Number(p.grandTotal || 0),
+            paidAmount: Number(p.paidAmount || 0), paymentStatus: p.paymentStatus
+        }));
+
+        // ── Operational Detail Table ─────────────────────────────────────
+        const opsDetail = allOperational.map((o: any) => ({
+            date: o.date, description: o.description,
+            bank: o.bank, category: o.category || o.transactionType,
+            amount: Number(o.amount || 0), salesPerson: o.salesPerson,
+            referenceNumber: o.referenceNumber
+        }));
+
+        const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+            'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+
+        return {
+            period: {
+                month: filterMonth, year: filterYear,
+                label: `${monthNames[filterMonth - 1]} ${filterYear}`
+            },
+            profitLoss: {
+                revenue: totalRevenue,
+                revenueSubtotal: totalRevenueSubtotal,
+                discount: totalDiscount,
+                salesTax: totalSalesTax,
+                hpp: totalHPP,
+                grossProfit,
+                grossMarginPct: Number(grossMarginPct.toFixed(1)),
+                expenses: totalExpenses,
+                netProfit,
+                netMarginPct: Number(netMarginPct.toFixed(1)),
+                expenseByCategory
+            },
+            purchases: {
+                total: netPurchases,
+                subtotal: netPurchasesSubtotal,
+                count: purchases.length
+            },
+            salesByTeam: { BC: salesBC, PF: salesPF, Other: salesOther },
+            arAging,
+            apAging,
+            topBuyers,
+            topSuppliers,
+            returnPurchaseSummary,
+            returnSalesSummary,
+            dailyBreakdown,
+            details: {
+                sales: salesDetail,
+                purchases: purchaseDetail,
+                operational: opsDetail
+            },
+            stats: {
+                salesCount: sales.length,
+                purchaseCount: purchases.length,
+                opsCount: allOperational.length,
+                totalSalesQty: sales.reduce((s: number, d: any) =>
+                    s + (d.items || []).reduce((q: number, i: any) => q + Number(i.quantity || 0), 0), 0),
+                totalPurchaseQty: purchases.reduce((s: number, d: any) =>
+                    s + (d.items || []).reduce((q: number, i: any) => q + Number(i.quantity || 0), 0), 0)
+            }
+        };
+    } catch (error: any) {
+        console.error('[getComprehensiveMonthlyReportService] ERROR:', error);
+        return { error: error.message || 'Failed to generate monthly report' };
+    }
+}
