@@ -583,6 +583,9 @@ function DailyReport({ data, isClient, fmtDate }: { data: any; isClient: boolean
                 )}
             </div>
 
+            {/* Staff Activity */}
+            <StaffActivitySection data={data} isClient={isClient} />
+
             {/* Empty State */}
             {!d.sales?.length && !d.purchases?.length && !d.operational?.length && (
                 <EmptyState message="Belum ada transaksi pada tanggal ini" />
@@ -777,6 +780,9 @@ function WeeklyReport({ data, isClient, fmtDate }: { data: any; isClient: boolea
                     </div>
                 </div>
             )}
+
+            {/* Staff Activity */}
+            <StaffActivitySection data={data} isClient={isClient} />
         </div>
     );
 }
@@ -1190,6 +1196,9 @@ function MonthlyReport({ data, isClient, fmtDate }: { data: any; isClient: boole
                     isClient={isClient}
                 />
             )}
+
+            {/* Staff Activity */}
+            <StaffActivitySection data={data} isClient={isClient} />
         </div>
     );
 }
@@ -1322,6 +1331,91 @@ function EmptyState({ message }: { message: string }) {
         <div className="erp-card p-12 text-center">
             <Package className="h-10 w-10 text-slate-200 mx-auto mb-4" />
             <p className="text-sm font-black text-slate-400 uppercase tracking-widest">{message}</p>
+        </div>
+    );
+}
+
+function StaffActivitySection({ data, isClient }: { data: any, isClient: boolean }) {
+    const finance = data.staffActivity?.finance || [];
+    const warehouse = data.staffActivity?.warehouse || [];
+
+    if (finance.length === 0 && warehouse.length === 0) return null;
+
+    return (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Finance Staff Work Summary */}
+            <div className="erp-card p-6">
+                <div className="flex items-center gap-2 mb-4">
+                    <Wallet className="h-4 w-4 text-amber-500" />
+                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Kinerja Pekerjaan Keuangan (Finance)</h3>
+                </div>
+                {finance.length === 0 ? (
+                    <p className="text-xs text-slate-400 font-bold uppercase tracking-wider text-center py-6">Tidak ada aktivitas keuangan dalam periode ini</p>
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs table-fixed min-w-[350px]">
+                            <thead className="text-[9px] font-black uppercase tracking-widest text-slate-500 bg-slate-50 border-b">
+                                <tr>
+                                    <th className="px-3 py-2 w-1/3">Staf Finance</th>
+                                    <th className="px-3 py-2 text-center w-1/6">Transaksi</th>
+                                    <th className="px-3 py-2 text-right w-1/4">Kas Keluar</th>
+                                    <th className="px-3 py-2 text-right w-1/4">Kas Masuk</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y text-slate-600">
+                                {finance.map((f: any, idx: number) => (
+                                    <tr key={idx} className="hover:bg-slate-50/50">
+                                        <td className="px-3 py-2.5 font-bold text-slate-900 truncate">{f.name}</td>
+                                        <td className="px-3 py-2.5 text-center tabular-nums font-bold">{f.count}</td>
+                                        <td className="px-3 py-2.5 text-right tabular-nums text-rose-600 font-black">
+                                            {isClient ? formatCurrency(f.paymentAmount) : '...'}
+                                        </td>
+                                        <td className="px-3 py-2.5 text-right tabular-nums text-emerald-600 font-black">
+                                            {isClient ? formatCurrency(f.receiptAmount) : '...'}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </div>
+
+            {/* Warehouse Staff Work Summary */}
+            <div className="erp-card p-6">
+                <div className="flex items-center gap-2 mb-4">
+                    <Package className="h-4 w-4 text-purple-500" />
+                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Kinerja Pekerjaan Gudang (Warehouse)</h3>
+                </div>
+                {warehouse.length === 0 ? (
+                    <p className="text-xs text-slate-400 font-bold uppercase tracking-wider text-center py-6">Tidak ada aktivitas penerimaan barang gudang</p>
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs table-fixed min-w-[350px]">
+                            <thead className="text-[9px] font-black uppercase tracking-widest text-slate-500 bg-slate-50 border-b">
+                                <tr>
+                                    <th className="px-3 py-2 w-1/3">Staf Warehouse</th>
+                                    <th className="px-3 py-2 text-center w-1/5">LPB Dibuat</th>
+                                    <th className="px-3 py-2 text-center w-1/5">LPB Verifikasi</th>
+                                    <th className="px-3 py-2 text-right w-1/4">Barang Masuk</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y text-slate-600">
+                                {warehouse.map((w: any, idx: number) => (
+                                    <tr key={idx} className="hover:bg-slate-50/50">
+                                        <td className="px-3 py-2.5 font-bold text-slate-900 truncate">{w.name}</td>
+                                        <td className="px-3 py-2.5 text-center tabular-nums">{w.createdCount}</td>
+                                        <td className="px-3 py-2.5 text-center tabular-nums font-bold text-emerald-600">{w.verifiedCount}</td>
+                                        <td className="px-3 py-2.5 text-right tabular-nums font-black truncate">
+                                            {w.totalQtyReceived.toLocaleString("id-ID")} unit
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </div>
         </div>
     );
 }

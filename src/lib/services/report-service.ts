@@ -846,8 +846,48 @@ export async function getComprehensiveDailyReportService(date?: string) {
         const grossProfit = totalSales - estimatedHPP;
         const netProfit = grossProfit - totalExpense;
 
+        // Calculate staff activity
+        const financeActivity = new Map<string, { name: string, count: number, paymentAmount: number, receiptAmount: number }>();
+        for (const o of operational) {
+            const userName = o.createdBy?.name || o.createdBy?.email || 'System';
+            if (!financeActivity.has(userName)) {
+                financeActivity.set(userName, { name: userName, count: 0, paymentAmount: 0, receiptAmount: 0 });
+            }
+            const act = financeActivity.get(userName)!;
+            act.count++;
+            if (o.transactionType === 'PAYMENT' || Number(o.amount) < 0) {
+                act.paymentAmount += Math.abs(Number(o.amount || 0));
+            } else {
+                act.receiptAmount += Math.abs(Number(o.amount || 0));
+            }
+        }
+
+        const warehouseActivity = new Map<string, { name: string, createdCount: number, verifiedCount: number, totalQtyReceived: number }>();
+        for (const p of purchases) {
+            const creatorName = p.createdBy?.name || p.createdBy?.email || 'System';
+            if (!warehouseActivity.has(creatorName)) {
+                warehouseActivity.set(creatorName, { name: creatorName, createdCount: 0, verifiedCount: 0, totalQtyReceived: 0 });
+            }
+            warehouseActivity.get(creatorName)!.createdCount++;
+        }
+        for (const p of purchases) {
+            if (p.isVerified && p.verifiedBy) {
+                const verifierName = p.verifiedBy;
+                if (!warehouseActivity.has(verifierName)) {
+                    warehouseActivity.set(verifierName, { name: verifierName, createdCount: 0, verifiedCount: 0, totalQtyReceived: 0 });
+                }
+                const act = warehouseActivity.get(verifierName)!;
+                act.verifiedCount++;
+                act.totalQtyReceived += (p.items || []).reduce((sum: number, item: any) => sum + Number(item.quantity || 0), 0);
+            }
+        }
+
         return {
             date: dayStart.toISOString(),
+            staffActivity: {
+                finance: Array.from(financeActivity.values()),
+                warehouse: Array.from(warehouseActivity.values())
+            },
             summary: {
                 totalSales, totalPurchases, totalIncome, totalExpense,
                 totalSalesQty, totalPurchaseQty,
@@ -952,12 +992,14 @@ export async function getComprehensiveWeeklyReportService(weekStartDate?: string
             (prisma as any).goodsReceipt.findMany({
                 where: { isVoid: false, date: { gte: startDate, lte: endDate } },
                 include: {
+                    createdBy: { select: { name: true } },
                     items: { select: { quantity: true, purchasePrice: true } }
                 },
                 orderBy: { date: 'asc' }
             }),
             (prisma as any).financeTransaction.findMany({
                 where: { date: { gte: startDate, lte: endDate } },
+                include: { createdBy: { select: { name: true } } },
                 orderBy: { date: 'asc' }
             }),
             (prisma as any).stockMovement.findMany({
@@ -1060,7 +1102,47 @@ export async function getComprehensiveWeeklyReportService(weekStartDate?: string
             else salesOther += v;
         });
 
+        // Calculate staff activity
+        const financeActivity = new Map<string, { name: string, count: number, paymentAmount: number, receiptAmount: number }>();
+        for (const o of operational) {
+            const userName = o.createdBy?.name || o.createdBy?.email || 'System';
+            if (!financeActivity.has(userName)) {
+                financeActivity.set(userName, { name: userName, count: 0, paymentAmount: 0, receiptAmount: 0 });
+            }
+            const act = financeActivity.get(userName)!;
+            act.count++;
+            if (o.transactionType === 'PAYMENT' || Number(o.amount) < 0) {
+                act.paymentAmount += Math.abs(Number(o.amount || 0));
+            } else {
+                act.receiptAmount += Math.abs(Number(o.amount || 0));
+            }
+        }
+
+        const warehouseActivity = new Map<string, { name: string, createdCount: number, verifiedCount: number, totalQtyReceived: number }>();
+        for (const p of purchases) {
+            const creatorName = p.createdBy?.name || p.createdBy?.email || 'System';
+            if (!warehouseActivity.has(creatorName)) {
+                warehouseActivity.set(creatorName, { name: creatorName, createdCount: 0, verifiedCount: 0, totalQtyReceived: 0 });
+            }
+            warehouseActivity.get(creatorName)!.createdCount++;
+        }
+        for (const p of purchases) {
+            if (p.isVerified && p.verifiedBy) {
+                const verifierName = p.verifiedBy;
+                if (!warehouseActivity.has(verifierName)) {
+                    warehouseActivity.set(verifierName, { name: verifierName, createdCount: 0, verifiedCount: 0, totalQtyReceived: 0 });
+                }
+                const act = warehouseActivity.get(verifierName)!;
+                act.verifiedCount++;
+                act.totalQtyReceived += (p.items || []).reduce((sum: number, item: any) => sum + Number(item.quantity || 0), 0);
+            }
+        }
+
         return {
+            staffActivity: {
+                finance: Array.from(financeActivity.values()),
+                warehouse: Array.from(warehouseActivity.values())
+            },
             period: {
                 start: startDate.toISOString(),
                 end: endDate.toISOString(),
@@ -1123,11 +1205,16 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
             // Purchases
             (prisma as any).goodsReceipt.findMany({
                 where: { isVoid: false, date: { gte: startDate, lte: endDate } },
+                include: {
+                    createdBy: { select: { name: true } },
+                    items: { select: { quantity: true } }
+                },
                 orderBy: { date: 'asc' }
             }),
             // All Finance Transactions
             (prisma as any).financeTransaction.findMany({
                 where: { date: { gte: startDate, lte: endDate } },
+                include: { createdBy: { select: { name: true } } },
                 orderBy: { date: 'asc' }
             }),
             // AR — unpaid sales deliveries up to end of month
@@ -1378,7 +1465,47 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
         const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
             'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 
+        // Calculate staff activity
+        const financeActivity = new Map<string, { name: string, count: number, paymentAmount: number, receiptAmount: number }>();
+        for (const o of allOperational) {
+            const userName = o.createdBy?.name || o.createdBy?.email || 'System';
+            if (!financeActivity.has(userName)) {
+                financeActivity.set(userName, { name: userName, count: 0, paymentAmount: 0, receiptAmount: 0 });
+            }
+            const act = financeActivity.get(userName)!;
+            act.count++;
+            if (o.transactionType === 'PAYMENT' || Number(o.amount) < 0) {
+                act.paymentAmount += Math.abs(Number(o.amount || 0));
+            } else {
+                act.receiptAmount += Math.abs(Number(o.amount || 0));
+            }
+        }
+
+        const warehouseActivity = new Map<string, { name: string, createdCount: number, verifiedCount: number, totalQtyReceived: number }>();
+        for (const p of purchases) {
+            const creatorName = p.createdBy?.name || p.createdBy?.email || 'System';
+            if (!warehouseActivity.has(creatorName)) {
+                warehouseActivity.set(creatorName, { name: creatorName, createdCount: 0, verifiedCount: 0, totalQtyReceived: 0 });
+            }
+            warehouseActivity.get(creatorName)!.createdCount++;
+        }
+        for (const p of purchases) {
+            if (p.isVerified && p.verifiedBy) {
+                const verifierName = p.verifiedBy;
+                if (!warehouseActivity.has(verifierName)) {
+                    warehouseActivity.set(verifierName, { name: verifierName, createdCount: 0, verifiedCount: 0, totalQtyReceived: 0 });
+                }
+                const act = warehouseActivity.get(verifierName)!;
+                act.verifiedCount++;
+                act.totalQtyReceived += (p.items || []).reduce((sum: number, item: any) => sum + Number(item.quantity || 0), 0);
+            }
+        }
+
         return {
+            staffActivity: {
+                finance: Array.from(financeActivity.values()),
+                warehouse: Array.from(warehouseActivity.values())
+            },
             period: {
                 month: filterMonth, year: filterYear,
                 label: `${monthNames[filterMonth - 1]} ${filterYear}`
