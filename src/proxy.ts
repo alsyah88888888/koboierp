@@ -57,6 +57,9 @@ export async function callAction(actionName: string, ...args: any[]) {
         case "lookupSalesReference":
             const { lookupSalesReferenceAction } = await import("@/actions/finance");
             return await lookupSalesReferenceAction(...args as [string]);
+        case "getRecentSalesReferences":
+            const { getRecentSalesReferencesAction } = await import("@/actions/finance");
+            return await getRecentSalesReferencesAction();
         case "updatePaymentStatus":
             const { updatePaymentStatusAction } = await import("@/actions/finance");
             return await updatePaymentStatusAction(...args as [any, any, any, any, any]);

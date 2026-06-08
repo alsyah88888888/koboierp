@@ -36,6 +36,27 @@ export function OperationalModal({ isOpen, onClose, coa }: OperationalModalProps
     } | null>(null);
     const [searchingRef, setSearchingRef] = useState(false);
 
+    const [salesRefs, setSalesRefs] = useState<any[]>([]);
+    const [isRefDropdownOpen, setIsRefDropdownOpen] = useState(false);
+    const [refSearch, setRefSearch] = useState("");
+
+    useEffect(() => {
+        if (!isOpen) return;
+
+        const loadSalesRefs = async () => {
+            try {
+                const res = await callAction("getRecentSalesReferences");
+                if (Array.isArray(res)) {
+                    setSalesRefs(res);
+                }
+            } catch (err) {
+                console.error("Error loading sales references:", err);
+            }
+        };
+
+        loadSalesRefs();
+    }, [isOpen]);
+
     useEffect(() => {
         if (!formData.referenceNumber) {
             setDetectedSale(null);
@@ -103,6 +124,15 @@ export function OperationalModal({ isOpen, onClose, coa }: OperationalModalProps
             setLoading(false);
         }
     };
+
+    const filteredRefs = salesRefs.filter(ref => {
+        const term = refSearch.toLowerCase();
+        return (
+            ref.invoiceNumber.toLowerCase().includes(term) ||
+            (ref.buyerName || "").toLowerCase().includes(term) ||
+            (ref.salesPerson || "").toLowerCase().includes(term)
+        );
+    });
 
     return (
         <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -273,16 +303,71 @@ export function OperationalModal({ isOpen, onClose, coa }: OperationalModalProps
                                     <option value="PF">Sales PF</option>
                                 </select>
                             </div>
-                            <div className="space-y-2">
+                            <div className="space-y-2 relative">
                                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">No. Invoice / SJ</label>
-                                <input
-                                    type="text"
-                                    placeholder="No. Invoice / SJ"
-                                    className="w-full bg-accent/50 border-none rounded-xl py-2 px-3 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all"
-                                    value={formData.invoiceNumber}
-                                    onChange={(e) => setFormData({ ...formData, invoiceNumber: e.target.value })}
-                                    required
-                                />
+                                <div className="relative">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsRefDropdownOpen(!isRefDropdownOpen)}
+                                        className="w-full text-left bg-accent/50 border-none rounded-xl py-2 px-3 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all flex justify-between items-center cursor-pointer min-h-[38px]"
+                                    >
+                                        <span className="truncate">
+                                            {formData.invoiceNumber || "Pilih Invoice / SJ..."}
+                                        </span>
+                                        <span className="text-[8px] text-slate-400">▼</span>
+                                    </button>
+
+                                    {isRefDropdownOpen && (
+                                        <>
+                                            <div 
+                                                className="fixed inset-0 z-40 cursor-default" 
+                                                onClick={() => setIsRefDropdownOpen(false)}
+                                            />
+                                            <div className="absolute right-0 left-0 mt-1 bg-card border border-slate-200 shadow-2xl rounded-2xl p-2 z-50 max-h-60 overflow-y-auto space-y-2 animate-in fade-in slide-in-from-top-1 duration-150">
+                                                <input
+                                                    type="text"
+                                                    placeholder="Cari Invoice/SJ..."
+                                                    className="w-full bg-slate-50 border border-slate-100 rounded-lg py-1.5 px-2.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                                    value={refSearch}
+                                                    onChange={(e) => setRefSearch(e.target.value)}
+                                                    onClick={(e) => e.stopPropagation()} // prevent closing
+                                                />
+                                                <div className="space-y-1 max-h-48 overflow-y-auto">
+                                                    {filteredRefs.length === 0 ? (
+                                                        <div className="p-3 text-[10px] font-bold text-slate-400 text-center uppercase tracking-wider">
+                                                            Data tidak ditemukan
+                                                        </div>
+                                                    ) : (
+                                                        filteredRefs.map((ref) => (
+                                                            <button
+                                                                key={ref.invoiceNumber}
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setFormData(prev => ({
+                                                                        ...prev,
+                                                                        invoiceNumber: ref.invoiceNumber,
+                                                                        salesPerson: ref.salesPerson || prev.salesPerson,
+                                                                        referenceNumber: ref.invoiceNumber
+                                                                    }));
+                                                                    setIsRefDropdownOpen(false);
+                                                                    setRefSearch("");
+                                                                }}
+                                                                className="w-full text-left p-2 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer flex flex-col gap-0.5"
+                                                            >
+                                                                <span className="text-xs font-bold text-slate-800 tracking-tight">
+                                                                    {ref.invoiceNumber}
+                                                                </span>
+                                                                <span className="text-[10px] font-medium text-slate-500 leading-none">
+                                                                    {ref.buyerName || "No Customer"} • Sales: {ref.salesPerson || "No Sales"} • Rp {ref.grandTotal.toLocaleString("id-ID")}
+                                                                </span>
+                                                            </button>
+                                                        ))
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     )}

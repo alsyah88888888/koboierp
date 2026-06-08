@@ -258,3 +258,100 @@ export async function lookupSalesReferenceAction(referenceNumber: string) {
 
     return { success: false, message: "No matching sales reference found" };
 }
+
+export async function getRecentSalesReferencesAction() {
+    const { getAuthOptions } = require("@/lib/auth");
+    const { getServerSession } = require("next-auth");
+    const { getPrisma } = require("@/lib/prisma");
+    const prisma = getPrisma();
+
+    const session = (await getServerSession(getAuthOptions())) as any;
+    if (!session?.user?.id) throw new Error("Unauthorized");
+
+    // Fetch recent sales deliveries
+    const deliveries = await prisma.salesDelivery.findMany({
+        where: { isVoid: false },
+        orderBy: { date: 'desc' },
+        take: 100,
+        select: {
+            deliveryNumber: true,
+            invoiceNumber: true,
+            salesPerson: true,
+            buyerName: true,
+            grandTotal: true,
+            date: true
+        }
+    });
+
+    // Fetch recent sales orders
+    const orders = await prisma.salesOrder.findMany({
+        orderBy: { date: 'desc' },
+        take: 100,
+        select: {
+            orderNumber: true,
+            invoiceNumber: true,
+            salesPerson: true,
+            buyerName: true,
+            grandTotal: true,
+            date: true
+        }
+    });
+
+    // Map and consolidate
+    const itemsMap = new Map<string, {
+        invoiceNumber: string;
+        salesPerson: string;
+        buyerName: string;
+        grandTotal: number;
+        date: string;
+        type: 'DELIVERY' | 'ORDER';
+        label: string;
+    }>();
+
+    // Add deliveries first
+    for (const d of deliveries) {
+        const key = d.invoiceNumber || d.deliveryNumber;
+        if (!key) continue;
+        
+        const sjPart = d.deliveryNumber ? ` (${d.deliveryNumber})` : "";
+        const label = `${key}${sjPart} - ${d.buyerName || "No Buyer"} [${d.salesPerson || "No Sales"}]`;
+
+        if (!itemsMap.has(key)) {
+            itemsMap.set(key, {
+                invoiceNumber: key,
+                salesPerson: d.salesPerson || "",
+                buyerName: d.buyerName || "",
+                grandTotal: Number(d.grandTotal || 0),
+                date: d.date.toISOString(),
+                type: 'DELIVERY',
+                label
+            });
+        }
+    }
+
+    // Add orders
+    for (const o of orders) {
+        const key = o.invoiceNumber || o.orderNumber;
+        if (!key) continue;
+
+        if (itemsMap.has(key)) continue;
+
+        const soPart = o.orderNumber ? ` (${o.orderNumber})` : "";
+        const label = `${key}${soPart} - ${o.buyerName || "No Buyer"} [${o.salesPerson || "No Sales"}]`;
+
+        itemsMap.set(key, {
+            invoiceNumber: key,
+            salesPerson: o.salesPerson || "",
+            buyerName: o.buyerName || "",
+            grandTotal: Number(o.grandTotal || 0),
+            date: o.date.toISOString(),
+            type: 'ORDER',
+            label
+        });
+    }
+
+    // Convert map to array and sort by date desc
+    const sortedList = Array.from(itemsMap.values()).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    return sortedList;
+}
