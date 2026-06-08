@@ -97,7 +97,10 @@ export function OperationalModal({ isOpen, onClose, coa }: OperationalModalProps
 
     // Filter COA for Expense and Bank accounts
     const expenseAccounts = Array.isArray(coa) ? coa.filter(a => a.type === "EXPENSE" || a.type === "REVENUE") : [];
-    const bankAccounts = Array.isArray(coa) ? coa.filter(a => a.code.startsWith("101") || a.code.startsWith("102")) : [];
+    const bankAccounts = Array.isArray(coa) ? coa.filter(a => 
+        a.type === "ASSET" && 
+        ["101", "102", "103", "106", "107", "108", "109", "110"].some(prefix => a.code.startsWith(prefix))
+    ).sort((a, b) => a.code.localeCompare(b.code)) : [];
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -260,9 +263,11 @@ export function OperationalModal({ isOpen, onClose, coa }: OperationalModalProps
                             }}
                             required
                         >
-                            <option value="">Pilih Rekening...</option>
+                            <option value="">-- PILIH REKENING / KAS --</option>
                             {Array.isArray(bankAccounts) && bankAccounts.map(acc => (
-                                <option key={acc.id} value={acc.id}>[{acc.code}] {acc.name}</option>
+                                <option key={acc.id} value={acc.id}>
+                                    {acc.name.toUpperCase()} ({acc.code})
+                                </option>
                             ))}
                         </select>
                     </div>
