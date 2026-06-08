@@ -314,14 +314,16 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                 </div>
                                 {/* DESKTOP TABLE VIEW */}
                                 <div className="hidden lg:block overflow-auto max-h-[calc(100vh-450px)] min-h-[400px] custom-scrollbar border-b-2 border-slate-50">
-                                    <table className="w-full text-sm text-left min-w-[1000px] table-fixed relative">
+                                    <table className="w-full text-sm text-left min-w-[1200px] table-fixed relative">
                                         <thead className="bg-slate-50 text-slate-500 border-b-2 border-slate-100 sticky top-0 z-20 shadow-sm">
                                             <tr>
-                                                <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest w-72">Barang / SKU</th>
-                                                <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest text-left w-48">Gudang</th>
-                                                <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest text-left">Vendor / Pemasok</th>
-                                                <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest text-right w-40">Qty Tersedia</th>
-                                                <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest text-right w-32">Status</th>
+                                                <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest w-64">Barang / SKU</th>
+                                                <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest text-left w-40">Gudang</th>
+                                                <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest text-left w-48">Vendor / Pemasok</th>
+                                                <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest text-right w-36">Qty Tersedia</th>
+                                                <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest text-right w-36">HPP per Unit</th>
+                                                <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest text-right w-36">Total Nilai HPP</th>
+                                                <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest text-right w-28">Status</th>
                                                 {isAdmin && <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest text-center w-20">Aksi</th>}
                                             </tr>
                                         </thead>
@@ -349,6 +351,12 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                                                 </td>
                                                                 <td className="px-6 py-4 text-right">
                                                                     <div className="text-lg font-black text-slate-800">{isClient ? (s.quantity || 0).toLocaleString() : "..."} <span className="text-[10px] text-slate-400 font-bold uppercase">{p.uom}</span></div>
+                                                                </td>
+                                                                <td className="px-6 py-4 text-right font-bold text-slate-600 text-xs">
+                                                                    {formatCurrency(Number(p.purchasePrice || 0))}
+                                                                </td>
+                                                                <td className="px-6 py-4 text-right font-black text-slate-800 text-xs">
+                                                                    {formatCurrency(Number(p.purchasePrice || 0) * (s.quantity || 0))}
                                                                 </td>
                                                                 <td className="px-6 py-4 text-right">
                                                                     <span className={cn(
@@ -403,6 +411,12 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                                             <td className="px-6 py-4 text-right">
                                                                 <div className="text-lg font-black text-slate-400">0 <span className="text-[10px] text-slate-300 font-bold uppercase">{p.uom}</span></div>
                                                             </td>
+                                                            <td className="px-6 py-4 text-right font-bold text-slate-400 text-xs">
+                                                                {formatCurrency(Number(p.purchasePrice || 0))}
+                                                            </td>
+                                                            <td className="px-6 py-4 text-right font-black text-slate-400 text-xs">
+                                                                Rp 0
+                                                            </td>
                                                             <td className="px-6 py-4 text-right">
                                                                 <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter bg-slate-100 text-slate-400">Empty</span>
                                                             </td>
@@ -456,6 +470,16 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                                                 <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1 text-right">Gudang</div>
                                                                 <div className="text-[11px] font-bold text-slate-700 truncate text-right">{whName}</div>
                                                             </div>
+                                                            <div className="border-t border-slate-100 pt-2 col-span-2 flex justify-between text-[11px]">
+                                                                <div>
+                                                                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-0.5">HPP per Unit</span>
+                                                                    <span className="font-bold text-slate-700">{formatCurrency(Number(p.purchasePrice || 0))}</span>
+                                                                </div>
+                                                                <div className="text-right">
+                                                                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-0.5">Total Nilai HPP</span>
+                                                                    <span className="font-bold text-slate-900">{formatCurrency(Number(p.purchasePrice || 0) * (s.quantity || 0))}</span>
+                                                                </div>
+                                                            </div>
                                                         </div>
 
                                                         <div className="flex items-end justify-between pt-1">
@@ -501,10 +525,13 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                                         <div className="font-bold text-slate-800 text-sm">{p.name}</div>
                                                         <div className="text-[10px] font-mono text-slate-400 uppercase">{p.sku}</div>
                                                     </div>
-                                                    <div className="flex justify-between items-center bg-slate-50 p-2 rounded-xl border border-dashed border-slate-200">
-                                                        <span className="text-[10px] font-bold text-slate-400 uppercase">Empty Stock</span>
-                                                        <div className="text-sm font-black text-slate-400">0 {p.uom}</div>
-                                                    </div>
+                                                     <div className="flex justify-between items-center bg-slate-50 p-2 rounded-xl border border-dashed border-slate-200 text-xs">
+                                                         <div>
+                                                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Empty Stock</span>
+                                                             <span className="text-[10px] text-slate-400">HPP: {formatCurrency(Number(p.purchasePrice || 0))}</span>
+                                                         </div>
+                                                         <div className="text-sm font-black text-slate-400">0 {p.uom}</div>
+                                                     </div>
                                                 </div>
                                             );
                                         }

@@ -6,7 +6,7 @@ import { format } from "date-fns";
 import { callAction } from "@/proxy";
 
 import { useSession } from "next-auth/react";
-import { cn } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
 
 export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[] }) {
     const { data: session } = useSession() as any;
@@ -168,8 +168,21 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
                         </div>
                         <div>
                             <h3 className="text-xl font-black text-slate-900 tracking-tight">Verifikasi Fisik</h3>
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">
-                                {selectedReceipt?.receiptNumber || "N/A"} • {selectedReceipt?.warehouse?.name || "Unknown Warehouse"}
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1 flex items-center gap-2 flex-wrap">
+                                <span>{selectedReceipt?.receiptNumber || "N/A"}</span>
+                                {selectedReceipt?.salesPerson && (
+                                    <span className={cn(
+                                        "text-[9px] font-black px-1.5 py-0.5 rounded border uppercase tracking-widest leading-none",
+                                        selectedReceipt.salesPerson === "BC" 
+                                            ? "bg-indigo-50 text-indigo-700 border-indigo-100" 
+                                            : selectedReceipt.salesPerson === "PF" 
+                                            ? "bg-amber-50 text-amber-700 border-amber-100" 
+                                            : "bg-slate-50 text-slate-600 border-slate-200"
+                                    )}>
+                                        {selectedReceipt.salesPerson}
+                                    </span>
+                                )}
+                                <span>• {selectedReceipt?.warehouse?.name || "Unknown Warehouse"}</span>
                             </p>
                         </div>
                     </div>
@@ -251,6 +264,7 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
                             <thead className="bg-slate-50 text-slate-500 font-bold uppercase text-[10px] tracking-widest border-b-2">
                                 <tr>
                                     <th className="px-6 py-4">Nama Barang (SKU)</th>
+                                    <th className="px-6 py-4 text-right">Harga Beli (HPP)</th>
                                     <th className="px-6 py-4 text-right">Target</th>
                                     <th className="px-6 py-4 text-right">Checked</th>
                                     <th className="px-6 py-4 text-center">Status</th>
@@ -273,6 +287,9 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
                                             <td className="px-6 py-4">
                                                 <div className="font-black text-slate-800">{item.product?.name || "Unknown Product"}</div>
                                                 <div className="text-[10px] font-mono text-slate-400 uppercase tracking-tighter mt-1">{item.product?.sku || "-"}</div>
+                                            </td>
+                                            <td className="px-6 py-4 text-right font-bold text-slate-600 text-xs">
+                                                {formatCurrency(Number(item.purchasePrice || 0))}
                                             </td>
                                             <td className="px-6 py-4 text-right font-black text-slate-400">
                                                 {item.quantity}
@@ -399,7 +416,11 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
                                                         </div>
                                                         <div className="min-w-0">
                                                             <div className="font-black text-slate-800 text-sm truncate">{item.product?.name || "Unknown"}</div>
-                                                            <div className="text-[10px] font-mono text-slate-400 uppercase tracking-widest">{item.product?.sku || "-"}</div>
+                                                            <div className="text-[10px] font-mono text-slate-400 uppercase tracking-widest flex flex-wrap items-center gap-2 mt-0.5">
+                                                                <span>{item.product?.sku || "-"}</span>
+                                                                <span className="text-slate-300">•</span>
+                                                                <span className="text-primary font-bold">HPP: {formatCurrency(Number(item.purchasePrice || 0))}</span>
+                                                            </div>
                                                         </div>
                                                     </div>
 
@@ -602,7 +623,21 @@ export function CheckerBoard({ unverifiedReceipts }: { unverifiedReceipts: any[]
                     {displayReceipts.map((r) => (
                         <div key={r.id} className="p-4 rounded-xl border bg-card hover:border-primary transition-all group shadow-sm">
                             <div className="flex justify-between items-start mb-2">
-                                <span className="font-mono text-primary font-bold">{r.receiptNumber}</span>
+                                <div className="flex items-center gap-2">
+                                    <span className="font-mono text-primary font-bold">{r.receiptNumber}</span>
+                                    {r.salesPerson && (
+                                        <span className={cn(
+                                            "text-[9px] font-black px-1.5 py-0.5 rounded border uppercase tracking-widest leading-none",
+                                            r.salesPerson === "BC" 
+                                                ? "bg-indigo-50 text-indigo-700 border-indigo-100" 
+                                                : r.salesPerson === "PF" 
+                                                ? "bg-amber-50 text-amber-700 border-amber-100" 
+                                                : "bg-slate-50 text-slate-600 border-slate-200"
+                                        )}>
+                                            {r.salesPerson}
+                                        </span>
+                                    )}
+                                </div>
                                 <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-bold uppercase tracking-tighter">Pending</span>
                             </div>
                             <p className="text-sm font-bold truncate mb-1">{r.receivedFrom}</p>

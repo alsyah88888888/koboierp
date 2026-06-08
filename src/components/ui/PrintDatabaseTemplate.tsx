@@ -9,6 +9,7 @@ interface Product {
     name: string;
     uom: string;
     barcode?: string;
+    purchasePrice?: any;
 }
 
 export function PrintDatabaseTemplate({ products }: { products: Product[] }) {
@@ -34,6 +35,7 @@ export function PrintDatabaseTemplate({ products }: { products: Product[] }) {
                         <th className="border-2 border-slate-800 px-4 py-3 text-left w-40">Kategori</th>
                         <th className="border-2 border-slate-800 px-4 py-3 text-left">Nama Barang</th>
                         <th className="border-2 border-slate-800 px-4 py-3 text-center w-24">Satuan</th>
+                        <th className="border-2 border-slate-800 px-4 py-3 text-right w-32">Harga (HPP)</th>
                         <th className="border-2 border-slate-800 px-4 py-3 text-left w-40">Barcode</th>
                     </tr>
                 </thead>
@@ -44,6 +46,9 @@ export function PrintDatabaseTemplate({ products }: { products: Product[] }) {
                             <td className="border-2 border-slate-200 px-4 py-2 text-[10px] font-black uppercase text-slate-600">{p.category || "UMUM"}</td>
                             <td className="border-2 border-slate-200 px-4 py-2 text-sm font-bold text-slate-900">{p.name}</td>
                             <td className="border-2 border-slate-200 px-4 py-2 text-center text-[10px] font-black uppercase text-slate-500">{p.uom}</td>
+                            <td className="border-2 border-slate-200 px-4 py-2 text-right text-xs font-bold text-slate-700">
+                                {p.purchasePrice ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(Number(p.purchasePrice)) : "-"}
+                            </td>
                             <td className="border-2 border-slate-200 px-4 py-2 font-mono text-[10px] text-slate-400">{p.barcode || "-"}</td>
                         </tr>
                     ))}
