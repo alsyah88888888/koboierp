@@ -256,6 +256,43 @@ export async function createFinanceTransactionService(data: any, userId: string)
             txDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds());
         }
 
+        let salesPerson = data.salesPerson || null;
+        let invoiceNumber = data.invoiceNumber || null;
+
+        if (data.referenceNumber && !invoiceNumber) {
+            const cleanedRef = data.referenceNumber.trim();
+            // Search in SalesDelivery
+            const delivery = await tx.salesDelivery.findFirst({
+                where: {
+                    OR: [
+                        { deliveryNumber: { equals: cleanedRef, mode: 'insensitive' } },
+                        { invoiceNumber: { equals: cleanedRef, mode: 'insensitive' } }
+                    ],
+                    isVoid: false
+                },
+                select: { salesPerson: true, invoiceNumber: true, deliveryNumber: true }
+            });
+            if (delivery) {
+                salesPerson = delivery.salesPerson || null;
+                invoiceNumber = delivery.invoiceNumber || delivery.deliveryNumber;
+            } else {
+                // Search in SalesOrder
+                const order = await tx.salesOrder.findFirst({
+                    where: {
+                        OR: [
+                            { orderNumber: { equals: cleanedRef, mode: 'insensitive' } },
+                            { invoiceNumber: { equals: cleanedRef, mode: 'insensitive' } }
+                        ]
+                    },
+                    select: { salesPerson: true, invoiceNumber: true, orderNumber: true }
+                });
+                if (order) {
+                    salesPerson = order.salesPerson || null;
+                    invoiceNumber = order.invoiceNumber || order.orderNumber;
+                }
+            }
+        }
+
         const transaction = await tx.financeTransaction.create({
             data: {
                 transactionType: data.transactionType,
@@ -265,8 +302,8 @@ export async function createFinanceTransactionService(data: any, userId: string)
                 description: data.description,
                 amount: data.amount as any,
                 createdById: userId,
-                salesPerson: data.salesPerson,
-                invoiceNumber: data.invoiceNumber || null,
+                salesPerson: salesPerson,
+                invoiceNumber: invoiceNumber,
                 receiptNumber: data.receiptNumber || null
             }
         });

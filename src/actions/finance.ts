@@ -187,3 +187,74 @@ export async function getMonthlyClosingReportAction(month?: number, year?: numbe
     const { getMonthlyClosingReportService } = require("@/lib/services/report-service");
     return await getMonthlyClosingReportService(month, year, prefix);
 }
+
+export async function lookupSalesReferenceAction(referenceNumber: string) {
+    const { getAuthOptions } = require("@/lib/auth");
+    const { getServerSession } = require("next-auth");
+    const { getPrisma } = require("@/lib/prisma");
+    const prisma = getPrisma();
+
+    const session = (await getServerSession(getAuthOptions())) as any;
+    if (!session?.user?.id) throw new Error("Unauthorized");
+
+    if (!referenceNumber) {
+        return { success: false, message: "Reference number is empty" };
+    }
+
+    const cleanedRef = referenceNumber.trim();
+
+    // 1. Search in SalesDelivery (Delivery Number or Invoice Number)
+    const delivery = await prisma.salesDelivery.findFirst({
+        where: {
+            OR: [
+                { deliveryNumber: { equals: cleanedRef, mode: 'insensitive' } },
+                { invoiceNumber: { equals: cleanedRef, mode: 'insensitive' } }
+            ],
+            isVoid: false
+        },
+        select: {
+            salesPerson: true,
+            invoiceNumber: true,
+            deliveryNumber: true,
+            buyerName: true
+        }
+    });
+
+    if (delivery) {
+        return {
+            success: true,
+            type: "SALES",
+            salesPerson: delivery.salesPerson || "",
+            invoiceNumber: delivery.invoiceNumber || delivery.deliveryNumber,
+            buyerName: delivery.buyerName
+        };
+    }
+
+    // 2. Search in SalesOrder (Order Number or Invoice Number)
+    const order = await prisma.salesOrder.findFirst({
+        where: {
+            OR: [
+                { orderNumber: { equals: cleanedRef, mode: 'insensitive' } },
+                { invoiceNumber: { equals: cleanedRef, mode: 'insensitive' } }
+            ]
+        },
+        select: {
+            salesPerson: true,
+            invoiceNumber: true,
+            orderNumber: true,
+            buyerName: true
+        }
+    });
+
+    if (order) {
+        return {
+            success: true,
+            type: "SALES",
+            salesPerson: order.salesPerson || "",
+            invoiceNumber: order.invoiceNumber || order.orderNumber,
+            buyerName: order.buyerName
+        };
+    }
+
+    return { success: false, message: "No matching sales reference found" };
+}

@@ -322,7 +322,10 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
                         { amount: { lt: 0 } }
                     ],
                     ...(isAll ? {} : { 
-                        description: { contains: prefix, mode: 'insensitive' }
+                        OR: [
+                            { description: { contains: prefix, mode: 'insensitive' } },
+                            { salesPerson: prefix }
+                        ]
                     })
                 },
                 orderBy: { date: 'asc' }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X, Save, AlertCircle } from "lucide-react";
 import { callAction } from "@/proxy";
 
@@ -29,6 +29,48 @@ export function OperationalModal({ isOpen, onClose, coa }: OperationalModalProps
         receiptNumber: "", // Tautan nomor LPB
     });
     const [contextType, setContextType] = useState<"GENERAL" | "SALES" | "PURCHASE">("GENERAL");
+    const [detectedSale, setDetectedSale] = useState<{
+        salesPerson: string;
+        invoiceNumber: string;
+        buyerName: string;
+    } | null>(null);
+    const [searchingRef, setSearchingRef] = useState(false);
+
+    useEffect(() => {
+        if (!formData.referenceNumber) {
+            setDetectedSale(null);
+            return;
+        }
+
+        const delayDebounceFn = setTimeout(async () => {
+            setSearchingRef(true);
+            try {
+                const res = await callAction("lookupSalesReference", formData.referenceNumber);
+                if (res && res.success) {
+                    setDetectedSale({
+                        salesPerson: res.salesPerson || "",
+                        invoiceNumber: res.invoiceNumber || "",
+                        buyerName: res.buyerName || ""
+                    });
+                    setContextType("SALES");
+                    setFormData(prev => ({
+                        ...prev,
+                        salesPerson: res.salesPerson || "",
+                        invoiceNumber: res.invoiceNumber || ""
+                    }));
+                } else {
+                    setDetectedSale(null);
+                }
+            } catch (err) {
+                console.error("Error looking up reference:", err);
+                setDetectedSale(null);
+            } finally {
+                setSearchingRef(false);
+            }
+        }, 500);
+
+        return () => clearTimeout(delayDebounceFn);
+    }, [formData.referenceNumber]);
 
     if (!isOpen) return null;
 
@@ -145,6 +187,20 @@ export function OperationalModal({ isOpen, onClose, coa }: OperationalModalProps
                                 value={formData.referenceNumber}
                                 onChange={(e) => setFormData({ ...formData, referenceNumber: e.target.value })}
                             />
+                            {searchingRef && (
+                                <p className="text-[10px] text-slate-400 italic animate-pulse ml-1">Mencari referensi penjualan...</p>
+                            )}
+                            {detectedSale && (
+                                <div className="mt-1 p-2 bg-emerald-50 border border-emerald-100 rounded-xl flex flex-col gap-0.5 animate-in fade-in slide-in-from-top-1 duration-200">
+                                    <p className="text-[10px] text-emerald-700 font-black uppercase tracking-wider">
+                                        ✓ Referensi Penjualan Terdeteksi
+                                    </p>
+                                    <p className="text-[9px] text-emerald-600 font-bold leading-normal">
+                                        Sales: {detectedSale.salesPerson} | Invoice: {detectedSale.invoiceNumber} <br />
+                                        Buyer: {detectedSale.buyerName}
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     </div>
 
