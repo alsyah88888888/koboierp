@@ -6,7 +6,8 @@ import {
     Search,
     ArrowUpCircle,
     ArrowDownCircle,
-    MoreVertical,
+    Pencil,
+    Trash2,
     Calendar,
     Receipt,
     Wallet,
@@ -38,6 +39,7 @@ export function OperationalDashboard({
 }: OperationalDashboardProps) {
     const [searchTerm, setSearchTerm] = useState("");
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingTransaction, setEditingTransaction] = useState<any | null>(null);
     const [isClient, setIsClient] = useState(false);
 
     useEffect(() => {
@@ -317,11 +319,21 @@ export function OperationalDashboard({
                                     <td className="px-6 py-4 text-center">
                                         <div className="flex items-center justify-center gap-1">
                                             <button
+                                                onClick={() => {
+                                                    setEditingTransaction(t);
+                                                    setIsModalOpen(true);
+                                                }}
+                                                className="p-2 text-indigo-500 hover:bg-indigo-50 rounded-xl transition-all opacity-0 group-hover:opacity-100 cursor-pointer"
+                                                title="Edit"
+                                            >
+                                                <Pencil className="w-4 h-4" />
+                                            </button>
+                                            <button
                                                 onClick={() => handleDelete(t.id)}
-                                                className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl transition-all opacity-0 group-hover:opacity-100"
+                                                className="p-2 text-rose-500 hover:bg-rose-50 rounded-xl transition-all opacity-0 group-hover:opacity-100 cursor-pointer"
                                                 title="Hapus"
                                             >
-                                                <MoreVertical className="w-4 h-4" />
+                                                <Trash2 className="w-4 h-4" />
                                             </button>
                                         </div>
                                     </td>
@@ -344,8 +356,12 @@ export function OperationalDashboard({
 
             <OperationalModal
                 isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
+                onClose={() => {
+                    setIsModalOpen(false);
+                    setEditingTransaction(null);
+                }}
                 coa={coa}
+                transaction={editingTransaction || undefined}
             />
         </div>
     );

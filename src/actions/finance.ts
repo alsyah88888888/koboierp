@@ -355,3 +355,14 @@ export async function getRecentSalesReferencesAction() {
 
     return sortedList;
 }
+
+export async function updateFinanceTransactionAction(id: string, data: any) {
+    const { getAuthOptions } = require("@/lib/auth");
+    const { getServerSession } = require("next-auth");
+    const { updateFinanceTransactionService } = require("@/lib/services/finance-service");
+
+    const session = (await getServerSession(getAuthOptions())) as any;
+    if (!session?.user?.id) throw new Error("Unauthorized");
+
+    return await updateFinanceTransactionService(id, data, session.user.id);
+}

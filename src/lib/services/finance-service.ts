@@ -377,3 +377,174 @@ export async function createFinanceTransactionService(data: any, userId: string)
         return { success: true, transactionId: transaction.id };
     }, { timeout: 30000 });
 }
+
+export async function updateFinanceTransactionService(id: string, data: any, userId: string) {
+    const { getPrisma } = require("@/lib/prisma");
+    const prisma = getPrisma();
+
+    return await prisma.$transaction(async (tx: any) => {
+        // 1. Get old transaction
+        const oldTx = await tx.financeTransaction.findUnique({
+            where: { id },
+            select: { receiptNumber: true, amount: true, transactionType: true }
+        });
+
+        // 2. Revert old Landed Cost if linked to purchase
+        if (oldTx && oldTx.receiptNumber && oldTx.transactionType === "PAYMENT") {
+            const goodsReceipt = await tx.goodsReceipt.findUnique({
+                where: { receiptNumber: oldTx.receiptNumber },
+                include: { items: true }
+            });
+            if (goodsReceipt && goodsReceipt.items.length > 0) {
+                const totalQty = goodsReceipt.items.reduce((sum: number, item: any) => sum + item.quantity, 0);
+                if (totalQty > 0) {
+                    const extraCostPerUnit = Number(oldTx.amount) / totalQty;
+                    const lots = await tx.productLot.findMany({
+                        where: { grNumber: oldTx.receiptNumber }
+                    });
+                    for (const lot of lots) {
+                        const currentLandedCost = Number(lot.landedCost || lot.purchasePrice);
+                        await tx.productLot.update({
+                            where: { id: lot.id },
+                            data: {
+                                landedCost: Math.max(Number(lot.purchasePrice), currentLandedCost - extraCostPerUnit)
+                            }
+                        });
+                    }
+                }
+            }
+        }
+
+        // Determine date
+        const now = new Date();
+        const txDate = new Date(data.date);
+        if (txDate.toDateString() === now.toDateString()) {
+            txDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds());
+        }
+
+        let salesPerson = data.salesPerson || null;
+        let invoiceNumber = data.invoiceNumber || null;
+
+        if (data.referenceNumber && !invoiceNumber) {
+            const cleanedRef = data.referenceNumber.trim();
+            const delivery = await tx.salesDelivery.findFirst({
+                where: {
+                    OR: [
+                        { deliveryNumber: { equals: cleanedRef, mode: 'insensitive' } },
+                        { invoiceNumber: { equals: cleanedRef, mode: 'insensitive' } }
+                    ],
+                    isVoid: false
+                },
+                select: { salesPerson: true, invoiceNumber: true, deliveryNumber: true }
+            });
+            if (delivery) {
+                salesPerson = delivery.salesPerson || null;
+                invoiceNumber = delivery.invoiceNumber || delivery.deliveryNumber;
+            } else {
+                const order = await tx.salesOrder.findFirst({
+                    where: {
+                        OR: [
+                            { orderNumber: { equals: cleanedRef, mode: 'insensitive' } },
+                            { invoiceNumber: { equals: cleanedRef, mode: 'insensitive' } }
+                        ]
+                    },
+                    select: { salesPerson: true, invoiceNumber: true, orderNumber: true }
+                });
+                if (order) {
+                    salesPerson = order.salesPerson || null;
+                    invoiceNumber = order.invoiceNumber || order.orderNumber;
+                }
+            }
+        }
+
+        // 3. Update the FinanceTransaction
+        const transaction = await tx.financeTransaction.update({
+            where: { id },
+            data: {
+                transactionType: data.transactionType,
+                bank: data.bank,
+                date: txDate,
+                referenceNumber: data.referenceNumber,
+                description: data.description,
+                amount: data.amount as any,
+                salesPerson: salesPerson,
+                invoiceNumber: invoiceNumber,
+                receiptNumber: data.receiptNumber || null
+            }
+        });
+
+        // 4. Apply new Landed Cost if linked to a Purchase Goods Receipt
+        if (data.receiptNumber && data.transactionType === "PAYMENT") {
+            const goodsReceipt = await tx.goodsReceipt.findUnique({
+                where: { receiptNumber: data.receiptNumber },
+                include: { items: true }
+            });
+            if (goodsReceipt && goodsReceipt.items.length > 0) {
+                const totalQty = goodsReceipt.items.reduce((sum: number, item: any) => sum + item.quantity, 0);
+                if (totalQty > 0) {
+                    const extraCostPerUnit = Number(data.amount) / totalQty;
+                    const lots = await tx.productLot.findMany({
+                        where: { grNumber: data.receiptNumber }
+                    });
+                    for (const lot of lots) {
+                        const currentLandedCost = Number(lot.landedCost || lot.purchasePrice);
+                        await tx.productLot.update({
+                            where: { id: lot.id },
+                            data: {
+                                landedCost: currentLandedCost + extraCostPerUnit
+                            }
+                        });
+                    }
+                }
+            }
+        }
+
+        // 5. Delete old journal entries
+        await tx.journalEntry.deleteMany({
+            where: { transactionId: id }
+        });
+
+        // 6. Create new journal entries
+        const isPayment = data.transactionType === "PAYMENT";
+        const isMutation = data.transactionType === "MUTATION";
+
+        let typeTargetAccount = isPayment ? "DEBIT" : "CREDIT";
+        let typeBankAccount = isPayment ? "CREDIT" : "DEBIT";
+
+        if (isMutation) {
+            typeTargetAccount = "DEBIT"; 
+            typeBankAccount = "CREDIT";  
+        }
+
+        await tx.journalEntry.create({
+            data: {
+                description: data.description,
+                amount: data.amount as any,
+                type: typeTargetAccount as any,
+                accountId: data.accountId,
+                transactionId: transaction.id,
+                date: txDate,
+                createdById: userId
+            }
+        });
+
+        if (data.bankAccountId) {
+            await tx.journalEntry.create({
+                data: {
+                    description: `${data.transactionType}: ${data.bank} - ${data.referenceNumber || ''}`,
+                    amount: data.amount as any,
+                    type: typeBankAccount as any,
+                    accountId: data.bankAccountId,
+                    transactionId: transaction.id,
+                    date: txDate,
+                    createdById: userId
+                }
+            });
+        }
+
+        revalidatePath("/finance");
+        revalidatePath("/");
+
+        return { success: true };
+    }, { timeout: 30000 });
+}

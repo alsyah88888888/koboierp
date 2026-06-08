@@ -11,9 +11,10 @@ interface OperationalModalProps {
     isOpen: boolean;
     onClose: () => void;
     coa: any[];
+    transaction?: any; // Add for edit mode
 }
 
-export function OperationalModal({ isOpen, onClose, coa }: OperationalModalProps) {
+export function OperationalModal({ isOpen, onClose, coa, transaction }: OperationalModalProps) {
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
         transactionType: "PAYMENT" as "PAYMENT" | "RECEIPT",
@@ -56,6 +57,47 @@ export function OperationalModal({ isOpen, onClose, coa }: OperationalModalProps
 
         loadSalesRefs();
     }, [isOpen]);
+
+    useEffect(() => {
+        if (isOpen && transaction) {
+            const bankJournal = transaction.journals?.find((j: any) => 
+                ["101", "102", "103", "106", "107", "108", "109", "110"].some(prefix => j.account?.code?.startsWith(prefix))
+            );
+            const categoryJournal = transaction.journals?.find((j: any) => 
+                !["101", "102", "103", "106", "107", "108", "109", "110"].some(prefix => j.account?.code?.startsWith(prefix))
+            );
+
+            setFormData({
+                transactionType: (transaction.transactionType || "PAYMENT") as "PAYMENT" | "RECEIPT",
+                bank: transaction.bank || "",
+                date: transaction.date ? new Date(transaction.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+                referenceNumber: transaction.referenceNumber || "",
+                description: transaction.description || "",
+                amount: transaction.amount ? Math.round(Number(transaction.amount)).toString() : "",
+                accountId: categoryJournal?.accountId || "",
+                bankAccountId: bankJournal?.accountId || "",
+                salesPerson: transaction.salesPerson || "",
+                invoiceNumber: transaction.invoiceNumber || "",
+                receiptNumber: transaction.receiptNumber || "",
+            });
+            setContextType(transaction.invoiceNumber ? "SALES" : transaction.receiptNumber ? "PURCHASE" : "GENERAL");
+        } else if (isOpen) {
+            setFormData({
+                transactionType: "PAYMENT",
+                bank: "Bank BCA",
+                date: new Date().toISOString().split('T')[0],
+                referenceNumber: "",
+                description: "",
+                amount: "",
+                accountId: "",
+                bankAccountId: "",
+                salesPerson: "",
+                invoiceNumber: "",
+                receiptNumber: "",
+            });
+            setContextType("GENERAL");
+        }
+    }, [transaction, isOpen]);
 
     useEffect(() => {
         if (!formData.referenceNumber) {
@@ -111,14 +153,23 @@ export function OperationalModal({ isOpen, onClose, coa }: OperationalModalProps
 
         setLoading(true);
         try {
-            const res = await callAction("createFinanceTransaction", {
-                ...formData,
-                amount: parseFloat(formData.amount),
-                date: new Date(formData.date),
-            });
+            let res;
+            if (transaction?.id) {
+                res = await callAction("updateFinanceTransaction", transaction.id, {
+                    ...formData,
+                    amount: parseFloat(formData.amount),
+                    date: new Date(formData.date),
+                });
+            } else {
+                res = await callAction("createFinanceTransaction", {
+                    ...formData,
+                    amount: parseFloat(formData.amount),
+                    date: new Date(formData.date),
+                });
+            }
 
             if (res.success) {
-                toast.success("Transaction recorded");
+                toast.success(transaction?.id ? "Transaction updated" : "Transaction recorded");
                 onClose();
             }
         } catch (error: any) {
@@ -142,9 +193,15 @@ export function OperationalModal({ isOpen, onClose, coa }: OperationalModalProps
             <div className="bg-card w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden border animate-in fade-in zoom-in duration-200">
                 <div className="p-6 border-b flex justify-between items-center">
                     <div>
-                        <h2 className="text-xl font-black uppercase tracking-tighter">Input Operasional</h2>
-                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-none">Catat Pengeluaran/Pemasukan Baru</p>
-                        <h2 className="text-xl font-black text-slate-900 tracking-tight">Financial Record</h2>
+                        <h2 className="text-xl font-black uppercase tracking-tighter">
+                            {transaction?.id ? "Edit Transaksi" : "Input Operasional"}
+                        </h2>
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-none">
+                            {transaction?.id ? "Ubah Data Transaksi Operasional" : "Catat Pengeluaran/Pemasukan Baru"}
+                        </p>
+                        <h2 className="text-xl font-black text-slate-900 tracking-tight">
+                            {transaction?.id ? "Edit Financial Record" : "Financial Record"}
+                        </h2>
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-red-50 hover:text-red-500 rounded-full transition-all text-slate-400 group">
                         <X className="w-5 h-5 text-slate-400" />
@@ -415,7 +472,7 @@ export function OperationalModal({ isOpen, onClose, coa }: OperationalModalProps
                         ) : (
                             <>
                                 <Save className="w-4 h-4" />
-                                Simpan Transaksi
+                                {transaction?.id ? "Simpan Perubahan" : "Simpan Transaksi"}
                             </>
                         )}
                     </button>
