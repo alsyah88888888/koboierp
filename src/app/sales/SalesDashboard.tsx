@@ -136,8 +136,8 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
 
     const handleDeleteOrder = async (id: string) => {
         const ok = await confirm({
-            title: "Hapus PO Penjualan?",
-            message: "Hapus pesanan ini? Tindakan ini tidak dapat dibatalkan. PO yang sudah memiliki pengiriman (SJ) tidak dapat dihapus.",
+            title: "Hapus SO Penjualan?",
+            message: "Hapus pesanan ini? Tindakan ini tidak dapat dibatalkan. SO yang sudah memiliki pengiriman (SJ) tidak dapat dihapus.",
             confirmText: "Hapus Sekarang",
             type: "danger",
             hasCountdown: true
@@ -285,15 +285,15 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
         }
     };
 
-    const handleExportPO = () => {
+    const handleExportSO = () => {
         const exportData: any[] = [];
         
         filteredOrders.forEach((o: any) => {
             const items = o.items || [];
             if (items.length === 0) {
                  exportData.push({
-                    'No. PO Jual': o.orderNumber,
-                    'Tgl PO': format(new Date(o.date || o.createdAt), "yyyy-MM-dd"),
+                    'No. SO Jual': o.orderNumber,
+                    'Tgl SO': format(new Date(o.date || o.createdAt), "yyyy-MM-dd"),
                     'Buyer / Customer': o.buyerName,
                     'Status': o.status,
                     'Barcode / SKU': "-",
@@ -309,8 +309,8 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                     const shipped = Number(item.shippedQuantity) || 0;
                     
                     exportData.push({
-                        'No. PO Jual': o.orderNumber,
-                        'Tgl PO': format(new Date(o.date || o.createdAt), "yyyy-MM-dd"),
+                        'No. SO Jual': o.orderNumber,
+                        'Tgl SO': format(new Date(o.date || o.createdAt), "yyyy-MM-dd"),
                         'Buyer / Customer': o.buyerName,
                         'Status': o.status,
                         'Barcode / SKU': item.product?.sku || "-",
@@ -324,7 +324,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
             }
         });
 
-        exportToExcel(exportData, `Laporan_PO_Penjualan_${format(new Date(), "yyyyMMdd")}`, 'PO_Penjualan');
+        exportToExcel(exportData, `Laporan_SO_Penjualan_${format(new Date(), "yyyyMMdd")}`, 'SO_Penjualan');
     };
 
     const handlePreview = () => {
@@ -357,7 +357,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                     <div className="flex items-center gap-2 text-slate-500 text-[9px] md:text-xs font-bold uppercase tracking-widest opacity-80">
                         <span>PI (Draft)</span>
                         <ChevronRight className="h-3 w-3" />
-                        <span>PO (Confirm)</span>
+                        <span>SO (Confirm)</span>
                         <ChevronRight className="h-3 w-3" />
                         <span className="text-primary">SJ (Shipment)</span>
                     </div>
@@ -390,7 +390,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                                 activeTab === "PO" ? "bg-indigo-600 text-white shadow-md shadow-indigo-200" : "text-slate-500 hover:bg-slate-50"
                             )}
                         >
-                            Proforma Invoice
+                            Proforma & SO
                         </button>
                     </div>
 
@@ -405,14 +405,14 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                                 )}
                             >
                                 <Plus className="h-4 w-4" />
-                                <span>{activeTab === "RETURNS" ? "Input Retur" : "Input Proforma Invoice"}</span>
+                                <span>{activeTab === "RETURNS" ? "Input Retur" : "Buat PI / SO"}</span>
                             </button>
                         )}
                         <div className="flex gap-2">
                            <button onClick={handlePreview} className="p-3 bg-white border border-slate-200 rounded-2xl hover:border-primary hover:text-primary transition-all shadow-sm group" title="Preview Report">
                                <Eye className="h-5 w-5 text-slate-400 group-hover:text-primary" />
                            </button>
-                           <button onClick={() => { if (activeTab === "SJ") handleExport(); else if (activeTab === "RETURNS") handleExportReturn(); else handleExportPO(); }} className="p-3 bg-white border border-slate-200 rounded-2xl hover:border-emerald-500 hover:text-emerald-500 transition-all shadow-sm group" title="Export Excel">
+                           <button onClick={() => { if (activeTab === "SJ") handleExport(); else if (activeTab === "RETURNS") handleExportReturn(); else handleExportSO(); }} className="p-3 bg-white border border-slate-200 rounded-2xl hover:border-emerald-500 hover:text-emerald-500 transition-all shadow-sm group" title="Export Excel">
                                <Download className="h-5 w-5 text-slate-400 group-hover:text-emerald-500" />
                            </button>
                         </div>
@@ -577,7 +577,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                 </div>
                 <div className="erp-card p-5">
                     <div className="flex justify-between items-center">
-                        <p className="erp-label">PO Penjualan (Confirm)</p>
+                        <p className="erp-label">SO Penjualan (Confirm)</p>
                         <FileText className="h-4 w-4 text-indigo-600 opacity-20" />
                     </div>
                     <h3 className="text-3xl font-black mt-1 text-indigo-600">
@@ -617,7 +617,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                                 activeTab === "PO" ? "text-indigo-600 border-indigo-600" : "text-slate-300 border-transparent hover:text-slate-400"
                             )}
                         >
-                            Proforma Invoice
+                            Proforma & SO
                         </button>
                     </div>
                     <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
@@ -780,18 +780,18 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                         <table className="table-erp table-to-cards min-w-full md:min-w-[1000px]">
                             <thead className="hidden md:table-header-group">
                                 <tr>
-                                    <th className="w-48">No. Proforma / PO</th>
+                                    <th className="w-48">No. Proforma / SO</th>
                                     <th>Buyer / Customer</th>
                                     <th className="w-40">Status</th>
                                     <th className="text-right w-40">Outstanding / Total</th>
-                                    <th className="text-right w-40">Tgl PO</th>
+                                    <th className="text-right w-40">Tgl SO</th>
                                     <th className="text-center w-32">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {Array.isArray(filteredOrders) && filteredOrders.map((o: any) => (
                                     <tr key={o.id}>
-                                        <td data-label="No. PO" className="font-mono text-indigo-700 font-bold md:pl-6">
+                                        <td data-label="No. SO" className="font-mono text-indigo-700 font-bold md:pl-6">
                                             {o.orderNumber}
                                             {o.revision > 0 && (
                                                 <span className="ml-2 text-[10px] text-amber-600 font-black italic bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100">
@@ -836,7 +836,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                                         </td>
                                         <td data-label="Aksi" className="md:pr-6">
                                             <div className="flex items-center justify-end md:justify-center gap-1">
-                                                <Link href={`/sales/order/print/${o.id}`} className="p-2.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all" title="Cetak PI/PO">
+                                                <Link href={`/sales/order/print/${o.id}`} className="p-2.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all" title="Cetak PI/SO">
                                                     <FileText className="h-4 w-4" />
                                                 </Link>
                                                 <Link href={`/sales/order/view/${o.id}`} className="p-2.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all" title="Lihat Detail">
