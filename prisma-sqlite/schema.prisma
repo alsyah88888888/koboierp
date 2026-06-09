@@ -429,7 +429,7 @@ model SystemSetting {
   companyName String   @default("PT. Kola Borasi Indonesia")
   address     String   @default("Jl. Industri No. 12, Jakarta Pusat, DKI Jakarta")
   taxId       String   @default("01.234.567.8-012.000")
-  website     String   @default("www.kolaborasi.id")
+  website     String   @default("www.kolaborasiindonesia.com")
   updatedAt   DateTime @updatedAt
 }
 

@@ -94,7 +94,7 @@ export function DocumentLayout({ title, docNumber, date, children, headerInfo, i
                                     Jl. Arjuna IV Green Kartika Residence Blok EE NO.2, CIBINONG, KAB. BOGOR - JAWA BARAT, 16911
                                 </p>
                                 <p className="text-[7pt] font-bold text-slate-400 uppercase tracking-widest">
-                                    PHONE: <span className="text-slate-500">0857-7444-4805</span> | WEB: <span className="text-slate-500">www.kolaborasi.id</span>
+                                    PHONE: <span className="text-slate-500">0857-7444-4805</span> | WEB: <span className="text-slate-500">www.kolaborasiindonesia.com</span>
                                 </p>
                             </div>
                         </div>

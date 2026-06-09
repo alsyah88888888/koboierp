@@ -469,7 +469,7 @@ CREATE TABLE "SystemSetting" (
     "companyName" TEXT NOT NULL DEFAULT 'PT. Kola Borasi Indonesia',
     "address" TEXT NOT NULL DEFAULT 'Jl. Industri No. 12, Jakarta Pusat, DKI Jakarta',
     "taxId" TEXT NOT NULL DEFAULT '01.234.567.8-012.000',
-    "website" TEXT NOT NULL DEFAULT 'www.kolaborasi.id',
+    "website" TEXT NOT NULL DEFAULT 'www.kolaborasiindonesia.com',
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "SystemSetting_pkey" PRIMARY KEY ("id")

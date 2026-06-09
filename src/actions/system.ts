@@ -88,7 +88,7 @@ export async function getSystemSettingsAction() {
             companyName: "PT. Kola Borasi Indonesia",
             address: "Jl. Arjuna IV Green Kartika Residence Blok EE NO.2, CIBINONG, KAB. BOGOR",
             taxId: "01.234.567.8-012.000",
-            website: "www.kolaborasi.id"
+            website: "www.kolaborasiindonesia.com"
         },
         counts: { product: productCount, vendor: vendorCount, customer: customerCount, warehouse: warehouseCount }
     };

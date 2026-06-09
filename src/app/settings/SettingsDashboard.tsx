@@ -50,7 +50,7 @@ export function SettingsDashboard() {
         name: "PT. Kola Borasi Indonesia",
         address: "Jl. Arjuna IV Green Kartika Residence Blok EE NO.2, CIBINONG, KAB. BOGOR - JAWA BARAT, 16911",
         taxId: "01.234.567.8-012.000",
-        website: "www.kolaborasi.id"
+        website: "www.kolaborasiindonesia.com"
     });
 
     const [counts, setCounts] = useState({
