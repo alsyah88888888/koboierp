@@ -71,7 +71,7 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
 
     const handleExport = () => {
         if (activeTab === "inventory") {
-            const data = filteredProducts.flatMap(p =>
+            const data = initialProducts.flatMap(p =>
                 p.stocks.map((s: any) => ({
                     'SKU': p.sku,
                     'Nama Barang': p.name,
@@ -116,7 +116,7 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
 
     const handlePreview = () => {
         if (activeTab === "inventory") {
-            const data = filteredProducts.flatMap(p =>
+            const data = initialProducts.flatMap(p =>
                 p.stocks.map((s: any) => ({
                     'SKU': p.sku,
                     'Nama Barang': p.name,
