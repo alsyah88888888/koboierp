@@ -348,16 +348,16 @@ export default function SalesModal({ products, warehouses, customers, orders = [
                                 </div>
                                 <div className="flex-1 space-y-1">
                                     <div className="flex items-center gap-2 mb-1">
-                                        <p className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Pilih dari PO Penjualan (Sangat Disarankan)</p>
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Pilih dari SO Penjualan (Sangat Disarankan)</p>
                                         <div className="bg-indigo-600 text-white px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest">Recommended</div>
                                     </div>
-                                    <p className="text-[10px] text-indigo-800/60 mb-2 font-bold uppercase italic">* Tarik data PO agar otomatis mengisi daftar barang dan mengurangi kesalahan input.</p>
+                                    <p className="text-[10px] text-indigo-800/60 mb-2 font-bold uppercase italic">* Tarik data SO agar otomatis mengisi daftar barang dan mengurangi kesalahan input.</p>
                                     <select 
                                         value={selectedOrderId}
                                         onChange={e => handleOrderSelect(e.target.value)}
                                         className="w-full bg-white/80 border-2 border-indigo-100 focus:border-indigo-500 rounded-xl px-4 py-2 text-sm font-black text-slate-900 outline-none transition-all shadow-sm"
                                     >
-                                        <option value="">-- BUAT SJ MANUAL (Tanpa Referensi PO) --</option>
+                                        <option value="">-- BUAT SJ MANUAL (Tanpa Referensi SO) --</option>
                                         {orders.filter((o: any) => o.status !== "DRAFT").map((o: any) => (
                                             <option key={o.id} value={o.id}>{o.orderNumber} - {o.buyerName} ({o.items.length} items)</option>
                                         ))}
@@ -539,7 +539,7 @@ export default function SalesModal({ products, warehouses, customers, orders = [
                                                         const outstanding = total - shipped;
                                                         return (
                                                             <div className="mt-1.5 flex flex-wrap gap-1.5 items-center text-[10px] font-bold">
-                                                                <span className="bg-sky-50 text-sky-600 px-1.5 py-0.5 rounded border border-sky-100/80">PO: {total}</span>
+                                                                <span className="bg-sky-50 text-sky-600 px-1.5 py-0.5 rounded border border-sky-100/80">SO: {total}</span>
                                                                 <span className="bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded border border-emerald-100/80">Kirim: {shipped}</span>
                                                                 <span className="bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded border border-amber-100/80">Sisa: {outstanding}</span>
                                                             </div>

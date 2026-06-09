@@ -124,8 +124,8 @@ export default function SalesOrderModal({ products, customers, warehouses, initi
             await alert({ 
                 title: "Berhasil Disimpan", 
                 message: isConfirm 
-                    ? "PO Berhasil Dikonfirmasi. Sekarang Anda bisa menarik data ini di menu Surat Jalan (SJ)." 
-                    : "PI Berhasil Disimpan sebagai Draft. Ingat: PI tidak akan muncul di menu Surat Jalan sampai Anda klik 'Konfirmasi Jadi PO'.", 
+                    ? "SO Berhasil Dikonfirmasi. Sekarang Anda bisa menarik data ini di menu Surat Jalan (SJ)." 
+                    : "PI Berhasil Disimpan sebagai Draft. Ingat: PI tidak akan muncul di menu Surat Jalan sampai Anda klik 'Konfirmasi Jadi SO'.", 
                 type: "success" 
             });
             window.location.reload();
@@ -154,7 +154,7 @@ export default function SalesOrderModal({ products, customers, warehouses, initi
                                 <span className="text-slate-400 text-[10px] font-black uppercase tracking-widest">Sales Workflow:</span>
                                 <span className={cn("px-2 py-0.5 text-[9px] font-black rounded uppercase border", initialData?.status !== "CONFIRMED" ? "bg-indigo-50 text-indigo-600 border-indigo-100" : "bg-slate-50 text-slate-400 border-slate-100")}>PI (Penawaran)</span>
                                 <ChevronRight className="h-3 w-3 text-slate-300" />
-                                <span className={cn("px-2 py-0.5 text-[9px] font-black rounded uppercase border", initialData?.status === "CONFIRMED" ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-slate-50 text-slate-400 border-slate-100")}>PO (Pesanan)</span>
+                                <span className={cn("px-2 py-0.5 text-[9px] font-black rounded uppercase border", initialData?.status === "CONFIRMED" ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-slate-50 text-slate-400 border-slate-100")}>SO (Pesanan)</span>
                             </div>
                         </div>
                     </div>
@@ -180,7 +180,7 @@ export default function SalesOrderModal({ products, customers, warehouses, initi
                                 PENTING: ALUR SURAT JALAN (SJ)
                             </p>
                             <p className="text-xs text-amber-800 leading-relaxed font-medium">
-                                • Agar data bisa <span className="font-black italic text-orange-700">DITARIK SAAT MEMBUAT SURAT JALAN (SJ)</span>, Anda wajib menekan tombol <span className="font-black underline text-emerald-700">KONFIRMASI JADI PO</span>.<br/>
+                                • Agar data bisa <span className="font-black italic text-orange-700">DITARIK SAAT MEMBUAT SURAT JALAN (SJ)</span>, Anda wajib menekan tombol <span className="font-black underline text-emerald-700">KONFIRMASI JADI SO</span>.<br/>
                                 • Tombol <span className="font-bold">Simpan sebagai PI</span> hanya untuk penawaran harga dan tidak akan muncul di menu Surat Jalan.
                             </p>
                         </div>
@@ -443,7 +443,7 @@ export default function SalesOrderModal({ products, customers, warehouses, initi
                         className="px-8 py-4 rounded-2xl bg-primary text-white text-[10px] font-black uppercase tracking-widest hover:bg-slate-900 transition-all flex items-center justify-center gap-2 shadow-xl shadow-primary/20 active:scale-95 group"
                     >
                         {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <CheckCircle className="h-5 w-5 group-hover:scale-110 transition-transform" />}
-                        Konfirmasi Jadi PO
+                        Konfirmasi Jadi SO
                     </button>
                 </div>
             </div>
