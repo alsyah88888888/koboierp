@@ -48,6 +48,15 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
         );
     }, [initialProducts, searchTerm]);
 
+    const findSalesPersonForStock = (productId: string, warehouseId: string, vendorName: string) => {
+        const matchingReceipt = unverifiedReceipts.find(r => 
+            (r.receivedFrom || "UMUM").trim().toLowerCase() === (vendorName || "UMUM").trim().toLowerCase() && 
+            r.warehouseId === warehouseId && 
+            r.items?.some((item: any) => item.productId === productId)
+        );
+        return matchingReceipt?.salesPerson || "-";
+    };
+
     const handleDeleteProduct = async (id: string) => {
         if (!confirm("Hapus produk ini? Semua data stok terkait juga akan dihapus.")) return;
         try {
@@ -68,6 +77,7 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                     'Nama Barang': p.name,
                     'Vendor / PT': s.vendorName || "UMUM",
                     'Gudang': warehouses.find(w => w.id === s.warehouseId)?.name || 'Unknown',
+                    'Sales Person': findSalesPersonForStock(p.id, s.warehouseId, s.vendorName),
                     'Satuan': p.uom,
                     'Total Stok': s.quantity,
                     'HPP per Unit': Number(p.purchasePrice) || 0,
@@ -112,6 +122,7 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                     'Nama Barang': p.name,
                     'Vendor / PT': s.vendorName || "UMUM",
                     'Gudang': warehouses.find(w => w.id === s.warehouseId)?.name || 'Unknown',
+                    'Sales Person': findSalesPersonForStock(p.id, s.warehouseId, s.vendorName),
                     'Satuan': p.uom,
                     'Total Stok': s.quantity,
                     'HPP per Unit': Number(p.purchasePrice) || 0,
@@ -322,6 +333,7 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                                 <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest w-64">Barang / SKU</th>
                                                 <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest text-left w-40">Gudang</th>
                                                 <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest text-left w-48">Vendor / Pemasok</th>
+                                                <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest text-center w-28">Sales</th>
                                                 <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest text-right w-36">Qty Tersedia</th>
                                                 <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest text-right w-36">HPP per Unit</th>
                                                 <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest text-right w-36">Total Nilai HPP</th>
@@ -336,6 +348,7 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                                     p.stocks.forEach((s: any) => {
                                                         const whName = warehouses.find(w => w.id === s.warehouseId)?.name || "Unknown";
                                                         const isLow = s.quantity <= p.lowStockThreshold;
+                                                        const salesPerson = findSalesPersonForStock(p.id, s.warehouseId, s.vendorName);
                                                         rows.push(
                                                             <tr key={`${p.id}-${s.id}`} className="hover:bg-slate-50/50 transition-colors group">
                                                                 <td className="px-6 py-4">
@@ -350,6 +363,20 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                                                         <WarehouseIcon className="h-3 w-3 text-slate-400 shrink-0" />
                                                                         <span className="truncate" title={s.vendorName || "UMUM"}>{s.vendorName || "UMUM"}</span>
                                                                     </span>
+                                                                </td>
+                                                                <td className="px-6 py-4 text-center">
+                                                                    {salesPerson !== "-" ? (
+                                                                        <span className={cn(
+                                                                            "px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest border",
+                                                                            salesPerson === "BC" 
+                                                                                ? "bg-indigo-50 text-indigo-700 border-indigo-100" 
+                                                                                : "bg-amber-50 text-amber-700 border-amber-100"
+                                                                        )}>
+                                                                            {salesPerson}
+                                                                        </span>
+                                                                    ) : (
+                                                                        <span className="text-slate-400 text-xs">-</span>
+                                                                    )}
                                                                 </td>
                                                                 <td className="px-6 py-4 text-right">
                                                                     <div className="text-lg font-black text-slate-800">{isClient ? (s.quantity || 0).toLocaleString() : "..."} <span className="text-[10px] text-slate-400 font-bold uppercase">{p.uom}</span></div>
@@ -410,6 +437,7 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                                             </td>
                                                             <td className="px-6 py-4 text-left text-slate-400 italic text-xs">No Stock Data</td>
                                                             <td className="px-6 py-4 text-left">-</td>
+                                                            <td className="px-6 py-4 text-center">-</td>
                                                             <td className="px-6 py-4 text-right">
                                                                 <div className="text-lg font-black text-slate-400">0 <span className="text-[10px] text-slate-300 font-bold uppercase">{p.uom}</span></div>
                                                             </td>
@@ -448,6 +476,7 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                             return p.stocks.map((s: any) => {
                                                 const whName = warehouses.find(w => w.id === s.warehouseId)?.name || "Unknown";
                                                 const isLow = s.quantity <= p.lowStockThreshold;
+                                                const salesPerson = findSalesPersonForStock(p.id, s.warehouseId, s.vendorName);
                                                 return (
                                                     <div key={`${p.id}-${s.id}`} className="p-4 space-y-3 hover:bg-slate-50 transition-colors">
                                                         <div className="flex justify-between items-start gap-3">
@@ -471,6 +500,21 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                                             <div>
                                                                 <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1 text-right">Gudang</div>
                                                                 <div className="text-[11px] font-bold text-slate-700 truncate text-right">{whName}</div>
+                                                            </div>
+                                                            <div className="border-t border-slate-100 pt-2 col-span-2 flex justify-between items-center text-xs">
+                                                                <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Sales Person</span>
+                                                                {salesPerson !== "-" ? (
+                                                                    <span className={cn(
+                                                                        "px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest border",
+                                                                        salesPerson === "BC" 
+                                                                            ? "bg-indigo-50 text-indigo-700 border-indigo-100" 
+                                                                            : "bg-amber-50 text-amber-700 border-amber-100"
+                                                                    )}>
+                                                                        {salesPerson}
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="text-slate-400 font-bold">-</span>
+                                                                )}
                                                             </div>
                                                             <div className="border-t border-slate-100 pt-2 col-span-2 flex justify-between text-[11px]">
                                                                 <div>
