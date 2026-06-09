@@ -81,7 +81,7 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                     'Satuan': p.uom,
                     'Total Stok': s.quantity,
                     'HPP per Unit': Number(p.purchasePrice) || 0,
-                    'Total Nilai HPP': (s.quantity || 0) * (Number(p.purchasePrice) || 0),
+                    'Total Nilai': (s.quantity || 0) * (Number(p.purchasePrice) || 0),
                     'Threshold': p.lowStockThreshold,
                     'Status': s.quantity <= p.lowStockThreshold ? 'LOW' : 'NORMAL'
                 }))
@@ -104,7 +104,7 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                         'Qty': item.quantity || 0,
                         'Satuan': item.uom || item.product?.uom || "-",
                         'HPP per Unit': Number(item.purchasePrice) || 0,
-                        'Total Nilai HPP': (item.quantity || 0) * (Number(item.purchasePrice) || 0),
+                        'Total Nilai': (item.quantity || 0) * (Number(item.purchasePrice) || 0),
                         'Status': r.isVerified ? 'VERIFIED' : 'PENDING',
                         'Penerima': r.createdBy?.name || '-'
                     });
@@ -126,7 +126,7 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                     'Satuan': p.uom,
                     'Total Stok': s.quantity,
                     'HPP per Unit': Number(p.purchasePrice) || 0,
-                    'Total Nilai HPP': (s.quantity || 0) * (Number(p.purchasePrice) || 0),
+                    'Total Nilai': (s.quantity || 0) * (Number(p.purchasePrice) || 0),
                     'Threshold': p.lowStockThreshold,
                     'Status': s.quantity <= p.lowStockThreshold ? 'LOW' : 'NORMAL'
                 }))
@@ -150,7 +150,7 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                         'Qty': item.quantity || 0,
                         'Satuan': item.uom || item.product?.uom || "-",
                         'HPP per Unit': Number(item.purchasePrice) || 0,
-                        'Total Nilai HPP': (item.quantity || 0) * (Number(item.purchasePrice) || 0),
+                        'Total Nilai': (item.quantity || 0) * (Number(item.purchasePrice) || 0),
                         'Status': r.isVerified ? 'VERIFIED' : 'PENDING'
                     });
                 });
@@ -336,7 +336,7 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                                 <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest text-center w-28">Sales</th>
                                                 <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest text-right w-36">Qty Tersedia</th>
                                                 <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest text-right w-36">HPP per Unit</th>
-                                                <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest text-right w-36">Total Nilai HPP</th>
+                                                <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest text-right w-36">Total Nilai</th>
                                                 <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest text-right w-28">Status</th>
                                                 {isAdmin && <th className="px-6 py-4 uppercase text-[10px] font-black tracking-widest text-center w-20">Aksi</th>}
                                             </tr>
@@ -522,7 +522,7 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                                                     <span className="font-bold text-slate-700">{formatCurrency(Number(p.purchasePrice || 0))}</span>
                                                                 </div>
                                                                 <div className="text-right">
-                                                                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-0.5">Total Nilai HPP</span>
+                                                                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-0.5">Total Nilai</span>
                                                                     <span className="font-bold text-slate-900">{formatCurrency(Number(p.purchasePrice || 0) * (s.quantity || 0))}</span>
                                                                 </div>
                                                             </div>
