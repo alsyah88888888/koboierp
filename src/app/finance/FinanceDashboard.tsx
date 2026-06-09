@@ -46,80 +46,9 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedHistoryItem, setSelectedHistoryItem] = useState<any>(null);
     const [historyMonth, setHistoryMonth] = useState<string>("ALL");
-    const [activeTab, setActiveTab] = useState<"ledger" | "ap" | "ar" | "checker" | "purchase_requests" | "history" | "closing">("ledger");
+    const [activeTab, setActiveTab] = useState<"ledger" | "ap" | "ar" | "checker" | "purchase_requests" | "history">("ledger");
     const [loading, setLoading] = useState<string | null>(null);
     const [isClient, setIsClient] = useState(false);
-
-    // Closing Report State
-    const [closingReport, setClosingReport] = useState<any>(null);
-    const [closingPeriod, setClosingPeriod] = useState({ 
-        month: new Date().getMonth() + 1, 
-        year: new Date().getFullYear() 
-    });
-    const [isFetchingClosing, setIsFetchingClosing] = useState(false);
-
-    const [closingPrefix, setClosingPrefix] = useState<'PF' | 'BC' | 'ALL'>('ALL');
-
-    const fetchClosingReport = async (m: number, y: number, pref: 'PF' | 'BC' | 'ALL' = 'ALL') => {
-        setIsFetchingClosing(true);
-        setClosingReport(null);
-        try {
-            const data = await callAction("getMonthlyClosingReport", m, y, pref);
-            setClosingReport(data);
-        } catch (err) {
-            console.error("Fetch Failed:", err);
-            setClosingReport({ error: "Koneksi terputus atau server sibuk." });
-        } finally {
-            setIsFetchingClosing(false);
-        }
-    };
-
-    const downloadPurchasesExcel = () => {
-        if (!closingReport?.details?.purchases) return;
-        
-        const data = closingReport.details.purchases.map((p: any) => ({
-            'Tanggal': format(new Date(p.date), 'MM/dd/yyyy'),
-            'No. LPB': p.number,
-            'Supplier': p.entity,
-            'Subtotal': p.subtotal,
-            'Diskon': p.discount,
-            'PPN %': p.taxRate / 100, // Format 11 as 0.11
-            'Pajak Rp': p.tax,
-            'Grand Total Netto': p.grandTotal,
-            'Sudah Dibayarkan (BCA)': p.paidAmount
-        }));
-
-        const ws = XLSX.utils.json_to_sheet(data);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Pembelian");
-        XLSX.writeFile(wb, `Laporan_Pembelian_${closingPeriod.month}_${closingPeriod.year}.xlsx`);
-    };
-
-    const downloadSalesExcel = () => {
-        if (!closingReport?.details?.sales) return;
-        
-        const data = closingReport.details.sales.map((s: any) => ({
-            'Tanggal': format(new Date(s.date), 'MM/dd/yyyy'),
-            'No. Invoice': s.number,
-            'Customer': s.entity,
-            'Qty': s.totalQty,
-            'Total Harga': s.subtotal - s.discount,
-            'PPN 11%': s.tax,
-            'Grand Total Netto': s.grandTotal,
-            'Sudah Dibayar (BCA)': s.paidAmount
-        }));
-
-        const ws = XLSX.utils.json_to_sheet(data);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Penjualan");
-        XLSX.writeFile(wb, `Laporan_Penjualan_${closingPeriod.month}_${closingPeriod.year}.xlsx`);
-    };
-
-    useEffect(() => {
-        if (activeTab === "closing") {
-            fetchClosingReport(closingPeriod.month, closingPeriod.year);
-        }
-    }, [activeTab, closingPeriod]);
 
     // Payment Modal State
     const [paymentModal, setPaymentModal] = useState<{
@@ -156,176 +85,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
     const [previewTitle, setPreviewTitle] = useState("");
 
     const handlePrint = () => {
-        if (activeTab === "closing" && closingReport) {
-            const printWindow = window.open('', '_blank');
-            if (!printWindow) return;
-
-            const html = `
-                <html>
-                    <head>
-                        <title>Laporan Closing Bulanan - ${closingReport.period}</title>
-                        <style>
-                            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-                            body { font-family: 'Inter', sans-serif; padding: 40px; color: #1e293b; line-height: 1.5; }
-                            .header { border-bottom: 4px solid #0f172a; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end; }
-                            .header h1 { margin: 0; font-weight: 900; text-transform: uppercase; letter-spacing: -1px; font-size: 32px; color: #0f172a; }
-                            .summary-grid { display: grid; grid-template-cols: repeat(4, 1fr); gap: 20px; margin-bottom: 40px; }
-                            .summary-card { padding: 15px; border: 1px solid #e2e8f0; border-radius: 12px; background: #fff; }
-                            .summary-card p { margin: 0; font-size: 10px; font-weight: 900; text-transform: uppercase; color: #64748b; letter-spacing: 1px; }
-                            .summary-card h2 { margin: 5px 0 0; font-size: 18px; font-weight: 900; letter-spacing: -0.5px; }
-                            h3 { font-weight: 900; text-transform: uppercase; font-size: 14px; border-left: 4px solid #3b82f6; padding-left: 12px; margin-top: 40px; margin-bottom: 15px; color: #0f172a; }
-                            table { width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 11px; }
-                            th { background: #f8fafc; padding: 12px; text-align: left; font-weight: 900; text-transform: uppercase; font-size: 9px; border-bottom: 2px solid #e2e8f0; color: #475569; }
-                            td { padding: 10px 12px; border-bottom: 1px solid #f1f5f9; color: #334155; }
-                            .text-right { text-align: right; }
-                            .font-black { font-weight: 900; color: #0f172a; }
-                            .footer-sig { margin-top: 80px; display: grid; grid-template-cols: 1fr 1fr; text-align: center; gap: 40px; }
-                            .sig-box { border-top: 1px solid #cbd5e1; padding-top: 10px; font-weight: 900; font-size: 12px; margin: 0 auto; width: 220px; }
-                            @media print { 
-                                body { padding: 0; }
-                                .summary-card { border: 1px solid #000; }
-                                h3 { border-left: 4px solid #000; }
-                            }
-                        </style>
-                    </head>
-                    <body>
-                        <div class="header">
-                            <div>
-                                <p style="font-weight: 900; color: #3b82f6; margin: 0; font-size: 11px; letter-spacing: 2px;">KOBOI ERP - FINANCIAL MODULE</p>
-                                <h1>Closing Report</h1>
-                                <p style="margin: 5px 0 0; font-weight: 700; color: #64748b; font-size: 14px;">Periode: ${closingReport.period}</p>
-                            </div>
-                            <div class="text-right">
-                                <p style="font-size: 9px; font-weight: 900; color: #94a3b8; text-transform: uppercase;">Generated at: ${format(new Date(), "dd MMM yyyy HH:mm")}</p>
-                            </div>
-                        </div>
-
-                        <div class="summary-grid">
-                            <div class="summary-card">
-                                <p>Penjualan</p>
-                                <h2>${formatCurrency(closingReport.revenue)}</h2>
-                            </div>
-                            <div class="summary-card">
-                                <p>Pembelian</p>
-                                <h2>${formatCurrency(closingReport.inventory?.purchases || 0)}</h2>
-                            </div>
-                            <div class="summary-card">
-                                <p>Operasional</p>
-                                <h2>${formatCurrency(closingReport.expenses)}</h2>
-                            </div>
-                            <div class="summary-card">
-                                <p>Gross Margin</p>
-                                <h2>${formatCurrency(closingReport.grossProfit)}</h2>
-                            </div>
-                            <div class="summary-card" style="background: #f8fafc; border: 1px solid #3b82f6;">
-                                <p style="color: #3b82f6;">Profit</p>
-                                <h2 style="color: ${closingReport.netProfit >= 0 ? '#059669' : '#dc2626'}">${formatCurrency(closingReport.netProfit)}</h2>
-                            </div>
-                        </div>
-
-                        <h3>I. Detail Penjualan (Matching Kas Masuk BCA)</h3>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th style="width: 12%;">Tanggal SJ</th>
-                                    <th style="width: 20%;">No. Invoice / SJ</th>
-                                    <th style="width: 30%;">Nama Customer</th>
-                                    <th style="width: 12%;">Bank</th>
-                                    <th style="width: 12%;">Tgl Bayar</th>
-                                    <th style="width: 14%;" class="text-right">Nilai Transaksi</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${closingReport.details?.sales?.map((s: any) => `
-                                    <tr>
-                                        <td>${format(new Date(s.date), "dd/MM/yyyy")}</td>
-                                        <td class="font-black">${s.number}</td>
-                                        <td>${s.entity || '-'}</td>
-                                        <td class="font-black" style="color: #3b82f6;">${s.bankCode}</td>
-                                        <td>${s.paymentDate ? format(new Date(s.paymentDate), "dd/MM/yyyy") : '-'}</td>
-                                        <td class="text-right font-black">${formatCurrency(s.grandTotal)}</td>
-                                    </tr>
-                                `).join('') || '<tr><td colspan="6" style="text-align:center">Tidak ada transaksi penjualan dalam periode ini</td></tr>'}
-                            </tbody>
-                        </table>
-
-                        <h3>II. Detail Biaya Operasional (Matching Kas Keluar BCA)</h3>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th style="width: 15%;">Tanggal</th>
-                                    <th style="width: 20%;">Kategori</th>
-                                    <th style="width: 45%;">Deskripsi Biaya</th>
-                                    <th style="width: 20%;" class="text-right">Nominal</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${closingReport.details?.expenses?.map((e: any) => `
-                                    <tr>
-                                        <td>${format(new Date(e.date), "dd/MM/yyyy")}</td>
-                                        <td>${e.category || 'OPR'}</td>
-                                        <td>${e.description}</td>
-                                        <td class="text-right font-black">${formatCurrency(Math.abs(e.amount))}</td>
-                                    </tr>
-                                `).join('') || '<tr><td colspan="4" style="text-align:center">Tidak ada pengeluaran operasional dalam periode ini</td></tr>'}
-                            </tbody>
-                        </table>
-
-                        <div style="page-break-before: always;"></div>
-
-                        <h3>III. Detail Pembelian Barang (Inventory Admission)</h3>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th style="width: 12%;">Tanggal LPB</th>
-                                    <th style="width: 20%;">No. LPB / GR</th>
-                                    <th style="width: 30%;">Nama Supplier</th>
-                                    <th style="width: 12%;">Bank</th>
-                                    <th style="width: 12%;">Tgl Bayar</th>
-                                    <th style="width: 14%;" class="text-right">Total Tagihan</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${closingReport.details?.purchases?.map((p: any) => `
-                                    <tr>
-                                        <td>${format(new Date(p.date), "dd/MM/yyyy")}</td>
-                                        <td class="font-black">${p.number}</td>
-                                        <td>${p.entity || '-'}</td>
-                                        <td class="font-black" style="color: #ef4444;">${p.bankCode}</td>
-                                        <td>${p.paymentDate ? format(new Date(p.paymentDate), "dd/MM/yyyy") : '-'}</td>
-                                        <td class="text-right font-black">${formatCurrency(p.grandTotal)}</td>
-                                    </tr>
-                                `).join('') || '<tr><td colspan="6" style="text-align:center">Tidak ada transaksi pembelian dalam periode ini</td></tr>'}
-                            </tbody>
-                        </table>
-
-                        <div class="footer-sig">
-                            <div>
-                                <p style="font-size: 10px; font-weight: 900; color: #64748b; margin-bottom: 70px; text-transform: uppercase;">Prepared By (Finance)</p>
-                                <div class="sig-box">ADMIN FINANCE</div>
-                            </div>
-                            <div>
-                                <p style="font-size: 10px; font-weight: 900; color: #64748b; margin-bottom: 70px; text-transform: uppercase;">Approved By (Management)</p>
-                                <div class="sig-box">DIRECTOR / OWNER</div>
-                            </div>
-                        </div>
-
-                        <script>
-                            window.onload = () => { 
-                                setTimeout(() => {
-                                    window.print(); 
-                                }, 500);
-                            };
-                        </script>
-                    </body>
-                </html>
-            `;
-
-            printWindow.document.write(html);
-            printWindow.document.close();
-        } else {
-            window.print();
-        }
+        window.print();
     };
 
     const handleVerifyPayment = async (type: "PURCHASE" | "SALE", id: string, status: "PAID" | "CREDIT" | "PENDING" | "PARTIAL", partialAmount?: number, pDate?: Date, bankAccountId?: string) => {
@@ -656,41 +416,50 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
 
     return (
         <div className="space-y-8 pb-16 animate-fade-up">
-            {/* Header Actions */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 px-1">
-                <div>
-                    <h1 className="text-2xl font-black text-slate-900 tracking-tight uppercase">Capital & Treasury</h1>
-                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-1">Financial oversight and ledger control</p>
+            {/* Header Section */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 px-2 py-4 bg-gradient-to-r from-slate-900/5 to-transparent rounded-3xl border border-slate-100">
+                <div className="flex items-center gap-4">
+                    <div className="p-3 bg-slate-950 text-white rounded-2xl shadow-xl shadow-slate-950/10">
+                        <Banknote className="h-6 w-6 text-primary-foreground" />
+                    </div>
+                    <div>
+                        <h2 className="text-2xl md:text-3xl font-black tracking-tight text-slate-900 uppercase">
+                            Capital & Treasury
+                        </h2>
+                        <p className="text-slate-500 font-bold text-[10px] md:text-xs tracking-wider uppercase opacity-70">Financial oversight and ledger control</p>
+                    </div>
                 </div>
-                <div className="flex flex-wrap gap-3 w-full md:w-auto">
+
+                <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
                     <button
                         onClick={handlePreview}
-                        className="erp-btn-secondary !bg-white/80 backdrop-blur-md flex-1 md:flex-none"
+                        className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs uppercase tracking-wider transition-all"
+                        title="Preview Report"
                     >
-                        <Eye className="h-4 w-4" />
+                        <Eye className="h-4 w-4 text-slate-500" />
                         <span>Preview</span>
                     </button>
                     <button
                         onClick={handleExport}
-                        className="erp-btn-primary !bg-emerald-600 hover:!bg-emerald-700 shadow-emerald-200 flex-1 md:flex-none"
+                        className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100/80 border border-emerald-200/50 text-emerald-800 font-bold text-xs uppercase tracking-wider transition-all shadow-sm"
                     >
-                        <Download className="h-4 w-4" />
+                        <Download className="h-4 w-4 text-emerald-600" />
                         <span>Export</span>
                     </button>
                     {activeTab === "ar" && (
                         <button
                             onClick={handleExportCortex}
-                            className="erp-btn-primary !bg-orange-600 hover:!bg-orange-700 shadow-orange-200 flex-1 md:flex-none"
+                            className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-orange-200 bg-orange-50 hover:bg-orange-100 text-orange-800 font-semibold text-xs uppercase tracking-wider transition-all"
                         >
-                            <FileCode2 className="h-4 w-4" />
+                            <FileCode2 className="h-4 w-4 text-orange-600" />
                             <span>Cortex CSV</span>
                         </button>
                     )}
                     <button
                         onClick={() => setShowModal(true)}
-                        className="erp-btn-primary flex-1 md:flex-none"
+                        className="flex-1 sm:flex-initial bg-slate-900 text-white px-6 py-3 rounded-2xl flex items-center justify-center gap-2 hover:bg-slate-800 transition-all font-bold shadow-lg shadow-slate-900/10 hover:shadow-slate-900/20 active:scale-98 group text-xs uppercase tracking-wider"
                     >
-                        <Plus className="h-4 w-4" />
+                        <Plus className="h-4 w-4 text-emerald-400 group-hover:rotate-90 transition-transform duration-300" />
                         <span>New Entry</span>
                     </button>
                 </div>
@@ -698,72 +467,89 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
 
             {/* Quick Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="erp-card p-6 border-l-4 border-l-rose-500 bg-white shadow-xl shadow-slate-100 relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:scale-110 transition-transform">
+                {/* Stat 1: AP */}
+                <div className="p-6 rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden group flex flex-col justify-between">
+                    <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform text-rose-500">
                         <ArrowDownCircle className="h-16 w-16" />
                     </div>
-                    <div className="relative z-10">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Outstanding AP (Hutang)</p>
-                        <h3 className="text-2xl font-black text-slate-900 tracking-tighter">{formatCurrency(totalHutang)}</h3>
-                        <div className="mt-4 space-y-2">
-                            <div className="flex items-center justify-between p-2 bg-amber-50 rounded-lg border border-amber-100">
+                    <div className="relative z-10 space-y-4">
+                        <div>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Outstanding AP (Hutang)</p>
+                            <h3 className="text-2xl font-mono font-black text-slate-900 tracking-tighter">{formatCurrency(totalHutang)}</h3>
+                        </div>
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between p-2 bg-amber-50 rounded-xl border border-amber-100">
                                 <div className="flex items-center gap-1.5">
                                     <AlertCircle className="h-3 w-3 text-amber-600" />
                                     <span className="text-[9px] font-bold text-amber-900 uppercase">Jatuh Tempo (14hr+)</span>
                                 </div>
-                                <span className="text-[10px] font-black text-amber-700">{formatCurrency(dueSoonAP)}</span>
+                                <span className="text-[10px] font-mono font-black text-amber-700">{formatCurrency(dueSoonAP)}</span>
                             </div>
-                            <div className="flex items-center justify-between px-2 pt-1">
+                            <div className="flex items-center justify-between px-2 pt-1 border-t border-slate-50">
                                 <span className="text-[9px] font-bold text-slate-400 uppercase">Paid this month ({format(new Date(), "MMM")})</span>
-                                <span className="text-[10px] font-black text-rose-600">{formatCurrency(currentMonthPaidAP)}</span>
+                                <span className="text-[10px] font-mono font-black text-rose-600">{formatCurrency(currentMonthPaidAP)}</span>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div className="erp-card p-6 border-l-4 border-l-emerald-500 bg-white shadow-xl shadow-slate-100 relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:scale-110 transition-transform">
+                {/* Stat 2: AR */}
+                <div className="p-6 rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden group flex flex-col justify-between">
+                    <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform text-emerald-500">
                         <ArrowUpCircle className="h-16 w-16" />
                     </div>
-                    <div className="relative z-10">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Outstanding AR (Piutang)</p>
-                        <h3 className="text-2xl font-black text-slate-900 tracking-tighter">{formatCurrency(totalPiutang)}</h3>
-                        <div className="mt-4 space-y-2">
-                            <div className="flex items-center justify-between p-2 bg-rose-50 rounded-lg border border-rose-100">
+                    <div className="relative z-10 space-y-4">
+                        <div>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Outstanding AR (Piutang)</p>
+                            <h3 className="text-2xl font-mono font-black text-slate-900 tracking-tighter">{formatCurrency(totalPiutang)}</h3>
+                        </div>
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between p-2 bg-rose-50 rounded-xl border border-rose-100">
                                 <div className="flex items-center gap-1.5">
                                     <Clock className="h-3 w-3 text-rose-600" />
                                     <span className="text-[9px] font-bold text-rose-900 uppercase tracking-tight">Overdue (30hr+)</span>
                                 </div>
-                                <span className="text-[10px] font-black text-rose-700">{formatCurrency(overdueAR)}</span>
+                                <span className="text-[10px] font-mono font-black text-rose-700">{formatCurrency(overdueAR)}</span>
                             </div>
-                            <div className="flex items-center justify-between px-2 pt-1">
+                            <div className="flex items-center justify-between px-2 pt-1 border-t border-slate-50">
                                 <span className="text-[9px] font-bold text-slate-400 uppercase">Collected this month ({format(new Date(), "MMM")})</span>
-                                <span className="text-[10px] font-black text-emerald-600">{formatCurrency(currentMonthPaidAR)}</span>
+                                <span className="text-[10px] font-mono font-black text-emerald-600">{formatCurrency(currentMonthPaidAR)}</span>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div className="erp-card p-6 border-l-4 border-l-blue-500 bg-white shadow-xl shadow-slate-100 relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:scale-110 transition-transform">
+
+                {/* Stat 3: Logistics Pendings */}
+                <div className="p-6 rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden group flex flex-col justify-between">
+                    <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform text-blue-500">
                         <FileText className="h-16 w-16" />
                     </div>
-                    <div className="relative z-10">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Logistics Pendings</p>
-                        <h3 className="text-2xl font-black text-blue-600 tracking-tighter">{unverifiedReceipts.length} <span className="text-xs text-slate-400 font-bold ml-1">Receipts</span></h3>
-                        <div className="mt-4 flex items-center gap-2 underline underline-offset-4 decoration-blue-100 cursor-pointer hover:text-blue-700 transition-colors" onClick={() => setActiveTab("checker")}>
+                    <div className="relative z-10 space-y-4">
+                        <div>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Logistics Pendings</p>
+                            <h3 className="text-2xl font-black text-blue-600 tracking-tighter">
+                                <span className="font-mono">{unverifiedReceipts.length}</span> <span className="text-xs text-slate-400 font-bold ml-1">Receipts</span>
+                            </h3>
+                        </div>
+                        <div className="pt-4 border-t border-slate-50 flex items-center gap-2 underline underline-offset-4 decoration-blue-100 cursor-pointer hover:text-blue-700 transition-colors" onClick={() => setActiveTab("checker")}>
                             <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Verify Goods Receipt</span>
                         </div>
                     </div>
                 </div>
 
-                <div className="erp-card p-6 border-l-4 border-l-amber-500 bg-white shadow-xl shadow-slate-100 relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:scale-110 transition-transform">
+                {/* Stat 4: Pengajuan */}
+                <div className="p-6 rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden group flex flex-col justify-between">
+                    <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform text-amber-500">
                         <ShoppingCart className="h-16 w-16" />
                     </div>
-                    <div className="relative z-10">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Pengajuan (Draft)</p>
-                        <h3 className="text-2xl font-black text-amber-600 tracking-tighter">{pendingPurchaseRequests.length} <span className="text-xs text-slate-400 font-bold ml-1">Docs</span></h3>
-                        <div className="mt-4 flex items-center gap-2 underline underline-offset-4 decoration-amber-100 cursor-pointer hover:text-amber-700 transition-colors" onClick={() => setActiveTab("purchase_requests")}>
+                    <div className="relative z-10 space-y-4">
+                        <div>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Pengajuan (Draft)</p>
+                            <h3 className="text-2xl font-black text-amber-600 tracking-tighter">
+                                <span className="font-mono">{pendingPurchaseRequests.length}</span> <span className="text-xs text-slate-400 font-bold ml-1">Docs</span>
+                            </h3>
+                        </div>
+                        <div className="pt-4 border-t border-slate-50 flex items-center gap-2 underline underline-offset-4 decoration-amber-100 cursor-pointer hover:text-amber-700 transition-colors" onClick={() => setActiveTab("purchase_requests")}>
                             <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest">Open Approvals</span>
                         </div>
                     </div>
@@ -807,39 +593,38 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
             </div>
 
             {/* Main Tabs */}
-                <div className="flex overflow-x-auto whitespace-nowrap gap-2 bg-slate-100/50 p-1.5 rounded-2xl border border-slate-200/50 hide-print custom-scrollbar scrollbar-hide">
-                    {[
-                        { id: "ledger", label: "Ledger", icon: FileText, count: 0 },
-                        { id: "ap", label: "AP (Hutang)", icon: ArrowDownCircle, count: pendingPurchases.filter((p: any) => p.paymentStatus !== 'PAID').length },
-                        { id: "ar", label: "AR (Piutang)", icon: ArrowUpCircle, count: pendingSales.filter((s: any) => s.paymentStatus !== 'PAID').length },
-                        { id: "checker", label: "Checker", icon: CheckCircle2, count: unverifiedReceipts.length },
-                        { id: "purchase_requests", label: "Pengajuan", icon: Wallet, count: pendingPurchaseRequests.length },
-                        { id: "history", label: "History", icon: Clock, count: (settledPurchases?.length || 0) + (settledSales?.length || 0) },
-                        { id: "closing", label: "Closing Bulanan", icon: FileCode2, count: 0 },
-                    ].map((tab) => (
-                        <button
-                            key={tab.id}
-                            onClick={() => setActiveTab(tab.id as any)}
-                            className={cn(
-                                "flex items-center gap-2.5 px-6 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all duration-300",
-                                activeTab === tab.id 
-                                    ? "bg-white text-primary shadow-sm border border-slate-200/50 scale-100" 
-                                    : "text-slate-500 hover:text-slate-900 hover:bg-white/50"
-                            )}
-                        >
-                            <tab.icon className={cn("h-4 w-4", activeTab === tab.id ? "text-primary" : "text-slate-400")} />
-                            {tab.label}
-                            {tab.count > 0 && (
-                                <span className={cn(
-                                    "px-1.5 py-0.5 rounded-md text-[9px]",
-                                    activeTab === tab.id ? "bg-primary/10 text-primary" : "bg-slate-200 text-slate-500"
-                                )}>
-                                    {tab.count}
-                                </span>
-                            )}
-                        </button>
-                    ))}
-                </div>
+            <div className="flex bg-slate-100/80 p-1.5 rounded-2xl w-full lg:w-fit gap-1 hide-print overflow-x-auto whitespace-nowrap scrollbar-hide">
+                {[
+                    { id: "ledger", label: "Ledger", icon: FileText, count: 0 },
+                    { id: "ap", label: "AP (Hutang)", icon: ArrowDownCircle, count: pendingPurchases.filter((p: any) => p.paymentStatus !== 'PAID').length },
+                    { id: "ar", label: "AR (Piutang)", icon: ArrowUpCircle, count: pendingSales.filter((s: any) => s.paymentStatus !== 'PAID').length },
+                    { id: "checker", label: "Checker", icon: CheckCircle2, count: unverifiedReceipts.length },
+                    { id: "purchase_requests", label: "Pengajuan", icon: Wallet, count: pendingPurchaseRequests.length },
+                    { id: "history", label: "History", icon: Clock, count: (settledPurchases?.length || 0) + (settledSales?.length || 0) },
+                ].map((tab) => (
+                    <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id as any)}
+                        className={cn(
+                            "flex-1 lg:flex-initial flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all duration-300",
+                            activeTab === tab.id
+                                ? "bg-white text-slate-900 shadow-md scale-102"
+                                : "text-slate-500 hover:text-slate-800 hover:bg-white/30"
+                        )}
+                    >
+                        <tab.icon className={cn("h-4 w-4", activeTab === tab.id ? "text-slate-900" : "text-slate-400")} />
+                        <span>{tab.label}</span>
+                        {tab.count > 0 && (
+                            <span className={cn(
+                                "px-1.5 py-0.5 rounded-md text-[9px] font-black leading-none",
+                                activeTab === tab.id ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-600"
+                            )}>
+                                {tab.count}
+                            </span>
+                        )}
+                    </button>
+                ))}
+            </div>
 
                 {/* Search & Results Panel */}
                 <div className="erp-card overflow-hidden border-slate-200/40">
@@ -890,13 +675,13 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                             <tbody className="divide-y divide-slate-50 text-slate-700">
                                 {filteredLedger.map((tx: any) => (
                                     <tr key={tx.id} className="hover:bg-slate-50/80 transition-all group/row">
-                                        <td className="px-8 py-5 text-slate-400 font-bold tabular-nums">
+                                        <td className="px-8 py-5 font-mono text-slate-400 font-bold tabular-nums">
                                             {isClient && tx.date ? format(new Date(tx.date), "dd/MM/yy") : "..."}
                                         </td>
                                         <td className="px-8 py-5">
                                             <div className="font-black text-slate-900 tracking-tight leading-none mb-1.5 truncate max-w-[400px]" title={tx.description}>{tx.description}</div>
                                             {tx.transaction && (
-                                                <div className="text-[9px] text-slate-400 font-black uppercase tracking-widest flex items-center gap-2">
+                                                <div className="text-[9px] text-slate-400 font-black font-mono uppercase tracking-widest flex items-center gap-2">
                                                     <div className="h-1 w-1 bg-slate-300 rounded-full" />
                                                     {tx.transaction.bank} <span className="text-slate-300">/</span> {tx.transaction.referenceNumber || 'CASH'}
                                                 </div>
@@ -919,7 +704,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                             </span>
                                         </td>
                                         <td className={cn(
-                                            "px-8 py-5 text-right font-black tabular-nums tracking-tighter text-base",
+                                            "px-8 py-5 text-right font-black font-mono tabular-nums tracking-tighter text-base",
                                             tx.type === "DEBIT" ? "text-emerald-500" : "text-slate-900"
                                         )}>
                                             {formatCurrency(Number(tx.amount))}
@@ -946,7 +731,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                 <div key={tx.id} className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm active:scale-[0.98] transition-transform">
                                     <div className="flex justify-between items-start mb-4">
                                         <div className="flex flex-col gap-1">
-                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                                            <span className="text-[10px] font-black font-mono text-slate-400 uppercase tracking-[0.2em]">
                                                 {isClient && tx.date ? format(new Date(tx.date), "dd MMM yyyy") : "..."}
                                             </span>
                                             <span className={cn(
@@ -958,7 +743,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                         </div>
                                         <div className="text-right">
                                             <div className={cn(
-                                                "text-lg font-black tracking-tighter tabular-nums",
+                                                "text-lg font-black font-mono tracking-tighter tabular-nums",
                                                 tx.type === "DEBIT" ? "text-emerald-500" : "text-slate-900"
                                             )}>
                                                 {formatCurrency(Number(tx.amount))}
@@ -969,7 +754,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                     <div className="mb-4">
                                         <div className="font-bold text-slate-900 text-sm leading-tight mb-2">{tx.description}</div>
                                         {tx.transaction && (
-                                            <div className="text-[10px] text-slate-400 font-bold bg-slate-50 p-2 rounded-lg border border-slate-100/50">
+                                            <div className="text-[10px] text-slate-400 font-bold font-mono bg-slate-50 p-2 rounded-lg border border-slate-100/50">
                                                 Ref: {tx.transaction.bank} / {tx.transaction.referenceNumber || 'CASH'}
                                             </div>
                                         )}
@@ -1008,7 +793,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                     {filteredPurchases.map((p: any) => (
                                         <tr key={p.id} className="hover:bg-slate-50/80 transition-all group/row">
                                             <td className="px-8 py-5">
-                                                <div className="text-[11px] font-black text-slate-400 uppercase tracking-widest leading-none mb-2">{isClient && p.createdAt ? format(new Date(p.createdAt), "dd/MM/yy") : "..."}</div>
+                                                <div className="text-[11px] font-black font-mono text-slate-400 uppercase tracking-widest leading-none mb-2">{isClient && p.createdAt ? format(new Date(p.createdAt), "dd/MM/yy") : "..."}</div>
                                                 <div className="font-mono text-[9px] font-black text-slate-300 uppercase tracking-tighter truncate" title={p.receiptNumber || ""}>{p.receiptNumber || "-"}</div>
                                             </td>
                                             <td className="px-8 py-5">
@@ -1030,16 +815,28 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                                     </span>
                                                 </div>
                                             </td>
+                                            <td className="px-8 py-5 text-center">
+                                                {(() => {
+                                                    const info = getBankInfo(p.receiptNumber);
+                                                    if (!info) return <span className="text-[10px] text-slate-300 font-bold font-mono">-</span>;
+                                                    return (
+                                                        <div className="flex flex-col gap-1">
+                                                            <span className="text-[10px] font-black text-rose-500 uppercase font-mono">{info.code}</span>
+                                                            <span className="text-[8px] font-black text-slate-400 font-mono">{isClient && info.date ? format(new Date(info.date), "dd/MM") : ""}</span>
+                                                        </div>
+                                                    );
+                                                })()}
+                                            </td>
                                             <td className="px-8 py-5 text-right">
-                                                <div className="font-black text-slate-900 tabular-nums tracking-tighter text-base">{formatCurrency(p.total)}</div>
+                                                <div className="font-black font-mono text-slate-900 tabular-nums tracking-tighter text-base">{formatCurrency(p.total)}</div>
                                                 {Number(p.paidAmount || 0) > 0 && (
-                                                    <div className="text-[9px] text-emerald-500 font-black uppercase tracking-widest mt-1">
+                                                    <div className="text-[9px] text-emerald-500 font-black font-mono uppercase tracking-widest mt-1">
                                                         Settled: {formatCurrency(Number(p.paidAmount))}
                                                     </div>
                                                 )}
                                             </td>
                                             <td className="px-8 py-5 text-right">
-                                                <div className="font-black text-rose-500 tabular-nums tracking-tighter text-base">{formatCurrency(Number(p.total) - Number(p.paidAmount || 0))}</div>
+                                                <div className="font-black font-mono text-rose-500 tabular-nums tracking-tighter text-base">{formatCurrency(Number(p.total) - Number(p.paidAmount || 0))}</div>
                                             </td>
                                             <td className="px-8 py-5">
                                                 <div className="flex flex-col gap-2 scale-90 origin-right">
@@ -1090,7 +887,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                     <div key={p.id} className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm">
                                         <div className="flex justify-between items-start mb-4">
                                             <div className="flex flex-col gap-1">
-                                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{isClient && p.createdAt ? format(new Date(p.createdAt), "dd MMM yyyy") : "..."}</span>
+                                                <span className="text-[10px] font-black font-mono text-slate-400 uppercase tracking-widest">{isClient && p.createdAt ? format(new Date(p.createdAt), "dd MMM yyyy") : "..."}</span>
                                                 <div className="font-mono text-[9px] text-slate-300 uppercase tracking-tighter truncate w-32">{p.receiptNumber || "-"}</div>
                                             </div>
                                             <div className={cn(
@@ -1105,7 +902,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                             <div className="flex justify-between items-center bg-slate-50/50 p-3 rounded-xl border border-slate-100/50">
                                                 <div className="flex flex-col">
                                                     <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Due Balance</span>
-                                                    <span className="text-sm font-black text-rose-500 tabular-nums">{formatCurrency(Number(p.total) - Number(p.paidAmount || 0))}</span>
+                                                    <span className="text-sm font-black font-mono text-rose-500 tabular-nums">{formatCurrency(Number(p.total) - Number(p.paidAmount || 0))}</span>
                                                 </div>
                                                 <div className="text-right">
                                                     <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">State</span>
@@ -1161,10 +958,10 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                             <tr key={r.id} className="hover:bg-rose-50/50 transition-colors">
 
                                                 <td className="px-6 py-4 font-mono font-bold text-rose-600">{r.returnNumber}</td>
-                                                <td className="px-6 py-4 text-slate-500">{format(new Date(r.date || r.createdAt), "dd/MM/yyyy")}</td>
-                                                <td className="px-6 py-4 text-slate-600">{r.receipt?.receiptNumber}</td>
+                                                <td className="px-6 py-4 text-slate-500 font-mono">{format(new Date(r.date || r.createdAt), "dd/MM/yyyy")}</td>
+                                                <td className="px-6 py-4 text-slate-600 font-mono">{r.receipt?.receiptNumber}</td>
                                                 <td className="px-6 py-4 font-medium text-slate-700">{r.receipt?.receivedFrom}</td>
-                                                <td className="px-6 py-4 text-center font-bold text-rose-600">
+                                                <td className="px-6 py-4 text-center font-bold font-mono text-rose-600">
                                                     {r.items?.reduce((acc: number, i: any) => acc + i.quantity, 0)} Items
                                                 </td>
                                                 <td className="px-6 py-4 text-center">
@@ -1212,7 +1009,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                     {Array.isArray(filteredSales) && filteredSales.map((s: any) => (
                                         <tr key={s.id} className="hover:bg-slate-50/80 transition-all group/row">
                                             <td className="px-8 py-5">
-                                                <div className="text-[11px] font-black text-slate-400 uppercase tracking-widest leading-none mb-2">{isClient ? format(new Date(s.createdAt), "dd/MM/yy") : "..."}</div>
+                                                <div className="text-[11px] font-black font-mono text-slate-400 uppercase tracking-widest leading-none mb-2">{isClient ? format(new Date(s.createdAt), "dd/MM/yy") : "..."}</div>
                                                 <div className="font-mono text-[9px] font-black text-slate-300 uppercase tracking-tighter truncate" title={s.deliveryNumber}>{s.deliveryNumber}</div>
                                             </td>
                                             <td className="px-8 py-5">
@@ -1235,20 +1032,20 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                             <td className="px-8 py-5 text-center">
                                                 {(() => {
                                                     const info = getBankInfo(s.deliveryNumber);
-                                                    if (!info) return <span className="text-[10px] text-slate-300 font-bold">-</span>;
+                                                    if (!info) return <span className="text-[10px] text-slate-300 font-bold font-mono">-</span>;
                                                     return (
                                                         <div className="flex flex-col gap-1">
-                                                            <span className="text-[10px] font-black text-emerald-500 uppercase">{info.code}</span>
-                                                            <span className="text-[8px] font-black text-slate-400">{isClient && info.date ? format(new Date(info.date), "dd/MM") : ""}</span>
+                                                            <span className="text-[10px] font-black text-emerald-500 uppercase font-mono">{info.code}</span>
+                                                            <span className="text-[8px] font-black text-slate-400 font-mono">{isClient && info.date ? format(new Date(info.date), "dd/MM") : ""}</span>
                                                         </div>
                                                     );
                                                 })()}
                                             </td>
                                             <td className="px-8 py-5 text-right">
-                                                <div className="font-black text-slate-900 tabular-nums tracking-tighter text-base">{formatCurrency(s.total)}</div>
+                                                <div className="font-black font-mono text-slate-900 tabular-nums tracking-tighter text-base">{formatCurrency(s.total)}</div>
                                             </td>
                                             <td className="px-8 py-5 text-right">
-                                                <div className="font-black text-emerald-600 tabular-nums tracking-tighter text-base">
+                                                <div className="font-black font-mono text-emerald-600 tabular-nums tracking-tighter text-base">
                                                     {formatCurrency(Number(s.total) - Number(s.paidAmount || 0))}
                                                 </div>
                                             </td>
@@ -1301,7 +1098,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                     <div key={s.id} className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm">
                                         <div className="flex justify-between items-start mb-4">
                                             <div className="flex flex-col gap-1">
-                                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{isClient ? format(new Date(s.createdAt), "dd MMM yyyy") : "..."}</span>
+                                                <span className="text-[10px] font-black font-mono text-slate-400 uppercase tracking-widest">{isClient ? format(new Date(s.createdAt), "dd MMM yyyy") : "..."}</span>
                                                 <div className="font-mono text-[9px] text-slate-300 uppercase tracking-tighter truncate w-32">{s.deliveryNumber}</div>
                                             </div>
                                             <div className={cn(
@@ -1316,11 +1113,11 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                             <div className="flex justify-between items-center bg-slate-50/50 p-3 rounded-xl border border-slate-100/50">
                                                 <div className="flex flex-col">
                                                     <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Value</span>
-                                                    <span className="text-sm font-black text-slate-900 tabular-nums">{formatCurrency(s.total)}</span>
+                                                    <span className="text-sm font-black font-mono text-slate-900 tabular-nums">{formatCurrency(s.total)}</span>
                                                 </div>
                                                 <div className="text-right">
                                                     <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest mb-1">Unpaid</span>
-                                                    <div className="text-sm font-black text-emerald-600 tabular-nums">{formatCurrency(Number(s.total) - Number(s.paidAmount || 0))}</div>
+                                                    <div className="text-sm font-black font-mono text-emerald-600 tabular-nums">{formatCurrency(Number(s.total) - Number(s.paidAmount || 0))}</div>
                                                 </div>
                                             </div>
                                         </div>
@@ -1362,9 +1159,9 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                                     <div>{r.returnNumber}</div>
                                                     <div className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">{r.delivery?.buyerName}</div>
                                                 </td>
-                                                <td className="py-4 text-slate-500 font-bold">{format(new Date(r.date || r.createdAt), "dd/MM/yyyy")}</td>
+                                                <td className="py-4 text-slate-500 font-bold font-mono">{format(new Date(r.date || r.createdAt), "dd/MM/yyyy")}</td>
                                                 <td className="py-4 text-slate-600 font-mono text-[10px]">{r.delivery?.deliveryNumber}</td>
-                                                <td className="py-4 text-right font-black text-blue-500 text-base tabular-nums">
+                                                <td className="py-4 text-right font-black font-mono text-blue-500 text-base tabular-nums">
                                                     {r.items?.reduce((acc: number, i: any) => acc + i.quantity, 0)} <span className="text-[9px] tracking-widest">PCS</span>
                                                 </td>
                                                 <td className="py-4 text-center">
@@ -1402,11 +1199,11 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                 {Array.isArray(unverifiedReceipts) && unverifiedReceipts.map((r: any) => (
                                     <tr key={r.id} className="hover:bg-slate-50/80 transition-all">
                                         <td className="px-8 py-5">
-                                            <div className="text-[11px] font-black text-slate-400 uppercase tracking-widest leading-none mb-2">{isClient ? format(new Date(r.createdAt), "dd/MM/yy") : "..."}</div>
+                                            <div className="text-[11px] font-black font-mono text-slate-400 uppercase tracking-widest leading-none mb-2">{isClient ? format(new Date(r.createdAt), "dd/MM/yy") : "..."}</div>
                                             <div className="font-mono text-[9px] font-black text-slate-300 uppercase tracking-tighter truncate">{r.receiptNumber}</div>
                                         </td>
                                         <td className="px-8 py-5 font-black text-slate-900 tracking-tight">{r.receivedFrom}</td>
-                                        <td className="px-8 py-5 text-center font-black tabular-nums">{r.items.length}</td>
+                                        <td className="px-8 py-5 text-center font-black font-mono tabular-nums">{r.items.length}</td>
                                         <td className="px-8 py-5">
                                             <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest bg-slate-100/50 px-3 py-1.5 rounded-lg border border-slate-100 inline-block">
                                                 {r.warehouse?.name}
@@ -1438,7 +1235,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                     <div className="mb-0">
                                         <div className="font-black text-slate-900 text-sm leading-tight mb-2">{r.receivedFrom}</div>
                                         <div className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Destination: {r.warehouse?.name}</div>
-                                        <div className="text-[10px] font-black text-primary uppercase tracking-widest mt-2">{r.items.length} Product SKU in shipment</div>
+                                        <div className="text-[10px] font-black text-primary uppercase tracking-widest mt-2"><span className="font-mono">{r.items.length}</span> Product SKU in shipment</div>
                                     </div>
                                 </div>
                             ))}
@@ -1463,7 +1260,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                 {Array.isArray(filteredPurchaseRequests) && filteredPurchaseRequests.map((r: any) => (
                                     <tr key={r.id} className="hover:bg-slate-50/80 transition-all">
                                         <td className="px-8 py-5">
-                                            <div className="text-[11px] font-black text-slate-400 uppercase tracking-widest leading-none mb-2">{isClient ? format(new Date(r.createdAt), "dd/MM/yy") : "..."}</div>
+                                            <div className="text-[11px] font-black font-mono text-slate-400 uppercase tracking-widest leading-none mb-2">{isClient ? format(new Date(r.createdAt), "dd/MM/yy") : "..."}</div>
                                             <div className="font-mono text-[9px] font-black text-slate-300 uppercase tracking-tighter truncate">{r.number}</div>
                                         </td>
                                         <td className="px-8 py-5 font-black text-slate-900 tracking-tight">{r.requestedBy?.name}</td>
@@ -1477,7 +1274,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                                 {r.category || "PEMBELIAN"}
                                             </span>
                                         </td>
-                                        <td className="px-8 py-5 text-right font-black tabular-nums">{r.items.length} Items</td>
+                                        <td className="px-8 py-5 text-right font-black font-mono tabular-nums">{r.items.length} Items</td>
                                         <td className="px-8 py-5 text-center">
                                             <button
                                                 disabled={loading === r.id}
@@ -1498,7 +1295,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                 <div key={r.id} className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm border-l-4 border-l-amber-500">
                                     <div className="flex justify-between items-start mb-4">
                                         <div className="flex flex-col gap-1">
-                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{isClient ? format(new Date(r.createdAt), "dd MMM yyyy") : "..."}</span>
+                                            <span className="text-[10px] font-black font-mono text-slate-400 uppercase tracking-widest">{isClient ? format(new Date(r.createdAt), "dd MMM yyyy") : "..."}</span>
                                             <div className="font-mono text-[9px] text-slate-300 uppercase tracking-tighter truncate w-32">{r.number}</div>
                                         </div>
                                         <div className="px-2 py-1 bg-amber-50 rounded-lg text-[9px] font-black text-amber-600 uppercase border border-amber-100">
@@ -1508,7 +1305,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                     <div className="mb-4">
                                         <div className="font-black text-slate-900 text-sm leading-tight mb-2">Requester: {r.requestedBy?.name}</div>
                                         <div className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Warehouse: {r.warehouse?.name}</div>
-                                        <p className="text-[10px] font-black text-primary uppercase tracking-widest mt-2">{r.items.length} Requested SKU Line Items</p>
+                                        <p className="text-[10px] font-black text-primary uppercase tracking-widest mt-2"><span className="font-mono">{r.items.length}</span> Requested SKU Line Items</p>
                                     </div>
                                     <button
                                         disabled={loading === r.id}
@@ -1566,12 +1363,12 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                         {/* Settled Sales (AR) */}
                                         {filteredSettledSales.map((s: any) => (
                                             <tr key={`sale-${s.id}`} onClick={() => setSelectedHistoryItem({ ...s, historyType: 'AR' })} className="hover:bg-blue-50/50 transition-all group/row cursor-pointer">
-                                                <td className="px-8 py-5 text-slate-400 font-bold tabular-nums">
+                                                <td className="px-8 py-5 font-mono text-slate-400 font-bold tabular-nums">
                                                     {isClient && s.updatedAt ? format(new Date(s.updatedAt), "dd/MM/yy") : "..."}
                                                 </td>
                                                 <td className="px-8 py-5">
                                                     <div className="font-black text-slate-900 tracking-tight mb-1 truncate">{s.buyerName}</div>
-                                                    <div className="text-[9px] text-emerald-500 font-black uppercase tracking-widest flex items-center gap-2">
+                                                    <div className="text-[9px] text-emerald-500 font-black font-mono uppercase tracking-widest flex items-center gap-2">
                                                         <span>Customer Payment (AR)</span>
                                                         <span className="h-1 w-1 bg-slate-300 rounded-full" />
                                                         <span className="text-slate-400">By: {s.createdBy?.name || 'Finance'}</span>
@@ -1581,7 +1378,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                                 <td className="px-8 py-5 text-center">
                                                     <span className="px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border bg-emerald-50 text-emerald-600 border-emerald-100">PELUNASAN</span>
                                                 </td>
-                                                <td className="px-8 py-5 text-right font-black tabular-nums tracking-tighter text-base text-emerald-600">
+                                                <td className="px-8 py-5 text-right font-black font-mono tabular-nums tracking-tighter text-base text-emerald-600">
                                                     {formatCurrency(Number(s.total))}
                                                 </td>
                                             </tr>
@@ -1589,12 +1386,12 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                         {/* Settled Purchases (AP) */}
                                         {filteredSettledPurchases.map((p: any) => (
                                             <tr key={`purchase-${p.id}`} onClick={() => setSelectedHistoryItem({ ...p, historyType: 'AP' })} className="hover:bg-rose-50/50 transition-all group/row cursor-pointer">
-                                                <td className="px-8 py-5 text-slate-400 font-bold tabular-nums">
+                                                <td className="px-8 py-5 font-mono text-slate-400 font-bold tabular-nums">
                                                     {isClient && p.updatedAt ? format(new Date(p.updatedAt), "dd/MM/yy") : "..."}
                                                 </td>
                                                 <td className="px-8 py-5">
                                                     <div className="font-black text-slate-900 tracking-tight mb-1 truncate">{p.receivedFrom}</div>
-                                                    <div className="text-[9px] text-rose-500 font-black uppercase tracking-widest flex items-center gap-2">
+                                                    <div className="text-[9px] text-rose-500 font-black font-mono uppercase tracking-widest flex items-center gap-2">
                                                         <span>Vendor Settlement (AP)</span>
                                                         <span className="h-1 w-1 bg-slate-300 rounded-full" />
                                                         <span className="text-slate-400">By: {p.createdBy?.name || 'Finance'}</span>
@@ -1604,7 +1401,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                                 <td className="px-8 py-5 text-center">
                                                     <span className="px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border bg-rose-50 text-rose-600 border-rose-100">PEMBAYARAN</span>
                                                 </td>
-                                                <td className="px-8 py-5 text-right font-black tabular-nums tracking-tighter text-base text-rose-600">
+                                                <td className="px-8 py-5 text-right font-black font-mono tabular-nums tracking-tighter text-base text-rose-600">
                                                     {formatCurrency(Number(p.total))}
                                                 </td>
                                             </tr>
@@ -1639,12 +1436,12 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                     <tbody className="divide-y divide-slate-50 text-slate-700">
                                         {Array.isArray(transactions) && transactions.map((tx: any) => (
                                             <tr key={tx.id} className="hover:bg-slate-50/80 transition-all">
-                                                <td className="px-8 py-5 text-slate-400 font-bold tabular-nums">
+                                                <td className="px-8 py-5 font-mono text-slate-400 font-bold tabular-nums">
                                                     {isClient && tx.date ? format(new Date(tx.date), "dd/MM/yy") : "..."}
                                                 </td>
                                                 <td className="px-8 py-5">
                                                     <div className="font-black text-slate-900 tracking-tight leading-none mb-1.5 truncate max-w-[400px]">{tx.description}</div>
-                                                    <div className="text-[9px] text-slate-400 font-black uppercase tracking-widest">REF: {tx.referenceNumber || 'INTERNAL'}</div>
+                                                    <div className="text-[9px] text-slate-400 font-black font-mono uppercase tracking-widest">REF: {tx.referenceNumber || 'INTERNAL'}</div>
                                                 </td>
                                                 <td className="px-8 py-5">
                                                     <span className={cn(
@@ -1655,7 +1452,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                                     </span>
                                                 </td>
                                                 <td className={cn(
-                                                    "px-8 py-5 text-right font-black tabular-nums tracking-tighter text-base",
+                                                    "px-8 py-5 text-right font-black font-mono tabular-nums tracking-tighter text-base",
                                                     tx.amount >= 0 ? "text-slate-900" : "text-rose-500"
                                                 )}>
                                                     {formatCurrency(Math.abs(Number(tx.amount)))}
@@ -1669,183 +1466,6 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                 </table>
                             </div>
                         </div>
-                    </div>
-                )}
-
-                {activeTab === "closing" && (
-                    <div className="space-y-8 animate-in fade-in zoom-in duration-500">
-                        <div className="bg-white p-8 rounded-[2.5rem] border-2 border-slate-100 shadow-sm flex flex-col md:flex-row justify-between items-center gap-6">
-                            <div className="flex items-center gap-4">
-                                <div className="p-4 bg-primary/10 rounded-[1.5rem] text-primary">
-                                    <Calendar className="h-8 w-8" />
-                                </div>
-                                <div>
-                                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">Period Closing Report</h3>
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Consolidated Financial Review</p>
-                                    {closingReport?.debug && (
-                                        <p className="text-[8px] font-mono text-slate-300 mt-2">
-                                            DEBUG: Sales({closingReport.debug.salesCount}) Items({closingReport.debug.totalItemsInSales}) Prices({closingReport.debug.priceMapSize})
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-3 bg-slate-50 p-2 rounded-2xl border border-slate-100">
-                                <select 
-                                    value={closingPrefix}
-                                    onChange={(e) => setClosingPrefix(e.target.value as any)}
-                                    className="bg-transparent font-black text-sm outline-none px-4 py-2 border-r border-slate-200"
-                                >
-                                    <option value="ALL">ALL DIV</option>
-                                    <option value="PF">PF DIV</option>
-                                    <option value="BC">BC DIV</option>
-                                </select>
-                                <select 
-                                    value={closingPeriod.month}
-                                    onChange={(e) => setClosingPeriod(prev => ({ ...prev, month: parseInt(e.target.value) }))}
-                                    className="bg-transparent font-black text-sm outline-none px-4 py-2"
-                                >
-                                    {Array.from({ length: 12 }).map((_, i) => (
-                                        <option key={i+1} value={i+1}>{format(new Date(2024, i, 1), "MMMM")}</option>
-                                    ))}
-                                </select>
-                                <select 
-                                    value={closingPeriod.year}
-                                    onChange={(e) => setClosingPeriod(prev => ({ ...prev, year: parseInt(e.target.value) }))}
-                                    className="bg-transparent font-black text-sm outline-none px-4 py-2"
-                                >
-                                    {[2024, 2025, 2026].map(y => (
-                                        <option key={y} value={y}>{y}</option>
-                                    ))}
-                                </select>
-                                <button 
-                                    onClick={() => fetchClosingReport(closingPeriod.month, closingPeriod.year, closingPrefix)}
-                                    disabled={isFetchingClosing}
-                                    className="p-2 bg-white rounded-xl shadow-sm hover:shadow-md transition-all active:scale-95 text-primary"
-                                >
-                                    <Search className={cn("h-5 w-5", isFetchingClosing && "animate-spin")} />
-                                </button>
-                            </div>
-                        </div>
-
-                        {isFetchingClosing ? (
-                            <div className="p-32 text-center bg-white rounded-[2.5rem] border-2 border-slate-50 shadow-inner flex flex-col items-center justify-center gap-6 animate-pulse">
-                                <div className="p-4 bg-primary/5 rounded-full">
-                                    <Clock className="h-12 w-12 text-primary/30 animate-spin" />
-                                </div>
-                                <div>
-                                    <p className="font-black text-slate-900 uppercase tracking-[0.2em] text-sm">Menarik Data Closing</p>
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">Mohon tunggu sebentar, sedang sinkronisasi data seluruh departemen...</p>
-                                </div>
-                            </div>
-                        ) : !closingReport ? (
-                            <div className="p-20 text-center bg-white rounded-[2.5rem] border-2 border-dashed border-slate-100 text-slate-300">
-                                <p className="font-black uppercase tracking-widest text-xs">Pilih periode dan klik cari untuk memuat data closing</p>
-                            </div>
-                        ) : closingReport.error ? (
-                            <div className="p-20 text-center bg-rose-50 rounded-[2.5rem] border-2 border-dashed border-rose-100 text-rose-400">
-                                <p className="font-black uppercase tracking-widest text-xs">Gagal Memuat Data: {closingReport.error}</p>
-                                <button onClick={() => fetchClosingReport(closingPeriod.month, closingPeriod.year)} className="mt-4 px-6 py-2 bg-rose-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest">Coba Lagi</button>
-                            </div>
-                        ) : (
-                            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                                {/* Metric Grid */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-                                    {[
-                                        { label: "Penjualan", value: closingReport.revenue, color: "text-emerald-500", icon: ArrowUpCircle },
-                                        { label: "Pembelian", value: closingReport.inventory?.purchases || 0, color: "text-blue-500", icon: ShoppingCart },
-                                        { label: "Operasional", value: closingReport.expenses, color: "text-amber-500", icon: Wallet },
-                                        { label: "Gross Margin", value: closingReport.grossProfit, color: "text-emerald-600", icon: Sparkles },
-                                        { label: "Profit", value: closingReport.netProfit, color: "text-indigo-600", icon: Banknote },
-                                    ].map((card, i) => (
-                                        <div key={i} className="bg-white p-6 rounded-3xl border-2 border-slate-50 shadow-sm hover:shadow-md transition-all group">
-                                            <div className="flex justify-between items-start mb-4">
-                                                <div className={cn("p-2 bg-slate-50 rounded-xl transition-colors group-hover:bg-primary/5", card.color.replace('text-', 'text-opacity-20 '))}>
-                                                    <card.icon className="h-4 w-4" />
-                                                </div>
-                                            </div>
-                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{card.label}</p>
-                                            <p className={cn("text-xl font-black tabular-nums tracking-tighter", card.color)}>
-                                                {formatCurrency(card.value)}
-                                            </p>
-                                        </div>
-                                    ))}
-                                </div>
-
-                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                                    <div className="lg:col-span-2 space-y-6">
-                                        <div className="bg-white rounded-[2.5rem] border-2 border-slate-100 overflow-hidden">
-                                            <div className="p-8 border-b border-slate-50 bg-slate-50/50">
-                                                <h4 className="font-black text-slate-900 uppercase tracking-tight">Outstanding Balances (End of Period)</h4>
-                                            </div>
-                                            <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
-                                                <div className="space-y-4">
-                                                    <div className="flex justify-between items-end">
-                                                        <div>
-                                                            <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Total Piutang (AR)</p>
-                                                            <p className="text-2xl font-black text-slate-900 tabular-nums tracking-tighter">{formatCurrency(closingReport.outstandingAR)}</p>
-                                                        </div>
-                                                        <ArrowUpCircle className="h-8 w-8 text-emerald-100" />
-                                                    </div>
-                                                    <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                                                        <div className="h-full bg-emerald-500 w-[65%]" />
-                                                    </div>
-                                                    <p className="text-[10px] text-slate-400 font-bold uppercase">Menunggu penagihan dari customer aktif</p>
-                                                </div>
-                                                <div className="space-y-4">
-                                                    <div className="flex justify-between items-end">
-                                                        <div>
-                                                            <p className="text-[10px] font-black text-rose-600 uppercase tracking-widest">Total Hutang (AP)</p>
-                                                            <p className="text-2xl font-black text-slate-900 tabular-nums tracking-tighter">{formatCurrency(closingReport.outstandingAP)}</p>
-                                                        </div>
-                                                        <ArrowDownCircle className="h-8 w-8 text-rose-100" />
-                                                    </div>
-                                                    <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                                                        <div className="h-full bg-rose-500 w-[45%]" />
-                                                    </div>
-                                                    <p className="text-[10px] text-slate-400 font-bold uppercase">Hutang berjalan ke supplier barang</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white relative overflow-hidden flex flex-col justify-between">
-                                        <div className="absolute top-0 right-0 p-8 opacity-10">
-                                            <Sparkles className="h-32 w-32" />
-                                        </div>
-                                        <div className="relative z-10">
-                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Operational Insight</p>
-                                            <h4 className="text-2xl font-black tracking-tight">Closing Efficiency</h4>
-                                            <p className="text-sm text-slate-400 mt-4 leading-relaxed">
-                                                Periode ini memiliki <strong>{closingReport.stats.salesCount}</strong> transaksi penjualan dan <strong>{closingReport.stats.purchaseCount}</strong> penerimaan barang.
-                                            </p>
-                                        </div>
-                                        <div className="relative z-10 mt-12 space-y-4">
-                                            <button 
-                                                onClick={() => handlePrint()}
-                                                className="w-full py-4 bg-white text-slate-900 font-black rounded-2xl hover:bg-slate-100 transition-all active:scale-95 text-xs uppercase tracking-widest flex items-center justify-center gap-2"
-                                            >
-                                                <Printer className="h-4 w-4" />
-                                                Cetak Laporan Closing
-                                            </button>
-                                            <button 
-                                                onClick={downloadPurchasesExcel}
-                                                className="w-full py-4 bg-emerald-500 text-white font-black rounded-2xl hover:bg-emerald-600 transition-all active:scale-95 text-xs uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg"
-                                            >
-                                                <Download className="h-4 w-4" />
-                                                Download Excel Pembelian
-                                            </button>
-                                            <button 
-                                                onClick={downloadSalesExcel}
-                                                className="w-full py-4 bg-blue-500 text-white font-black rounded-2xl hover:bg-blue-600 transition-all active:scale-95 text-xs uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg"
-                                            >
-                                                <Download className="h-4 w-4" />
-                                                Download Excel Penjualan
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
                     </div>
                 )}
             </div>
@@ -1873,7 +1493,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                         <tr key={v.id} className="hover:bg-white/60 transition-colors">
                                             <td className="px-8 py-4 font-bold text-slate-700">{v.name}</td>
                                             <td className={cn(
-                                                "px-8 py-4 text-right font-black tabular-nums tracking-tighter",
+                                                "px-8 py-4 text-right font-black font-mono tabular-nums tracking-tighter",
                                                 activeTab === "ap" ? "text-rose-500" : "text-emerald-500"
                                             )}>
                                                 {formatCurrency(v.balance || 0)}
@@ -1914,11 +1534,11 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                     {Array.isArray(accounts) && accounts.map((account: any) => (
                         <div key={account.id} className="erp-card p-5 bg-white/60 hover:border-primary/40 transition-all group cursor-pointer border-slate-200/50">
                             <div className="flex justify-between items-start mb-4">
-                                <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest bg-slate-100 px-1.5 py-0.5 rounded-md group-hover:bg-primary group-hover:text-white transition-colors">{account.code}</div>
+                                <div className="text-[9px] font-black font-mono text-slate-400 uppercase tracking-widest bg-slate-100 px-1.5 py-0.5 rounded-md group-hover:bg-primary group-hover:text-white transition-colors">{account.code}</div>
                                 <Wallet className="h-3.5 w-3.5 text-slate-300 group-hover:text-primary transition-colors" />
                             </div>
                             <h3 className="text-[11px] font-black text-slate-800 leading-tight mb-2 uppercase tracking-tight line-clamp-1">{account.name}</h3>
-                            <p className="text-sm font-black text-slate-900 tracking-tighter tabular-nums">{formatCurrency(account.balance || 0)}</p>
+                            <p className="text-sm font-black font-mono text-slate-900 tracking-tighter tabular-nums">{formatCurrency(account.balance || 0)}</p>
                         </div>
                     ))}
                 </div>
@@ -2023,19 +1643,19 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                         {selectedHistoryItem.items?.map((item: any, idx: number) => (
                                             <tr key={idx}>
                                                 <td className="px-6 py-4">
-                                                    <div className="font-black text-slate-900 leading-none mb-1">{item.product?.sku}</div>
+                                                    <div className="font-black font-mono text-slate-900 leading-none mb-1">{item.product?.sku}</div>
                                                     <div className="text-[10px] font-bold text-slate-400 uppercase truncate max-w-[250px]">{item.product?.name}</div>
                                                 </td>
-                                                <td className="px-6 py-4 text-center font-black tabular-nums">{item.quantity} {item.uom || item.product?.uom}</td>
-                                                <td className="px-6 py-4 text-right font-black tabular-nums text-slate-500">{formatCurrency(Number(item.purchasePrice || item.salesPrice || 0))}</td>
-                                                <td className="px-6 py-4 text-right font-black tabular-nums text-slate-900">{formatCurrency(Number(item.quantity) * Number(item.purchasePrice || item.salesPrice || 0))}</td>
+                                                <td className="px-6 py-4 text-center font-black font-mono tabular-nums">{item.quantity} {item.uom || item.product?.uom}</td>
+                                                <td className="px-6 py-4 text-right font-black font-mono tabular-nums text-slate-500">{formatCurrency(Number(item.purchasePrice || item.salesPrice || 0))}</td>
+                                                <td className="px-6 py-4 text-right font-black font-mono tabular-nums text-slate-900">{formatCurrency(Number(item.quantity) * Number(item.purchasePrice || item.salesPrice || 0))}</td>
                                             </tr>
                                         ))}
                                     </tbody>
                                     <tfoot className="bg-slate-50/50 font-black">
                                         <tr>
                                             <td colSpan={3} className="px-6 py-4 text-right text-slate-500 uppercase text-[10px]">Grand Total Settled</td>
-                                            <td className="px-6 py-4 text-right text-lg tracking-tighter text-slate-900">{formatCurrency(Number(selectedHistoryItem.total || selectedHistoryItem.grandTotal || 0))}</td>
+                                            <td className="px-6 py-4 text-right font-mono text-lg tracking-tighter text-slate-900">{formatCurrency(Number(selectedHistoryItem.total || selectedHistoryItem.grandTotal || 0))}</td>
                                         </tr>
                                     </tfoot>
                                 </table>
@@ -2090,7 +1710,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                 <div className="space-y-4">
                                      <div className="flex justify-between items-center bg-rose-50/50 p-6 rounded-[2rem] border border-rose-100 border-dashed">
                                         <span className="text-[11px] font-black text-rose-500 uppercase tracking-widest">Outstanding Due</span>
-                                        <span className="text-2xl font-black text-rose-600 tabular-nums tracking-tighter">{formatCurrency(remaining)}</span>
+                                        <span className="text-2xl font-black font-mono text-rose-600 tabular-nums tracking-tighter">{formatCurrency(remaining)}</span>
                                     </div>
 
                                     <div className="space-y-2">
@@ -2102,14 +1722,14 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                                 type="number"
                                                 value={paymentAmount}
                                                 onChange={e => setPaymentAmount(e.target.value)}
-                                                className="w-full bg-slate-50 border-2 border-slate-100 rounded-[2rem] p-6 pl-14 text-2xl font-black text-slate-900 outline-none focus:border-primary transition-all shadow-inner"
+                                                className="w-full bg-slate-50 border-2 border-slate-100 rounded-[2rem] p-6 pl-14 text-2xl font-black font-mono text-slate-900 outline-none focus:border-primary transition-all shadow-inner"
                                                 placeholder="0.00"
                                             />
                                         </div>
                                         {currentAmount > 0 && (
                                             <div className="px-4">
                                                 <p className={cn("text-[10px] font-black uppercase tracking-widest", isLunas ? "text-emerald-500" : "text-blue-500")}>
-                                                    {isLunas ? "✓ Authorized for full settlement" : `Remaining post-allocation: ${formatCurrency(remaining - currentAmount)}`}
+                                                    {isLunas ? "✓ Authorized for full settlement" : <span>Remaining post-allocation: <span className="font-mono">{formatCurrency(remaining - currentAmount)}</span></span>}
                                                 </p>
                                             </div>
                                         )}
@@ -2149,7 +1769,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                                 type="date"
                                                 value={paymentDate}
                                                 onChange={e => setPaymentDate(e.target.value)}
-                                                className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 pl-12 text-[11px] font-black text-slate-600 uppercase tracking-[0.2em] outline-none focus:border-primary transition-all"
+                                                className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 pl-12 text-[11px] font-black font-mono text-slate-600 uppercase tracking-[0.2em] outline-none focus:border-primary transition-all"
                                             />
                                         </div>
                                     </div>

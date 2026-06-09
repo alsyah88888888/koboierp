@@ -10,7 +10,8 @@ import {
     Wallet, Package, ArrowUpRight, ArrowDownRight, FileSpreadsheet,
     Activity, BarChart3, RefreshCw, Clock, CreditCard, AlertCircle,
     CheckCircle2, ArrowRight, Printer, ChevronLeft, ChevronRight,
-    DollarSign, Receipt, Truck, RotateCcw, Shield, Users, Building
+    DollarSign, Receipt, Truck, RotateCcw, Shield, Users, Building,
+    FileCode2, Sparkles, Banknote, Search, Download, Eye
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { formatCurrency, cn } from "@/lib/utils";
@@ -19,11 +20,13 @@ import {
     getComprehensiveWeeklyReportAction,
     getComprehensiveMonthlyReportAction
 } from "@/actions/reports";
+import { callAction } from "@/proxy";
+import { format } from "date-fns";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // TYPES
 // ═══════════════════════════════════════════════════════════════════════════
-type ReportTab = "daily" | "weekly" | "monthly";
+type ReportTab = "daily" | "weekly" | "monthly" | "closing";
 
 const CHART_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
 const PAYMENT_BADGE: Record<string, string> = {
@@ -58,6 +61,15 @@ export function ReportsDashboard() {
     const [weeklyData, setWeeklyData] = useState<any>(null);
     const [monthlyData, setMonthlyData] = useState<any>(null);
 
+    // Closing Report State
+    const [closingReport, setClosingReport] = useState<any>(null);
+    const [closingPeriod, setClosingPeriod] = useState({ 
+        month: new Date().getMonth() + 1, 
+        year: new Date().getFullYear() 
+    });
+    const [isFetchingClosing, setIsFetchingClosing] = useState(false);
+    const [closingPrefix, setClosingPrefix] = useState<'PF' | 'BC' | 'ALL'>('ALL');
+
     useEffect(() => { setIsClient(true); }, []);
 
     // ── Data Fetching ─────────────────────────────────────────────────────
@@ -88,11 +100,242 @@ export function ReportsDashboard() {
         setIsLoading(false);
     }, [selectedMonth, selectedYear]);
 
+    const fetchClosingReport = async (m: number, y: number, pref: 'PF' | 'BC' | 'ALL' = 'ALL') => {
+        setIsFetchingClosing(true);
+        setClosingReport(null);
+        try {
+            const data = await callAction("getMonthlyClosingReport", m, y, pref);
+            setClosingReport(data);
+        } catch (err) {
+            console.error("Fetch Failed:", err);
+            setClosingReport({ error: "Koneksi terputus atau server sibuk." });
+        } finally {
+            setIsFetchingClosing(false);
+        }
+    };
+
+    const downloadPurchasesExcel = () => {
+        if (!closingReport?.details?.purchases) return;
+        
+        const data = closingReport.details.purchases.map((p: any) => ({
+            'Tanggal': format(new Date(p.date), 'MM/dd/yyyy'),
+            'No. LPB': p.number,
+            'Supplier': p.entity,
+            'Subtotal': p.subtotal,
+            'Diskon': p.discount,
+            'PPN %': p.taxRate / 100, // Format 11 as 0.11
+            'Pajak Rp': p.tax,
+            'Grand Total Netto': p.grandTotal,
+            'Sudah Dibayarkan (BCA)': p.paidAmount
+        }));
+
+        const ws = XLSX.utils.json_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Pembelian");
+        XLSX.writeFile(wb, `Laporan_Pembelian_${closingPeriod.month}_${closingPeriod.year}.xlsx`);
+    };
+
+    const downloadSalesExcel = () => {
+        if (!closingReport?.details?.sales) return;
+        
+        const data = closingReport.details.sales.map((s: any) => ({
+            'Tanggal': format(new Date(s.date), 'MM/dd/yyyy'),
+            'No. Invoice': s.number,
+            'Customer': s.entity,
+            'Qty': s.totalQty,
+            'Total Harga': s.subtotal - s.discount,
+            'PPN 11%': s.tax,
+            'Grand Total Netto': s.grandTotal,
+            'Sudah Dibayar (BCA)': s.paidAmount
+        }));
+
+        const ws = XLSX.utils.json_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Penjualan");
+        XLSX.writeFile(wb, `Laporan_Penjualan_${closingPeriod.month}_${closingPeriod.year}.xlsx`);
+    };
+
+    const handlePrint = () => {
+        if (activeTab === "closing" && closingReport) {
+            const printWindow = window.open('', '_blank');
+            if (!printWindow) return;
+
+            const html = `
+                <html>
+                    <head>
+                        <title>Laporan Closing Bulanan - ${closingReport.period}</title>
+                        <style>
+                            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+                            body { font-family: 'Inter', sans-serif; padding: 40px; color: #1e293b; line-height: 1.5; }
+                            .header { border-bottom: 4px solid #0f172a; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end; }
+                            .header h1 { margin: 0; font-weight: 900; text-transform: uppercase; letter-spacing: -1px; font-size: 32px; color: #0f172a; }
+                            .summary-grid { display: grid; grid-template-cols: repeat(4, 1fr); gap: 20px; margin-bottom: 40px; }
+                            .summary-card { padding: 15px; border: 1px solid #e2e8f0; border-radius: 12px; background: #fff; }
+                            .summary-card p { margin: 0; font-size: 10px; font-weight: 900; text-transform: uppercase; color: #64748b; letter-spacing: 1px; }
+                            .summary-card h2 { margin: 5px 0 0; font-size: 18px; font-weight: 900; letter-spacing: -0.5px; }
+                            h3 { font-weight: 900; text-transform: uppercase; font-size: 14px; border-left: 4px solid #3b82f6; padding-left: 12px; margin-top: 40px; margin-bottom: 15px; color: #0f172a; }
+                            table { width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 11px; }
+                            th { background: #f8fafc; padding: 12px; text-align: left; font-weight: 900; text-transform: uppercase; font-size: 9px; border-bottom: 2px solid #e2e8f0; color: #475569; }
+                            td { padding: 10px 12px; border-bottom: 1px solid #f1f5f9; color: #334155; }
+                            .text-right { text-align: right; }
+                            .font-black { font-weight: 900; color: #0f172a; }
+                            .footer-sig { margin-top: 80px; display: grid; grid-template-cols: 1fr 1fr; text-align: center; gap: 40px; }
+                            .sig-box { border-top: 1px solid #cbd5e1; padding-top: 10px; font-weight: 900; font-size: 12px; margin: 0 auto; width: 220px; }
+                            @media print { 
+                                body { padding: 0; }
+                                .summary-card { border: 1px solid #000; }
+                                h3 { border-left: 4px solid #000; }
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="header">
+                            <div>
+                                <p style="font-weight: 900; color: #3b82f6; margin: 0; font-size: 11px; letter-spacing: 2px;">KOBOI ERP - FINANCIAL MODULE</p>
+                                <h1>Closing Report</h1>
+                                <p style="margin: 5px 0 0; font-weight: 700; color: #64748b; font-size: 14px;">Periode: ${closingReport.period}</p>
+                            </div>
+                            <div class="text-right">
+                                <p style="font-size: 9px; font-weight: 900; color: #94a3b8; text-transform: uppercase;">Generated at: ${format(new Date(), "dd MMM yyyy HH:mm")}</p>
+                            </div>
+                        </div>
+
+                        <div class="summary-grid">
+                            <div class="summary-card">
+                                <p>Penjualan</p>
+                                <h2>${formatCurrency(closingReport.revenue)}</h2>
+                            </div>
+                            <div class="summary-card">
+                                <p>Pembelian</p>
+                                <h2>${formatCurrency(closingReport.inventory?.purchases || 0)}</h2>
+                            </div>
+                            <div class="summary-card">
+                                <p>Operasional</p>
+                                <h2>${formatCurrency(closingReport.expenses)}</h2>
+                            </div>
+                            <div class="summary-card">
+                                <p>Gross Margin</p>
+                                <h2>${formatCurrency(closingReport.grossProfit)}</h2>
+                            </div>
+                            <div class="summary-card" style="background: #f8fafc; border: 1px solid #3b82f6;">
+                                <p style="color: #3b82f6;">Profit</p>
+                                <h2 style="color: ${closingReport.netProfit >= 0 ? '#059669' : '#dc2626'}">${formatCurrency(closingReport.netProfit)}</h2>
+                            </div>
+                        </div>
+
+                        <h3>I. Detail Penjualan (Matching Kas Masuk BCA)</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width: 12%;">Tanggal SJ</th>
+                                    <th style="width: 20%;">No. Invoice / SJ</th>
+                                    <th style="width: 30%;">Nama Customer</th>
+                                    <th style="width: 12%;">Bank</th>
+                                    <th style="width: 12%;">Tgl Bayar</th>
+                                    <th style="width: 14%;" class="text-right">Nilai Transaksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${closingReport.details?.sales?.map((s: any) => `
+                                    <tr>
+                                        <td>${format(new Date(s.date), "dd/MM/yyyy")}</td>
+                                        <td class="font-black">${s.number}</td>
+                                        <td>${s.entity || '-'}</td>
+                                        <td class="font-black" style="color: #3b82f6;">${s.bankCode}</td>
+                                        <td>${s.paymentDate ? format(new Date(s.paymentDate), "dd/MM/yyyy") : '-'}</td>
+                                        <td class="text-right font-black">${formatCurrency(s.grandTotal)}</td>
+                                    </tr>
+                                `).join('') || '<tr><td colspan="6" style="text-align:center">Tidak ada transaksi penjualan dalam periode ini</td></tr>'}
+                            </tbody>
+                        </table>
+
+                        <h3>II. Detail Biaya Operasional (Matching Kas Keluar BCA)</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width: 15%;">Tanggal</th>
+                                    <th style="width: 20%;">Kategori</th>
+                                    <th style="width: 45%;">Deskripsi Biaya</th>
+                                    <th style="width: 20%;" class="text-right">Nominal</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${closingReport.details?.expenses?.map((e: any) => `
+                                    <tr>
+                                        <td>${format(new Date(e.date), "dd/MM/yyyy")}</td>
+                                        <td>${e.category || 'OPR'}</td>
+                                        <td>${e.description}</td>
+                                        <td class="text-right font-black">${formatCurrency(Math.abs(e.amount))}</td>
+                                    </tr>
+                                `).join('') || '<tr><td colspan="4" style="text-align:center">Tidak ada pengeluaran operasional dalam periode ini</td></tr>'}
+                            </tbody>
+                        </table>
+
+                        <div style="page-break-before: always;"></div>
+
+                        <h3>III. Detail Pembelian Barang (Inventory Admission)</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width: 12%;">Tanggal LPB</th>
+                                    <th style="width: 20%;">No. LPB / GR</th>
+                                    <th style="width: 30%;">Nama Supplier</th>
+                                    <th style="width: 12%;">Bank</th>
+                                    <th style="width: 12%;">Tgl Bayar</th>
+                                    <th style="width: 14%;" class="text-right">Total Tagihan</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${closingReport.details?.purchases?.map((p: any) => `
+                                    <tr>
+                                        <td>${format(new Date(p.date), "dd/MM/yyyy")}</td>
+                                        <td class="font-black">${p.number}</td>
+                                        <td>${p.entity || '-'}</td>
+                                        <td class="font-black" style="color: #ef4444;">${p.bankCode}</td>
+                                        <td>${p.paymentDate ? format(new Date(p.paymentDate), "dd/MM/yyyy") : '-'}</td>
+                                        <td class="text-right font-black">${formatCurrency(p.grandTotal)}</td>
+                                    </tr>
+                                `).join('') || '<tr><td colspan="6" style="text-align:center">Tidak ada transaksi pembelian dalam periode ini</td></tr>'}
+                            </tbody>
+                        </table>
+
+                        <div class="footer-sig">
+                            <div>
+                                <p style="font-size: 10px; font-weight: 900; color: #64748b; margin-bottom: 70px; text-transform: uppercase;">Prepared By (Finance)</p>
+                                <div class="sig-box">ADMIN FINANCE</div>
+                            </div>
+                            <div>
+                                <p style="font-size: 10px; font-weight: 900; color: #64748b; margin-bottom: 70px; text-transform: uppercase;">Approved By (Management)</p>
+                                <div class="sig-box">DIRECTOR / OWNER</div>
+                            </div>
+                        </div>
+
+                        <script>
+                            window.onload = () => { 
+                                setTimeout(() => {
+                                    window.print(); 
+                                }, 500);
+                            };
+                        </script>
+                    </body>
+                </html>
+            `;
+
+            printWindow.document.write(html);
+            printWindow.document.close();
+        } else {
+            window.print();
+        }
+    };
+
     useEffect(() => {
         if (activeTab === 'daily') fetchDaily();
         else if (activeTab === 'weekly') fetchWeekly();
         else if (activeTab === 'monthly') fetchMonthly();
-    }, [activeTab, fetchDaily, fetchWeekly, fetchMonthly]);
+        else if (activeTab === 'closing') {
+            fetchClosingReport(closingPeriod.month, closingPeriod.year, closingPrefix);
+        }
+    }, [activeTab, fetchDaily, fetchWeekly, fetchMonthly, closingPeriod, closingPrefix]);
 
     // ── Helpers ───────────────────────────────────────────────────────────
     const fmtDate = (d: any) => d ? new Date(d).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
@@ -277,26 +520,28 @@ export function ReportsDashboard() {
                                     <BarChart3 className="h-5 w-5 text-blue-400" />
                                 </div>
                                 <div>
-                                    <h1 className="text-2xl font-black tracking-tight uppercase">Pusat Laporan</h1>
+                                <h1 className="text-2xl font-black tracking-tight uppercase">Pusat Laporan</h1>
                                     <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.3em]">Reporting Center — Semua Modul</p>
                                 </div>
                             </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                            <button
-                                onClick={() => window.print()}
-                                className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-white/10"
-                            >
-                                <Printer className="h-4 w-4" /><span>Print</span>
-                            </button>
-                            <button
-                                onClick={handleExportExcel}
-                                disabled={isLoading}
-                                className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50"
-                            >
-                                <FileSpreadsheet className="h-4 w-4" /><span>Export Excel</span>
-                            </button>
-                        </div>
+                        {activeTab !== 'closing' && (
+                            <div className="flex items-center gap-3">
+                                <button
+                                    onClick={() => window.print()}
+                                    className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-white/10"
+                                >
+                                    <Printer className="h-4 w-4" /><span>Print</span>
+                                </button>
+                                <button
+                                    onClick={handleExportExcel}
+                                    disabled={isLoading}
+                                    className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50"
+                                >
+                                    <FileSpreadsheet className="h-4 w-4" /><span>Export Excel</span>
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -306,6 +551,7 @@ export function ReportsDashboard() {
                         { key: 'daily' as ReportTab, label: 'Harian', icon: Calendar },
                         { key: 'weekly' as ReportTab, label: 'Mingguan', icon: Activity },
                         { key: 'monthly' as ReportTab, label: 'Bulanan', icon: BarChart3 },
+                        { key: 'closing' as ReportTab, label: 'Closing Bulanan', icon: FileCode2 },
                     ]).map(tab => (
                         <button
                             key={tab.key}
@@ -324,7 +570,8 @@ export function ReportsDashboard() {
                 </div>
 
                 {/* ── PERIOD PICKER ──────────────────────────────────── */}
-                <div className="px-6 py-4 bg-slate-50/30 flex flex-wrap items-center justify-between gap-4">
+                {activeTab !== 'closing' && (
+                    <div className="px-6 py-4 bg-slate-50/30 flex flex-wrap items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
                         <button onClick={() => {
                             if (activeTab === 'daily') navigateDate(-1);
@@ -397,10 +644,11 @@ export function ReportsDashboard() {
                         </button>
                     </div>
                 </div>
+            )}
             </div>
 
             {/* ── CONTENT ───────────────────────────────────────────── */}
-            {isLoading && !dailyData && !weeklyData && !monthlyData ? (
+            {isLoading && !dailyData && !weeklyData && !monthlyData && activeTab !== 'closing' ? (
                 <div className="erp-card p-20 flex flex-col items-center justify-center gap-4">
                     <RefreshCw className="h-8 w-8 text-slate-300 animate-spin" />
                     <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Mengambil data laporan...</p>
@@ -410,6 +658,183 @@ export function ReportsDashboard() {
                     {activeTab === 'daily' && dailyData && <DailyReport data={dailyData} isClient={isClient} fmtDate={fmtDate} />}
                     {activeTab === 'weekly' && weeklyData && <WeeklyReport data={weeklyData} isClient={isClient} fmtDate={fmtDate} />}
                     {activeTab === 'monthly' && monthlyData && <MonthlyReport data={monthlyData} isClient={isClient} fmtDate={fmtDate} />}
+                    
+                    {activeTab === "closing" && (
+                        <div className="space-y-8 animate-in fade-in zoom-in duration-500">
+                            <div className="bg-white p-8 rounded-[2.5rem] border-2 border-slate-100 shadow-sm flex flex-col md:flex-row justify-between items-center gap-6">
+                                <div className="flex items-center gap-4">
+                                    <div className="p-4 bg-primary/10 rounded-[1.5rem] text-primary">
+                                        <Calendar className="h-8 w-8" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-2xl font-black text-slate-900 tracking-tight">Period Closing Report</h3>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Consolidated Financial Review</p>
+                                        {closingReport?.debug && (
+                                            <p className="text-[8px] font-mono text-slate-300 mt-2">
+                                                DEBUG: Sales({closingReport.debug.salesCount}) Items({closingReport.debug.totalItemsInSales}) Prices({closingReport.debug.priceMapSize})
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-3 bg-slate-50 p-2 rounded-2xl border border-slate-100">
+                                    <select 
+                                        value={closingPrefix}
+                                        onChange={(e) => setClosingPrefix(e.target.value as any)}
+                                        className="bg-transparent font-black text-sm outline-none px-4 py-2 border-r border-slate-200"
+                                    >
+                                        <option value="ALL">ALL DIV</option>
+                                        <option value="PF">PF DIV</option>
+                                        <option value="BC">BC DIV</option>
+                                    </select>
+                                    <select 
+                                        value={closingPeriod.month}
+                                        onChange={(e) => setClosingPeriod(prev => ({ ...prev, month: parseInt(e.target.value) }))}
+                                        className="bg-transparent font-black text-sm outline-none px-4 py-2"
+                                    >
+                                        {Array.from({ length: 12 }).map((_, i) => (
+                                            <option key={i+1} value={i+1}>{format(new Date(2024, i, 1), "MMMM")}</option>
+                                        ))}
+                                    </select>
+                                    <select 
+                                        value={closingPeriod.year}
+                                        onChange={(e) => setClosingPeriod(prev => ({ ...prev, year: parseInt(e.target.value) }))}
+                                        className="bg-transparent font-black text-sm outline-none px-4 py-2"
+                                    >
+                                        {[2024, 2025, 2026].map(y => (
+                                            <option key={y} value={y}>{y}</option>
+                                        ))}
+                                    </select>
+                                    <button 
+                                        onClick={() => fetchClosingReport(closingPeriod.month, closingPeriod.year, closingPrefix)}
+                                        disabled={isFetchingClosing}
+                                        className="p-2 bg-white rounded-xl shadow-sm hover:shadow-md transition-all active:scale-95 text-primary"
+                                    >
+                                        <Search className={cn("h-5 w-5", isFetchingClosing && "animate-spin")} />
+                                    </button>
+                                </div>
+                            </div>
+
+                            {isFetchingClosing ? (
+                                <div className="p-32 text-center bg-white rounded-[2.5rem] border-2 border-slate-50 shadow-inner flex flex-col items-center justify-center gap-6 animate-pulse">
+                                    <div className="p-4 bg-primary/5 rounded-full">
+                                        <Clock className="h-12 w-12 text-primary/30 animate-spin" />
+                                    </div>
+                                    <div>
+                                        <p className="font-black text-slate-900 uppercase tracking-[0.2em] text-sm">Menarik Data Closing</p>
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">Mohon tunggu sebentar, sedang sinkronisasi data seluruh departemen...</p>
+                                    </div>
+                                </div>
+                            ) : !closingReport ? (
+                                <div className="p-20 text-center bg-white rounded-[2.5rem] border-2 border-dashed border-slate-100 text-slate-300">
+                                    <p className="font-black uppercase tracking-widest text-xs">Pilih periode dan klik cari untuk memuat data closing</p>
+                                </div>
+                            ) : closingReport.error ? (
+                                <div className="p-20 text-center bg-rose-50 rounded-[2.5rem] border-2 border-dashed border-rose-100 text-rose-400">
+                                    <p className="font-black uppercase tracking-widest text-xs">Gagal Memuat Data: {closingReport.error}</p>
+                                    <button onClick={() => fetchClosingReport(closingPeriod.month, closingPeriod.year, closingPrefix)} className="mt-4 px-6 py-2 bg-rose-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest">Coba Lagi</button>
+                                </div>
+                            ) : (
+                                <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                                    {/* Metric Grid */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+                                        {[
+                                            { label: "Penjualan", value: closingReport.revenue, color: "text-emerald-500", icon: ArrowUpCircle },
+                                            { label: "Pembelian", value: closingReport.inventory?.purchases || 0, color: "text-blue-500", icon: ShoppingCart },
+                                            { label: "Operasional", value: closingReport.expenses, color: "text-amber-500", icon: Wallet },
+                                            { label: "Gross Margin", value: closingReport.grossProfit, color: "text-emerald-600", icon: Sparkles },
+                                            { label: "Profit", value: closingReport.netProfit, color: "text-indigo-600", icon: Banknote },
+                                        ].map((card, i) => (
+                                            <div key={i} className="bg-white p-6 rounded-3xl border-2 border-slate-50 shadow-sm hover:shadow-md transition-all group">
+                                                <div className="flex justify-between items-start mb-4">
+                                                    <div className={cn("p-2 bg-slate-50 rounded-xl transition-colors group-hover:bg-primary/5", card.color.replace('text-', 'text-opacity-20 '))}>
+                                                        <card.icon className="h-4 w-4" />
+                                                    </div>
+                                                </div>
+                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{card.label}</p>
+                                                <p className={cn("text-xl font-black tabular-nums tracking-tighter", card.color)}>
+                                                    {formatCurrency(card.value)}
+                                                </p>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                                        <div className="lg:col-span-2 space-y-6">
+                                            <div className="bg-white rounded-[2.5rem] border-2 border-slate-100 overflow-hidden">
+                                                <div className="p-8 border-b border-slate-50 bg-slate-50/50">
+                                                    <h4 className="font-black text-slate-900 uppercase tracking-tight">Outstanding Balances (End of Period)</h4>
+                                                </div>
+                                                <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+                                                    <div className="space-y-4">
+                                                        <div className="flex justify-between items-end">
+                                                            <div>
+                                                                <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Total Piutang (AR)</p>
+                                                                <p className="text-2xl font-black text-slate-900 tabular-nums tracking-tighter">{formatCurrency(closingReport.outstandingAR)}</p>
+                                                            </div>
+                                                            <ArrowUpCircle className="h-8 w-8 text-emerald-100" />
+                                                        </div>
+                                                        <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                                                            <div className="h-full bg-emerald-500 w-[65%]" />
+                                                        </div>
+                                                        <p className="text-[10px] text-slate-400 font-bold uppercase">Menunggu penagihan dari customer aktif</p>
+                                                    </div>
+                                                    <div className="space-y-4">
+                                                        <div className="flex justify-between items-end">
+                                                            <div>
+                                                                <p className="text-[10px] font-black text-rose-600 uppercase tracking-widest">Total Hutang (AP)</p>
+                                                                <p className="text-2xl font-black text-slate-900 tabular-nums tracking-tighter">{formatCurrency(closingReport.outstandingAP)}</p>
+                                                            </div>
+                                                            <ArrowDownCircle className="h-8 w-8 text-rose-100" />
+                                                        </div>
+                                                        <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                                                            <div className="h-full bg-rose-500 w-[45%]" />
+                                                        </div>
+                                                        <p className="text-[10px] text-slate-400 font-bold uppercase">Hutang berjalan ke supplier barang</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white relative overflow-hidden flex flex-col justify-between">
+                                            <div className="absolute top-0 right-0 p-8 opacity-10">
+                                                <Sparkles className="h-32 w-32" />
+                                            </div>
+                                            <div className="relative z-10">
+                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Operational Insight</p>
+                                                <h4 className="text-2xl font-black tracking-tight">Closing Efficiency</h4>
+                                                <p className="text-sm text-slate-400 mt-4 leading-relaxed">
+                                                    Periode ini memiliki <strong>{closingReport.stats.salesCount}</strong> transaksi penjualan dan <strong>{closingReport.stats.purchaseCount}</strong> penerimaan barang.
+                                                </p>
+                                            </div>
+                                            <div className="relative z-10 mt-12 space-y-4">
+                                                <button 
+                                                    onClick={() => handlePrint()}
+                                                    className="w-full py-4 bg-white text-slate-900 font-black rounded-2xl hover:bg-slate-100 transition-all active:scale-95 text-xs uppercase tracking-widest flex items-center justify-center gap-2"
+                                                >
+                                                    <Printer className="h-4 w-4" />
+                                                    Cetak Laporan Closing
+                                                </button>
+                                                <button 
+                                                    onClick={downloadPurchasesExcel}
+                                                    className="w-full py-4 bg-emerald-500 text-white font-black rounded-2xl hover:bg-emerald-600 transition-all active:scale-95 text-xs uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg animate-fade-up"
+                                                >
+                                                    <Download className="h-4 w-4" />
+                                                    Download Excel Pembelian
+                                                </button>
+                                                <button 
+                                                    onClick={downloadSalesExcel}
+                                                    className="w-full py-4 bg-blue-500 text-white font-black rounded-2xl hover:bg-blue-600 transition-all active:scale-95 text-xs uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg animate-fade-up"
+                                                >
+                                                    <Download className="h-4 w-4" />
+                                                    Download Excel Penjualan
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </>
             )}
         </div>
