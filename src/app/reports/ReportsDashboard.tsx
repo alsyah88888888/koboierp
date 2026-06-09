@@ -11,7 +11,7 @@ import {
     Activity, BarChart3, RefreshCw, Clock, CreditCard, AlertCircle,
     CheckCircle2, ArrowRight, Printer, ChevronLeft, ChevronRight,
     DollarSign, Receipt, Truck, RotateCcw, Shield, Users, Building,
-    FileCode2, Sparkles, Banknote, Search, Download, Eye
+    FileCode2, Sparkles, Banknote, Search, Download, Eye, ArrowUpCircle, ArrowDownCircle
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { formatCurrency, cn } from "@/lib/utils";
