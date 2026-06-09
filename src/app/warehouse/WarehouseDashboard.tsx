@@ -48,13 +48,17 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
         );
     }, [initialProducts, searchTerm]);
 
-    const findSalesPersonForStock = (productId: string, warehouseId: string, vendorName: string) => {
+    const getStockMetadata = (productId: string, warehouseId: string, vendorName: string) => {
         const matchingReceipt = unverifiedReceipts.find(r => 
             (r.receivedFrom || "UMUM").trim().toLowerCase() === (vendorName || "UMUM").trim().toLowerCase() && 
             r.warehouseId === warehouseId && 
             r.items?.some((item: any) => item.productId === productId)
         );
-        return matchingReceipt?.salesPerson || "-";
+        const matchingItem = matchingReceipt?.items?.find((item: any) => item.productId === productId);
+        return {
+            salesPerson: matchingReceipt?.salesPerson || "-",
+            hpp: matchingItem?.purchasePrice ? Number(matchingItem.purchasePrice) : 0
+        };
     };
 
     const handleDeleteProduct = async (id: string) => {
@@ -72,19 +76,23 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
     const handleExport = () => {
         if (activeTab === "inventory") {
             const data = initialProducts.flatMap(p =>
-                p.stocks.map((s: any) => ({
-                    'SKU': p.sku,
-                    'Nama Barang': p.name,
-                    'Vendor / PT': s.vendorName || "UMUM",
-                    'Gudang': warehouses.find(w => w.id === s.warehouseId)?.name || 'Unknown',
-                    'Sales Person': findSalesPersonForStock(p.id, s.warehouseId, s.vendorName),
-                    'Satuan': p.uom,
-                    'Total Stok': s.quantity,
-                    'HPP per Unit': Number(p.purchasePrice) || 0,
-                    'Total Nilai': (s.quantity || 0) * (Number(p.purchasePrice) || 0),
-                    'Threshold': p.lowStockThreshold,
-                    'Status': s.quantity <= p.lowStockThreshold ? 'LOW' : 'NORMAL'
-                }))
+                p.stocks.map((s: any) => {
+                    const meta = getStockMetadata(p.id, s.warehouseId, s.vendorName);
+                    const hpp = meta.hpp || Number(p.purchasePrice) || 0;
+                    return {
+                        'SKU': p.sku,
+                        'Nama Barang': p.name,
+                        'Vendor / PT': s.vendorName || "UMUM",
+                        'Gudang': warehouses.find(w => w.id === s.warehouseId)?.name || 'Unknown',
+                        'Sales Person': meta.salesPerson,
+                        'Satuan': p.uom,
+                        'Total Stok': s.quantity,
+                        'HPP per Unit': hpp,
+                        'Total Nilai': (s.quantity || 0) * hpp,
+                        'Threshold': p.lowStockThreshold,
+                        'Status': s.quantity <= p.lowStockThreshold ? 'LOW' : 'NORMAL'
+                    };
+                })
             );
             exportToExcel(data, 'Laporan_Stok_Gudang', 'Inventory');
         } else {
@@ -117,19 +125,23 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
     const handlePreview = () => {
         if (activeTab === "inventory") {
             const data = initialProducts.flatMap(p =>
-                p.stocks.map((s: any) => ({
-                    'SKU': p.sku,
-                    'Nama Barang': p.name,
-                    'Vendor / PT': s.vendorName || "UMUM",
-                    'Gudang': warehouses.find(w => w.id === s.warehouseId)?.name || 'Unknown',
-                    'Sales Person': findSalesPersonForStock(p.id, s.warehouseId, s.vendorName),
-                    'Satuan': p.uom,
-                    'Total Stok': s.quantity,
-                    'HPP per Unit': Number(p.purchasePrice) || 0,
-                    'Total Nilai': (s.quantity || 0) * (Number(p.purchasePrice) || 0),
-                    'Threshold': p.lowStockThreshold,
-                    'Status': s.quantity <= p.lowStockThreshold ? 'LOW' : 'NORMAL'
-                }))
+                p.stocks.map((s: any) => {
+                    const meta = getStockMetadata(p.id, s.warehouseId, s.vendorName);
+                    const hpp = meta.hpp || Number(p.purchasePrice) || 0;
+                    return {
+                        'SKU': p.sku,
+                        'Nama Barang': p.name,
+                        'Vendor / PT': s.vendorName || "UMUM",
+                        'Gudang': warehouses.find(w => w.id === s.warehouseId)?.name || 'Unknown',
+                        'Sales Person': meta.salesPerson,
+                        'Satuan': p.uom,
+                        'Total Stok': s.quantity,
+                        'HPP per Unit': hpp,
+                        'Total Nilai': (s.quantity || 0) * hpp,
+                        'Threshold': p.lowStockThreshold,
+                        'Status': s.quantity <= p.lowStockThreshold ? 'LOW' : 'NORMAL'
+                    };
+                })
             );
             setPreviewData(data);
             setPreviewTitle("Laporan Master Stok Gudang (Berdasarkan Vendor)");
@@ -348,7 +360,9 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                                     p.stocks.forEach((s: any) => {
                                                         const whName = warehouses.find(w => w.id === s.warehouseId)?.name || "Unknown";
                                                         const isLow = s.quantity <= p.lowStockThreshold;
-                                                        const salesPerson = findSalesPersonForStock(p.id, s.warehouseId, s.vendorName);
+                                                        const meta = getStockMetadata(p.id, s.warehouseId, s.vendorName);
+                                                        const salesPerson = meta.salesPerson;
+                                                        const hpp = meta.hpp || Number(p.purchasePrice) || 0;
                                                         rows.push(
                                                             <tr key={`${p.id}-${s.id}`} className="hover:bg-slate-50/50 transition-colors group">
                                                                 <td className="px-6 py-4">
@@ -382,10 +396,10 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                                                     <div className="text-lg font-black text-slate-800">{isClient ? (s.quantity || 0).toLocaleString() : "..."} <span className="text-[10px] text-slate-400 font-bold uppercase">{p.uom}</span></div>
                                                                 </td>
                                                                 <td className="px-6 py-4 text-right font-bold text-slate-600 text-xs">
-                                                                    {formatCurrency(Number(p.purchasePrice || 0))}
+                                                                    {formatCurrency(hpp)}
                                                                 </td>
                                                                 <td className="px-6 py-4 text-right font-black text-slate-800 text-xs">
-                                                                    {formatCurrency(Number(p.purchasePrice || 0) * (s.quantity || 0))}
+                                                                    {formatCurrency(hpp * (s.quantity || 0))}
                                                                 </td>
                                                                 <td className="px-6 py-4 text-right">
                                                                     <span className={cn(
@@ -476,7 +490,9 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                             return p.stocks.map((s: any) => {
                                                 const whName = warehouses.find(w => w.id === s.warehouseId)?.name || "Unknown";
                                                 const isLow = s.quantity <= p.lowStockThreshold;
-                                                const salesPerson = findSalesPersonForStock(p.id, s.warehouseId, s.vendorName);
+                                                const meta = getStockMetadata(p.id, s.warehouseId, s.vendorName);
+                                                const salesPerson = meta.salesPerson;
+                                                const hpp = meta.hpp || Number(p.purchasePrice) || 0;
                                                 return (
                                                     <div key={`${p.id}-${s.id}`} className="p-4 space-y-3 hover:bg-slate-50 transition-colors">
                                                         <div className="flex justify-between items-start gap-3">
@@ -519,11 +535,11 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                                             <div className="border-t border-slate-100 pt-2 col-span-2 flex justify-between text-[11px]">
                                                                 <div>
                                                                     <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-0.5">HPP per Unit</span>
-                                                                    <span className="font-bold text-slate-700">{formatCurrency(Number(p.purchasePrice || 0))}</span>
+                                                                    <span className="font-bold text-slate-700">{formatCurrency(hpp)}</span>
                                                                 </div>
                                                                 <div className="text-right">
                                                                     <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-0.5">Total Nilai</span>
-                                                                    <span className="font-bold text-slate-900">{formatCurrency(Number(p.purchasePrice || 0) * (s.quantity || 0))}</span>
+                                                                    <span className="font-bold text-slate-900">{formatCurrency(hpp * (s.quantity || 0))}</span>
                                                                 </div>
                                                             </div>
                                                         </div>
