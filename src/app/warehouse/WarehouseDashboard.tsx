@@ -76,23 +76,25 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
     const handleExport = () => {
         if (activeTab === "inventory") {
             const data = initialProducts.flatMap(p =>
-                p.stocks.map((s: any) => {
-                    const meta = getStockMetadata(p.id, s.warehouseId, s.vendorName);
-                    const hpp = meta.hpp || Number(p.purchasePrice) || 0;
-                    return {
-                        'SKU': p.sku,
-                        'Nama Barang': p.name,
-                        'Vendor / PT': s.vendorName || "UMUM",
-                        'Gudang': warehouses.find(w => w.id === s.warehouseId)?.name || 'Unknown',
-                        'Sales Person': meta.salesPerson,
-                        'Satuan': p.uom,
-                        'Total Stok': s.quantity,
-                        'HPP per Unit': hpp,
-                        'Total Nilai': (s.quantity || 0) * hpp,
-                        'Threshold': p.lowStockThreshold,
-                        'Status': s.quantity <= p.lowStockThreshold ? 'LOW' : 'NORMAL'
-                    };
-                })
+                (p.stocks || [])
+                    .filter((s: any) => s.quantity > 0)
+                    .map((s: any) => {
+                        const meta = getStockMetadata(p.id, s.warehouseId, s.vendorName);
+                        const hpp = meta.hpp || Number(p.purchasePrice) || 0;
+                        return {
+                            'SKU': p.sku,
+                            'Nama Barang': p.name,
+                            'Vendor / PT': s.vendorName || "UMUM",
+                            'Gudang': warehouses.find(w => w.id === s.warehouseId)?.name || 'Unknown',
+                            'Sales Person': meta.salesPerson,
+                            'Satuan': p.uom,
+                            'Total Stok': s.quantity,
+                            'HPP per Unit': hpp,
+                            'Total Nilai': (s.quantity || 0) * hpp,
+                            'Threshold': p.lowStockThreshold,
+                            'Status': s.quantity <= p.lowStockThreshold ? 'LOW' : 'NORMAL'
+                        };
+                    })
             );
             exportToExcel(data, 'Laporan_Stok_Gudang', 'Inventory');
         } else {
@@ -125,23 +127,25 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
     const handlePreview = () => {
         if (activeTab === "inventory") {
             const data = initialProducts.flatMap(p =>
-                p.stocks.map((s: any) => {
-                    const meta = getStockMetadata(p.id, s.warehouseId, s.vendorName);
-                    const hpp = meta.hpp || Number(p.purchasePrice) || 0;
-                    return {
-                        'SKU': p.sku,
-                        'Nama Barang': p.name,
-                        'Vendor / PT': s.vendorName || "UMUM",
-                        'Gudang': warehouses.find(w => w.id === s.warehouseId)?.name || 'Unknown',
-                        'Sales Person': meta.salesPerson,
-                        'Satuan': p.uom,
-                        'Total Stok': s.quantity,
-                        'HPP per Unit': hpp,
-                        'Total Nilai': (s.quantity || 0) * hpp,
-                        'Threshold': p.lowStockThreshold,
-                        'Status': s.quantity <= p.lowStockThreshold ? 'LOW' : 'NORMAL'
-                    };
-                })
+                (p.stocks || [])
+                    .filter((s: any) => s.quantity > 0)
+                    .map((s: any) => {
+                        const meta = getStockMetadata(p.id, s.warehouseId, s.vendorName);
+                        const hpp = meta.hpp || Number(p.purchasePrice) || 0;
+                        return {
+                            'SKU': p.sku,
+                            'Nama Barang': p.name,
+                            'Vendor / PT': s.vendorName || "UMUM",
+                            'Gudang': warehouses.find(w => w.id === s.warehouseId)?.name || 'Unknown',
+                            'Sales Person': meta.salesPerson,
+                            'Satuan': p.uom,
+                            'Total Stok': s.quantity,
+                            'HPP per Unit': hpp,
+                            'Total Nilai': (s.quantity || 0) * hpp,
+                            'Threshold': p.lowStockThreshold,
+                            'Status': s.quantity <= p.lowStockThreshold ? 'LOW' : 'NORMAL'
+                        };
+                    })
             );
             setPreviewData(data);
             setPreviewTitle("Laporan Master Stok Gudang (Berdasarkan Vendor)");
@@ -355,128 +359,93 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                         </thead>
                                         <tbody className="divide-y divide-slate-50">
                                             {filteredProducts.flatMap((p: any) => {
-                                                const rows = [];
-                                                if (p.stocks && p.stocks.length > 0) {
-                                                    p.stocks.forEach((s: any) => {
-                                                        const whName = warehouses.find(w => w.id === s.warehouseId)?.name || "Unknown";
-                                                        const isLow = s.quantity <= p.lowStockThreshold;
-                                                        const meta = getStockMetadata(p.id, s.warehouseId, s.vendorName);
-                                                        const salesPerson = meta.salesPerson;
-                                                        const hpp = meta.hpp || Number(p.purchasePrice) || 0;
-                                                        rows.push(
-                                                            <tr key={`${p.id}-${s.id}`} className="hover:bg-slate-50/50 transition-colors group">
-                                                                <td className="px-6 py-4">
-                                                                    <div className="font-bold text-slate-800 truncate" title={p.name}>{p.name}</div>
-                                                                    <div className="text-[10px] font-mono text-slate-400 uppercase group-hover:text-primary transition-colors truncate" title={p.sku}>{p.sku}</div>
-                                                                </td>
-                                                                <td className="px-6 py-4 text-left font-bold text-slate-600 text-xs text-nowrap">
-                                                                    {whName}
-                                                                </td>
-                                                                <td className="px-6 py-4 text-left">
-                                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 text-xs font-bold border border-slate-200 max-w-full">
-                                                                        <WarehouseIcon className="h-3 w-3 text-slate-400 shrink-0" />
-                                                                        <span className="truncate" title={s.vendorName || "UMUM"}>{s.vendorName || "UMUM"}</span>
-                                                                    </span>
-                                                                </td>
-                                                                <td className="px-6 py-4 text-center">
-                                                                    {salesPerson !== "-" ? (
-                                                                        <span className={cn(
-                                                                            "px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest border",
-                                                                            salesPerson === "BC" 
-                                                                                ? "bg-indigo-50 text-indigo-700 border-indigo-100" 
-                                                                                : "bg-amber-50 text-amber-700 border-amber-100"
-                                                                        )}>
-                                                                            {salesPerson}
-                                                                        </span>
-                                                                    ) : (
-                                                                        <span className="text-slate-400 text-xs">-</span>
-                                                                    )}
-                                                                </td>
-                                                                <td className="px-6 py-4 text-right">
-                                                                    <div className="text-lg font-black text-slate-800">{isClient ? (s.quantity || 0).toLocaleString() : "..."} <span className="text-[10px] text-slate-400 font-bold uppercase">{p.uom}</span></div>
-                                                                </td>
-                                                                <td className="px-6 py-4 text-right font-bold text-slate-600 text-xs">
-                                                                    {formatCurrency(hpp)}
-                                                                </td>
-                                                                <td className="px-6 py-4 text-right font-black text-slate-800 text-xs">
-                                                                    {formatCurrency(hpp * (s.quantity || 0))}
-                                                                </td>
-                                                                <td className="px-6 py-4 text-right">
-                                                                    <span className={cn(
-                                                                        "px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter shadow-sm",
-                                                                        isLow ? "bg-amber-100 text-amber-700 shadow-amber-100" : "bg-emerald-100 text-emerald-700 shadow-emerald-100"
-                                                                    )}>
-                                                                        {isLow ? "Low Stock" : "In Stock"}
-                                                                    </span>
-                                                                </td>
-                                                                {isAdmin && (
-                                                                    <td className="px-6 py-4 text-center">
-                                                                        <div className="flex items-center justify-center gap-2">
-                                                                            <button
-                                                                                onClick={() => setSelectedStockForAdjustment({ product: p, stock: s })}
-                                                                                className="p-2 text-slate-300 hover:text-primary hover:bg-primary/10 rounded-lg transition-all"
-                                                                                title="Penyesuaian Stok"
-                                                                            >
-                                                                                <Edit2 className="h-4 w-4" />
-                                                                            </button>
-                                                                            <button
-                                                                                onClick={() => {
-                                                                                    setSelectedProductIdForCard(p.id);
-                                                                                    setShowStockCard(true);
-                                                                                }}
-                                                                                className="p-2 text-slate-300 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
-                                                                                title="Kartu Stok"
-                                                                            >
-                                                                                <FileText className="h-4 w-4" />
-                                                                            </button>
-                                                                            <button
-                                                                                onClick={() => handleDeleteProduct(p.id)}
-                                                                                className="p-2 text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                                                                                title="Hapus Produk"
-                                                                            >
-                                                                                <Trash2 className="h-4 w-4" />
-                                                                            </button>
-                                                                        </div>
-                                                                    </td>
-                                                                )}
-                                                            </tr>
-                                                        );
-                                                    });
-                                                } else {
+                                                const rows: any[] = [];
+                                                const activeStocks = (p.stocks || []).filter((s: any) => s.quantity > 0);
+                                                activeStocks.forEach((s: any) => {
+                                                    const whName = warehouses.find(w => w.id === s.warehouseId)?.name || "Unknown";
+                                                    const isLow = s.quantity <= p.lowStockThreshold;
+                                                    const meta = getStockMetadata(p.id, s.warehouseId, s.vendorName);
+                                                    const salesPerson = meta.salesPerson;
+                                                    const hpp = meta.hpp || Number(p.purchasePrice) || 0;
                                                     rows.push(
-                                                        <tr key={`${p.id}-empty`} className="hover:bg-slate-50/50 transition-colors group">
+                                                        <tr key={`${p.id}-${s.id}`} className="hover:bg-slate-50/50 transition-colors group">
                                                             <td className="px-6 py-4">
                                                                 <div className="font-bold text-slate-800 truncate" title={p.name}>{p.name}</div>
                                                                 <div className="text-[10px] font-mono text-slate-400 uppercase group-hover:text-primary transition-colors truncate" title={p.sku}>{p.sku}</div>
                                                             </td>
-                                                            <td className="px-6 py-4 text-left text-slate-400 italic text-xs">No Stock Data</td>
-                                                            <td className="px-6 py-4 text-left">-</td>
-                                                            <td className="px-6 py-4 text-center">-</td>
+                                                            <td className="px-6 py-4 text-left font-bold text-slate-600 text-xs text-nowrap">
+                                                                {whName}
+                                                            </td>
+                                                            <td className="px-6 py-4 text-left">
+                                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 text-xs font-bold border border-slate-200 max-w-full">
+                                                                    <WarehouseIcon className="h-3 w-3 text-slate-400 shrink-0" />
+                                                                    <span className="truncate" title={s.vendorName || "UMUM"}>{s.vendorName || "UMUM"}</span>
+                                                                </span>
+                                                            </td>
+                                                            <td className="px-6 py-4 text-center">
+                                                                {salesPerson !== "-" ? (
+                                                                    <span className={cn(
+                                                                        "px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest border",
+                                                                        salesPerson === "BC" 
+                                                                            ? "bg-indigo-50 text-indigo-700 border-indigo-100" 
+                                                                            : "bg-amber-50 text-amber-700 border-amber-100"
+                                                                    )}>
+                                                                        {salesPerson}
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="text-slate-400 text-xs">-</span>
+                                                                )}
+                                                            </td>
                                                             <td className="px-6 py-4 text-right">
-                                                                <div className="text-lg font-black text-slate-400">0 <span className="text-[10px] text-slate-300 font-bold uppercase">{p.uom}</span></div>
+                                                                <div className="text-lg font-black text-slate-800">{isClient ? (s.quantity || 0).toLocaleString() : "..."} <span className="text-[10px] text-slate-400 font-bold uppercase">{p.uom}</span></div>
                                                             </td>
-                                                            <td className="px-6 py-4 text-right font-bold text-slate-400 text-xs">
-                                                                {formatCurrency(Number(p.purchasePrice || 0))}
+                                                            <td className="px-6 py-4 text-right font-bold text-slate-600 text-xs">
+                                                                {formatCurrency(hpp)}
                                                             </td>
-                                                            <td className="px-6 py-4 text-right font-black text-slate-400 text-xs">
-                                                                Rp 0
+                                                            <td className="px-6 py-4 text-right font-black text-slate-800 text-xs">
+                                                                {formatCurrency(hpp * (s.quantity || 0))}
                                                             </td>
                                                             <td className="px-6 py-4 text-right">
-                                                                <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter bg-slate-100 text-slate-400">Empty</span>
+                                                                <span className={cn(
+                                                                    "px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter shadow-sm",
+                                                                    isLow ? "bg-amber-100 text-amber-700 shadow-amber-100" : "bg-emerald-100 text-emerald-700 shadow-emerald-100"
+                                                                )}>
+                                                                    {isLow ? "Low Stock" : "In Stock"}
+                                                                </span>
                                                             </td>
                                                             {isAdmin && (
                                                                 <td className="px-6 py-4 text-center">
-                                                                    <button
-                                                                        onClick={() => handleDeleteProduct(p.id)}
-                                                                        className="p-2 text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                                                                    >
-                                                                        <Trash2 className="h-4 w-4" />
-                                                                    </button>
+                                                                    <div className="flex items-center justify-center gap-2">
+                                                                        <button
+                                                                            onClick={() => setSelectedStockForAdjustment({ product: p, stock: s })}
+                                                                            className="p-2 text-slate-300 hover:text-primary hover:bg-primary/10 rounded-lg transition-all"
+                                                                            title="Penyesuaian Stok"
+                                                                        >
+                                                                            <Edit2 className="h-4 w-4" />
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                setSelectedProductIdForCard(p.id);
+                                                                                setShowStockCard(true);
+                                                                            }}
+                                                                            className="p-2 text-slate-300 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
+                                                                            title="Kartu Stok"
+                                                                        >
+                                                                            <FileText className="h-4 w-4" />
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => handleDeleteProduct(p.id)}
+                                                                            className="p-2 text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                                                                            title="Hapus Produk"
+                                                                        >
+                                                                            <Trash2 className="h-4 w-4" />
+                                                                        </button>
+                                                                    </div>
                                                                 </td>
                                                             )}
                                                         </tr>
                                                     );
-                                                }
+                                                });
                                                 return rows;
                                             })}
                                         </tbody>
@@ -486,117 +455,100 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                 {/* MOBILE & TABLET CARD VIEW */}
                                 <div className="lg:hidden divide-y divide-slate-100 overflow-y-auto max-h-[70vh] custom-scrollbar">
                                     {filteredProducts.flatMap((p: any) => {
-                                        if (p.stocks && p.stocks.length > 0) {
-                                            return p.stocks.map((s: any) => {
-                                                const whName = warehouses.find(w => w.id === s.warehouseId)?.name || "Unknown";
-                                                const isLow = s.quantity <= p.lowStockThreshold;
-                                                const meta = getStockMetadata(p.id, s.warehouseId, s.vendorName);
-                                                const salesPerson = meta.salesPerson;
-                                                const hpp = meta.hpp || Number(p.purchasePrice) || 0;
-                                                return (
-                                                    <div key={`${p.id}-${s.id}`} className="p-4 space-y-3 hover:bg-slate-50 transition-colors">
-                                                        <div className="flex justify-between items-start gap-3">
-                                                            <div className="flex-1 min-w-0">
-                                                                <div className="font-black text-slate-900 text-sm truncate">{p.name}</div>
-                                                                <div className="text-[10px] font-mono text-primary font-black uppercase tracking-wider">{p.sku}</div>
-                                                            </div>
-                                                            <span className={cn(
-                                                                "shrink-0 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter shadow-sm",
-                                                                isLow ? "bg-amber-100 text-amber-700 shadow-amber-100" : "bg-emerald-100 text-emerald-700 shadow-emerald-100"
-                                                            )}>
-                                                                {isLow ? "Low Stock" : "Ready"}
-                                                            </span>
+                                        const activeStocks = (p.stocks || []).filter((s: any) => s.quantity > 0);
+                                        return activeStocks.map((s: any) => {
+                                            const whName = warehouses.find(w => w.id === s.warehouseId)?.name || "Unknown";
+                                            const isLow = s.quantity <= p.lowStockThreshold;
+                                            const meta = getStockMetadata(p.id, s.warehouseId, s.vendorName);
+                                            const salesPerson = meta.salesPerson;
+                                            const hpp = meta.hpp || Number(p.purchasePrice) || 0;
+                                            return (
+                                                <div key={`${p.id}-${s.id}`} className="p-4 space-y-3 hover:bg-slate-50 transition-colors">
+                                                    <div className="flex justify-between items-start gap-3">
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="font-black text-slate-900 text-sm truncate">{p.name}</div>
+                                                            <div className="text-[10px] font-mono text-primary font-black uppercase tracking-wider">{p.sku}</div>
                                                         </div>
+                                                        <span className={cn(
+                                                            "shrink-0 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter shadow-sm",
+                                                            isLow ? "bg-amber-100 text-amber-700 shadow-amber-100" : "bg-emerald-100 text-emerald-700 shadow-emerald-100"
+                                                        )}>
+                                                            {isLow ? "Low Stock" : "Ready"}
+                                                        </span>
+                                                    </div>
 
-                                                        <div className="grid grid-cols-2 gap-3 bg-slate-50/50 p-3 rounded-xl border border-slate-100">
-                                                            <div>
-                                                                <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Vendor</div>
-                                                                <div className="text-[11px] font-bold text-slate-700 truncate">{s.vendorName || "UMUM"}</div>
-                                                            </div>
-                                                            <div>
-                                                                <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1 text-right">Gudang</div>
-                                                                <div className="text-[11px] font-bold text-slate-700 truncate text-right">{whName}</div>
-                                                            </div>
-                                                            <div className="border-t border-slate-100 pt-2 col-span-2 flex justify-between items-center text-xs">
-                                                                <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Sales Person</span>
-                                                                {salesPerson !== "-" ? (
-                                                                    <span className={cn(
-                                                                        "px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest border",
-                                                                        salesPerson === "BC" 
-                                                                            ? "bg-indigo-50 text-indigo-700 border-indigo-100" 
-                                                                            : "bg-amber-50 text-amber-700 border-amber-100"
-                                                                    )}>
-                                                                        {salesPerson}
-                                                                    </span>
-                                                                ) : (
-                                                                    <span className="text-slate-400 font-bold">-</span>
-                                                                )}
-                                                            </div>
-                                                            <div className="border-t border-slate-100 pt-2 col-span-2 flex justify-between text-[11px]">
-                                                                <div>
-                                                                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-0.5">HPP per Unit</span>
-                                                                    <span className="font-bold text-slate-700">{formatCurrency(hpp)}</span>
-                                                                </div>
-                                                                <div className="text-right">
-                                                                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-0.5">Total Nilai</span>
-                                                                    <span className="font-bold text-slate-900">{formatCurrency(hpp * (s.quantity || 0))}</span>
-                                                                </div>
-                                                            </div>
+                                                    <div className="grid grid-cols-2 gap-3 bg-slate-50/50 p-3 rounded-xl border border-slate-100">
+                                                        <div>
+                                                            <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Vendor</div>
+                                                            <div className="text-[11px] font-bold text-slate-700 truncate">{s.vendorName || "UMUM"}</div>
                                                         </div>
-
-                                                        <div className="flex items-end justify-between pt-1">
-                                                            <div>
-                                                                <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Qty Available</div>
-                                                                <div className="text-xl font-black text-slate-900 leading-none">
-                                                                    {isClient ? (s.quantity || 0).toLocaleString() : "..."} <span className="text-[10px] text-slate-400 font-bold uppercase ml-1">{p.uom}</span>
-                                                                </div>
-                                                            </div>
-                                                            {isAdmin && (
-                                                                    <div className="flex items-center gap-2">
-                                                                        <button
-                                                                            onClick={() => setSelectedStockForAdjustment({ product: p, stock: s })}
-                                                                            className="p-2 text-slate-400 hover:text-primary bg-slate-100 rounded-xl transition-all active:scale-90"
-                                                                        >
-                                                                            <Edit2 className="h-3.5 w-3.5" />
-                                                                        </button>
-                                                                        <button
-                                                                            onClick={() => {
-                                                                                setSelectedProductIdForCard(p.id);
-                                                                                setShowStockCard(true);
-                                                                            }}
-                                                                            className="p-2 text-slate-400 hover:text-indigo-600 bg-slate-100 rounded-xl transition-all active:scale-90"
-                                                                        >
-                                                                            <FileText className="h-3.5 w-3.5" />
-                                                                        </button>
-                                                                        <button
-                                                                            onClick={() => handleDeleteProduct(p.id)}
-                                                                            className="p-2 text-slate-400 hover:text-red-600 bg-slate-100 rounded-xl transition-all active:scale-90"
-                                                                        >
-                                                                            <Trash2 className="h-3.5 w-3.5" />
-                                                                        </button>
-                                                                    </div>
+                                                        <div>
+                                                            <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1 text-right">Gudang</div>
+                                                            <div className="text-[11px] font-bold text-slate-700 truncate text-right">{whName}</div>
+                                                        </div>
+                                                        <div className="border-t border-slate-100 pt-2 col-span-2 flex justify-between items-center text-xs">
+                                                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Sales Person</span>
+                                                            {salesPerson !== "-" ? (
+                                                                <span className={cn(
+                                                                    "px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest border",
+                                                                    salesPerson === "BC" 
+                                                                        ? "bg-indigo-50 text-indigo-700 border-indigo-100" 
+                                                                        : "bg-amber-50 text-amber-700 border-amber-100"
+                                                                )}>
+                                                                    {salesPerson}
+                                                                </span>
+                                                            ) : (
+                                                                <span className="text-slate-400 font-bold">-</span>
                                                             )}
                                                         </div>
+                                                        <div className="border-t border-slate-100 pt-2 col-span-2 flex justify-between text-[11px]">
+                                                            <div>
+                                                                <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-0.5">HPP per Unit</span>
+                                                                <span className="font-bold text-slate-700">{formatCurrency(hpp)}</span>
+                                                            </div>
+                                                            <div className="text-right">
+                                                                <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-0.5">Total Nilai</span>
+                                                                <span className="font-bold text-slate-900">{formatCurrency(hpp * (s.quantity || 0))}</span>
+                                                            </div>
+                                                        </div>
                                                     </div>
-                                                );
-                                            });
-                                        } else {
-                                            return (
-                                                <div key={`${p.id}-empty`} className="p-4 space-y-3 opacity-60">
-                                                    <div>
-                                                        <div className="font-bold text-slate-800 text-sm">{p.name}</div>
-                                                        <div className="text-[10px] font-mono text-slate-400 uppercase">{p.sku}</div>
+
+                                                    <div className="flex items-end justify-between pt-1">
+                                                        <div>
+                                                            <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Qty Available</div>
+                                                            <div className="text-xl font-black text-slate-900 leading-none">
+                                                                {isClient ? (s.quantity || 0).toLocaleString() : "..."} <span className="text-[10px] text-slate-400 font-bold uppercase ml-1">{p.uom}</span>
+                                                            </div>
+                                                        </div>
+                                                        {isAdmin && (
+                                                                <div className="flex items-center gap-2">
+                                                                    <button
+                                                                        onClick={() => setSelectedStockForAdjustment({ product: p, stock: s })}
+                                                                        className="p-2 text-slate-400 hover:text-primary bg-slate-100 rounded-xl transition-all active:scale-90"
+                                                                    >
+                                                                        <Edit2 className="h-3.5 w-3.5" />
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            setSelectedProductIdForCard(p.id);
+                                                                            setShowStockCard(true);
+                                                                        }}
+                                                                        className="p-2 text-slate-400 hover:text-indigo-600 bg-slate-100 rounded-xl transition-all active:scale-90"
+                                                                    >
+                                                                        <FileText className="h-3.5 w-3.5" />
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => handleDeleteProduct(p.id)}
+                                                                        className="p-2 text-slate-400 hover:text-red-600 bg-slate-100 rounded-xl transition-all active:scale-90"
+                                                                    >
+                                                                        <Trash2 className="h-3.5 w-3.5" />
+                                                                    </button>
+                                                                </div>
+                                                        )}
                                                     </div>
-                                                     <div className="flex justify-between items-center bg-slate-50 p-2 rounded-xl border border-dashed border-slate-200 text-xs">
-                                                         <div>
-                                                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Empty Stock</span>
-                                                             <span className="text-[10px] text-slate-400">HPP: {formatCurrency(Number(p.purchasePrice || 0))}</span>
-                                                         </div>
-                                                         <div className="text-sm font-black text-slate-400">0 {p.uom}</div>
-                                                     </div>
                                                 </div>
                                             );
-                                        }
+                                        });
                                     })}
                                 </div>
 
