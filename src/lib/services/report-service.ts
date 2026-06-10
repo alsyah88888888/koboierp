@@ -214,6 +214,7 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
                         // ─ PENJUALAN (COLUMNS SECOND) ─
                         'TANGGAL JUAL'     : tglJual,
                         'NOMOR SJ'         : sd.deliveryNumber,
+                        'NOMOR FAKTUR PENJUALAN': sd.invoiceNumber || sd.deliveryNumber || '-',
                         'NAMA PEMBELI'     : buyer,
                         'SALES'            : spJual,
                         'QTY JUAL'         : qty,

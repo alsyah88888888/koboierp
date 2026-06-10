@@ -426,7 +426,8 @@ export function ReportsDashboard() {
                     'Tgl Beli': r['TANGGAL BELI'],
                     'Total Beli (HPP)': r['TOTAL BELI'],
                     'Buyer': r['NAMA PEMBELI'],
-                    'No. SJ': r['NOMOR SJ'],
+                    'No. Faktur Penjualan': r['NOMOR FAKTUR PENJUALAN'],
+                    'Tgl Jual': r['TANGGAL JUAL'],
                     'Total Jual (Net)': r['TOTAL JUAL'],
                     'Margin': r.MARGIN,
                     'Margin %': r['MARGIN %']
@@ -923,7 +924,7 @@ function DailyReport({ data, isClient, fmtDate }: { data: any; isClient: boolean
                         const marginPct = totalJual > 0 ? (totalMargin / totalJual * 100) : 0;
                         return `${formatCurrency(totalMargin)} (${marginPct.toFixed(1)}%)`;
                     })() : '...'}
-                    headers={['No.', 'Barcode', 'Nama Item', 'Supplier', 'No. LPB', 'Tgl Beli', 'Total Beli (HPP)', 'Buyer', 'No. SJ', 'Total Jual (Net)', 'Margin', 'Margin %']}
+                    headers={['No.', 'Barcode', 'Nama Item', 'Supplier', 'No. LPB', 'Tgl Beli', 'Total Beli (HPP)', 'Buyer', 'No. Faktur Penjualan', 'Tgl Jual', 'Total Jual (Net)', 'Margin', 'Margin %']}
                     rows={d.dailyTraceability.map((row: any) => [
                         <span className="font-bold">{row.NO}</span>,
                         row.BARCODE,
@@ -933,7 +934,8 @@ function DailyReport({ data, isClient, fmtDate }: { data: any; isClient: boolean
                         row['TANGGAL BELI'],
                         <span className="tabular-nums font-bold text-rose-600">{isClient ? formatCurrency(row['TOTAL BELI']) : '...'}</span>,
                         <span className="truncate max-w-[130px] block" title={row['NAMA PEMBELI']}>{row['NAMA PEMBELI']}</span>,
-                        <span className="font-black text-slate-900">{row['NOMOR SJ']}</span>,
+                        <span className="font-black text-slate-900">{row['NOMOR FAKTUR PENJUALAN']}</span>,
+                        row['TANGGAL JUAL'],
                         <span className="tabular-nums font-bold text-blue-600">{isClient ? formatCurrency(row['TOTAL JUAL']) : '...'}</span>,
                         <span className={cn("tabular-nums font-black", row.MARGIN >= 0 ? "text-emerald-600" : "text-rose-600")}>
                             {isClient ? formatCurrency(row.MARGIN) : '...'}
