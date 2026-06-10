@@ -65,76 +65,6 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
             : [];
         const grMapA = new Map<string, any>(grDataPathA.map((g: any) => [g.receiptNumber, g]));
 
-        // Ambil semua Product ID dari pengiriman untuk pelacakan dinamis per bulan (Rule 1)
-        const allProductIds = new Set<string>();
-        for (const sd of deliveries) {
-            for (const sdItem of sd.items) {
-                allProductIds.add(sdItem.productId);
-            }
-        }
-
-        const fifoLotsByProduct = new Map<string, any[]>();
-        if (allProductIds.size > 0) {
-            const allFifoLots = await (prisma as any).productLot.findMany({
-                where: { productId: { in: [...allProductIds] }, isVoided: false },
-                orderBy: { grDate: 'asc' }
-            });
-            for (const lot of allFifoLots) {
-                if (!fifoLotsByProduct.has(lot.productId)) fifoLotsByProduct.set(lot.productId, []);
-                fifoLotsByProduct.get(lot.productId)!.push(lot);
-            }
-        }
-
-        // Batch-fetch full GR data for FIFO lots
-        const grNumbersFifo = new Set<string>();
-        for (const lots of fifoLotsByProduct.values()) {
-            for (const lot of lots) if (lot.grNumber) grNumbersFifo.add(lot.grNumber);
-        }
-        const grDataFifo = grNumbersFifo.size > 0
-            ? await (prisma as any).goodsReceipt.findMany({
-                where: { receiptNumber: { in: [...grNumbersFifo] } },
-                select: {
-                    receiptNumber: true, paymentStatus: true, salesPerson: true,
-                    formNumber: true, taxInvoiceDate: true, taxInvoiceNumber: true
-                }
-            })
-            : [];
-        const grMapFifo = new Map<string, any>(grDataFifo.map((g: any) => [g.receiptNumber, g]));
-
-        // Helper: FIFO lot untuk produk pada tanggal tertentu dengan Prioritas Bulan yang Sama dan Sisa Stok Aktif (Rule 1)
-        const getFifoLot = (productId: string, saleDate: Date): any | null => {
-            const lots = fifoLotsByProduct.get(productId) ?? [];
-            
-            // 1. Ambil lot yang masih memiliki sisa stok aktif di gudang (remainingQty > 0)
-            // agar lot yang sudah habis terjual tidak dikaitkan kembali secara fiktif
-            const activeLots = lots.filter((l: any) => l.remainingQty > 0);
-            
-            // 2. Cari apakah ada pembelian di bulan dan tahun yang sama dengan tanggal penjualan pada lot aktif
-            const saleD = new Date(saleDate);
-            const saleYear = saleD.getFullYear();
-            const saleMonth = saleD.getMonth();
-            
-            const sameMonthLots = activeLots.filter((l: any) => {
-                const grD = new Date(l.grDate);
-                return grD.getFullYear() === saleYear && grD.getMonth() === saleMonth;
-            });
-            
-            // Jika ada pembelian aktif di bulan yang sama, prioritaskan lot tersebut
-            if (sameMonthLots.length > 0) {
-                return sameMonthLots[0];
-            }
-            
-            // 3. Cari stok aktif tertua yang masuk sebelum tanggal penjualan (FIFO stok rill)
-            const eligibleActive = activeLots.filter((l: any) => new Date(l.grDate) <= saleDate);
-            if (eligibleActive.length > 0) {
-                return eligibleActive[0];
-            }
-            
-            // 4. Fallback jika semua stok aktif sudah habis / kosong secara fisik: gunakan database lot terawal
-            const eligible = lots.filter((l: any) => new Date(l.grDate) <= saleDate);
-            return eligible[0] ?? lots[0] ?? null;
-        };
-
         // Helper: format date Indonesia
         const fmtDate = (d: any) => d ? new Date(d).toLocaleDateString('id-ID') : '-';
 
@@ -158,15 +88,15 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
                 const discount  = Number(sdItem.discount || 0);
 
                 // Gunakan alokasi lot riil dari database jika ada untuk akurasi 100%,
-                // jika kosong baru gunakan fallback getFifoLot secara dinamis (Rule 1)
+                // jika kosong baru gunakan fallback tanpa simulasi FIFO (Rule 1)
                 const allocations = sdItem.lotAllocations && sdItem.lotAllocations.length > 0
                     ? sdItem.lotAllocations
                     : [null];
 
                 for (const alloc of allocations) {
-                    const fifoLot = alloc ? alloc.lot : getFifoLot(sdItem.productId, sd.date);
-                    const grInfo  = fifoLot?.grNumber ? (grMapFifo.get(fifoLot.grNumber) || grMapA.get(fifoLot.grNumber) || {}) : {};
-                    const hpp     = alloc ? Number(alloc.hppAtTime || fifoLot?.purchasePrice || 0) : (fifoLot ? Number(fifoLot.purchasePrice) : Number(sdItem.product.purchasePrice || 0));
+                    const fifoLot = alloc ? alloc.lot : null;
+                    const grInfo  = fifoLot?.grNumber ? (grMapA.get(fifoLot.grNumber) || {}) : {};
+                    const hpp     = alloc ? Number(alloc.hppAtTime || fifoLot?.purchasePrice || 0) : Number(sdItem.product.purchasePrice || 0);
                     const qty     = alloc ? alloc.qty : sdItem.quantity;
 
                     const sellPriceWithTax = Math.round(sellPrice * (1 + taxRate / 100));
