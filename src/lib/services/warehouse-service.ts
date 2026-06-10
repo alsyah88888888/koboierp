@@ -136,7 +136,7 @@ export async function getProductTrackingService(productId: string, userId: strin
             parentId: item.delivery.id,
             date: item.delivery.date || item.delivery.createdAt,
             type: "SALE",
-            ref: item.delivery.deliveryNumber,
+            ref: item.delivery.invoiceNumber || item.delivery.deliveryNumber,
             partner: item.delivery.buyerName || item.delivery.recipient || "Unknown Customer",
             qtyIn: 0,
             qtyOut: item.quantity

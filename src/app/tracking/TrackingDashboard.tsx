@@ -261,7 +261,7 @@ export function TrackingDashboard({ initialProducts, userEmail, userRole }: Trac
     const getDocUrl = (record: any) => {
         if (!record.parentId) return "#";
         if (record.type === "PURCHASE") return `/purchase/print/${record.parentId}`;
-        if (record.type === "SALE") return `/sales/print/sj/${record.parentId}`;
+        if (record.type === "SALE") return `/sales/print/${record.parentId}`;
         if (record.type === "PURCHASE_RETURN") return `/purchase/print/invoice/${record.parentId}`;
         if (record.type === "SALES_RETURN") return `/sales/print/sj/${record.parentId}`;
         return "#";
