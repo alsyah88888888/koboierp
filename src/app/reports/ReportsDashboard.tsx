@@ -415,6 +415,24 @@ export function ReportsDashboard() {
                 }));
                 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Pergerakan Stok');
             }
+            // Traceability Harian sheet
+            if (data.details.dailyTraceability?.length) {
+                const rows = data.details.dailyTraceability.map((r: any) => ({
+                    'No': r.NO,
+                    'Barcode': r.BARCODE,
+                    'Nama Item': r['KETERANGAN ITEM'],
+                    'Supplier': r['NAMA SUPPLIER'],
+                    'No. LPB': r['NOMOR LPB'],
+                    'Tgl Beli': r['TANGGAL BELI'],
+                    'Total Beli (HPP)': r['TOTAL BELI'],
+                    'Buyer': r['NAMA PEMBELI'],
+                    'No. SJ': r['NOMOR SJ'],
+                    'Total Jual (Net)': r['TOTAL JUAL'],
+                    'Margin': r.MARGIN,
+                    'Margin %': r['MARGIN %']
+                }));
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Traceability Harian');
+            }
         }
 
         if (activeTab === 'weekly' && data.dailyBreakdown) {
@@ -888,6 +906,41 @@ function DailyReport({ data, isClient, fmtDate }: { data: any; isClient: boolean
                         <span className="tabular-nums">{isClient ? formatCurrency(row.paidAmount) : '...'}</span>,
                         <PaymentBadge status={row.paymentStatus} />,
                         <span className="text-slate-400">{row.operator}</span>
+                    ])}
+                    isClient={isClient}
+                />
+            )}
+
+            {/* Traceability Harian (FIFO) */}
+            {d.dailyTraceability?.length > 0 && (
+                <ReportTable
+                    title="Traceability Harian (FIFO)" icon={<FileSpreadsheet className="h-4 w-4 text-emerald-500" />}
+                    count={d.dailyTraceability.length}
+                    totalLabel="Margin Traceability"
+                    totalValue={isClient ? (() => {
+                        const totalJual = d.dailyTraceability.reduce((sum: number, r: any) => sum + Number(r['TOTAL JUAL'] || 0), 0);
+                        const totalMargin = d.dailyTraceability.reduce((sum: number, r: any) => sum + Number(r.MARGIN || 0), 0);
+                        const marginPct = totalJual > 0 ? (totalMargin / totalJual * 100) : 0;
+                        return `${formatCurrency(totalMargin)} (${marginPct.toFixed(1)}%)`;
+                    })() : '...'}
+                    headers={['No.', 'Barcode', 'Nama Item', 'Supplier', 'No. LPB', 'Tgl Beli', 'Total Beli (HPP)', 'Buyer', 'No. SJ', 'Total Jual (Net)', 'Margin', 'Margin %']}
+                    rows={d.dailyTraceability.map((row: any) => [
+                        <span className="font-bold">{row.NO}</span>,
+                        row.BARCODE,
+                        <span className="truncate max-w-[150px] block font-bold" title={row['KETERANGAN ITEM']}>{row['KETERANGAN ITEM']}</span>,
+                        <span className="truncate max-w-[130px] block" title={row['NAMA SUPPLIER']}>{row['NAMA SUPPLIER']}</span>,
+                        <span className="font-semibold">{row['NOMOR LPB']}</span>,
+                        row['TANGGAL BELI'],
+                        <span className="tabular-nums font-bold text-rose-600">{isClient ? formatCurrency(row['TOTAL BELI']) : '...'}</span>,
+                        <span className="truncate max-w-[130px] block" title={row['NAMA PEMBELI']}>{row['NAMA PEMBELI']}</span>,
+                        <span className="font-black text-slate-900">{row['NOMOR SJ']}</span>,
+                        <span className="tabular-nums font-bold text-blue-600">{isClient ? formatCurrency(row['TOTAL JUAL']) : '...'}</span>,
+                        <span className={cn("tabular-nums font-black", row.MARGIN >= 0 ? "text-emerald-600" : "text-rose-600")}>
+                            {isClient ? formatCurrency(row.MARGIN) : '...'}
+                        </span>,
+                        <span className={cn("font-black", row.MARGIN >= 0 ? "text-emerald-600" : "text-rose-600")}>
+                            {row['MARGIN %']}
+                        </span>
                     ])}
                     isClient={isClient}
                 />

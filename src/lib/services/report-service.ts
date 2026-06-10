@@ -5,22 +5,9 @@ import { getPrisma } from "@/lib/prisma";
  * Kolom disesuaikan persis dengan format gambar referensi:
  * NO | TANGGAL | F.PAJAK | NOMOR | TANGGAL(beli) | NAMA PEMBELI | BARCODE |
  * KETERANGAN ITEM | SALES | [BELI: QTY/HARGA/OPS/TOTAL] | [JUAL: NAMA/QTY/HARGA/TOTAL] |
- * MARGIN | MARGIN% | DPP | PPH | TOTAL | NO.PO | [FAKTUR: NO.FAKTUR/NO.PAJAK] | PAYMENT | DATE | PER/CT
  */
-export async function getProductTraceabilityService(month?: number, year?: number) {
+async function calculateProductTraceabilityInternal(startDate: Date, endDate: Date) {
     const prisma = getPrisma();
-
-    const filterYear  = year  || new Date().getFullYear();
-    const filterMonth = month || (new Date().getMonth() + 1);
-
-    // Sesuaikan penarikan data secara presisi dengan Zona Waktu Indonesia WIB (UTC+7)
-    // agar transaksi akhir/awal bulan tidak tergeser zona waktu UTC server
-    const startDate = new Date(Date.UTC(filterYear, filterMonth - 1, 1, 0, 0, 0));
-    startDate.setUTCHours(startDate.getUTCHours() - 7);
-
-    const endDate = new Date(Date.UTC(filterYear, filterMonth, 0, 23, 59, 59, 999));
-    endDate.setUTCHours(endDate.getUTCHours() - 7);
-
     try {
         const rows: Record<string, any>[] = [];
 
@@ -151,12 +138,6 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
         // Helper: format date Indonesia
         const fmtDate = (d: any) => d ? new Date(d).toLocaleDateString('id-ID') : '-';
 
-        // Helper: hitung DPP (Dasar Pengenaan Pajak = Total / 1.11 jika ada PPN 11%)
-        const calcDPP = (totalJual: number, taxRate: number) => {
-            if (taxRate > 0) return Math.round(totalJual / (1 + taxRate / 100));
-            return totalJual; // jika tidak ada PPN, DPP = Total Jual
-        };
-
         let rowNo = 0;
 
         // ════════════════════════════════════════════════════════════
@@ -253,11 +234,7 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
             }
         }
 
-
-
-        // ════════════════════════════════════════════════════════════
         // STEP 5: Sort kronologis, re-number NO setelah sort
-        // ════════════════════════════════════════════════════════════
         rows.sort((a, b) => new Date(a._sortDate).getTime() - new Date(b._sortDate).getTime());
 
         // Re-number setelah sort agar NO urut sesuai tanggal
@@ -265,6 +242,26 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
 
         return rows.map(({ _sortDate, ...rest }) => rest);
 
+    } catch (error: any) {
+        console.error('[calculateProductTraceabilityInternal] ERROR:', error);
+        throw error;
+    }
+}
+
+export async function getProductTraceabilityService(month?: number, year?: number) {
+    const filterYear  = year  || new Date().getFullYear();
+    const filterMonth = month || (new Date().getMonth() + 1);
+
+    // Sesuaikan penarikan data secara presisi dengan Zona Waktu Indonesia WIB (UTC+7)
+    // agar transaksi akhir/awal bulan tidak tergeser zona waktu UTC server
+    const startDate = new Date(Date.UTC(filterYear, filterMonth - 1, 1, 0, 0, 0));
+    startDate.setUTCHours(startDate.getUTCHours() - 7);
+
+    const endDate = new Date(Date.UTC(filterYear, filterMonth, 0, 23, 59, 59, 999));
+    endDate.setUTCHours(endDate.getUTCHours() - 7);
+
+    try {
+        return await calculateProductTraceabilityInternal(startDate, endDate);
     } catch (error: any) {
         console.error('[getProductTraceabilityService] ERROR:', error);
         return { error: (error as Error).message || 'Failed to fetch traceability report' };
@@ -822,6 +819,15 @@ export async function getComprehensiveDailyReportService(date?: string) {
             })
         ]);
 
+        // Traceability time range (aligned to UTC+7 timezone)
+        const traceStartDate = new Date(Date.UTC(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), 0, 0, 0));
+        traceStartDate.setUTCHours(traceStartDate.getUTCHours() - 7);
+
+        const traceEndDate = new Date(Date.UTC(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), 23, 59, 59, 999));
+        traceEndDate.setUTCHours(traceEndDate.getUTCHours() - 7);
+
+        const dailyTraceability = await calculateProductTraceabilityInternal(traceStartDate, traceEndDate).catch(() => []);
+
         // Calculate summaries
         const totalSales = sales.reduce((s: number, d: any) => s + Number(d.grandTotal || 0), 0);
         const totalPurchases = purchases.reduce((s: number, d: any) => s + Number(d.grandTotal || 0), 0);
@@ -990,7 +996,8 @@ export async function getComprehensiveDailyReportService(date?: string) {
                     action: a.action, resource: a.resource, resourceId: a.resourceId,
                     user: a.user?.name || a.user?.email || 'System',
                     date: a.createdAt, details: a.details
-                }))
+                })),
+                dailyTraceability
             }
         };
     } catch (error: any) {
