@@ -763,7 +763,12 @@ export async function getComprehensiveDailyReportService(date?: string) {
                 where: { isVoid: false, date: { gte: dayStart, lte: dayEnd } },
                 include: {
                     createdBy: { select: { name: true } },
-                    items: { include: { product: { select: { sku: true, name: true } } } }
+                    items: {
+                        include: {
+                            product: { select: { sku: true, name: true, purchasePrice: true } },
+                            lotAllocations: true
+                        }
+                    }
                 },
                 orderBy: { date: 'asc' }
             }),
@@ -841,10 +846,25 @@ export async function getComprehensiveDailyReportService(date?: string) {
         const purchasePaid = purchases.filter((p: any) => p.paymentStatus === 'PAID').length;
         const purchasePending = purchases.filter((p: any) => p.paymentStatus !== 'PAID').length;
 
-        // Simple daily P&L estimate (Revenue - Cost - Ops Expense)
-        const estimatedHPP = purchases.reduce((s: number, p: any) => s + Number(p.subtotal || 0), 0);
-        const grossProfit = totalSales - estimatedHPP;
+        // Calculate HPP of items sold
+        let totalHPP = 0;
+        sales.forEach((s: any) => {
+            (s.items || []).forEach((item: any) => {
+                const qty = Number(item.quantity || 0);
+                if (item.lotAllocations && item.lotAllocations.length > 0) {
+                    item.lotAllocations.forEach((alloc: any) => {
+                        totalHPP += Number(alloc.qty || 0) * Number(alloc.hppAtTime || 0);
+                    });
+                } else {
+                    totalHPP += qty * Number(item.product?.purchasePrice || 0);
+                }
+            });
+        });
+
+        const grossProfit = totalSales - totalHPP;
         const netProfit = grossProfit - totalExpense;
+        const grossMarginPct = totalSales > 0 ? (grossProfit / totalSales * 100) : 0;
+        const netMarginPct = totalSales > 0 ? (netProfit / totalSales * 100) : 0;
 
         // Calculate staff activity
         const financeActivity = new Map<string, { name: string, count: number, paymentAmount: number, receiptAmount: number }>();
@@ -894,22 +914,42 @@ export async function getComprehensiveDailyReportService(date?: string) {
                 salesCount: sales.length, purchaseCount: purchases.length,
                 opsCount: operational.length,
                 salesPaid, salesPending, purchasePaid, purchasePending,
+                totalHPP,
                 grossProfit, netProfit,
+                grossMarginPct, netMarginPct,
                 returnPurchaseCount: returns_purchase.length,
                 returnSalesCount: returns_sales.length,
                 stockMovementCount: stockMovements.length
             },
             details: {
-                sales: sales.map((s: any) => ({
-                    id: s.id, number: s.deliveryNumber, date: s.date,
-                    buyer: s.buyerName || s.recipient, salesPerson: s.salesPerson,
-                    subtotal: Number(s.subtotal || 0), discount: Number(s.totalDiscount || 0),
-                    tax: Number(s.taxAmount || 0), grandTotal: Number(s.grandTotal || 0),
-                    paidAmount: Number(s.paidAmount || 0), paymentStatus: s.paymentStatus,
-                    operator: s.createdBy?.name || 'System',
-                    itemCount: (s.items || []).length,
-                    totalQty: (s.items || []).reduce((q: number, i: any) => q + Number(i.quantity || 0), 0)
-                })),
+                sales: sales.map((s: any) => {
+                    let saleHpp = 0;
+                    (s.items || []).forEach((item: any) => {
+                        const qty = Number(item.quantity || 0);
+                        if (item.lotAllocations && item.lotAllocations.length > 0) {
+                            item.lotAllocations.forEach((alloc: any) => {
+                                saleHpp += Number(alloc.qty || 0) * Number(alloc.hppAtTime || 0);
+                            });
+                        } else {
+                            saleHpp += qty * Number(item.product?.purchasePrice || 0);
+                        }
+                    });
+                    const margin = Number(s.grandTotal || 0) - saleHpp;
+                    const marginPct = Number(s.grandTotal || 0) > 0 ? (margin / Number(s.grandTotal || 0) * 100) : 0;
+                    return {
+                        id: s.id, number: s.deliveryNumber, date: s.date,
+                        buyer: s.buyerName || s.recipient, salesPerson: s.salesPerson,
+                        subtotal: Number(s.subtotal || 0), discount: Number(s.totalDiscount || 0),
+                        tax: Number(s.taxAmount || 0), grandTotal: Number(s.grandTotal || 0),
+                        paidAmount: Number(s.paidAmount || 0), paymentStatus: s.paymentStatus,
+                        operator: s.createdBy?.name || 'System',
+                        itemCount: (s.items || []).length,
+                        totalQty: (s.items || []).reduce((q: number, i: any) => q + Number(i.quantity || 0), 0),
+                        hpp: saleHpp,
+                        margin,
+                        marginPct
+                    };
+                }),
                 purchases: purchases.map((p: any) => ({
                     id: p.id, number: p.receiptNumber, date: p.date,
                     supplier: p.receivedFrom, warehouse: p.warehouse?.name,
@@ -985,7 +1025,12 @@ export async function getComprehensiveWeeklyReportService(weekStartDate?: string
             (prisma as any).salesDelivery.findMany({
                 where: { isVoid: false, date: { gte: startDate, lte: endDate } },
                 include: {
-                    items: { select: { quantity: true, salesPrice: true, discount: true } }
+                    items: {
+                        include: {
+                            product: { select: { sku: true, name: true, purchasePrice: true } },
+                            lotAllocations: true
+                        }
+                    }
                 },
                 orderBy: { date: 'asc' }
             }),
@@ -1030,6 +1075,22 @@ export async function getComprehensiveWeeklyReportService(weekStartDate?: string
             const opsExpense = dayOps.filter((o: any) => o.transactionType === 'PAYMENT' || o.transactionType === 'EXPENSE' || Number(o.amount) < 0)
                 .reduce((s: number, o: any) => s + Math.abs(Number(o.amount || 0)), 0);
 
+            let dayHPP = 0;
+            daySales.forEach((s: any) => {
+                (s.items || []).forEach((item: any) => {
+                    const qty = Number(item.quantity || 0);
+                    if (item.lotAllocations && item.lotAllocations.length > 0) {
+                        item.lotAllocations.forEach((alloc: any) => {
+                            dayHPP += Number(alloc.qty || 0) * Number(alloc.hppAtTime || 0);
+                        });
+                    } else {
+                        dayHPP += qty * Number(item.product?.purchasePrice || 0);
+                    }
+                });
+            });
+            const dayGrossProfit = salesTotal - dayHPP;
+            const dayMarginPct = salesTotal > 0 ? (dayGrossProfit / salesTotal * 100) : 0;
+
             dailyBreakdown.push({
                 date: dayStart.toISOString(),
                 dayName: dayStart.toLocaleDateString('id-ID', { weekday: 'long' }),
@@ -1038,6 +1099,8 @@ export async function getComprehensiveWeeklyReportService(weekStartDate?: string
                 sales: salesTotal,
                 purchases: purchaseTotal,
                 opsExpense,
+                hpp: dayHPP,
+                marginPct: dayMarginPct,
                 salesCount: daySales.length,
                 purchaseCount: dayPurchases.length,
                 salesQty: daySales.reduce((s: number, d: any) =>
@@ -1091,7 +1154,26 @@ export async function getComprehensiveWeeklyReportService(weekStartDate?: string
         const totalExpenses = operational
             .filter((o: any) => o.transactionType === 'PAYMENT' || o.transactionType === 'EXPENSE' || Number(o.amount) < 0)
             .reduce((s: number, o: any) => s + Math.abs(Number(o.amount || 0)), 0);
-        const estimatedHPP = purchases.reduce((s: number, p: any) => s + Number(p.subtotal || 0), 0);
+
+        // Calculate HPP of items sold
+        let totalHPP = 0;
+        sales.forEach((s: any) => {
+            (s.items || []).forEach((item: any) => {
+                const qty = Number(item.quantity || 0);
+                if (item.lotAllocations && item.lotAllocations.length > 0) {
+                    item.lotAllocations.forEach((alloc: any) => {
+                        totalHPP += Number(alloc.qty || 0) * Number(alloc.hppAtTime || 0);
+                    });
+                } else {
+                    totalHPP += qty * Number(item.product?.purchasePrice || 0);
+                }
+            });
+        });
+
+        const grossProfit = totalSales - totalHPP;
+        const netProfit = grossProfit - totalExpenses;
+        const grossMarginPct = totalSales > 0 ? (grossProfit / totalSales * 100) : 0;
+        const netMarginPct = totalSales > 0 ? (netProfit / totalSales * 100) : 0;
 
         // Sales by Team
         let salesBC = 0, salesPF = 0, salesOther = 0;
@@ -1150,8 +1232,11 @@ export async function getComprehensiveWeeklyReportService(weekStartDate?: string
             },
             summary: {
                 totalSales, totalPurchases, totalExpenses,
-                grossProfit: totalSales - estimatedHPP,
-                netProfit: totalSales - estimatedHPP - totalExpenses,
+                totalHPP,
+                grossProfit,
+                netProfit,
+                grossMarginPct,
+                netMarginPct,
                 salesCount: sales.length,
                 purchaseCount: purchases.length,
                 opsCount: operational.length,
@@ -1436,14 +1521,32 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
         };
 
         // ── Sales Detail Table ───────────────────────────────────────────
-        const salesDetail = sales.map((s: any) => ({
-            number: s.deliveryNumber, date: s.date,
-            buyer: s.buyerName || s.recipient, salesPerson: s.salesPerson,
-            subtotal: Number(s.subtotal || 0), discount: Number(s.totalDiscount || 0),
-            tax: Number(s.taxAmount || 0), grandTotal: Number(s.grandTotal || 0),
-            paidAmount: Number(s.paidAmount || 0), paymentStatus: s.paymentStatus,
-            totalQty: (s.items || []).reduce((q: number, i: any) => q + Number(i.quantity || 0), 0)
-        }));
+        const salesDetail = sales.map((s: any) => {
+            let saleHpp = 0;
+            (s.items || []).forEach((item: any) => {
+                const qty = Number(item.quantity || 0);
+                if (item.lotAllocations && item.lotAllocations.length > 0) {
+                    item.lotAllocations.forEach((alloc: any) => {
+                        saleHpp += Number(alloc.qty || 0) * Number(alloc.hppAtTime || 0);
+                    });
+                } else {
+                    saleHpp += qty * Number(item.product?.purchasePrice || 0);
+                }
+            });
+            const margin = Number(s.grandTotal || 0) - saleHpp;
+            const marginPct = Number(s.grandTotal || 0) > 0 ? (margin / Number(s.grandTotal || 0) * 100) : 0;
+            return {
+                number: s.deliveryNumber, date: s.date,
+                buyer: s.buyerName || s.recipient, salesPerson: s.salesPerson,
+                subtotal: Number(s.subtotal || 0), discount: Number(s.totalDiscount || 0),
+                tax: Number(s.taxAmount || 0), grandTotal: Number(s.grandTotal || 0),
+                paidAmount: Number(s.paidAmount || 0), paymentStatus: s.paymentStatus,
+                totalQty: (s.items || []).reduce((q: number, i: any) => q + Number(i.quantity || 0), 0),
+                hpp: saleHpp,
+                margin,
+                marginPct
+            };
+        });
 
         // ── Purchase Detail Table ────────────────────────────────────────
         const purchaseDetail = purchases.map((p: any) => ({

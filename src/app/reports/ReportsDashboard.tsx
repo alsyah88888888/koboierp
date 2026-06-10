@@ -379,6 +379,7 @@ export function ReportsDashboard() {
                     'Buyer': s.buyer, 'Sales': s.salesPerson || '-',
                     'Qty': s.totalQty, 'Subtotal': s.subtotal, 'Diskon': s.discount,
                     'PPN': s.tax, 'Grand Total': s.grandTotal,
+                    'HPP': s.hpp, 'Margin': s.margin, 'Margin %': `${s.marginPct?.toFixed(1) || 0}%`,
                     'Dibayar': s.paidAmount, 'Status': s.paymentStatus,
                     'Operator': s.operator
                 }));
@@ -419,8 +420,8 @@ export function ReportsDashboard() {
         if (activeTab === 'weekly' && data.dailyBreakdown) {
             const rows = data.dailyBreakdown.map((d: any) => ({
                 'Tanggal': d.dateLabel, 'Hari': d.dayName,
-                'Penjualan': d.sales, 'Pembelian': d.purchases,
-                'Biaya Ops': d.opsExpense,
+                'Penjualan': d.sales, 'HPP': d.hpp, 'Margin %': `${d.marginPct?.toFixed(1) || 0}%`,
+                'Pembelian': d.purchases, 'Biaya Ops': d.opsExpense,
                 'Jml SJ': d.salesCount, 'Jml LPB': d.purchaseCount,
                 'Qty Jual': d.salesQty, 'Qty Beli': d.purchaseQty
             }));
@@ -459,7 +460,7 @@ export function ReportsDashboard() {
                 const rows = data.details.sales.map((s: any, i: number) => ({
                     'No': i + 1, 'No. SJ': s.number, 'Tanggal': fmtDate(s.date),
                     'Buyer': s.buyer, 'Sales': s.salesPerson || '-', 'Qty': s.totalQty,
-                    'Grand Total': s.grandTotal, 'Status': s.paymentStatus
+                    'Grand Total': s.grandTotal, 'HPP': s.hpp, 'Margin': s.margin, 'Margin %': `${s.marginPct?.toFixed(1) || 0}%`, 'Status': s.paymentStatus
                 }));
                 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Detail Penjualan');
             }
@@ -857,7 +858,7 @@ function DailyReport({ data, isClient, fmtDate }: { data: any; isClient: boolean
                 <KPICard icon={<ShoppingBag className="h-5 w-5 text-blue-500" />} label="Penjualan" value={formatCurrency(s.totalSales || 0)} sub={`${s.salesCount || 0} Invoice • ${s.totalSalesQty || 0} Unit`} color="blue" isClient={isClient} />
                 <KPICard icon={<ShoppingCart className="h-5 w-5 text-emerald-500" />} label="Pembelian" value={formatCurrency(s.totalPurchases || 0)} sub={`${s.purchaseCount || 0} LPB • ${s.totalPurchaseQty || 0} Unit`} color="emerald" isClient={isClient} />
                 <KPICard icon={<Wallet className="h-5 w-5 text-amber-500" />} label="Biaya Operasional" value={formatCurrency(s.totalExpense || 0)} sub={`${s.opsCount || 0} Transaksi`} color="amber" isClient={isClient} />
-                <KPICard icon={<TrendingUp className="h-5 w-5 text-purple-500" />} label="Estimasi Laba Bersih" value={formatCurrency(s.netProfit || 0)} sub={`Laba Kotor: ${formatCurrency(s.grossProfit || 0)}`} color="purple" trend={s.netProfit >= 0 ? 'up' : 'down'} isClient={isClient} />
+                <KPICard icon={<TrendingUp className="h-5 w-5 text-purple-500" />} label="Laba Bersih (Margin)" value={formatCurrency(s.netProfit || 0)} sub={`M. Bersih: ${s.netMarginPct?.toFixed(1) || 0}% • M. Kotor: ${s.grossMarginPct?.toFixed(1) || 0}% (${formatCurrency(s.grossProfit || 0)})`} color="purple" trend={s.netProfit >= 0 ? 'up' : 'down'} isClient={isClient} />
             </div>
 
             {/* Payment Status Summary */}
@@ -873,13 +874,17 @@ function DailyReport({ data, isClient, fmtDate }: { data: any; isClient: boolean
                 <ReportTable
                     title="Detail Penjualan" icon={<ShoppingBag className="h-4 w-4 text-blue-500" />}
                     count={d.sales.length} totalLabel="Total Penjualan" totalValue={formatCurrency(s.totalSales || 0)}
-                    headers={['No. SJ', 'Buyer', 'Sales', 'Qty', 'Grand Total', 'Dibayar', 'Status', 'Operator']}
+                    headers={['No. SJ', 'Buyer', 'Sales', 'Qty', 'Grand Total', 'HPP', 'Margin', 'Dibayar', 'Status', 'Operator']}
                     rows={d.sales.map((row: any) => [
                         <span className="font-black text-slate-900">{row.number}</span>,
                         <span className="truncate max-w-[140px] block">{row.buyer}</span>,
                         row.salesPerson || '-',
                         <span className="tabular-nums font-black">{row.totalQty}</span>,
                         <span className="tabular-nums font-black">{isClient ? formatCurrency(row.grandTotal) : '...'}</span>,
+                        <span className="tabular-nums text-rose-600">{isClient ? formatCurrency(row.hpp) : '...'}</span>,
+                        <span className={cn("tabular-nums font-black", row.margin >= 0 ? "text-emerald-600" : "text-rose-600")}>
+                            {isClient ? `${formatCurrency(row.margin)} (${row.marginPct?.toFixed(1) || 0}%)` : '...'}
+                        </span>,
                         <span className="tabular-nums">{isClient ? formatCurrency(row.paidAmount) : '...'}</span>,
                         <PaymentBadge status={row.paymentStatus} />,
                         <span className="text-slate-400">{row.operator}</span>
@@ -1035,8 +1040,8 @@ function WeeklyReport({ data, isClient, fmtDate }: { data: any; isClient: boolea
                 <KPICard icon={<ShoppingBag className="h-5 w-5 text-blue-500" />} label="Total Penjualan" value={formatCurrency(s.totalSales || 0)} sub={`${s.salesCount || 0} Invoice`} color="blue" isClient={isClient} />
                 <KPICard icon={<ShoppingCart className="h-5 w-5 text-emerald-500" />} label="Total Pembelian" value={formatCurrency(s.totalPurchases || 0)} sub={`${s.purchaseCount || 0} LPB`} color="emerald" isClient={isClient} />
                 <KPICard icon={<Wallet className="h-5 w-5 text-amber-500" />} label="Biaya Operasional" value={formatCurrency(s.totalExpenses || 0)} sub={`${s.opsCount || 0} Transaksi`} color="amber" isClient={isClient} />
-                <KPICard icon={<TrendingUp className="h-5 w-5 text-purple-500" />} label="Laba Kotor" value={formatCurrency(s.grossProfit || 0)} sub="Revenue - HPP" color="purple" trend={s.grossProfit >= 0 ? 'up' : 'down'} isClient={isClient} />
-                <KPICard icon={<DollarSign className="h-5 w-5 text-indigo-500" />} label="Laba Bersih" value={formatCurrency(s.netProfit || 0)} sub="Kotor - Ops" color="indigo" trend={s.netProfit >= 0 ? 'up' : 'down'} isClient={isClient} />
+                <KPICard icon={<TrendingUp className="h-5 w-5 text-purple-500" />} label="Laba Kotor" value={formatCurrency(s.grossProfit || 0)} sub={`M. Kotor: ${s.grossMarginPct?.toFixed(1) || 0}%`} color="purple" trend={s.grossProfit >= 0 ? 'up' : 'down'} isClient={isClient} />
+                <KPICard icon={<DollarSign className="h-5 w-5 text-indigo-500" />} label="Laba Bersih" value={formatCurrency(s.netProfit || 0)} sub={`M. Bersih: ${s.netMarginPct?.toFixed(1) || 0}% • Kotor - Ops`} color="indigo" trend={s.netProfit >= 0 ? 'up' : 'down'} isClient={isClient} />
             </div>
 
             {/* Charts Row */}
@@ -1121,11 +1126,15 @@ function WeeklyReport({ data, isClient, fmtDate }: { data: any; isClient: boolea
             <ReportTable
                 title="Breakdown Harian" icon={<Calendar className="h-4 w-4 text-blue-500" />}
                 count={breakdown.length}
-                headers={['Hari', 'Tanggal', 'Penjualan', 'Pembelian', 'Ops', 'SJ', 'LPB', 'Qty Jual', 'Qty Beli']}
+                headers={['Hari', 'Tanggal', 'Penjualan', 'HPP', 'Margin %', 'Pembelian', 'Ops', 'SJ', 'LPB', 'Qty Jual', 'Qty Beli']}
                 rows={breakdown.map((row: any) => [
                     <span className="font-black">{row.dayName}</span>,
                     row.dateLabel,
                     <span className="tabular-nums font-black text-blue-600">{isClient ? formatCurrency(row.sales) : '...'}</span>,
+                    <span className="tabular-nums text-rose-600">{isClient ? formatCurrency(row.hpp) : '...'}</span>,
+                    <span className={cn("tabular-nums font-black", (row.sales - row.hpp) >= 0 ? "text-emerald-600" : "text-rose-600")}>
+                        {isClient ? `${row.marginPct?.toFixed(1) || 0}%` : '...'}
+                    </span>,
                     <span className="tabular-nums font-black text-emerald-600">{isClient ? formatCurrency(row.purchases) : '...'}</span>,
                     <span className="tabular-nums text-amber-600">{isClient ? formatCurrency(row.opsExpense) : '...'}</span>,
                     <span className="tabular-nums font-black">{row.salesCount}</span>,
@@ -1568,7 +1577,7 @@ function MonthlyReport({ data, isClient, fmtDate }: { data: any; isClient: boole
                 <ReportTable
                     title="Detail Penjualan" icon={<ShoppingBag className="h-4 w-4 text-blue-500" />}
                     count={data.details.sales.length} totalLabel="Total Revenue" totalValue={formatCurrency(pl.revenue || 0)}
-                    headers={['No. SJ', 'Tanggal', 'Buyer', 'Sales', 'Qty', 'Grand Total', 'Dibayar', 'Status']}
+                    headers={['No. SJ', 'Tanggal', 'Buyer', 'Sales', 'Qty', 'Grand Total', 'HPP', 'Margin', 'Dibayar', 'Status']}
                     rows={data.details.sales.map((row: any) => [
                         <span className="font-black text-slate-900">{row.number}</span>,
                         fmtDate(row.date),
@@ -1576,6 +1585,10 @@ function MonthlyReport({ data, isClient, fmtDate }: { data: any; isClient: boole
                         row.salesPerson || '-',
                         <span className="tabular-nums font-black">{row.totalQty}</span>,
                         <span className="tabular-nums font-black">{isClient ? formatCurrency(row.grandTotal) : '...'}</span>,
+                        <span className="tabular-nums text-rose-600">{isClient ? formatCurrency(row.hpp) : '...'}</span>,
+                        <span className={cn("tabular-nums font-black", row.margin >= 0 ? "text-emerald-600" : "text-rose-600")}>
+                            {isClient ? `${formatCurrency(row.margin)} (${row.marginPct?.toFixed(1) || 0}%)` : '...'}
+                        </span>,
                         <span className="tabular-nums">{isClient ? formatCurrency(row.paidAmount) : '...'}</span>,
                         <PaymentBadge status={row.paymentStatus} />
                     ])}
