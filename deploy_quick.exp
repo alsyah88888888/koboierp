@@ -1,0 +1,14 @@
+#!/usr/bin/expect -f
+set timeout 600
+set password "dE2NJ/Xr+4KBif5"
+spawn ssh -o StrictHostKeyChecking=no root@76.13.20.44
+expect "*?assword:*" {
+    send "$password\r"
+}
+expect -re "(#|\\$)" {
+    send "cd ~/erp && git reset --hard HEAD && git pull && npm run build && pm2 restart erp\r"
+}
+expect -re "(#|\\$)" {
+    send "exit\r"
+}
+expect eof
