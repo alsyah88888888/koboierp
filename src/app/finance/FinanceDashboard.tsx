@@ -67,6 +67,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
     // Edit Payment Modal State
     const [editPaymentModal, setEditPaymentModal] = useState<{
         open: boolean;
+        type: "PURCHASE" | "SALE";
         id: string;
         deliveryNumber: string;
         buyerName: string;
@@ -77,8 +78,11 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
     const [editPaymentDate, setEditPaymentDate] = useState("");
     const [editBankId, setEditBankId] = useState("");
 
-    const handleOpenEditPayment = (item: any) => {
-        const info = getBankInfo(item.deliveryNumber);
+    const handleOpenEditPayment = (item: any, type: "PURCHASE" | "SALE") => {
+        const refNum = type === "SALE" ? item.deliveryNumber : item.receiptNumber;
+        const partyName = type === "SALE" ? item.buyerName : item.receivedFrom;
+        
+        const info = getBankInfo(refNum);
         const bankCode = info?.code || "";
         const bankAcc = accounts.find(a => a.code === bankCode);
         
@@ -88,11 +92,12 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
         
         setEditPaymentModal({
             open: true,
+            type,
             id: item.id,
-            deliveryNumber: item.deliveryNumber,
-            buyerName: item.buyerName,
+            deliveryNumber: refNum,
+            buyerName: partyName,
             total: Number(item.total || 0),
-            alreadyPaid: Number(item.paidAmount || 0)
+            alreadyPaid: Number(item.paidAmount || item.total || 0)
         });
     };
 
@@ -109,8 +114,8 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
         }
         
         const msg = amount === 0 
-            ? "Apakah Anda yakin ingin membatalkan pelunasan piutang ini? Status pembayaran akan dikembalikan menjadi CREDIT dan jurnal pembayaran akan dihapus."
-            : `Konfirmasi perubahan pelunasan piutang menjadi ${formatCurrency(amount)}?`;
+            ? `Apakah Anda yakin ingin membatalkan pelunasan/pembayaran ${editPaymentModal.type === "SALE" ? "piutang" : "hutang"} ini? Status pembayaran akan dikembalikan menjadi CREDIT dan jurnal pembayaran akan dihapus.`
+            : `Konfirmasi perubahan pelunasan/pembayaran ${editPaymentModal.type === "SALE" ? "piutang" : "hutang"} menjadi ${formatCurrency(amount)}?`;
             
         if (!confirm(msg)) return;
         
@@ -120,11 +125,11 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
         
         try {
             const pDate = editPaymentDate ? new Date(editPaymentDate) : new Date();
-            await callAction("editSettledSalesPayment", editPaymentModal.id, amount, pDate, editBankId);
-            alert("Perubahan pelunasan berhasil disimpan.");
+            await callAction("editSettledPayment", editPaymentModal.type, editPaymentModal.id, amount, pDate, editBankId);
+            alert("Perubahan pelunasan/pembayaran berhasil disimpan.");
             router.refresh();
         } catch (e) {
-            alert("Gagal memperbarui pelunasan.");
+            alert("Gagal memperbarui pelunasan/pembayaran.");
         } finally {
             setLoading(null);
         }
@@ -1727,20 +1732,23 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                 </table>
                             </div>
                         </div>
-                        {selectedHistoryItem.historyType === 'AR' && isAdminOrFinance && (
+                        {(selectedHistoryItem.historyType === 'AR' || selectedHistoryItem.historyType === 'AP') && isAdminOrFinance && (
                             <div className="bg-slate-50 px-10 py-6 border-t border-slate-100 flex items-center justify-end gap-3">
                                 <button
                                     onClick={() => {
-                                        if (confirm("Apakah Anda yakin ingin membatalkan pelunasan piutang ini? Status pembayaran akan dikembalikan menjadi CREDIT dan jurnal pembayaran akan dihapus.")) {
+                                        const isAR = selectedHistoryItem.historyType === 'AR';
+                                        const type = isAR ? 'SALE' : 'PURCHASE';
+                                        const labelType = isAR ? 'pelunasan piutang' : 'pembayaran hutang';
+                                        if (confirm(`Apakah Anda yakin ingin membatalkan ${labelType} ini? Status pembayaran akan dikembalikan menjadi CREDIT dan jurnal pembayaran akan dihapus.`)) {
                                             const id = selectedHistoryItem.id;
                                             setSelectedHistoryItem(null);
                                             setLoading(id);
-                                            callAction("editSettledSalesPayment", id, 0, new Date(), "")
+                                            callAction("editSettledPayment", type, id, 0, new Date(), "")
                                                 .then(() => {
-                                                    alert("Pelunasan berhasil dibatalkan.");
+                                                    alert("Pembayaran/pelunasan berhasil dibatalkan.");
                                                     router.refresh();
                                                 })
-                                                .catch(() => alert("Gagal membatalkan pelunasan."))
+                                                .catch(() => alert("Gagal membatalkan pembayaran/pelunasan."))
                                                 .finally(() => setLoading(null));
                                         }
                                     }}
@@ -1749,7 +1757,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                     Batal Pelunasan
                                 </button>
                                 <button
-                                    onClick={() => handleOpenEditPayment(selectedHistoryItem)}
+                                    onClick={() => handleOpenEditPayment(selectedHistoryItem, selectedHistoryItem.historyType === 'AR' ? 'SALE' : 'PURCHASE')}
                                     className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-black rounded-2xl transition-all uppercase tracking-widest shadow-lg shadow-emerald-500/20"
                                 >
                                     Edit Pelunasan
@@ -1760,25 +1768,28 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                 </div>
             )}
 
-            {/* Edit Settled AR Payment Modal */}
+            {/* Edit Settled AR/AP Payment Modal */}
             {editPaymentModal && (() => {
                 const remaining = editPaymentModal.total;
                 const currentAmount = Number(editPaymentAmount) || 0;
                 const isLunas = currentAmount >= remaining;
                 const isValid = currentAmount >= 0 && currentAmount <= (remaining + 1); // 0 is allowed (means revert/cancel)
+                const isAR = editPaymentModal.type === "SALE";
 
                 return (
                     <div className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
                         <div className="absolute inset-0" onClick={() => setEditPaymentModal(null)} />
                         <div className="relative w-full max-w-lg bg-white rounded-[2.5rem] shadow-2xl overflow-hidden animate-in slide-in-from-bottom-10 sm:zoom-in-95 duration-300">
                             {/* Visual Header */}
-                            <div className="p-8 bg-emerald-950 text-white relative">
+                            <div className={cn("p-8 text-white relative", isAR ? "bg-emerald-950" : "bg-rose-950")}>
                                 <div className="absolute top-0 right-0 p-8 opacity-10">
                                     <Banknote className="h-24 w-24" />
                                 </div>
                                 <div className="relative z-10">
-                                    <h3 className="text-2xl font-black tracking-tight uppercase">Edit Pelunasan Piutang</h3>
-                                    <p className="text-emerald-400 text-[10px] font-black uppercase tracking-[0.2em] mt-1">Adjust Settled AR details</p>
+                                    <h3 className="text-2xl font-black tracking-tight uppercase">{isAR ? 'Edit Pelunasan Piutang' : 'Edit Pembayaran Hutang'}</h3>
+                                    <p className={cn("text-[10px] font-black uppercase tracking-[0.2em] mt-1", isAR ? "text-emerald-400" : "text-rose-400")}>
+                                        {isAR ? 'Adjust Settled AR details' : 'Adjust Settled AP details'}
+                                    </p>
                                 </div>
                             </div>
 
@@ -1786,20 +1797,28 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                 {/* Account Context Cards */}
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex flex-col justify-between h-20">
-                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">No. SJ / Invoice</span>
+                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                                            {isAR ? 'No. SJ / Invoice' : 'No. LPB / Invoice'}
+                                        </span>
                                         <span className="text-[11px] font-black text-slate-900 leading-tight">{editPaymentModal.deliveryNumber}</span>
                                     </div>
                                     <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex flex-col justify-between h-20">
-                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Buyer</span>
+                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                                            {isAR ? 'Buyer' : 'Supplier'}
+                                        </span>
                                         <span className="text-[11px] font-black text-slate-900 leading-tight">{editPaymentModal.buyerName}</span>
                                     </div>
                                 </div>
 
                                 {/* Financial Detail */}
                                 <div className="space-y-4">
-                                     <div className="flex justify-between items-center bg-emerald-50/50 p-6 rounded-[2rem] border border-emerald-100 border-dashed">
-                                        <span className="text-[11px] font-black text-emerald-600 uppercase tracking-widest">Total Invoice</span>
-                                        <span className="text-2xl font-black font-mono text-emerald-700 tabular-nums tracking-tighter">{formatCurrency(remaining)}</span>
+                                     <div className={cn("flex justify-between items-center p-6 rounded-[2rem] border border-dashed", 
+                                         isAR ? "bg-emerald-50/50 border-emerald-100 text-emerald-600" : "bg-rose-50/50 border-rose-100 text-rose-600"
+                                     )}>
+                                        <span className="text-[11px] font-black uppercase tracking-widest">Total Invoice</span>
+                                        <span className={cn("text-2xl font-black font-mono tabular-nums tracking-tighter", isAR ? "text-emerald-700" : "text-rose-700")}>
+                                            {formatCurrency(remaining)}
+                                        </span>
                                     </div>
 
                                     <div className="space-y-2">
@@ -1810,21 +1829,21 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                                 type="number"
                                                 value={editPaymentAmount}
                                                 onChange={e => setEditPaymentAmount(e.target.value)}
-                                                className="w-full bg-slate-50 border-2 border-slate-100 rounded-[2rem] p-6 pl-14 text-2xl font-black font-mono text-slate-900 outline-none focus:border-emerald-600 transition-all shadow-inner"
+                                                className="w-full bg-slate-50 border-2 border-slate-100 rounded-[2rem] p-6 pl-14 text-2xl font-black font-mono text-slate-900 outline-none focus:border-primary transition-all shadow-inner"
                                                 placeholder="0.00"
                                             />
                                         </div>
                                         {currentAmount > 0 && (
                                             <div className="px-4">
                                                 <p className={cn("text-[10px] font-black uppercase tracking-widest", isLunas ? "text-emerald-500" : "text-blue-500")}>
-                                                    {isLunas ? "✓ Pelunasan Penuh" : <span>Sisa Piutang: <span className="font-mono">{formatCurrency(remaining - currentAmount)}</span></span>}
+                                                    {isLunas ? "✓ Pelunasan Penuh" : <span>{isAR ? 'Sisa Piutang' : 'Sisa Hutang'}: <span className="font-mono">{formatCurrency(remaining - currentAmount)}</span></span>}
                                                 </p>
                                             </div>
                                         )}
                                         {currentAmount === 0 && (
                                             <div className="px-4">
                                                 <p className="text-[10px] font-black uppercase tracking-widest text-rose-500">
-                                                    ⚠ Nilai 0 berarti membatalkan pelunasan sepenuhnya.
+                                                    ⚠ Nilai 0 berarti membatalkan {isAR ? 'pelunasan' : 'pembayaran'} sepenuhnya.
                                                 </p>
                                             </div>
                                         )}
@@ -1848,7 +1867,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                         <select 
                                             value={editBankId} 
                                             onChange={e => setEditBankId(e.target.value)}
-                                            className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 text-[11px] font-black text-slate-900 uppercase tracking-[0.1em] outline-none focus:border-emerald-600 transition-all"
+                                            className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 text-[11px] font-black text-slate-900 uppercase tracking-[0.1em] outline-none focus:border-primary transition-all"
                                         >
                                             <option value="">-- Pilih Rekening / Kas --</option>
                                             {accounts.filter(a => ['101', '102', '106', '107', '108', '109', '110'].includes(a.code)).map(acc => (
@@ -1865,7 +1884,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                                 type="date"
                                                 value={editPaymentDate}
                                                 onChange={e => setEditPaymentDate(e.target.value)}
-                                                className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 pl-12 text-[11px] font-black font-mono text-slate-600 uppercase tracking-[0.2em] outline-none focus:border-emerald-600 transition-all"
+                                                className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 pl-12 text-[11px] font-black font-mono text-slate-600 uppercase tracking-[0.2em] outline-none focus:border-primary transition-all"
                                             />
                                         </div>
                                     </div>
@@ -1883,7 +1902,10 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                         type="button"
                                         disabled={!isValid}
                                         onClick={handleEditPaymentSubmit}
-                                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-black rounded-2xl uppercase tracking-widest py-4 shadow-xl shadow-emerald-500/20 disabled:opacity-50"
+                                        className={cn(
+                                            "flex-1 text-white text-[11px] font-black rounded-2xl uppercase tracking-widest py-4 shadow-xl disabled:opacity-50",
+                                            isAR ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/20" : "bg-rose-600 hover:bg-rose-700 shadow-rose-500/20"
+                                        )}
                                     >
                                         Simpan Perubahan
                                     </button>

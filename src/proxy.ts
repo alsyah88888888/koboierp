@@ -66,9 +66,9 @@ export async function callAction(actionName: string, ...args: any[]) {
         case "updatePaymentStatus":
             const { updatePaymentStatusAction } = await import("@/actions/finance");
             return await updatePaymentStatusAction(...args as [any, any, any, any, any]);
-        case "editSettledSalesPayment":
-            const { editSettledSalesPaymentAction } = await import("@/actions/finance");
-            return await editSettledSalesPaymentAction(...args as [string, number, Date, string]);
+        case "editSettledPayment":
+            const { editSettledPaymentAction } = await import("@/actions/finance");
+            return await editSettledPaymentAction(...args as [any, any, any, any, any]);
         case "deleteJournalEntry":
             const { deleteJournalEntryAction } = await import("@/actions/finance");
             return await deleteJournalEntryAction(...args as [string]);

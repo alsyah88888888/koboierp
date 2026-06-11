@@ -549,8 +549,9 @@ export async function updateFinanceTransactionService(id: string, data: any, use
     }, { timeout: 30000 });
 }
 
-export async function editSettledSalesPaymentService(
-    deliveryId: string,
+export async function editSettledPaymentService(
+    type: "PURCHASE" | "SALE",
+    id: string,
     newPaidAmount: number,
     paymentDate?: Date,
     userId?: string,
@@ -560,131 +561,255 @@ export async function editSettledSalesPaymentService(
     const prisma = getPrisma();
 
     return await prisma.$transaction(async (tx: any) => {
-        // 1. Fetch SalesDelivery
-        const delivery = await tx.salesDelivery.findUnique({
-            where: { id: deliveryId },
-            include: { items: true }
-        });
-        if (!delivery) throw new Error("Delivery not found");
-
-        const reference = delivery.deliveryNumber;
-        const party = delivery.buyerName;
-        const totalAmount = Math.round(Number(delivery.grandTotal || 0));
-        const previouslyPaid = Math.round(Number(delivery.paidAmount || 0));
-
-        // 2. Find and delete previous payment journal entries
-        const entriesToDelete = await tx.journalEntry.findMany({
-            where: {
-                OR: [
-                    { description: { startsWith: `Penerimaan Pelunasan Piutang: ${reference}` } },
-                    { description: { startsWith: `Penyelesaian Piutang: ${reference}` } },
-                    { description: { startsWith: `Penerimaan DP/Sebagian Piutang: ${reference}` } },
-                    { description: { startsWith: `Penyelesaian Piutang (DP): ${reference}` } },
-                    { description: { startsWith: `Kas Bank (Penjualan Tunai): ${reference}` } }
-                ]
-            }
-        });
-
-        let wasDirectCashSale = false;
-        for (const entry of entriesToDelete) {
-            if (entry.description.startsWith(`Kas Bank (Penjualan Tunai): ${reference}`)) {
-                wasDirectCashSale = true;
-            }
-        }
-
-        // Delete old entries
-        if (entriesToDelete.length > 0) {
-            await tx.journalEntry.deleteMany({
-                where: { id: { in: entriesToDelete.map((e: any) => e.id) } }
+        if (type === "SALE") {
+            // 1. Fetch SalesDelivery
+            const delivery = await tx.salesDelivery.findUnique({
+                where: { id },
+                include: { items: true }
             });
-        }
+            if (!delivery) throw new Error("Delivery not found");
 
-        // If it was a direct cash sale, we now turn it into a credit sale by recognizing the AR:
-        if (wasDirectCashSale) {
-            const arAccount = await tx.financeAccount.findUnique({ where: { code: '105' } });
-            if (arAccount) {
-                await tx.journalEntry.create({
-                    data: {
-                        description: `Piutang Penjualan: ${reference} (${party})`,
-                        amount: totalAmount as any,
-                        type: "DEBIT",
-                        accountId: arAccount.id,
-                        date: delivery.date || new Date(),
-                        createdById: userId
-                    }
-                });
-            }
-        }
+            const reference = delivery.deliveryNumber;
+            const party = delivery.buyerName;
+            const totalAmount = Math.round(Number(delivery.grandTotal || 0));
+            const previouslyPaid = Math.round(Number(delivery.paidAmount || 0));
 
-        // Revert customer balance: add back the previouslyPaid amount (making it unpaid again)
-        const customer = await tx.customer.findFirst({ where: { name: party } });
-        if (customer && previouslyPaid > 0) {
-            await tx.customer.update({
-                where: { id: customer.id },
-                data: { balance: { increment: previouslyPaid } }
+            // 2. Find and delete previous payment journal entries
+            const entriesToDelete = await tx.journalEntry.findMany({
+                where: {
+                    OR: [
+                        { description: { startsWith: `Penerimaan Pelunasan Piutang: ${reference}` } },
+                        { description: { startsWith: `Penyelesaian Piutang: ${reference}` } },
+                        { description: { startsWith: `Penerimaan DP/Sebagian Piutang: ${reference}` } },
+                        { description: { startsWith: `Penyelesaian Piutang (DP): ${reference}` } },
+                        { description: { startsWith: `Kas Bank (Penjualan Tunai): ${reference}` } }
+                    ]
+                }
             });
-        }
 
-        // 3. Apply the new payment details (if newPaidAmount > 0)
-        let newStatus = "CREDIT";
-        let finalPaidAmount = 0;
-
-        if (newPaidAmount > 0) {
-            const toReceive = Math.round(Number(newPaidAmount));
-            if (toReceive >= totalAmount) {
-                newStatus = "PAID";
-                finalPaidAmount = totalAmount;
-            } else {
-                newStatus = "PARTIAL";
-                finalPaidAmount = toReceive;
+            let wasDirectCashSale = false;
+            for (const entry of entriesToDelete) {
+                if (entry.description.startsWith(`Kas Bank (Penjualan Tunai): ${reference}`)) {
+                    wasDirectCashSale = true;
+                }
             }
 
-            const arAccount = await tx.financeAccount.findUnique({ where: { code: '105' } });
-            const bankAccount = bankAccountId 
-                ? await tx.financeAccount.findUnique({ where: { id: bankAccountId } })
-                : await tx.financeAccount.findUnique({ where: { code: '102' } });
-
-            if (bankAccount && arAccount && toReceive > 0) {
-                const instRecDate = paymentDate || new Date();
-                await tx.journalEntry.create({
-                    data: {
-                        description: `Penerimaan ${newStatus === "PARTIAL" ? "DP/Sebagian" : "Pelunasan"} Piutang: ${reference} (${party})`,
-                        amount: toReceive as any,
-                        type: "DEBIT",
-                        accountId: bankAccount.id,
-                        date: instRecDate,
-                        createdById: userId
-                    }
-                });
-                await tx.journalEntry.create({
-                    data: {
-                        description: `Penyelesaian Piutang: ${reference} (${party})`,
-                        amount: toReceive as any,
-                        type: "CREDIT",
-                        accountId: arAccount.id,
-                        date: instRecDate,
-                        createdById: userId
-                    }
+            // Delete old entries
+            if (entriesToDelete.length > 0) {
+                await tx.journalEntry.deleteMany({
+                    where: { id: { in: entriesToDelete.map((e: any) => e.id) } }
                 });
             }
 
-            // Update customer balance: decrement by the new paid amount
-            if (customer && toReceive > 0) {
+            // If it was a direct cash sale, we now turn it into a credit sale by recognizing the AR:
+            if (wasDirectCashSale) {
+                const arAccount = await tx.financeAccount.findUnique({ where: { code: '105' } });
+                if (arAccount) {
+                    await tx.journalEntry.create({
+                        data: {
+                            description: `Piutang Penjualan: ${reference} (${party})`,
+                            amount: totalAmount as any,
+                            type: "DEBIT",
+                            accountId: arAccount.id,
+                            date: delivery.date || new Date(),
+                            createdById: userId
+                        }
+                    });
+                }
+            }
+
+            // Revert customer balance: add back the previouslyPaid amount (making it unpaid again)
+            const customer = await tx.customer.findFirst({ where: { name: party } });
+            if (customer && previouslyPaid > 0) {
                 await tx.customer.update({
                     where: { id: customer.id },
-                    data: { balance: { decrement: toReceive } }
+                    data: { balance: { increment: previouslyPaid } }
                 });
             }
-        }
 
-        // 4. Update the SalesDelivery
-        await tx.salesDelivery.update({
-            where: { id: deliveryId },
-            data: {
-                paymentStatus: newStatus as any,
-                paidAmount: finalPaidAmount
+            // 3. Apply the new payment details (if newPaidAmount > 0)
+            let newStatus = "CREDIT";
+            let finalPaidAmount = 0;
+
+            if (newPaidAmount > 0) {
+                const toReceive = Math.round(Number(newPaidAmount));
+                if (toReceive >= totalAmount) {
+                    newStatus = "PAID";
+                    finalPaidAmount = totalAmount;
+                } else {
+                    newStatus = "PARTIAL";
+                    finalPaidAmount = toReceive;
+                }
+
+                const arAccount = await tx.financeAccount.findUnique({ where: { code: '105' } });
+                const bankAccount = bankAccountId 
+                    ? await tx.financeAccount.findUnique({ where: { id: bankAccountId } })
+                    : await tx.financeAccount.findUnique({ where: { code: '102' } });
+
+                if (bankAccount && arAccount && toReceive > 0) {
+                    const instRecDate = paymentDate || new Date();
+                    await tx.journalEntry.create({
+                        data: {
+                            description: `Penerimaan ${newStatus === "PARTIAL" ? "DP/Sebagian" : "Pelunasan"} Piutang: ${reference} (${party})`,
+                            amount: toReceive as any,
+                            type: "DEBIT",
+                            accountId: bankAccount.id,
+                            date: instRecDate,
+                            createdById: userId
+                        }
+                    });
+                    await tx.journalEntry.create({
+                        data: {
+                            description: `Penyelesaian Piutang: ${reference} (${party})`,
+                            amount: toReceive as any,
+                            type: "CREDIT",
+                            accountId: arAccount.id,
+                            date: instRecDate,
+                            createdById: userId
+                        }
+                    });
+                }
+
+                // Update customer balance: decrement by the new paid amount
+                if (customer && toReceive > 0) {
+                    await tx.customer.update({
+                        where: { id: customer.id },
+                        data: { balance: { decrement: toReceive } }
+                    });
+                }
             }
-        });
+
+            // 4. Update the SalesDelivery
+            await tx.salesDelivery.update({
+                where: { id },
+                data: {
+                    paymentStatus: newStatus as any,
+                    paidAmount: finalPaidAmount
+                }
+            });
+
+        } else if (type === "PURCHASE") {
+            // 1. Fetch GoodsReceipt
+            const receipt = await tx.goodsReceipt.findUnique({
+                where: { id },
+                include: { items: true }
+            });
+            if (!receipt) throw new Error("Receipt not found");
+
+            const reference = receipt.receiptNumber;
+            const party = receipt.receivedFrom;
+            const totalAmount = Math.round(Number(receipt.grandTotal || 0));
+            const previouslyPaid = Math.round(Number(receipt.paidAmount || 0));
+
+            // 2. Find and delete previous payment journal entries
+            const entriesToDelete = await tx.journalEntry.findMany({
+                where: {
+                    OR: [
+                        { description: { startsWith: `Pembayaran DP Hutang: ${reference}` } },
+                        { description: { startsWith: `Kas Bank (Keluar DP): ${reference}` } },
+                        { description: { startsWith: `Pembayaran Sebagian Hutang: ${reference}` } },
+                        { description: { startsWith: `Pembayaran Pelunasan Hutang: ${reference}` } },
+                        { description: { startsWith: `Kas Bank (Keluar): ${reference}` } },
+                        { description: { startsWith: `Pembelian Tunai (Bank): ${reference}` } }
+                    ]
+                }
+            });
+
+            let wasDirectCashPurchase = false;
+            for (const entry of entriesToDelete) {
+                if (entry.description.startsWith(`Pembelian Tunai (Bank): ${reference}`)) {
+                    wasDirectCashPurchase = true;
+                }
+            }
+
+            // Delete old entries
+            if (entriesToDelete.length > 0) {
+                await tx.journalEntry.deleteMany({
+                    where: { id: { in: entriesToDelete.map((e: any) => e.id) } }
+                });
+            }
+
+            // If it was a direct cash purchase, we now turn it into a credit purchase by recognizing the AP:
+            if (wasDirectCashPurchase) {
+                const apAccount = await tx.financeAccount.findUnique({ where: { code: '201' } });
+                if (apAccount) {
+                    await tx.journalEntry.create({
+                        data: {
+                            description: `Hutang Pembelian: ${reference} (${party})`,
+                            amount: totalAmount as any,
+                            type: "CREDIT",
+                            accountId: apAccount.id,
+                            date: receipt.date || new Date(),
+                            createdById: userId
+                        }
+                    });
+                }
+            }
+
+            // Reset paidAmount to 0 first to correctly sync vendor balance
+            await tx.goodsReceipt.update({
+                where: { id },
+                data: {
+                    paymentStatus: "CREDIT",
+                    paidAmount: 0
+                }
+            });
+            await syncVendorBalanceAfterPayment(tx, party);
+
+            // 3. Apply the new payment details (if newPaidAmount > 0)
+            let newStatus = "CREDIT";
+            let finalPaidAmount = 0;
+
+            if (newPaidAmount > 0) {
+                const toPay = Math.round(Number(newPaidAmount));
+                if (toPay >= totalAmount) {
+                    newStatus = "PAID";
+                    finalPaidAmount = totalAmount;
+                } else {
+                    newStatus = "PARTIAL";
+                    finalPaidAmount = toPay;
+                }
+
+                const apAccount = await tx.financeAccount.findUnique({ where: { code: '201' } });
+                const bankAccount = bankAccountId 
+                    ? await tx.financeAccount.findUnique({ where: { id: bankAccountId } })
+                    : await tx.financeAccount.findUnique({ where: { code: '102' } });
+
+                if (apAccount && bankAccount && toPay > 0) {
+                    const activePayDate = paymentDate || new Date();
+                    await tx.journalEntry.create({
+                        data: {
+                            description: `Pembayaran ${newStatus === "PARTIAL" ? "DP/Sebagian" : "Pelunasan"} Hutang: ${reference} (${party})`,
+                            amount: toPay as any,
+                            type: "DEBIT",
+                            accountId: apAccount.id,
+                            date: activePayDate,
+                            createdById: userId
+                        }
+                    });
+                    await tx.journalEntry.create({
+                        data: {
+                            description: `Kas Bank (Keluar): ${reference} (${party})`,
+                            amount: toPay as any,
+                            type: "CREDIT",
+                            accountId: bankAccount.id,
+                            date: activePayDate,
+                            createdById: userId
+                        }
+                    });
+                }
+            }
+
+            // 4. Update the GoodsReceipt with final status & paidAmount
+            await tx.goodsReceipt.update({
+                where: { id },
+                data: {
+                    paymentStatus: newStatus as any,
+                    paidAmount: finalPaidAmount
+                }
+            });
+            await syncVendorBalanceAfterPayment(tx, party);
+        }
 
         revalidatePath("/finance");
         revalidatePath("/");
