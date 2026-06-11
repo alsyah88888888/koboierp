@@ -113,7 +113,6 @@ export function Sidebar() {
                                         <div className="flex-1 min-w-0">
                                             <p className="text-xs font-black text-white truncate leading-none uppercase tracking-tight mb-1">{session.user.name}</p>
                                             <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{userRole}</span>
-                                            <p className="text-[8px] text-emerald-400 font-mono mt-1 break-all">Akses: {JSON.stringify(userPermissions)}</p>
                                         </div>
                                     </div>
                                     <div className="flex items-center justify-between pt-3 border-t border-white/5">
