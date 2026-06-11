@@ -128,10 +128,11 @@ export function Sidebar() {
                 <nav className="flex-1 px-5 pb-6 space-y-1 overflow-y-auto custom-scrollbar">
                     <p className="px-4 text-[9px] font-black text-slate-600 uppercase tracking-[0.3em] mb-4 mt-2">Management</p>
                     {navigation.map((item) => {
-                        const isMainAdmin = userRole === "ADMIN";
+                        const isMainAdmin = userRole.toUpperCase() === "ADMIN";
                         const userPermissions = (session?.user as any)?.permissions || [];
                         const hasAccess = isMainAdmin || 
                                           userPermissions.includes(item.permissionKey) ||
+                                          (item.roles && item.roles.includes(userRole.toUpperCase())) ||
                                           (item.permissionKey === "DELIVERY" && (
                                               userPermissions.includes("SALES") || 
                                               userPermissions.includes("WAREHOUSE") || 
