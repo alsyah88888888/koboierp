@@ -36,7 +36,7 @@ export default async function FinancePage() {
         pendingReturns,
         pendingSalesReturns,
         pendingPurchaseRequests,
-        transactions,
+        rawTransactions,
         settledPurchases,
         settledSales,
         totalPaidAPRes,
@@ -179,6 +179,18 @@ export default async function FinancePage() {
             _sum: { grandTotal: true, paidAmount: true }
         }).catch(() => ({ _sum: { grandTotal: 0, paidAmount: 0 } }))
     ]);
+
+    // Fetch journals separately for the transactions to populate relation data in OperationalModal
+    const txIds = rawTransactions.map((t: any) => t.id);
+    const txJournals = await prisma.journalEntry.findMany({
+        where: { transactionId: { in: txIds } },
+        include: { account: true }
+    }).catch(() => []);
+
+    const transactions = rawTransactions.map((t: any) => ({
+        ...t,
+        journals: txJournals.filter((j: any) => j.transactionId === t.id)
+    }));
 
     // Helper to calculate total safely without NaN
     const calculateTotal = (grandTotal: any, items: any[], priceField: string) => {
