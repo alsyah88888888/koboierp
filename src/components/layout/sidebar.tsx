@@ -45,6 +45,7 @@ export function Sidebar() {
     const pathname = usePathname();
     const { data: session } = useSession();
     const userRole = (session?.user as any)?.role || "USER";
+    const userPermissions = (session?.user as any)?.permissions || [];
     const { isOpen, setIsOpen } = useSidebar();
 
     const isAuthPage = pathname?.startsWith("/auth");
@@ -112,6 +113,7 @@ export function Sidebar() {
                                         <div className="flex-1 min-w-0">
                                             <p className="text-xs font-black text-white truncate leading-none uppercase tracking-tight mb-1">{session.user.name}</p>
                                             <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{userRole}</span>
+                                            <p className="text-[8px] text-emerald-400 font-mono mt-1 break-all">Akses: {JSON.stringify(userPermissions)}</p>
                                         </div>
                                     </div>
                                     <div className="flex items-center justify-between pt-3 border-t border-white/5">
@@ -129,7 +131,6 @@ export function Sidebar() {
                     <p className="px-4 text-[9px] font-black text-slate-600 uppercase tracking-[0.3em] mb-4 mt-2">Management</p>
                     {navigation.map((item) => {
                         const isMainAdmin = userRole.toUpperCase() === "ADMIN";
-                        const userPermissions = (session?.user as any)?.permissions || [];
                         const hasAccess = isMainAdmin || 
                                           userPermissions.includes(item.permissionKey) ||
                                           (item.roles && item.roles.includes(userRole.toUpperCase())) ||
