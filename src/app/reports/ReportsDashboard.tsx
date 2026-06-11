@@ -426,6 +426,7 @@ export function ReportsDashboard() {
                     'Tgl Beli': r['TANGGAL BELI'],
                     'Total Beli (HPP)': r['TOTAL BELI'],
                     'Buyer': r['NAMA PEMBELI'],
+                    'Sales': r.SALES || '-',
                     'No. Faktur Penjualan': r['NOMOR FAKTUR PENJUALAN'],
                     'Tgl Jual': r['TANGGAL JUAL'],
                     'Total Jual (Net)': r['TOTAL JUAL'],
@@ -912,10 +913,10 @@ function DailyReport({ data, isClient, fmtDate }: { data: any; isClient: boolean
                 />
             )}
 
-            {/* Traceability Harian (FIFO) */}
+            {/* Traceability Harian */}
             {d.dailyTraceability?.length > 0 && (
                 <ReportTable
-                    title="Traceability Harian (FIFO)" icon={<FileSpreadsheet className="h-4 w-4 text-emerald-500" />}
+                    title="Traceability Harian" icon={<FileSpreadsheet className="h-4 w-4 text-emerald-500" />}
                     count={d.dailyTraceability.length}
                     totalLabel="Margin Traceability"
                     totalValue={isClient ? (() => {
@@ -924,7 +925,7 @@ function DailyReport({ data, isClient, fmtDate }: { data: any; isClient: boolean
                         const marginPct = totalJual > 0 ? (totalMargin / totalJual * 100) : 0;
                         return `${formatCurrency(totalMargin)} (${marginPct.toFixed(1)}%)`;
                     })() : '...'}
-                    headers={['No.', 'Barcode', 'Nama Item', 'Supplier', 'No. LPB', 'Tgl Beli', 'Total Beli (HPP)', 'Buyer', 'No. Faktur Penjualan', 'Tgl Jual', 'Total Jual (Net)', 'Margin', 'Margin %']}
+                    headers={['No.', 'Barcode', 'Nama Item', 'Supplier', 'No. LPB', 'Tgl Beli', 'Total Beli (HPP)', 'Buyer', 'Sales', 'No. Faktur Penjualan', 'Tgl Jual', 'Total Jual (Net)', 'Margin', 'Margin %']}
                     rows={d.dailyTraceability.map((row: any) => [
                         <span className="font-bold">{row.NO}</span>,
                         row.BARCODE,
@@ -934,6 +935,7 @@ function DailyReport({ data, isClient, fmtDate }: { data: any; isClient: boolean
                         row['TANGGAL BELI'],
                         <span className="tabular-nums font-bold text-rose-600">{isClient ? formatCurrency(row['TOTAL BELI']) : '...'}</span>,
                         <span className="truncate max-w-[130px] block" title={row['NAMA PEMBELI']}>{row['NAMA PEMBELI']}</span>,
+                        row.SALES || '-',
                         <span className="font-black text-slate-900">{row['NOMOR FAKTUR PENJUALAN']}</span>,
                         row['TANGGAL JUAL'],
                         <span className="tabular-nums font-bold text-blue-600">{isClient ? formatCurrency(row['TOTAL JUAL']) : '...'}</span>,

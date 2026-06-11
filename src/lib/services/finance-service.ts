@@ -548,3 +548,150 @@ export async function updateFinanceTransactionService(id: string, data: any, use
         return { success: true };
     }, { timeout: 30000 });
 }
+
+export async function editSettledSalesPaymentService(
+    deliveryId: string,
+    newPaidAmount: number,
+    paymentDate?: Date,
+    userId?: string,
+    bankAccountId?: string
+) {
+    const { getPrisma } = require("@/lib/prisma");
+    const prisma = getPrisma();
+
+    return await prisma.$transaction(async (tx: any) => {
+        // 1. Fetch SalesDelivery
+        const delivery = await tx.salesDelivery.findUnique({
+            where: { id: deliveryId },
+            include: { items: true }
+        });
+        if (!delivery) throw new Error("Delivery not found");
+
+        const reference = delivery.deliveryNumber;
+        const party = delivery.buyerName;
+        const totalAmount = Math.round(Number(delivery.grandTotal || 0));
+        const previouslyPaid = Math.round(Number(delivery.paidAmount || 0));
+
+        // 2. Find and delete previous payment journal entries
+        const entriesToDelete = await tx.journalEntry.findMany({
+            where: {
+                OR: [
+                    { description: { startsWith: `Penerimaan Pelunasan Piutang: ${reference}` } },
+                    { description: { startsWith: `Penyelesaian Piutang: ${reference}` } },
+                    { description: { startsWith: `Penerimaan DP/Sebagian Piutang: ${reference}` } },
+                    { description: { startsWith: `Penyelesaian Piutang (DP): ${reference}` } },
+                    { description: { startsWith: `Kas Bank (Penjualan Tunai): ${reference}` } }
+                ]
+            }
+        });
+
+        let wasDirectCashSale = false;
+        for (const entry of entriesToDelete) {
+            if (entry.description.startsWith(`Kas Bank (Penjualan Tunai): ${reference}`)) {
+                wasDirectCashSale = true;
+            }
+        }
+
+        // Delete old entries
+        if (entriesToDelete.length > 0) {
+            await tx.journalEntry.deleteMany({
+                where: { id: { in: entriesToDelete.map((e: any) => e.id) } }
+            });
+        }
+
+        // If it was a direct cash sale, we now turn it into a credit sale by recognizing the AR:
+        if (wasDirectCashSale) {
+            const arAccount = await tx.financeAccount.findUnique({ where: { code: '105' } });
+            if (arAccount) {
+                await tx.journalEntry.create({
+                    data: {
+                        description: `Piutang Penjualan: ${reference} (${party})`,
+                        amount: totalAmount as any,
+                        type: "DEBIT",
+                        accountId: arAccount.id,
+                        date: delivery.date || new Date(),
+                        createdById: userId
+                    }
+                });
+            }
+        }
+
+        // Revert customer balance: add back the previouslyPaid amount (making it unpaid again)
+        const customer = await tx.customer.findFirst({ where: { name: party } });
+        if (customer && previouslyPaid > 0) {
+            await tx.customer.update({
+                where: { id: customer.id },
+                data: { balance: { increment: previouslyPaid } }
+            });
+        }
+
+        // 3. Apply the new payment details (if newPaidAmount > 0)
+        let newStatus = "CREDIT";
+        let finalPaidAmount = 0;
+
+        if (newPaidAmount > 0) {
+            const toReceive = Math.round(Number(newPaidAmount));
+            if (toReceive >= totalAmount) {
+                newStatus = "PAID";
+                finalPaidAmount = totalAmount;
+            } else {
+                newStatus = "PARTIAL";
+                finalPaidAmount = toReceive;
+            }
+
+            const arAccount = await tx.financeAccount.findUnique({ where: { code: '105' } });
+            const bankAccount = bankAccountId 
+                ? await tx.financeAccount.findUnique({ where: { id: bankAccountId } })
+                : await tx.financeAccount.findUnique({ where: { code: '102' } });
+
+            if (bankAccount && arAccount && toReceive > 0) {
+                const instRecDate = paymentDate || new Date();
+                await tx.journalEntry.create({
+                    data: {
+                        description: `Penerimaan ${newStatus === "PARTIAL" ? "DP/Sebagian" : "Pelunasan"} Piutang: ${reference} (${party})`,
+                        amount: toReceive as any,
+                        type: "DEBIT",
+                        accountId: bankAccount.id,
+                        date: instRecDate,
+                        createdById: userId
+                    }
+                });
+                await tx.journalEntry.create({
+                    data: {
+                        description: `Penyelesaian Piutang: ${reference} (${party})`,
+                        amount: toReceive as any,
+                        type: "CREDIT",
+                        accountId: arAccount.id,
+                        date: instRecDate,
+                        createdById: userId
+                    }
+                });
+            }
+
+            // Update customer balance: decrement by the new paid amount
+            if (customer && toReceive > 0) {
+                await tx.customer.update({
+                    where: { id: customer.id },
+                    data: { balance: { decrement: toReceive } }
+                });
+            }
+        }
+
+        // 4. Update the SalesDelivery
+        await tx.salesDelivery.update({
+            where: { id: deliveryId },
+            data: {
+                paymentStatus: newStatus as any,
+                paidAmount: finalPaidAmount
+            }
+        });
+
+        revalidatePath("/finance");
+        revalidatePath("/");
+        revalidatePath("/purchase");
+        revalidatePath("/sales");
+
+        return { success: true };
+    }, { timeout: 30000 });
+}
+

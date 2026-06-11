@@ -366,3 +366,20 @@ export async function updateFinanceTransactionAction(id: string, data: any) {
 
     return await updateFinanceTransactionService(id, data, session.user.id);
 }
+
+export async function editSettledSalesPaymentAction(
+    deliveryId: string,
+    newPaidAmount: number,
+    paymentDate?: Date,
+    bankAccountId?: string
+) {
+    const { getAuthOptions } = require("@/lib/auth");
+    const { getServerSession } = require("next-auth");
+    const { editSettledSalesPaymentService } = require("@/lib/services/finance-service");
+
+    const session = (await getServerSession(getAuthOptions())) as any;
+    if (!session?.user?.id) throw new Error("Unauthorized");
+
+    return await editSettledSalesPaymentService(deliveryId, newPaidAmount, paymentDate, session.user.id, bankAccountId);
+}
+

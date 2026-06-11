@@ -63,6 +63,72 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
     const [paymentDate, setPaymentDate] = useState(format(new Date(), "yyyy-MM-dd"));
     const [selectedBankId, setSelectedBankId] = useState("");
     const paymentInputRef = useRef<HTMLInputElement>(null);
+
+    // Edit Payment Modal State
+    const [editPaymentModal, setEditPaymentModal] = useState<{
+        open: boolean;
+        id: string;
+        deliveryNumber: string;
+        buyerName: string;
+        total: number;
+        alreadyPaid: number;
+    } | null>(null);
+    const [editPaymentAmount, setEditPaymentAmount] = useState("");
+    const [editPaymentDate, setEditPaymentDate] = useState("");
+    const [editBankId, setEditBankId] = useState("");
+
+    const handleOpenEditPayment = (item: any) => {
+        const info = getBankInfo(item.deliveryNumber);
+        const bankCode = info?.code || "";
+        const bankAcc = accounts.find(a => a.code === bankCode);
+        
+        setEditPaymentAmount(String(Number(item.paidAmount || item.total || 0)));
+        setEditPaymentDate(info?.date ? format(new Date(info.date), "yyyy-MM-dd") : (item.updatedAt ? format(new Date(item.updatedAt), "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd")));
+        setEditBankId(bankAcc?.id || "");
+        
+        setEditPaymentModal({
+            open: true,
+            id: item.id,
+            deliveryNumber: item.deliveryNumber,
+            buyerName: item.buyerName,
+            total: Number(item.total || 0),
+            alreadyPaid: Number(item.paidAmount || 0)
+        });
+    };
+
+    const handleEditPaymentSubmit = async () => {
+        if (!editPaymentModal) return;
+        const amount = Number(editPaymentAmount);
+        if (isNaN(amount) || amount < 0 || amount > editPaymentModal.total) {
+            alert("Jumlah tidak valid atau melebihi total tagihan.");
+            return;
+        }
+        if (amount > 0 && !editBankId) {
+            alert("Pilih Akun Bank BCA terlebih dahulu.");
+            return;
+        }
+        
+        const msg = amount === 0 
+            ? "Apakah Anda yakin ingin membatalkan pelunasan piutang ini? Status pembayaran akan dikembalikan menjadi CREDIT dan jurnal pembayaran akan dihapus."
+            : `Konfirmasi perubahan pelunasan piutang menjadi ${formatCurrency(amount)}?`;
+            
+        if (!confirm(msg)) return;
+        
+        setLoading(editPaymentModal.id);
+        setSelectedHistoryItem(null);
+        setEditPaymentModal(null);
+        
+        try {
+            const pDate = editPaymentDate ? new Date(editPaymentDate) : new Date();
+            await callAction("editSettledSalesPayment", editPaymentModal.id, amount, pDate, editBankId);
+            alert("Perubahan pelunasan berhasil disimpan.");
+            router.refresh();
+        } catch (e) {
+            alert("Gagal memperbarui pelunasan.");
+        } finally {
+            setLoading(null);
+        }
+    };
  
     const getBankInfo = (refNumber: string) => {
         if (!refNumber || !paymentHistory) return null;
@@ -1661,9 +1727,172 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                 </table>
                             </div>
                         </div>
+                        {selectedHistoryItem.historyType === 'AR' && isAdminOrFinance && (
+                            <div className="bg-slate-50 px-10 py-6 border-t border-slate-100 flex items-center justify-end gap-3">
+                                <button
+                                    onClick={() => {
+                                        if (confirm("Apakah Anda yakin ingin membatalkan pelunasan piutang ini? Status pembayaran akan dikembalikan menjadi CREDIT dan jurnal pembayaran akan dihapus.")) {
+                                            const id = selectedHistoryItem.id;
+                                            setSelectedHistoryItem(null);
+                                            setLoading(id);
+                                            callAction("editSettledSalesPayment", id, 0, new Date(), "")
+                                                .then(() => {
+                                                    alert("Pelunasan berhasil dibatalkan.");
+                                                    router.refresh();
+                                                })
+                                                .catch(() => alert("Gagal membatalkan pelunasan."))
+                                                .finally(() => setLoading(null));
+                                        }
+                                    }}
+                                    className="px-6 py-3 border-2 border-rose-100 hover:border-rose-200 text-rose-600 hover:bg-rose-50 text-[11px] font-black rounded-2xl transition-all uppercase tracking-widest"
+                                >
+                                    Batal Pelunasan
+                                </button>
+                                <button
+                                    onClick={() => handleOpenEditPayment(selectedHistoryItem)}
+                                    className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-black rounded-2xl transition-all uppercase tracking-widest shadow-lg shadow-emerald-500/20"
+                                >
+                                    Edit Pelunasan
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
+
+            {/* Edit Settled AR Payment Modal */}
+            {editPaymentModal && (() => {
+                const remaining = editPaymentModal.total;
+                const currentAmount = Number(editPaymentAmount) || 0;
+                const isLunas = currentAmount >= remaining;
+                const isValid = currentAmount >= 0 && currentAmount <= (remaining + 1); // 0 is allowed (means revert/cancel)
+
+                return (
+                    <div className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+                        <div className="absolute inset-0" onClick={() => setEditPaymentModal(null)} />
+                        <div className="relative w-full max-w-lg bg-white rounded-[2.5rem] shadow-2xl overflow-hidden animate-in slide-in-from-bottom-10 sm:zoom-in-95 duration-300">
+                            {/* Visual Header */}
+                            <div className="p-8 bg-emerald-950 text-white relative">
+                                <div className="absolute top-0 right-0 p-8 opacity-10">
+                                    <Banknote className="h-24 w-24" />
+                                </div>
+                                <div className="relative z-10">
+                                    <h3 className="text-2xl font-black tracking-tight uppercase">Edit Pelunasan Piutang</h3>
+                                    <p className="text-emerald-400 text-[10px] font-black uppercase tracking-[0.2em] mt-1">Adjust Settled AR details</p>
+                                </div>
+                            </div>
+
+                            <div className="p-8 space-y-8">
+                                {/* Account Context Cards */}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex flex-col justify-between h-20">
+                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">No. SJ / Invoice</span>
+                                        <span className="text-[11px] font-black text-slate-900 leading-tight">{editPaymentModal.deliveryNumber}</span>
+                                    </div>
+                                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex flex-col justify-between h-20">
+                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Buyer</span>
+                                        <span className="text-[11px] font-black text-slate-900 leading-tight">{editPaymentModal.buyerName}</span>
+                                    </div>
+                                </div>
+
+                                {/* Financial Detail */}
+                                <div className="space-y-4">
+                                     <div className="flex justify-between items-center bg-emerald-50/50 p-6 rounded-[2rem] border border-emerald-100 border-dashed">
+                                        <span className="text-[11px] font-black text-emerald-600 uppercase tracking-widest">Total Invoice</span>
+                                        <span className="text-2xl font-black font-mono text-emerald-700 tabular-nums tracking-tighter">{formatCurrency(remaining)}</span>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Jumlah Pembayaran</label>
+                                        <div className="relative">
+                                            <span className="absolute left-6 top-1/2 -translate-y-1/2 text-lg font-black text-slate-300">Rp</span>
+                                            <input
+                                                type="number"
+                                                value={editPaymentAmount}
+                                                onChange={e => setEditPaymentAmount(e.target.value)}
+                                                className="w-full bg-slate-50 border-2 border-slate-100 rounded-[2rem] p-6 pl-14 text-2xl font-black font-mono text-slate-900 outline-none focus:border-emerald-600 transition-all shadow-inner"
+                                                placeholder="0.00"
+                                            />
+                                        </div>
+                                        {currentAmount > 0 && (
+                                            <div className="px-4">
+                                                <p className={cn("text-[10px] font-black uppercase tracking-widest", isLunas ? "text-emerald-500" : "text-blue-500")}>
+                                                    {isLunas ? "✓ Pelunasan Penuh" : <span>Sisa Piutang: <span className="font-mono">{formatCurrency(remaining - currentAmount)}</span></span>}
+                                                </p>
+                                            </div>
+                                        )}
+                                        {currentAmount === 0 && (
+                                            <div className="px-4">
+                                                <p className="text-[10px] font-black uppercase tracking-widest text-rose-500">
+                                                    ⚠ Nilai 0 berarti membatalkan pelunasan sepenuhnya.
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="flex gap-2">
+                                        {[0.25, 0.5, 0.75, 1].map((pct) => (
+                                            <button
+                                                key={pct}
+                                                type="button"
+                                                onClick={() => setEditPaymentAmount(String(Math.round(remaining * pct)))}
+                                                className="px-3 py-2 bg-slate-100 text-slate-500 text-[10px] font-black rounded-xl hover:bg-slate-200 transition-colors uppercase tracking-[0.1em]"
+                                            >
+                                                {pct === 1 ? 'MAX' : `${pct * 100}%`}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Akun Bank / Kas</label>
+                                        <select 
+                                            value={editBankId} 
+                                            onChange={e => setEditBankId(e.target.value)}
+                                            className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 text-[11px] font-black text-slate-900 uppercase tracking-[0.1em] outline-none focus:border-emerald-600 transition-all"
+                                        >
+                                            <option value="">-- Pilih Rekening / Kas --</option>
+                                            {accounts.filter(a => ['101', '102', '106', '107', '108', '109', '110'].includes(a.code)).map(acc => (
+                                                <option key={acc.id} value={acc.id}>{acc.name} ({acc.code})</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Posting Date</label>
+                                        <div className="relative">
+                                            <Calendar className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                                            <input
+                                                type="date"
+                                                value={editPaymentDate}
+                                                onChange={e => setEditPaymentDate(e.target.value)}
+                                                className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 pl-12 text-[11px] font-black font-mono text-slate-600 uppercase tracking-[0.2em] outline-none focus:border-emerald-600 transition-all"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-4 pt-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => setEditPaymentModal(null)}
+                                        className="flex-1 py-4 text-[11px] font-black text-slate-400 uppercase tracking-widest hover:bg-slate-50 rounded-2xl transition-all"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="button"
+                                        disabled={!isValid}
+                                        onClick={handleEditPaymentSubmit}
+                                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-black rounded-2xl uppercase tracking-widest py-4 shadow-xl shadow-emerald-500/20 disabled:opacity-50"
+                                    >
+                                        Simpan Perubahan
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            })()}
 
             {/* Unified Professional Payment Modal */}
             {paymentModal && (() => {
