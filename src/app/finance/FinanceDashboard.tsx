@@ -948,22 +948,22 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                                 <div className="font-black font-mono text-rose-500 tabular-nums tracking-tighter text-base">{formatCurrency(Number(p.total) - Number(p.paidAmount || 0))}</div>
                                             </td>
                                             <td className="px-8 py-5">
-                                                <div className="flex flex-col gap-2 scale-90 origin-right">
+                                                <div className="flex flex-wrap items-center justify-end gap-1.5 max-w-[280px] ml-auto">
                                                     {p.paymentStatus === 'PENDING' && (
                                                         <>
                                                             <button
                                                                 disabled={loading === p.id || (!p.isVerified && !isAdmin)}
                                                                 onClick={() => handleVerifyPayment("PURCHASE", p.id, "CREDIT")}
-                                                                className="erp-btn-secondary !py-2 !text-[9px] !rounded-lg"
+                                                                className="px-2.5 py-1.5 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-[10px] font-black rounded-xl uppercase tracking-wider transition-all disabled:opacity-50"
                                                             >
-                                                                {loading === p.id ? "..." : "RECORD DEBT"}
+                                                                {loading === p.id ? "..." : "Jadikan Hutang"}
                                                             </button>
                                                             <button
                                                                 disabled={loading === p.id || (!p.isVerified && !isAdmin)}
                                                                 onClick={() => handlePartialPayment("PURCHASE", p.id, Number(p.total), 0, p.receivedFrom)}
-                                                                className="erp-btn-secondary !py-2 !text-[9px] !rounded-lg !bg-blue-50 !text-blue-600 !border-blue-100"
+                                                                className="px-2.5 py-1.5 border border-blue-200 bg-blue-50/50 hover:bg-blue-50 text-blue-700 text-[10px] font-black rounded-xl uppercase tracking-wider transition-all disabled:opacity-50"
                                                             >
-                                                                {loading === p.id ? "..." : "DEBT + DP"}
+                                                                {loading === p.id ? "..." : "Bayar DP"}
                                                             </button>
                                                         </>
                                                     )}
@@ -971,17 +971,17 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                                         <button
                                                             disabled={loading === p.id}
                                                             onClick={() => handlePartialPayment("PURCHASE", p.id, Number(p.total), Number(p.paidAmount || 0), p.receivedFrom)}
-                                                            className="erp-btn-secondary !py-2 !text-[9px] !rounded-lg !bg-blue-50 !text-blue-600 !border-blue-100"
+                                                            className="px-2.5 py-1.5 border border-amber-200 bg-amber-50/50 hover:bg-amber-50 text-amber-700 text-[10px] font-black rounded-xl uppercase tracking-wider transition-all disabled:opacity-50"
                                                         >
-                                                            PARTIAL PAY
+                                                            Bayar Cicil
                                                         </button>
                                                     )}
                                                     <button
                                                         disabled={loading === p.id || (!p.isVerified && !isAdmin)}
                                                         onClick={() => handleVerifyPayment("PURCHASE", p.id, "PAID")}
-                                                        className="erp-btn-primary !py-2 !text-[9px] !rounded-lg"
+                                                        className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-black rounded-xl uppercase tracking-wider transition-all shadow-md shadow-slate-900/10 disabled:opacity-50"
                                                     >
-                                                        {loading === p.id ? "..." : (p.paymentStatus === 'PENDING' ? "FULL CASH" : "SETTLE BALANCE")}
+                                                        {loading === p.id ? "..." : (p.paymentStatus === 'PENDING' ? "Lunas Tunai" : "Lunasi Sisa")}
                                                     </button>
                                                 </div>
                                             </td>
@@ -1159,22 +1159,22 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                                 </div>
                                             </td>
                                             <td className="px-8 py-5">
-                                                <div className="flex flex-col gap-2 scale-90 origin-right">
+                                                <div className="flex flex-wrap items-center justify-end gap-1.5 max-w-[280px] ml-auto">
                                                     {s.paymentStatus === 'PENDING' && (
                                                         <>
                                                             <button
                                                                 disabled={loading === s.id}
                                                                 onClick={() => handleVerifyPayment("SALE", s.id, "CREDIT")}
-                                                                className="erp-btn-secondary !py-2 !text-[9px] !rounded-lg"
+                                                                className="px-2.5 py-1.5 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-[10px] font-black rounded-xl uppercase tracking-wider transition-all disabled:opacity-50"
                                                             >
-                                                                RECORD CREDIT
+                                                                {loading === s.id ? "..." : "Jadikan Piutang"}
                                                             </button>
                                                             <button
                                                                 disabled={loading === s.id}
                                                                 onClick={() => handlePartialPayment("SALE", s.id, Number(s.total), 0, s.buyerName)}
-                                                                className="erp-btn-secondary !py-2 !text-[9px] !rounded-lg !bg-emerald-50 !text-emerald-600 !border-emerald-100"
+                                                                className="px-2.5 py-1.5 border border-emerald-200 bg-emerald-50/50 hover:bg-emerald-50 text-emerald-700 text-[10px] font-black rounded-xl uppercase tracking-wider transition-all disabled:opacity-50"
                                                             >
-                                                                CREDIT + DP
+                                                                {loading === s.id ? "..." : "Terima DP"}
                                                             </button>
                                                         </>
                                                     )}
@@ -1182,17 +1182,17 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                                         <button
                                                             disabled={loading === s.id}
                                                             onClick={() => handlePartialPayment("SALE", s.id, Number(s.total), Number(s.paidAmount || 0), s.buyerName)}
-                                                            className="erp-btn-secondary !py-2 !text-[9px] !rounded-lg !bg-blue-50 !text-blue-600 !border-blue-100"
+                                                            className="px-2.5 py-1.5 border border-amber-200 bg-amber-50/50 hover:bg-amber-50 text-amber-700 text-[10px] font-black rounded-xl uppercase tracking-wider transition-all disabled:opacity-50"
                                                         >
-                                                            PARTIAL PAY
+                                                            Cicil Lagi
                                                         </button>
                                                     )}
                                                     <button
                                                         disabled={loading === s.id}
                                                         onClick={() => handleVerifyPayment("SALE", s.id, "PAID")}
-                                                        className="erp-btn-primary !py-2 !text-[9px] !rounded-lg"
+                                                        className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-black rounded-xl uppercase tracking-wider transition-all shadow-md shadow-slate-900/10 disabled:opacity-50"
                                                     >
-                                                        {loading === s.id ? "..." : (s.paymentStatus === 'PENDING' ? "FULL CASH" : "SETTLE BALANCE")}
+                                                        {loading === s.id ? "..." : (s.paymentStatus === 'PENDING' ? "Lunas Tunai" : "Lunasi Sisa")}
                                                     </button>
                                                 </div>
                                             </td>
@@ -1975,28 +1975,31 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                         </div>
                     </div>
                 );
-            })()}
-
-            {/* Unified Professional Payment Modal */}
+            })()}            {/* Unified Professional Payment Modal */}
             {paymentModal && (() => {
                 const remaining = paymentModal.total - (paymentModal.alreadyPaid || 0);
                 const progress = paymentModal.total > 0 ? Math.round(((paymentModal.alreadyPaid || 0) / paymentModal.total) * 100) : 0;
                 const currentAmount = Number(paymentAmount) || 0;
                 const isLunas = currentAmount >= remaining;
                 const isValid = currentAmount > 0 && currentAmount <= (remaining + 1); // Allow small rounding margin
+                const isAR = paymentModal.type === "SALE";
 
                 return (
                     <div className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
                         <div className="absolute inset-0" onClick={() => setPaymentModal(null)} />
                         <div className="relative w-full max-w-lg bg-white rounded-[2.5rem] shadow-2xl overflow-hidden animate-in slide-in-from-bottom-10 sm:zoom-in-95 duration-300">
                             {/* Visual Header */}
-                            <div className="p-8 bg-slate-900 text-white relative">
+                            <div className={cn("p-8 text-white relative", isAR ? "bg-emerald-950" : "bg-rose-950")}>
                                 <div className="absolute top-0 right-0 p-8 opacity-10">
                                     <Banknote className="h-24 w-24" />
                                 </div>
                                 <div className="relative z-10">
-                                    <h3 className="text-2xl font-black tracking-tight uppercase">Payment Allocation</h3>
-                                    <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mt-1">{paymentModal.type === "PURCHASE" ? "Accounts Payable" : "Accounts Receivable"} Verification</p>
+                                    <h3 className="text-2xl font-black tracking-tight uppercase">
+                                        {isAR ? "Terima Pelunasan / DP" : "Bayar Hutang / DP"}
+                                    </h3>
+                                    <p className={cn("text-[10px] font-black uppercase tracking-[0.2em] mt-1", isAR ? "text-emerald-400" : "text-rose-400")}>
+                                        {isAR ? "Accounts Receivable (Piutang)" : "Accounts Payable (Hutang)"} Verification
+                                    </p>
                                 </div>
                             </div>
 
@@ -2004,14 +2007,16 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                 {/* Account Context Cards */}
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex flex-col justify-between h-24">
-                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Entry Ref</span>
+                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                                            {isAR ? "Nama Pelanggan" : "Nama Supplier"}
+                                        </span>
                                         <span className="text-[11px] font-black text-slate-900 leading-tight">{paymentModal.supplierName || 'System Ref'}</span>
                                     </div>
                                     <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex flex-col justify-between h-24">
-                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest text-right">Progress</span>
+                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest text-right">Progres Pelunasan</span>
                                         <div className="flex items-center gap-2 justify-end">
                                             <div className="w-16 h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                                                <div className="h-full bg-emerald-500" style={{ width: `${progress}%` }} />
+                                                <div className={cn("h-full", isAR ? "bg-emerald-500" : "bg-rose-500")} style={{ width: `${progress}%` }} />
                                             </div>
                                             <span className="text-[11px] font-black text-slate-900 tabular-nums">{progress}%</span>
                                         </div>
@@ -2020,13 +2025,17 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
 
                                 {/* Financial Detail */}
                                 <div className="space-y-4">
-                                     <div className="flex justify-between items-center bg-rose-50/50 p-6 rounded-[2rem] border border-rose-100 border-dashed">
-                                        <span className="text-[11px] font-black text-rose-500 uppercase tracking-widest">Outstanding Due</span>
-                                        <span className="text-2xl font-black font-mono text-rose-600 tabular-nums tracking-tighter">{formatCurrency(remaining)}</span>
+                                     <div className={cn("flex justify-between items-center p-6 rounded-[2rem] border border-dashed",
+                                         isAR ? "bg-emerald-50/50 border-emerald-100 text-emerald-600" : "bg-rose-50/50 border-rose-100 text-rose-600"
+                                     )}>
+                                        <span className="text-[11px] font-black uppercase tracking-widest">Sisa Tagihan</span>
+                                        <span className={cn("text-2xl font-black font-mono tabular-nums tracking-tighter", isAR ? "text-emerald-600" : "text-rose-600")}>
+                                            {formatCurrency(remaining)}
+                                        </span>
                                     </div>
 
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Allocation Amount</label>
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Jumlah Pembayaran</label>
                                         <div className="relative">
                                             <span className="absolute left-6 top-1/2 -translate-y-1/2 text-lg font-black text-slate-300">Rp</span>
                                             <input
@@ -2041,7 +2050,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                         {currentAmount > 0 && (
                                             <div className="px-4">
                                                 <p className={cn("text-[10px] font-black uppercase tracking-widest", isLunas ? "text-emerald-500" : "text-blue-500")}>
-                                                    {isLunas ? "✓ Authorized for full settlement" : <span>Remaining post-allocation: <span className="font-mono">{formatCurrency(remaining - currentAmount)}</span></span>}
+                                                    {isLunas ? "✓ Pelunasan Penuh" : <span>Sisa Tagihan Setelah Bayar: <span className="font-mono">{formatCurrency(remaining - currentAmount)}</span></span>}
                                                 </p>
                                             </div>
                                         )}
@@ -2060,7 +2069,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                     </div>
 
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Pilih Metode / Akun Pembayaran</label>
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Pilih Rekening / Kas</label>
                                         <select 
                                             value={selectedBankId} 
                                             onChange={e => setSelectedBankId(e.target.value)}
@@ -2074,7 +2083,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                     </div>
 
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Posting Date</label>
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Tanggal Posting</label>
                                         <div className="relative">
                                             <Calendar className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
                                             <input
@@ -2092,14 +2101,17 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                         onClick={() => setPaymentModal(null)}
                                         className="flex-1 py-4 text-[11px] font-black text-slate-400 uppercase tracking-widest hover:bg-slate-50 rounded-2xl transition-all"
                                     >
-                                        Cancel
+                                        Batal
                                     </button>
                                     <button
                                         disabled={!isValid}
                                         onClick={handlePaymentModalSubmit}
-                                        className="flex-1 erp-btn-primary !py-4 shadow-xl shadow-primary/20 disabled:opacity-50"
+                                        className={cn(
+                                            "flex-1 text-white text-[11px] font-black rounded-2xl uppercase tracking-widest py-4 shadow-xl disabled:opacity-50",
+                                            isAR ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/20" : "bg-rose-600 hover:bg-rose-700 shadow-rose-500/20"
+                                        )}
                                     >
-                                        {isLunas ? 'Authorize Settlement' : 'Verify Allocation'}
+                                        {isLunas ? 'Konfirmasi Lunas' : 'Simpan Pembayaran'}
                                     </button>
                                 </div>
                             </div>
