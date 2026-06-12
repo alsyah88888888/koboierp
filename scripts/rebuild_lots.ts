@@ -74,8 +74,7 @@ async function rebuild() {
                     isVoided: false,
                     grItem: {
                         receipt: {
-                            warehouseId: sd.warehouseId,
-                            salesPerson: sd.salesPerson || null
+                            warehouseId: sd.warehouseId
                         }
                     }
                 },

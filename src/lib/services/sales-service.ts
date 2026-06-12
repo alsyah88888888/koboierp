@@ -305,8 +305,7 @@ export async function createSalesDeliveryService(data: any, userId: string) {
                         isVoided: false,
                         grItem: {
                             receipt: {
-                                warehouseId: createdDelivery.warehouseId,
-                                salesPerson: createdDelivery.salesPerson || null
+                                warehouseId: createdDelivery.warehouseId
                             }
                         }
                     },
@@ -555,7 +554,7 @@ export async function updateSalesDeliveryService(id: string, data: any, userId: 
         if (updatedDelivery) {
             for (const sdItem of updatedDelivery.items) {
                 let remaining = sdItem.quantity;
-                const availableLots = await tx.productLot.findMany({
+                 const availableLots = await tx.productLot.findMany({
                     where: {
                         productId: sdItem.productId,
                         supplierName: sdItem.vendorName,
@@ -563,8 +562,7 @@ export async function updateSalesDeliveryService(id: string, data: any, userId: 
                         isVoided: false,
                         grItem: {
                             receipt: {
-                                warehouseId: updatedDelivery.warehouseId,
-                                salesPerson: updatedDelivery.salesPerson || null
+                                warehouseId: updatedDelivery.warehouseId
                             }
                         }
                     },
