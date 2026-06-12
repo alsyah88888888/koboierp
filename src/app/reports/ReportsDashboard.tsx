@@ -688,9 +688,9 @@ export function ReportsDashboard() {
                 </div>
             ) : (
                 <>
-                    {activeTab === 'daily' && dailyData && <DailyReport data={dailyData} isClient={isClient} fmtDate={fmtDate} />}
-                    {activeTab === 'weekly' && weeklyData && <WeeklyReport data={weeklyData} isClient={isClient} fmtDate={fmtDate} />}
-                    {activeTab === 'monthly' && monthlyData && <MonthlyReport data={monthlyData} isClient={isClient} fmtDate={fmtDate} />}
+                    {activeTab === 'daily' && dailyData && <DailyReport data={dailyData} isClient={isClient} fmtDate={fmtDate} activePrefix={activePrefix} setActivePrefix={setActivePrefix} />}
+                    {activeTab === 'weekly' && weeklyData && <WeeklyReport data={weeklyData} isClient={isClient} fmtDate={fmtDate} activePrefix={activePrefix} setActivePrefix={setActivePrefix} />}
+                    {activeTab === 'monthly' && monthlyData && <MonthlyReport data={monthlyData} isClient={isClient} fmtDate={fmtDate} activePrefix={activePrefix} setActivePrefix={setActivePrefix} />}
                     
                     {activeTab === "closing" && (
                         <div className="space-y-8 animate-in fade-in zoom-in duration-500">
@@ -878,10 +878,22 @@ export function ReportsDashboard() {
 // ═══════════════════════════════════════════════════════════════════════════
 // DAILY REPORT SUB-COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════
-function DailyReport({ data, isClient, fmtDate }: { data: any; isClient: boolean; fmtDate: (d: any) => string }) {
+function DailyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix }: { data: any; isClient: boolean; fmtDate: (d: any) => string; activePrefix: 'PF' | 'BC' | 'ALL'; setActivePrefix: (val: 'PF' | 'BC' | 'ALL') => void }) {
     if (data.error) return <ErrorCard message={data.error} />;
     const s = data.summary || {};
     const d = data.details || {};
+
+    const divisionFilterSelect = (
+        <select
+            value={activePrefix}
+            onChange={e => setActivePrefix(e.target.value as any)}
+            className="bg-white border border-slate-200 rounded-lg px-2 py-1 text-[10px] font-black uppercase tracking-wider cursor-pointer outline-none shadow-sm text-slate-800"
+        >
+            <option value="ALL">ALL DIV</option>
+            <option value="PF">PF DIV</option>
+            <option value="BC">BC DIV</option>
+        </select>
+    );
 
     return (
         <div className="space-y-8">
@@ -922,6 +934,7 @@ function DailyReport({ data, isClient, fmtDate }: { data: any; isClient: boolean
                         <span className="text-slate-400">{row.operator}</span>
                     ])}
                     isClient={isClient}
+                    actions={divisionFilterSelect}
                 />
             )}
 
@@ -980,6 +993,7 @@ function DailyReport({ data, isClient, fmtDate }: { data: any; isClient: boolean
                         <span className="text-slate-400">{row.operator}</span>
                     ])}
                     isClient={isClient}
+                    actions={divisionFilterSelect}
                 />
             )}
 
@@ -1784,7 +1798,7 @@ function PLRow({ label, value, valueStr, bold, sub, negative, highlight, isClien
     );
 }
 
-function ReportTable({ title, icon, count, totalLabel, totalValue, headers, rows, isClient }: any) {
+function ReportTable({ title, icon, count, totalLabel, totalValue, headers, rows, isClient, actions }: any) {
     return (
         <div className="erp-card overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/40">
@@ -1792,6 +1806,7 @@ function ReportTable({ title, icon, count, totalLabel, totalValue, headers, rows
                     {icon}
                     <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">{title}</h3>
                     <span className="text-[9px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">{count}</span>
+                    {actions && <div className="ml-4 flex items-center gap-2">{actions}</div>}
                 </div>
                 {totalLabel && (
                     <div className="text-right">
