@@ -81,27 +81,25 @@ export async function createSalesDeliveryService(data: any, userId: string) {
         let deliveryNumber = "";
         
         // 1. Get the sequential number for this day across all deliveries
-        const startOfDay = new Date(txDate);
-        startOfDay.setHours(0, 0, 0, 0);
-        const endOfDay = new Date(txDate);
-        endOfDay.setHours(23, 59, 59, 999);
-
-        const latestDayDelivery = await tx.salesDelivery.findFirst({
+        const dayDeliveries = await tx.salesDelivery.findMany({
             where: {
-                createdAt: {
-                    gte: startOfDay,
-                    lte: endOfDay
+                deliveryNumber: {
+                    contains: `-${dateStr}-`
                 }
             },
-            orderBy: { deliveryNumber: 'desc' }
+            select: { deliveryNumber: true }
         });
 
         let nextSeq = 1;
-        if (latestDayDelivery && latestDayDelivery.deliveryNumber) {
-            const parts = latestDayDelivery.deliveryNumber.split('-');
-            const lastSeq = parseInt(parts[parts.length - 1]);
-            if (!isNaN(lastSeq)) {
-                nextSeq = lastSeq + 1;
+        if (dayDeliveries.length > 0) {
+            const seqs = dayDeliveries
+                .map((d: any) => {
+                    const parts = d.deliveryNumber.split('-');
+                    return parseInt(parts[parts.length - 1]);
+                })
+                .filter((seq: number) => !isNaN(seq));
+            if (seqs.length > 0) {
+                nextSeq = Math.max(...seqs) + 1;
             }
         }
 
