@@ -1112,10 +1112,22 @@ function DailyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix }:
 // ═══════════════════════════════════════════════════════════════════════════
 // WEEKLY REPORT SUB-COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════
-function WeeklyReport({ data, isClient, fmtDate }: { data: any; isClient: boolean; fmtDate: (d: any) => string }) {
+function WeeklyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix }: { data: any; isClient: boolean; fmtDate: (d: any) => string; activePrefix: 'PF' | 'BC' | 'ALL'; setActivePrefix: (val: 'PF' | 'BC' | 'ALL') => void }) {
     if (data.error) return <ErrorCard message={data.error} />;
     const s = data.summary || {};
     const breakdown = data.dailyBreakdown || [];
+
+    const divisionFilterSelect = (
+        <select
+            value={activePrefix}
+            onChange={e => setActivePrefix(e.target.value as any)}
+            className="bg-white border border-slate-200 rounded-lg px-2 py-1 text-[10px] font-black uppercase tracking-wider cursor-pointer outline-none shadow-sm text-slate-800"
+        >
+            <option value="ALL">ALL DIV</option>
+            <option value="PF">PF DIV</option>
+            <option value="BC">BC DIV</option>
+        </select>
+    );
 
     return (
         <div className="space-y-8">
@@ -1227,6 +1239,7 @@ function WeeklyReport({ data, isClient, fmtDate }: { data: any; isClient: boolea
                     <span className="tabular-nums">{row.purchaseQty}</span>
                 ])}
                 isClient={isClient}
+                actions={divisionFilterSelect}
             />
 
             {/* Top Buyers + Top Suppliers */}
@@ -1309,10 +1322,22 @@ function WeeklyReport({ data, isClient, fmtDate }: { data: any; isClient: boolea
 // ═══════════════════════════════════════════════════════════════════════════
 // MONTHLY REPORT SUB-COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════
-function MonthlyReport({ data, isClient, fmtDate }: { data: any; isClient: boolean; fmtDate: (d: any) => string }) {
+function MonthlyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix }: { data: any; isClient: boolean; fmtDate: (d: any) => string; activePrefix: 'PF' | 'BC' | 'ALL'; setActivePrefix: (val: 'PF' | 'BC' | 'ALL') => void }) {
     if (data.error) return <ErrorCard message={data.error} />;
     const pl = data.profitLoss || {};
     const stats = data.stats || {};
+
+    const divisionFilterSelect = (
+        <select
+            value={activePrefix}
+            onChange={e => setActivePrefix(e.target.value as any)}
+            className="bg-white border border-slate-200 rounded-lg px-2 py-1 text-[10px] font-black uppercase tracking-wider cursor-pointer outline-none shadow-sm text-slate-800"
+        >
+            <option value="ALL">ALL DIV</option>
+            <option value="PF">PF DIV</option>
+            <option value="BC">BC DIV</option>
+        </select>
+    );
 
     return (
         <div className="space-y-8">
@@ -1677,6 +1702,7 @@ function MonthlyReport({ data, isClient, fmtDate }: { data: any; isClient: boole
                         <PaymentBadge status={row.paymentStatus} />
                     ])}
                     isClient={isClient}
+                    actions={divisionFilterSelect}
                 />
             )}
 
@@ -1696,6 +1722,7 @@ function MonthlyReport({ data, isClient, fmtDate }: { data: any; isClient: boole
                         <PaymentBadge status={row.paymentStatus} />
                     ])}
                     isClient={isClient}
+                    actions={divisionFilterSelect}
                 />
             )}
 
