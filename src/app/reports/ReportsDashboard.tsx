@@ -551,6 +551,15 @@ export function ReportsDashboard() {
                         </div>
                         {activeTab !== 'closing' && (
                             <div className="flex items-center gap-3">
+                                <select
+                                    value={activePrefix}
+                                    onChange={e => setActivePrefix(e.target.value as any)}
+                                    className="bg-white/10 hover:bg-white/20 text-white px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-white/10 outline-none cursor-pointer"
+                                >
+                                    <option value="ALL" className="text-slate-900 bg-white font-black">ALL DIV</option>
+                                    <option value="PF" className="text-slate-900 bg-white font-black">PF DIV</option>
+                                    <option value="BC" className="text-slate-900 bg-white font-black">BC DIV</option>
+                                </select>
                                 <button
                                     onClick={() => window.print()}
                                     className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-white/10"
@@ -648,17 +657,6 @@ export function ReportsDashboard() {
                         }} className="h-9 w-9 rounded-xl bg-white border border-slate-200 flex items-center justify-center hover:bg-slate-100 transition-colors">
                             <ChevronRight className="h-4 w-4 text-slate-600" />
                         </button>
-
-                        <div className="h-9 border-l border-slate-200/80 mx-1 hidden sm:block" />
-                        <select
-                            value={activePrefix}
-                            onChange={e => setActivePrefix(e.target.value as any)}
-                            className="erp-input !w-auto !h-9 !py-1 !text-xs font-black bg-white cursor-pointer"
-                        >
-                            <option value="ALL">ALL DIV</option>
-                            <option value="PF">PF DIV</option>
-                            <option value="BC">BC DIV</option>
-                        </select>
                     </div>
 
                     <div className="flex items-center gap-2">
