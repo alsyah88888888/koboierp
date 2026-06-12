@@ -44,6 +44,27 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
             : [];
         const soMap = new Map<string, string>(salesOrders.map((o: any) => [o.id, o.orderNumber]));
 
+        // Fetch operational transactions linked to these deliveries/invoices
+        const invoiceNumbers = deliveries.map((d: any) => d.invoiceNumber).filter(Boolean);
+        const opsTransactions = invoiceNumbers.length > 0
+            ? await prisma.financeTransaction.findMany({
+                where: {
+                    invoiceNumber: { in: invoiceNumbers }
+                },
+                select: { invoiceNumber: true, amount: true, transactionType: true }
+            })
+            : [];
+
+        // Group ops by invoiceNumber
+        const opsMap = new Map<string, number>();
+        opsTransactions.forEach((t: any) => {
+            if (!t.invoiceNumber) return;
+            const amt = (t.transactionType === "PAYMENT" || t.transactionType === "EXPENSE" || Number(t.amount) < 0)
+                ? Math.abs(Number(t.amount))
+                : -Math.abs(Number(t.amount));
+            opsMap.set(t.invoiceNumber, (opsMap.get(t.invoiceNumber) || 0) + amt);
+        });
+
         // PATH A: Collect GR numbers from lot allocations
         const grNumbersPathA = new Set<string>();
         for (const sd of deliveries) {
@@ -79,6 +100,8 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
             const tglJual   = fmtDate(sd.date);
             const spJual    = sd.salesPerson || '-';
             const taxRate   = Number(sd.taxRate || 0);
+            const sdTotalQty = sd.items.reduce((sum: number, item: any) => sum + item.quantity, 0);
+            const invoiceOps = sd.invoiceNumber ? (opsMap.get(sd.invoiceNumber) || 0) : 0;
 
             for (const sdItem of sd.items) {
                 const barcode   = sdItem.product.barcode || sdItem.product.sku;
@@ -116,9 +139,11 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
                     // Total Jual (Termasuk PPN) = DPP + PPN
                     const totalJual = dpp + ppn;
 
-                    // Margin dihitung dari Total Jual (kolom Excel) dikurangi Total Beli (kolom Excel)
+                    const rowOps = sdTotalQty > 0 ? Math.round((qty / sdTotalQty) * invoiceOps) : 0;
+
+                    // Margin dihitung dari Total Jual (kolom Excel) dikurangi Total Beli (kolom Excel) dan dikurangi Ops
                     // agar laporan konsisten secara visual untuk pembaca laporan Excel
-                    const margin    = totalJual - totalBeli;
+                    const margin    = totalJual - totalBeli - rowOps;
                     const marginPct = totalJual > 0 ? (margin / totalJual * 100) : 0;
 
                     rowNo++;
@@ -135,7 +160,7 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
                         'NAMA SUPPLIER'    : fifoLot?.supplierName || '-',
                         'QTY BELI'         : qty,
                         'HARGA BELI'       : Math.round(hpp),
-                        'OPS'              : 0,
+                        'OPS'              : rowOps,
                         'TOTAL BELI'       : totalBeli,
                         'F. PAJAK'         : fmtDate(grInfo.taxInvoiceDate),
                         'NO. FAKTUR'       : grInfo.formNumber || fifoLot?.grNumber || '-',

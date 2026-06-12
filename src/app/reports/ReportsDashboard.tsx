@@ -425,6 +425,7 @@ export function ReportsDashboard() {
                     'No. LPB': r['NOMOR LPB'],
                     'Tgl Beli': r['TANGGAL BELI'],
                     'Total Beli (HPP)': r['TOTAL BELI'],
+                    'Ops': r.OPS,
                     'Buyer': r['NAMA PEMBELI'],
                     'Sales': r.SALES || '-',
                     'No. Faktur Penjualan': r['NOMOR FAKTUR PENJUALAN'],
@@ -925,7 +926,7 @@ function DailyReport({ data, isClient, fmtDate }: { data: any; isClient: boolean
                         const marginPct = totalJual > 0 ? (totalMargin / totalJual * 100) : 0;
                         return `${formatCurrency(totalMargin)} (${marginPct.toFixed(1)}%)`;
                     })() : '...'}
-                    headers={['No.', 'Barcode', 'Nama Item', 'Supplier', 'No. LPB', 'Tgl Beli', 'Total Beli (HPP)', 'Buyer', 'Sales', 'No. Faktur Penjualan', 'Tgl Jual', 'Total Jual (Net)', 'Margin', 'Margin %']}
+                    headers={['No.', 'Barcode', 'Nama Item', 'Supplier', 'No. LPB', 'Tgl Beli', 'Total Beli (HPP)', 'Ops', 'Buyer', 'Sales', 'No. Faktur Penjualan', 'Tgl Jual', 'Total Jual (Net)', 'Margin', 'Margin %']}
                     rows={d.dailyTraceability.map((row: any) => [
                         <span className="font-bold">{row.NO}</span>,
                         row.BARCODE,
@@ -934,6 +935,7 @@ function DailyReport({ data, isClient, fmtDate }: { data: any; isClient: boolean
                         <span className="font-semibold">{row['NOMOR LPB']}</span>,
                         row['TANGGAL BELI'],
                         <span className="tabular-nums font-bold text-rose-600">{isClient ? formatCurrency(row['TOTAL BELI']) : '...'}</span>,
+                        <span className="tabular-nums font-bold text-amber-600">{isClient ? formatCurrency(row.OPS) : '...'}</span>,
                         <span className="truncate max-w-[130px] block" title={row['NAMA PEMBELI']}>{row['NAMA PEMBELI']}</span>,
                         row.SALES || '-',
                         <span className="font-black text-slate-900">{row['NOMOR FAKTUR PENJUALAN']}</span>,
