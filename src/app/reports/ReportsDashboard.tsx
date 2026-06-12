@@ -69,6 +69,7 @@ export function ReportsDashboard() {
     });
     const [isFetchingClosing, setIsFetchingClosing] = useState(false);
     const [closingPrefix, setClosingPrefix] = useState<'PF' | 'BC' | 'ALL'>('ALL');
+    const [activePrefix, setActivePrefix] = useState<'PF' | 'BC' | 'ALL'>('ALL');
 
     useEffect(() => { setIsClient(true); }, []);
 
@@ -76,29 +77,29 @@ export function ReportsDashboard() {
     const fetchDaily = useCallback(async () => {
         setIsLoading(true);
         try {
-            const data = await getComprehensiveDailyReportAction(selectedDate);
+            const data = await getComprehensiveDailyReportAction(selectedDate, activePrefix);
             setDailyData(data);
         } catch (e) { console.error(e); }
         setIsLoading(false);
-    }, [selectedDate]);
+    }, [selectedDate, activePrefix]);
 
     const fetchWeekly = useCallback(async () => {
         setIsLoading(true);
         try {
-            const data = await getComprehensiveWeeklyReportAction(selectedWeekStart);
+            const data = await getComprehensiveWeeklyReportAction(selectedWeekStart, activePrefix);
             setWeeklyData(data);
         } catch (e) { console.error(e); }
         setIsLoading(false);
-    }, [selectedWeekStart]);
+    }, [selectedWeekStart, activePrefix]);
 
     const fetchMonthly = useCallback(async () => {
         setIsLoading(true);
         try {
-            const data = await getComprehensiveMonthlyReportAction(selectedMonth, selectedYear);
+            const data = await getComprehensiveMonthlyReportAction(selectedMonth, selectedYear, activePrefix);
             setMonthlyData(data);
         } catch (e) { console.error(e); }
         setIsLoading(false);
-    }, [selectedMonth, selectedYear]);
+    }, [selectedMonth, selectedYear, activePrefix]);
 
     const fetchClosingReport = async (m: number, y: number, pref: 'PF' | 'BC' | 'ALL' = 'ALL') => {
         setIsFetchingClosing(true);
@@ -521,8 +522,9 @@ export function ReportsDashboard() {
             }
         }
 
+        const prefixSuffix = activePrefix !== 'ALL' ? `_${activePrefix}` : '';
         const tabLabel = activeTab === 'daily' ? `Harian_${selectedDate}` : activeTab === 'weekly' ? `Mingguan_${selectedWeekStart}` : `Bulanan_${monthNames[selectedMonth - 1]}_${selectedYear}`;
-        XLSX.writeFile(wb, `Laporan_${tabLabel}.xlsx`);
+        XLSX.writeFile(wb, `Laporan_${tabLabel}${prefixSuffix}.xlsx`);
     };
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -646,6 +648,17 @@ export function ReportsDashboard() {
                         }} className="h-9 w-9 rounded-xl bg-white border border-slate-200 flex items-center justify-center hover:bg-slate-100 transition-colors">
                             <ChevronRight className="h-4 w-4 text-slate-600" />
                         </button>
+
+                        <div className="h-9 border-l border-slate-200/80 mx-1 hidden sm:block" />
+                        <select
+                            value={activePrefix}
+                            onChange={e => setActivePrefix(e.target.value as any)}
+                            className="erp-input !w-auto !h-9 !py-1 !text-xs font-black bg-white cursor-pointer"
+                        >
+                            <option value="ALL">ALL DIV</option>
+                            <option value="PF">PF DIV</option>
+                            <option value="BC">BC DIV</option>
+                        </select>
                     </div>
 
                     <div className="flex items-center gap-2">

@@ -6,8 +6,9 @@ import { getPrisma } from "@/lib/prisma";
  * NO | TANGGAL | F.PAJAK | NOMOR | TANGGAL(beli) | NAMA PEMBELI | BARCODE |
  * KETERANGAN ITEM | SALES | [BELI: QTY/HARGA/OPS/TOTAL] | [JUAL: NAMA/QTY/HARGA/TOTAL] |
  */
-async function calculateProductTraceabilityInternal(startDate: Date, endDate: Date) {
+async function calculateProductTraceabilityInternal(startDate: Date, endDate: Date, prefix?: 'PF' | 'BC' | 'ALL') {
     const prisma = getPrisma();
+    const isAll = !prefix || prefix === 'ALL';
     try {
         const rows: Record<string, any>[] = [];
 
@@ -15,7 +16,11 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
         // PRE-FETCH: SalesDeliveries + SO map + PATH A GR data
         // ════════════════════════════════════════════════════════════
         const deliveries = await (prisma as any).salesDelivery.findMany({
-            where: { isVoid: false, date: { gte: startDate, lte: endDate } },
+            where: { 
+                isVoid: false, 
+                date: { gte: startDate, lte: endDate },
+                ...(isAll ? {} : { salesPerson: prefix })
+            },
             include: {
                 items: {
                     include: {
@@ -204,7 +209,7 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
     }
 }
 
-export async function getProductTraceabilityService(month?: number, year?: number) {
+export async function getProductTraceabilityService(month?: number, year?: number, prefix?: 'PF' | 'BC' | 'ALL') {
     const filterYear  = year  || new Date().getFullYear();
     const filterMonth = month || (new Date().getMonth() + 1);
 
@@ -217,7 +222,7 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
     endDate.setUTCHours(endDate.getUTCHours() - 7);
 
     try {
-        return await calculateProductTraceabilityInternal(startDate, endDate);
+        return await calculateProductTraceabilityInternal(startDate, endDate, prefix);
     } catch (error: any) {
         console.error('[getProductTraceabilityService] ERROR:', error);
         return { error: (error as Error).message || 'Failed to fetch traceability report' };
@@ -697,8 +702,9 @@ export async function getBatchTraceabilityService(filters: {
  * COMPREHENSIVE DAILY REPORT SERVICE
  * Returns all transaction data for a single date across all modules
  */
-export async function getComprehensiveDailyReportService(date?: string) {
+export async function getComprehensiveDailyReportService(date?: string, prefix?: 'PF' | 'BC' | 'ALL') {
     const prisma = getPrisma();
+    const isAll = !prefix || prefix === 'ALL';
 
     const targetDate = date ? new Date(date) : new Date();
     const dayStart = new Date(targetDate);
@@ -713,7 +719,11 @@ export async function getComprehensiveDailyReportService(date?: string) {
         ] = await Promise.all([
             // Sales Deliveries
             (prisma as any).salesDelivery.findMany({
-                where: { isVoid: false, date: { gte: dayStart, lte: dayEnd } },
+                where: { 
+                    isVoid: false, 
+                    date: { gte: dayStart, lte: dayEnd },
+                    ...(isAll ? {} : { salesPerson: prefix })
+                },
                 include: {
                     createdBy: { select: { name: true } },
                     items: {
@@ -727,7 +737,11 @@ export async function getComprehensiveDailyReportService(date?: string) {
             }),
             // Goods Receipts
             (prisma as any).goodsReceipt.findMany({
-                where: { isVoid: false, date: { gte: dayStart, lte: dayEnd } },
+                where: { 
+                    isVoid: false, 
+                    date: { gte: dayStart, lte: dayEnd },
+                    ...(isAll ? {} : { salesPerson: prefix })
+                },
                 include: {
                     createdBy: { select: { name: true } },
                     warehouse: { select: { name: true } },
@@ -737,13 +751,25 @@ export async function getComprehensiveDailyReportService(date?: string) {
             }),
             // Operational / Finance Transactions
             (prisma as any).financeTransaction.findMany({
-                where: { date: { gte: dayStart, lte: dayEnd } },
+                where: { 
+                    date: { gte: dayStart, lte: dayEnd },
+                    ...(isAll ? {} : {
+                        OR: [
+                            { description: { contains: prefix, mode: 'insensitive' } },
+                            { salesPerson: prefix }
+                        ]
+                    })
+                },
                 include: { createdBy: { select: { name: true } } },
                 orderBy: { date: 'asc' }
             }),
             // Purchase Returns
             (prisma as any).purchaseReturn.findMany({
-                where: { isVoid: false, date: { gte: dayStart, lte: dayEnd } },
+                where: { 
+                    isVoid: false, 
+                    date: { gte: dayStart, lte: dayEnd },
+                    ...(isAll ? {} : { receipt: { salesPerson: prefix } })
+                },
                 include: {
                     items: { include: { product: { select: { sku: true, name: true } } } },
                     receipt: { select: { receiptNumber: true, receivedFrom: true } }
@@ -751,7 +777,11 @@ export async function getComprehensiveDailyReportService(date?: string) {
             }),
             // Sales Returns
             (prisma as any).salesReturn.findMany({
-                where: { isVoid: false, date: { gte: dayStart, lte: dayEnd } },
+                where: { 
+                    isVoid: false, 
+                    date: { gte: dayStart, lte: dayEnd },
+                    ...(isAll ? {} : { delivery: { salesPerson: prefix } })
+                },
                 include: {
                     items: { include: { product: { select: { sku: true, name: true } } } },
                     delivery: { select: { deliveryNumber: true, buyerName: true } }
@@ -782,7 +812,7 @@ export async function getComprehensiveDailyReportService(date?: string) {
         const traceEndDate = new Date(Date.UTC(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), 23, 59, 59, 999));
         traceEndDate.setUTCHours(traceEndDate.getUTCHours() - 7);
 
-        const dailyTraceability = await calculateProductTraceabilityInternal(traceStartDate, traceEndDate).catch(() => []);
+        const dailyTraceability = await calculateProductTraceabilityInternal(traceStartDate, traceEndDate, prefix).catch(() => []);
 
         // Calculate summaries
         const totalSales = sales.reduce((s: number, d: any) => s + Number(d.grandTotal || 0), 0);
@@ -967,8 +997,9 @@ export async function getComprehensiveDailyReportService(date?: string) {
  * COMPREHENSIVE WEEKLY REPORT SERVICE
  * Returns aggregated data for 7 days with daily breakdowns
  */
-export async function getComprehensiveWeeklyReportService(weekStartDate?: string) {
+export async function getComprehensiveWeeklyReportService(weekStartDate?: string, prefix?: 'PF' | 'BC' | 'ALL') {
     const prisma = getPrisma();
+    const isAll = !prefix || prefix === 'ALL';
 
     const startDate = weekStartDate ? new Date(weekStartDate) : new Date();
     if (!weekStartDate) {
@@ -986,7 +1017,11 @@ export async function getComprehensiveWeeklyReportService(weekStartDate?: string
     try {
         const [sales, purchases, operational, stockMovements] = await Promise.all([
             (prisma as any).salesDelivery.findMany({
-                where: { isVoid: false, date: { gte: startDate, lte: endDate } },
+                where: { 
+                    isVoid: false, 
+                    date: { gte: startDate, lte: endDate },
+                    ...(isAll ? {} : { salesPerson: prefix })
+                },
                 include: {
                     items: {
                         include: {
@@ -998,7 +1033,11 @@ export async function getComprehensiveWeeklyReportService(weekStartDate?: string
                 orderBy: { date: 'asc' }
             }),
             (prisma as any).goodsReceipt.findMany({
-                where: { isVoid: false, date: { gte: startDate, lte: endDate } },
+                where: { 
+                    isVoid: false, 
+                    date: { gte: startDate, lte: endDate },
+                    ...(isAll ? {} : { salesPerson: prefix })
+                },
                 include: {
                     createdBy: { select: { name: true } },
                     items: { select: { quantity: true, purchasePrice: true } }
@@ -1006,7 +1045,15 @@ export async function getComprehensiveWeeklyReportService(weekStartDate?: string
                 orderBy: { date: 'asc' }
             }),
             (prisma as any).financeTransaction.findMany({
-                where: { date: { gte: startDate, lte: endDate } },
+                where: { 
+                    date: { gte: startDate, lte: endDate },
+                    ...(isAll ? {} : {
+                        OR: [
+                            { description: { contains: prefix, mode: 'insensitive' } },
+                            { salesPerson: prefix }
+                        ]
+                    })
+                },
                 include: { createdBy: { select: { name: true } } },
                 orderBy: { date: 'asc' }
             }),
@@ -1225,12 +1272,13 @@ export async function getComprehensiveWeeklyReportService(weekStartDate?: string
  * COMPREHENSIVE MONTHLY REPORT SERVICE
  * Full P&L, AR/AP aging, inventory valuation, top partner analysis
  */
-export async function getComprehensiveMonthlyReportService(month?: number, year?: number) {
+export async function getComprehensiveMonthlyReportService(month?: number, year?: number, prefix?: 'PF' | 'BC' | 'ALL') {
     const prisma = getPrisma();
     const filterYear = year || new Date().getFullYear();
     const filterMonth = month || (new Date().getMonth() + 1);
     const startDate = new Date(filterYear, filterMonth - 1, 1);
     const endDate = new Date(filterYear, filterMonth, 0, 23, 59, 59, 999);
+    const isAll = !prefix || prefix === 'ALL';
 
     try {
         const [
@@ -1239,7 +1287,11 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
         ] = await Promise.all([
             // Sales
             (prisma as any).salesDelivery.findMany({
-                where: { isVoid: false, date: { gte: startDate, lte: endDate } },
+                where: { 
+                    isVoid: false, 
+                    date: { gte: startDate, lte: endDate },
+                    ...(isAll ? {} : { salesPerson: prefix })
+                },
                 include: {
                     items: {
                         include: {
@@ -1252,7 +1304,11 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
             }),
             // Purchases
             (prisma as any).goodsReceipt.findMany({
-                where: { isVoid: false, date: { gte: startDate, lte: endDate } },
+                where: { 
+                    isVoid: false, 
+                    date: { gte: startDate, lte: endDate },
+                    ...(isAll ? {} : { salesPerson: prefix })
+                },
                 include: {
                     createdBy: { select: { name: true } },
                     items: { select: { quantity: true } }
@@ -1261,7 +1317,15 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
             }),
             // All Finance Transactions
             (prisma as any).financeTransaction.findMany({
-                where: { date: { gte: startDate, lte: endDate } },
+                where: { 
+                    date: { gte: startDate, lte: endDate },
+                    ...(isAll ? {} : {
+                        OR: [
+                            { description: { contains: prefix, mode: 'insensitive' } },
+                            { salesPerson: prefix }
+                        ]
+                    })
+                },
                 include: { createdBy: { select: { name: true } } },
                 orderBy: { date: 'asc' }
             }),
@@ -1269,7 +1333,8 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
             (prisma as any).salesDelivery.findMany({
                 where: {
                     isVoid: false, date: { lte: endDate },
-                    paymentStatus: { in: ['PENDING', 'PARTIAL'] }
+                    paymentStatus: { in: ['PENDING', 'PARTIAL'] },
+                    ...(isAll ? {} : { salesPerson: prefix })
                 },
                 select: {
                     deliveryNumber: true, buyerName: true, recipient: true, date: true,
@@ -1281,7 +1346,8 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
             (prisma as any).goodsReceipt.findMany({
                 where: {
                     isVoid: false, date: { lte: endDate },
-                    paymentStatus: { in: ['PENDING', 'PARTIAL'] }
+                    paymentStatus: { in: ['PENDING', 'PARTIAL'] },
+                    ...(isAll ? {} : { salesPerson: prefix })
                 },
                 select: {
                     receiptNumber: true, receivedFrom: true, date: true,
@@ -1291,7 +1357,11 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
             }),
             // Purchase Returns
             (prisma as any).purchaseReturn.findMany({
-                where: { isVoid: false, date: { gte: startDate, lte: endDate } },
+                where: { 
+                    isVoid: false, 
+                    date: { gte: startDate, lte: endDate },
+                    ...(isAll ? {} : { receipt: { salesPerson: prefix } })
+                },
                 include: {
                     items: { include: { product: { select: { sku: true, name: true } } } },
                     receipt: { select: { receiptNumber: true, receivedFrom: true } }
@@ -1299,7 +1369,11 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
             }),
             // Sales Returns
             (prisma as any).salesReturn.findMany({
-                where: { isVoid: false, date: { gte: startDate, lte: endDate } },
+                where: { 
+                    isVoid: false, 
+                    date: { gte: startDate, lte: endDate },
+                    ...(isAll ? {} : { delivery: { salesPerson: prefix } })
+                },
                 include: {
                     items: { include: { product: { select: { sku: true, name: true } } } },
                     delivery: { select: { deliveryNumber: true, buyerName: true } }
