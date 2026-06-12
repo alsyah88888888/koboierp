@@ -300,7 +300,6 @@ export async function createSalesDeliveryService(data: any, userId: string) {
                 const availableLots = await tx.productLot.findMany({
                     where: {
                         productId: sdItem.productId,
-                        supplierName: sdItem.vendorName,
                         remainingQty: { gt: 0 },
                         isVoided: false,
                         grItem: {
@@ -557,7 +556,6 @@ export async function updateSalesDeliveryService(id: string, data: any, userId: 
                  const availableLots = await tx.productLot.findMany({
                     where: {
                         productId: sdItem.productId,
-                        supplierName: sdItem.vendorName,
                         remainingQty: { gt: 0 },
                         isVoided: false,
                         grItem: {

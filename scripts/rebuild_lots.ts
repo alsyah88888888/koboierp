@@ -69,7 +69,6 @@ async function rebuild() {
             const availableLots = await prisma.productLot.findMany({
                 where: {
                     productId: item.productId,
-                    supplierName: item.vendorName,
                     remainingQty: { gt: 0 },
                     isVoided: false,
                     grItem: {

@@ -6,8 +6,7 @@ async function run() {
     const delivery = await prisma.salesDelivery.findFirst({
       where: {
         OR: [
-          { invoiceNumber: 'KB-TRD-12062026-006' },
-          { deliveryNumber: 'SJ-231-12062026-018' }
+          { invoiceNumber: 'KB-TRN-12062026-001' }
         ]
       },
       include: {
