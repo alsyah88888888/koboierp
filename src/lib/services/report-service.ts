@@ -243,8 +243,8 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
             (prisma as any).salesDelivery.findMany({
                 where: { 
                     isVoid: false, 
-                    deliveryNumber: { contains: `${filterMonth.toString().padStart(2, '0')}${filterYear}-` },
-                    ...(isAll ? {} : { deliveryNumber: { startsWith: prefix } })
+                    date: { gte: startDate, lte: endDate },
+                    ...(isAll ? {} : { salesPerson: prefix })
                 },
                 include: {
                     items: {
@@ -260,8 +260,8 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
             (prisma as any).goodsReceipt.findMany({
                 where: { 
                     isVoid: false, 
-                    receiptNumber: { contains: `${filterMonth.toString().padStart(2, '0')}${filterYear}-` },
-                    ...(isAll ? {} : { receiptNumber: { startsWith: prefix } })
+                    date: { gte: startDate, lte: endDate },
+                    ...(isAll ? {} : { salesPerson: prefix })
                 },
                 orderBy: { date: 'asc' }
             }),
@@ -289,7 +289,7 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
                     isVoid: false, 
                     date: { lte: endDate },
                     paymentStatus: { in: ["PENDING", "PARTIAL"] },
-                    ...(isAll ? {} : { deliveryNumber: { startsWith: prefix } })
+                    ...(isAll ? {} : { salesPerson: prefix })
                 },
                 select: { grandTotal: true, paidAmount: true }
             }),
@@ -299,7 +299,7 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
                     isVoid: false, 
                     date: { lte: endDate },
                     paymentStatus: { in: ["PENDING", "PARTIAL"] },
-                    ...(isAll ? {} : { receiptNumber: { startsWith: prefix } })
+                    ...(isAll ? {} : { salesPerson: prefix })
                 },
                 select: { grandTotal: true, paidAmount: true }
             }),

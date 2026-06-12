@@ -661,9 +661,11 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                                     <th className="w-48">No. Penjualan</th>
                                     <th className="w-60">Buyer / Penerima</th>
                                     <th>Alamat</th>
-                                    <th className="w-40">Gudang</th>
-                                    <th className="text-right w-40">Qty</th>
+                                    <th className="w-36">Gudang</th>
+                                    <th className="text-right w-32">Qty</th>
+                                    <th className="text-right w-36">Total Jual</th>
                                     <th className="text-right w-40">Tanggal</th>
+                                    <th className="text-center w-32">Status</th>
                                     {(isAdmin || userRole === "SALES") && <th className="text-center w-32">Aksi</th>}
                                 </tr>
                             </thead>
@@ -712,8 +714,21 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                                         <td data-label="Qty" className="text-right font-bold text-slate-900 md:pr-6">
                                             {d.items.reduce((acc: number, i: any) => acc + i.quantity, 0)} <span className="text-[10px] text-slate-400">Pcs</span>
                                         </td>
+                                        <td data-label="Total Jual" className="text-right font-black text-blue-600 md:pr-6 tabular-nums">
+                                            {formatCurrency(d.grandTotal)}
+                                        </td>
                                         <td data-label="Tanggal" className="text-right text-xs text-slate-500 md:pr-6">
                                             {isClient ? format(new Date(d.createdAt), "dd/MM/yyyy HH:mm") : "..."}
+                                        </td>
+                                        <td data-label="Status" className="text-center">
+                                            <span className={cn(
+                                                "px-3 py-1 text-[10px] font-black rounded-lg border uppercase tracking-widest inline-block",
+                                                d.paymentStatus === "PAID" ? "bg-emerald-50 text-emerald-700 border-emerald-100" :
+                                                d.paymentStatus === "PARTIAL" ? "bg-amber-50 text-amber-700 border-amber-100" :
+                                                "bg-slate-50 text-slate-500 border-slate-100"
+                                            )}>
+                                                {d.paymentStatus || 'PENDING'}
+                                            </span>
                                         </td>
                                         <td data-label="Aksi" className="md:pr-6">
                                             <div className="flex items-center justify-end md:justify-center gap-1">
