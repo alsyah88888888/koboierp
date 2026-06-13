@@ -46,16 +46,8 @@ export async function getAccountingDataAction() {
     const session = (await getServerSession(getAuthOptions())) as any;
     if (!session?.user) throw new Error("Unauthorized");
 
-    const isAdmin = session.user.role?.toUpperCase() === "ADMIN";
-    const userFilter = isAdmin ? {} : {
-        OR: [
-            { goodsReceipt: { createdById: session.user.id } },
-            { salesDelivery: { createdById: session.user.id } },
-            { financeTransaction: { createdById: session.user.id } },
-            { purchaseReturn: { createdById: session.user.id } },
-            { salesReturn: { createdById: session.user.id } }
-        ]
-    };
+    const isAdminOrFinance = ["ADMIN", "FINANCE"].includes(session.user.role?.toUpperCase());
+    const userFilter = isAdminOrFinance ? {} : { createdById: session.user.id };
 
     const [journals, accounts] = await Promise.all([
         prisma.journalEntry.findMany({
