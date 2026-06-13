@@ -20,16 +20,7 @@ export default async function SalesPage() {
 
     const isAdmin = session?.user?.role?.toUpperCase() === "ADMIN";
 
-    
-    // Strict filter for Sales: must be "BC" or owned by her (if no salesperson code is set)
-    // and explicitly NOT "PF" if she is the one seeing it.
-    const userFilter = isAdmin ? {} : { 
-        OR: [
-            { salesPerson: "BC" },
-            { createdById: session?.user?.id }
-        ],
-        NOT: { salesPerson: "PF" } // Redundant but safe
-    };
+    const userFilter = {};
     
     const products = serializeDecimal(await prisma.product.findMany({
         include: { stocks: true },

@@ -82,8 +82,7 @@ export async function getCortexXmlContentAction() {
     const session = (await getServerSession(getAuthOptions())) as any;
     if (!session?.user?.id) throw new Error("Unauthorized");
 
-    const isAdmin = session.user.role?.toUpperCase() === "ADMIN";
-    const userFilter = isAdmin ? {} : { createdById: session.user.id };
+    const userFilter = {};
 
     const allSales = await prisma.salesDelivery.findMany({
         where: userFilter,

@@ -20,19 +20,8 @@ export default async function PurchasePage() {
 
     const isAdmin = session?.user?.role?.toUpperCase() === "ADMIN";
     
-    // Strict filters for non-admins to exclude "PF" and focus on "BC"
-    const receiptFilter = isAdmin ? {} : { 
-        OR: [{ salesPerson: "BC" }, { createdById: session?.user?.id }],
-        NOT: { salesPerson: "PF" }
-    };
-    
-    const returnFilter = isAdmin ? {} : {
-        OR: [
-            { receipt: { salesPerson: "BC" } },
-            { createdById: session?.user?.id }
-        ],
-        NOT: { receipt: { salesPerson: "PF" } }
-    };
+    const receiptFilter = {};
+    const returnFilter = {};
     
     const products = serializeDecimal(await prisma.product.findMany({
         select: { 

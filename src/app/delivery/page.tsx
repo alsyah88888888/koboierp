@@ -27,13 +27,7 @@ export default async function DeliveryPage() {
         redirect("/");
     }
 
-    const userFilter = isAdmin ? {} : { 
-        OR: [
-            { salesPerson: "BC" },
-            { createdById: session?.user?.id }
-        ],
-        NOT: { salesPerson: "PF" }
-    };
+    const userFilter = {};
     
     const products = serializeDecimal(await prisma.product.findMany({
         include: { stocks: true },
@@ -53,13 +47,7 @@ export default async function DeliveryPage() {
     }).catch(() => []));
 
     const salesOrders = serializeDecimal(await (prisma as any).salesOrder.findMany({
-        where: isAdmin ? {} : {
-            OR: [
-                { salesPerson: "BC" },
-                { createdById: session?.user?.id }
-            ],
-            NOT: { salesPerson: "PF" }
-        },
+        where: {},
         include: { items: { include: { product: true } }, deliveries: true },
         orderBy: { date: 'desc' }
     }).catch(() => []));

@@ -77,19 +77,8 @@ export async function getProductTrackingService(productId: string, userId: strin
     const { getPrisma } = require("@/lib/prisma");
     const prisma = getPrisma();
 
-    const salesFilter = isAdmin ? {} : { 
-        OR: [
-            { salesPerson: prefix },
-            { salesPerson: null }
-        ]
-    };
-    const purchaseFilter = isAdmin ? {} : { 
-        OR: [
-            { createdById: userId },
-            { createdBy: { role: "ADMIN" } }
-        ],
-        NOT: { salesPerson: "PF" }
-    };
+    const salesFilter = {};
+    const purchaseFilter = {};
 
     const [receipts, deliveries, pReturns, sReturns, product] = await Promise.all([
         prisma.goodsReceiptItem.findMany({

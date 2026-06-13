@@ -75,8 +75,7 @@ export async function getFinanceTransactionsAction() {
     const session = (await getServerSession(getAuthOptions())) as any;
     if (!session?.user?.id) throw new Error("Unauthorized");
 
-    const isAdmin = session.user.role?.toUpperCase() === "ADMIN";
-    const userFilter = isAdmin ? {} : { createdById: session.user.id };
+    const userFilter = {};
 
     return await prisma.financeTransaction.findMany({
         where: userFilter,

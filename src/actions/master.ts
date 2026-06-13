@@ -198,8 +198,7 @@ export async function getMDAction() {
     const prisma = getPrisma();
 
     const session = (await getServerSession(getAuthOptions())) as any;
-    const isAdmin = session?.user?.role?.toUpperCase() === "ADMIN";
-    const userFilter = isAdmin ? {} : { createdById: session?.user?.id };
+    const userFilter = {};
 
     const [vendors, customers, warehouses, coa, products] = await Promise.all([
         prisma.vendor.findMany({ where: userFilter, orderBy: { name: 'asc' } }),

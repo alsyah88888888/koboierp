@@ -21,8 +21,7 @@ export default async function FinancePage() {
         redirect("/api/auth/signin");
     }
 
-    const isAdmin = session.user?.role?.toUpperCase() === "ADMIN";
-    const userFilter = isAdmin ? {} : { createdById: session.user.id };
+    const userFilter = {};
 
     // Fetch all data in parallel for performance
     const [

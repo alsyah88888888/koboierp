@@ -12,7 +12,7 @@ export async function getDashboardSummaryService(userId: string, prefix: string,
     const { getPrisma } = require("@/lib/prisma");
     const prisma = getPrisma();
 
-    const userFilter = isAdmin ? {} : { createdById: userId };
+    const userFilter = {};
 
     const startOfMonth = month && year ? new Date(year, month - 1, 1) : null;
     const endOfMonth = month && year ? new Date(year, month, 0, 23, 59, 59, 999) : null;
@@ -34,8 +34,7 @@ export async function getDashboardSummaryService(userId: string, prefix: string,
     const fetchJournals = async (criteria: any) => {
         const journals = await prisma.journalEntry.findMany({
             where: {
-                ...criteria,
-                ...(isAdmin ? {} : { createdById: userId })
+                ...criteria
             },
             select: { type: true, amount: true }
         });
@@ -56,12 +55,7 @@ export async function getDashboardSummaryService(userId: string, prefix: string,
         expenseAgg
     ] = await Promise.all([
         prisma.stock.findMany({
-            where: isAdmin ? {} : { 
-                OR: [
-                    { product: { is: { createdById: userId } } },
-                    { product: { is: { createdById: null } } }
-                ]
-            },
+            where: {},
             select: {
                 quantity: true,
                 product: {
@@ -88,12 +82,6 @@ export async function getDashboardSummaryService(userId: string, prefix: string,
         }),
         prisma.salesDelivery.aggregate({
             where: {
-                ...(isAdmin ? {} : { 
-                    OR: [
-                        { salesPerson: prefix || null },
-                        { salesPerson: null }
-                    ]
-                }),
                 ...dateFilter
             },
             _sum: { subtotal: true, totalDiscount: true }
@@ -179,7 +167,6 @@ export async function getDashboardSummaryService(userId: string, prefix: string,
         }),
         prisma.purchaseRequest.count({ 
             where: { 
-                ...(isAdmin ? {} : { requestedById: userId }), 
                 createdAt: { gte: todayStart } 
             } 
         }),
@@ -265,8 +252,7 @@ export async function getDashboardSummaryService(userId: string, prefix: string,
 
 async function getWeeklyStatsService(userId: string, isAdmin: boolean) {
     const { getPrisma } = require("@/lib/prisma");
-    const prisma = getPrisma();
-    const userFilter = isAdmin ? {} : { createdById: userId };
+    const userFilter = {};
 
     const last7Days = [];
     for (let i = 6; i >= 0; i--) {
