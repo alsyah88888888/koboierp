@@ -252,6 +252,7 @@ export async function getDashboardSummaryService(userId: string, prefix: string,
 
 async function getWeeklyStatsService(userId: string, isAdmin: boolean) {
     const { getPrisma } = require("@/lib/prisma");
+    const prisma = getPrisma();
     const userFilter = {};
 
     const last7Days = [];
