@@ -132,7 +132,6 @@ export function Sidebar() {
                         const isMainAdmin = userRole.toUpperCase() === "ADMIN";
                         const hasAccess = isMainAdmin || 
                                           userPermissions.includes(item.permissionKey) ||
-                                          (item.roles && item.roles.includes(userRole.toUpperCase())) ||
                                           (item.permissionKey === "DELIVERY" && (
                                               userPermissions.includes("SALES") || 
                                               userPermissions.includes("WAREHOUSE") || 
