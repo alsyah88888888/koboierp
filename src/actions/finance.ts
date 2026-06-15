@@ -263,7 +263,7 @@ export async function getRecentSalesReferencesAction() {
     const deliveries = await prisma.salesDelivery.findMany({
         where: { isVoid: false },
         orderBy: { date: 'desc' },
-        take: 100,
+        take: 2000,
         select: {
             deliveryNumber: true,
             invoiceNumber: true,
@@ -277,7 +277,7 @@ export async function getRecentSalesReferencesAction() {
     // Fetch recent sales orders
     const orders = await prisma.salesOrder.findMany({
         orderBy: { date: 'desc' },
-        take: 100,
+        take: 2000,
         select: {
             orderNumber: true,
             invoiceNumber: true,
