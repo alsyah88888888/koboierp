@@ -121,11 +121,15 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
                     ? sdItem.lotAllocations
                     : [null];
 
+                const isMultiLot = allocations.length > 1;
+
                 for (const alloc of allocations) {
                     const fifoLot = alloc ? alloc.lot : null;
                     const grInfo  = fifoLot?.grNumber ? (grMapA.get(fifoLot.grNumber) || {}) : {};
                     const hpp     = alloc ? Number(alloc.hppAtTime || fifoLot?.purchasePrice || 0) : Number(sdItem.product.purchasePrice || 0);
                     const qty     = alloc ? alloc.qty : sdItem.quantity;
+                    
+                    const displayNamaItem = isMultiLot ? `${namaItem} (Batch: ${qty} dr ${sdItem.quantity})` : namaItem;
 
                     const sellPriceWithTax = Math.round(sellPrice * (1 + taxRate / 100));
                     const totalBeli = Math.round(hpp * qty);
@@ -156,7 +160,7 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
                         _sortDate          : sd.date,
                         'NO'               : rowNo,
                         'BARCODE'          : barcode,
-                        'KETERANGAN ITEM'  : namaItem,
+                        'KETERANGAN ITEM'  : displayNamaItem,
                         'PER/CT'           : perCt,
                         
                         // ─ PEMBELIAN (COLUMNS FIRST) ─
