@@ -6,11 +6,13 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatCurrency(amount: number) {
-    // Manually handle hydration-safe currency formatting
+    // Pembulatan matematika ke ratusan terdekat (misal 99 -> 100, 499 -> 500)
+    const roundedAmount = Math.round(amount / 100) * 100;
+    
     const formatted = new Intl.NumberFormat("id-ID", {
         minimumFractionDigits: 0,
         maximumFractionDigits: 0,
-    }).format(Math.round(Math.abs(amount)));
+    }).format(Math.abs(roundedAmount));
     return `Rp ${formatted}`;
 }
 
