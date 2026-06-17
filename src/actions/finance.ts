@@ -375,5 +375,13 @@ export async function editSettledPaymentAction(
     return await editSettledPaymentService(type, id, newPaidAmount, paymentDate, session.user.id, bankAccountId);
 }
 
+export async function getAgingReportAction() {
+    const { getAuthOptions } = require("@/lib/auth");
+    const { getServerSession } = require("next-auth");
+    const { getAgingReportService } = require("@/lib/services/aging-service");
 
+    const session = (await getServerSession(getAuthOptions())) as any;
+    if (!session?.user?.id) throw new Error("Unauthorized");
 
+    return await getAgingReportService();
+}

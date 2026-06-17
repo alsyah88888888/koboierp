@@ -518,6 +518,13 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                         <Download className="h-4 w-4 text-emerald-600" />
                         <span>Export</span>
                     </button>
+                    <button
+                        onClick={() => router.push("/finance/aging")}
+                        className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-800 font-semibold text-xs uppercase tracking-wider transition-all"
+                    >
+                        <Clock className="h-4 w-4 text-blue-600" />
+                        <span>Aging Report</span>
+                    </button>
                     {activeTab === "ar" && (
                         <button
                             onClick={handleExportCortex}
