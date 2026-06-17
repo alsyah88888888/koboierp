@@ -11,7 +11,7 @@ import {
     Activity, BarChart3, RefreshCw, Clock, CreditCard, AlertCircle,
     CheckCircle2, ArrowRight, Printer, ChevronLeft, ChevronRight,
     DollarSign, Receipt, Truck, RotateCcw, Shield, Users, Building,
-    FileCode2, Sparkles, Banknote, Search, Download, Eye, ArrowUpCircle, ArrowDownCircle
+    FileCode2, Sparkles, Banknote, Search, Download, Eye, ArrowUpCircle, ArrowDownCircle, X
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { formatCurrency, cn } from "@/lib/utils";
@@ -67,6 +67,7 @@ export function ReportsDashboard() {
         month: new Date().getMonth() + 1, 
         year: new Date().getFullYear() 
     });
+    const [drillDownData, setDrillDownData] = useState<{title: string, data: any[], type: string} | null>(null);
     const [isFetchingClosing, setIsFetchingClosing] = useState(false);
     const [closingPrefix, setClosingPrefix] = useState<'PF' | 'BC' | 'ALL'>('ALL');
     const [activePrefix, setActivePrefix] = useState<'PF' | 'BC' | 'ALL'>('ALL');
@@ -190,14 +191,21 @@ export function ReportsDashboard() {
                         </style>
                     </head>
                     <body>
-                        <div class="header">
-                            <div>
-                                <p style="font-weight: 900; color: #3b82f6; margin: 0; font-size: 11px; letter-spacing: 2px;">KOBOI ERP - FINANCIAL MODULE</p>
-                                <h1>Closing Report</h1>
-                                <p style="margin: 5px 0 0; font-weight: 700; color: #64748b; font-size: 14px;">Periode: ${closingReport.period}</p>
+                        <div class="header" style="border-bottom: 4px solid #0f172a; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end;">
+                            <div style="display: flex; gap: 20px; align-items: center;">
+                                <div style="width: 60px; height: 60px; background: #0f172a; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 900; font-size: 24px;">
+                                    KB
+                                </div>
+                                <div>
+                                    <h1 style="margin: 0; font-weight: 900; font-size: 28px; color: #0f172a; letter-spacing: -1px;">PT. KOBOI DIGITAL NUSANTARA</h1>
+                                    <p style="margin: 5px 0 0; color: #64748b; font-size: 12px;">Gedung Cyber 1 Lt. 12, Jl. Kuningan Barat No.8, Jakarta Selatan 12710</p>
+                                    <p style="margin: 0; color: #64748b; font-size: 12px;">Telp: (021) 1234-5678 | Email: finance@koboi.id</p>
+                                </div>
                             </div>
                             <div class="text-right">
-                                <p style="font-size: 9px; font-weight: 900; color: #94a3b8; text-transform: uppercase;">Generated at: ${format(new Date(), "dd MMM yyyy HH:mm")}</p>
+                                <h2 style="margin: 0; font-weight: 900; color: #3b82f6; font-size: 20px; text-transform: uppercase;">Closing Report</h2>
+                                <p style="margin: 5px 0 0; font-weight: 700; color: #64748b; font-size: 12px;">Periode: ${closingReport.period}</p>
+                                <p style="margin: 5px 0 0; font-size: 9px; font-weight: 900; color: #94a3b8; text-transform: uppercase;">Generated at: ${format(new Date(), "dd MMM yyyy HH:mm")}</p>
                             </div>
                         </div>
 
@@ -771,13 +779,17 @@ export function ReportsDashboard() {
                                     {/* Metric Grid */}
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
                                         {[
-                                            { label: "Penjualan", value: closingReport.revenue, color: "text-emerald-500", icon: ArrowUpCircle },
-                                            { label: "Pembelian", value: closingReport.inventory?.purchases || 0, color: "text-blue-500", icon: ShoppingCart },
-                                            { label: "Operasional", value: closingReport.expenses, color: "text-amber-500", icon: Wallet },
-                                            { label: "Gross Margin", value: closingReport.grossProfit, color: "text-emerald-600", icon: Sparkles },
-                                            { label: "Profit", value: closingReport.netProfit, color: "text-indigo-600", icon: Banknote },
+                                            { label: "Penjualan", value: closingReport.revenue, color: "text-emerald-500", icon: ArrowUpCircle, type: 'sales', data: closingReport.details?.sales || [] },
+                                            { label: "Pembelian", value: closingReport.inventory?.purchases || 0, color: "text-blue-500", icon: ShoppingCart, type: 'purchases', data: closingReport.details?.purchases || [] },
+                                            { label: "Operasional", value: closingReport.expenses, color: "text-amber-500", icon: Wallet, type: 'operational', data: closingReport.details?.operational || [] },
+                                            { label: "Gross Margin", value: closingReport.grossProfit, color: "text-emerald-600", icon: Sparkles, type: 'none', data: [] },
+                                            { label: "Profit", value: closingReport.netProfit, color: "text-indigo-600", icon: Banknote, type: 'none', data: [] },
                                         ].map((card, i) => (
-                                            <div key={i} className="bg-white p-6 rounded-3xl border-2 border-slate-50 shadow-sm hover:shadow-md transition-all group">
+                                            <div 
+                                                key={i} 
+                                                onClick={() => card.type !== 'none' ? setDrillDownData({ title: `Rincian ${card.label}`, data: card.data, type: card.type }) : undefined}
+                                                className={cn("bg-white p-6 rounded-3xl border-2 border-slate-50 shadow-sm transition-all group", card.type !== 'none' && "cursor-pointer hover:shadow-md hover:border-slate-200")}
+                                            >
                                                 <div className="flex justify-between items-start mb-4">
                                                     <div className={cn("p-2 bg-slate-50 rounded-xl transition-colors group-hover:bg-primary/5", card.color.replace('text-', 'text-opacity-20 '))}>
                                                         <card.icon className="h-4 w-4" />
@@ -802,7 +814,12 @@ export function ReportsDashboard() {
                                                         <div className="flex justify-between items-end">
                                                             <div>
                                                                 <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Total Piutang (AR)</p>
-                                                                <p className="text-2xl font-black text-slate-900 tabular-nums tracking-tighter">{formatCurrency(closingReport.outstandingAR)}</p>
+                                                                <p 
+                                                                    onClick={() => setDrillDownData({ title: 'Rincian Piutang (AR)', data: closingReport.arAging?.items || [], type: 'ar' })}
+                                                                    className="text-2xl font-black text-slate-900 tabular-nums tracking-tighter cursor-pointer hover:underline"
+                                                                >
+                                                                    {formatCurrency(closingReport.outstandingAR)}
+                                                                </p>
                                                             </div>
                                                             <ArrowUpCircle className="h-8 w-8 text-emerald-100" />
                                                         </div>
@@ -815,7 +832,12 @@ export function ReportsDashboard() {
                                                         <div className="flex justify-between items-end">
                                                             <div>
                                                                 <p className="text-[10px] font-black text-rose-600 uppercase tracking-widest">Total Hutang (AP)</p>
-                                                                <p className="text-2xl font-black text-slate-900 tabular-nums tracking-tighter">{formatCurrency(closingReport.outstandingAP)}</p>
+                                                                <p 
+                                                                    onClick={() => setDrillDownData({ title: 'Rincian Hutang (AP)', data: closingReport.apAging?.items || [], type: 'ap' })}
+                                                                    className="text-2xl font-black text-slate-900 tabular-nums tracking-tighter cursor-pointer hover:underline"
+                                                                >
+                                                                    {formatCurrency(closingReport.outstandingAP)}
+                                                                </p>
                                                             </div>
                                                             <ArrowDownCircle className="h-8 w-8 text-rose-100" />
                                                         </div>
@@ -869,6 +891,56 @@ export function ReportsDashboard() {
                         </div>
                     )}
                 </>
+            )}
+            {drillDownData && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[80vh] flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                            <div>
+                                <h3 className="text-xl font-black text-slate-900 tracking-tight">{drillDownData.title}</h3>
+                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">Total {drillDownData.data.length} data</p>
+                            </div>
+                            <button onClick={() => setDrillDownData(null)} className="p-2 hover:bg-slate-200 rounded-xl transition-colors">
+                                <X className="h-5 w-5 text-slate-500" />
+                            </button>
+                        </div>
+                        <div className="p-6 overflow-y-auto bg-white flex-1 custom-scrollbar">
+                            <table className="w-full text-left text-xs table-fixed min-w-[600px]">
+                                <thead className="text-[9px] font-black uppercase tracking-widest text-slate-400 border-b border-slate-100">
+                                    <tr>
+                                        <th className="pb-3 w-12">No</th>
+                                        <th className="pb-3 w-1/4">Ref / No. Dokumen</th>
+                                        <th className="pb-3 w-1/3">Keterangan / Entitas</th>
+                                        <th className="pb-3 text-right">Nominal</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-50 text-slate-600">
+                                    {drillDownData.data.map((item, idx) => (
+                                        <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                                            <td className="py-3 font-bold">{idx + 1}</td>
+                                            <td className="py-3 font-black text-slate-900 truncate">
+                                                {drillDownData.type === 'operational' ? item.bank || '-' : item.number || '-'}
+                                            </td>
+                                            <td className="py-3 truncate max-w-[200px]" title={item.description || item.buyer || item.supplier || item.partner || ''}>
+                                                {item.description || item.buyer || item.supplier || item.partner || '-'}
+                                            </td>
+                                            <td className="py-3 text-right font-black text-slate-900 tabular-nums">
+                                                {formatCurrency(item.amount || item.grandTotal || item.outstanding || 0)}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {drillDownData.data.length === 0 && (
+                                        <tr>
+                                            <td colSpan={4} className="py-8 text-center text-slate-400 font-bold uppercase text-[10px] tracking-widest">
+                                                Tidak ada data
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );

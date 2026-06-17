@@ -1,8 +1,8 @@
 "use client";
 import * as XLSX from 'xlsx';
-
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend, PieChart, Pie, Cell } from 'recharts';
 import { useState, useEffect, useRef } from "react";
-import { Plus, Search, Wallet, ArrowUpCircle, ArrowDownCircle, FileText, Trash2, Download, Eye, FileCode2, X, Banknote, Calendar, Printer, Sparkles, ShoppingCart, AlertCircle, Pencil } from "lucide-react";
+import { Plus, Search, Wallet, ArrowUpCircle, ArrowDownCircle, FileText, Trash2, Download, Eye, FileCode2, X, Banknote, Calendar, Printer, Sparkles, ShoppingCart, AlertCircle, Pencil, BarChart3 } from "lucide-react";
 import { ReportPreviewModal } from "@/components/ReportPreviewModal";
 import { formatCurrency, cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -486,6 +486,35 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
     const totalHutang = pendingPurchases.reduce((acc: number, p: any) => acc + (Number(p.grandTotal) - Number(p.paidAmount || 0)), 0);
     const totalPiutang = pendingSales.reduce((acc: number, s: any) => acc + (Number(s.grandTotal) - Number(s.paidAmount || 0)), 0);
 
+    // --- Chart Data Processing ---
+    const reversedMonthlyStats = [...(monthlyStats || [])].reverse();
+
+    const currentMonth = new Date().getMonth();
+    const currentYear = new Date().getFullYear();
+    const currentMonthExpenses = (transactions || []).filter((tx: any) => {
+        const txDate = new Date(tx.date);
+        return txDate.getMonth() === currentMonth && txDate.getFullYear() === currentYear && (tx.transactionType === 'EXPENSE' || tx.amount < 0);
+    });
+
+    const expenseCategories = currentMonthExpenses.reduce((acc: any, tx: any) => {
+        const cat = tx.category || tx.transactionType || 'Lainnya';
+        acc[cat] = (acc[cat] || 0) + Math.abs(Number(tx.amount || 0));
+        return acc;
+    }, {});
+
+    const topExpenses = Object.entries(expenseCategories)
+        .map(([name, value]) => ({ name, value: Number(value) }))
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 5);
+
+    const PIE_COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6'];
+
+    const cashFlowData = [
+        { name: 'Uang Masuk', value: currentMonthPaidAR + (transactions || []).filter((tx: any) => new Date(tx.date).getMonth() === currentMonth && new Date(tx.date).getFullYear() === currentYear && tx.transactionType === 'INCOME').reduce((sum: number, tx: any) => sum + Number(tx.amount || 0), 0), fill: '#10b981' },
+        { name: 'Uang Keluar', value: currentMonthPaidAP + currentMonthExpenses.reduce((sum: number, tx: any) => sum + Math.abs(Number(tx.amount || 0)), 0), fill: '#ef4444' }
+    ];
+    // -----------------------------
+
     return (
         <div className="space-y-8 pb-16 animate-fade-up">
             {/* Header Section */}
@@ -637,36 +666,119 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
 
             {/* Main Content Area */}
             <div className="space-y-6">
-                {/* Monthly Performance Breakdown */}
-            <div className="erp-card p-8 bg-slate-900 text-white relative overflow-hidden group border-none shadow-2xl shadow-slate-200">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(59,130,246,0.1),transparent_70%)]" />
-                <div className="relative z-10">
-                    <div className="flex items-center justify-between mb-8">
-                        <div>
-                            <h2 className="text-sm font-black uppercase tracking-[0.2em] text-slate-400">Monthly Settlement Performance</h2>
-                            <p className="text-[10px] font-bold text-slate-500 uppercase mt-1 tracking-widest">Historical collection & payment trends (Last 6 Months)</p>
+            {/* Interactive Charts Area */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                {/* Chart 1: 12-Month Trend (Area Chart) */}
+                <div className="lg:col-span-2 erp-card p-6 bg-slate-900 text-white relative overflow-hidden group border-none shadow-2xl shadow-slate-200">
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(59,130,246,0.1),transparent_70%)]" />
+                    <div className="relative z-10 h-full flex flex-col">
+                        <div className="flex items-center justify-between mb-6">
+                            <div>
+                                <h2 className="text-sm font-black uppercase tracking-[0.2em] text-slate-400">Trend Penyelesaian Keuangan</h2>
+                                <p className="text-[10px] font-bold text-slate-500 uppercase mt-1 tracking-widest">Pendapatan vs Pengeluaran (6 Bulan Terakhir)</p>
+                            </div>
+                            <div className="h-10 w-10 rounded-xl bg-slate-800 flex items-center justify-center">
+                                <BarChart3 className="h-5 w-5 text-blue-400" />
+                            </div>
                         </div>
-                        <div className="h-10 w-10 rounded-xl bg-slate-800 flex items-center justify-center">
-                            <Calendar className="h-5 w-5 text-blue-400" />
+                        <div className="flex-1 min-h-[250px] w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart data={reversedMonthlyStats} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                                    <defs>
+                                        <linearGradient id="colorAr" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#34d399" stopOpacity={0.3} />
+                                            <stop offset="95%" stopColor="#34d399" stopOpacity={0} />
+                                        </linearGradient>
+                                        <linearGradient id="colorAp" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#f87171" stopOpacity={0.3} />
+                                            <stop offset="95%" stopColor="#f87171" stopOpacity={0} />
+                                        </linearGradient>
+                                    </defs>
+                                    <XAxis dataKey="label" stroke="#475569" fontSize={10} tickLine={false} axisLine={false} />
+                                    <YAxis 
+                                        stroke="#475569" 
+                                        fontSize={10} 
+                                        tickLine={false} 
+                                        axisLine={false} 
+                                        tickFormatter={(value) => `Rp${(value / 1000000).toFixed(0)}M`}
+                                    />
+                                    <Tooltip 
+                                        contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: '12px' }}
+                                        itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
+                                        formatter={(value: any) => formatCurrency(Number(value))}
+                                    />
+                                    <Legend iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
+                                    <Area type="monotone" dataKey="ar" name="Penerimaan (AR)" stroke="#34d399" strokeWidth={3} fillOpacity={1} fill="url(#colorAr)" />
+                                    <Area type="monotone" dataKey="ap" name="Pembayaran (AP)" stroke="#f87171" strokeWidth={3} fillOpacity={1} fill="url(#colorAp)" />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Chart 2: Cash Flow MTD & Top Expenses */}
+                <div className="space-y-6">
+                    {/* Cash Flow */}
+                    <div className="erp-card p-6 border-slate-200 shadow-sm bg-white flex flex-col">
+                        <div>
+                            <h2 className="text-sm font-black uppercase tracking-[0.2em] text-slate-800">Arus Kas (MTD)</h2>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase mt-1 tracking-widest">Bulan Berjalan</p>
+                        </div>
+                        <div className="flex-1 mt-4 h-[120px] w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={cashFlowData} layout="vertical" margin={{ top: 0, right: 30, left: 0, bottom: 0 }}>
+                                    <XAxis type="number" hide />
+                                    <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} fontSize={11} width={80} fontWeight="bold" />
+                                    <Tooltip 
+                                        cursor={{fill: '#f8fafc'}}
+                                        formatter={(value: any) => formatCurrency(Number(value))}
+                                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                    />
+                                    <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={20}>
+                                        {cashFlowData.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={entry.fill} />
+                                        ))}
+                                    </Bar>
+                                </BarChart>
+                            </ResponsiveContainer>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                        {(monthlyStats || []).map((m, idx) => (
-                            <div key={idx} className="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-5 hover:bg-slate-800/60 transition-all group/month">
-                                <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-4 border-b border-slate-700/50 pb-2 group-hover/month:text-white transition-colors">{m.label}</p>
-                                <div className="space-y-3">
-                                    <div>
-                                        <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest leading-none mb-1">Settled AR</p>
-                                        <p className="text-xs font-black text-emerald-400 tabular-nums">{formatCurrency(m.ar)}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest leading-none mb-1">Settled AP</p>
-                                        <p className="text-xs font-black text-rose-400 tabular-nums">{formatCurrency(m.ap)}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
+                    {/* Top 5 Expenses */}
+                    <div className="erp-card p-6 border-slate-200 shadow-sm bg-white flex flex-col">
+                        <div>
+                            <h2 className="text-sm font-black uppercase tracking-[0.2em] text-slate-800">Top Pengeluaran</h2>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase mt-1 tracking-widest">Kategori Tertinggi (MTD)</p>
+                        </div>
+                        <div className="flex-1 mt-4 h-[150px] w-full relative flex items-center justify-center">
+                            {topExpenses.length > 0 ? (
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Tooltip 
+                                            formatter={(value: any) => formatCurrency(Number(value))}
+                                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                        />
+                                        <Pie
+                                            data={topExpenses}
+                                            cx="50%"
+                                            cy="50%"
+                                            innerRadius={40}
+                                            outerRadius={60}
+                                            paddingAngle={2}
+                                            dataKey="value"
+                                        >
+                                            {topExpenses.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                                            ))}
+                                        </Pie>
+                                        <Legend layout="vertical" verticalAlign="middle" align="right" iconType="circle" wrapperStyle={{ fontSize: '10px' }} />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            ) : (
+                                <div className="text-xs text-slate-400 text-center w-full">Belum ada data pengeluaran operasional bulan ini.</div>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
