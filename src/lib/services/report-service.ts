@@ -91,6 +91,30 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
             : [];
         const grMapA = new Map<string, any>(grDataPathA.map((g: any) => [g.receiptNumber, g]));
 
+        // PREDICTIVE HEURISTIC PATH: Fetch most recent GR for products sold to fill in missing traceability
+        const productIdsInSales = Array.from(new Set(
+            deliveries.flatMap((sd: any) => sd.items.map((i: any) => i.productId)).filter(Boolean)
+        ));
+        
+        const predictiveGRMap = new Map<string, any>();
+        if (productIdsInSales.length > 0) {
+            const lastGRPrices = await (prisma as any).goodsReceiptItem.findMany({
+                where: { productId: { in: productIdsInSales } },
+                orderBy: { id: 'desc' }, // Latest GRs first
+                include: { 
+                    receipt: { 
+                        select: { receiptNumber: true, date: true, receivedFrom: true } 
+                    } 
+                }
+            });
+            // Map keeps the FIRST one it finds (which is the most recent due to orderBy desc)
+            lastGRPrices.forEach((lp: any) => {
+                if (!predictiveGRMap.has(lp.productId)) {
+                    predictiveGRMap.set(lp.productId, lp);
+                }
+            });
+        }
+
         // Helper: format date Indonesia
         const fmtDate = (d: any) => d ? new Date(d).toLocaleDateString('id-ID') : '-';
 
@@ -115,8 +139,21 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
                 const sellPrice = Number(sdItem.salesPrice || 0);
                 const discount  = Number(sdItem.discount || 0);
 
-                // Gunakan alokasi lot riil dari database jika ada untuk akurasi 100%,
-                // jika kosong baru gunakan fallback tanpa simulasi FIFO (Rule 1)
+                // Predictive Heuristic: Jika tidak ada lot, cari referensi LPB terdekat untuk produk ini
+                let fallbackLot: any = null;
+                if (!sdItem.lotAllocations || sdItem.lotAllocations.length === 0) {
+                    const fallbackGRItem = predictiveGRMap.get(sdItem.productId);
+                    if (fallbackGRItem) {
+                        fallbackLot = {
+                            grNumber: fallbackGRItem.receipt?.receiptNumber,
+                            grDate: fallbackGRItem.receipt?.date,
+                            supplierName: fallbackGRItem.receipt?.receivedFrom,
+                            purchasePrice: fallbackGRItem.purchasePrice,
+                            _isPredictive: true
+                        };
+                    }
+                }
+
                 const allocations = sdItem.lotAllocations && sdItem.lotAllocations.length > 0
                     ? sdItem.lotAllocations
                     : [null];
@@ -124,9 +161,10 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
                 const isMultiLot = allocations.length > 1;
 
                 for (const alloc of allocations) {
-                    const fifoLot = alloc ? alloc.lot : null;
-                    const grInfo  = fifoLot?.grNumber ? (grMapA.get(fifoLot.grNumber) || {}) : {};
-                    const hpp     = alloc ? Number(alloc.hppAtTime || fifoLot?.purchasePrice || 0) : Number(sdItem.product.purchasePrice || 0);
+                    const fifoLot = alloc ? alloc.lot : fallbackLot;
+                    // Jika fifoLot berasal dari predictive fallback, pastikan kita format infonya
+                    const grInfo  = fifoLot?.grNumber ? (grMapA.get(fifoLot.grNumber) || fifoLot.receipt || {}) : {};
+                    const hpp     = alloc ? Number(alloc.hppAtTime || fifoLot?.purchasePrice || 0) : Number(fifoLot?.purchasePrice || sdItem.product.purchasePrice || 0);
                     const qty     = alloc ? alloc.qty : sdItem.quantity;
                     
                     const displayNamaItem = isMultiLot ? `${namaItem} (Batch: ${qty} dr ${sdItem.quantity})` : namaItem;
