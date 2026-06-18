@@ -65,22 +65,23 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
         setCashbacks(updated);
     };
 
-    // Helper to parse numbers intelligently (handle Indonesian dots/commas and decimal points)
     const parseIndoNumber = (val: string | number): number => {
         if (typeof val === 'number') return val;
         if (!val) return 0;
         
         let s = String(val).trim();
         
-        // If it contains only ONE dot and NO comma, it's likely a decimal point (US style parsing)
         const dotCount = (s.match(/\./g) || []).length;
         const commaCount = (s.match(/,/g) || []).length;
         
         if (dotCount === 1 && commaCount === 0) {
+            const parts = s.split('.');
+            if (parts.length === 2 && parts[1].length === 3) {
+                return Number(s.replace(/\./g, "")) || 0;
+            }
             return parseFloat(s) || 0;
         }
         
-        // Otherwise, treat dots as thousand separators and comma as decimal (ID style)
         return Number(s.replace(/\./g, "").replace(",", ".")) || 0;
     };
 
