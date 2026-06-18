@@ -277,26 +277,33 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
             }));
             exportToExcel(data, `Laporan_Buku_Besar_${format(new Date(), "yyyyMMdd")}`, 'Ledger');
         } else if (activeTab === "ap") {
-            const data = filteredPurchases.map(p => ({
-                'Bulan': format(new Date(p.date || p.createdAt), "MMMM yyyy"),
-                'Tanggal Terima': format(new Date(p.date || p.createdAt), "dd/MM/yyyy"),
-                'No. Terima (LPB)': p.receiptNumber,
-                'No. Invoice Vendor': p.formNumber || '-',
-                'Supplier': p.receivedFrom,
-                'No. Faktur Pajak': p.taxInvoiceNumber || '-',
-                'Total Tagihan': Number(p.grandTotal),
-                'Sudah Dibayar': Number(p.paidAmount || 0),
-                'Sisa Hutang': Number(p.grandTotal) - Number(p.paidAmount || 0),
-                'Status': p.paymentStatus === 'PAID' ? 'DONE' : p.paymentStatus,
-                'Sales Person Vendor': p.salesPerson || '-',
-                'Gudang': p.warehouse?.name || '-'
-            }));
+            const data = filteredPurchases.map(p => {
+                const round100 = (val: number) => Math.round(val / 100) * 100;
+                const printedTotal = round100(Number(p.grandTotal || 0));
+                const printedPaid = round100(Number(p.paidAmount || 0));
+                
+                return {
+                    'Bulan': format(new Date(p.date || p.createdAt), "MMMM yyyy"),
+                    'Tanggal Terima': format(new Date(p.date || p.createdAt), "dd/MM/yyyy"),
+                    'No. Terima (LPB)': p.receiptNumber,
+                    'No. Invoice Vendor': p.formNumber || '-',
+                    'Supplier': p.receivedFrom,
+                    'No. Faktur Pajak': p.taxInvoiceNumber || '-',
+                    'Total Tagihan': printedTotal,
+                    'Sudah Dibayar': printedPaid,
+                    'Sisa Hutang': printedTotal - printedPaid,
+                    'Status': p.paymentStatus === 'PAID' ? 'DONE' : p.paymentStatus,
+                    'Sales Person Vendor': p.salesPerson || '-',
+                    'Gudang': p.warehouse?.name || '-'
+                };
+            });
             exportToExcel(data, `Laporan_Hutang_Dagang_Kompleks_${format(new Date(), "yyyyMMdd")}`, 'AP');
         } else if (activeTab === "ar") {
             const data = filteredSales.map(s => {
-                const total = Number(s.grandTotal || 0);
-                const paid = Number(s.paidAmount || 0);
-                const remaining = total - paid;
+                const round100 = (val: number) => Math.round(val / 100) * 100;
+                const printedTotal = round100(Number(s.grandTotal || 0));
+                const printedPaid = round100(Number(s.paidAmount || 0));
+                const remaining = printedTotal - printedPaid;
                 const agingDays = Math.floor((new Date().getTime() - new Date(s.date || s.createdAt).getTime()) / (1000 * 3600 * 24));
                 
                 return {
@@ -307,8 +314,8 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                     'PO BUYER': s.poNumber || '-',
                     'Pelanggan': s.buyerName,
                     'Sales Person': s.salesPerson || '-',
-                    'Total Tagihan': total,
-                    'Sudah Dibayar': paid,
+                    'Total Tagihan': printedTotal,
+                    'Sudah Dibayar': printedPaid,
                     'Sisa Piutang': remaining,
                     'Status': s.paymentStatus === 'PAID' ? 'DONE' : s.paymentStatus,
                     'Umur Piutang (Hari)': agingDays > 0 ? agingDays : 0,

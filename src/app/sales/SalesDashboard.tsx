@@ -222,11 +222,17 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                 const qty = Number(item.quantity) || 0;
                 const price = Number(item.salesPrice) || 0;
                 const discLine = Number(item.discount || 0);
-                
-                const itemSubtotal = (qty * price) - discLine;
                 const taxRate = Number(d.taxRate || 0);
-                const itemTax = taxRate > 0 ? (itemSubtotal * 0.11) : 0;
-                const itemNettoTotal = itemSubtotal + itemTax;
+
+                // Terapkan logika pembulatan yang persis SAMA dengan fungsi formatCurrency di print document
+                const round100 = (val: number) => Math.round(val / 100) * 100;
+
+                const printedPrice = round100(price);
+                const printedTotalBrutto = round100(qty * price);
+                const printedDiscLine = round100(discLine);
+                const itemNettoBeforeTax = (qty * price) - discLine;
+                const printedTax = round100(itemNettoBeforeTax * (taxRate > 0 ? 0.11 : 0));
+                const printedNettoTotal = round100(itemNettoBeforeTax * (taxRate > 0 ? 1.11 : 1));
 
                 exportData.push({
                     'No. Surat Jalan': d.deliveryNumber,
@@ -238,15 +244,15 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                     'Nama Barang': item.product?.name || "-",
                     'Qty': qty,
                     'Satuan': item.uom || item.product?.uom || "-",
-                    'Harga Satuan': price,
-                    'Total Harga': itemSubtotal,
-                    'Potongan Item': discLine,
+                    'Harga Satuan': printedPrice,
+                    'Total Harga': printedTotalBrutto,
+                    'Potongan Item': printedDiscLine,
                     'Tgl SJ': format(new Date(d.createdAt), "yyyy-MM-dd"),
                     'Gudang': d.warehouse?.name || "-",
                     'Sales Person': d.salesPerson || "-",
                     '': '', // Empty separator
-                    'Hasil PPN 11%': itemTax,
-                    'Hasil Grand Total Netto': itemNettoTotal,
+                    'Hasil PPN 11%': printedTax,
+                    'Hasil Grand Total Netto': printedNettoTotal,
                     'Status Pembayaran': d.paymentStatus === 'PAID' ? 'PAID / DONE' : 'PENDING'
                 });
             });

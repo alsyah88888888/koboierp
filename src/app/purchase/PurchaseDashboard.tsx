@@ -138,10 +138,15 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, initialRequ
                 const discLine = Number(item.discount || 0);
                 const taxRate = Number(r.taxRate || 0);
 
-                const itemTotalBrutto = Math.round(qty * buyPrice);
-                const itemNettoBeforeTax = itemTotalBrutto - discLine;
-                const itemTaxCalculated = Math.round(itemTotalBrutto * 0.11);
-                const itemNettoTotal = itemNettoBeforeTax + itemTaxCalculated;
+                // Terapkan logika pembulatan yang persis SAMA dengan fungsi formatCurrency di print document
+                const round100 = (val: number) => Math.round(val / 100) * 100;
+
+                const printedBuyPrice = round100(buyPrice);
+                const printedTotalBrutto = round100(qty * buyPrice);
+                const printedDiscLine = round100(discLine);
+                const itemNettoBeforeTax = (qty * buyPrice) - discLine;
+                const printedTax = round100(itemNettoBeforeTax * (taxRate > 0 ? 0.11 : 0));
+                const printedNettoTotal = round100(itemNettoBeforeTax * (taxRate > 0 ? 1.11 : 1));
 
                 exportData.push({
                     'No. Terima': r.receiptNumber,
@@ -153,11 +158,11 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, initialRequ
                     'Nama Barang': item.product?.name || "-",
                     'Qty': qty,
                     'Satuan': item.uom || item.product?.uom || "-",
-                    'Harga Beli': buyPrice,
-                    'Potongan Item': discLine,
-                    'Total Brutto (Row)': itemTotalBrutto,
-                    'PPN (Header %)': itemTaxCalculated,
-                    'Total Netto Pembayaran (Header)': itemNettoTotal,
+                    'Harga Beli': printedBuyPrice,
+                    'Potongan Item': printedDiscLine,
+                    'Total Brutto (Row)': printedTotalBrutto,
+                    'PPN (Header %)': printedTax,
+                    'Total Netto Pembayaran (Header)': printedNettoTotal,
                     'Gudang': r.warehouse?.name || "-",
                     'Sales Person': r.salesPerson || "-",
                     'Status': r.isVoid ? 'VOID' : (r.isVerified ? 'VERIFIED' : 'PENDING')
