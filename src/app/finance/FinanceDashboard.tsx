@@ -554,6 +554,13 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                         <Clock className="h-4 w-4 text-blue-600" />
                         <span>Aging Report</span>
                     </button>
+                    <button
+                        onClick={() => router.push("/finance/approval-history")}
+                        className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-purple-200 bg-purple-50 hover:bg-purple-100 text-purple-800 font-semibold text-xs uppercase tracking-wider transition-all"
+                    >
+                        <CheckCircle2 className="h-4 w-4 text-purple-600" />
+                        <span>Riwayat Approval</span>
+                    </button>
                     {activeTab === "ar" && (
                         <button
                             onClick={handleExportCortex}

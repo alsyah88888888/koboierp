@@ -37,6 +37,17 @@ export async function createFinanceTransactionAction(data: any) {
     return await createFinanceTransactionService(data, session.user.id);
 }
 
+export async function getApprovalHistoryAction(period: 'daily' | 'weekly' | 'monthly', dateStr: string, prefix?: 'PF' | 'BC' | 'ALL') {
+    const { getAuthOptions } = require("@/lib/auth");
+    const { getServerSession } = require("next-auth");
+    const { getApprovalHistoryService } = require("@/lib/services/finance-history-service");
+
+    const session = (await getServerSession(getAuthOptions())) as any;
+    if (!session?.user?.id) throw new Error("Unauthorized");
+
+    return await getApprovalHistoryService(period, dateStr, prefix);
+}
+
 export async function getAccountingDataAction() {
     const { getAuthOptions } = require("@/lib/auth");
     const { getServerSession } = require("next-auth");
