@@ -17,8 +17,8 @@ echo ""
 ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_IP} "
     pm2 stop koboierp || true && \
     cd ${REMOTE_PATH} && \
-    git reset --hard HEAD && \
-    git pull && \
+    git fetch --all && \
+    git reset --hard origin/main && \
     npx prisma db push && \
     npm run build && \
     pm2 restart erp
