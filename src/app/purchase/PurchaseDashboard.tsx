@@ -138,16 +138,16 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, initialRequ
                 const discLine = Number(item.discount || 0);
                 const taxRate = Number(r.taxRate || 0);
 
-                const itemTotalBrutto = qty * buyPrice;
+                const itemTotalBrutto = Math.round(qty * buyPrice);
                 const itemNettoBeforeTax = itemTotalBrutto - discLine;
-                const itemTaxCalculated = itemTotalBrutto * 0.11;
+                const itemTaxCalculated = Math.round(itemTotalBrutto * 0.11);
                 const itemNettoTotal = itemNettoBeforeTax + itemTaxCalculated;
 
                 exportData.push({
                     'No. Terima': r.receiptNumber,
-                    'No. Form': r.formNumber || "-",
+                    'Ref. Tracking': r.formNumber || "-",
                     'Tanggal': format(new Date(r.date || r.createdAt), "yyyy-MM-dd"),
-                    'Terima Dari': r.receivedFrom,
+                    'Supplier': r.receivedFrom || "-",
                     'Barcode': item.product?.barcode || item.product?.sku || "-",
                     'SKU': item.product?.sku || "-",
                     'Nama Barang': item.product?.name || "-",
@@ -156,8 +156,8 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, initialRequ
                     'Harga Beli': buyPrice,
                     'Potongan Item': discLine,
                     'Total Brutto (Row)': itemTotalBrutto,
-                    'PPN (Header %)': itemTotalBrutto * 0.11,
-                    'Total Netto Pembayaran (Header)': itemTotalBrutto + (itemTotalBrutto * 0.11),
+                    'PPN (Header %)': itemTaxCalculated,
+                    'Total Netto Pembayaran (Header)': itemNettoTotal,
                     'Gudang': r.warehouse?.name || "-",
                     'Sales Person': r.salesPerson || "-",
                     'Status': r.isVoid ? 'VOID' : (r.isVerified ? 'VERIFIED' : 'PENDING')
