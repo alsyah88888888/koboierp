@@ -45,7 +45,8 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
     const [showModal, setShowModal] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedHistoryItem, setSelectedHistoryItem] = useState<any>(null);
-    const [historyMonth, setHistoryMonth] = useState<string>("ALL");
+    const [arHistoryMonth, setArHistoryMonth] = useState<string>("ALL");
+    const [apHistoryMonth, setApHistoryMonth] = useState<string>("ALL");
     const [activeTab, setActiveTab] = useState<"ledger" | "ap" | "ar" | "checker" | "purchase_requests" | "history">("ledger");
     const [loading, setLoading] = useState<string | null>(null);
     const [isClient, setIsClient] = useState(false);
@@ -248,18 +249,18 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
         const matchesSearch = (p.receiptNumber || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
             (p.receivedFrom || "").toLowerCase().includes(searchTerm.toLowerCase());
         
-        if (historyMonth === "ALL") return matchesSearch;
+        if (apHistoryMonth === "ALL") return matchesSearch;
         const pDate = p.updatedAt ? new Date(p.updatedAt) : null;
-        return matchesSearch && pDate && (pDate.getMonth() + 1).toString() === historyMonth;
+        return matchesSearch && pDate && (pDate.getMonth() + 1).toString() === apHistoryMonth;
     });
 
     const filteredSettledSales = (settledSales || []).filter(s => {
         const matchesSearch = (s.deliveryNumber || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
             (s.buyerName || "").toLowerCase().includes(searchTerm.toLowerCase());
         
-        if (historyMonth === "ALL") return matchesSearch;
+        if (arHistoryMonth === "ALL") return matchesSearch;
         const sDate = s.updatedAt ? new Date(s.updatedAt) : null;
-        return matchesSearch && sDate && (sDate.getMonth() + 1).toString() === historyMonth;
+        return matchesSearch && sDate && (sDate.getMonth() + 1).toString() === arHistoryMonth;
     });
 
     const handleExport = () => {
@@ -1565,96 +1566,145 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                 {activeTab === "history" && (
                     <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
                         {/* Settled Invoices Section */}
-                        <div className="space-y-6">
-                            <div className="flex items-center gap-3 px-1">
-                                <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Pelunasan Piutang & Hutang (Recent Settlements)</h3>
-                                <div className="flex items-center gap-2 ml-auto">
-                                    <select 
-                                        value={historyMonth}
-                                        onChange={(e) => setHistoryMonth(e.target.value)}
-                                        className="text-[10px] font-black uppercase tracking-widest bg-white border border-slate-200 rounded-lg px-3 py-1.5 outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                                    >
-                                        <option value="ALL">All Months</option>
-                                        <option value="1">Januari</option>
-                                        <option value="2">Februari</option>
-                                        <option value="3">Maret</option>
-                                        <option value="4">April</option>
-                                        <option value="5">Mei</option>
-                                        <option value="6">Juni</option>
-                                        <option value="7">Juli</option>
-                                        <option value="8">Agustus</option>
-                                        <option value="9">September</option>
-                                        <option value="10">Oktober</option>
-                                        <option value="11">November</option>
-                                        <option value="12">Desember</option>
-                                    </select>
+                        <div className="space-y-8">
+                            {/* Settled Sales (AR) */}
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-3 px-1">
+                                    <h3 className="text-sm font-black text-emerald-800 uppercase tracking-widest">History Pelunasan Piutang (AR Settlements)</h3>
+                                    <div className="flex items-center gap-2 ml-auto">
+                                        <select 
+                                            value={arHistoryMonth}
+                                            onChange={(e) => setArHistoryMonth(e.target.value)}
+                                            className="text-[10px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-lg px-3 py-1.5 outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                                        >
+                                            <option value="ALL">All Months</option>
+                                            <option value="1">Januari</option>
+                                            <option value="2">Februari</option>
+                                            <option value="3">Maret</option>
+                                            <option value="4">April</option>
+                                            <option value="5">Mei</option>
+                                            <option value="6">Juni</option>
+                                            <option value="7">Juli</option>
+                                            <option value="8">Agustus</option>
+                                            <option value="9">September</option>
+                                            <option value="10">Oktober</option>
+                                            <option value="11">November</option>
+                                            <option value="12">Desember</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div className="overflow-x-auto custom-scrollbar">
+                                    <table className="w-full text-sm text-left min-w-[1000px] table-fixed">
+                                        <thead className="bg-emerald-50/50 text-emerald-800 border-b border-emerald-100 text-[10px] uppercase tracking-[0.2em] font-black">
+                                            <tr>
+                                                <th className="px-8 py-5 w-40">Tgl Lunas</th>
+                                                <th className="px-8 py-5">Customer</th>
+                                                <th className="px-8 py-5 w-48">Ref Number</th>
+                                                <th className="px-8 py-5 w-40 text-center">Tipe</th>
+                                                <th className="px-8 py-5 text-right w-44">Settled Amount</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-emerald-50 text-slate-700">
+                                            {filteredSettledSales.map((s: any) => (
+                                                <tr key={`sale-${s.id}`} onClick={() => setSelectedHistoryItem({ ...s, historyType: 'AR' })} className="hover:bg-emerald-50/50 transition-all group/row cursor-pointer">
+                                                    <td className="px-8 py-5 font-mono text-slate-400 font-bold tabular-nums">
+                                                        {isClient && s.updatedAt ? format(new Date(s.updatedAt), "dd/MM/yy") : "..."}
+                                                    </td>
+                                                    <td className="px-8 py-5">
+                                                        <div className="font-black text-slate-900 tracking-tight mb-1 truncate">{s.buyerName}</div>
+                                                        <div className="text-[9px] text-emerald-500 font-black font-mono uppercase tracking-widest flex items-center gap-2">
+                                                            <span>Customer Payment (AR)</span>
+                                                            <span className="h-1 w-1 bg-slate-300 rounded-full" />
+                                                            <span className="text-slate-400">By: {s.createdBy?.name || 'Finance'}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-8 py-5 font-mono text-[10px] font-bold text-slate-500">{s.deliveryNumber}</td>
+                                                    <td className="px-8 py-5 text-center">
+                                                        <span className="px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border bg-emerald-50 text-emerald-600 border-emerald-100">PELUNASAN</span>
+                                                    </td>
+                                                    <td className="px-8 py-5 text-right font-black font-mono tabular-nums tracking-tighter text-base text-emerald-600">
+                                                        {formatCurrency(Number(s.total))}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                            {filteredSettledSales.length === 0 && (
+                                                <tr>
+                                                    <td colSpan={5} className="px-8 py-12 text-center text-slate-400 italic font-medium uppercase tracking-widest text-[10px]">No settled AR invoices found for {arHistoryMonth === "ALL" ? "all months" : "selected month"}</td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
-                            <div className="overflow-x-auto custom-scrollbar">
-                                <table className="w-full text-sm text-left min-w-[1000px] table-fixed">
-                                    <thead className="bg-slate-50/50 text-slate-400 border-b border-slate-100 text-[10px] uppercase tracking-[0.2em] font-black">
-                                        <tr>
-                                            <th className="px-8 py-5 w-40">Tgl Lunas</th>
-                                            <th className="px-8 py-5">Entity / Counterparty</th>
-                                            <th className="px-8 py-5 w-48">Ref Number</th>
-                                            <th className="px-8 py-5 w-40 text-center">Tipe</th>
-                                            <th className="px-8 py-5 text-right w-44">Settled Amount</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-slate-50 text-slate-700">
-                                        {/* Settled Sales (AR) */}
-                                        {filteredSettledSales.map((s: any) => (
-                                            <tr key={`sale-${s.id}`} onClick={() => setSelectedHistoryItem({ ...s, historyType: 'AR' })} className="hover:bg-blue-50/50 transition-all group/row cursor-pointer">
-                                                <td className="px-8 py-5 font-mono text-slate-400 font-bold tabular-nums">
-                                                    {isClient && s.updatedAt ? format(new Date(s.updatedAt), "dd/MM/yy") : "..."}
-                                                </td>
-                                                <td className="px-8 py-5">
-                                                    <div className="font-black text-slate-900 tracking-tight mb-1 truncate">{s.buyerName}</div>
-                                                    <div className="text-[9px] text-emerald-500 font-black font-mono uppercase tracking-widest flex items-center gap-2">
-                                                        <span>Customer Payment (AR)</span>
-                                                        <span className="h-1 w-1 bg-slate-300 rounded-full" />
-                                                        <span className="text-slate-400">By: {s.createdBy?.name || 'Finance'}</span>
-                                                    </div>
-                                                </td>
-                                                <td className="px-8 py-5 font-mono text-[10px] font-bold text-slate-500">{s.deliveryNumber}</td>
-                                                <td className="px-8 py-5 text-center">
-                                                    <span className="px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border bg-emerald-50 text-emerald-600 border-emerald-100">PELUNASAN</span>
-                                                </td>
-                                                <td className="px-8 py-5 text-right font-black font-mono tabular-nums tracking-tighter text-base text-emerald-600">
-                                                    {formatCurrency(Number(s.total))}
-                                                </td>
-                                            </tr>
-                                        ))}
-                                        {/* Settled Purchases (AP) */}
-                                        {filteredSettledPurchases.map((p: any) => (
-                                            <tr key={`purchase-${p.id}`} onClick={() => setSelectedHistoryItem({ ...p, historyType: 'AP' })} className="hover:bg-rose-50/50 transition-all group/row cursor-pointer">
-                                                <td className="px-8 py-5 font-mono text-slate-400 font-bold tabular-nums">
-                                                    {isClient && p.updatedAt ? format(new Date(p.updatedAt), "dd/MM/yy") : "..."}
-                                                </td>
-                                                <td className="px-8 py-5">
-                                                    <div className="font-black text-slate-900 tracking-tight mb-1 truncate">{p.receivedFrom}</div>
-                                                    <div className="text-[9px] text-rose-500 font-black font-mono uppercase tracking-widest flex items-center gap-2">
-                                                        <span>Vendor Settlement (AP)</span>
-                                                        <span className="h-1 w-1 bg-slate-300 rounded-full" />
-                                                        <span className="text-slate-400">By: {p.createdBy?.name || 'Finance'}</span>
-                                                    </div>
-                                                </td>
-                                                <td className="px-8 py-5 font-mono text-[10px] font-bold text-slate-500">{p.receiptNumber}</td>
-                                                <td className="px-8 py-5 text-center">
-                                                    <span className="px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border bg-rose-50 text-rose-600 border-rose-100">PEMBAYARAN</span>
-                                                </td>
-                                                <td className="px-8 py-5 text-right font-black font-mono tabular-nums tracking-tighter text-base text-rose-600">
-                                                    {formatCurrency(Number(p.total))}
-                                                </td>
-                                            </tr>
-                                        ))}
-                                        {filteredSettledSales.length === 0 && filteredSettledPurchases.length === 0 && (
+
+                            {/* Settled Purchases (AP) */}
+                            <div className="space-y-4 pt-4 border-t border-slate-100">
+                                <div className="flex items-center gap-3 px-1">
+                                    <h3 className="text-sm font-black text-rose-800 uppercase tracking-widest">History Pembayaran Hutang (AP Settlements)</h3>
+                                    <div className="flex items-center gap-2 ml-auto">
+                                        <select 
+                                            value={apHistoryMonth}
+                                            onChange={(e) => setApHistoryMonth(e.target.value)}
+                                            className="text-[10px] font-black uppercase tracking-widest bg-rose-50 text-rose-800 border border-rose-200 rounded-lg px-3 py-1.5 outline-none focus:ring-2 focus:ring-rose-500/20 transition-all"
+                                        >
+                                            <option value="ALL">All Months</option>
+                                            <option value="1">Januari</option>
+                                            <option value="2">Februari</option>
+                                            <option value="3">Maret</option>
+                                            <option value="4">April</option>
+                                            <option value="5">Mei</option>
+                                            <option value="6">Juni</option>
+                                            <option value="7">Juli</option>
+                                            <option value="8">Agustus</option>
+                                            <option value="9">September</option>
+                                            <option value="10">Oktober</option>
+                                            <option value="11">November</option>
+                                            <option value="12">Desember</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div className="overflow-x-auto custom-scrollbar">
+                                    <table className="w-full text-sm text-left min-w-[1000px] table-fixed">
+                                        <thead className="bg-rose-50/50 text-rose-800 border-b border-rose-100 text-[10px] uppercase tracking-[0.2em] font-black">
                                             <tr>
-                                                <td colSpan={5} className="px-8 py-12 text-center text-slate-400 italic font-medium uppercase tracking-widest text-[10px]">No settled invoices found in recent history</td>
+                                                <th className="px-8 py-5 w-40">Tgl Lunas</th>
+                                                <th className="px-8 py-5">Vendor</th>
+                                                <th className="px-8 py-5 w-48">Ref Number</th>
+                                                <th className="px-8 py-5 w-40 text-center">Tipe</th>
+                                                <th className="px-8 py-5 text-right w-44">Settled Amount</th>
                                             </tr>
-                                        )}
-                                    </tbody>
-                                </table>
+                                        </thead>
+                                        <tbody className="divide-y divide-rose-50 text-slate-700">
+                                            {filteredSettledPurchases.map((p: any) => (
+                                                <tr key={`purchase-${p.id}`} onClick={() => setSelectedHistoryItem({ ...p, historyType: 'AP' })} className="hover:bg-rose-50/50 transition-all group/row cursor-pointer">
+                                                    <td className="px-8 py-5 font-mono text-slate-400 font-bold tabular-nums">
+                                                        {isClient && p.updatedAt ? format(new Date(p.updatedAt), "dd/MM/yy") : "..."}
+                                                    </td>
+                                                    <td className="px-8 py-5">
+                                                        <div className="font-black text-slate-900 tracking-tight mb-1 truncate">{p.receivedFrom}</div>
+                                                        <div className="text-[9px] text-rose-500 font-black font-mono uppercase tracking-widest flex items-center gap-2">
+                                                            <span>Vendor Settlement (AP)</span>
+                                                            <span className="h-1 w-1 bg-slate-300 rounded-full" />
+                                                            <span className="text-slate-400">By: {p.createdBy?.name || 'Finance'}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-8 py-5 font-mono text-[10px] font-bold text-slate-500">{p.receiptNumber}</td>
+                                                    <td className="px-8 py-5 text-center">
+                                                        <span className="px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border bg-rose-50 text-rose-600 border-rose-100">PEMBAYARAN</span>
+                                                    </td>
+                                                    <td className="px-8 py-5 text-right font-black font-mono tabular-nums tracking-tighter text-base text-rose-600">
+                                                        {formatCurrency(Number(p.total))}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                            {filteredSettledPurchases.length === 0 && (
+                                                <tr>
+                                                    <td colSpan={5} className="px-8 py-12 text-center text-slate-400 italic font-medium uppercase tracking-widest text-[10px]">No settled AP invoices found for {apHistoryMonth === "ALL" ? "all months" : "selected month"}</td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
 
