@@ -156,13 +156,8 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, initialRequ
                     'Harga Beli': buyPrice,
                     'Potongan Item': discLine,
                     'Total Brutto (Row)': itemTotalBrutto,
-                    'PPN (Header %)': taxRate,
-                    'Total Netto Pembayaran (Header)': (() => {
-                        const dpp = Number(r.subtotal || 0) - Number(r.totalDiscount || 0);
-                        const cbs = Array.isArray(r.cashbacks) ? r.cashbacks : [];
-                        const totalCb = cbs.reduce((acc: number, cb: any) => acc + Math.floor(dpp * (Number(cb.rate || 0) / 100)), 0);
-                        return Number(r.grandTotal || 0) - totalCb;
-                    })(),
+                    'PPN (Header %)': itemTotalBrutto * 0.11,
+                    'Total Netto Pembayaran (Header)': itemTotalBrutto + (itemTotalBrutto * 0.11),
                     'Gudang': r.warehouse?.name || "-",
                     'Sales Person': r.salesPerson || "-",
                     'Status': r.isVoid ? 'VOID' : (r.isVerified ? 'VERIFIED' : 'PENDING')
