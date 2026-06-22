@@ -2,9 +2,10 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 async function main() {
-    const users = await prisma.user.findMany({ 
-        where: { email: { in: ['andi@kolaborasi.id', 'rian@kolaborasi.id', 'ferza@kolaborasi.id'] } } 
+    const users = await prisma.user.findMany({
+        select: { id: true, name: true, email: true, role: true }
     });
-    console.log("Users:", users);
+    console.log(JSON.stringify(users, null, 2));
 }
-main().finally(() => prisma.$disconnect());
+
+main().catch(console.error).finally(() => prisma.$disconnect());

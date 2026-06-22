@@ -13,9 +13,20 @@ export default async function ReportsPage() {
     }
 
     const userRole = session?.user?.role || "USER";
+    const userEmail = session?.user?.email || "";
     
-    // Only ADMIN and FINANCE can access reports
-    if (!["ADMIN", "FINANCE"].includes(userRole)) {
+    // Only ADMIN, FINANCE, or specific users can access reports
+    const isAllowedRole = ["ADMIN", "FINANCE"].includes(userRole);
+    const allowedEmails = [
+        "fatiatunisia@kolaborasi.id", // Fatia
+        "andi@kolaborasi.id", // Andi
+        "andisetiandi@kolaborasi.id", // Andi
+        "dwirismawan@kolaborasi.id", // Dwi
+        "kusmawani@kolaborasi.id" // Kusumawani
+    ];
+    const isAllowedEmail = allowedEmails.includes(userEmail);
+
+    if (!isAllowedRole && !isAllowedEmail) {
         redirect("/");
     }
 
