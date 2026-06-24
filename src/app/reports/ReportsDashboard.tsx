@@ -472,7 +472,7 @@ export function ReportsDashboard() {
                     'No. LPB': r['NOMOR LPB'],
                     'Tgl Beli': r['TANGGAL BELI'],
                     'Qty Beli': r['QTY BELI'],
-                    'Total Beli (HPP)': r['TOTAL BELI (HPP)'],
+                    'Total Beli (HPP)': r['TOTAL BELI'],
                     'Ops': r.OPS,
                     'Buyer': r.BUYER,
                     'Sales': r.SALES,

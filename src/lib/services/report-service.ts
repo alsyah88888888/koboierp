@@ -873,10 +873,13 @@ export async function getComprehensiveDailyReportService(date?: string, prefix?:
             o.transactionType === 'RECEIPT' || Number(o.amount) > 0
         );
         const expenseTransactions = operational.filter((o: any) =>
-            o.transactionType === 'PAYMENT' || o.transactionType === 'EXPENSE' || Number(o.amount) < 0
+            (o.transactionType === 'PAYMENT' || o.transactionType === 'EXPENSE' || Number(o.amount) < 0) && !o.invoiceNumber
         );
         const totalIncome = incomeTransactions.reduce((s: number, o: any) => s + Math.abs(Number(o.amount || 0)), 0);
-        const totalExpense = expenseTransactions.reduce((s: number, o: any) => s + Math.abs(Number(o.amount || 0)), 0);
+        
+        const generalExpense = expenseTransactions.reduce((s: number, o: any) => s + Math.abs(Number(o.amount || 0)), 0);
+        const linkedOpsExpense = dailyTraceability.reduce((sum: number, t: any) => sum + Number(t['OPS'] || 0), 0);
+        const totalExpense = generalExpense + linkedOpsExpense;
 
         // Payment status breakdown
         const salesPaid = sales.filter((s: any) => s.paymentStatus === 'PAID').length;
@@ -884,22 +887,8 @@ export async function getComprehensiveDailyReportService(date?: string, prefix?:
         const purchasePaid = purchases.filter((p: any) => p.paymentStatus === 'PAID').length;
         const purchasePending = purchases.filter((p: any) => p.paymentStatus !== 'PAID').length;
 
-        // Calculate HPP of items sold
-        let totalHPP = 0;
-        sales.forEach((s: any) => {
-            const isPKP = s.isPKP || Number(s.taxRate || 0) > 0 || String(s.invoiceNumber || '').includes('TRN');
-            const taxMultiplier = 1 + (isPKP ? 0.11 : 0);
-            (s.items || []).forEach((item: any) => {
-                const qty = Number(item.quantity || 0);
-                if (item.lotAllocations && item.lotAllocations.length > 0) {
-                    item.lotAllocations.forEach((alloc: any) => {
-                        totalHPP += Number(alloc.qty || 0) * Math.round(Number(alloc.hppAtTime || 0) * taxMultiplier);
-                    });
-                } else {
-                    totalHPP += qty * Math.round(Number(item.product?.purchasePrice || 0) * taxMultiplier);
-                }
-            });
-        });
+        // Calculate HPP of items sold from traceability
+        const totalHPP = dailyTraceability.reduce((sum: number, t: any) => sum + Number(t['TOTAL BELI'] || 0), 0);
 
         const grossProfit = totalSales - totalHPP;
         const netProfit = grossProfit - totalExpense;
@@ -1133,24 +1122,18 @@ export async function getComprehensiveWeeklyReportService(weekStartDate?: string
 
             const salesTotal = daySales.reduce((s: number, d: any) => s + Number(d.grandTotal || 0), 0);
             const purchaseTotal = dayPurchases.reduce((s: number, d: any) => s + Number(d.grandTotal || 0), 0);
-            const opsExpense = dayOps.filter((o: any) => o.transactionType === 'PAYMENT' || o.transactionType === 'EXPENSE' || Number(o.amount) < 0)
-                .reduce((s: number, o: any) => s + Math.abs(Number(o.amount || 0)), 0);
+            const daySalesDeliveries = daySales.map((s: any) => s.deliveryNumber).filter(Boolean);
+            const dayTraceRows = weeklyTraceability.filter((t: any) => daySalesDeliveries.includes(t['NOMOR SJ']));
 
-            let dayHPP = 0;
-            daySales.forEach((s: any) => {
-                const isPKP = s.isPKP || Number(s.taxRate || 0) > 0 || String(s.invoiceNumber || '').includes('TRN');
-                const taxMultiplier = 1 + (isPKP ? 0.11 : 0);
-                (s.items || []).forEach((item: any) => {
-                    const qty = Number(item.quantity || 0);
-                    if (item.lotAllocations && item.lotAllocations.length > 0) {
-                        item.lotAllocations.forEach((alloc: any) => {
-                            dayHPP += Number(alloc.qty || 0) * Math.round(Number(alloc.hppAtTime || 0) * taxMultiplier);
-                        });
-                    } else {
-                        dayHPP += qty * Math.round(Number(item.product?.purchasePrice || 0) * taxMultiplier);
-                    }
-                });
-            });
+            let dayHPP = dayTraceRows.reduce((sum: number, t: any) => sum + Number(t['TOTAL BELI'] || 0), 0);
+            const linkedOpsExpense = dayTraceRows.reduce((sum: number, t: any) => sum + Number(t['OPS'] || 0), 0);
+
+            // General Ops that occurred today (unlinked)
+            const generalOps = dayOps.filter((o: any) => 
+                (o.transactionType === 'PAYMENT' || o.transactionType === 'EXPENSE' || Number(o.amount) < 0) && !o.invoiceNumber
+            ).reduce((s: number, o: any) => s + Math.abs(Number(o.amount || 0)), 0);
+
+            const opsExpense = generalOps + linkedOpsExpense;
             const dayGrossProfit = salesTotal - dayHPP;
             const dayMarginPct = salesTotal > 0 ? (dayGrossProfit / salesTotal * 100) : 0;
 
@@ -1214,26 +1197,9 @@ export async function getComprehensiveWeeklyReportService(weekStartDate?: string
         // Totals
         const totalSales = sales.reduce((s: number, d: any) => s + Number(d.grandTotal || 0), 0);
         const totalPurchases = purchases.reduce((s: number, d: any) => s + Number(d.grandTotal || 0), 0);
-        const totalExpenses = operational
-            .filter((o: any) => o.transactionType === 'PAYMENT' || o.transactionType === 'EXPENSE' || Number(o.amount) < 0)
-            .reduce((s: number, o: any) => s + Math.abs(Number(o.amount || 0)), 0);
-
-        // Calculate HPP of items sold
-        let totalHPP = 0;
-        sales.forEach((s: any) => {
-            const isPKP = s.isPKP || Number(s.taxRate || 0) > 0 || String(s.invoiceNumber || '').includes('TRN');
-            const taxMultiplier = 1 + (isPKP ? 0.11 : 0);
-            (s.items || []).forEach((item: any) => {
-                const qty = Number(item.quantity || 0);
-                if (item.lotAllocations && item.lotAllocations.length > 0) {
-                    item.lotAllocations.forEach((alloc: any) => {
-                        totalHPP += Number(alloc.qty || 0) * Math.round(Number(alloc.hppAtTime || 0) * taxMultiplier);
-                    });
-                } else {
-                    totalHPP += qty * Math.round(Number(item.product?.purchasePrice || 0) * taxMultiplier);
-                }
-            });
-        });
+        
+        const totalHPP = dailyBreakdown.reduce((sum: number, d: any) => sum + Number(d.hpp || 0), 0);
+        const totalExpenses = dailyBreakdown.reduce((sum: number, d: any) => sum + Number(d.opsExpense || 0), 0);
 
         const grossProfit = totalSales - totalHPP;
         const netProfit = grossProfit - totalExpenses;
