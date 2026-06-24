@@ -461,6 +461,31 @@ export function ReportsDashboard() {
                 'Margin': d.sales - d.hpp - d.opsExpense
             }));
             XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Breakdown Harian');
+
+            // Traceability Mingguan
+            if (data.details?.weeklyTraceability?.length) {
+                const traceRows = data.details.weeklyTraceability.map((r: any) => ({
+                    'No.': r.NO,
+                    'Barcode': r.BARCODE,
+                    'Nama Item': r['NAMA BARANG'],
+                    'Supplier': r['NAMA SUPPLIER'],
+                    'No. LPB': r['NOMOR LPB'],
+                    'Tgl Beli': r['TANGGAL BELI'],
+                    'Qty Beli': r['QTY BELI'],
+                    'Total Beli (HPP)': r['TOTAL BELI (HPP)'],
+                    'Ops': r.OPS,
+                    'Buyer': r.BUYER,
+                    'Sales': r.SALES,
+                    'No. Faktur Penjualan': r['NOMOR FAKTUR PENJUALAN'],
+                    'No. Surat Jalan': r['NOMOR SURAT JALAN'],
+                    'Tgl Jual': r['TANGGAL JUAL'],
+                    'Qty Jual': r['QTY JUAL'],
+                    'Total Jual (Net)': r['TOTAL JUAL'],
+                    'Margin': r.MARGIN,
+                    'Margin %': r.MARGIN_PCT ? `${r.MARGIN_PCT}%` : '0%'
+                }));
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(traceRows), 'Traceability Mingguan');
+            }
             if (data.topBuyers?.length)
                 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data.topBuyers), 'Top Buyer');
             if (data.topSuppliers?.length)
@@ -1320,6 +1345,51 @@ function WeeklyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix }
                 isClient={isClient}
                 actions={divisionFilterSelect}
             />
+
+            {/* Traceability Mingguan */}
+            {data.details?.weeklyTraceability?.length > 0 && (
+                <ReportTable
+                    title="Traceability Mingguan" icon={<FileSpreadsheet className="h-4 w-4 text-emerald-500" />}
+                    count={data.details.weeklyTraceability.length}
+                    totalLabel="Margin Traceability"
+                    totalValue={isClient ? (() => {
+                        const totalJual = data.details.weeklyTraceability.reduce((sum: number, r: any) => sum + Number(r['TOTAL JUAL'] || 0), 0);
+                        const totalMargin = data.details.weeklyTraceability.reduce((sum: number, r: any) => sum + Number(r.MARGIN || 0), 0);
+                        const marginPct = totalJual > 0 ? (totalMargin / totalJual * 100) : 0;
+                        return `${formatCurrency(totalMargin)} (${marginPct.toFixed(1)}%)`;
+                    })() : '...'}
+                    exportData={{
+                        filename: 'traceability-mingguan',
+                        data: data.details.weeklyTraceability
+                    }}
+                    headers={['No.', 'Barcode', 'Nama Item', 'Supplier', 'No. LPB', 'Tgl Beli', 'Qty Beli', 'Total Beli (HPP)', 'Ops', 'Buyer', 'Sales', 'No. Faktur Penjualan', 'No. Surat Jalan', 'Tgl Jual', 'Qty Jual', 'Total Jual (Net)', 'Margin', 'Margin %']}
+                    rows={data.details.weeklyTraceability.map((row: any) => [
+                        <span className="font-bold">{row.NO}</span>,
+                        row.BARCODE,
+                        <span className="font-black text-slate-900 truncate max-w-[200px] block" title={row['NAMA BARANG']}>{row['NAMA BARANG']}</span>,
+                        <span className="truncate max-w-[130px] block" title={row['NAMA SUPPLIER']}>{row['NAMA SUPPLIER']}</span>,
+                        <span className="font-semibold">{row['NOMOR LPB']}</span>,
+                        row['TANGGAL BELI'],
+                        row['QTY BELI'],
+                        <span className="tabular-nums text-rose-600">{isClient ? formatCurrency(row['TOTAL BELI (HPP)']) : '...'}</span>,
+                        <span className="tabular-nums text-amber-600">{isClient ? formatCurrency(row.OPS || 0) : '...'}</span>,
+                        <span className="font-semibold truncate max-w-[130px] block" title={row.BUYER}>{row.BUYER}</span>,
+                        row.SALES,
+                        <span className="font-semibold text-xs">{row['NOMOR FAKTUR PENJUALAN']}</span>,
+                        <span className="font-semibold text-xs text-slate-500">{row['NOMOR SURAT JALAN']}</span>,
+                        row['TANGGAL JUAL'],
+                        row['QTY JUAL'],
+                        <span className="tabular-nums font-black text-blue-600">{isClient ? formatCurrency(row['TOTAL JUAL']) : '...'}</span>,
+                        <span className={cn("tabular-nums font-black", Number(row.MARGIN) >= 0 ? "text-emerald-600" : "text-rose-600")}>
+                            {isClient ? formatCurrency(row.MARGIN) : '...'}
+                        </span>,
+                        <span className={cn("tabular-nums font-black", Number(row.MARGIN) >= 0 ? "text-emerald-600" : "text-rose-600")}>
+                            {isClient ? `${row.MARGIN_PCT || 0}%` : '...'}
+                        </span>
+                    ])}
+                    isClient={isClient}
+                />
+            )}
 
             {/* Top Buyers + Top Suppliers */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

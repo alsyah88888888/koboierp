@@ -1065,7 +1065,7 @@ export async function getComprehensiveWeeklyReportService(weekStartDate?: string
     endDate.setHours(23, 59, 59, 999);
 
     try {
-        const [sales, purchases, operational, stockMovements] = await Promise.all([
+        const [sales, purchases, operational, stockMovements, weeklyTraceability] = await Promise.all([
             (prisma as any).salesDelivery.findMany({
                 where: { 
                     isVoid: false, 
@@ -1111,7 +1111,8 @@ export async function getComprehensiveWeeklyReportService(weekStartDate?: string
                 where: { createdAt: { gte: startDate, lte: endDate } },
                 include: { product: { select: { sku: true, name: true } } },
                 orderBy: { createdAt: 'asc' }
-            })
+            }),
+            calculateProductTraceabilityInternal(startDate, endDate, prefix).catch(() => [])
         ]);
 
         // Build daily breakdown for the 7 days
@@ -1288,6 +1289,9 @@ export async function getComprehensiveWeeklyReportService(weekStartDate?: string
             staffActivity: {
                 finance: Array.from(financeActivity.values()),
                 warehouse: Array.from(warehouseActivity.values())
+            },
+            details: {
+                weeklyTraceability
             },
             period: {
                 start: startDate.toISOString(),
