@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { callAction } from "@/proxy";
 
 import { Plus, Trash2, X, ClipboardList, Calculator } from "lucide-react";
@@ -34,21 +34,19 @@ export function PurchaseRequestModal({
     const [purchaseSearch, setPurchaseSearch] = useState("");
 
     // Fetch refs on mount
-    import("react").then(({ useEffect }) => {
-        useEffect(() => {
-            const loadRefs = async () => {
-                try {
-                    const sRes = await callAction("getRecentSalesReferences");
-                    if (Array.isArray(sRes)) setSalesRefs(sRes);
-                    const pRes = await callAction("getRecentPurchaseReferences");
-                    if (Array.isArray(pRes)) setPurchaseRefs(pRes);
-                } catch (err) {
-                    console.error("Error loading refs:", err);
-                }
-            };
-            loadRefs();
-        }, []);
-    });
+    useEffect(() => {
+        const loadRefs = async () => {
+            try {
+                const sRes = await callAction("getRecentSalesReferences");
+                if (Array.isArray(sRes)) setSalesRefs(sRes);
+                const pRes = await callAction("getRecentPurchaseReferences");
+                if (Array.isArray(pRes)) setPurchaseRefs(pRes);
+            } catch (err) {
+                console.error("Error loading refs:", err);
+            }
+        };
+        loadRefs();
+    }, []);
 
     const filteredSalesRefs = salesRefs.filter(r => 
         (r.invoiceNumber || "").toLowerCase().includes(salesSearch.toLowerCase()) || 
