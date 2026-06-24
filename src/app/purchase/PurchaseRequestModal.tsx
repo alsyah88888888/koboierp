@@ -26,6 +26,40 @@ export function PurchaseRequestModal({
     const [invoiceNumber, setInvoiceNumber] = useState(initialPr?.invoiceNumber || "");
     const [receiptNumber, setReceiptNumber] = useState(initialPr?.receiptNumber || "");
     const [notes, setNotes] = useState(initialPr?.notes || "");
+    const [salesRefs, setSalesRefs] = useState<any[]>([]);
+    const [purchaseRefs, setPurchaseRefs] = useState<any[]>([]);
+    const [isSalesDropdownOpen, setIsSalesDropdownOpen] = useState(false);
+    const [isPurchaseDropdownOpen, setIsPurchaseDropdownOpen] = useState(false);
+    const [salesSearch, setSalesSearch] = useState("");
+    const [purchaseSearch, setPurchaseSearch] = useState("");
+
+    // Fetch refs on mount
+    import("react").then(({ useEffect }) => {
+        useEffect(() => {
+            const loadRefs = async () => {
+                try {
+                    const sRes = await callAction("getRecentSalesReferences");
+                    if (Array.isArray(sRes)) setSalesRefs(sRes);
+                    const pRes = await callAction("getRecentPurchaseReferences");
+                    if (Array.isArray(pRes)) setPurchaseRefs(pRes);
+                } catch (err) {
+                    console.error("Error loading refs:", err);
+                }
+            };
+            loadRefs();
+        }, []);
+    });
+
+    const filteredSalesRefs = salesRefs.filter(r => 
+        (r.invoiceNumber || "").toLowerCase().includes(salesSearch.toLowerCase()) || 
+        (r.buyerName || "").toLowerCase().includes(salesSearch.toLowerCase())
+    ).slice(0, 50);
+
+    const filteredPurchaseRefs = purchaseRefs.filter(r => 
+        (r.receiptNumber || "").toLowerCase().includes(purchaseSearch.toLowerCase()) || 
+        (r.supplierName || "").toLowerCase().includes(purchaseSearch.toLowerCase())
+    ).slice(0, 50);
+
     const [items, setItems] = useState<RequestItem[]>(
         initialPr?.items?.length > 0 
             ? initialPr.items.map((i: any) => ({
