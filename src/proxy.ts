@@ -49,6 +49,9 @@ export async function callAction(actionName: string, ...args: any[]) {
         case "deleteSalesOrder":
             const { deleteSalesOrderAction } = await import("@/actions/sales");
             return await deleteSalesOrderAction(...args as [string]);
+        case "getAvailableLotsForProductAction":
+            const { getAvailableLotsForProductAction } = await import("@/actions/sales");
+            return await getAvailableLotsForProductAction(...args as [string, string?]);
 
         // FINANCE
         case "createFinanceTransaction":
