@@ -588,6 +588,43 @@ export async function updateSalesDeliveryService(id: string, data: any, userId: 
         if (updatedDelivery) {
             for (const sdItem of updatedDelivery.items) {
                 let remaining = sdItem.quantity;
+
+                // Match with data.items to get selectedLotId
+                const inputItem = data.items.find((i: any) => i.productId === sdItem.productId && !i._allocatedLotFlagUpdate);
+                if (inputItem) {
+                    inputItem._allocatedLotFlagUpdate = true;
+                }
+
+                // 1. Prioritize manual Lot selection if provided
+                if (inputItem && inputItem.selectedLotId && remaining > 0) {
+                    const specificLot = await tx.productLot.findUnique({
+                        where: { id: inputItem.selectedLotId }
+                    });
+
+                    if (specificLot && specificLot.remainingQty > 0 && !specificLot.isVoided) {
+                        const consume = Math.min(remaining, specificLot.remainingQty);
+                        
+                        await tx.lotAllocation.create({
+                            data: {
+                                lotId: specificLot.id,
+                                sdItemId: sdItem.id,
+                                qty: consume,
+                                hppAtTime: specificLot.landedCost ?? specificLot.purchasePrice
+                            }
+                        });
+
+                        await tx.productLot.update({
+                            where: { id: specificLot.id },
+                            data: { remainingQty: { decrement: consume } }
+                        });
+
+                        remaining -= consume;
+                    }
+                }
+
+                if (remaining <= 0) continue;
+
+                // 2. Get available lots for this product, FIFO order (oldest first)
                  const availableLots = await tx.productLot.findMany({
                     where: {
                         productId: sdItem.productId,
