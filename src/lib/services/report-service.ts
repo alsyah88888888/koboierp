@@ -85,7 +85,7 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
                 select: {
                     receiptNumber: true, paymentStatus: true, salesPerson: true,
                     formNumber: true, taxInvoiceDate: true, taxInvoiceNumber: true,
-                    totalDiscount: true
+                    totalDiscount: true, taxRate: true
                 }
             })
             : [];
@@ -103,7 +103,7 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
                 orderBy: { id: 'desc' }, // Latest GRs first
                 include: { 
                     receipt: { 
-                        select: { receiptNumber: true, date: true, receivedFrom: true } 
+                        select: { receiptNumber: true, date: true, receivedFrom: true, taxRate: true } 
                     } 
                 }
             });
@@ -165,12 +165,14 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
                     // Jika fifoLot berasal dari predictive fallback, pastikan kita format infonya
                     const grInfo  = fifoLot?.grNumber ? (grMapA.get(fifoLot.grNumber) || fifoLot.receipt || {}) : {};
                     const hpp     = alloc ? Number(alloc.hppAtTime || fifoLot?.purchasePrice || 0) : Number(fifoLot?.purchasePrice || sdItem.product.purchasePrice || 0);
+                    const purchaseTaxRate = Number(grInfo.taxRate || 0);
+                    const hppWithTax = Math.round(hpp * (1 + purchaseTaxRate / 100));
                     const qty     = alloc ? alloc.qty : sdItem.quantity;
                     
                     const displayNamaItem = isMultiLot ? `${namaItem} (Batch: ${qty} dr ${sdItem.quantity})` : namaItem;
 
                     const sellPriceWithTax = Math.round(sellPrice * (1 + taxRate / 100));
-                    const totalBeli = Math.round(hpp * qty);
+                    const totalBeli = Math.round(hppWithTax * qty);
                     
                     // Hitung diskon proporsional untuk alokasi lot ini (nominal diskon garis dibagi per kuantitas)
                     const allocDiscount = sdItem.quantity > 0 
@@ -206,7 +208,7 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
                         'NOMOR LPB'        : fifoLot?.grNumber || '-',
                         'NAMA SUPPLIER'    : fifoLot?.supplierName || '-',
                         'QTY BELI'         : qty,
-                        'HARGA BELI'       : Math.round(hpp),
+                        'HARGA BELI'       : Math.round(hppWithTax),
                         'OPS'              : rowOps,
                         'TOTAL BELI'       : totalBeli,
                         'F. PAJAK'         : fmtDate(grInfo.taxInvoiceDate),
