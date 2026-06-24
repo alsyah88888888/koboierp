@@ -449,11 +449,16 @@ export function ReportsDashboard() {
 
         if (activeTab === 'weekly' && data.dailyBreakdown) {
             const rows = data.dailyBreakdown.map((d: any) => ({
-                'Tanggal': d.dateLabel, 'Hari': d.dayName,
-                'Penjualan': d.sales, 'HPP': d.hpp, 'Margin %': `${d.marginPct?.toFixed(1) || 0}%`,
-                'Pembelian': d.purchases, 'Biaya Ops': d.opsExpense,
-                'Jml SJ': d.salesCount, 'Jml LPB': d.purchaseCount,
-                'Qty Jual': d.salesQty, 'Qty Beli': d.purchaseQty
+                'Hari': d.dayName,
+                'Tanggal': d.dateLabel,
+                'Pembelian': d.purchases,
+                'Penjualan': d.sales,
+                'Ops': d.opsExpense,
+                'Jumlah Surat Pembelian': d.purchaseCount,
+                'Jumlah Surat Penjualan': d.salesCount,
+                'Qty Jual': d.salesQty,
+                'Qty Beli': d.purchaseQty,
+                'Margin': d.sales - d.hpp
             }));
             XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Breakdown Harian');
             if (data.topBuyers?.length)
@@ -1297,21 +1302,20 @@ function WeeklyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix }
             <ReportTable
                 title="Breakdown Harian" icon={<Calendar className="h-4 w-4 text-blue-500" />}
                 count={breakdown.length}
-                headers={['Hari', 'Tanggal', 'Penjualan', 'HPP', 'Margin %', 'Pembelian', 'Ops', 'SJ', 'LPB', 'Qty Jual', 'Qty Beli']}
+                headers={['Hari', 'Tanggal', 'Pembelian', 'Penjualan', 'Ops', 'Jumlah Surat Pembelian', 'Jumlah Surat Penjualan', 'Qty Jual', 'Qty Beli', 'Margin']}
                 rows={breakdown.map((row: any) => [
                     <span className="font-black">{row.dayName}</span>,
                     row.dateLabel,
-                    <span className="tabular-nums font-black text-blue-600">{isClient ? formatCurrency(row.sales) : '...'}</span>,
-                    <span className="tabular-nums text-rose-600">{isClient ? formatCurrency(row.hpp) : '...'}</span>,
-                    <span className={cn("tabular-nums font-black", (row.sales - row.hpp) >= 0 ? "text-emerald-600" : "text-rose-600")}>
-                        {isClient ? `${row.marginPct?.toFixed(1) || 0}%` : '...'}
-                    </span>,
                     <span className="tabular-nums font-black text-emerald-600">{isClient ? formatCurrency(row.purchases) : '...'}</span>,
+                    <span className="tabular-nums font-black text-blue-600">{isClient ? formatCurrency(row.sales) : '...'}</span>,
                     <span className="tabular-nums text-amber-600">{isClient ? formatCurrency(row.opsExpense) : '...'}</span>,
-                    <span className="tabular-nums font-black">{row.salesCount}</span>,
                     <span className="tabular-nums font-black">{row.purchaseCount}</span>,
+                    <span className="tabular-nums font-black">{row.salesCount}</span>,
                     <span className="tabular-nums">{row.salesQty}</span>,
-                    <span className="tabular-nums">{row.purchaseQty}</span>
+                    <span className="tabular-nums">{row.purchaseQty}</span>,
+                    <span className={cn("tabular-nums font-black", (row.sales - row.hpp) >= 0 ? "text-emerald-600" : "text-rose-600")}>
+                        {isClient ? formatCurrency(row.sales - row.hpp) : '...'}
+                    </span>
                 ])}
                 isClient={isClient}
                 actions={divisionFilterSelect}
