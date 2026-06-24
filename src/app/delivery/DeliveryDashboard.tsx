@@ -41,6 +41,7 @@ export default function DeliveryDashboard({
     const [showVoidModal, setShowVoidModal] = useState(false);
     const [voidId, setVoidId] = useState<string | null>(null);
 
+    const [selectedDate, setSelectedDate] = useState<string>("");
     const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
     const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
 
@@ -76,14 +77,15 @@ export default function DeliveryDashboard({
     // Filter deliveries
     const filteredDeliveries = initialDeliveries.filter(d => {
         const dDate = new Date(d.createdAt);
-        const matchesMonth = (dDate.getMonth() + 1) === selectedMonth;
-        const matchesYear = dDate.getFullYear() === selectedYear;
+        const matchesMonth = selectedDate ? true : (dDate.getMonth() + 1) === selectedMonth;
+        const matchesYear = selectedDate ? true : dDate.getFullYear() === selectedYear;
+        const matchesDate = selectedDate ? format(dDate, 'yyyy-MM-dd') === selectedDate : true;
         const matchesSearch = d.deliveryNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
                              d.recipient.toLowerCase().includes(searchTerm.toLowerCase()) ||
                              d.buyerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                              (d.poNumber && d.poNumber.toLowerCase().includes(searchTerm.toLowerCase())) ||
                              (d.invoiceNumber && d.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()));
-        return matchesMonth && matchesYear && matchesSearch;
+        return matchesMonth && matchesYear && matchesDate && matchesSearch;
     });
 
     // Stats calculations
@@ -254,6 +256,12 @@ export default function DeliveryDashboard({
                 </div>
 
                 <div className="flex items-center gap-2">
+                    <input 
+                        type="date"
+                        value={selectedDate}
+                        onChange={(e) => setSelectedDate(e.target.value)}
+                        className="px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-black uppercase tracking-widest outline-none focus:bg-white focus:border-primary transition-all text-slate-500"
+                    />
                     <select
                         value={selectedMonth}
                         onChange={e => setSelectedMonth(Number(e.target.value))}

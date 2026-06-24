@@ -114,17 +114,19 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, initialRequ
         }
     };
 
+    const [selectedDate, setSelectedDate] = useState<string>("");
     const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
     const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
 
     const filteredReceipts = initialReceipts.filter(r => {
         const rDate = new Date(r.date || r.createdAt);
-        const matchesMonth = (rDate.getMonth() + 1) === selectedMonth;
-        const matchesYear = rDate.getFullYear() === selectedYear;
+        const matchesMonth = selectedDate ? true : (rDate.getMonth() + 1) === selectedMonth;
+        const matchesYear = selectedDate ? true : rDate.getFullYear() === selectedYear;
+        const matchesDate = selectedDate ? format(rDate, 'yyyy-MM-dd') === selectedDate : true;
         const matchesSearch = r.receiptNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                              r.receivedFrom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                              r.formNumber?.toLowerCase().includes(searchTerm.toLowerCase());
-        return matchesMonth && matchesYear && matchesSearch;
+        return matchesMonth && matchesYear && matchesDate && matchesSearch;
     });
 
     const handleExport = () => {
@@ -365,6 +367,12 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, initialRequ
                     </div>
                     <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
                         <div className="flex items-center gap-2 w-full md:w-auto">
+                            <input 
+                                type="date"
+                                value={selectedDate}
+                                onChange={(e) => setSelectedDate(e.target.value)}
+                                className="w-full md:w-auto px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-2xl text-xs font-black uppercase tracking-widest focus:outline-none focus:border-primary transition-all text-slate-500"
+                            />
                             <select 
                                 value={selectedMonth}
                                 onChange={(e) => setSelectedMonth(Number(e.target.value))}

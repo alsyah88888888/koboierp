@@ -42,6 +42,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
     const [isClient, setIsClient] = useState(false);
     const [showVoidModal, setShowVoidModal] = useState(false);
     const [voidId, setVoidId] = useState<string | null>(null);
+    const [selectedDate, setSelectedDate] = useState<string>("");
     const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
     const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
 
@@ -167,15 +168,16 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
 
     const filteredDeliveries = initialDeliveries.filter(d => {
         const dDate = new Date(d.createdAt);
-        const matchesMonth = (dDate.getMonth() + 1) === selectedMonth;
-        const matchesYear = dDate.getFullYear() === selectedYear;
+        const matchesMonth = selectedDate ? true : (dDate.getMonth() + 1) === selectedMonth;
+        const matchesYear = selectedDate ? true : dDate.getFullYear() === selectedYear;
+        const matchesDate = selectedDate ? format(dDate, 'yyyy-MM-dd') === selectedDate : true;
         const piNum = d.order?.proformaNumber || (d.order?.orderNumber?.startsWith("KB-PI-") ? d.order.orderNumber : null);
         const matchesSearch = d.deliveryNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
                              d.recipient.toLowerCase().includes(searchTerm.toLowerCase()) ||
                              d.buyerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                              (d.invoiceNumber && d.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase())) ||
                              (piNum && piNum.toLowerCase().includes(searchTerm.toLowerCase()));
-        return matchesMonth && matchesYear && matchesSearch;
+        return matchesMonth && matchesYear && matchesDate && matchesSearch;
     });
 
     const handleExportXMLCoretax = async () => {
@@ -628,6 +630,12 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                     </div>
                     <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
                         <div className="flex items-center gap-2 w-full md:w-auto">
+                            <input 
+                                type="date"
+                                value={selectedDate}
+                                onChange={(e) => setSelectedDate(e.target.value)}
+                                className="w-full md:w-auto px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-2xl text-xs font-black uppercase tracking-widest focus:outline-none focus:border-primary transition-all text-slate-500"
+                            />
                             <select 
                                 value={selectedMonth}
                                 onChange={(e) => setSelectedMonth(Number(e.target.value))}
@@ -741,6 +749,11 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                                                 <Link href={`/sales/print/${d.id}`} className="p-2.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all" title="Cetak Penjualan">
                                                     <Printer className="h-4 w-4" />
                                                 </Link>
+                                                {!d.isVoid && (
+                                                    <button onClick={() => { setEditData(d); setShowSalesModal(true); }} className="p-2.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-all" title="Edit Transaksi">
+                                                        <Edit2 className="h-4 w-4" />
+                                                    </button>
+                                                )}
                                                 {d.isVoid && (
                                                     <div className="px-3 py-1 bg-slate-100 text-slate-400 text-[8px] font-black italic rounded-lg" title={d.voidReason}>
                                                         VOIDED: {d.voidReason}
