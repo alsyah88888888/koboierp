@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { X, Plus, Trash2, Loader2, Save, Tag, ShoppingCart, FileCheck, Search, Truck, FileText, Eye } from "lucide-react";
 import { callAction } from "@/proxy";
 
@@ -17,6 +17,7 @@ interface SalesItem {
     uom: string;
     vendorName: string;
     orderItemId?: string;
+    selectedLotId?: string;
 }
 
 export default function SalesModal({ products, warehouses, customers, orders = [], onClose, initialData }: { products: any[], warehouses: any[], customers: any[], orders?: any[], onClose: () => void, initialData?: any }) {
@@ -46,6 +47,8 @@ export default function SalesModal({ products, warehouses, customers, orders = [
     const [taxRate, setTaxRate] = useState<number | "">(0);
     const [isPKP, setIsPKP] = useState(false); // false = Non-PKP (KB-TRD), true = PKP (KB-TRN)
     const [result, setResult] = useState<any>(null);
+    const [lotsCache, setLotsCache] = useState<Record<string, any[]>>({});
+    const fetchedLotsRef = useRef<Set<string>>(new Set());
 
     // Helper to parse Indonesian numbers (remove dots, replace comma with dot)
     const parseIndoNumber = (val: string | number): number => {
@@ -95,6 +98,22 @@ export default function SalesModal({ products, warehouses, customers, orders = [
         }
     }, [initialData]);
 
+    useEffect(() => {
+        items.forEach(async (item) => {
+            if (item.productId && !fetchedLotsRef.current.has(item.productId)) {
+                fetchedLotsRef.current.add(item.productId);
+                try {
+                    const lots = await callAction("getAvailableLotsForProductAction", item.productId);
+                    if (!lots?.error) {
+                        setLotsCache(prev => ({ ...prev, [item.productId]: lots }));
+                    }
+                } catch (e) {
+                    console.error(e);
+                }
+            }
+        });
+    }, [items]);
+
     const addItem = () => setItems([...items, { productId: "", sku: "", quantity: 1, salesPrice: 0, discount: 0, discountPercent: "", uom: "", vendorName: "UMUM" }]);
     const removeItem = (index: number) => setItems(items.filter((_, i) => i !== index));
 
@@ -136,6 +155,15 @@ export default function SalesModal({ products, warehouses, customers, orders = [
             const price = parseIndoNumber(newItems[index].salesPrice);
             const gross = qty * price;
             newItems[index].discount = Math.round(gross * (numVal / 100));
+        } else if (field === 'sourceLpb') {
+            const lot = lotsCache[newItems[index].productId]?.find((l: any) => l.id === value);
+            if (lot) {
+                newItems[index].selectedLotId = value;
+                newItems[index].vendorName = lot.supplierName || "UMUM";
+            } else {
+                newItems[index].selectedLotId = "";
+                newItems[index].vendorName = value; // fallback to vendorName
+            }
         } else {
             (newItems[index] as any)[field] = value;
         }
@@ -276,7 +304,8 @@ export default function SalesModal({ products, warehouses, customers, orders = [
                     discount: parseIndoNumber(i.discount || 0),
                     uom: i.uom,
                     vendorName: i.vendorName,
-                    orderItemId: i.orderItemId
+                    orderItemId: i.orderItemId,
+                    selectedLotId: i.selectedLotId
                 }))
             };
 
@@ -502,7 +531,7 @@ export default function SalesModal({ products, warehouses, customers, orders = [
 
                         <div className="hidden lg:flex items-center gap-4 px-4 py-2.5 bg-slate-100/80 rounded-xl text-[9px] font-black uppercase text-slate-500 tracking-widest border border-slate-200">
                             <div className="flex-[4] min-w-0">Product / SKU</div>
-                            <div className="flex-[2] min-w-0">Source / Vendor</div>
+                            <div className="flex-[3] min-w-0">Source LPB / Vendor</div>
                             <div className="w-16 text-center">Qty</div>
                             <div className="flex-[2] text-right pr-4">Price</div>
                             {showDiscount && <div className="w-16 text-right pr-2">Disc</div>}
@@ -551,21 +580,32 @@ export default function SalesModal({ products, warehouses, customers, orders = [
                                         </div>
                                     </div>
 
-                                    <div className="w-full lg:flex-[2] min-w-0">
-                                        <label className="lg:hidden text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Vendor</label>
+                                    <div className="w-full lg:flex-[3] min-w-0">
+                                        <label className="lg:hidden text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Source LPB</label>
                                         <select
-                                            value={item.vendorName}
-                                            onChange={e => updateItem(index, 'vendorName', e.target.value)}
+                                            value={item.selectedLotId || item.vendorName || ""}
+                                            onChange={e => updateItem(index, 'sourceLpb', e.target.value)}
                                             className="w-full lg:bg-white border border-slate-200 lg:border-slate-100 px-2 py-1.5 rounded-lg lg:rounded-md text-[11px] font-bold outline-none focus:border-primary"
                                             required
                                         >
-                                            <option value="">Vendor</option>
-                                            {item.productId && Array.isArray(products) && products.find(p => p.id === item.productId)?.stocks?.map((s: any) => (
-                                                <option key={s.id} value={s.vendorName}>
-                                                    {s.vendorName} ({s.quantity})
-                                                </option>
-                                            ))}
-                                            {!item.productId && <option value="UMUM">UMUM</option>}
+                                            <option value="">Pilih Sumber...</option>
+                                            {item.productId && lotsCache[item.productId] && lotsCache[item.productId].length > 0 && (
+                                                <optgroup label="Dari Pembelian (LPB)">
+                                                    {lotsCache[item.productId].map((lot: any) => (
+                                                        <option key={lot.id} value={lot.id}>
+                                                            {lot.grNumber} ({lot.remainingQty} {item.uom}) - {lot.supplierName}
+                                                        </option>
+                                                    ))}
+                                                </optgroup>
+                                            )}
+                                            <optgroup label="Vendor Default">
+                                                {item.productId && Array.isArray(products) && products.find(p => p.id === item.productId)?.stocks?.map((s: any) => (
+                                                    <option key={`vendor-${s.vendorName}`} value={s.vendorName}>
+                                                        {s.vendorName} (Stok: {s.quantity})
+                                                    </option>
+                                                ))}
+                                                {!item.productId && <option value="UMUM">UMUM</option>}
+                                            </optgroup>
                                         </select>
                                     </div>
 

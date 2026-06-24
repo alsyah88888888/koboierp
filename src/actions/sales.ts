@@ -589,3 +589,43 @@ export async function deleteSalesOrderAction(id: string) {
         return { error: err.message || "Failed to delete sales order." };
     }
 }
+
+export async function getAvailableLotsForProductAction(productId: string) {
+    try {
+        const { getAuthOptions } = require("@/lib/auth");
+        const { getServerSession } = require("next-auth");
+        const { getPrisma } = require("@/lib/prisma");
+        const prisma = getPrisma();
+
+        const session = (await getServerSession(getAuthOptions())) as any;
+        if (!session?.user?.id) throw new Error("Unauthorized");
+
+        const availableLots = await prisma.productLot.findMany({
+            where: {
+                productId: productId,
+                remainingQty: { gt: 0 },
+                isVoided: false
+            },
+            orderBy: { grDate: 'asc' },
+            select: {
+                id: true,
+                lotNumber: true,
+                grNumber: true,
+                grDate: true,
+                supplierName: true,
+                remainingQty: true,
+                purchasePrice: true
+            }
+        });
+
+        // Parse date for frontend if needed, Prisma usually returns DateTime object which needs to be serialized
+        return availableLots.map((lot: any) => ({
+            ...lot,
+            grDate: lot.grDate ? lot.grDate.toISOString() : null,
+            purchasePrice: Number(lot.purchasePrice)
+        }));
+    } catch (err: any) {
+        console.error("[getAvailableLotsForProductAction] ERROR:", err);
+        return { error: err.message || "Failed to fetch available lots." };
+    }
+}
