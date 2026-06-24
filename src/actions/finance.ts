@@ -418,7 +418,7 @@ export async function getRecentPurchaseReferencesAction() {
         }
     });
 
-    const results = receipts.map((d) => {
+    const results = receipts.map((d: any) => {
         return {
             receiptNumber: d.receiptNumber,
             supplierName: d.receivedFrom || "",
