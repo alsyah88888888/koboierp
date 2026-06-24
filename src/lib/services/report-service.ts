@@ -772,6 +772,7 @@ export async function getComprehensiveDailyReportService(date?: string, prefix?:
                 },
                 include: {
                     createdBy: { select: { name: true } },
+                    warehouse: { select: { name: true } },
                     items: {
                         include: {
                             product: { select: { sku: true, name: true, purchasePrice: true } },
@@ -970,6 +971,7 @@ export async function getComprehensiveDailyReportService(date?: string, prefix?:
                     return {
                         id: s.id, number: s.deliveryNumber, date: s.date,
                         buyer: s.buyerName || s.recipient, salesPerson: s.salesPerson,
+                        alamat: s.recipient, gudang: s.warehouse?.name,
                         subtotal: Number(s.subtotal || 0), discount: Number(s.totalDiscount || 0),
                         tax: Number(s.taxAmount || 0), grandTotal: Number(s.grandTotal || 0),
                         paidAmount: Number(s.paidAmount || 0), paymentStatus: s.paymentStatus,
