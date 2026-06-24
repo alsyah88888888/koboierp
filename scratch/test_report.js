@@ -1,14 +1,10 @@
-const { getPrisma } = require("./src/lib/prisma");
-const { getMonthlyClosingReportService } = require("./src/lib/services/report-service");
+const { getComprehensiveWeeklyReportService } = require('./src/lib/services/report-service.ts');
+require('ts-node').register();
+const service = require('./src/lib/services/report-service.ts');
 
-async function testReport() {
-    console.log("Testing Monthly Closing Report for May 2026...");
-    try {
-        const report = await getMonthlyClosingReportService(5, 2026);
-        console.log("Report Result:", JSON.stringify(report, null, 2));
-    } catch (err) {
-        console.error("Report Error:", err);
-    }
+async function main() {
+    const data = await service.getComprehensiveWeeklyReportService(null, 'ALL');
+    console.log(data.dailyBreakdown.map(d => ({ date: d.date, opsExpense: d.opsExpense })));
 }
 
-testReport();
+main().catch(console.error);
