@@ -377,6 +377,7 @@ export async function createSalesDeliveryService(data: any, userId: string) {
         revalidatePath("/sales");
         revalidatePath("/warehouse");
         revalidatePath("/finance");
+        revalidatePath("/reports");
         revalidatePath("/");
 
         return { success: true, deliveryNumber };
@@ -578,6 +579,7 @@ export async function updateSalesDeliveryService(id: string, data: any, userId: 
         revalidatePath("/sales");
         revalidatePath("/warehouse");
         revalidatePath("/finance");
+        revalidatePath("/reports");
         revalidatePath("/");
 
         // ─── FASE 3c: Re-allocate Lots for the updated items ────────────
