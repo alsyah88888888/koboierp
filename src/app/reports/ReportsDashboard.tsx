@@ -1371,7 +1371,7 @@ function WeeklyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix }
                         <span className="font-semibold">{row['NOMOR LPB']}</span>,
                         row['TANGGAL BELI'],
                         row['QTY BELI'],
-                        <span className="tabular-nums text-rose-600">{isClient ? formatCurrency(row['TOTAL BELI (HPP)']) : '...'}</span>,
+                        <span className="tabular-nums text-rose-600">{isClient ? formatCurrency(row['TOTAL BELI']) : '...'}</span>,
                         <span className="tabular-nums text-amber-600">{isClient ? formatCurrency(row.OPS || 0) : '...'}</span>,
                         <span className="font-semibold truncate max-w-[130px] block" title={row.BUYER}>{row.BUYER}</span>,
                         row.SALES,
