@@ -458,7 +458,7 @@ export function ReportsDashboard() {
                 'Jumlah Surat Penjualan': d.salesCount,
                 'Qty Jual': d.salesQty,
                 'Qty Beli': d.purchaseQty,
-                'Margin': d.sales - d.hpp
+                'Margin': d.sales - d.hpp - d.opsExpense
             }));
             XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Breakdown Harian');
             if (data.topBuyers?.length)
@@ -1313,8 +1313,8 @@ function WeeklyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix }
                     <span className="tabular-nums font-black">{row.salesCount}</span>,
                     <span className="tabular-nums">{row.salesQty}</span>,
                     <span className="tabular-nums">{row.purchaseQty}</span>,
-                    <span className={cn("tabular-nums font-black", (row.sales - row.hpp) >= 0 ? "text-emerald-600" : "text-rose-600")}>
-                        {isClient ? formatCurrency(row.sales - row.hpp) : '...'}
+                    <span className={cn("tabular-nums font-black", (row.sales - row.hpp - row.opsExpense) >= 0 ? "text-emerald-600" : "text-rose-600")}>
+                        {isClient ? formatCurrency(row.sales - row.hpp - row.opsExpense) : '...'}
                     </span>
                 ])}
                 isClient={isClient}
