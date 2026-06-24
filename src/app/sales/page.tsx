@@ -33,7 +33,7 @@ export default async function SalesPage() {
         where: userFilter,
         include: { 
             warehouse: true, 
-            items: { include: { product: true } },
+            items: { include: { product: true, lotAllocations: true } },
             order: true
         },
         orderBy: { createdAt: 'desc' }

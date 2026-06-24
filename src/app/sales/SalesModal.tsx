@@ -82,6 +82,7 @@ export default function SalesModal({ products, warehouses, customers, orders = [
 
                     return {
                         productId: i.productId,
+                        selectedLotId: i.lotAllocations?.[0]?.lotId || "",
                         sku: i.product?.sku || "",
                         quantity: i.quantity,
                         salesPrice: Number(i.salesPrice),
@@ -103,7 +104,7 @@ export default function SalesModal({ products, warehouses, customers, orders = [
             if (item.productId && !fetchedLotsRef.current.has(item.productId)) {
                 fetchedLotsRef.current.add(item.productId);
                 try {
-                    const lots = await callAction("getAvailableLotsForProductAction", item.productId);
+                    const lots = await callAction("getAvailableLotsForProductAction", item.productId, item.selectedLotId);
                     if (!lots?.error) {
                         setLotsCache(prev => ({ ...prev, [item.productId]: lots }));
                     }

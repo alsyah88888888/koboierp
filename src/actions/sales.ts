@@ -590,7 +590,7 @@ export async function deleteSalesOrderAction(id: string) {
     }
 }
 
-export async function getAvailableLotsForProductAction(productId: string) {
+export async function getAvailableLotsForProductAction(productId: string, includeLotId?: string) {
     try {
         const { getAuthOptions } = require("@/lib/auth");
         const { getServerSession } = require("next-auth");
@@ -603,8 +603,11 @@ export async function getAvailableLotsForProductAction(productId: string) {
         const availableLots = await prisma.productLot.findMany({
             where: {
                 productId: productId,
-                remainingQty: { gt: 0 },
-                isVoided: false
+                isVoided: false,
+                OR: [
+                    { remainingQty: { gt: 0 } },
+                    ...(includeLotId ? [{ id: includeLotId }] : [])
+                ]
             },
             orderBy: { grDate: 'asc' },
             select: {
