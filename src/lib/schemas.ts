@@ -15,6 +15,7 @@ export const SalesDeliverySchema = z.object({
     createdAt: z.date().optional().or(z.string().transform(val => new Date(val))),
     items: z.array(z.object({
         productId: z.string().min(1),
+        selectedLotId: z.string().optional(),
         quantity: z.coerce.number().positive("Jumlah harus lebih dari 0"),
         salesPrice: z.coerce.number().optional(),
         discount: z.coerce.number().optional(),
