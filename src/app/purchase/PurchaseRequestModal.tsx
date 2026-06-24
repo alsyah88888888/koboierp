@@ -23,6 +23,8 @@ export function PurchaseRequestModal({
     const [category, setCategory] = useState(initialPr?.category || "PEMBELIAN");
     const [date, setDate] = useState(initialPr?.date ? new Date(initialPr.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
     const [salesPerson, setSalesPerson] = useState(initialPr?.salesPerson || "UMUM");
+    const [invoiceNumber, setInvoiceNumber] = useState(initialPr?.invoiceNumber || "");
+    const [receiptNumber, setReceiptNumber] = useState(initialPr?.receiptNumber || "");
     const [notes, setNotes] = useState(initialPr?.notes || "");
     const [items, setItems] = useState<RequestItem[]>(
         initialPr?.items?.length > 0 
@@ -76,6 +78,8 @@ export function PurchaseRequestModal({
                 notes,
                 category,
                 salesPerson,
+                invoiceNumber: invoiceNumber || undefined,
+                receiptNumber: receiptNumber || undefined,
                 items: items.map(i => ({
                     itemName: i.itemName,
                     quantity: Number(i.quantity),
@@ -166,24 +170,51 @@ export function PurchaseRequestModal({
 
                     {/* Sales Person Selection for Operasional */}
                     {category === "OPERASIONAL" && (
-                        <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                            <label className="text-xs font-black uppercase tracking-widest text-slate-400">Klasifikasi Operasional</label>
-                            <div className="flex flex-wrap gap-3">
-                                {["BC", "PF", "UMUM"].map((sp) => (
-                                    <button
-                                        key={sp}
-                                        type="button"
-                                        onClick={() => setSalesPerson(sp)}
-                                        className={cn(
-                                            "px-6 py-3 rounded-xl border-2 font-black transition-all",
-                                            salesPerson === sp
-                                                ? "bg-slate-900 border-slate-900 text-white shadow-lg"
-                                                : "bg-white border-slate-100 text-slate-400 hover:border-slate-200"
-                                        )}
-                                    >
-                                        {sp}
-                                    </button>
-                                ))}
+                        <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                            <div className="space-y-2">
+                                <label className="text-xs font-black uppercase tracking-widest text-slate-400">Klasifikasi Operasional</label>
+                                <div className="flex flex-wrap gap-3">
+                                    {["BC", "PF", "UMUM"].map((sp) => (
+                                        <button
+                                            key={sp}
+                                            type="button"
+                                            onClick={() => setSalesPerson(sp)}
+                                            className={cn(
+                                                "px-6 py-3 rounded-xl border-2 font-black transition-all",
+                                                salesPerson === sp
+                                                    ? "bg-slate-900 border-slate-900 text-white shadow-lg"
+                                                    : "bg-white border-slate-100 text-slate-400 hover:border-slate-200"
+                                            )}
+                                        >
+                                            {sp}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-xs font-black uppercase tracking-widest text-slate-400">No. Penjualan / Invoice (Opsional)</label>
+                                <input
+                                    type="text"
+                                    placeholder="Cth: KB-TRD-01062026-004"
+                                    className="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-xl text-sm focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all outline-none"
+                                    value={invoiceNumber}
+                                    onChange={(e) => setInvoiceNumber(e.target.value)}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-xs font-black uppercase tracking-widest text-slate-400">No. LPB / Pembelian (Opsional)</label>
+                                <input
+                                    type="text"
+                                    placeholder="Cth: KB-LPBD-02062026-005"
+                                    className="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-xl text-sm focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all outline-none"
+                                    value={receiptNumber}
+                                    onChange={(e) => setReceiptNumber(e.target.value)}
+                                />
+                            </div>
+                            <div className="col-span-full">
+                                <p className="text-[10px] font-medium text-emerald-600 bg-emerald-50 p-3 rounded-lg border border-emerald-100 flex items-center gap-2">
+                                    <span className="text-sm">💡</span> Jika No. Penjualan atau LPB diisi, maka biaya pengajuan ini akan otomatis memotong margin barang di menu Traceability sebagai biaya "Ops".
+                                </p>
                             </div>
                         </div>
                     )}

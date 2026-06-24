@@ -35,6 +35,8 @@ export async function createPurchaseRequestService(data: any, userId: string) {
                 notes: data.notes,
                 category: data.category,
                 salesPerson: data.salesPerson,
+                invoiceNumber: data.invoiceNumber,
+                receiptNumber: data.receiptNumber,
                 items: {
                     create: data.items.map((i: any) => ({
                         itemName: i.itemName,
@@ -73,6 +75,8 @@ export async function updatePurchaseRequestService(id: string, data: any, userId
                 notes: data.notes,
                 category: data.category,
                 salesPerson: data.salesPerson,
+                invoiceNumber: data.invoiceNumber,
+                receiptNumber: data.receiptNumber,
                 updatedAt: new Date()
             }
         });
