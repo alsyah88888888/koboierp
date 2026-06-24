@@ -642,6 +642,9 @@ export async function executePurchaseRequestService(id: string, paymentData: any
                 description: `Payment for PR: ${pr.number} - ${pr.notes || ""}`,
                 amount: totalAmount,
                 category: pr.category,
+                salesPerson: pr.salesPerson,
+                invoiceNumber: pr.invoiceNumber,
+                receiptNumber: pr.receiptNumber,
                 createdById: userId
             }
         });
