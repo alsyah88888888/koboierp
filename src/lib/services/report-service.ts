@@ -391,6 +391,8 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
             totalRevenue += Number(s.grandTotal || 0);
             
             // For HPP, we calculate it proportionally to the quantity sold
+            const isPKP = s.isPKP || Number(s.taxRate || 0) > 0 || String(s.invoiceNumber || '').includes('TRN');
+            const taxMultiplier = 1 + (isPKP ? 0.11 : 0);
             (s.items || []).forEach((item: any) => {
                 const qty = Number(item.quantity || 0);
                 let unitCost = 0;
@@ -398,13 +400,13 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
                 // Priority 1: FIFO / Lot Allocation
                 if (item.lotAllocations && item.lotAllocations.length > 0) {
                     item.lotAllocations.forEach((alloc: any) => {
-                        unitCost = Number(alloc.hppAtTime || 0);
+                        unitCost = Math.round(Number(alloc.hppAtTime || 0) * taxMultiplier);
                         totalHpp += (Number(alloc.quantity || 0) * unitCost);
                     });
                 } 
                 else {
                     // Priority 2: Historical LPB Price or Master Price
-                    unitCost = priceMap[item.productId] || Number(item.product?.purchasePrice || 0);
+                    unitCost = Math.round((priceMap[item.productId] || Number(item.product?.purchasePrice || 0)) * taxMultiplier);
                     totalHpp += (qty * unitCost);
                 }
             });
@@ -885,14 +887,16 @@ export async function getComprehensiveDailyReportService(date?: string, prefix?:
         // Calculate HPP of items sold
         let totalHPP = 0;
         sales.forEach((s: any) => {
+            const isPKP = s.isPKP || Number(s.taxRate || 0) > 0 || String(s.invoiceNumber || '').includes('TRN');
+            const taxMultiplier = 1 + (isPKP ? 0.11 : 0);
             (s.items || []).forEach((item: any) => {
                 const qty = Number(item.quantity || 0);
                 if (item.lotAllocations && item.lotAllocations.length > 0) {
                     item.lotAllocations.forEach((alloc: any) => {
-                        totalHPP += Number(alloc.qty || 0) * Number(alloc.hppAtTime || 0);
+                        totalHPP += Number(alloc.qty || 0) * Math.round(Number(alloc.hppAtTime || 0) * taxMultiplier);
                     });
                 } else {
-                    totalHPP += qty * Number(item.product?.purchasePrice || 0);
+                    totalHPP += qty * Math.round(Number(item.product?.purchasePrice || 0) * taxMultiplier);
                 }
             });
         });
@@ -960,14 +964,16 @@ export async function getComprehensiveDailyReportService(date?: string, prefix?:
             details: {
                 sales: sales.map((s: any) => {
                     let saleHpp = 0;
+                    const isPKP = s.isPKP || Number(s.taxRate || 0) > 0 || String(s.invoiceNumber || '').includes('TRN');
+                    const taxMultiplier = 1 + (isPKP ? 0.11 : 0);
                     (s.items || []).forEach((item: any) => {
                         const qty = Number(item.quantity || 0);
                         if (item.lotAllocations && item.lotAllocations.length > 0) {
                             item.lotAllocations.forEach((alloc: any) => {
-                                saleHpp += Number(alloc.qty || 0) * Number(alloc.hppAtTime || 0);
+                                saleHpp += Number(alloc.qty || 0) * Math.round(Number(alloc.hppAtTime || 0) * taxMultiplier);
                             });
                         } else {
-                            saleHpp += qty * Number(item.product?.purchasePrice || 0);
+                            saleHpp += qty * Math.round(Number(item.product?.purchasePrice || 0) * taxMultiplier);
                         }
                     });
                     const margin = Number(s.grandTotal || 0) - saleHpp;
@@ -1131,14 +1137,16 @@ export async function getComprehensiveWeeklyReportService(weekStartDate?: string
 
             let dayHPP = 0;
             daySales.forEach((s: any) => {
+                const isPKP = s.isPKP || Number(s.taxRate || 0) > 0 || String(s.invoiceNumber || '').includes('TRN');
+                const taxMultiplier = 1 + (isPKP ? 0.11 : 0);
                 (s.items || []).forEach((item: any) => {
                     const qty = Number(item.quantity || 0);
                     if (item.lotAllocations && item.lotAllocations.length > 0) {
                         item.lotAllocations.forEach((alloc: any) => {
-                            dayHPP += Number(alloc.qty || 0) * Number(alloc.hppAtTime || 0);
+                            dayHPP += Number(alloc.qty || 0) * Math.round(Number(alloc.hppAtTime || 0) * taxMultiplier);
                         });
                     } else {
-                        dayHPP += qty * Number(item.product?.purchasePrice || 0);
+                        dayHPP += qty * Math.round(Number(item.product?.purchasePrice || 0) * taxMultiplier);
                     }
                 });
             });
@@ -1212,14 +1220,16 @@ export async function getComprehensiveWeeklyReportService(weekStartDate?: string
         // Calculate HPP of items sold
         let totalHPP = 0;
         sales.forEach((s: any) => {
+            const isPKP = s.isPKP || Number(s.taxRate || 0) > 0 || String(s.invoiceNumber || '').includes('TRN');
+            const taxMultiplier = 1 + (isPKP ? 0.11 : 0);
             (s.items || []).forEach((item: any) => {
                 const qty = Number(item.quantity || 0);
                 if (item.lotAllocations && item.lotAllocations.length > 0) {
                     item.lotAllocations.forEach((alloc: any) => {
-                        totalHPP += Number(alloc.qty || 0) * Number(alloc.hppAtTime || 0);
+                        totalHPP += Number(alloc.qty || 0) * Math.round(Number(alloc.hppAtTime || 0) * taxMultiplier);
                     });
                 } else {
-                    totalHPP += qty * Number(item.product?.purchasePrice || 0);
+                    totalHPP += qty * Math.round(Number(item.product?.purchasePrice || 0) * taxMultiplier);
                 }
             });
         });
@@ -1442,15 +1452,17 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
         let totalHPP = 0;
         const productIdsInSales = new Set<string>();
         sales.forEach((s: any) => {
+            const isPKP = s.isPKP || Number(s.taxRate || 0) > 0 || String(s.invoiceNumber || '').includes('TRN');
+            const taxMultiplier = 1 + (isPKP ? 0.11 : 0);
             (s.items || []).forEach((item: any) => {
                 productIdsInSales.add(item.productId);
                 const qty = Number(item.quantity || 0);
                 if (item.lotAllocations && item.lotAllocations.length > 0) {
                     item.lotAllocations.forEach((alloc: any) => {
-                        totalHPP += Number(alloc.qty || 0) * Number(alloc.hppAtTime || 0);
+                        totalHPP += Number(alloc.qty || 0) * Math.round(Number(alloc.hppAtTime || 0) * taxMultiplier);
                     });
                 } else {
-                    totalHPP += qty * Number(item.product?.purchasePrice || 0);
+                    totalHPP += qty * Math.round(Number(item.product?.purchasePrice || 0) * taxMultiplier);
                 }
             });
         });
@@ -1604,14 +1616,16 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
         // ── Sales Detail Table ───────────────────────────────────────────
         const salesDetail = sales.map((s: any) => {
             let saleHpp = 0;
+            const isPKP = s.isPKP || Number(s.taxRate || 0) > 0 || String(s.invoiceNumber || '').includes('TRN');
+            const taxMultiplier = 1 + (isPKP ? 0.11 : 0);
             (s.items || []).forEach((item: any) => {
                 const qty = Number(item.quantity || 0);
                 if (item.lotAllocations && item.lotAllocations.length > 0) {
                     item.lotAllocations.forEach((alloc: any) => {
-                        saleHpp += Number(alloc.qty || 0) * Number(alloc.hppAtTime || 0);
+                        saleHpp += Number(alloc.qty || 0) * Math.round(Number(alloc.hppAtTime || 0) * taxMultiplier);
                     });
                 } else {
-                    saleHpp += qty * Number(item.product?.purchasePrice || 0);
+                    saleHpp += qty * Math.round(Number(item.product?.purchasePrice || 0) * taxMultiplier);
                 }
             });
             const margin = Number(s.grandTotal || 0) - saleHpp;
