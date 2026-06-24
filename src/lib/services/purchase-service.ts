@@ -226,6 +226,12 @@ export async function createGoodsReceiptService(data: any, userId: string) {
         });
 
         if (createdReceipt) {
+            // Calculate total cashback percentage
+            let cbPct = 0;
+            if (data.cashbacks && Array.isArray(data.cashbacks)) {
+                cbPct = data.cashbacks.reduce((sum: number, cb: any) => sum + (Number(cb.rate) || 0), 0);
+            }
+
             // Count existing lots for this product on this date to generate sequence
             for (const grItem of createdReceipt.items) {
                 const sku = grItem.product.sku.replace(/[^A-Z0-9]/gi, '').toUpperCase();
@@ -243,6 +249,17 @@ export async function createGoodsReceiptService(data: any, userId: string) {
                 }
                 const lotNumber = `${prefix}${String(lotSeq).padStart(3, '0')}`;
 
+                // --- Calculate Landed Cost ---
+                const rawTotal = (Number(grItem.quantity) || 0) * (Number(grItem.purchasePrice) || 0);
+                const netAfterItemDiscount = rawTotal - (Number(grItem.discount) || 0);
+                // Proporsi diskon nota ke item ini
+                const propDiscount = subtotal > 0 ? (netAfterItemDiscount / subtotal) * totalDiscountNominal : 0;
+                const netAfterGlobalDiscount = netAfterItemDiscount - propDiscount;
+                // Potong Cashback
+                const netAfterCb = netAfterGlobalDiscount * (1 - (cbPct / 100));
+                // Landed Cost per Pcs
+                const landedCost = (Number(grItem.quantity) || 0) > 0 ? netAfterCb / Number(grItem.quantity) : Number(grItem.purchasePrice);
+
                 await tx.productLot.create({
                     data: {
                         lotNumber,
@@ -250,6 +267,7 @@ export async function createGoodsReceiptService(data: any, userId: string) {
                         grItemId: grItem.id,
                         supplierName: data.receivedFrom || "UMUM",
                         purchasePrice: grItem.purchasePrice,
+                        landedCost: landedCost,
                         grNumber: receiptNumber,
                         grDate: txDate,
                         initialQty: grItem.quantity,
@@ -447,6 +465,12 @@ export async function updateGoodsReceiptService(id: string, data: any, userId: s
             include: { items: { include: { product: { select: { sku: true } } } } }
         });
         if (updatedReceipt) {
+            // Calculate total cashback percentage
+            let cbPct = 0;
+            if (data.cashbacks && Array.isArray(data.cashbacks)) {
+                cbPct = data.cashbacks.reduce((sum: number, cb: any) => sum + (Number(cb.rate) || 0), 0);
+            }
+
             for (const grItem of updatedReceipt.items) {
                 const sku = grItem.product.sku.replace(/[^A-Z0-9]/gi, '').toUpperCase();
                 const grDateStr = txDate.toISOString().slice(0, 10).replace(/-/g, '');
@@ -462,6 +486,18 @@ export async function updateGoodsReceiptService(id: string, data: any, userId: s
                     if (!isNaN(lastNum)) lotSeq = lastNum + 1;
                 }
                 const lotNumber = `${prefix}${String(lotSeq).padStart(3, '0')}`;
+
+                // --- Calculate Landed Cost ---
+                const rawTotal = (Number(grItem.quantity) || 0) * (Number(grItem.purchasePrice) || 0);
+                const netAfterItemDiscount = rawTotal - (Number(grItem.discount) || 0);
+                // Proporsi diskon nota ke item ini
+                const propDiscount = subtotal > 0 ? (netAfterItemDiscount / subtotal) * totalDiscountNominal : 0;
+                const netAfterGlobalDiscount = netAfterItemDiscount - propDiscount;
+                // Potong Cashback
+                const netAfterCb = netAfterGlobalDiscount * (1 - (cbPct / 100));
+                // Landed Cost per Pcs
+                const landedCost = (Number(grItem.quantity) || 0) > 0 ? netAfterCb / Number(grItem.quantity) : Number(grItem.purchasePrice);
+
                 await tx.productLot.create({
                     data: {
                         lotNumber,
@@ -469,6 +505,7 @@ export async function updateGoodsReceiptService(id: string, data: any, userId: s
                         grItemId: grItem.id,
                         supplierName: data.receivedFrom || "UMUM",
                         purchasePrice: grItem.purchasePrice,
+                        landedCost: landedCost,
                         grNumber: currentReceiptNumber,
                         grDate: txDate,
                         initialQty: grItem.quantity,
