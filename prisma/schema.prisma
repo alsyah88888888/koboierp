@@ -191,6 +191,8 @@ model PurchaseRequest {
   updatedAt     DateTime              @updatedAt
   category      String?
   salesPerson   String?
+  invoiceNumber String?
+  receiptNumber String?
   approvedBy    User?                 @relation("ApprovedBy", fields: [approvedById], references: [id])
   requestedBy   User                  @relation("RequestedBy", fields: [requestedById], references: [id])
   verifiedBy    User?                 @relation("VerifiedBy", fields: [verifiedById], references: [id])
