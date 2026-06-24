@@ -518,10 +518,9 @@ export function ReportsDashboard() {
             // Details
             if (data.details?.sales?.length) {
                 const rows = data.details.sales.map((s: any, i: number) => ({
-                    'No': i + 1, 'No. Penjualan': s.number, 'Buyer / Penerima': s.buyer,
-                    'Alamat': s.alamat || '-', 'Gudang': s.gudang || '-',
+                    'No': i + 1, 'No. Penjualan': s.invoiceNumber || s.number, 'No. Surat Jalan': s.number,
+                    'Buyer': s.buyer, 'Alamat': s.alamat || '-', 'Gudang': s.gudang || '-',
                     'Qty': s.totalQty, 'Total Jual': s.grandTotal,
-                    'HPP': s.hpp, 'Margin': s.margin, 'Margin %': `${s.marginPct?.toFixed(1) || 0}%`,
                     'Tanggal': fmtDate(s.date), 'Status': s.paymentStatus
                 }));
                 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Detail Penjualan');
@@ -1022,18 +1021,15 @@ function DailyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix }:
                 <ReportTable
                     title="Detail Penjualan" icon={<ShoppingBag className="h-4 w-4 text-blue-500" />}
                     count={d.sales.length} totalLabel="Total Penjualan" totalValue={formatCurrency(s.totalSales || 0)}
-                    headers={['No. Penjualan', 'Buyer / Penerima', 'Alamat', 'Gudang', 'Qty', 'Total Jual', 'HPP', 'Margin', 'Tanggal', 'Status']}
+                    headers={['No. Penjualan', 'No. Surat Jalan', 'Buyer', 'Alamat', 'Gudang', 'Qty', 'Total Jual', 'Tanggal', 'Status']}
                     rows={d.sales.map((row: any) => [
-                        <span className="font-black text-slate-900">{row.number}</span>,
+                        <span className="font-black text-blue-700">{row.invoiceNumber || row.number}</span>,
+                        <span className="font-mono text-slate-500 text-xs">{row.number}</span>,
                         <span className="truncate max-w-[140px] block font-bold">{row.buyer}</span>,
                         <span className="truncate max-w-[150px] block text-xs text-slate-500">{row.alamat || '-'}</span>,
                         <span className="text-[10px] font-black uppercase text-slate-600 bg-slate-100 px-2 py-1 rounded">{row.gudang || '-'}</span>,
                         <span className="tabular-nums font-black">{row.totalQty}</span>,
-                        <span className="tabular-nums font-black text-blue-600">{isClient ? formatCurrency(row.grandTotal) : '...'}</span>,
-                        <span className="tabular-nums text-rose-600">{isClient ? formatCurrency(row.hpp) : '...'}</span>,
-                        <span className={cn("tabular-nums font-black", row.margin >= 0 ? "text-emerald-600" : "text-rose-600")}>
-                            {isClient ? `${formatCurrency(row.margin)} (${row.marginPct?.toFixed(1) || 0}%)` : '...'}
-                        </span>,
+                        <span className="tabular-nums font-black text-emerald-600">{isClient ? formatCurrency(row.grandTotal) : '...'}</span>,
                         <span className="text-xs text-slate-500">{fmtDate(row.date)}</span>,
                         <PaymentBadge status={row.paymentStatus} />
                     ])}
@@ -1837,18 +1833,15 @@ function MonthlyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix 
                 <ReportTable
                     title="Detail Penjualan" icon={<ShoppingBag className="h-4 w-4 text-blue-500" />}
                     count={data.details.sales.length} totalLabel="Total Revenue" totalValue={formatCurrency(pl.revenue || 0)}
-                    headers={['No. Penjualan', 'Buyer / Penerima', 'Alamat', 'Gudang', 'Qty', 'Total Jual', 'HPP', 'Margin', 'Tanggal', 'Status']}
+                    headers={['No. Penjualan', 'No. Surat Jalan', 'Buyer', 'Alamat', 'Gudang', 'Qty', 'Total Jual', 'Tanggal', 'Status']}
                     rows={data.details.sales.map((row: any) => [
-                        <span className="font-black text-slate-900">{row.number}</span>,
+                        <span className="font-black text-blue-700">{row.invoiceNumber || row.number}</span>,
+                        <span className="font-mono text-slate-500 text-xs">{row.number}</span>,
                         <span className="truncate max-w-[140px] block font-bold">{row.buyer}</span>,
                         <span className="truncate max-w-[150px] block text-xs text-slate-500">{row.alamat || '-'}</span>,
                         <span className="text-[10px] font-black uppercase text-slate-600 bg-slate-100 px-2 py-1 rounded">{row.gudang || '-'}</span>,
                         <span className="tabular-nums font-black">{row.totalQty}</span>,
-                        <span className="tabular-nums font-black text-blue-600">{isClient ? formatCurrency(row.grandTotal) : '...'}</span>,
-                        <span className="tabular-nums text-rose-600">{isClient ? formatCurrency(row.hpp) : '...'}</span>,
-                        <span className={cn("tabular-nums font-black", row.margin >= 0 ? "text-emerald-600" : "text-rose-600")}>
-                            {isClient ? `${formatCurrency(row.margin)} (${row.marginPct?.toFixed(1) || 0}%)` : '...'}
-                        </span>,
+                        <span className="tabular-nums font-black text-emerald-600">{isClient ? formatCurrency(row.grandTotal) : '...'}</span>,
                         <span className="text-xs text-slate-500">{fmtDate(row.date)}</span>,
                         <PaymentBadge status={row.paymentStatus} />
                     ])}

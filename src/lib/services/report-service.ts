@@ -969,7 +969,7 @@ export async function getComprehensiveDailyReportService(date?: string, prefix?:
                     const margin = Number(s.grandTotal || 0) - saleHpp;
                     const marginPct = Number(s.grandTotal || 0) > 0 ? (margin / Number(s.grandTotal || 0) * 100) : 0;
                     return {
-                        id: s.id, number: s.deliveryNumber, date: s.date,
+                        id: s.id, number: s.deliveryNumber, invoiceNumber: s.invoiceNumber, date: s.date,
                         buyer: s.buyerName || s.recipient, salesPerson: s.salesPerson,
                         alamat: s.recipient, gudang: s.warehouse?.name,
                         subtotal: Number(s.subtotal || 0), discount: Number(s.totalDiscount || 0),
