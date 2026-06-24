@@ -13,7 +13,8 @@ export function formatCurrency(amount: number) {
         minimumFractionDigits: 0,
         maximumFractionDigits: 0,
     }).format(Math.abs(roundedAmount));
-    return `Rp ${formatted}`;
+    const sign = roundedAmount < 0 ? "-" : "";
+    return `${sign}Rp ${formatted}`;
 }
 
 export function formatNumber(amount: number) {
