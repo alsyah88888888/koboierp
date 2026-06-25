@@ -8,7 +8,7 @@ export function cn(...inputs: ClassValue[]) {
 export function formatCurrency(amount: number) {
     // Pembulatan matematika ke ratusan terdekat (misal 99 -> 100, 499 -> 500)
     const roundedAmount = Math.round(amount / 100) * 100;
-    
+
     const formatted = new Intl.NumberFormat("id-ID", {
         minimumFractionDigits: 0,
         maximumFractionDigits: 0,
@@ -41,8 +41,8 @@ export function serializeDecimal(obj: any): any {
         if (obj instanceof Date) return obj;
 
         // Check for Decimal-like structures/classes
-        const isDecimal = 
-            (obj.constructor && (obj.constructor.name === 'Decimal' || obj.constructor.name === 'i')) || 
+        const isDecimal =
+            (obj.constructor && (obj.constructor.name === 'Decimal' || obj.constructor.name === 'i')) ||
             (typeof obj.toNumber === 'function') ||
             (obj.d && Array.isArray(obj.d) && typeof obj.s === 'number' && typeof obj.e === 'number');
 

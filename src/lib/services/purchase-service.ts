@@ -653,6 +653,7 @@ export async function updatePurchaseRequestStatusService(id: string, status: str
 
     revalidatePath("/purchase");
     revalidatePath("/operational");
+    revalidatePath("/finance");
     return { success: true, request: res };
 }
 
