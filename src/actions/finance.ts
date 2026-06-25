@@ -408,7 +408,7 @@ export async function getRecentPurchaseReferencesAction() {
 
     // Fetch recent LPB
     const receipts = await prisma.goodsReceipt.findMany({
-        where: { isVerified: true },
+        where: { isVoid: false },
         orderBy: { date: 'desc' },
         take: 2000,
         select: {
