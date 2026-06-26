@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, Fragment } from "react";
 import { Plus, Clock, FileText, Search, Truck, Trash2, Eye, Edit2, BarChart3, TrendingUp, TrendingDown, Users, Download, Wallet, XCircle, Undo2, ChevronRight, Printer } from "lucide-react";
 import { format } from "date-fns";
 import SalesModal from "@/app/sales/SalesModal";
@@ -45,6 +45,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
     const [selectedDate, setSelectedDate] = useState<string>("");
     const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
     const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+    const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
     useEffect(() => {
         setIsClient(true);
@@ -179,6 +180,32 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                              (piNum && piNum.toLowerCase().includes(searchTerm.toLowerCase()));
         return matchesMonth && matchesYear && matchesDate && matchesSearch;
     });
+
+    const groupedDeliveries = useMemo(() => {
+        const grouped = new Map<string, any>();
+        for (const s of filteredDeliveries) {
+            const key = s.invoiceNumber || s.deliveryNumber;
+            if (!grouped.has(key)) {
+                grouped.set(key, {
+                    ...s,
+                    id: `GROUP_${key}`,
+                    isGrouped: true,
+                    groupedChildren: [],
+                    totalQty: 0,
+                    totalGrandTotal: 0,
+                });
+            }
+            const g = grouped.get(key);
+            g.groupedChildren.push(s);
+            g.totalGrandTotal += Number(s.grandTotal || 0);
+            g.totalQty += s.items.reduce((acc: number, i: any) => acc + i.quantity, 0);
+        }
+        return Array.from(grouped.values());
+    }, [filteredDeliveries]);
+
+    const toggleGroup = (groupId: string) => {
+        setExpandedGroups(prev => ({ ...prev, [groupId]: !prev[groupId] }));
+    };
 
     const handleExportXMLCoretax = async () => {
         try {
@@ -684,84 +711,144 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                                 </tr>
                             </thead>
                             <tbody>
-                                {Array.isArray(filteredDeliveries) && filteredDeliveries.map((d: any) => (
-                                    <tr 
-                                        key={d.id} 
-                                        className={cn(
-                                            "hover:bg-slate-50/50 transition-colors",
-                                            d.isVoid && "bg-slate-50/80 opacity-60"
-                                        )}
-                                    >
-                                        <td data-label="No. Penjualan" className="font-mono text-primary font-bold md:pl-6">
-                                            <div className="flex items-center gap-2">
-                                                <span className={cn(d.isVoid && "line-through text-slate-400")}>{d.invoiceNumber || d.deliveryNumber}</span>
-                                                {d.isVoid && (
-                                                    <span className="bg-rose-100 text-rose-600 text-[8px] px-1.5 py-0.5 rounded-md font-black uppercase tracking-tighter">BATAL</span>
+                                {Array.isArray(groupedDeliveries) && groupedDeliveries.map((group: any) => (
+                                    <Fragment key={group.id}>
+                                        <tr 
+                                            onClick={() => toggleGroup(group.id)}
+                                            className={cn(
+                                                "hover:bg-slate-50/50 transition-colors cursor-pointer",
+                                                group.isVoid && "bg-slate-50/80 opacity-60"
+                                            )}
+                                        >
+                                            <td data-label="No. Penjualan" className="font-mono text-primary font-bold md:pl-6">
+                                                <div className="flex items-center gap-2">
+                                                    <ChevronRight className={cn("h-4 w-4 transition-transform text-slate-400", expandedGroups[group.id] && "rotate-90")} />
+                                                    <span className={cn(group.isVoid && "line-through text-slate-400")}>{group.invoiceNumber || group.deliveryNumber}</span>
+                                                    {group.groupedChildren.length > 1 && (
+                                                        <span className="bg-blue-100 text-blue-700 text-[10px] px-1.5 py-0.5 rounded-md font-black">{group.groupedChildren.length} SJ</span>
+                                                    )}
+                                                    {group.isVoid && (
+                                                        <span className="bg-rose-100 text-rose-600 text-[8px] px-1.5 py-0.5 rounded-md font-black uppercase tracking-tighter">BATAL</span>
+                                                    )}
+                                                </div>
+                                                {(() => {
+                                                    const piNum = group.order?.proformaNumber || (group.order?.orderNumber?.startsWith("KB-PI-") ? group.order.orderNumber : null);
+                                                    if (piNum) {
+                                                        return (
+                                                            <div className="text-[10px] text-slate-400 font-bold uppercase mt-0.5 ml-6">
+                                                                PI: {piNum}
+                                                            </div>
+                                                        );
+                                                    }
+                                                    return null;
+                                                })()}
+                                            </td>
+                                            <td data-label="Buyer">
+                                                <div className="font-black text-slate-900">{group.buyerName}</div>
+                                                <div className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter truncate max-w-[200px]">
+                                                    {group.recipient?.split(',')[0]}
+                                                </div>
+                                            </td>
+                                            <td data-label="Alamat" className="text-xs text-slate-500 leading-relaxed max-w-xs md:truncate">
+                                                {group.recipient}
+                                            </td>
+                                            <td data-label="Gudang">
+                                                <span className="bg-slate-100 px-2 py-1 rounded text-[10px] font-black uppercase text-slate-600">
+                                                    {group.groupedChildren.length > 1 ? "MULTIPLE" : (group.warehouse?.name || '-')}
+                                                </span>
+                                            </td>
+                                            <td data-label="Qty" className="text-right font-bold text-slate-900 md:pr-6">
+                                                {group.totalQty} <span className="text-[10px] text-slate-400">Pcs</span>
+                                            </td>
+                                            <td data-label="Total Jual" className="text-right font-black text-blue-600 md:pr-6 tabular-nums">
+                                                {formatCurrency(group.totalGrandTotal)}
+                                            </td>
+                                            <td data-label="Tanggal" className="text-right text-xs text-slate-500 md:pr-6">
+                                                {isClient ? format(new Date(group.createdAt), "dd/MM/yyyy HH:mm") : "..."}
+                                            </td>
+                                            <td data-label="Status" className="text-center">
+                                                <span className={cn(
+                                                    "px-3 py-1 text-[10px] font-black rounded-lg border uppercase tracking-widest inline-block",
+                                                    group.paymentStatus === "PAID" ? "bg-emerald-50 text-emerald-700 border-emerald-100" :
+                                                    group.paymentStatus === "PARTIAL" ? "bg-amber-50 text-amber-700 border-amber-100" :
+                                                    "bg-slate-50 text-slate-500 border-slate-100"
+                                                )}>
+                                                    {group.paymentStatus || 'PENDING'}
+                                                </span>
+                                            </td>
+                                            <td data-label="Aksi" className="md:pr-6" onClick={(e) => e.stopPropagation()}>
+                                                <div className="flex items-center justify-end md:justify-center gap-1">
+                                                    <Link href={`/sales/print/${group.groupedChildren[0]?.id || group.id}`} className="p-2.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all" title="Cetak Faktur (Invoice)">
+                                                        <Printer className="h-4 w-4" />
+                                                    </Link>
+                                                    {!group.isVoid && (
+                                                        <button onClick={() => handleVoid(group.id)} className="p-2.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all" title="Batalkan Faktur">
+                                                            <XCircle className="h-4 w-4" />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {expandedGroups[group.id] && group.groupedChildren.map((d: any) => (
+                                            <tr 
+                                                key={d.id} 
+                                                className={cn(
+                                                    "bg-slate-50/50 hover:bg-slate-100/50 transition-colors border-l-4 border-l-indigo-200",
+                                                    d.isVoid && "bg-slate-50/80 opacity-60"
                                                 )}
-                                            </div>
-                                            {(() => {
-                                                const piNum = d.order?.proformaNumber || (d.order?.orderNumber?.startsWith("KB-PI-") ? d.order.orderNumber : null);
-                                                if (piNum) {
-                                                    return (
-                                                        <div className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">
-                                                            PI: {piNum}
-                                                        </div>
-                                                    );
-                                                }
-                                                return null;
-                                            })()}
-                                        </td>
-                                        <td data-label="Buyer">
-                                            <div className="font-black text-slate-900">{d.buyerName}</div>
-                                            <div className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter truncate max-w-[200px]">
-                                                {d.recipient?.split(',')[0]}
-                                            </div>
-                                        </td>
-                                        <td data-label="Alamat" className="text-xs text-slate-500 leading-relaxed max-w-xs md:truncate">
-                                            {d.recipient}
-                                        </td>
-                                        <td data-label="Gudang">
-                                            <span className="bg-slate-100 px-2 py-1 rounded text-[10px] font-black uppercase text-slate-600">
-                                                {d.warehouse.name}
-                                            </span>
-                                        </td>
-                                        <td data-label="Qty" className="text-right font-bold text-slate-900 md:pr-6">
-                                            {d.items.reduce((acc: number, i: any) => acc + i.quantity, 0)} <span className="text-[10px] text-slate-400">Pcs</span>
-                                        </td>
-                                        <td data-label="Total Jual" className="text-right font-black text-blue-600 md:pr-6 tabular-nums">
-                                            {formatCurrency(d.grandTotal)}
-                                        </td>
-                                        <td data-label="Tanggal" className="text-right text-xs text-slate-500 md:pr-6">
-                                            {isClient ? format(new Date(d.createdAt), "dd/MM/yyyy HH:mm") : "..."}
-                                        </td>
-                                        <td data-label="Status" className="text-center">
-                                            <span className={cn(
-                                                "px-3 py-1 text-[10px] font-black rounded-lg border uppercase tracking-widest inline-block",
-                                                d.paymentStatus === "PAID" ? "bg-emerald-50 text-emerald-700 border-emerald-100" :
-                                                d.paymentStatus === "PARTIAL" ? "bg-amber-50 text-amber-700 border-amber-100" :
-                                                "bg-slate-50 text-slate-500 border-slate-100"
-                                            )}>
-                                                {d.paymentStatus || 'PENDING'}
-                                            </span>
-                                        </td>
-                                        <td data-label="Aksi" className="md:pr-6">
-                                            <div className="flex items-center justify-end md:justify-center gap-1">
-                                                <Link href={`/sales/print/${d.id}`} className="p-2.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all" title="Cetak Penjualan">
-                                                    <Printer className="h-4 w-4" />
-                                                </Link>
-                                                {!d.isVoid && (
-                                                    <button onClick={() => { setEditData(d); setShowSalesModal(true); }} className="p-2.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-all" title="Edit Transaksi">
-                                                        <Edit2 className="h-4 w-4" />
-                                                    </button>
-                                                )}
-                                                {d.isVoid && (
-                                                    <div className="px-3 py-1 bg-slate-100 text-slate-400 text-[8px] font-black italic rounded-lg" title={d.voidReason}>
-                                                        VOIDED: {d.voidReason}
+                                            >
+                                                <td data-label="No. Penjualan" className="font-mono text-indigo-700 font-bold md:pl-10">
+                                                    <div className="flex items-center gap-2">
+                                                        <Truck className="h-3 w-3 text-indigo-400" />
+                                                        <span className={cn(d.isVoid && "line-through text-slate-400")}>{d.deliveryNumber}</span>
+                                                        {d.isVoid && (
+                                                            <span className="bg-rose-100 text-rose-600 text-[8px] px-1.5 py-0.5 rounded-md font-black uppercase tracking-tighter">BATAL</span>
+                                                        )}
                                                     </div>
-                                                )}
-                                            </div>
-                                        </td>
-                                    </tr>
+                                                </td>
+                                                <td data-label="Buyer" className="opacity-70">
+                                                    <div className="font-black text-slate-900">{d.buyerName}</div>
+                                                </td>
+                                                <td data-label="Alamat" className="opacity-70 text-xs text-slate-500 leading-relaxed max-w-xs md:truncate">
+                                                    {d.recipient}
+                                                </td>
+                                                <td data-label="Gudang">
+                                                    <span className="bg-slate-200 px-2 py-1 rounded text-[10px] font-black uppercase text-slate-600">
+                                                        {d.warehouse?.name}
+                                                    </span>
+                                                </td>
+                                                <td data-label="Qty" className="text-right font-bold text-slate-900 md:pr-6">
+                                                    {d.items.reduce((acc: number, i: any) => acc + i.quantity, 0)} <span className="text-[10px] text-slate-400">Pcs</span>
+                                                </td>
+                                                <td data-label="Total Jual" className="text-right font-black text-indigo-600 md:pr-6 tabular-nums">
+                                                    {formatCurrency(d.grandTotal)}
+                                                </td>
+                                                <td data-label="Tanggal" className="text-right text-xs text-slate-500 md:pr-6">
+                                                    {isClient ? format(new Date(d.createdAt), "dd/MM/yyyy HH:mm") : "..."}
+                                                </td>
+                                                <td data-label="Status" className="text-center opacity-0">
+                                                    {/* Hide status */}
+                                                </td>
+                                                <td data-label="Aksi" className="md:pr-6">
+                                                    <div className="flex items-center justify-end md:justify-center gap-1">
+                                                        <Link href={`/sales/print/sj/${d.id}`} className="p-2.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all" title="Cetak Surat Jalan">
+                                                            <FileText className="h-4 w-4" />
+                                                        </Link>
+                                                        {!d.isVoid && (
+                                                            <button onClick={() => { setEditData(d); setShowSalesModal(true); }} className="p-2.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-all" title="Edit Surat Jalan">
+                                                                <Edit2 className="h-4 w-4" />
+                                                            </button>
+                                                        )}
+                                                        {d.isVoid && (
+                                                            <div className="px-3 py-1 bg-slate-100 text-slate-400 text-[8px] font-black italic rounded-lg" title={d.voidReason}>
+                                                                VOIDED: {d.voidReason}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </Fragment>
                                 ))}
                             </tbody>
                         </table>
