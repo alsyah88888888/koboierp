@@ -13,16 +13,53 @@ export default async function InvoicePrintPage({ params }: { params: Promise<{ i
     const prisma = getPrisma();
     const { id } = await params;
 
-    
-    const delivery: any = await prisma.salesDelivery.findUnique({
-        where: { id },
-        include: {
-            items: { include: { product: true } },
-            warehouse: true
-        }
-    }).then((res: any) => serializeDecimal(res));
+    let delivery: any;
+    let allItems: any[] = [];
 
-    if (!delivery) return <div>Data not found</div>;
+    if (id.startsWith("GROUP_")) {
+        const invoiceNumber = id.replace("GROUP_", "");
+        const deliveries = await prisma.salesDelivery.findMany({
+            where: { invoiceNumber },
+            include: {
+                items: { include: { product: true } },
+                warehouse: true
+            }
+        });
+
+        if (deliveries.length === 0) return <div>Data not found</div>;
+
+        // Aggregate data
+        delivery = serializeDecimal(deliveries[0]);
+        
+        let subtotal = 0;
+        let totalDiscount = 0;
+        let taxAmount = 0;
+        let grandTotal = 0;
+
+        deliveries.forEach((d: any) => {
+            subtotal += Number(d.subtotal || 0);
+            totalDiscount += Number(d.totalDiscount || 0);
+            taxAmount += Number(d.taxAmount || 0);
+            grandTotal += Number(d.grandTotal || 0);
+            allItems = allItems.concat(d.items);
+        });
+
+        delivery.subtotal = subtotal;
+        delivery.totalDiscount = totalDiscount;
+        delivery.taxAmount = taxAmount;
+        delivery.grandTotal = grandTotal;
+        delivery.items = serializeDecimal(allItems);
+    } else {
+        delivery = await prisma.salesDelivery.findUnique({
+            where: { id },
+            include: {
+                items: { include: { product: true } },
+                warehouse: true
+            }
+        }).then((res: any) => serializeDecimal(res));
+
+        if (!delivery) return <div>Data not found</div>;
+    }
 
     const groupedItemsMap = delivery.items.reduce((acc: any, item: any) => {
         const key = item.productId || item.product?.id || item.product?.name;

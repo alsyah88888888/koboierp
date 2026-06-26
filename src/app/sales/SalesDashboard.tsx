@@ -806,7 +806,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                                             </td>
                                             <td data-label="Aksi" className="md:pr-6" onClick={(e) => e.stopPropagation()}>
                                                 <div className="flex items-center justify-end md:justify-center gap-1">
-                                                    <Link href={`/sales/print/${group.groupedChildren[0]?.id || group.id}`} className="p-2.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all" title="Cetak Faktur (Invoice)">
+                                                    <Link href={`/sales/print/${group.id}`} className="p-2.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all" title="Cetak Faktur (Invoice)">
                                                         <Printer className="h-4 w-4" />
                                                     </Link>
                                                     {!group.isVoid && (
