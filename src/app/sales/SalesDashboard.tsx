@@ -109,6 +109,34 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
         }
     };
 
+    const handleDeleteDelivery = async (id: string) => {
+        const confirmed = await confirm({
+            title: "Hapus Pengiriman?",
+            message: "Apakah Anda yakin ingin menghapus data pengiriman ini secara permanen dari sistem? Tindakan ini tidak dapat dibatalkan.",
+            confirmText: "Ya, Hapus",
+            cancelText: "Batal",
+            type: "danger"
+        });
+
+        if (confirmed) {
+            try {
+                await callAction("deleteSalesDelivery", id);
+                await alert({
+                    title: "Berhasil Dihapus",
+                    message: "Data pengiriman telah dihapus dari sistem.",
+                    type: "success"
+                });
+                window.location.reload();
+            } catch (e: any) {
+                await alert({
+                    title: "Gagal Menghapus",
+                    message: e.message || "Terjadi kesalahan saat menghapus data pengiriman.",
+                    type: "danger"
+                });
+            }
+        }
+    };
+
     const handleDeleteReturn = async (id: string) => {
         const ok = await confirm({
             title: "Hapus Retur Penjualan?",
@@ -786,6 +814,11 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                                                             <XCircle className="h-4 w-4" />
                                                         </button>
                                                     )}
+                                                    {group.isVoid && (
+                                                        <button onClick={() => handleDeleteDelivery(group.id)} className="p-2.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all" title="Hapus Faktur Void Secara Permanen">
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>
@@ -840,8 +873,13 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                                                             </button>
                                                         )}
                                                         {d.isVoid && (
-                                                            <div className="px-3 py-1 bg-slate-100 text-slate-400 text-[8px] font-black italic rounded-lg" title={d.voidReason}>
-                                                                VOIDED: {d.voidReason}
+                                                            <div className="flex items-center gap-1">
+                                                                <div className="px-3 py-1 bg-slate-100 text-slate-400 text-[8px] font-black italic rounded-lg" title={d.voidReason}>
+                                                                    VOIDED
+                                                                </div>
+                                                                <button onClick={() => handleDeleteDelivery(d.id)} className="p-2.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all" title="Hapus Permanen">
+                                                                    <Trash2 className="h-4 w-4" />
+                                                                </button>
                                                             </div>
                                                         )}
                                                     </div>

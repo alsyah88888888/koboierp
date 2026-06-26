@@ -70,7 +70,25 @@ export async function deleteSalesDeliveryAction(id: string) {
     const role = session?.user?.role?.toUpperCase();
     if (role !== "ADMIN" && role !== "SALES") throw new Error("Unauthorized: Only Admin or Sales can delete deliveries");
 
-    return await deleteSalesDeliveryService(id);
+    if (id.startsWith("GROUP_")) {
+        const invoiceNumber = id.replace("GROUP_", "");
+        const { getPrisma } = require("@/lib/prisma");
+        const prisma = getPrisma();
+        const deliveries = await prisma.salesDelivery.findMany({
+            where: { OR: [ { invoiceNumber: invoiceNumber }, { deliveryNumber: invoiceNumber } ] }
+        });
+        for (const d of deliveries) {
+            await deleteSalesDeliveryService(d.id);
+        }
+        const { revalidatePath } = require("next/cache");
+        revalidatePath("/sales");
+        return { success: true };
+    }
+
+    const res = await deleteSalesDeliveryService(id);
+    const { revalidatePath } = require("next/cache");
+    revalidatePath("/sales");
+    return res;
 }
 
 export async function getCortexXmlContentAction() {
