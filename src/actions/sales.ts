@@ -520,6 +520,19 @@ export async function voidSalesDeliveryAction(id: string, reason: string) {
         const role = session?.user?.role?.toUpperCase();
         if (role !== "ADMIN" && role !== "SALES") throw new Error("Unauthorized: Only Admin or Sales can void deliveries");
 
+        if (id.startsWith("GROUP_")) {
+            const invoiceNumber = id.replace("GROUP_", "");
+            const { getPrisma } = require("@/lib/prisma");
+            const prisma = getPrisma();
+            const deliveries = await prisma.salesDelivery.findMany({
+                where: { OR: [ { invoiceNumber: invoiceNumber }, { deliveryNumber: invoiceNumber } ], isVoid: false }
+            });
+            for (const d of deliveries) {
+                await voidSalesDeliveryService(d.id, reason);
+            }
+            return { success: true };
+        }
+
         return await voidSalesDeliveryService(id, reason);
     } catch (err: any) {
         console.error("[voidSalesDeliveryAction] CRITICAL ERROR:", err);

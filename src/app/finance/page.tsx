@@ -204,6 +204,48 @@ export default async function FinancePage() {
         }, 0);
     };
 
+    // Helper to group sales by invoice number to avoid duplicates
+    const groupSalesByInvoice = (salesArray: any[]) => {
+        const grouped = new Map<string, any>();
+        for (const s of salesArray) {
+            const key = s.invoiceNumber || s.deliveryNumber; 
+            if (!grouped.has(key)) {
+                grouped.set(key, {
+                    ...s,
+                    id: `GROUP_${key}`,
+                    deliveryNumber: key, 
+                    subtotal: 0,
+                    totalDiscount: 0,
+                    taxAmount: 0,
+                    grandTotal: 0,
+                    paidAmount: 0,
+                    total: 0,
+                    isGrouped: true,
+                    groupedIds: []
+                });
+            }
+            const g = grouped.get(key);
+            g.subtotal += Number(s.subtotal || 0);
+            g.totalDiscount += Number(s.totalDiscount || 0);
+            g.taxAmount += Number(s.taxAmount || 0);
+            g.grandTotal += Number(s.grandTotal || 0);
+            g.paidAmount += Number(s.paidAmount || 0);
+            g.total += Number(s.total || 0);
+            g.groupedIds.push(s.id);
+        }
+        
+        return Array.from(grouped.values()).map(g => {
+            if (g.paidAmount >= g.total && g.total > 0) {
+                g.paymentStatus = 'PAID';
+            } else if (g.paidAmount > 0) {
+                g.paymentStatus = 'PARTIAL';
+            } else {
+                g.paymentStatus = 'PENDING';
+            }
+            return g;
+        });
+    };
+
     // Serialize and transform
     const serializedLedger = serializeDecimal(ledger || []);
     const serializedVendors = serializeDecimal(vendors || []);
@@ -214,10 +256,10 @@ export default async function FinancePage() {
         total: calculateTotal(p.grandTotal, p.items, 'purchasePrice')
     }));
 
-    const serializedSales = serializeDecimal(pendingSales || []).map((s: any) => ({
+    const serializedSales = groupSalesByInvoice(serializeDecimal(pendingSales || []).map((s: any) => ({
         ...s,
         total: calculateTotal(s.grandTotal, s.items, 'salesPrice')
-    }));
+    })));
 
     const serializedUnverifiedReceipts = serializeDecimal(unverifiedReceipts || []);
     const serializedPendingReturns = serializeDecimal(pendingReturns || []);
@@ -228,10 +270,10 @@ export default async function FinancePage() {
         ...p,
         total: calculateTotal(p.grandTotal, p.items, 'purchasePrice')
     }));
-    const serializedSettledSales = serializeDecimal(settledSales || []).map((s: any) => ({
+    const serializedSettledSales = groupSalesByInvoice(serializeDecimal(settledSales || []).map((s: any) => ({
         ...s,
         total: calculateTotal(s.grandTotal, s.items, 'salesPrice')
-    }));
+    })));
 
     // Process Monthly Stats
     const monthlyStats = [];

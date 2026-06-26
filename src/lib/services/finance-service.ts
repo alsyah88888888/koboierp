@@ -820,3 +820,59 @@ export async function editSettledPaymentService(
     }, { timeout: 30000 });
 }
 
+export async function updateGroupedPaymentStatusService(
+    invoiceNumber: string,
+    status: "PAID" | "CREDIT" | "PENDING" | "PARTIAL",
+    partialAmount?: number,
+    paymentDate?: Date,
+    userId?: string,
+    bankAccountId?: string
+) {
+    const { getPrisma } = require("@/lib/prisma");
+    const prisma = getPrisma();
+
+    const deliveries = await prisma.salesDelivery.findMany({
+        where: { OR: [ { invoiceNumber: invoiceNumber }, { deliveryNumber: invoiceNumber } ], isVoid: false },
+        orderBy: { createdAt: 'asc' }
+    });
+
+    if (deliveries.length === 0) throw new Error("No deliveries found for this invoice");
+
+    if (status === "CREDIT") {
+        for (const d of deliveries) {
+            if (d.paymentStatus === "PENDING") {
+                await updatePaymentStatusService("SALE", d.id, "CREDIT", undefined, paymentDate, userId, bankAccountId);
+            }
+        }
+        return { success: true };
+    }
+
+    if (status === "PAID" && !partialAmount) {
+        for (const d of deliveries) {
+            if (d.paymentStatus !== "PAID") {
+                await updatePaymentStatusService("SALE", d.id, "PAID", undefined, paymentDate, userId, bankAccountId);
+            }
+        }
+        return { success: true };
+    }
+
+    if (status === "PARTIAL" || partialAmount) {
+        let remainingToDistribute = Number(partialAmount) || 0;
+        for (const d of deliveries) {
+            if (remainingToDistribute <= 0) break;
+            const amount = Math.round(Number(d.grandTotal || 0));
+            const currentPaid = Math.round(Number(d.paidAmount || 0));
+            const unpaid = amount - currentPaid;
+
+            if (unpaid > 0) {
+                const payForThis = Math.min(unpaid, remainingToDistribute);
+                const newStatus = (payForThis === unpaid && d.paymentStatus !== "PENDING") ? "PAID" : "PARTIAL";
+                await updatePaymentStatusService("SALE", d.id, newStatus, payForThis, paymentDate, userId, bankAccountId);
+                remainingToDistribute -= payForThis;
+            }
+        }
+        return { success: true };
+    }
+
+    return { success: true };
+}

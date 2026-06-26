@@ -18,11 +18,15 @@ export async function updatePaymentStatusAction(
 ) {
     const { getAuthOptions } = require("@/lib/auth");
     const { getServerSession } = require("next-auth");
-    const { updatePaymentStatusService } = require("@/lib/services/finance-service");
+    const { updatePaymentStatusService, updateGroupedPaymentStatusService } = require("@/lib/services/finance-service");
  
     const session = (await getServerSession(getAuthOptions())) as any;
     if (!session?.user?.id) throw new Error("Unauthorized");
  
+    if (type === "SALE" && id.startsWith("GROUP_")) {
+        return await updateGroupedPaymentStatusService(id.replace("GROUP_", ""), status, partialAmount, paymentDate, session.user.id, bankAccountId);
+    }
+
     return await updatePaymentStatusService(type, id, status, partialAmount, paymentDate, session.user.id, bankAccountId);
 }
 
