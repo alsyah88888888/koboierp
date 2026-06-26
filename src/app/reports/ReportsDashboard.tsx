@@ -168,17 +168,17 @@ export function ReportsDashboard() {
                 .header { border-bottom: 4px solid #0f172a; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end; }
                 .header h1 { margin: 0; font-weight: 900; text-transform: uppercase; letter-spacing: -1px; font-size: 32px; color: #0f172a; }
                 .summary-grid { display: grid; grid-template-cols: repeat(4, 1fr); gap: 20px; margin-bottom: 40px; }
-                .summary-card { padding: 15px; border: 1px solid #e2e8f0; border-radius: 12px; background: #fff; }
-                .summary-card p { margin: 0; font-size: 10px; font-weight: 900; text-transform: uppercase; color: #64748b; letter-spacing: 1px; }
-                .summary-card h2 { margin: 5px 0 0; font-size: 18px; font-weight: 900; letter-spacing: -0.5px; }
-                h3 { font-weight: 900; text-transform: uppercase; font-size: 14px; border-left: 4px solid #3b82f6; padding-left: 12px; margin-top: 40px; margin-bottom: 15px; color: #0f172a; }
-                table { width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 11px; }
-                th { background: #f8fafc; padding: 12px; text-align: left; font-weight: 900; text-transform: uppercase; font-size: 9px; border-bottom: 2px solid #e2e8f0; color: #475569; }
-                td { padding: 10px 12px; border-bottom: 1px solid #f1f5f9; color: #334155; }
+                .summary-card { padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background: #fff; }
+                .summary-card p { margin: 0; font-size: 12px; font-weight: 900; text-transform: uppercase; color: #64748b; letter-spacing: 1px; }
+                .summary-card h2 { margin: 8px 0 0; font-size: 24px; font-weight: 900; letter-spacing: -0.5px; }
+                h3 { font-weight: 900; text-transform: uppercase; font-size: 16px; border-left: 4px solid #3b82f6; padding-left: 12px; margin-top: 40px; margin-bottom: 15px; color: #0f172a; }
+                table { width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 13px; }
+                th { background: #f8fafc; padding: 14px 16px; text-align: left; font-weight: 900; text-transform: uppercase; font-size: 11px; border-bottom: 2px solid #e2e8f0; color: #475569; }
+                td { padding: 12px 16px; border-bottom: 1px solid #f1f5f9; color: #334155; }
                 .text-right { text-align: right; }
                 .font-black { font-weight: 900; color: #0f172a; }
                 .footer-sig { margin-top: 80px; display: grid; grid-template-cols: 1fr 1fr; text-align: center; gap: 40px; }
-                .sig-box { border-top: 1px solid #cbd5e1; padding-top: 10px; font-weight: 900; font-size: 12px; margin: 0 auto; width: 220px; }
+                .sig-box { border-top: 1px solid #cbd5e1; padding-top: 10px; font-weight: 900; font-size: 14px; margin: 0 auto; width: 220px; }
                 @media print { 
                     body { padding: 0; }
                     .summary-card { border: 1px solid #000; }
@@ -2216,23 +2216,23 @@ function MonthlyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix 
 
 function KPICard({ icon, label, value, sub, color, trend, isClient }: any) {
     return (
-        <div className="erp-card p-5 relative group">
+        <div className="erp-card p-6 relative group">
             <div className={`absolute -right-4 -top-4 h-24 w-24 rounded-full bg-${color}-500/5 blur-2xl group-hover:scale-150 transition-all`} />
             <div className="relative space-y-3">
                 <div className="flex items-center justify-between">
-                    <div className={`p-2.5 rounded-xl bg-${color}-50 border border-${color}-100/50`}>{icon}</div>
+                    <div className={`p-3 rounded-xl bg-${color}-50 border border-${color}-100/50`}>{icon}</div>
                     {trend && (
-                        <span className={cn("flex items-center gap-1 text-[9px] font-black px-2 py-1 rounded-full",
+                        <span className={cn("flex items-center gap-1 text-[10px] font-black px-2 py-1 rounded-full",
                             trend === 'up' ? 'text-emerald-700 bg-emerald-50' : 'text-rose-700 bg-rose-50'
                         )}>
-                            {trend === 'up' ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+                            {trend === 'up' ? <ArrowUpRight className="h-4 w-4" /> : <ArrowDownRight className="h-4 w-4" />}
                         </span>
                     )}
                 </div>
                 <div>
-                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">{label}</p>
-                    <p className="text-xl font-black text-slate-900 tracking-tighter tabular-nums leading-tight">{isClient ? value : 'Rp ---'}</p>
-                    {sub && <p className="text-[9px] font-bold text-slate-400 mt-1">{sub}</p>}
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{label}</p>
+                    <p className="text-2xl font-black text-slate-900 tracking-tighter tabular-nums leading-tight">{isClient ? value : 'Rp ---'}</p>
+                    {sub && <p className="text-[10px] font-bold text-slate-400 mt-2">{sub}</p>}
                 </div>
             </div>
         </div>
@@ -2241,11 +2241,11 @@ function KPICard({ icon, label, value, sub, color, trend, isClient }: any) {
 
 function MiniStat({ label, value, icon }: any) {
     return (
-        <div className="erp-card p-4 flex items-center gap-3">
-            {icon}
+        <div className="erp-card p-5 flex items-center gap-4">
+            <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100">{icon}</div>
             <div>
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{label}</p>
-                <p className="text-lg font-black text-slate-900 tabular-nums">{value}</p>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{label}</p>
+                <p className="text-xl font-black text-slate-900 tabular-nums">{value}</p>
             </div>
         </div>
     );
@@ -2253,7 +2253,7 @@ function MiniStat({ label, value, icon }: any) {
 
 function PaymentBadge({ status }: { status: string }) {
     return (
-        <span className={cn("text-[8px] font-black uppercase px-2 py-0.5 rounded border", PAYMENT_BADGE[status] || PAYMENT_BADGE.PENDING)}>
+        <span className={cn("text-[9px] font-black uppercase px-2 py-1 rounded border", PAYMENT_BADGE[status] || PAYMENT_BADGE.PENDING)}>
             {status}
         </span>
     );
@@ -2261,16 +2261,16 @@ function PaymentBadge({ status }: { status: string }) {
 
 function PLRow({ label, value, valueStr, bold, sub, negative, highlight, isClient }: any) {
     return (
-        <div className={cn("flex items-center justify-between py-2 px-3 rounded-lg",
+        <div className={cn("flex items-center justify-between py-3 px-4 rounded-lg",
             bold && !highlight ? "bg-slate-50" : "",
             highlight === 'green' ? "bg-emerald-50 border border-emerald-100" : "",
             highlight === 'red' ? "bg-rose-50 border border-rose-100" : ""
         )}>
-            <span className={cn("text-[12px]",
+            <span className={cn("text-[13px]",
                 bold ? "font-black text-slate-900 uppercase" : "",
-                sub ? "font-bold text-slate-500 text-[11px]" : "font-bold text-slate-700"
+                sub ? "font-bold text-slate-500 text-[12px]" : "font-bold text-slate-700"
             )}>{label}</span>
-            <span className={cn("text-[12px] tabular-nums",
+            <span className={cn("text-[13px] tabular-nums",
                 bold ? "font-black" : "font-bold",
                 highlight === 'green' ? "text-emerald-700" : "",
                 highlight === 'red' ? "text-rose-700" : "",
@@ -2285,34 +2285,34 @@ function PLRow({ label, value, valueStr, bold, sub, negative, highlight, isClien
 function ReportTable({ title, icon, count, totalLabel, totalValue, headers, rows, isClient, actions }: any) {
     return (
         <div className="erp-card overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/40">
+            <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/40">
                 <div className="flex items-center gap-2">
                     {icon}
                     <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">{title}</h3>
-                    <span className="text-[9px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">{count}</span>
+                    <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">{count}</span>
                     {actions && <div className="ml-4 flex items-center gap-2">{actions}</div>}
                 </div>
                 {totalLabel && (
                     <div className="text-right">
-                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{totalLabel}</p>
-                        <p className="text-sm font-black text-slate-900 tabular-nums">{isClient ? totalValue : 'Rp ---'}</p>
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{totalLabel}</p>
+                        <p className="text-base font-black text-slate-900 tabular-nums">{isClient ? totalValue : 'Rp ---'}</p>
                     </div>
                 )}
             </div>
             <div className="overflow-x-auto">
-                <table className="w-full text-[11px]">
+                <table className="w-full text-xs">
                     <thead>
                         <tr className="bg-slate-900 text-white">
                             {headers.map((h: string, i: number) => (
-                                <th key={i} className="px-4 py-3 text-left font-black uppercase tracking-wider whitespace-nowrap text-[10px]">{h}</th>
+                                <th key={i} className="px-5 py-4 text-left font-black uppercase tracking-wider whitespace-nowrap text-[11px]">{h}</th>
                             ))}
                         </tr>
                     </thead>
                     <tbody>
                         {rows.map((row: any[], i: number) => (
-                            <tr key={i} className={cn("border-b border-slate-50 hover:bg-blue-50/30 transition-colors", i % 2 === 0 ? 'bg-white' : 'bg-slate-50/30')}>
+                            <tr key={i} className={cn("border-b border-slate-100 hover:bg-blue-50/50 transition-colors", i % 2 === 0 ? 'bg-white' : 'bg-slate-50/30')}>
                                 {row.map((cell: any, j: number) => (
-                                    <td key={j} className="px-4 py-2.5 text-slate-700 whitespace-nowrap">{cell}</td>
+                                    <td key={j} className="px-5 py-3.5 text-slate-800 whitespace-nowrap">{cell}</td>
                                 ))}
                             </tr>
                         ))}
