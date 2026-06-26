@@ -29,58 +29,7 @@ export default async function SalesPage() {
 
     const warehouses = serializeDecimal(await prisma.warehouse.findMany().catch(() => []));
 
-    // Helper to group sales by invoice number to avoid duplicates
-    const groupSalesByInvoice = (salesArray: any[]) => {
-        const grouped = new Map<string, any>();
-        for (const s of salesArray) {
-            const key = s.invoiceNumber || s.deliveryNumber; 
-            if (!grouped.has(key)) {
-                grouped.set(key, {
-                    ...s,
-                    id: `GROUP_${key}`,
-                    deliveryNumber: key, 
-                    subtotal: 0,
-                    totalDiscount: 0,
-                    taxAmount: 0,
-                    grandTotal: 0,
-                    paidAmount: 0,
-                    isGrouped: true,
-                    groupedIds: [],
-                    items: [],
-                    warehouse: s.warehouse || { name: '-' },
-                    recipient: s.recipient || '',
-                    order: s.order || null,
-                    createdAt: s.createdAt,
-                    buyerName: s.buyerName || '',
-                    salesPerson: s.salesPerson || '',
-                    isVoid: s.isVoid || false
-                });
-            }
-            const g = grouped.get(key);
-            g.subtotal += Number(s.subtotal || 0);
-            g.totalDiscount += Number(s.totalDiscount || 0);
-            g.taxAmount += Number(s.taxAmount || 0);
-            g.grandTotal += Number(s.grandTotal || 0);
-            g.paidAmount += Number(s.paidAmount || 0);
-            g.groupedIds.push(s.id);
-            if (s.items) {
-                g.items.push(...s.items);
-            }
-        }
-        
-        return Array.from(grouped.values()).map(g => {
-            if (g.paidAmount >= g.grandTotal && g.grandTotal > 0) {
-                g.paymentStatus = 'PAID';
-            } else if (g.paidAmount > 0) {
-                g.paymentStatus = 'PARTIAL';
-            } else {
-                g.paymentStatus = 'PENDING';
-            }
-            return g;
-        });
-    };
-
-    const rawDeliveries = await prisma.salesDelivery.findMany({
+    const deliveries = serializeDecimal(await prisma.salesDelivery.findMany({
         where: userFilter,
         include: { 
             warehouse: true, 
@@ -88,9 +37,7 @@ export default async function SalesPage() {
             order: true
         },
         orderBy: { createdAt: 'desc' }
-    }).catch(() => []);
-
-    const deliveries = serializeDecimal(groupSalesByInvoice(rawDeliveries));
+    }).catch(() => []));
 
     const receipts = serializeDecimal(await prisma.goodsReceipt.findMany({
         where: { isVerified: true },
