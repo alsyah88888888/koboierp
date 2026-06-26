@@ -1707,7 +1707,8 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
             details: {
                 sales: salesDetail,
                 purchases: purchaseDetail,
-                operational: opsDetail
+                operational: opsDetail,
+                monthlyTraceability
             },
             stats: {
                 salesCount: sales.length,

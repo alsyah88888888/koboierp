@@ -852,6 +852,29 @@ export function ReportsDashboard() {
                 }));
                 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Detail Operasional');
             }
+            if (data.details?.monthlyTraceability?.length) {
+                const traceRows = data.details.monthlyTraceability.map((r: any) => ({
+                    'No.': r.NO,
+                    'Barcode': r.BARCODE,
+                    'Nama Item': r['NAMA BARANG'],
+                    'Supplier': r.SUPPLIER,
+                    'No. LPB': r['NOMOR LPB'],
+                    'Tgl Beli': r['TANGGAL BELI'],
+                    'Qty Beli': r['QTY BELI'],
+                    'Total Beli (HPP)': r['TOTAL BELI'],
+                    'Ops': r.OPS,
+                    'Buyer': r.BUYER,
+                    'Sales': r.SALES,
+                    'No. Faktur Penjualan': r['NOMOR FAKTUR PENJUALAN'],
+                    'No. Surat Jalan': r['NOMOR SURAT JALAN'],
+                    'Tgl Jual': r['TANGGAL JUAL'],
+                    'Qty Jual': r['QTY JUAL'],
+                    'Total Jual (Net)': r['TOTAL JUAL'],
+                    'Margin': r.MARGIN,
+                    'Margin %': r.MARGIN_PCT ? `${r.MARGIN_PCT}%` : '0%'
+                }));
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(traceRows), 'Traceability Bulanan');
+            }
             // AR
             if (data.arAging?.items?.length) {
                 const rows = data.arAging.items.map((r: any, i: number) => ({
@@ -2139,6 +2162,52 @@ function MonthlyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix 
                         )}
                     </div>
                 </div>
+            )}
+
+            {/* Traceability Bulanan */}
+            {data.details?.monthlyTraceability?.length > 0 && (
+                <ReportTable
+                    title="Traceability Bulanan" icon={<FileSpreadsheet className="h-4 w-4 text-emerald-500" />}
+                    count={data.details.monthlyTraceability.length}
+                    totalLabel="Margin Traceability"
+                    totalValue={isClient ? (() => {
+                        const totalJual = data.details.monthlyTraceability.reduce((sum: number, r: any) => sum + Number(r['TOTAL JUAL'] || 0), 0);
+                        const totalMargin = data.details.monthlyTraceability.reduce((sum: number, r: any) => sum + Number(r.MARGIN || 0), 0);
+                        const marginPct = totalJual > 0 ? (totalMargin / totalJual * 100) : 0;
+                        return `${formatCurrency(totalMargin)} (${marginPct.toFixed(1)}%)`;
+                    })() : '...'}
+                    exportData={{
+                        filename: 'traceability-bulanan',
+                        data: data.details.monthlyTraceability
+                    }}
+                    headers={['No.', 'Barcode', 'Nama Item', 'Supplier', 'No. LPB', 'Tgl Beli', 'Qty Beli', 'Total Beli (HPP)', 'Ops', 'Buyer', 'Sales', 'No. Faktur Penjualan', 'No. Surat Jalan', 'Tgl Jual', 'Qty Jual', 'Total Jual (Net)', 'Margin', 'Margin %']}
+                    rows={data.details.monthlyTraceability.map((row: any) => [
+                        <span className="font-bold">{row.NO}</span>,
+                        row.BARCODE,
+                        <span className="font-black text-slate-900 truncate max-w-[200px] block" title={row['NAMA BARANG']}>{row['NAMA BARANG']}</span>,
+                        <span className="truncate max-w-[120px] block" title={row.SUPPLIER}>{row.SUPPLIER}</span>,
+                        <span className="text-[10px] text-slate-500">{row['NOMOR LPB']}</span>,
+                        row['TANGGAL BELI'],
+                        <span className="tabular-nums font-bold">{row['QTY BELI']}</span>,
+                        <span className="tabular-nums font-black text-emerald-600">{isClient ? formatCurrency(row['TOTAL BELI']) : '...'}</span>,
+                        <span className="tabular-nums text-slate-500">{isClient ? formatCurrency(row.OPS) : '...'}</span>,
+                        <span className="truncate max-w-[120px] block font-bold" title={row.BUYER}>{row.BUYER}</span>,
+                        <span className="text-[10px] uppercase font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">{row.SALES}</span>,
+                        <span className="text-[10px] text-slate-500">{row['NOMOR FAKTUR PENJUALAN']}</span>,
+                        <span className="text-[10px] text-slate-500">{row['NOMOR SURAT JALAN']}</span>,
+                        row['TANGGAL JUAL'],
+                        <span className="tabular-nums font-bold">{row['QTY JUAL']}</span>,
+                        <span className="tabular-nums font-black text-blue-600">{isClient ? formatCurrency(row['TOTAL JUAL']) : '...'}</span>,
+                        <span className={cn("tabular-nums font-black", Number(row.MARGIN) >= 0 ? "text-emerald-600" : "text-rose-600")}>
+                            {isClient ? formatCurrency(row.MARGIN) : '...'}
+                        </span>,
+                        <span className={cn("tabular-nums font-black text-[10px]", Number(row.MARGIN) >= 0 ? "text-emerald-600" : "text-rose-600")}>
+                            {row.MARGIN_PCT ? `${row.MARGIN_PCT}%` : '0%'}
+                        </span>
+                    ])}
+                    isClient={isClient}
+                    actions={divisionFilterSelect}
+                />
             )}
 
             {/* Sales Detail Table */}
