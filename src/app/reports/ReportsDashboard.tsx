@@ -158,57 +158,82 @@ export function ReportsDashboard() {
     };
 
     const handlePrint = () => {
-        if (activeTab === "closing" && closingReport) {
-            const printWindow = window.open('', '_blank');
-            if (!printWindow) return;
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) return;
 
-            const html = `
+        const getCommonStyles = () => `
+            <style>
+                @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+                body { font-family: 'Inter', sans-serif; padding: 40px; color: #1e293b; line-height: 1.5; }
+                .header { border-bottom: 4px solid #0f172a; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end; }
+                .header h1 { margin: 0; font-weight: 900; text-transform: uppercase; letter-spacing: -1px; font-size: 32px; color: #0f172a; }
+                .summary-grid { display: grid; grid-template-cols: repeat(4, 1fr); gap: 20px; margin-bottom: 40px; }
+                .summary-card { padding: 15px; border: 1px solid #e2e8f0; border-radius: 12px; background: #fff; }
+                .summary-card p { margin: 0; font-size: 10px; font-weight: 900; text-transform: uppercase; color: #64748b; letter-spacing: 1px; }
+                .summary-card h2 { margin: 5px 0 0; font-size: 18px; font-weight: 900; letter-spacing: -0.5px; }
+                h3 { font-weight: 900; text-transform: uppercase; font-size: 14px; border-left: 4px solid #3b82f6; padding-left: 12px; margin-top: 40px; margin-bottom: 15px; color: #0f172a; }
+                table { width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 11px; }
+                th { background: #f8fafc; padding: 12px; text-align: left; font-weight: 900; text-transform: uppercase; font-size: 9px; border-bottom: 2px solid #e2e8f0; color: #475569; }
+                td { padding: 10px 12px; border-bottom: 1px solid #f1f5f9; color: #334155; }
+                .text-right { text-align: right; }
+                .font-black { font-weight: 900; color: #0f172a; }
+                .footer-sig { margin-top: 80px; display: grid; grid-template-cols: 1fr 1fr; text-align: center; gap: 40px; }
+                .sig-box { border-top: 1px solid #cbd5e1; padding-top: 10px; font-weight: 900; font-size: 12px; margin: 0 auto; width: 220px; }
+                @media print { 
+                    body { padding: 0; }
+                    .summary-card { border: 1px solid #000; }
+                    h3 { border-left: 4px solid #000; }
+                }
+            </style>
+        `;
+
+        const getHeaderHTML = (title: string, periodStr: string) => `
+            <div class="header">
+                <div style="display: flex; gap: 20px; align-items: center;">
+                    <div style="width: 60px; height: 60px; background: #0f172a; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 900; font-size: 24px;">
+                        KB
+                    </div>
+                    <div>
+                        <h1 style="margin: 0; font-weight: 900; font-size: 28px; color: #0f172a; letter-spacing: -1px;">PT. KOBOI DIGITAL NUSANTARA</h1>
+                        <p style="margin: 5px 0 0; color: #64748b; font-size: 12px;">Gedung Cyber 1 Lt. 12, Jl. Kuningan Barat No.8, Jakarta Selatan 12710</p>
+                        <p style="margin: 0; color: #64748b; font-size: 12px;">Telp: (021) 1234-5678 | Email: finance@koboi.id</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <h2 style="margin: 0; font-weight: 900; color: #3b82f6; font-size: 20px; text-transform: uppercase;">${title}</h2>
+                    <p style="margin: 5px 0 0; font-weight: 700; color: #64748b; font-size: 12px;">Periode: ${periodStr}</p>
+                    <p style="margin: 5px 0 0; font-size: 9px; font-weight: 900; color: #94a3b8; text-transform: uppercase;">Generated at: ${format(new Date(), "dd MMM yyyy HH:mm")}</p>
+                </div>
+            </div>
+        `;
+
+        const getFooterHTML = () => `
+            <div class="footer-sig">
+                <div>
+                    <p style="font-size: 10px; font-weight: 900; color: #64748b; margin-bottom: 70px; text-transform: uppercase;">Prepared By</p>
+                    <div class="sig-box">ADMINISTRATOR</div>
+                </div>
+                <div>
+                    <p style="font-size: 10px; font-weight: 900; color: #64748b; margin-bottom: 70px; text-transform: uppercase;">Approved By</p>
+                    <div class="sig-box">MANAGEMENT</div>
+                </div>
+            </div>
+            <script>
+                window.onload = () => { setTimeout(() => { window.print(); }, 500); };
+            </script>
+        `;
+
+        let html = '';
+
+        if (activeTab === "closing" && closingReport) {
+            html = `
                 <html>
                     <head>
                         <title>Laporan Closing Bulanan - ${closingReport.period}</title>
-                        <style>
-                            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-                            body { font-family: 'Inter', sans-serif; padding: 40px; color: #1e293b; line-height: 1.5; }
-                            .header { border-bottom: 4px solid #0f172a; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end; }
-                            .header h1 { margin: 0; font-weight: 900; text-transform: uppercase; letter-spacing: -1px; font-size: 32px; color: #0f172a; }
-                            .summary-grid { display: grid; grid-template-cols: repeat(4, 1fr); gap: 20px; margin-bottom: 40px; }
-                            .summary-card { padding: 15px; border: 1px solid #e2e8f0; border-radius: 12px; background: #fff; }
-                            .summary-card p { margin: 0; font-size: 10px; font-weight: 900; text-transform: uppercase; color: #64748b; letter-spacing: 1px; }
-                            .summary-card h2 { margin: 5px 0 0; font-size: 18px; font-weight: 900; letter-spacing: -0.5px; }
-                            h3 { font-weight: 900; text-transform: uppercase; font-size: 14px; border-left: 4px solid #3b82f6; padding-left: 12px; margin-top: 40px; margin-bottom: 15px; color: #0f172a; }
-                            table { width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 11px; }
-                            th { background: #f8fafc; padding: 12px; text-align: left; font-weight: 900; text-transform: uppercase; font-size: 9px; border-bottom: 2px solid #e2e8f0; color: #475569; }
-                            td { padding: 10px 12px; border-bottom: 1px solid #f1f5f9; color: #334155; }
-                            .text-right { text-align: right; }
-                            .font-black { font-weight: 900; color: #0f172a; }
-                            .footer-sig { margin-top: 80px; display: grid; grid-template-cols: 1fr 1fr; text-align: center; gap: 40px; }
-                            .sig-box { border-top: 1px solid #cbd5e1; padding-top: 10px; font-weight: 900; font-size: 12px; margin: 0 auto; width: 220px; }
-                            @media print { 
-                                body { padding: 0; }
-                                .summary-card { border: 1px solid #000; }
-                                h3 { border-left: 4px solid #000; }
-                            }
-                        </style>
+                        ${getCommonStyles()}
                     </head>
                     <body>
-                        <div class="header" style="border-bottom: 4px solid #0f172a; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end;">
-                            <div style="display: flex; gap: 20px; align-items: center;">
-                                <div style="width: 60px; height: 60px; background: #0f172a; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 900; font-size: 24px;">
-                                    KB
-                                </div>
-                                <div>
-                                    <h1 style="margin: 0; font-weight: 900; font-size: 28px; color: #0f172a; letter-spacing: -1px;">PT. KOBOI DIGITAL NUSANTARA</h1>
-                                    <p style="margin: 5px 0 0; color: #64748b; font-size: 12px;">Gedung Cyber 1 Lt. 12, Jl. Kuningan Barat No.8, Jakarta Selatan 12710</p>
-                                    <p style="margin: 0; color: #64748b; font-size: 12px;">Telp: (021) 1234-5678 | Email: finance@koboi.id</p>
-                                </div>
-                            </div>
-                            <div class="text-right">
-                                <h2 style="margin: 0; font-weight: 900; color: #3b82f6; font-size: 20px; text-transform: uppercase;">Closing Report</h2>
-                                <p style="margin: 5px 0 0; font-weight: 700; color: #64748b; font-size: 12px;">Periode: ${closingReport.period}</p>
-                                <p style="margin: 5px 0 0; font-size: 9px; font-weight: 900; color: #94a3b8; text-transform: uppercase;">Generated at: ${format(new Date(), "dd MMM yyyy HH:mm")}</p>
-                            </div>
-                        </div>
-
+                        ${getHeaderHTML('Closing Report', closingReport.period)}
                         <div class="summary-grid">
                             <div class="summary-card">
                                 <p>Penjualan</p>
@@ -222,17 +247,13 @@ export function ReportsDashboard() {
                                 <p>Operasional</p>
                                 <h2>${formatCurrency(closingReport.expenses)}</h2>
                             </div>
-                            <div class="summary-card">
-                                <p>Gross Margin</p>
-                                <h2>${formatCurrency(closingReport.grossProfit)}</h2>
-                            </div>
                             <div class="summary-card" style="background: #f8fafc; border: 1px solid #3b82f6;">
                                 <p style="color: #3b82f6;">Profit</p>
                                 <h2 style="color: ${closingReport.netProfit >= 0 ? '#059669' : '#dc2626'}">${formatCurrency(closingReport.netProfit)}</h2>
                             </div>
                         </div>
 
-                        <h3>I. Detail Penjualan (Matching Kas Masuk BCA)</h3>
+                        <h3>I. Detail Penjualan</h3>
                         <table>
                             <thead>
                                 <tr>
@@ -254,11 +275,11 @@ export function ReportsDashboard() {
                                         <td>${s.paymentDate ? format(new Date(s.paymentDate), "dd/MM/yyyy") : '-'}</td>
                                         <td class="text-right font-black">${formatCurrency(s.grandTotal)}</td>
                                     </tr>
-                                `).join('') || '<tr><td colspan="6" style="text-align:center">Tidak ada transaksi penjualan dalam periode ini</td></tr>'}
+                                `).join('') || '<tr><td colspan="6" style="text-align:center">Tidak ada transaksi penjualan</td></tr>'}
                             </tbody>
                         </table>
 
-                        <h3>II. Detail Biaya Operasional (Matching Kas Keluar BCA)</h3>
+                        <h3>II. Detail Biaya Operasional</h3>
                         <table>
                             <thead>
                                 <tr>
@@ -276,13 +297,13 @@ export function ReportsDashboard() {
                                         <td>${e.description}</td>
                                         <td class="text-right font-black">${formatCurrency(Math.abs(e.amount))}</td>
                                     </tr>
-                                `).join('') || '<tr><td colspan="4" style="text-align:center">Tidak ada pengeluaran operasional dalam periode ini</td></tr>'}
+                                `).join('') || '<tr><td colspan="4" style="text-align:center">Tidak ada pengeluaran operasional</td></tr>'}
                             </tbody>
                         </table>
 
                         <div style="page-break-before: always;"></div>
 
-                        <h3>III. Detail Pembelian Barang (Inventory Admission)</h3>
+                        <h3>III. Detail Pembelian Barang</h3>
                         <table>
                             <thead>
                                 <tr>
@@ -304,37 +325,329 @@ export function ReportsDashboard() {
                                         <td>${p.paymentDate ? format(new Date(p.paymentDate), "dd/MM/yyyy") : '-'}</td>
                                         <td class="text-right font-black">${formatCurrency(p.grandTotal)}</td>
                                     </tr>
-                                `).join('') || '<tr><td colspan="6" style="text-align:center">Tidak ada transaksi pembelian dalam periode ini</td></tr>'}
+                                `).join('') || '<tr><td colspan="6" style="text-align:center">Tidak ada transaksi pembelian</td></tr>'}
                             </tbody>
                         </table>
-
-                        <div class="footer-sig">
-                            <div>
-                                <p style="font-size: 10px; font-weight: 900; color: #64748b; margin-bottom: 70px; text-transform: uppercase;">Prepared By (Finance)</p>
-                                <div class="sig-box">ADMIN FINANCE</div>
-                            </div>
-                            <div>
-                                <p style="font-size: 10px; font-weight: 900; color: #64748b; margin-bottom: 70px; text-transform: uppercase;">Approved By (Management)</p>
-                                <div class="sig-box">DIRECTOR / OWNER</div>
-                            </div>
-                        </div>
-
-                        <script>
-                            window.onload = () => { 
-                                setTimeout(() => {
-                                    window.print(); 
-                                }, 500);
-                            };
-                        </script>
+                        ${getFooterHTML()}
                     </body>
                 </html>
             `;
+        } else if (activeTab === "daily" && dailyData) {
+            html = `
+                <html>
+                    <head>
+                        <title>Laporan Harian - ${dailyData.period}</title>
+                        ${getCommonStyles()}
+                    </head>
+                    <body>
+                        ${getHeaderHTML('Laporan Harian', dailyData.period)}
+                        <div class="summary-grid">
+                            <div class="summary-card">
+                                <p>Penjualan</p>
+                                <h2>${formatCurrency(dailyData.totals?.sales || 0)}</h2>
+                            </div>
+                            <div class="summary-card">
+                                <p>HPP</p>
+                                <h2>${formatCurrency(dailyData.totals?.hpp || 0)}</h2>
+                            </div>
+                            <div class="summary-card">
+                                <p>Pembelian</p>
+                                <h2>${formatCurrency(dailyData.totals?.purchases || 0)}</h2>
+                            </div>
+                            <div class="summary-card" style="background: #f8fafc; border: 1px solid #3b82f6;">
+                                <p style="color: #3b82f6;">Gross Profit</p>
+                                <h2 style="color: ${(dailyData.totals?.sales - dailyData.totals?.hpp) >= 0 ? '#059669' : '#dc2626'}">${formatCurrency(dailyData.totals?.sales - dailyData.totals?.hpp)}</h2>
+                            </div>
+                        </div>
 
-            printWindow.document.write(html);
-            printWindow.document.close();
+                        <h3>I. 10 Produk Terlaris Harian</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width: 50%;">Nama Produk</th>
+                                    <th style="width: 25%; text-align: right;">Total Terjual (Qty)</th>
+                                    <th style="width: 25%; text-align: right;">Total Nilai</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${dailyData.topProducts?.slice(0, 10).map((p: any) => `
+                                    <tr>
+                                        <td class="font-black">${p.name}</td>
+                                        <td class="text-right">${p.totalQty}</td>
+                                        <td class="text-right font-black">${formatCurrency(p.totalSales)}</td>
+                                    </tr>
+                                `).join('') || '<tr><td colspan="3" style="text-align:center">Tidak ada data produk</td></tr>'}
+                            </tbody>
+                        </table>
+
+                        <h3>II. Detail Penjualan Harian</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width: 25%;">No. Invoice / SJ</th>
+                                    <th style="width: 35%;">Nama Customer</th>
+                                    <th style="width: 20%;" class="text-right">Tgl Transaksi</th>
+                                    <th style="width: 20%;" class="text-right">Total Transaksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${dailyData.sales?.map((s: any) => `
+                                    <tr>
+                                        <td class="font-black">${s.deliveryNumber}</td>
+                                        <td>${s.buyerName || '-'}</td>
+                                        <td class="text-right">${format(new Date(s.date), "dd/MM/yyyy HH:mm")}</td>
+                                        <td class="text-right font-black">${formatCurrency(s.grandTotal)}</td>
+                                    </tr>
+                                `).join('') || '<tr><td colspan="4" style="text-align:center">Tidak ada transaksi penjualan harian</td></tr>'}
+                            </tbody>
+                        </table>
+                        
+                        <h3>III. Detail Pembelian Harian</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width: 25%;">No. Penerimaan</th>
+                                    <th style="width: 35%;">Nama Supplier</th>
+                                    <th style="width: 20%;" class="text-right">Tgl Transaksi</th>
+                                    <th style="width: 20%;" class="text-right">Total Tagihan</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${dailyData.purchases?.map((p: any) => `
+                                    <tr>
+                                        <td class="font-black">${p.receiptNumber}</td>
+                                        <td>${p.receivedFrom || '-'}</td>
+                                        <td class="text-right">${format(new Date(p.date || p.createdAt), "dd/MM/yyyy HH:mm")}</td>
+                                        <td class="text-right font-black">${formatCurrency(p.grandTotal)}</td>
+                                    </tr>
+                                `).join('') || '<tr><td colspan="4" style="text-align:center">Tidak ada transaksi pembelian harian</td></tr>'}
+                            </tbody>
+                        </table>
+                        ${getFooterHTML()}
+                    </body>
+                </html>
+            `;
+        } else if (activeTab === "weekly" && weeklyData) {
+            html = `
+                <html>
+                    <head>
+                        <title>Laporan Mingguan - ${weeklyData.period}</title>
+                        ${getCommonStyles()}
+                    </head>
+                    <body>
+                        ${getHeaderHTML('Laporan Mingguan', weeklyData.period)}
+                        <div class="summary-grid">
+                            <div class="summary-card">
+                                <p>Total Penjualan</p>
+                                <h2>${formatCurrency(weeklyData.totals?.sales || 0)}</h2>
+                            </div>
+                            <div class="summary-card">
+                                <p>Total Pembelian</p>
+                                <h2>${formatCurrency(weeklyData.totals?.purchases || 0)}</h2>
+                            </div>
+                            <div class="summary-card">
+                                <p>Operasional</p>
+                                <h2>${formatCurrency(weeklyData.totals?.opsExpense || 0)}</h2>
+                            </div>
+                            <div class="summary-card" style="background: #f8fafc; border: 1px solid #3b82f6;">
+                                <p style="color: #3b82f6;">Gross Margin</p>
+                                <h2 style="color: ${(weeklyData.totals?.sales - weeklyData.totals?.hpp) >= 0 ? '#059669' : '#dc2626'}">${formatCurrency(weeklyData.totals?.sales - weeklyData.totals?.hpp)}</h2>
+                            </div>
+                        </div>
+
+                        <h3>I. Tren Pendapatan Harian (Senin - Minggu)</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width: 20%;">Hari / Tanggal</th>
+                                    <th style="width: 15%; text-align: right;">Total Transaksi</th>
+                                    <th style="width: 25%; text-align: right;">Total Penjualan</th>
+                                    <th style="width: 20%; text-align: right;">HPP</th>
+                                    <th style="width: 20%; text-align: right;">Gross Profit</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${weeklyData.dailyBreakdown?.map((d: any) => `
+                                    <tr>
+                                        <td class="font-black">${d.dayName}, ${d.dateLabel}</td>
+                                        <td class="text-right">${d.salesCount}</td>
+                                        <td class="text-right font-black" style="color: #059669;">${formatCurrency(d.sales)}</td>
+                                        <td class="text-right">${formatCurrency(d.hpp)}</td>
+                                        <td class="text-right font-black">${formatCurrency(d.sales - d.hpp)}</td>
+                                    </tr>
+                                `).join('') || '<tr><td colspan="5" style="text-align:center">Tidak ada data harian</td></tr>'}
+                            </tbody>
+                        </table>
+
+                        <div style="display: grid; grid-template-cols: 1fr 1fr; gap: 40px;">
+                            <div>
+                                <h3>II. Top 5 Customer</h3>
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Nama Customer</th>
+                                            <th class="text-right">Total Nilai</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${weeklyData.topBuyers?.slice(0, 5).map((b: any) => `
+                                            <tr>
+                                                <td class="font-black">${b.name}</td>
+                                                <td class="text-right font-black">${formatCurrency(b.total)}</td>
+                                            </tr>
+                                        `).join('') || '<tr><td colspan="2" style="text-align:center">Tidak ada data</td></tr>'}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div>
+                                <h3>III. Top 5 Produk</h3>
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Nama Produk</th>
+                                            <th class="text-right">Qty Terjual</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${weeklyData.topProducts?.slice(0, 5).map((p: any) => `
+                                            <tr>
+                                                <td class="font-black">${p.name}</td>
+                                                <td class="text-right font-black">${p.totalQty}</td>
+                                            </tr>
+                                        `).join('') || '<tr><td colspan="2" style="text-align:center">Tidak ada data</td></tr>'}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        ${getFooterHTML()}
+                    </body>
+                </html>
+            `;
+        } else if (activeTab === "monthly" && monthlyData) {
+            html = `
+                <html>
+                    <head>
+                        <title>Laporan Bulanan - ${monthlyData.period}</title>
+                        ${getCommonStyles()}
+                    </head>
+                    <body>
+                        ${getHeaderHTML('Laporan Bulanan', monthlyData.period)}
+                        <div class="summary-grid">
+                            <div class="summary-card">
+                                <p>Total Penjualan</p>
+                                <h2>${formatCurrency(monthlyData.totals?.sales || 0)}</h2>
+                            </div>
+                            <div class="summary-card">
+                                <p>Total Pembelian</p>
+                                <h2>${formatCurrency(monthlyData.totals?.purchases || 0)}</h2>
+                            </div>
+                            <div class="summary-card">
+                                <p>Operasional</p>
+                                <h2>${formatCurrency(monthlyData.totals?.opsExpense || 0)}</h2>
+                            </div>
+                            <div class="summary-card" style="background: #f8fafc; border: 1px solid #3b82f6;">
+                                <p style="color: #3b82f6;">Gross Margin</p>
+                                <h2 style="color: ${(monthlyData.totals?.sales - monthlyData.totals?.hpp) >= 0 ? '#059669' : '#dc2626'}">${formatCurrency(monthlyData.totals?.sales - monthlyData.totals?.hpp)}</h2>
+                            </div>
+                        </div>
+
+                        <h3>I. Tren Kinerja Bulanan (Per Minggu)</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width: 25%;">Minggu</th>
+                                    <th style="width: 25%; text-align: right;">Total Penjualan</th>
+                                    <th style="width: 25%; text-align: right;">Total Pembelian</th>
+                                    <th style="width: 25%; text-align: right;">Gross Profit</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${(() => {
+                                    const weeks: any[] = [];
+                                    const days = monthlyData.dailyBreakdown || [];
+                                    let currentWeek = { sales: 0, purchases: 0, hpp: 0, count: 0 };
+                                    let weekNum = 1;
+                                    
+                                    days.forEach((d: any, index: number) => {
+                                        currentWeek.sales += d.sales;
+                                        currentWeek.purchases += d.purchases;
+                                        currentWeek.hpp += d.hpp;
+                                        currentWeek.count++;
+                                        
+                                        if (currentWeek.count === 7 || index === days.length - 1) {
+                                            weeks.push({ week: 'Minggu Ke-' + weekNum, ...currentWeek });
+                                            currentWeek = { sales: 0, purchases: 0, hpp: 0, count: 0 };
+                                            weekNum++;
+                                        }
+                                    });
+
+                                    return weeks.map(w => `
+                                        <tr>
+                                            <td class="font-black">${w.week}</td>
+                                            <td class="text-right font-black" style="color: #059669;">${formatCurrency(w.sales)}</td>
+                                            <td class="text-right">${formatCurrency(w.purchases)}</td>
+                                            <td class="text-right font-black">${formatCurrency(w.sales - w.hpp)}</td>
+                                        </tr>
+                                    `).join('');
+                                })()}
+                            </tbody>
+                        </table>
+
+                        <div style="page-break-before: always;"></div>
+
+                        <h3>II. Top 10 Customer Terbesar</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width: 50%;">Nama Customer</th>
+                                    <th style="width: 25%; text-align: right;">Jumlah Transaksi</th>
+                                    <th style="width: 25%; text-align: right;">Total Nilai Pembelian</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${monthlyData.topBuyers?.slice(0, 10).map((b: any) => `
+                                    <tr>
+                                        <td class="font-black">${b.name}</td>
+                                        <td class="text-right">${b.count}</td>
+                                        <td class="text-right font-black">${formatCurrency(b.total)}</td>
+                                    </tr>
+                                `).join('') || '<tr><td colspan="3" style="text-align:center">Tidak ada data</td></tr>'}
+                            </tbody>
+                        </table>
+
+                        <h3>III. Top 10 Produk Terlaris</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width: 50%;">Nama Produk</th>
+                                    <th style="width: 25%; text-align: right;">Total Qty Terjual</th>
+                                    <th style="width: 25%; text-align: right;">Total Pendapatan</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${monthlyData.topProducts?.slice(0, 10).map((p: any) => `
+                                    <tr>
+                                        <td class="font-black">${p.name}</td>
+                                        <td class="text-right">${p.totalQty}</td>
+                                        <td class="text-right font-black">${formatCurrency(p.totalSales)}</td>
+                                    </tr>
+                                `).join('') || '<tr><td colspan="3" style="text-align:center">Tidak ada data</td></tr>'}
+                            </tbody>
+                        </table>
+
+                        ${getFooterHTML()}
+                    </body>
+                </html>
+            `;
         } else {
+            printWindow.close();
             window.print();
+            return;
         }
+
+        printWindow.document.write(html);
+        printWindow.document.close();
     };
 
     useEffect(() => {
