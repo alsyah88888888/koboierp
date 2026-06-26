@@ -1309,7 +1309,7 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
     try {
         const [
             sales, purchases, allOperational, arRecords, apRecords,
-            returnsPurchase, returnsSales, stockMovements
+            returnsPurchase, returnsSales, stockMovements, monthlyTraceability
         ] = await Promise.all([
             // Sales
             (prisma as any).salesDelivery.findMany({
@@ -1410,7 +1410,9 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
                 where: { createdAt: { gte: startDate, lte: endDate } },
                 include: { product: { select: { sku: true, name: true } } },
                 orderBy: { createdAt: 'asc' }
-            })
+            }),
+            // Traceability
+            calculateProductTraceabilityInternal(startDate, endDate, prefix).catch(() => [])
         ]);
 
         // ── P&L Calculation ──────────────────────────────────────────────
@@ -1420,24 +1422,8 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
         const totalDiscount = sales.reduce((s: number, d: any) => s + Number(d.totalDiscount || 0), 0);
         const totalSalesTax = sales.reduce((s: number, d: any) => s + Number(d.taxAmount || 0), 0);
 
-        // COGS / HPP — from lot allocations if available, fallback to product purchasePrice
-        let totalHPP = 0;
-        const productIdsInSales = new Set<string>();
-        sales.forEach((s: any) => {
-            const isPKP = s.isPKP || Number(s.taxRate || 0) > 0 || String(s.invoiceNumber || '').includes('TRN');
-            const taxMultiplier = 1 + (isPKP ? 0.11 : 0);
-            (s.items || []).forEach((item: any) => {
-                productIdsInSales.add(item.productId);
-                const qty = Number(item.quantity || 0);
-                if (item.lotAllocations && item.lotAllocations.length > 0) {
-                    item.lotAllocations.forEach((alloc: any) => {
-                        totalHPP += Number(alloc.qty || 0) * Math.round(Number(alloc.hppAtTime || 0) * taxMultiplier);
-                    });
-                } else {
-                    totalHPP += qty * Math.round(Number(item.product?.purchasePrice || 0) * taxMultiplier);
-                }
-            });
-        });
+        // COGS / HPP — from Traceability for 100% accuracy
+        let totalHPP = monthlyTraceability.reduce((sum: number, t: any) => sum + Number(t['TOTAL BELI'] || 0), 0);
 
         // Gross Profit
         const grossProfit = totalRevenue - totalHPP;
@@ -1447,7 +1433,9 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
         const expenses = allOperational.filter((o: any) =>
             o.transactionType === 'PAYMENT' || o.transactionType === 'EXPENSE' || Number(o.amount) < 0
         );
-        const totalExpenses = expenses.reduce((s: number, o: any) => s + Math.abs(Number(o.amount || 0)), 0);
+        const generalOps = expenses.filter((o: any) => !o.invoiceNumber).reduce((s: number, o: any) => s + Math.abs(Number(o.amount || 0)), 0);
+        const linkedOpsExpense = monthlyTraceability.reduce((sum: number, t: any) => sum + Number(t['OPS'] || 0), 0);
+        const totalExpenses = generalOps + linkedOpsExpense;
 
         // Net Profit
         const netProfit = grossProfit - totalExpenses;
@@ -1553,11 +1541,31 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
                 const dt = p.date ? new Date(p.date) : null;
                 return dt && dt >= dayStart && dt <= dayEnd;
             });
+            const dayOps = allOperational.filter((o: any) => new Date(o.date) >= dayStart && new Date(o.date) <= dayEnd);
+
+            const salesTotal = daySales.reduce((s: number, x: any) => s + Number(x.grandTotal || 0), 0);
+            const purchaseTotal = dayPurchases.reduce((s: number, x: any) => s + Number(x.grandTotal || 0), 0);
+
+            const daySalesDeliveries = daySales.map((s: any) => s.deliveryNumber).filter(Boolean);
+            const dayTraceRows = monthlyTraceability.filter((t: any) => daySalesDeliveries.includes(t['NOMOR SJ']));
+
+            let dayHPP = dayTraceRows.reduce((sum: number, t: any) => sum + Number(t['TOTAL BELI'] || 0), 0);
+            const linkedOpsExpense = dayTraceRows.reduce((sum: number, t: any) => sum + Number(t['OPS'] || 0), 0);
+
+            // General Ops that occurred today (unlinked)
+            const generalOpsToday = dayOps.filter((o: any) => 
+                (o.transactionType === 'PAYMENT' || o.transactionType === 'EXPENSE' || Number(o.amount) < 0) && !o.invoiceNumber
+            ).reduce((s: number, o: any) => s + Math.abs(Number(o.amount || 0)), 0);
+
+            const opsExpense = generalOpsToday + linkedOpsExpense;
+
             dailyBreakdown.push({
                 day: d,
                 label: `${d}`,
-                sales: daySales.reduce((s: number, x: any) => s + Number(x.grandTotal || 0), 0),
-                purchases: dayPurchases.reduce((s: number, x: any) => s + Number(x.grandTotal || 0), 0),
+                sales: salesTotal,
+                purchases: purchaseTotal,
+                hpp: dayHPP,
+                opsExpense,
                 salesCount: daySales.length,
                 purchaseCount: dayPurchases.length
             });
@@ -1587,19 +1595,9 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
 
         // ── Sales Detail Table ───────────────────────────────────────────
         const salesDetail = sales.map((s: any) => {
-            let saleHpp = 0;
-            const isPKP = s.isPKP || Number(s.taxRate || 0) > 0 || String(s.invoiceNumber || '').includes('TRN');
-            const taxMultiplier = 1 + (isPKP ? 0.11 : 0);
-            (s.items || []).forEach((item: any) => {
-                const qty = Number(item.quantity || 0);
-                if (item.lotAllocations && item.lotAllocations.length > 0) {
-                    item.lotAllocations.forEach((alloc: any) => {
-                        saleHpp += Number(alloc.qty || 0) * Math.round(Number(alloc.hppAtTime || 0) * taxMultiplier);
-                    });
-                } else {
-                    saleHpp += qty * Math.round(Number(item.product?.purchasePrice || 0) * taxMultiplier);
-                }
-            });
+            const saleTraceRows = monthlyTraceability.filter((t: any) => t['NOMOR SJ'] === s.deliveryNumber);
+            const saleHpp = saleTraceRows.reduce((sum: number, t: any) => sum + Number(t['TOTAL BELI'] || 0), 0);
+            
             const margin = Number(s.grandTotal || 0) - saleHpp;
             const marginPct = Number(s.grandTotal || 0) > 0 ? (margin / Number(s.grandTotal || 0) * 100) : 0;
             return {
