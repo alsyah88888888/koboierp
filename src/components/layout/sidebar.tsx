@@ -79,7 +79,7 @@ export function Sidebar() {
                             <div className="absolute inset-0 bg-gradient-to-br from-white via-slate-50 to-slate-100" />
                             <img 
                                 src="/image/logokoboi.png" 
-                                alt="Kobaie Logo" 
+                                alt="Kola Borasi Logo" 
                                 className="h-8 w-auto object-contain relative z-10"
                                 onError={(e) => {
                                     (e.target as any).src = "/logo.png";
@@ -87,7 +87,7 @@ export function Sidebar() {
                             />
                         </div>
                         <div>
-                            <h1 className="text-lg font-black text-white leading-tight tracking-tight uppercase">Kobaie ERP</h1>
+                            <h1 className="text-lg font-black text-white leading-tight tracking-tight uppercase">ERP PT. Kola Borasi Indonesia</h1>
                             <div className="flex items-center gap-1.5 mt-0.5">
                                 <span className="relative flex h-1.5 w-1.5">
                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
