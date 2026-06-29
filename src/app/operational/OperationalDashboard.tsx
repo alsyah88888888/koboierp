@@ -41,6 +41,13 @@ export function OperationalDashboard({
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState<any | null>(null);
     const [isClient, setIsClient] = useState(false);
+    const [filterType, setFilterType] = useState<"ALL"|"INCOME"|"EXPENSE">("ALL");
+    const [filterMonth, setFilterMonth] = useState<string>("ALL");
+    const [filterYear, setFilterYear] = useState<string>(new Date().getFullYear().toString());
+    const [filterDate, setFilterDate] = useState<string>("");
+
+    const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+    const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
 
     useEffect(() => {
         setIsClient(true);
@@ -70,10 +77,30 @@ export function OperationalDashboard({
     const bcStats = getStats("BC");
     const pfStats = getStats("PF");
 
-    const filteredTransactions = transactions.filter(t =>
-        t.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        t.referenceNumber?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredTransactions = transactions.filter(t => {
+        const matchSearch = t.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            t.referenceNumber?.toLowerCase().includes(searchTerm.toLowerCase());
+        
+        let matchType = true;
+        if (filterType === "INCOME") matchType = t.transactionType === "RECEIPT";
+        if (filterType === "EXPENSE") matchType = t.transactionType === "PAYMENT";
+
+        let matchDate = true;
+        if (filterDate) {
+            matchDate = t.date.split('T')[0] === filterDate;
+        } else {
+            const txDate = new Date(t.date);
+            const txYear = txDate.getFullYear().toString();
+            const txMonth = (txDate.getMonth() + 1).toString();
+            
+            const matchYear = filterYear === "ALL" || txYear === filterYear;
+            const matchMonth = filterMonth === "ALL" || txMonth === filterMonth;
+            
+            matchDate = matchYear && matchMonth;
+        }
+
+        return matchSearch && matchType && matchDate;
+    });
 
     const handleDelete = async (id: string) => {
         if (!confirm("Are you sure you want to delete this transaction?")) return;
@@ -248,21 +275,72 @@ export function OperationalDashboard({
             </div>
 
             <div className="bg-card border-none shadow-sm rounded-3xl overflow-hidden flex flex-col flex-1">
-                <div className="p-4 border-b flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4">
-                    <div className="relative w-full md:max-w-md">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <input
-                            type="text"
-                            placeholder="Cari transaksi..."
-                            className="w-full bg-accent/50 border-none rounded-2xl py-2 pl-10 pr-4 text-sm focus:ring-2 focus:ring-primary/20 transition-all font-medium"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
+                <div className="p-4 border-b flex flex-col xl:flex-row justify-between items-stretch xl:items-center gap-4">
+                    <div className="flex flex-col md:flex-row gap-4 w-full xl:max-w-3xl">
+                        <div className="relative w-full md:w-64 shrink-0">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                            <input
+                                type="text"
+                                placeholder="Cari transaksi..."
+                                className="w-full bg-accent/50 border-none rounded-2xl py-2 pl-10 pr-4 text-sm focus:ring-2 focus:ring-primary/20 transition-all font-medium"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
+
+                        {/* Date Filters */}
+                        <div className="flex flex-wrap items-center gap-2">
+                            <input
+                                type="date"
+                                className="bg-accent/50 border-none rounded-2xl py-2 px-4 text-[10px] font-black uppercase tracking-widest text-slate-600 focus:ring-2 focus:ring-primary/20 transition-all outline-none h-[36px]"
+                                value={filterDate}
+                                onChange={(e) => {
+                                    setFilterDate(e.target.value);
+                                    if (e.target.value) {
+                                        setFilterMonth("ALL");
+                                        setFilterYear("ALL");
+                                    }
+                                }}
+                            />
+                            {!filterDate && (
+                                <>
+                                    <select
+                                        value={filterMonth}
+                                        onChange={(e) => setFilterMonth(e.target.value)}
+                                        className="bg-accent/50 border-none rounded-2xl py-2 pl-4 pr-8 text-[10px] font-black uppercase tracking-widest text-slate-600 focus:ring-2 focus:ring-primary/20 transition-all outline-none cursor-pointer h-[36px]"
+                                    >
+                                        <option value="ALL">Semua Bulan</option>
+                                        {months.map((m, i) => (
+                                            <option key={i} value={(i + 1).toString()}>{m}</option>
+                                        ))}
+                                    </select>
+                                    <select
+                                        value={filterYear}
+                                        onChange={(e) => setFilterYear(e.target.value)}
+                                        className="bg-accent/50 border-none rounded-2xl py-2 pl-4 pr-8 text-[10px] font-black uppercase tracking-widest text-slate-600 focus:ring-2 focus:ring-primary/20 transition-all outline-none cursor-pointer h-[36px]"
+                                    >
+                                        <option value="ALL">Semua Tahun</option>
+                                        {years.map(y => (
+                                            <option key={y} value={y.toString()}>{y}</option>
+                                        ))}
+                                    </select>
+                                </>
+                            )}
+                        </div>
                     </div>
-                    <div className="flex flex-wrap gap-2 text-[10px] md:text-xs font-black uppercase tracking-widest justify-center">
-                        <button className="px-4 py-1.5 bg-accent rounded-full flex-1 md:flex-none">Semua</button>
-                        <button className="px-4 py-1.5 text-muted-foreground hover:bg-accent rounded-full transition-colors flex-1 md:flex-none">Expenses</button>
-                        <button className="px-4 py-1.5 text-muted-foreground hover:bg-accent rounded-full transition-colors flex-1 md:flex-none">Income</button>
+                    <div className="flex flex-wrap gap-2 text-[10px] md:text-xs font-black uppercase tracking-widest justify-center shrink-0">
+                        <button 
+                            className={`px-4 py-1.5 rounded-full flex-1 md:flex-none transition-colors ${filterType === "ALL" ? 'bg-accent text-slate-900' : 'text-muted-foreground hover:bg-accent/50'}`}
+                            onClick={() => setFilterType("ALL")}
+                        >Semua</button>
+                        <button 
+                            className={`px-4 py-1.5 rounded-full flex-1 md:flex-none transition-colors ${filterType === "EXPENSE" ? 'bg-accent text-slate-900' : 'text-muted-foreground hover:bg-accent/50'}`}
+                            onClick={() => setFilterType("EXPENSE")}
+                        >Expenses</button>
+                        <button 
+                            className={`px-4 py-1.5 rounded-full flex-1 md:flex-none transition-colors ${filterType === "INCOME" ? 'bg-accent text-slate-900' : 'text-muted-foreground hover:bg-accent/50'}`}
+                            onClick={() => setFilterType("INCOME")}
+                        >Income</button>
                     </div>
                 </div>
 

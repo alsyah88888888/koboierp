@@ -374,7 +374,7 @@ export function OperationalModal({ isOpen, onClose, coa, transaction }: Operatio
                                         className="w-full text-left bg-accent/50 border-none rounded-xl py-2 px-3 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all flex justify-between items-center cursor-pointer min-h-[38px]"
                                     >
                                         <span className="truncate">
-                                            {formData.invoiceNumber || "Pilih Invoice / SJ..."}
+                                            {formData.invoiceNumber || "Pilih Invoice / SJ (Bisa >1)..."}
                                         </span>
                                         <span className="text-[8px] text-slate-400">▼</span>
                                     </button>
@@ -400,30 +400,47 @@ export function OperationalModal({ isOpen, onClose, coa, transaction }: Operatio
                                                             Data tidak ditemukan
                                                         </div>
                                                     ) : (
-                                                        filteredRefs.map((ref) => (
-                                                            <button
-                                                                key={ref.invoiceNumber}
-                                                                type="button"
-                                                                onClick={() => {
-                                                                    setFormData(prev => ({
-                                                                        ...prev,
-                                                                        invoiceNumber: ref.invoiceNumber,
-                                                                        salesPerson: ref.salesPerson || prev.salesPerson,
-                                                                        referenceNumber: ref.invoiceNumber
-                                                                    }));
-                                                                    setIsRefDropdownOpen(false);
-                                                                    setRefSearch("");
-                                                                }}
-                                                                className="w-full text-left p-2 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer flex flex-col gap-0.5"
-                                                            >
-                                                                <span className="text-xs font-bold text-slate-800 tracking-tight">
-                                                                    {ref.invoiceNumber}
-                                                                </span>
-                                                                <span className="text-[10px] font-medium text-slate-500 leading-none">
-                                                                    {ref.buyerName || "No Customer"} • Sales: {ref.salesPerson || "No Sales"} • Rp {ref.grandTotal.toLocaleString("id-ID")}
-                                                                </span>
-                                                            </button>
-                                                        ))
+                                                        filteredRefs.map((ref) => {
+                                                            const currentInvoices = formData.invoiceNumber ? formData.invoiceNumber.split(',').map(s => s.trim()).filter(Boolean) : [];
+                                                            const isSelected = currentInvoices.includes(ref.invoiceNumber);
+
+                                                            return (
+                                                                <button
+                                                                    key={ref.invoiceNumber}
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        let newInvoices;
+                                                                        if (isSelected) {
+                                                                            newInvoices = currentInvoices.filter(inv => inv !== ref.invoiceNumber);
+                                                                        } else {
+                                                                            newInvoices = [...currentInvoices, ref.invoiceNumber];
+                                                                        }
+                                                                        
+                                                                        const newInvoiceString = newInvoices.join(', ');
+
+                                                                        setFormData(prev => ({
+                                                                            ...prev,
+                                                                            invoiceNumber: newInvoiceString,
+                                                                            salesPerson: ref.salesPerson || prev.salesPerson,
+                                                                            referenceNumber: newInvoiceString
+                                                                        }));
+                                                                    }}
+                                                                    className={`w-full text-left p-2 rounded-lg transition-colors cursor-pointer flex items-center gap-3 ${isSelected ? 'bg-primary/10 border-primary/20' : 'hover:bg-slate-50 border-transparent'} border`}
+                                                                >
+                                                                    <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${isSelected ? 'bg-primary border-primary text-white' : 'border-slate-300'}`}>
+                                                                        {isSelected && <span className="text-[10px]">✓</span>}
+                                                                    </div>
+                                                                    <div className="flex flex-col gap-0.5">
+                                                                        <span className="text-xs font-bold text-slate-800 tracking-tight">
+                                                                            {ref.invoiceNumber}
+                                                                        </span>
+                                                                        <span className="text-[10px] font-medium text-slate-500 leading-none">
+                                                                            {ref.buyerName || "No Customer"} • Sales: {ref.salesPerson || "No Sales"} • Rp {ref.grandTotal.toLocaleString("id-ID")}
+                                                                        </span>
+                                                                    </div>
+                                                                </button>
+                                                            );
+                                                        })
                                                     )}
                                                 </div>
                                             </div>

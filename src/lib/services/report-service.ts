@@ -60,14 +60,20 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
             })
             : [];
 
-        // Group ops by invoiceNumber
         const opsMap = new Map<string, number>();
         opsTransactions.forEach((t: any) => {
             if (!t.invoiceNumber) return;
             const amt = (t.transactionType === "PAYMENT" || t.transactionType === "EXPENSE" || Number(t.amount) < 0)
                 ? Math.abs(Number(t.amount))
                 : -Math.abs(Number(t.amount));
-            opsMap.set(t.invoiceNumber, (opsMap.get(t.invoiceNumber) || 0) + amt);
+            
+            const invoices = t.invoiceNumber.split(',').map((inv: string) => inv.trim()).filter(Boolean);
+            if (invoices.length > 0) {
+                const splitAmt = amt / invoices.length;
+                invoices.forEach((inv: string) => {
+                    opsMap.set(inv, (opsMap.get(inv) || 0) + splitAmt);
+                });
+            }
         });
 
         // PATH A: Collect GR numbers from lot allocations
