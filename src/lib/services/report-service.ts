@@ -185,13 +185,38 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
                     }
                 }
 
-                const allocations = sdItem.lotAllocations && sdItem.lotAllocations.length > 0
-                    ? sdItem.lotAllocations
-                    : [null];
+                // ── MERGE alokasi lot yang berasal dari LPB yang sama ──────────────────
+                // Jika 1 item penjualan memiliki 2 lot dari LPB yang sama (e.g. FIFO split
+                // mengambil sisa 1 pcs batch lama + 999 pcs batch baru yang kebetulan
+                // LPB-nya sama), kita gabungkan jadi 1 baris agar laporan tidak terpecah.
+                let mergedAllocations: any[];
+                if (sdItem.lotAllocations && sdItem.lotAllocations.length > 0) {
+                    // Group by grNumber
+                    const mergeMap = new Map<string, any>();
+                    for (const alloc of sdItem.lotAllocations) {
+                        const key = alloc.lot?.grNumber || alloc.lotId || 'unknown';
+                        if (mergeMap.has(key)) {
+                            // Same LPB → merge: accumulate qty, use weighted avg HPP
+                            const existing = mergeMap.get(key)!;
+                            const totalQty = existing.qty + alloc.qty;
+                            const weightedHpp = totalQty > 0
+                                ? (Number(existing.hppAtTime) * existing.qty + Number(alloc.hppAtTime) * alloc.qty) / totalQty
+                                : Number(existing.hppAtTime);
+                            existing.qty = totalQty;
+                            existing.hppAtTime = weightedHpp;
+                        } else {
+                            mergeMap.set(key, { ...alloc, qty: alloc.qty, hppAtTime: Number(alloc.hppAtTime) });
+                        }
+                    }
+                    mergedAllocations = Array.from(mergeMap.values());
+                } else {
+                    mergedAllocations = [null];
+                }
+                // ────────────────────────────────────────────────────────────────────────
 
-                const isMultiLot = allocations.length > 1;
+                const isMultiLot = mergedAllocations.length > 1 && mergedAllocations[0] !== null;
 
-                for (const alloc of allocations) {
+                for (const alloc of mergedAllocations) {
                     const fifoLot = alloc ? alloc.lot : fallbackLot;
                     // Jika fifoLot berasal dari predictive fallback, pastikan kita format infonya
                     const grInfo  = fifoLot?.grNumber ? (grMapA.get(fifoLot.grNumber) || fifoLot.receipt || {}) : {};
