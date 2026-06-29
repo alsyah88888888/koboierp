@@ -50,7 +50,7 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
         const soMap = new Map<string, string>(salesOrders.map((o: any) => [o.id, o.orderNumber]));
 
         // Fetch operational transactions linked to these deliveries/invoices
-        const invoiceNumbers = deliveries.map((d: any) => d.invoiceNumber).filter(Boolean);
+        const invoiceNumbers = deliveries.map((d: any) => d.invoiceNumber || d.deliveryNumber).filter(Boolean);
         const opsTransactions = invoiceNumbers.length > 0
             ? await prisma.financeTransaction.findMany({
                 where: {
@@ -136,7 +136,8 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
             const spJual    = sd.salesPerson || '-';
             const taxRate   = Number(sd.taxRate || 0);
             const sdTotalQty = sd.items.reduce((sum: number, item: any) => sum + item.quantity, 0);
-            const invoiceOps = sd.invoiceNumber ? (opsMap.get(sd.invoiceNumber) || 0) : 0;
+            const refNum     = sd.invoiceNumber || sd.deliveryNumber;
+            const invoiceOps = refNum ? (opsMap.get(refNum) || 0) : 0;
 
             for (const sdItem of sd.items) {
                 const barcode   = sdItem.product.barcode || sdItem.product.sku;
