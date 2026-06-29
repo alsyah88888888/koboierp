@@ -1710,7 +1710,7 @@ function WeeklyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix }
                         <span className="font-semibold truncate max-w-[130px] block" title={row['NAMA PEMBELI']}>{row['NAMA PEMBELI']}</span>,
                         row.SALES,
                         <span className="font-semibold text-xs">{row['NOMOR FAKTUR PENJUALAN']}</span>,
-                        <span className="font-semibold text-xs text-slate-500">{row['NOMOR SURAT JALAN']}</span>,
+                        <span className="font-semibold text-xs text-slate-500">{row['NOMOR SJ']}</span>,
                         row['TANGGAL JUAL'],
                         row['QTY JUAL'],
                         <span className="tabular-nums font-black text-blue-600">{isClient ? formatCurrency(row['TOTAL JUAL']) : '...'}</span>,
@@ -1718,7 +1718,7 @@ function WeeklyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix }
                             {isClient ? formatCurrency(row.MARGIN) : '...'}
                         </span>,
                         <span className={cn("tabular-nums font-black", Number(row.MARGIN) >= 0 ? "text-emerald-600" : "text-rose-600")}>
-                            {isClient ? `${row.MARGIN_PCT || 0}%` : '...'}
+                            {row['MARGIN %'] || '0%'}
                         </span>
                     ])}
                     isClient={isClient}
@@ -2194,7 +2194,7 @@ function MonthlyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix 
                         <span className="truncate max-w-[120px] block font-bold" title={row['NAMA PEMBELI']}>{row['NAMA PEMBELI']}</span>,
                         <span className="text-[10px] uppercase font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">{row.SALES}</span>,
                         <span className="text-[10px] text-slate-500">{row['NOMOR FAKTUR PENJUALAN']}</span>,
-                        <span className="text-[10px] text-slate-500">{row['NOMOR SURAT JALAN']}</span>,
+                        <span className="text-[10px] text-slate-500">{row['NOMOR SJ']}</span>,
                         row['TANGGAL JUAL'],
                         <span className="tabular-nums font-bold">{row['QTY JUAL']}</span>,
                         <span className="tabular-nums font-black text-blue-600">{isClient ? formatCurrency(row['TOTAL JUAL']) : '...'}</span>,
@@ -2202,7 +2202,7 @@ function MonthlyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix 
                             {isClient ? formatCurrency(row.MARGIN) : '...'}
                         </span>,
                         <span className={cn("tabular-nums font-black text-[10px]", Number(row.MARGIN) >= 0 ? "text-emerald-600" : "text-rose-600")}>
-                            {row.MARGIN_PCT ? `${row.MARGIN_PCT}%` : '0%'}
+                            {row['MARGIN %'] || '0%'}
                         </span>
                     ])}
                     isClient={isClient}
