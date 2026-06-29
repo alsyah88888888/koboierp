@@ -61,10 +61,45 @@ export function OperationalDashboard({
 
         const salesVal = sales.reduce((acc, d) => acc + d.items.reduce((sum: number, i: any) => sum + (i.quantity * Number(i.salesPrice || 0)), 0), 0);
         const purchaseVal = purchases.reduce((acc, r) => acc + r.items.reduce((sum: number, i: any) => sum + (i.quantity * Number(i.purchasePrice || 0)), 0), 0);
-        const expenseVal = expenses.reduce((acc, e) => {
-            const amt = (e.transactionType === "PAYMENT") ? Number(e.amount) : -Number(e.amount);
-            return acc + amt;
-        }, 0);
+        let expenseVal = 0;
+
+        transactions.forEach(e => {
+            const isExpense = (e.transactionType === "PAYMENT");
+            const amt = isExpense ? Number(e.amount) : -Number(e.amount);
+            
+            const refStr = (e.invoiceNumber || e.referenceNumber || "").toUpperCase();
+            if (refStr.includes('KB-TRN') || refStr.includes('SJ-')) {
+                // Find all matching deliveries
+                const refs = refStr.split(',').map((r: string) => r.trim()).filter(Boolean);
+                const matchingDeliveries = initialDeliveries.filter((d: any) => 
+                    refs.some((r: string) => d.deliveryNumber?.includes(r) || d.invoiceNumber?.includes(r))
+                );
+                
+                if (matchingDeliveries.length > 0) {
+                    // Split proportionally by total items quantity
+                    let totalQty = 0;
+                    let qtyForId = 0;
+                    
+                    matchingDeliveries.forEach((d: any) => {
+                        const dQty = d.items?.reduce((sum: number, i: any) => sum + (i.quantity || 0), 0) || 1;
+                        totalQty += dQty;
+                        if (d.salesPerson === id) {
+                            qtyForId += dQty;
+                        }
+                    });
+                    
+                    if (totalQty > 0) {
+                        expenseVal += (amt * (qtyForId / totalQty));
+                    }
+                    return; // Done with this transaction
+                }
+            }
+            
+            // Fallback: If no deliveries match, use the transaction's own salesPerson field
+            if (e.salesPerson === id) {
+                expenseVal += amt;
+            }
+        });
 
         return {
             salesVal,
