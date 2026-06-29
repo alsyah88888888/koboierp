@@ -69,8 +69,24 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
             
             const invoices = t.invoiceNumber.split(',').map((inv: string) => inv.trim()).filter(Boolean);
             if (invoices.length > 0) {
-                const splitAmt = amt / invoices.length;
+                // Calculate total quantity for proportional distribution
+                let totalQty = 0;
+                const qtyMap = new Map<string, number>();
+                
                 invoices.forEach((inv: string) => {
+                    const matchingDelivery = deliveries.find((d: any) => d.invoiceNumber === inv || d.deliveryNumber === inv);
+                    let qty = 1; // Default fallback
+                    if (matchingDelivery && matchingDelivery.items) {
+                        qty = matchingDelivery.items.reduce((sum: number, item: any) => sum + Number(item.quantity || 0), 0);
+                        if (qty === 0) qty = 1;
+                    }
+                    totalQty += qty;
+                    qtyMap.set(inv, qty);
+                });
+
+                invoices.forEach((inv: string) => {
+                    const qty = qtyMap.get(inv) || 1;
+                    const splitAmt = totalQty > 0 ? Math.round(amt * (qty / totalQty)) : (amt / invoices.length);
                     opsMap.set(inv, (opsMap.get(inv) || 0) + splitAmt);
                 });
             }
