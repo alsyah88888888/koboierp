@@ -87,7 +87,10 @@ export function OperationalDashboard({
 
         let matchDate = true;
         if (filterDate) {
-            matchDate = t.date.split('T')[0] === filterDate;
+            const txDate = new Date(t.date);
+            // Adjust for local timezone to ensure date matches what the user selected locally
+            const localDateStr = `${txDate.getFullYear()}-${String(txDate.getMonth() + 1).padStart(2, '0')}-${String(txDate.getDate()).padStart(2, '0')}`;
+            matchDate = localDateStr === filterDate;
         } else {
             const txDate = new Date(t.date);
             const txYear = txDate.getFullYear().toString();
