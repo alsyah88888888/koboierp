@@ -22,20 +22,16 @@ async function main() {
     const deleted = await prisma.lotAllocation.deleteMany({});
     console.log(`✅ Hapus ${deleted.count} LotAllocation lama`);
 
-    // ── STEP 2: Reset semua ProductLot.remainingQty = initialQty ──
-    await prisma.productLot.updateMany({
-        where: { isVoided: false },
-        data: {} // we'll do it per-lot below via raw
-    });
-
-    // Get all non-voided lots
+    // ── STEP 2: Reset semua ProductLot.remainingQty ──
+    // Lot HIST (pre-ERP) → set remainingQty = 0 (sudah habis sebelum sistem dipakai)
+    // Lot non-HIST (real GR) → set remainingQty = initialQty
+    await prisma.$executeRaw`UPDATE "ProductLot" SET "remainingQty" = 0 WHERE "isVoided" = false AND "lotNumber" LIKE 'LOT-HIST-%'`;
+    await prisma.$executeRaw`UPDATE "ProductLot" SET "remainingQty" = "initialQty" WHERE "isVoided" = false AND "lotNumber" NOT LIKE 'LOT-HIST-%'`;
+    
     const allLots = await prisma.productLot.findMany({
         where: { isVoided: false },
         select: { id: true }
     });
-    
-    // Reset remainingQty to initialQty for all
-    await prisma.$executeRaw`UPDATE "ProductLot" SET "remainingQty" = "initialQty" WHERE "isVoided" = false`;
     console.log(`✅ Reset ${allLots.length} ProductLot.remainingQty = initialQty\n`);
 
     // ── STEP 3: Get all distinct productIds that have lots ──
