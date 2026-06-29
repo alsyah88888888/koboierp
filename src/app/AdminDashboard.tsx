@@ -506,21 +506,21 @@ export function AdminDashboard({
                                         const marginNum = parseFloat(row['Margin %']);
                                         return (
                                             <tr key={i} className={`hover:bg-blue-50/50 transition-colors ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50/20'}`}>
-                                                <td className="px-4 py-3 font-bold text-slate-500 whitespace-nowrap">{row['Tgl Beli']}</td>
-                                                <td className="px-4 py-3 font-black text-slate-900 whitespace-nowrap tracking-tight">{row['No. Lot']}</td>
-                                                <td className="px-4 py-3 font-bold text-slate-700 truncate max-w-[150px]">{row['Supplier']}</td>
-                                                <td className="px-4 py-3 font-bold text-slate-500 whitespace-nowrap text-blue-600">{row['Tgl Jual']}</td>
-                                                <td className="px-4 py-3 font-black text-slate-900 whitespace-nowrap tracking-tight">{row['No. SJ']}</td>
-                                                <td className="px-4 py-3 font-bold text-slate-700 truncate max-w-[150px]">{row['Buyer']}</td>
+                                                <td className="px-4 py-3 font-bold text-slate-500 whitespace-nowrap">{row['TANGGAL BELI']}</td>
+                                                <td className="px-4 py-3 font-black text-slate-900 whitespace-nowrap tracking-tight">{row['NOMOR LPB']}</td>
+                                                <td className="px-4 py-3 font-bold text-slate-700 truncate max-w-[150px]">{row['NAMA SUPPLIER']}</td>
+                                                <td className="px-4 py-3 font-bold text-slate-500 whitespace-nowrap text-blue-600">{row['TANGGAL JUAL']}</td>
+                                                <td className="px-4 py-3 font-black text-slate-900 whitespace-nowrap tracking-tight">{row['NOMOR SJ']}</td>
+                                                <td className="px-4 py-3 font-bold text-slate-700 truncate max-w-[150px]">{row['NAMA PEMBELI']}</td>
                                                 <td className="px-4 py-3">
-                                                    <p className="font-black text-slate-900 leading-none mb-1">{row['SKU']}</p>
-                                                    <p className="text-[10px] font-bold text-slate-400 uppercase truncate max-w-[200px]">{row['Nama Barang']}</p>
+                                                    <p className="font-black text-slate-900 leading-none mb-1">{row['BARCODE']}</p>
+                                                    <p className="text-[10px] font-bold text-slate-400 uppercase truncate max-w-[200px]">{row['KETERANGAN ITEM']}</p>
                                                 </td>
-                                                <td className="px-4 py-3 text-right font-black text-slate-900 tabular-nums">{row['QTY']}</td>
-                                                <td className="px-4 py-3 text-right font-black text-slate-500 whitespace-nowrap tabular-nums">{formatCurrency(row['HPP Per Unit (Rp)'])}</td>
-                                                <td className="px-4 py-3 text-right font-black text-slate-900 whitespace-nowrap tabular-nums">{formatCurrency(row['Harga Jual Per Unit (Rp)'])}</td>
-                                                <td className={`px-4 py-3 text-right font-black whitespace-nowrap tabular-nums ${row['Total Profit (Rp)'] >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                                                    {formatCurrency(row['Total Profit (Rp)'])}
+                                                <td className="px-4 py-3 text-right font-black text-slate-900 tabular-nums">{row['QTY JUAL']}</td>
+                                                <td className="px-4 py-3 text-right font-black text-slate-500 whitespace-nowrap tabular-nums">{formatCurrency(row['HARGA BELI'])}</td>
+                                                <td className="px-4 py-3 text-right font-black text-slate-900 whitespace-nowrap tabular-nums">{formatCurrency(row['HARGA JUAL'])}</td>
+                                                <td className={`px-4 py-3 text-right font-black whitespace-nowrap tabular-nums ${row['MARGIN'] >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                                    {formatCurrency(row['MARGIN'])}
                                                 </td>
                                                 <td className="px-4 py-3 text-center">
                                                     <span className={`px-2.5 py-1 rounded-lg font-black text-[10px] ${
@@ -529,34 +529,28 @@ export function AdminDashboard({
                                                         marginNum > 0 ? 'bg-amber-100 text-amber-700' :
                                                         'bg-rose-100 text-rose-700'
                                                     }`}>
-                                                        {row['Margin %']}
+                                                        {row['MARGIN %']}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-3 text-center whitespace-nowrap">
+                                                    <span className={`px-2.5 py-1 rounded-lg font-black text-[8px] uppercase tracking-tighter border bg-emerald-50 text-emerald-600 border-emerald-100`}>
+                                                        PAID
                                                     </span>
                                                 </td>
                                                 <td className="px-4 py-3 text-center whitespace-nowrap">
                                                     <span className={`px-2.5 py-1 rounded-lg font-black text-[8px] uppercase tracking-tighter border ${
-                                                        row['Status Bayar Beli'] === 'PAID' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                                                        row['Status Bayar Beli'] === 'PARTIAL' ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                                                        row['PAYMENT'] === 'PAID' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                                                        row['PAYMENT'] === 'PARTIAL' || row['PAYMENT'] === 'CREDIT' ? 'bg-amber-50 text-amber-600 border-amber-100' :
                                                         'bg-slate-50 text-slate-400 border-slate-100'
                                                     }`}>
-                                                        {row['Status Bayar Beli'] === 'PAID' ? 'PAID' : 'PENDING'}
-                                                    </span>
-                                                </td>
-                                                <td className="px-4 py-3 text-center whitespace-nowrap">
-                                                    <span className={`px-2.5 py-1 rounded-lg font-black text-[8px] uppercase tracking-tighter border ${
-                                                        row['Status Bayar Jual'] === 'PAID' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                                                        row['Status Bayar Jual'] === 'PARTIAL' || row['Status Bayar Jual'] === 'CREDIT' ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                                                        'bg-slate-50 text-slate-400 border-slate-100'
-                                                    }`}>
-                                                        {row['Status Bayar Jual'] === 'PAID' ? 'PAID' : 
-                                                         row['Status Bayar Jual'] === 'PARTIAL' ? 'PART' :
-                                                         row['Status Bayar Jual'] === 'CREDIT' ? 'CR' : 'PEND'}
+                                                        {row['PAYMENT'] === 'PAID' ? 'PAID' : 
+                                                         row['PAYMENT'] === 'PARTIAL' ? 'PART' :
+                                                         row['PAYMENT'] === 'CREDIT' ? 'CR' : 'PEND'}
                                                     </span>
                                                 </td>
                                                 <td className="px-4 py-3 text-center">
-                                                    <span className={`text-[9px] font-black px-2.5 py-1 rounded-md uppercase tracking-tighter ${
-                                                        row['Status'] === 'TERJUAL (LOT)' ? 'bg-slate-900 text-white shadow-lg shadow-slate-200' : 'bg-slate-100 text-slate-500'
-                                                    }`}>
-                                                        {row['Status']}
+                                                    <span className={`text-[9px] font-black px-2.5 py-1 rounded-md uppercase tracking-tighter bg-slate-900 text-white shadow-lg shadow-slate-200`}>
+                                                        TERJUAL (LOT)
                                                     </span>
                                                 </td>
                                             </tr>
