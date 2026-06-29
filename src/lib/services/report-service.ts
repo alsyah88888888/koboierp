@@ -54,7 +54,7 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
         const opsTransactions = invoiceNumbers.length > 0
             ? await prisma.financeTransaction.findMany({
                 where: {
-                    invoiceNumber: { in: invoiceNumbers }
+                    OR: invoiceNumbers.map((inv: string) => ({ invoiceNumber: { contains: inv } }))
                 },
                 select: { invoiceNumber: true, amount: true, transactionType: true }
             })
