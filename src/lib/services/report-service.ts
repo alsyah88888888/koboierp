@@ -84,9 +84,14 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
                     qtyMap.set(inv, qty);
                 });
 
-                invoices.forEach((inv: string) => {
+                let remainingAmt = amt;
+                let remainingQty = totalQty;
+                
+                invoices.forEach((inv: string, index: number) => {
                     const qty = qtyMap.get(inv) || 1;
-                    const splitAmt = totalQty > 0 ? Math.round(amt * (qty / totalQty)) : (amt / invoices.length);
+                    const splitAmt = remainingQty > 0 ? Math.round(remainingAmt * (qty / remainingQty)) : Math.round(remainingAmt / (invoices.length - index));
+                    remainingAmt -= splitAmt;
+                    remainingQty -= qty;
                     opsMap.set(inv, (opsMap.get(inv) || 0) + splitAmt);
                 });
             }
@@ -155,6 +160,9 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
             const refNum     = sd.invoiceNumber || sd.deliveryNumber;
             const invoiceOps = refNum ? (opsMap.get(refNum) || 0) : 0;
 
+            let remainingInvoiceOps = invoiceOps;
+            let remainingSdQty = sdTotalQty;
+
             for (const sdItem of sd.items) {
                 const barcode   = sdItem.product.barcode || sdItem.product.sku;
                 const namaItem  = sdItem.product.name;
@@ -211,7 +219,9 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
                     // Total Jual (Termasuk PPN) = DPP + PPN
                     const totalJual = dpp + ppn;
 
-                    const rowOps = sdTotalQty > 0 ? Math.round((qty / sdTotalQty) * invoiceOps) : 0;
+                    const rowOps = remainingSdQty > 0 ? Math.round(remainingInvoiceOps * (qty / remainingSdQty)) : 0;
+                    remainingInvoiceOps -= rowOps;
+                    remainingSdQty -= qty;
 
                     // Margin dihitung dari Total Jual (kolom Excel) dikurangi Total Beli (kolom Excel) dan dikurangi Ops
                     // agar laporan konsisten secara visual untuk pembaca laporan Excel
