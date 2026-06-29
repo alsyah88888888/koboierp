@@ -6,8 +6,8 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatCurrency(amount: number) {
-    // Pembulatan matematika ke ratusan terdekat (misal 99 -> 100, 499 -> 500)
-    const roundedAmount = Math.round(amount / 100) * 100;
+    // Pembulatan ke satuan terdekat (menghilangkan desimal/sen)
+    const roundedAmount = Math.round(amount);
 
     const formatted = new Intl.NumberFormat("id-ID", {
         minimumFractionDigits: 0,
