@@ -560,7 +560,7 @@ export async function editSettledPaymentService(
     const { getPrisma } = require("@/lib/prisma");
     const prisma = getPrisma();
 
-    return await prisma.$transaction(async (tx: any) => {
+    const result = await prisma.$transaction(async (tx: any) => {
         if (type === "SALE") {
             // 1. Fetch SalesDelivery
             const delivery = await tx.salesDelivery.findUnique({
@@ -811,13 +811,19 @@ export async function editSettledPaymentService(
             await syncVendorBalanceAfterPayment(tx, party);
         }
 
+        return { success: true };
+    }, { timeout: 30000 });
+
+    try {
         revalidatePath("/finance");
         revalidatePath("/");
         revalidatePath("/purchase");
         revalidatePath("/sales");
+    } catch (e) {
+        console.error("revalidatePath error (safe to ignore in non-request contexts):", e);
+    }
 
-        return { success: true };
-    }, { timeout: 30000 });
+    return result;
 }
 
 export async function updateGroupedPaymentStatusService(
