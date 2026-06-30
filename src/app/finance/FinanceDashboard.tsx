@@ -1757,6 +1757,8 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                             ))}
                                             {filteredSettledPurchases.length === 0 && (
                                                 <tr>
+                                                    <td colSpan={isAdminOrFinance ? 6 : 5} className="px-8 py-12 text-center text-slate-400 italic font-medium uppercase tracking-widest text-[10px]">No settled AP invoices found for {apHistoryMonth === "ALL" ? "all months" : "selected month"}</td>
+                                                </tr>
                                             )}
                                         </tbody>
                                     </table>
