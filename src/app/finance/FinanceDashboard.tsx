@@ -812,7 +812,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id as any)}
                         className={cn(
-                            "flex-1 lg:flex-initial flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all duration-300",
+                            "flex-1 lg:flex-initial flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all duration-300 outline-none focus:outline-none",
                             activeTab === tab.id
                                 ? "bg-white text-slate-900 shadow-md scale-102"
                                 : "text-slate-500 hover:text-slate-800 hover:bg-white/30"
@@ -1592,21 +1592,23 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                             <option value="12">Desember</option>
                                         </select>
                                     </div>
+                                </div>
+                                <div className="overflow-x-auto custom-scrollbar">
                                     <table className="w-full text-sm text-left min-w-[1000px] table-fixed">
                                         <thead className="bg-emerald-50/50 text-emerald-800 border-b border-emerald-100 text-[10px] uppercase tracking-[0.2em] font-black">
                                             <tr>
-                                                <th className="px-8 py-5 w-40">Tgl Lunas</th>
+                                                <th className="px-8 py-5 w-40 whitespace-nowrap">Tgl Lunas</th>
                                                 <th className="px-8 py-5">Customer</th>
-                                                <th className="px-8 py-5 w-48">Ref Number</th>
-                                                <th className="px-8 py-5 w-40 text-center">Tipe</th>
-                                                <th className="px-8 py-5 text-right w-44">Settled Amount</th>
-                                                {isAdminOrFinance && <th className="px-8 py-5 w-44 text-center">Aksi</th>}
+                                                <th className="px-8 py-5 w-48 whitespace-nowrap">Ref Number</th>
+                                                <th className="px-8 py-5 w-40 text-center whitespace-nowrap">Tipe</th>
+                                                <th className="px-8 py-5 text-right w-44 whitespace-nowrap">Settled Amount</th>
+                                                {isAdminOrFinance && <th className="px-8 py-5 w-44 text-center whitespace-nowrap">Aksi</th>}
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-emerald-50 text-slate-700">
                                             {filteredSettledSales.map((s: any) => (
                                                 <tr key={`sale-${s.id}`} onClick={() => setSelectedHistoryItem({ ...s, historyType: 'AR' })} className="hover:bg-emerald-50/50 transition-all group/row cursor-pointer">
-                                                    <td className="px-8 py-5 font-mono text-slate-400 font-bold tabular-nums">
+                                                    <td className="px-8 py-5 font-mono text-slate-400 font-bold tabular-nums whitespace-nowrap">
                                                         {isClient && s.updatedAt ? format(new Date(s.updatedAt), "dd/MM/yy") : "..."}
                                                     </td>
                                                     <td className="px-8 py-5">
@@ -1617,15 +1619,15 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                                             <span className="text-slate-400">By: {s.createdBy?.name || 'Finance'}</span>
                                                         </div>
                                                     </td>
-                                                    <td className="px-8 py-5 font-mono text-[10px] font-bold text-slate-500">{s.deliveryNumber}</td>
-                                                    <td className="px-8 py-5 text-center">
+                                                    <td className="px-8 py-5 font-mono text-[10px] font-bold text-slate-500 whitespace-nowrap">{s.deliveryNumber}</td>
+                                                    <td className="px-8 py-5 text-center whitespace-nowrap">
                                                         <span className="px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border bg-emerald-50 text-emerald-600 border-emerald-100">PELUNASAN</span>
                                                     </td>
-                                                    <td className="px-8 py-5 text-right font-black font-mono tabular-nums tracking-tighter text-base text-emerald-600">
+                                                    <td className="px-8 py-5 text-right font-black font-mono tabular-nums tracking-tighter text-base text-emerald-600 whitespace-nowrap">
                                                         {formatCurrency(Number(s.total))}
                                                     </td>
                                                     {isAdminOrFinance && (
-                                                        <td className="px-8 py-5 text-center" onClick={e => e.stopPropagation()}>
+                                                        <td className="px-8 py-5 text-center whitespace-nowrap" onClick={e => e.stopPropagation()}>
                                                             <div className="flex items-center justify-center gap-2">
                                                                 <button
                                                                     onClick={() => handleOpenEditPayment(s, 'SALE')}
@@ -1695,18 +1697,18 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                     <table className="w-full text-sm text-left min-w-[1000px] table-fixed">
                                         <thead className="bg-rose-50/50 text-rose-800 border-b border-rose-100 text-[10px] uppercase tracking-[0.2em] font-black">
                                             <tr>
-                                                <th className="px-8 py-5 w-40">Tgl Lunas</th>
+                                                <th className="px-8 py-5 w-40 whitespace-nowrap">Tgl Lunas</th>
                                                 <th className="px-8 py-5">Vendor</th>
-                                                <th className="px-8 py-5 w-48">Ref Number</th>
-                                                <th className="px-8 py-5 w-40 text-center">Tipe</th>
-                                                <th className="px-8 py-5 text-right w-44">Settled Amount</th>
-                                                {isAdminOrFinance && <th className="px-8 py-5 w-44 text-center">Aksi</th>}
+                                                <th className="px-8 py-5 w-48 whitespace-nowrap">Ref Number</th>
+                                                <th className="px-8 py-5 w-40 text-center whitespace-nowrap">Tipe</th>
+                                                <th className="px-8 py-5 text-right w-44 whitespace-nowrap">Settled Amount</th>
+                                                {isAdminOrFinance && <th className="px-8 py-5 w-44 text-center whitespace-nowrap">Aksi</th>}
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-rose-50 text-slate-700">
                                             {filteredSettledPurchases.map((p: any) => (
                                                 <tr key={`purchase-${p.id}`} onClick={() => setSelectedHistoryItem({ ...p, historyType: 'AP' })} className="hover:bg-rose-50/50 transition-all group/row cursor-pointer">
-                                                    <td className="px-8 py-5 font-mono text-slate-400 font-bold tabular-nums">
+                                                    <td className="px-8 py-5 font-mono text-slate-400 font-bold tabular-nums whitespace-nowrap">
                                                         {isClient && p.updatedAt ? format(new Date(p.updatedAt), "dd/MM/yy") : "..."}
                                                     </td>
                                                     <td className="px-8 py-5">
@@ -1717,15 +1719,15 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                                             <span className="text-slate-400">By: {p.createdBy?.name || 'Finance'}</span>
                                                         </div>
                                                     </td>
-                                                    <td className="px-8 py-5 font-mono text-[10px] font-bold text-slate-500">{p.receiptNumber}</td>
-                                                    <td className="px-8 py-5 text-center">
+                                                    <td className="px-8 py-5 font-mono text-[10px] font-bold text-slate-500 whitespace-nowrap">{p.receiptNumber}</td>
+                                                    <td className="px-8 py-5 text-center whitespace-nowrap">
                                                         <span className="px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border bg-rose-50 text-rose-600 border-rose-100">PEMBAYARAN</span>
                                                     </td>
-                                                    <td className="px-8 py-5 text-right font-black font-mono tabular-nums tracking-tighter text-base text-rose-600">
+                                                    <td className="px-8 py-5 text-right font-black font-mono tabular-nums tracking-tighter text-base text-rose-600 whitespace-nowrap">
                                                         {formatCurrency(Number(p.total))}
                                                     </td>
                                                     {isAdminOrFinance && (
-                                                        <td className="px-8 py-5 text-center" onClick={e => e.stopPropagation()}>
+                                                        <td className="px-8 py-5 text-center whitespace-nowrap" onClick={e => e.stopPropagation()}>
                                                             <div className="flex items-center justify-center gap-2">
                                                                 <button
                                                                     onClick={() => handleOpenEditPayment(p, 'PURCHASE')}
