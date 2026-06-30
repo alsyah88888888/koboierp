@@ -2343,7 +2343,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                                     type="text"
                                                     value={bankReconSearchQuery}
                                                     onChange={(e) => setBankReconSearchQuery(e.target.value)}
-                                                    placeholder="Cari deskripsi, referensi, nominal..."
+                                                placeholder="Cari deskripsi, referensi, nominal..."
                                                     className="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2 outline-none focus:ring-2 focus:ring-slate-900/10 transition-all font-medium"
                                                 />
                                             </div>
@@ -2351,40 +2351,58 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                             {/* Candidates Container */}
                                             <div className="flex-1 overflow-y-auto max-h-[350px] space-y-3 pr-1 custom-scrollbar">
                                                 {(() => {
+                                                    const mutDesc = (selectedMutationForMatching.description || "").toLowerCase();
+                                                    const mutAmount = Number(selectedMutationForMatching.amount);
+
                                                     // Filter unmatched candidates
                                                     const unmatchedErpTx = transactions
                                                         .filter((tx: any) => {
-                                                            // Ensure it is not reconciled yet
                                                             const isLinked = bankMutations.some((m: any) => m.transactionId === tx.id);
-                                                            
                                                             const queryLower = bankReconSearchQuery.toLowerCase();
-                                                            const matchQuery = 
+                                                            const matchQuery = !queryLower ||
                                                                 (tx.description || "").toLowerCase().includes(queryLower) ||
                                                                 (tx.referenceNumber || "").toLowerCase().includes(queryLower) ||
                                                                 String(Math.round(Number(tx.amount))).includes(queryLower);
-                                                            
                                                             return !isLinked && matchQuery;
                                                         })
                                                         .map((tx: any) => {
-                                                            // Rank/calculate closeness points
                                                             const txAmount = Math.abs(Number(tx.amount));
-                                                            const isAmountMatch = txAmount === Number(selectedMutationForMatching.amount);
-                                                            
+                                                            const isAmountMatch = txAmount === mutAmount;
+                                                            const isAmountClose = Math.abs(txAmount - mutAmount) / (mutAmount || 1) < 0.01;
+
                                                             // Days difference
                                                             const diffTime = Math.abs(new Date(tx.date).getTime() - new Date(selectedMutationForMatching.date).getTime());
                                                             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                                                            // Check if vendor/supplier/buyer name appears in bank description
+                                                            const txDesc = (tx.description || "").toLowerCase();
+                                                            const txRef = (tx.referenceNumber || "").toLowerCase();
                                                             
-                                                            // Rank score: amount match gets 1000 points, subtract days difference
-                                                            const score = (isAmountMatch ? 1000 : 0) - diffDays;
-                                                            return { ...tx, isAmountMatch, diffDays, score };
+                                                            // Extract keywords from transaction description (words > 3 chars)
+                                                            const txWords = txDesc.split(/[\s\/\-\(]+/).filter((w: string) => w.length > 3);
+                                                            const nameMatches = txWords.filter((w: string) => mutDesc.includes(w));
+                                                            const hasNameMatch = nameMatches.length > 0;
+                                                            const hasRefMatch = txRef && mutDesc.includes(txRef);
+
+                                                            // Score: amount match = 1000, name keyword match = 200/keyword, ref match = 300, subtract days
+                                                            let score = 0;
+                                                            if (isAmountMatch) score += 1000;
+                                                            else if (isAmountClose) score += 700;
+                                                            score += nameMatches.length * 200;
+                                                            if (hasRefMatch) score += 300;
+                                                            score -= diffDays * 2;
+
+                                                            return { ...tx, isAmountMatch, isAmountClose, diffDays, score, hasNameMatch, nameMatches, hasRefMatch };
                                                         })
-                                                        // Sort by rank score descending
-                                                        .sort((a, b) => b.score - a.score);
+                                                        .filter((tx: any) => bankReconSearchQuery || tx.score > -100)
+                                                        .sort((a: any, b: any) => b.score - a.score)
+                                                        .slice(0, 20); // show max 20 candidates
 
                                                     if (unmatchedErpTx.length === 0) {
                                                         return (
                                                             <div className="text-center text-slate-400 py-8 text-[10px] italic uppercase tracking-wider">
-                                                                Tidak ada transaksi kas ERP yang cocok ditemukan.
+                                                                Tidak ada transaksi kas ERP yang cocok ditemukan.<br/>
+                                                                <span className="text-[9px] normal-case not-italic text-slate-300 mt-1 block">Coba ketik nominal atau nama vendor di kotak pencarian</span>
                                                             </div>
                                                         );
                                                     }
@@ -2396,24 +2414,38 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                                                 "border rounded-2xl p-4 transition-all flex flex-col space-y-3",
                                                                 tx.isAmountMatch
                                                                     ? "border-emerald-200 bg-emerald-50/20 shadow-sm"
+                                                                    : tx.isAmountClose
+                                                                    ? "border-amber-200 bg-amber-50/20"
                                                                     : "border-slate-100 hover:border-slate-200 bg-white"
                                                             )}
                                                         >
                                                             <div className="flex justify-between items-start">
-                                                                <div>
+                                                                <div className="flex-1 min-w-0">
                                                                     <span className="font-mono text-[9px] font-bold text-slate-400 block uppercase">
-                                                                        {format(new Date(tx.date), "dd/MM/yyyy")} • Ref: {tx.referenceNumber || "-"}
+                                                                        {format(new Date(tx.date), "dd/MM/yyyy")} • {tx.referenceNumber || "-"}
                                                                     </span>
-                                                                    <span className="font-black text-slate-900 text-xs block pt-0.5">
+                                                                    <span className="font-black text-slate-900 text-xs block pt-0.5 truncate" title={tx.description}>
                                                                         {tx.description}
                                                                     </span>
                                                                 </div>
                                                                 
-                                                                {tx.isAmountMatch && (
-                                                                    <span className="px-2 py-0.5 rounded-full text-[8px] font-black bg-emerald-500 text-white uppercase tracking-wider whitespace-nowrap">
-                                                                        Rekomendasi
-                                                                    </span>
-                                                                )}
+                                                                <div className="flex flex-col gap-1 ml-2 shrink-0">
+                                                                    {tx.isAmountMatch && (
+                                                                        <span className="px-2 py-0.5 rounded-full text-[8px] font-black bg-emerald-500 text-white uppercase tracking-wider whitespace-nowrap">
+                                                                            ✓ Nominal Sama
+                                                                        </span>
+                                                                    )}
+                                                                    {tx.isAmountClose && !tx.isAmountMatch && (
+                                                                        <span className="px-2 py-0.5 rounded-full text-[8px] font-black bg-amber-400 text-white uppercase tracking-wider whitespace-nowrap">
+                                                                            ≈ Nominal Mirip
+                                                                        </span>
+                                                                    )}
+                                                                    {tx.hasNameMatch && (
+                                                                        <span className="px-2 py-0.5 rounded-full text-[8px] font-black bg-blue-100 text-blue-700 uppercase tracking-wider whitespace-nowrap">
+                                                                            ✓ Nama Cocok
+                                                                        </span>
+                                                                    )}
+                                                                </div>
                                                             </div>
 
                                                             <div className="flex justify-between items-end border-t border-slate-100/50 pt-2.5">
@@ -2425,6 +2457,9 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                                                     )}>
                                                                         {tx.transactionType === "IN" ? "+" : "-"}{formatCurrency(Math.abs(Number(tx.amount)))}
                                                                     </span>
+                                                                    {tx.diffDays > 0 && (
+                                                                        <span className="text-[8px] text-slate-400 block">{tx.diffDays} hari dari tanggal mutasi</span>
+                                                                    )}
                                                                 </div>
 
                                                                 <button
