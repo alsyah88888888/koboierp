@@ -341,14 +341,15 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
                 const totalBuyDiscount = buyItemDiscount + grDiscountShare;
 
                 // ── PPN CONSISTENCY RULE ──
-                // Use the SALES taxRate for BOTH buy and sell sides:
-                //   KB-TRN (taxRate=11%): Beli +11%, Jual +11%
-                //   KB-TRD (taxRate=0%):  Beli +0%,  Jual +0%
+                // Sisi BELI: gunakan taxRate dari GR (purchaseTaxRate)
+                //   KB-LPBD (purchaseTaxRate=11%): HPP sudah tanpa PPN → Total Beli = DPP × 1.11
+                //   KB-LPB  (purchaseTaxRate=0%):  HPP sudah termasuk net → Total Beli = DPP (tanpa PPN)
+                // Sisi JUAL: tetap gunakan taxRate dari SD (KB-TRN=11%, KB-TRD=0%)
 
                 // DPP Beli = (HPP × qty) - Diskon Beli (item + nota GR)
                 const dppBeli = Math.round((hpp * qty) - totalBuyDiscount);
-                const totalBeli = Math.round(dppBeli * (1 + taxRate / 100));
-                const hppEffective = qty > 0 ? Math.round(dppBeli / qty * (1 + taxRate / 100)) : 0;
+                const totalBeli = Math.round(dppBeli * (1 + purchaseTaxRate / 100));
+                const hppEffective = qty > 0 ? Math.round(dppBeli / qty * (1 + purchaseTaxRate / 100)) : 0;
 
                 const grInfo = {
                     taxInvoiceDate: bestGR?.receipt?.taxInvoiceDate || null,
