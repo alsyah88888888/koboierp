@@ -120,6 +120,8 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
                 formNumber: string | null;
                 taxInvoiceDate: Date | null;
                 taxInvoiceNumber: string | null;
+                totalDiscount: any;
+                subtotal: any;
             };
         };
 
@@ -134,7 +136,8 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
                         select: {
                             receiptNumber: true, date: true, receivedFrom: true,
                             isVoid: true, taxRate: true, formNumber: true,
-                            taxInvoiceDate: true, taxInvoiceNumber: true
+                            taxInvoiceDate: true, taxInvoiceNumber: true,
+                            totalDiscount: true, subtotal: true
                         }
                     }
                 },
@@ -264,6 +267,12 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
             }
             const mergedItems = Array.from(mergedItemsMap.values());
 
+            // ── SISI JUAL: Distribute header-level discount (diskon nota SD) ──
+            const sdHeaderDiscount = Number(sd.totalDiscount || 0);
+            const sdSubtotal = mergedItems.reduce((sum: number, item: any) => {
+                return sum + (Number(item.salesPrice || 0) * item.quantity - Number(item.discount || 0));
+            }, 0);
+
             for (const sdItem of mergedItems) {
                 const barcode   = sdItem.product.barcode || sdItem.product.sku;
                 const namaItem  = sdItem.product.name;
@@ -272,8 +281,14 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
                 const itemDiscount  = Number(sdItem.discount || 0);
                 const qty       = sdItem.quantity;
 
+                // Distribusi diskon nota SD ke item ini (proporsional)
+                const sellLineSubtotal = sellPrice * qty - itemDiscount;
+                const sdDiscountShare = sdSubtotal > 0
+                    ? Math.round(sdHeaderDiscount * (sellLineSubtotal / sdSubtotal))
+                    : 0;
+                const totalSellDiscount = itemDiscount + sdDiscountShare;
+
                 // ── SMART MATCHING: Find best purchase for this sale item ──
-                // Use Nearest Purchase Matching instead of FIFO lot allocation
                 const bestGR = findBestGR(sdItem.productId, sd.date, qty);
 
                 const grNumber = bestGR?.receipt?.receiptNumber || '-';
@@ -282,12 +297,25 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
                 const hpp = bestGR ? Number(bestGR.purchasePrice) : Number(sdItem.product.purchasePrice || 0);
                 const purchaseTaxRate = Number(bestGR?.receipt?.taxRate || 0);
 
+                // ── SISI BELI: Distribute header-level discount (diskon nota GR) ──
+                const grHeaderDiscount = Number(bestGR?.receipt?.totalDiscount || 0);
+                const grSubtotal = Number(bestGR?.receipt?.subtotal || 0);
+                const buyItemDiscount = Number(bestGR?.discount || 0);
+                const buyLineSubtotal = hpp * qty;
+                const grDiscountShare = grSubtotal > 0
+                    ? Math.round(grHeaderDiscount * (buyLineSubtotal / grSubtotal))
+                    : 0;
+                const totalBuyDiscount = buyItemDiscount + grDiscountShare;
+
                 // ── PPN CONSISTENCY RULE ──
                 // Use the SALES taxRate for BOTH buy and sell sides:
-                //   KB-TRN (taxRate=11%): Beli +11%, Jual +11% → consistent comparison
-                //   KB-TRD (taxRate=0%):  Beli +0%,  Jual +0%  → consistent comparison
-                const hppWithSalesTax = Math.round(hpp * (1 + taxRate / 100));
-                const totalBeli = Math.round(hppWithSalesTax * qty);
+                //   KB-TRN (taxRate=11%): Beli +11%, Jual +11%
+                //   KB-TRD (taxRate=0%):  Beli +0%,  Jual +0%
+
+                // DPP Beli = (HPP × qty) - Diskon Beli (item + nota GR)
+                const dppBeli = Math.round((hpp * qty) - totalBuyDiscount);
+                const totalBeli = Math.round(dppBeli * (1 + taxRate / 100));
+                const hppEffective = qty > 0 ? Math.round(dppBeli / qty * (1 + taxRate / 100)) : 0;
 
                 const grInfo = {
                     taxInvoiceDate: bestGR?.receipt?.taxInvoiceDate || null,
@@ -296,12 +324,10 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
                     taxRate: purchaseTaxRate
                 };
 
-                // DPP Jual = (Harga Jual per unit × qty) - Diskon Item
-                // Catatan: Diskon Nota (SD.totalDiscount) TIDAK didistribusikan per-item
-                // karena akan membuat perbandingan tidak adil (diskon hanya di sisi jual, tidak di sisi beli)
-                const dpp = Math.round((sellPrice * qty) - itemDiscount);
+                // DPP Jual = (Harga Jual × qty) - Diskon Jual (item + nota SD)
+                const dpp = Math.round((sellPrice * qty) - totalSellDiscount);
 
-                // PPN Jual = DPP × taxRate (0% for KB-TRD, 11% for KB-TRN)
+                // PPN Jual = DPP × taxRate
                 const ppn = Math.round(dpp * taxRate / 100);
 
                 // Total Jual = DPP + PPN
@@ -311,7 +337,7 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
                 remainingInvoiceOps -= rowOps;
                 remainingSdQty -= qty;
 
-                // Margin: Total Jual vs Total Beli (keduanya pakai taxRate yang sama)
+                // Margin: Total Jual vs Total Beli (keduanya diskon nota sudah didistribusikan)
                 const margin    = totalJual - totalBeli - rowOps;
                 const marginPct = totalJual > 0 ? (margin / totalJual * 100) : 0;
 
@@ -328,7 +354,7 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
                     'NOMOR LPB'        : grNumber,
                     'NAMA SUPPLIER'    : supplierName,
                     'QTY BELI'         : qty,
-                    'HARGA BELI'       : hppWithSalesTax,
+                    'HARGA BELI'       : hppEffective,
                     'OPS'              : rowOps,
                     'TOTAL BELI'       : totalBeli,
                     'F. PAJAK'         : fmtDate(grInfo.taxInvoiceDate),
