@@ -892,6 +892,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                             </div>
                         </div>
                         <div className="flex-1 min-h-[250px] w-full">
+                            {isClient ? (
                             <ResponsiveContainer width="100%" height="100%">
                                 <AreaChart data={reversedMonthlyStats} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                                     <defs>
@@ -922,6 +923,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                     <Area type="monotone" dataKey="ap" name="Pembayaran (AP)" stroke="#f87171" strokeWidth={3} fillOpacity={1} fill="url(#colorAp)" />
                                 </AreaChart>
                             </ResponsiveContainer>
+                            ) : <div className="w-full h-full flex items-center justify-center"><div className="animate-pulse h-2 w-24 bg-slate-700 rounded-full" /></div>}
                         </div>
                     </div>
                 </div>
@@ -935,6 +937,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                             <p className="text-[10px] font-bold text-slate-400 uppercase mt-1 tracking-widest">Bulan Berjalan</p>
                         </div>
                         <div className="flex-1 mt-4 h-[120px] w-full">
+                            {isClient ? (
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={cashFlowData} layout="vertical" margin={{ top: 0, right: 30, left: 0, bottom: 0 }}>
                                     <XAxis type="number" hide />
@@ -951,6 +954,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                     </Bar>
                                 </BarChart>
                             </ResponsiveContainer>
+                            ) : <div className="w-full h-full animate-pulse bg-slate-100 rounded-xl" />}
                         </div>
                     </div>
 
@@ -962,6 +966,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                         </div>
                         <div className="flex-1 mt-4 h-[150px] w-full relative flex items-center justify-center">
                             {topExpenses.length > 0 ? (
+                                isClient ? (
                                 <ResponsiveContainer width="100%" height="100%">
                                     <PieChart>
                                         <Tooltip 
@@ -984,6 +989,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                         <Legend layout="vertical" verticalAlign="middle" align="right" iconType="circle" wrapperStyle={{ fontSize: '10px' }} />
                                     </PieChart>
                                 </ResponsiveContainer>
+                                ) : <div className="w-full h-full animate-pulse bg-slate-100 rounded-xl" />
                             ) : (
                                 <div className="text-xs text-slate-400 text-center w-full">Belum ada data pengeluaran operasional bulan ini.</div>
                             )}
