@@ -13,7 +13,7 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
         const rows: Record<string, any>[] = [];
 
         // ════════════════════════════════════════════════════════════
-        // PRE-FETCH: SalesDeliveries + SO map + PATH A GR data
+        // PRE-FETCH: SalesDeliveries + SO map + GR data
         // ════════════════════════════════════════════════════════════
         const deliveries = await (prisma as any).salesDelivery.findMany({
             where: { 
@@ -26,7 +26,7 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
                     include: {
                         product: {
                             select: {
-                                sku: true, name: true, uom: true,
+                                id: true, sku: true, name: true, uom: true,
                                 barcode: true, purchasePrice: true
                             }
                         },
@@ -69,13 +69,12 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
             
             const invoices = t.invoiceNumber.split(',').map((inv: string) => inv.trim()).filter(Boolean);
             if (invoices.length > 0) {
-                // Calculate total quantity for proportional distribution
                 let totalQty = 0;
                 const qtyMap = new Map<string, number>();
                 
                 invoices.forEach((inv: string) => {
                     const matchingDelivery = deliveries.find((d: any) => d.invoiceNumber === inv || d.deliveryNumber === inv);
-                    let qty = 1; // Default fallback
+                    let qty = 1;
                     if (matchingDelivery && matchingDelivery.items) {
                         qty = matchingDelivery.items.reduce((sum: number, item: any) => sum + Number(item.quantity || 0), 0);
                         if (qty === 0) qty = 1;
@@ -97,49 +96,123 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
             }
         });
 
-        // PATH A: Collect GR numbers from lot allocations
-        const grNumbersPathA = new Set<string>();
-        for (const sd of deliveries) {
-            for (const sdItem of sd.items) {
-                for (const alloc of sdItem.lotAllocations ?? []) {
-                    if (alloc.lot?.grNumber) grNumbersPathA.add(alloc.lot.grNumber);
-                }
-            }
-        }
-        const grDataPathA = grNumbersPathA.size > 0
-            ? await (prisma as any).goodsReceipt.findMany({
-                where: { receiptNumber: { in: [...grNumbersPathA] } },
-                select: {
-                    receiptNumber: true, paymentStatus: true, salesPerson: true,
-                    formNumber: true, taxInvoiceDate: true, taxInvoiceNumber: true,
-                    totalDiscount: true, taxRate: true
-                }
-            })
-            : [];
-        const grMapA = new Map<string, any>(grDataPathA.map((g: any) => [g.receiptNumber, g]));
-
-        // PREDICTIVE HEURISTIC PATH: Fetch most recent GR for products sold to fill in missing traceability
+        // ════════════════════════════════════════════════════════════
+        // NEAREST PURCHASE MATCHING: Pre-fetch ALL GR items for products sold
+        // This replaces pure FIFO with smart date+price proximity matching
+        // ════════════════════════════════════════════════════════════
         const productIdsInSales = Array.from(new Set(
             deliveries.flatMap((sd: any) => sd.items.map((i: any) => i.productId)).filter(Boolean)
         ));
-        
-        const predictiveGRMap = new Map<string, any>();
-        if (productIdsInSales.length > 0) {
-            const lastGRPrices = await (prisma as any).goodsReceiptItem.findMany({
-                where: { productId: { in: productIdsInSales } },
-                orderBy: { id: 'desc' }, // Latest GRs first
-                include: { 
-                    receipt: { 
-                        select: { receiptNumber: true, date: true, receivedFrom: true, taxRate: true } 
-                    } 
+
+        // Fetch all GR items for these products (non-voided GRs only)
+        type GRItemData = {
+            id: string;
+            productId: string;
+            quantity: number;
+            purchasePrice: any;
+            discount: any;
+            receipt: {
+                receiptNumber: string;
+                date: Date | null;
+                receivedFrom: string;
+                isVoid: boolean;
+                taxRate: any;
+                formNumber: string | null;
+                taxInvoiceDate: Date | null;
+                taxInvoiceNumber: string | null;
+            };
+        };
+
+        const allGRItemsRaw: GRItemData[] = productIdsInSales.length > 0
+            ? await (prisma as any).goodsReceiptItem.findMany({
+                where: { 
+                    productId: { in: productIdsInSales },
+                    receipt: { isVoid: false }
+                },
+                include: {
+                    receipt: {
+                        select: {
+                            receiptNumber: true, date: true, receivedFrom: true,
+                            isVoid: true, taxRate: true, formNumber: true,
+                            taxInvoiceDate: true, taxInvoiceNumber: true
+                        }
+                    }
+                },
+                orderBy: { receipt: { date: 'asc' } }
+            })
+            : [];
+
+        // Group GR items by productId for fast lookup
+        const grItemsByProduct = new Map<string, GRItemData[]>();
+        for (const grItem of allGRItemsRaw) {
+            if (!grItemsByProduct.has(grItem.productId)) {
+                grItemsByProduct.set(grItem.productId, []);
+            }
+            grItemsByProduct.get(grItem.productId)!.push(grItem);
+        }
+
+        // Calculate median price per product to detect anomalies
+        const medianPriceByProduct = new Map<string, number>();
+        for (const [productId, grItems] of grItemsByProduct) {
+            const prices = grItems.map(g => Number(g.purchasePrice)).filter(p => p > 0).sort((a, b) => a - b);
+            if (prices.length > 0) {
+                const mid = Math.floor(prices.length / 2);
+                medianPriceByProduct.set(productId, prices.length % 2 === 0 ? (prices[mid - 1] + prices[mid]) / 2 : prices[mid]);
+            }
+        }
+
+        /**
+         * SMART MATCHING: Find the best GR for a given sale item
+         * Scoring: date proximity (closer = better) + price consistency (closer to median = better)
+         * Filters out price anomalies (>5x or <0.2x median price)
+         */
+        function findBestGR(productId: string, saleDate: Date, saleQty: number): GRItemData | null {
+            const candidates = grItemsByProduct.get(productId);
+            if (!candidates || candidates.length === 0) return null;
+
+            const medianPrice = medianPriceByProduct.get(productId) || 0;
+            const saleDateMs = saleDate.getTime();
+
+            let bestScore = -Infinity;
+            let bestGR: GRItemData | null = null;
+
+            for (const gr of candidates) {
+                const grDate = gr.receipt.date;
+                if (!grDate) continue;
+
+                const grPrice = Number(gr.purchasePrice);
+
+                // Filter anomalous prices (more than 5x or less than 0.2x median)
+                if (medianPrice > 0 && (grPrice > medianPrice * 5 || grPrice < medianPrice * 0.2)) {
+                    continue;
                 }
-            });
-            // Map keeps the FIRST one it finds (which is the most recent due to orderBy desc)
-            lastGRPrices.forEach((lp: any) => {
-                if (!predictiveGRMap.has(lp.productId)) {
-                    predictiveGRMap.set(lp.productId, lp);
+
+                // Score 1: Date proximity (prefer purchases BEFORE or ON sale date, penalize future purchases less)
+                const daysDiff = Math.abs(saleDateMs - grDate.getTime()) / (1000 * 60 * 60 * 24);
+                const isBeforeSale = grDate.getTime() <= saleDateMs;
+                const dateScore = isBeforeSale 
+                    ? Math.max(0, 100 - daysDiff * 0.5) // Purchases before sale: slight decay
+                    : Math.max(0, 50 - daysDiff * 2);   // Purchases after sale: heavier penalty
+
+                // Score 2: Price consistency (closer to median = better)
+                const priceDeviation = medianPrice > 0 ? Math.abs(grPrice - medianPrice) / medianPrice : 0;
+                const priceScore = Math.max(0, 50 - priceDeviation * 100);
+
+                // Score 3: Quantity match bonus (exact match or close = bonus)
+                const qtyRatio = saleQty > 0 && gr.quantity > 0 
+                    ? Math.min(saleQty, gr.quantity) / Math.max(saleQty, gr.quantity) 
+                    : 0;
+                const qtyScore = qtyRatio * 30; // Up to 30 points for exact qty match
+
+                const totalScore = dateScore + priceScore + qtyScore;
+
+                if (totalScore > bestScore) {
+                    bestScore = totalScore;
+                    bestGR = gr;
                 }
-            });
+            }
+
+            return bestGR;
         }
 
         // Helper: format date Indonesia
@@ -148,7 +221,7 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
         let rowNo = 0;
 
         // ════════════════════════════════════════════════════════════
-        // STEP 1: PENJUALAN rows
+        // STEP 1: PENJUALAN rows with SMART MATCHING
         // ════════════════════════════════════════════════════════════
         for (const sd of deliveries) {
             const soNumber  = soMap.get(sd.orderId ?? '') ?? sd.poNumber ?? '-';
@@ -169,131 +242,87 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
                 const perCt     = sdItem.product.uom || 'PCS';
                 const sellPrice = Number(sdItem.salesPrice || 0);
                 const discount  = Number(sdItem.discount || 0);
+                const qty       = sdItem.quantity;
 
-                // Predictive Heuristic: Jika tidak ada lot, cari referensi LPB terdekat untuk produk ini
-                let fallbackLot: any = null;
-                if (!sdItem.lotAllocations || sdItem.lotAllocations.length === 0) {
-                    const fallbackGRItem = predictiveGRMap.get(sdItem.productId);
-                    if (fallbackGRItem) {
-                        fallbackLot = {
-                            grNumber: fallbackGRItem.receipt?.receiptNumber,
-                            grDate: fallbackGRItem.receipt?.date,
-                            supplierName: fallbackGRItem.receipt?.receivedFrom,
-                            purchasePrice: fallbackGRItem.purchasePrice,
-                            _isPredictive: true
-                        };
-                    }
-                }
+                // ── SMART MATCHING: Find best purchase for this sale item ──
+                // Use Nearest Purchase Matching instead of FIFO lot allocation
+                const bestGR = findBestGR(sdItem.productId, sd.date, qty);
 
-                // ── MERGE alokasi lot yang berasal dari LPB yang sama ──────────────────
-                // Jika 1 item penjualan memiliki 2 lot dari LPB yang sama (e.g. FIFO split
-                // mengambil sisa 1 pcs batch lama + 999 pcs batch baru yang kebetulan
-                // LPB-nya sama), kita gabungkan jadi 1 baris agar laporan tidak terpecah.
-                let mergedAllocations: any[];
-                if (sdItem.lotAllocations && sdItem.lotAllocations.length > 0) {
-                    // Group by grNumber
-                    const mergeMap = new Map<string, any>();
-                    for (const alloc of sdItem.lotAllocations) {
-                        const key = alloc.lot?.grNumber || alloc.lotId || 'unknown';
-                        if (mergeMap.has(key)) {
-                            // Same LPB → merge: accumulate qty, use weighted avg HPP
-                            const existing = mergeMap.get(key)!;
-                            const totalQty = existing.qty + alloc.qty;
-                            const weightedHpp = totalQty > 0
-                                ? (Number(existing.hppAtTime) * existing.qty + Number(alloc.hppAtTime) * alloc.qty) / totalQty
-                                : Number(existing.hppAtTime);
-                            existing.qty = totalQty;
-                            existing.hppAtTime = weightedHpp;
-                        } else {
-                            mergeMap.set(key, { ...alloc, qty: alloc.qty, hppAtTime: Number(alloc.hppAtTime) });
-                        }
-                    }
-                    mergedAllocations = Array.from(mergeMap.values());
-                } else {
-                    mergedAllocations = [null];
-                }
-                // ────────────────────────────────────────────────────────────────────────
+                const grNumber = bestGR?.receipt?.receiptNumber || '-';
+                const grDate = bestGR?.receipt?.date || null;
+                const supplierName = bestGR?.receipt?.receivedFrom || '-';
+                const hpp = bestGR ? Number(bestGR.purchasePrice) : Number(sdItem.product.purchasePrice || 0);
+                const purchaseTaxRate = Number(bestGR?.receipt?.taxRate || 0);
+                const hppWithTax = Math.round(hpp * (1 + purchaseTaxRate / 100));
+                const totalBeli = Math.round(hppWithTax * qty);
 
-                const isMultiLot = mergedAllocations.length > 1 && mergedAllocations[0] !== null;
+                const grInfo = {
+                    taxInvoiceDate: bestGR?.receipt?.taxInvoiceDate || null,
+                    formNumber: bestGR?.receipt?.formNumber || null,
+                    taxInvoiceNumber: bestGR?.receipt?.taxInvoiceNumber || null,
+                    taxRate: purchaseTaxRate
+                };
 
-                for (const alloc of mergedAllocations) {
-                    const fifoLot = alloc ? alloc.lot : fallbackLot;
-                    // Jika fifoLot berasal dari predictive fallback, pastikan kita format infonya
-                    const grInfo  = fifoLot?.grNumber ? (grMapA.get(fifoLot.grNumber) || fifoLot.receipt || {}) : {};
-                    const hpp     = alloc ? Number(alloc.hppAtTime || fifoLot?.purchasePrice || 0) : Number(fifoLot?.purchasePrice || sdItem.product.purchasePrice || 0);
-                    const purchaseTaxRate = Number(grInfo.taxRate || 0);
-                    const hppWithTax = Math.round(hpp * (1 + purchaseTaxRate / 100));
-                    const qty     = alloc ? alloc.qty : sdItem.quantity;
+                // Hitung diskon proporsional
+                const allocDiscount = discount;
+
+                // DPP (Dasar Pengenaan Pajak / Omzet Jual Bersih) = (Harga Jual per unit * qty) - Diskon
+                const dpp = Math.round((sellPrice * qty) - allocDiscount);
+
+                // PPN = DPP * taxRate / 100
+                const ppn = Math.round(dpp * taxRate / 100);
+
+                // Total Jual (Termasuk PPN) = DPP + PPN
+                const totalJual = dpp + ppn;
+
+                const rowOps = remainingSdQty > 0 ? Math.round(remainingInvoiceOps * (qty / remainingSdQty)) : 0;
+                remainingInvoiceOps -= rowOps;
+                remainingSdQty -= qty;
+
+                // Margin
+                const margin    = totalJual - totalBeli - rowOps;
+                const marginPct = totalJual > 0 ? (margin / totalJual * 100) : 0;
+
+                rowNo++;
+                rows.push({
+                    _sortDate          : sd.date,
+                    'NO'               : rowNo,
+                    'BARCODE'          : barcode,
+                    'KETERANGAN ITEM'  : namaItem,
+                    'PER/CT'           : perCt,
                     
-                    const displayNamaItem = isMultiLot ? `${namaItem} (Batch: ${qty} dr ${sdItem.quantity})` : namaItem;
-
-                    const sellPriceWithTax = Math.round(sellPrice * (1 + taxRate / 100));
-                    const totalBeli = Math.round(hppWithTax * qty);
+                    // ─ PEMBELIAN (COLUMNS FIRST) ─
+                    'TANGGAL BELI'     : fmtDate(grDate),
+                    'NOMOR LPB'        : grNumber,
+                    'NAMA SUPPLIER'    : supplierName,
+                    'QTY BELI'         : qty,
+                    'HARGA BELI'       : Math.round(hppWithTax),
+                    'OPS'              : rowOps,
+                    'TOTAL BELI'       : totalBeli,
+                    'F. PAJAK'         : fmtDate(grInfo.taxInvoiceDate),
+                    'NO. FAKTUR'       : grInfo.formNumber || grNumber || '-',
+                    'NO. PAJAK'        : grInfo.taxInvoiceNumber || '-',
                     
-                    // Hitung diskon proporsional untuk alokasi lot ini (nominal diskon garis dibagi per kuantitas)
-                    const allocDiscount = sdItem.quantity > 0 
-                        ? (qty / sdItem.quantity) * discount 
-                        : 0;
-
-                    // DPP (Dasar Pengenaan Pajak / Omzet Jual Bersih) = (Harga Jual per unit * qty) - Diskon
-                    const dpp = Math.round((sellPrice * qty) - allocDiscount);
-
-                    // PPN = DPP * taxRate / 100
-                    const ppn = Math.round(dpp * taxRate / 100);
-
-                    // Total Jual (Termasuk PPN) = DPP + PPN
-                    const totalJual = dpp + ppn;
-
-                    const rowOps = remainingSdQty > 0 ? Math.round(remainingInvoiceOps * (qty / remainingSdQty)) : 0;
-                    remainingInvoiceOps -= rowOps;
-                    remainingSdQty -= qty;
-
-                    // Margin dihitung dari Total Jual (kolom Excel) dikurangi Total Beli (kolom Excel) dan dikurangi Ops
-                    // agar laporan konsisten secara visual untuk pembaca laporan Excel
-                    const margin    = totalJual - totalBeli - rowOps;
-                    const marginPct = totalJual > 0 ? (margin / totalJual * 100) : 0;
-
-                    rowNo++;
-                    rows.push({
-                        _sortDate          : sd.date,
-                        'NO'               : rowNo,
-                        'BARCODE'          : barcode,
-                        'KETERANGAN ITEM'  : displayNamaItem,
-                        'PER/CT'           : perCt,
-                        
-                        // ─ PEMBELIAN (COLUMNS FIRST) ─
-                        'TANGGAL BELI'     : fmtDate(fifoLot?.grDate),
-                        'NOMOR LPB'        : fifoLot?.grNumber || '-',
-                        'NAMA SUPPLIER'    : fifoLot?.supplierName || '-',
-                        'QTY BELI'         : qty,
-                        'HARGA BELI'       : Math.round(hppWithTax),
-                        'OPS'              : rowOps,
-                        'TOTAL BELI'       : totalBeli,
-                        'F. PAJAK'         : fmtDate(grInfo.taxInvoiceDate),
-                        'NO. FAKTUR'       : grInfo.formNumber || fifoLot?.grNumber || '-',
-                        'NO. PAJAK'        : grInfo.taxInvoiceNumber || '-',
-                        
-                        // ─ PENJUALAN (COLUMNS SECOND) ─
-                        'TANGGAL JUAL'     : tglJual,
-                        'NOMOR SJ'         : sd.deliveryNumber,
-                        'NOMOR FAKTUR PENJUALAN': sd.invoiceNumber || sd.deliveryNumber || '-',
-                        'NAMA PEMBELI'     : buyer,
-                        'SALES'            : spJual,
-                        'QTY JUAL'         : qty,
-                        'HARGA JUAL'       : sellPriceWithTax,
-                        'TOTAL JUAL'       : totalJual,
-                        'DPP'              : dpp,
-                        'PPH'              : ppn,
-                        'TOTAL'            : totalJual,
-                        'NO. PO'           : soNumber,
-                        'PAYMENT'          : sd.paymentStatus || 'PENDING',
-                        
-                        // ─ KALKULASI & RETUR ─
-                        'MARGIN'           : margin,
-                        'MARGIN %'         : `${marginPct.toFixed(1)}%`,
-                        'NOMOR RETUR'      : '-',
-                    });
-                }
+                    // ─ PENJUALAN (COLUMNS SECOND) ─
+                    'TANGGAL JUAL'     : tglJual,
+                    'NOMOR SJ'         : sd.deliveryNumber,
+                    'NOMOR FAKTUR PENJUALAN': sd.invoiceNumber || sd.deliveryNumber || '-',
+                    'NAMA PEMBELI'     : buyer,
+                    'SALES'            : spJual,
+                    'QTY JUAL'         : qty,
+                    'HARGA JUAL'       : Math.round(sellPrice * (1 + taxRate / 100)),
+                    'TOTAL JUAL'       : totalJual,
+                    'DPP'              : dpp,
+                    'PPH'              : ppn,
+                    'TOTAL'            : totalJual,
+                    'NO. PO'           : soNumber,
+                    'PAYMENT'          : sd.paymentStatus || 'PENDING',
+                    
+                    // ─ KALKULASI & RETUR ─
+                    'MARGIN'           : margin,
+                    'MARGIN %'         : `${marginPct.toFixed(1)}%`,
+                    'NOMOR RETUR'      : '-',
+                });
             }
         }
 
