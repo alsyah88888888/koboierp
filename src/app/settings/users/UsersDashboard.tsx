@@ -25,6 +25,7 @@ const AVAILABLE_PERMISSIONS = [
   { key: "PURCHASE", label: "Pembelian (PO/LPB)" },
   { key: "PURCHASE_REQUEST", label: "Pengajuan Permintaan" },
   { key: "SALES", label: "Penjualan (SJ/Order)" },
+  { key: "DELIVERY", label: "Surat Jalan (Delivery)" },
   { key: "TRACKING", label: "Tracking Item / Lot" },
   { key: "OPERATIONAL", label: "Operasional (Biaya)" },
   { key: "WAREHOUSE", label: "Gudang (Stok/Checker)" },
