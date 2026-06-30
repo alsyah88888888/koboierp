@@ -137,8 +137,8 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
             await callAction("editSettledPayment", editPaymentModal.type, editPaymentModal.id, amount, pDate, editBankId);
             alert("Perubahan pelunasan/pembayaran berhasil disimpan.");
             router.refresh();
-        } catch (e) {
-            alert("Gagal memperbarui pelunasan/pembayaran.");
+        } catch (e: any) {
+            alert("Gagal memperbarui pelunasan/pembayaran.\n\nDetail: " + (e?.message || String(e)));
         } finally {
             setLoading(null);
         }
