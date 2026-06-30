@@ -106,6 +106,7 @@ model FinanceTransaction {
   createdById     String?
   createdBy       User?          @relation("FTCreatedBy", fields: [createdById], references: [id])
   journals        JournalEntry[]
+  bankMutation    BankMutation?
 
   @@index([date])
   @@index([createdAt])
@@ -591,4 +592,24 @@ model AuditLog {
   @@index([userId])
   @@index([createdAt])
   @@index([action])
+}
+
+model BankMutation {
+  id                 String              @id @default(cuid())
+  bank               String              // e.g., "BCA", "Mandiri", "BNI"
+  date               DateTime
+  description        String
+  type               String              // "CR" (Credit/Masuk) or "DB" (Debit/Keluar)
+  amount             Decimal             @db.Decimal(15, 2)
+  isReconciled       Boolean             @default(false)
+  
+  // Relasi ke transaksi kas/bank internal ERP
+  transactionId      String?             @unique
+  financeTransaction FinanceTransaction? @relation(fields: [transactionId], references: [id], onDelete: SetNull)
+
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  @@index([date])
+  @@index([isReconciled])
 }

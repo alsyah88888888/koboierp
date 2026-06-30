@@ -46,7 +46,8 @@ export default async function FinancePage() {
         currentMonthPaidAPRes,
         currentMonthPaidARRes,
         dueSoonAPRes,
-        overdueARRes
+        overdueARRes,
+        bankMutations
     ] = await Promise.all([
         getBalanceSheet().catch(() => []),
         prisma.journalEntry.findMany({
@@ -176,7 +177,11 @@ export default async function FinancePage() {
                 date: { lt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) }
             },
             _sum: { grandTotal: true, paidAmount: true }
-        }).catch(() => ({ _sum: { grandTotal: 0, paidAmount: 0 } }))
+        }).catch(() => ({ _sum: { grandTotal: 0, paidAmount: 0 } })),
+        prisma.bankMutation.findMany({
+            include: { financeTransaction: true },
+            orderBy: { date: 'desc' }
+        }).catch(() => [])
     ]);
 
     // Fetch journals separately for the transactions to populate relation data in OperationalModal
@@ -274,6 +279,7 @@ export default async function FinancePage() {
         ...s,
         total: calculateTotal(s.grandTotal, s.items, 'salesPrice')
     })));
+    const serializedBankMutations = serializeDecimal(bankMutations || []);
 
     // Process Monthly Stats
     const monthlyStats = [];
@@ -318,6 +324,7 @@ export default async function FinancePage() {
             overdueAR={Number(overdueARRes?._sum?.grandTotal || 0) - Number(overdueARRes?._sum?.paidAmount || 0)}
             monthlyStats={monthlyStats}
             paymentHistory={serializeDecimal(paymentHistory || [])}
+            bankMutations={serializedBankMutations}
         />
     );
 }

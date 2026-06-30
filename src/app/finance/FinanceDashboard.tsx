@@ -11,11 +11,11 @@ import { useSession } from "next-auth/react";
 import { callAction } from "@/proxy";
 import { DashboardStats } from "../components/DashboardStats";
 
-import { CheckCircle2, Clock } from "lucide-react";
+import { CheckCircle2, Clock, Landmark } from "lucide-react";
 import { exportToExcel } from "@/lib/excel";
 import { useRouter } from "next/navigation";
 
-export function FinanceDashboard({ accounts, ledger, vendors, customers, pendingPurchases, pendingSales, unverifiedReceipts, pendingReturns, pendingSalesReturns, pendingPurchaseRequests, transactions, settledPurchases, settledSales, totalPaidAP, totalPaidAR, currentMonthPaidAP = 0, currentMonthPaidAR = 0, dueSoonAP = 0, overdueAR = 0, monthlyStats, paymentHistory = [] }: {
+export function FinanceDashboard({ accounts, ledger, vendors, customers, pendingPurchases, pendingSales, unverifiedReceipts, pendingReturns, pendingSalesReturns, pendingPurchaseRequests, transactions, settledPurchases, settledSales, totalPaidAP, totalPaidAR, currentMonthPaidAP = 0, currentMonthPaidAR = 0, dueSoonAP = 0, overdueAR = 0, monthlyStats, paymentHistory = [], bankMutations = [] }: {
     accounts: any[],
     ledger: any[],
     vendors: any[],
@@ -36,7 +36,8 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
     dueSoonAP?: number,
     overdueAR?: number,
     monthlyStats: { label: string, ap: number, ar: number }[],
-    paymentHistory?: any[]
+    paymentHistory?: any[],
+    bankMutations?: any[]
 }) {
     const { data: session } = useSession() as any;
     const userRole = session?.user?.role?.toUpperCase() || "";
@@ -47,10 +48,16 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
     const [selectedHistoryItem, setSelectedHistoryItem] = useState<any>(null);
     const [arHistoryMonth, setArHistoryMonth] = useState<string>("ALL");
     const [apHistoryMonth, setApHistoryMonth] = useState<string>("ALL");
-    const [activeTab, setActiveTab] = useState<"ledger" | "ap" | "ar" | "checker" | "purchase_requests" | "history">("ledger");
+    const [activeTab, setActiveTab] = useState<"ledger" | "ap" | "ar" | "checker" | "purchase_requests" | "history" | "bank_reconciliation">("ledger");
     const [loading, setLoading] = useState<string | null>(null);
     const [isClient, setIsClient] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState<any | null>(null);
+
+    // Bank Reconciliation State
+    const [selectedBank, setSelectedBank] = useState<string>("BCA");
+    const [reconFilterReconciled, setReconFilterReconciled] = useState<boolean>(false);
+    const [selectedMutationForMatching, setSelectedMutationForMatching] = useState<any | null>(null);
+    const [bankReconSearchQuery, setBankReconSearchQuery] = useState("");
 
     // Payment Modal State
     const [paymentModal, setPaymentModal] = useState<{
@@ -204,6 +211,179 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
         const pDate = paymentDate ? new Date(paymentDate) : new Date();
         setPaymentModal(null);
         handleVerifyPayment(paymentModal.type, paymentModal.id, amount === remaining ? "PAID" : "PARTIAL", amount, pDate, selectedBankId);
+    };
+
+    const handleReconcile = async (mutationId: string, transactionId: string) => {
+        try {
+            setLoading(mutationId);
+            const res = await callAction("reconcileMutation", mutationId, transactionId);
+            if (res.success) {
+                alert("Berhasil mencocokkan mutasi bank dengan transaksi internal.");
+                setSelectedMutationForMatching(null);
+                router.refresh();
+            } else {
+                alert("Gagal mencocokkan mutasi.");
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Terjadi kesalahan.");
+        } finally {
+            setLoading(null);
+        }
+    };
+
+    const handleUnreconcile = async (mutationId: string) => {
+        if (!confirm("Batal mencocokkan mutasi bank ini?")) return;
+        try {
+            setLoading(mutationId);
+            const res = await callAction("unreconcileMutation", mutationId);
+            if (res.success) {
+                alert("Pencocokan mutasi bank berhasil dibatalkan.");
+                router.refresh();
+            } else {
+                alert("Gagal membatalkan pencocokan.");
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Terjadi kesalahan.");
+        } finally {
+            setLoading(null);
+        }
+    };
+
+    const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            try {
+                const data = new Uint8Array(e.target?.result as ArrayBuffer);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[];
+
+                let headerIndex = -1;
+                let dateCol = -1, descCol = -1, amtCol = -1, typeCol = -1;
+
+                // Find header row scanning first 20 rows
+                for (let r = 0; r < Math.min(jsonData.length, 20); r++) {
+                    const row = jsonData[r];
+                    if (!Array.isArray(row)) continue;
+                    const rowStr = row.map(c => String(c || "").toLowerCase());
+                    
+                    const dIdx = rowStr.findIndex(c => c.includes("tanggal") || c.includes("date"));
+                    const descIdx = rowStr.findIndex(c => c.includes("keterangan") || c.includes("desc") || c.includes("detail") || c.includes("remark"));
+                    const amtIdx = rowStr.findIndex(c => c.includes("jumlah") || c.includes("amount") || c.includes("nominal") || c.includes("value"));
+                    const tIdx = rowStr.findIndex(c => c.includes("mutasi") || c.includes("tipe") || c.includes("type") || c.includes("db/cr") || c.includes("cr/db"));
+
+                    if (dIdx !== -1 && descIdx !== -1 && amtIdx !== -1) {
+                        headerIndex = r;
+                        dateCol = dIdx;
+                        descCol = descIdx;
+                        amtCol = amtIdx;
+                        typeCol = tIdx;
+                        break;
+                    }
+                }
+
+                if (headerIndex === -1) {
+                    // Fallback
+                    headerIndex = 0;
+                    dateCol = 0;
+                    descCol = 1;
+                    amtCol = 3;
+                    typeCol = 4;
+                }
+
+                const parsedRows: any[] = [];
+                for (let r = headerIndex + 1; r < jsonData.length; r++) {
+                    const row = jsonData[r];
+                    if (!row || row.length < 3) continue;
+
+                    let dateVal = row[dateCol];
+                    let descVal = row[descCol];
+                    let amtVal = row[amtCol];
+                    let typeVal = typeCol !== -1 ? row[typeCol] : "";
+
+                    if (!dateVal || !descVal || !amtVal) continue;
+
+                    let dateObj: Date;
+                    if (typeof dateVal === "number") {
+                        dateObj = new Date((dateVal - (25567 + 2)) * 86400 * 1000);
+                    } else {
+                        const dateStr = String(dateVal).trim();
+                        const parts = dateStr.split("/");
+                        if (parts.length >= 2) {
+                            const day = parseInt(parts[0], 10);
+                            const month = parseInt(parts[1], 10) - 1;
+                            const year = parts.length === 3 ? parseInt(parts[2], 10) : new Date().getFullYear();
+                            dateObj = new Date(year, month, day);
+                        } else {
+                            dateObj = new Date(dateStr);
+                        }
+                    }
+
+                    if (isNaN(dateObj.getTime())) {
+                        dateObj = new Date();
+                    }
+
+                    let cleanAmt = 0;
+                    if (typeof amtVal === "number") {
+                        cleanAmt = amtVal;
+                    } else {
+                        const amtStr = String(amtVal).replace(/[^0-9.-]+/g, "");
+                        cleanAmt = parseFloat(amtStr) || 0;
+                    }
+
+                    let finalType = "DB";
+                    const typeStr = String(typeVal).toUpperCase();
+                    if (typeStr.includes("CR") || typeStr.includes("KREDIT") || typeStr.includes("IN") || typeStr.includes("CREDIT") || typeStr.includes("K")) {
+                        finalType = "CR";
+                    }
+
+                    parsedRows.push({
+                        date: dateObj.toISOString(),
+                        description: String(descVal).trim(),
+                        amount: cleanAmt,
+                        type: finalType
+                    });
+                }
+
+                if (parsedRows.length === 0) {
+                    alert("Tidak ada baris mutasi bank valid yang ditemukan.");
+                    return;
+                }
+
+                setLoading("uploading");
+                const res = await callAction("importBankMutations", selectedBank, parsedRows);
+                if (res.success) {
+                    alert(`Berhasil mengimpor ${res.importedCount} baris mutasi bank (${res.skippedCount} dilewati karena duplikat).`);
+                    router.refresh();
+                } else {
+                    alert("Gagal mengimpor mutasi bank.");
+                }
+            } catch (err) {
+                console.error(err);
+                alert("Gagal membaca file statement.");
+            } finally {
+                setLoading(null);
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    };
+
+    const handleQuickRecord = (mutation: any) => {
+        setEditingTransaction({
+            transactionType: mutation.type === "CR" ? "RECEIPT" : "PAYMENT",
+            bank: selectedBank === "BCA" ? "Bank BCA" : selectedBank === "Mandiri" ? "Bank Mandiri" : "Bank BNI",
+            date: mutation.date ? mutation.date.split("T")[0] : new Date().toISOString().split("T")[0],
+            description: mutation.description,
+            amount: mutation.amount,
+            journals: []
+        });
+        setShowModal(true);
     };
 
     const handleDelete = async (id: string, isManual: boolean) => {
@@ -807,6 +987,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                     { id: "checker", label: "Checker", icon: CheckCircle2, count: unverifiedReceipts.length },
                     { id: "purchase_requests", label: "Pengajuan", icon: Wallet, count: pendingPurchaseRequests.length },
                     { id: "history", label: "History", icon: Clock, count: (settledPurchases?.length || 0) + (settledSales?.length || 0) },
+                    { id: "bank_reconciliation", label: "Rekonsiliasi Bank", icon: Landmark, count: bankMutations?.filter((m: any) => !m.isReconciled).length || 0 },
                 ].map((tab) => (
                     <button
                         key={tab.id}
@@ -1840,6 +2021,345 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                         ))}
                                     </tbody>
                                 </table>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === "bank_reconciliation" && (
+                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        {/* Top Filters & Controls */}
+                        <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                            <div className="flex flex-wrap items-center gap-3">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Bank:</span>
+                                    <select
+                                        value={selectedBank}
+                                        onChange={(e) => {
+                                            setSelectedBank(e.target.value);
+                                            setSelectedMutationForMatching(null);
+                                        }}
+                                        className="text-xs font-black uppercase bg-white border border-slate-200 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-slate-900/10 transition-all"
+                                    >
+                                        <option value="BCA">BCA</option>
+                                        <option value="Mandiri">Mandiri</option>
+                                        <option value="BNI">BNI</option>
+                                    </select>
+                                </div>
+                                <div className="flex bg-slate-200/60 p-1 rounded-xl gap-1">
+                                    <button
+                                        onClick={() => setReconFilterReconciled(false)}
+                                        className={cn(
+                                            "px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all",
+                                            !reconFilterReconciled ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-800"
+                                        )}
+                                    >
+                                        Belum Cocok
+                                    </button>
+                                    <button
+                                        onClick={() => setReconFilterReconciled(true)}
+                                        className={cn(
+                                            "px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all",
+                                            reconFilterReconciled ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-800"
+                                        )}
+                                    >
+                                        Sudah Cocok
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            {isAdminOrFinance && (
+                                <label className="flex items-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-black text-[10px] uppercase tracking-widest cursor-pointer shadow-md hover:shadow-slate-900/10 hover:scale-102 transition-all">
+                                    <Download className="h-3.5 w-3.5" /> Import Mutasi Bank
+                                    <input
+                                        type="file"
+                                        accept=".xlsx,.xls,.csv"
+                                        onChange={handleFileUpload}
+                                        className="hidden"
+                                    />
+                                </label>
+                            )}
+                        </div>
+
+                        {/* Main Reconciliation Grid */}
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                            {/* Left Panel: Bank Mutations List */}
+                            <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-100 p-6 shadow-sm flex flex-col min-h-[500px]">
+                                <div className="mb-4">
+                                    <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">
+                                        Mutasi Bank Rekening {selectedBank} ({bankMutations.filter((m: any) => m.bank === selectedBank && m.isReconciled === reconFilterReconciled).length} data)
+                                    </h4>
+                                    <p className="text-[10px] text-slate-500">
+                                        {reconFilterReconciled 
+                                            ? "Daftar mutasi rekening koran yang sudah terhubung dengan transaksi kas ERP."
+                                            : "Klik salah satu baris mutasi koran di bawah untuk mencari kecocokan transaksi kas internal ERP."
+                                        }
+                                    </p>
+                                </div>
+
+                                <div className="overflow-x-auto custom-scrollbar flex-1">
+                                    <table className="w-full text-xs text-left min-w-[600px] table-fixed">
+                                        <thead className="bg-slate-50 text-slate-600 border-b border-slate-100 text-[10px] uppercase tracking-wider font-black font-sans">
+                                            <tr>
+                                                <th className="px-4 py-3 w-28 whitespace-nowrap">Tanggal</th>
+                                                <th className="px-4 py-3">Keterangan</th>
+                                                <th className="px-4 py-3 w-16 text-center whitespace-nowrap">Tipe</th>
+                                                <th className="px-4 py-3 w-32 text-right whitespace-nowrap">Nominal</th>
+                                                <th className="px-4 py-3 w-24 text-center whitespace-nowrap">Aksi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-50 text-slate-700">
+                                            {bankMutations
+                                                .filter((m: any) => m.bank === selectedBank && m.isReconciled === reconFilterReconciled)
+                                                .map((m: any) => {
+                                                    const isSelected = selectedMutationForMatching?.id === m.id;
+                                                    return (
+                                                        <tr 
+                                                            key={m.id} 
+                                                            onClick={() => !m.isReconciled && setSelectedMutationForMatching(isSelected ? null : m)}
+                                                            className={cn(
+                                                                "transition-all cursor-pointer",
+                                                                isSelected 
+                                                                    ? "bg-amber-50 hover:bg-amber-100/80 border-l-4 border-amber-500" 
+                                                                    : "hover:bg-slate-50"
+                                                            )}
+                                                        >
+                                                            <td className="px-4 py-3.5 font-mono text-slate-400 font-bold whitespace-nowrap">
+                                                                {format(new Date(m.date), "dd/MM/yyyy")}
+                                                            </td>
+                                                            <td className="px-4 py-3.5">
+                                                                <div className="font-bold text-slate-900 truncate" title={m.description}>
+                                                                    {m.description}
+                                                                </div>
+                                                                {m.isReconciled && m.financeTransaction && (
+                                                                    <div className="text-[9px] text-slate-400 mt-1 font-mono">
+                                                                        Matched: {m.financeTransaction.referenceNumber || "No Ref"} ({m.financeTransaction.description})
+                                                                    </div>
+                                                                )}
+                                                            </td>
+                                                            <td className="px-4 py-3.5 text-center whitespace-nowrap">
+                                                                {m.type === "CR" ? (
+                                                                    <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-emerald-50 text-emerald-600 border border-emerald-100 uppercase">
+                                                                        CR
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-rose-50 text-rose-600 border border-rose-100 uppercase">
+                                                                        DB
+                                                                    </span>
+                                                                )}
+                                                            </td>
+                                                            <td className="px-4 py-3.5 text-right font-mono font-black text-slate-900 whitespace-nowrap">
+                                                                {formatCurrency(Number(m.amount))}
+                                                            </td>
+                                                            <td className="px-4 py-3.5 text-center whitespace-nowrap" onClick={e => e.stopPropagation()}>
+                                                                {m.isReconciled ? (
+                                                                    <button
+                                                                        onClick={() => handleUnreconcile(m.id)}
+                                                                        className="px-2 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 text-[10px] font-black rounded-lg transition-all uppercase tracking-wider border border-rose-100 cursor-pointer"
+                                                                    >
+                                                                        Batal
+                                                                    </button>
+                                                                ) : (
+                                                                    <button
+                                                                        onClick={() => setSelectedMutationForMatching(isSelected ? null : m)}
+                                                                        className={cn(
+                                                                            "px-2 py-1.5 text-[10px] font-black rounded-lg transition-all uppercase tracking-wider border cursor-pointer",
+                                                                            isSelected
+                                                                                ? "bg-amber-500 text-white border-amber-500 hover:bg-amber-600"
+                                                                                : "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200"
+                                                                        )}
+                                                                    >
+                                                                        {isSelected ? "Dipilih" : "Match"}
+                                                                    </button>
+                                                                )}
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })}
+                                            {bankMutations.filter((m: any) => m.bank === selectedBank && m.isReconciled === reconFilterReconciled).length === 0 && (
+                                                <tr>
+                                                    <td colSpan={5} className="px-4 py-12 text-center text-slate-400 italic uppercase tracking-widest text-[10px]">
+                                                        Tidak ada mutasi bank ditemukan. Silakan upload mutasi baru.
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            {/* Right Panel: Reconciliation Workspace */}
+                            <div className="lg:col-span-5 bg-white rounded-2xl border border-slate-100 p-6 shadow-sm flex flex-col min-h-[500px]">
+                                {!selectedMutationForMatching ? (
+                                    <div className="flex flex-col items-center justify-center flex-1 text-center p-8 text-slate-500">
+                                        <div className="p-4 bg-slate-50 rounded-2xl mb-4 border border-slate-100">
+                                            <Landmark className="h-8 w-8 text-slate-400" />
+                                        </div>
+                                        <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest mb-2">Pilih Mutasi Koran</h4>
+                                        <p className="text-[10px] text-slate-500 max-w-xs leading-relaxed">
+                                            Klik tombol <strong>"Match"</strong> pada salah satu baris mutasi bank di panel sebelah kiri untuk mulai mencari pasangan transaksi kas internal ERP.
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-6 flex flex-col flex-1">
+                                        {/* Selected Mutation Info Card */}
+                                        <div className="bg-amber-50/50 border border-amber-200/60 rounded-2xl p-4 space-y-3 relative overflow-hidden">
+                                            <div className="absolute top-0 right-0 p-2">
+                                                <button 
+                                                    onClick={() => setSelectedMutationForMatching(null)}
+                                                    className="text-slate-400 hover:text-slate-600 transition-all cursor-pointer"
+                                                >
+                                                    <X className="h-4 w-4" />
+                                                </button>
+                                            </div>
+                                            <span className="px-2 py-0.5 rounded-full text-[8px] font-black bg-amber-500 text-white leading-none uppercase tracking-wider">
+                                                Mutasi Terpilih
+                                            </span>
+                                            
+                                            <div className="grid grid-cols-2 gap-2 text-xs pt-1">
+                                                <div>
+                                                    <span className="text-[9px] font-bold text-slate-400 uppercase block tracking-wider">Tanggal Mutasi</span>
+                                                    <span className="font-mono font-black text-slate-800">
+                                                        {format(new Date(selectedMutationForMatching.date), "dd MMMM yyyy")}
+                                                    </span>
+                                                </div>
+                                                <div>
+                                                    <span className="text-[9px] font-bold text-slate-400 uppercase block tracking-wider">Nominal</span>
+                                                    <span className="font-mono font-black text-slate-900 text-sm">
+                                                        {formatCurrency(Number(selectedMutationForMatching.amount))}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <span className="text-[9px] font-bold text-slate-400 uppercase block tracking-wider">Keterangan Bank</span>
+                                                <span className="text-[10px] font-black text-slate-700 block leading-tight">
+                                                    {selectedMutationForMatching.description}
+                                                </span>
+                                            </div>
+
+                                            <div className="flex gap-2 pt-2">
+                                                <button
+                                                    onClick={() => handleQuickRecord(selectedMutationForMatching)}
+                                                    className="flex-1 px-3 py-2 bg-slate-950 hover:bg-slate-800 text-white rounded-xl font-black text-[9px] uppercase tracking-wider text-center transition-all cursor-pointer"
+                                                >
+                                                    Pencatatan Cepat (Buat Transaksi ERP)
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* ERP Candidate Transactions Title and Search */}
+                                        <div className="space-y-3 flex-1 flex flex-col">
+                                            <div className="flex justify-between items-center">
+                                                <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest">
+                                                    Daftar Transaksi Kas/Bank ERP
+                                                </h4>
+                                            </div>
+
+                                            {/* Search bar inside right pane */}
+                                            <div className="relative">
+                                                <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
+                                                <input
+                                                    type="text"
+                                                    value={bankReconSearchQuery}
+                                                    onChange={(e) => setBankReconSearchQuery(e.target.value)}
+                                                    placeholder="Cari deskripsi, referensi, nominal..."
+                                                    className="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2 outline-none focus:ring-2 focus:ring-slate-900/10 transition-all font-medium"
+                                                />
+                                            </div>
+
+                                            {/* Candidates Container */}
+                                            <div className="flex-1 overflow-y-auto max-h-[350px] space-y-3 pr-1 custom-scrollbar">
+                                                {(() => {
+                                                    // Filter unmatched candidates
+                                                    const unmatchedErpTx = transactions
+                                                        .filter((tx: any) => {
+                                                            // Ensure it is not reconciled yet
+                                                            const isLinked = bankMutations.some((m: any) => m.transactionId === tx.id);
+                                                            
+                                                            const queryLower = bankReconSearchQuery.toLowerCase();
+                                                            const matchQuery = 
+                                                                (tx.description || "").toLowerCase().includes(queryLower) ||
+                                                                (tx.referenceNumber || "").toLowerCase().includes(queryLower) ||
+                                                                String(Math.round(Number(tx.amount))).includes(queryLower);
+                                                            
+                                                            return !isLinked && matchQuery;
+                                                        })
+                                                        .map((tx: any) => {
+                                                            // Rank/calculate closeness points
+                                                            const txAmount = Math.abs(Number(tx.amount));
+                                                            const isAmountMatch = txAmount === Number(selectedMutationForMatching.amount);
+                                                            
+                                                            // Days difference
+                                                            const diffTime = Math.abs(new Date(tx.date).getTime() - new Date(selectedMutationForMatching.date).getTime());
+                                                            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                                                            
+                                                            // Rank score: amount match gets 1000 points, subtract days difference
+                                                            const score = (isAmountMatch ? 1000 : 0) - diffDays;
+                                                            return { ...tx, isAmountMatch, diffDays, score };
+                                                        })
+                                                        // Sort by rank score descending
+                                                        .sort((a, b) => b.score - a.score);
+
+                                                    if (unmatchedErpTx.length === 0) {
+                                                        return (
+                                                            <div className="text-center text-slate-400 py-8 text-[10px] italic uppercase tracking-wider">
+                                                                Tidak ada transaksi kas ERP yang cocok ditemukan.
+                                                            </div>
+                                                        );
+                                                    }
+
+                                                    return unmatchedErpTx.map((tx: any) => (
+                                                        <div 
+                                                            key={tx.id} 
+                                                            className={cn(
+                                                                "border rounded-2xl p-4 transition-all flex flex-col space-y-3",
+                                                                tx.isAmountMatch
+                                                                    ? "border-emerald-200 bg-emerald-50/20 shadow-sm"
+                                                                    : "border-slate-100 hover:border-slate-200 bg-white"
+                                                            )}
+                                                        >
+                                                            <div className="flex justify-between items-start">
+                                                                <div>
+                                                                    <span className="font-mono text-[9px] font-bold text-slate-400 block uppercase">
+                                                                        {format(new Date(tx.date), "dd/MM/yyyy")} • Ref: {tx.referenceNumber || "-"}
+                                                                    </span>
+                                                                    <span className="font-black text-slate-900 text-xs block pt-0.5">
+                                                                        {tx.description}
+                                                                    </span>
+                                                                </div>
+                                                                
+                                                                {tx.isAmountMatch && (
+                                                                    <span className="px-2 py-0.5 rounded-full text-[8px] font-black bg-emerald-500 text-white uppercase tracking-wider whitespace-nowrap">
+                                                                        Rekomendasi
+                                                                    </span>
+                                                                )}
+                                                            </div>
+
+                                                            <div className="flex justify-between items-end border-t border-slate-100/50 pt-2.5">
+                                                                <div>
+                                                                    <span className="text-[8px] text-slate-400 block uppercase tracking-wider">Nilai Transaksi ERP</span>
+                                                                    <span className={cn(
+                                                                        "font-mono font-black text-xs",
+                                                                        tx.transactionType === "IN" ? "text-emerald-600" : "text-rose-600"
+                                                                    )}>
+                                                                        {tx.transactionType === "IN" ? "+" : "-"}{formatCurrency(Math.abs(Number(tx.amount)))}
+                                                                    </span>
+                                                                </div>
+
+                                                                <button
+                                                                    onClick={() => handleReconcile(selectedMutationForMatching.id, tx.id)}
+                                                                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer"
+                                                                >
+                                                                    Hubungkan
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    ));
+                                                })()}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>

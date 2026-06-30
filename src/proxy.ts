@@ -88,6 +88,20 @@ export async function callAction(actionName: string, ...args: any[]) {
             const { getMonthlyClosingReportAction } = await import("@/actions/finance");
             return await getMonthlyClosingReportAction(...args as [number, number]);
 
+        // BANK RECONCILIATION
+        case "importBankMutations":
+            const { importBankMutationsAction } = await import("@/actions/bank-reconciliation");
+            return await importBankMutationsAction(...args as [string, any[]]);
+        case "getBankMutations":
+            const { getBankMutationsAction } = await import("@/actions/bank-reconciliation");
+            return await getBankMutationsAction(...args as [string?, boolean?]);
+        case "reconcileMutation":
+            const { reconcileMutationAction } = await import("@/actions/bank-reconciliation");
+            return await reconcileMutationAction(...args as [string, string]);
+        case "unreconcileMutation":
+            const { unreconcileMutationAction } = await import("@/actions/bank-reconciliation");
+            return await unreconcileMutationAction(...args as [string]);
+
         // PURCHASE
         case "createGoodsReceipt":
             const { createGoodsReceiptAction } = await import("@/actions/purchase");
