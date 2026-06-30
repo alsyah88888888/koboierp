@@ -96,6 +96,38 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
             }
         });
 
+        // ── FIX: When multiple deliveries share the same invoiceNumber,
+        // distribute OPS proportionally by delivery qty instead of assigning all to each ──
+        const invoiceToDeliveries = new Map<string, { deliveryNumber: string; totalQty: number }[]>();
+        for (const sd of deliveries) {
+            const inv = sd.invoiceNumber || sd.deliveryNumber;
+            if (!invoiceToDeliveries.has(inv)) invoiceToDeliveries.set(inv, []);
+            const sdQty = sd.items.reduce((sum: number, item: any) => sum + Number(item.quantity || 0), 0) || 1;
+            invoiceToDeliveries.get(inv)!.push({ deliveryNumber: sd.deliveryNumber, totalQty: sdQty });
+        }
+
+        // Re-key opsMap from invoiceNumber → deliveryNumber for shared invoices
+        const opsMapByDelivery = new Map<string, number>();
+        for (const [inv, totalOps] of opsMap) {
+            const sharedDeliveries = invoiceToDeliveries.get(inv) || [];
+            if (sharedDeliveries.length <= 1) {
+                // Only 1 delivery uses this invoice → assign all OPS
+                opsMapByDelivery.set(inv, totalOps);
+            } else {
+                // Multiple deliveries share this invoice → distribute by qty
+                const grandQty = sharedDeliveries.reduce((s, d) => s + d.totalQty, 0);
+                let remaining = totalOps;
+                for (let i = 0; i < sharedDeliveries.length; i++) {
+                    const share = i < sharedDeliveries.length - 1
+                        ? Math.round(totalOps * (sharedDeliveries[i].totalQty / grandQty))
+                        : remaining; // Last one gets remainder to avoid rounding errors
+                    remaining -= share;
+                    opsMapByDelivery.set(sharedDeliveries[i].deliveryNumber, 
+                        (opsMapByDelivery.get(sharedDeliveries[i].deliveryNumber) || 0) + share);
+                }
+            }
+        }
+
         // ════════════════════════════════════════════════════════════
         // NEAREST PURCHASE MATCHING: Pre-fetch ALL GR items for products sold
         // This replaces pure FIFO with smart date+price proximity matching
@@ -234,7 +266,8 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
             const taxRate   = Number(sd.taxRate || 0);
             const sdTotalQty = sd.items.reduce((sum: number, item: any) => sum + item.quantity, 0);
             const refNum     = sd.invoiceNumber || sd.deliveryNumber;
-            const invoiceOps = refNum ? (opsMap.get(refNum) || 0) : 0;
+            // Use delivery-specific OPS (handles shared invoices), fallback to invoice-level
+            const invoiceOps = opsMapByDelivery.get(sd.deliveryNumber) ?? opsMapByDelivery.get(refNum) ?? opsMap.get(refNum) ?? 0;
 
             let remainingInvoiceOps = invoiceOps;
             let remainingSdQty = sdTotalQty;
