@@ -28,6 +28,18 @@ export default async function RootLayout({
   await cookies();
   const session = await getServerSession(getAuthOptions());
   
+  if (!session) {
+    return (
+      <html lang="en" className="dark">
+        <body className={`${inter.className} bg-slate-50 antialiased`} suppressHydrationWarning>
+          <Providers session={session}>
+            {children}
+          </Providers>
+        </body>
+      </html>
+    );
+  }
+
   return (
     <html lang="en" className="dark">
       <body className={`${inter.className} bg-background text-foreground antialiased`} suppressHydrationWarning>
