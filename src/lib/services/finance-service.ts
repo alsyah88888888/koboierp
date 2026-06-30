@@ -236,20 +236,26 @@ export async function updatePaymentStatusService(
             }
         }
 
+        return { success: true };
+    }, { timeout: 30000 });
+
+    try {
         revalidatePath("/finance");
         revalidatePath("/");
         revalidatePath("/purchase");
         revalidatePath("/sales");
+    } catch (e) {
+        console.error("revalidatePath error:", e);
+    }
 
-        return { success: true };
-    }, { timeout: 30000 });
+    return { success: true };
 }
 
 export async function createFinanceTransactionService(data: any, userId: string) {
     const { getPrisma } = require("@/lib/prisma");
     const prisma = getPrisma();
 
-    return await prisma.$transaction(async (tx: any) => {
+    const result = await prisma.$transaction(async (tx: any) => {
         const now = new Date();
         const txDate = new Date(data.date);
         if (txDate.toDateString() === now.toDateString()) {
@@ -371,18 +377,24 @@ export async function createFinanceTransactionService(data: any, userId: string)
             });
         }
 
-        revalidatePath("/finance");
-        revalidatePath("/");
-
         return { success: true, transactionId: transaction.id };
     }, { timeout: 30000 });
+
+    try {
+        revalidatePath("/finance");
+        revalidatePath("/");
+    } catch (e) {
+        console.error("revalidatePath error:", e);
+    }
+
+    return result;
 }
 
 export async function updateFinanceTransactionService(id: string, data: any, userId: string) {
     const { getPrisma } = require("@/lib/prisma");
     const prisma = getPrisma();
 
-    return await prisma.$transaction(async (tx: any) => {
+    const result = await prisma.$transaction(async (tx: any) => {
         // 1. Get old transaction
         const oldTx = await tx.financeTransaction.findUnique({
             where: { id },
@@ -542,11 +554,17 @@ export async function updateFinanceTransactionService(id: string, data: any, use
             });
         }
 
-        revalidatePath("/finance");
-        revalidatePath("/");
-
         return { success: true };
     }, { timeout: 30000 });
+
+    try {
+        revalidatePath("/finance");
+        revalidatePath("/");
+    } catch (e) {
+        console.error("revalidatePath error:", e);
+    }
+
+    return result;
 }
 
 export async function editSettledPaymentService(
