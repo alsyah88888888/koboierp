@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export default async function SettingsPage() {
     const session = await getServerSession(getAuthOptions()) as any;
     if (!session) {
-        redirect("/api/auth/signin");
+        redirect("/login");
     }
     return <SettingsDashboard />;
 }

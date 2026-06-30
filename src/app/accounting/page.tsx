@@ -15,7 +15,7 @@ export default async function AccountingPage() {
     
     const session = await getServerSession(getAuthOptions()) as any;
     if (!session) {
-        redirect("/api/auth/signin");
+        redirect("/login");
     }
     const { journals, accounts } = await getAccountingDataAction();
     return (

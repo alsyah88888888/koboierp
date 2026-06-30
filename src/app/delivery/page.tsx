@@ -15,7 +15,7 @@ export default async function DeliveryPage() {
     const session = await getServerSession(getAuthOptions()) as any;
 
     if (!session) {
-        redirect("/api/auth/signin");
+        redirect("/login");
     }
 
     const isAdmin = session?.user?.role?.toUpperCase() === "ADMIN";

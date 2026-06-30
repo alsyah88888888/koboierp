@@ -9,7 +9,7 @@ export default async function ReportsPage() {
     const session = await getServerSession(getAuthOptions()) as any;
 
     if (!session) {
-        redirect("/api/auth/signin");
+        redirect("/login");
     }
 
     const userRole = session?.user?.role || "USER";

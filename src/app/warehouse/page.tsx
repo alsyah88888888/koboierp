@@ -15,7 +15,7 @@ export default async function WarehousePage() {
     const session = await getServerSession(getAuthOptions()) as any;
 
     if (!session) {
-        redirect("/api/auth/signin");
+        redirect("/login");
     }
     // 1. Fetch Products and Warehouses
     const [products, warehouses] = await Promise.all([

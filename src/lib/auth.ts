@@ -85,7 +85,7 @@ export function getAuthOptions(): AuthOptions {
             })()
         ],
         pages: {
-            signIn: "/auth/signin",
+            signIn: "/login",
         },
     };
 }

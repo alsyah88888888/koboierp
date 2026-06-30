@@ -13,7 +13,7 @@ export default async function TrackingPage() {
     const session = await getServerSession(getAuthOptions()) as any;
 
     if (!session) {
-        redirect("/api/auth/signin");
+        redirect("/login");
     }
 
     // Fetch all products with their stocks summarized

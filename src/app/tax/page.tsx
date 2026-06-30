@@ -13,7 +13,7 @@ export default async function TaxPage() {
     const session = await getServerSession(getAuthOptions()) as any;
 
     if (!session?.user) {
-        redirect("/api/auth/signin");
+        redirect("/login");
     }
 
     const isAdmin = session.user.role?.toUpperCase() === "ADMIN";
