@@ -176,10 +176,10 @@ export function Sidebar() {
                     <button
                         onClick={async () => {
                             try {
-                                await signOut({ redirect: true, callbackUrl: "/auth/signin" });
+                                await signOut({ redirect: true, callbackUrl: "/login" });
                             } catch (e) {
                                 console.error("SignOut failed:", e);
-                                window.location.href = "/auth/signin";
+                                window.location.href = "/login";
                             }
                         }}
                         className="group flex items-center justify-center w-full px-4 py-4 text-[10px] font-black text-rose-500 hover:text-white bg-rose-500/5 hover:bg-rose-500 rounded-2xl transition-all duration-500 border border-rose-500/10 hover:border-rose-500 shadow-xl hover:shadow-rose-500/20 uppercase tracking-[0.2em]"

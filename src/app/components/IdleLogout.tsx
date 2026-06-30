@@ -12,7 +12,7 @@ export function IdleLogout() {
     const handleLogout = useCallback(() => {
         if (session) {
             console.log("Session idle timeout reached. Logging out...");
-            signOut({ callbackUrl: "/auth/signin?reason=idle" });
+            signOut({ callbackUrl: "/login?reason=idle" });
         }
     }, [session]);
 
