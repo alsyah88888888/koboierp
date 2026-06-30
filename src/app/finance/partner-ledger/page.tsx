@@ -12,34 +12,18 @@ export default async function PartnerLedgerPage() {
     const session = await getServerSession(getAuthOptions()) as any;
     if (!session) redirect("/login");
 
-    const [
-        salesDeliveries,
-        goodsReceipts,
-        salesReturns,
-        purchaseReturns,
-        purchaseOrders,
-    ] = await Promise.all([
+    const [salesDeliveries, goodsReceipts, purchaseOrders] = await Promise.all([
         prisma.salesDelivery.findMany({
             where: { isVoid: false },
             orderBy: { date: "desc" },
             select: {
-                id: true,
-                deliveryNumber: true,
-                invoiceNumber: true,
-                buyerName: true,
-                date: true,
-                grandTotal: true,
-                paidAmount: true,
-                paymentStatus: true,
-                createdAt: true,
-                updatedAt: true,
+                id: true, deliveryNumber: true, invoiceNumber: true,
+                buyerName: true, date: true, grandTotal: true,
+                paidAmount: true, paymentStatus: true,
                 returns: {
+                    where: { isVoid: false },
                     select: {
-                        id: true,
-                        returnNumber: true,
-                        date: true,
-                        status: true,
-                        isVoid: true,
+                        id: true, returnNumber: true, date: true, status: true,
                         items: { select: { quantity: true, product: { select: { name: true } } } }
                     }
                 }
@@ -49,61 +33,45 @@ export default async function PartnerLedgerPage() {
             where: { isVoid: false },
             orderBy: { date: "desc" },
             select: {
-                id: true,
-                receiptNumber: true,
-                receivedFrom: true,
-                date: true,
-                grandTotal: true,
-                paidAmount: true,
-                paymentStatus: true,
-                isVerified: true,
-                createdAt: true,
-                updatedAt: true,
-                items: { select: { quantity: true, product: { select: { name: true } }, purchasePrice: true } },
-            }
-        }),
-        prisma.salesReturn.findMany({
-            where: { isVoid: false },
-            select: {
-                id: true,
-                returnNumber: true,
-                date: true,
-                status: true,
-                deliveryId: true,
-                items: { select: { quantity: true, product: { select: { name: true } } } }
-            }
-        }),
-        prisma.purchaseReturn.findMany({
-            where: { isVoid: false },
-            select: {
-                id: true,
-                returnNumber: true,
-                date: true,
-                status: true,
-                receiptId: true,
-                items: { select: { quantity: true, product: { select: { name: true } } } }
+                id: true, receiptNumber: true, receivedFrom: true,
+                date: true, grandTotal: true, paidAmount: true, paymentStatus: true,
+                returns: {
+                    where: { isVoid: false },
+                    select: {
+                        id: true, returnNumber: true, date: true, status: true,
+                        items: { select: { quantity: true, product: { select: { name: true } } } }
+                    }
+                }
             }
         }),
         prisma.purchaseOrder.findMany({
             orderBy: { date: "desc" },
             select: {
                 id: true,
-                poNumber: true,
-                vendorName: true,
+                number: true,
+                vendorId: true,
                 date: true,
                 status: true,
-                totalAmount: true,
+                vendor: { select: { name: true } },
+                items: { select: { price: true, quantity: true } }
             }
         }),
     ]);
+
+    const normalizedPOs = purchaseOrders.map((po: any) => ({
+        id: po.id,
+        poNumber: po.number,
+        vendorName: po.vendor?.name || "",
+        date: po.date,
+        status: po.status,
+        totalAmount: (po.items || []).reduce((s: number, i: any) => s + Number(i.price) * Number(i.quantity), 0),
+    }));
 
     return (
         <PartnerLedger
             salesDeliveries={serializeDecimal(salesDeliveries)}
             goodsReceipts={serializeDecimal(goodsReceipts)}
-            salesReturns={serializeDecimal(salesReturns)}
-            purchaseReturns={serializeDecimal(purchaseReturns)}
-            purchaseOrders={serializeDecimal(purchaseOrders)}
+            purchaseOrders={serializeDecimal(normalizedPOs)}
         />
     );
 }

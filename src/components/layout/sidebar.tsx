@@ -27,6 +27,7 @@ import { useSidebar } from "./SidebarContext";
 const navigation = [
     { name: "Dashboard", href: "/", icon: LayoutDashboard, permissionKey: "DASHBOARD", roles: ["ADMIN", "FINANCE", "PURCHASE", "SALES", "WAREHOUSE"] },
     { name: "Keuangan", href: "/finance", icon: Wallet, permissionKey: "FINANCE", roles: ["ADMIN", "FINANCE"] },
+    { name: "Buku Besar Mitra", href: "/finance/partner-ledger", icon: BarChart3, permissionKey: "FINANCE", roles: ["ADMIN", "FINANCE"] },
     { name: "Pembelian", href: "/purchase", icon: ShoppingCart, permissionKey: "PURCHASE", roles: ["ADMIN", "PURCHASE", "SALES"] },
     { name: "Pengajuan", href: "/purchase/request", icon: FileText, permissionKey: "PURCHASE_REQUEST", roles: ["ADMIN", "PURCHASE", "FINANCE"] },
     { name: "Penjualan", href: "/sales", icon: ShoppingBag, permissionKey: "SALES", roles: ["ADMIN", "SALES", "PURCHASE"] },
@@ -40,6 +41,7 @@ const navigation = [
     { name: "Master Data", href: "/master-data", icon: Database, permissionKey: "MASTER", roles: ["ADMIN", "PURCHASE"] },
     { name: "Settings", href: "/settings", icon: Settings, permissionKey: "SETTINGS", roles: ["ADMIN"] },
 ];
+
 
 export function Sidebar() {
     const pathname = usePathname();
