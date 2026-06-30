@@ -38,7 +38,6 @@ export default async function SalesReturnPrintPage({ params }: { params: Promise
 
     return (
         <DocumentLayout
-            isA5={true}
             title="RETUR PENJUALAN"
             docNumber={salesReturn.returnNumber}
             date={format(new Date(salesReturn.date || salesReturn.createdAt), "dd MMM yyyy")}
