@@ -2,93 +2,116 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-async function verifyDettolOps() {
-    console.log("=== VERIFIKASI OPS: SJ-450-12062026-012 / KB-TRN-09062026-002 ===\n");
+async function checkOpsDistribution() {
+    console.log("=== CHECK OPS DISTRIBUTION ACROSS ITEMS ===\n");
 
-    // 1. Sales Delivery
-    const sd = await prisma.salesDelivery.findFirst({
-        where: { deliveryNumber: 'SJ-450-12062026-012' },
-        include: {
-            items: { include: { product: { select: { name: true, barcode: true } } } }
-        }
-    });
+    const startDate = new Date('2026-06-01T00:00:00+07:00');
+    const endDate = new Date('2026-06-30T23:59:59+07:00');
 
-    if (!sd) return console.log("SD not found!");
-
-    console.log(`📄 ${sd.deliveryNumber} | Invoice: ${sd.invoiceNumber}`);
-    console.log(`   Buyer: ${sd.buyerName} | Sales: ${sd.salesPerson}`);
-    console.log(`   Date: ${sd.date?.toISOString().split('T')[0]}`);
-    console.log(`   Items: ${sd.items.length}`);
-    const totalQty = sd.items.reduce((s, i) => s + i.quantity, 0);
-    console.log(`   Total Qty: ${totalQty}`);
-
-    // 2. Check ALL finance transactions that contain this invoice number
-    const invoiceNumber = sd.invoiceNumber || sd.deliveryNumber;
-    console.log(`\n=== Finance Transactions containing "${invoiceNumber}" ===\n`);
-
-    const transactions = await prisma.financeTransaction.findMany({
-        where: { invoiceNumber: { contains: invoiceNumber } },
+    // 1. Ambil data SD
+    const deliveries = await prisma.salesDelivery.findMany({
+        where: { isVoid: false, date: { gte: startDate, lte: endDate } },
+        include: { items: { include: { product: { select: { name: true } } } } },
         orderBy: { date: 'asc' }
     });
 
-    console.log(`Found ${transactions.length} transactions:\n`);
-    let totalOps = 0;
-    for (const t of transactions) {
-        const amt = Number(t.amount);
-        console.log(`  ID: ${t.id.substring(0, 8)}...`);
-        console.log(`  Type: ${t.transactionType} | Category: ${t.category}`);
-        console.log(`  Date: ${t.date?.toISOString().split('T')[0]}`);
-        console.log(`  Amount: Rp ${amt.toLocaleString()}`);
-        console.log(`  Description: ${t.description}`);
-        console.log(`  InvoiceNumber: ${t.invoiceNumber}`);
-        console.log(`  Partner: ${t.partnerName}`);
-        console.log();
-
-        // OPS calculation logic from report
-        const isOps = (t.transactionType === "PAYMENT" || t.transactionType === "EXPENSE" || amt < 0);
-        const opsAmt = isOps ? Math.abs(amt) : -Math.abs(amt);
-        totalOps += opsAmt;
-    }
-
-    console.log(`=== Total OPS (calculated): Rp ${totalOps.toLocaleString()} ===`);
-
-    // 3. Check if the invoice number is shared with other deliveries
-    console.log(`\n=== Other deliveries with same invoice "${invoiceNumber}" ===\n`);
-    const otherDeliveries = await prisma.salesDelivery.findMany({
-        where: { 
-            OR: [
-                { invoiceNumber: invoiceNumber },
-                { invoiceNumber: { contains: invoiceNumber } }
-            ],
-            isVoid: false
-        },
-        include: { items: true }
+    // 2. Ambil data OPS (FinanceTransaction)
+    const invoiceNumbers = deliveries.map(d => d.invoiceNumber || d.deliveryNumber).filter(Boolean);
+    const opsTransactions = await prisma.financeTransaction.findMany({
+        where: { OR: invoiceNumbers.map(inv => ({ invoiceNumber: { contains: inv } })) },
+        select: { invoiceNumber: true, amount: true, transactionType: true }
     });
 
-    for (const d of otherDeliveries) {
-        const qty = d.items.reduce((s, i) => s + i.quantity, 0);
-        console.log(`  ${d.deliveryNumber} | Invoice: ${d.invoiceNumber} | Qty: ${qty} | Date: ${d.date?.toISOString().split('T')[0]}`);
-    }
-
-    // 4. Also check transactions that might have comma-separated invoice numbers
-    console.log(`\n=== Transactions with comma-separated invoices containing "${invoiceNumber}" ===`);
-    const commaTransactions = await prisma.financeTransaction.findMany({
-        where: { invoiceNumber: { contains: ',' } },
-        select: { invoiceNumber: true, amount: true, transactionType: true, description: true }
+    const opsMap = new Map<string, number>();
+    opsTransactions.forEach(t => {
+        if (!t.invoiceNumber) return;
+        const amt = (t.transactionType === "PAYMENT" || t.transactionType === "EXPENSE" || Number(t.amount) < 0)
+            ? Math.abs(Number(t.amount)) : -Math.abs(Number(t.amount));
+        const invoices = t.invoiceNumber.split(',').map(i => i.trim()).filter(Boolean);
+        if (invoices.length > 0) {
+            let totalQty = 0;
+            const qtyMap = new Map<string, number>();
+            invoices.forEach(inv => {
+                const md = deliveries.find(d => d.invoiceNumber === inv || d.deliveryNumber === inv);
+                let qty = 1;
+                if (md && md.items) {
+                    qty = md.items.reduce((s, i) => s + Number(i.quantity || 0), 0) || 1;
+                }
+                totalQty += qty;
+                qtyMap.set(inv, qty);
+            });
+            let remainingAmt = amt;
+            let remainingQty = totalQty;
+            invoices.forEach((inv, index) => {
+                const qty = qtyMap.get(inv) || 1;
+                const splitAmt = remainingQty > 0 ? Math.round(remainingAmt * (qty / remainingQty)) : Math.round(remainingAmt / (invoices.length - index));
+                remainingAmt -= splitAmt;
+                remainingQty -= qty;
+                opsMap.set(inv, (opsMap.get(inv) || 0) + splitAmt);
+            });
+        }
     });
 
-    for (const t of commaTransactions) {
-        if (t.invoiceNumber && t.invoiceNumber.includes(invoiceNumber)) {
-            console.log(`  Invoice: ${t.invoiceNumber}`);
-            console.log(`  Amount: Rp ${Number(t.amount).toLocaleString()} | Type: ${t.transactionType}`);
-            console.log(`  Desc: ${t.description}`);
-            const invoices = t.invoiceNumber.split(',').map(s => s.trim());
-            console.log(`  Shared with ${invoices.length} invoices: ${invoices.join(', ')}`);
+    // 3. Distribusi Antar Delivery (Fix tadi)
+    const invoiceToDeliveries = new Map<string, { deliveryNumber: string; totalQty: number }[]>();
+    for (const sd of deliveries) {
+        const inv = sd.invoiceNumber || sd.deliveryNumber;
+        if (!invoiceToDeliveries.has(inv)) invoiceToDeliveries.set(inv, []);
+        const sdQty = sd.items.reduce((s, i) => s + Number(i.quantity || 0), 0) || 1;
+        invoiceToDeliveries.get(inv)!.push({ deliveryNumber: sd.deliveryNumber, totalQty: sdQty });
+    }
+
+    const opsMapByDelivery = new Map<string, number>();
+    for (const [inv, totalOps] of opsMap) {
+        const shared = invoiceToDeliveries.get(inv) || [];
+        if (shared.length <= 1) {
+            opsMapByDelivery.set(inv, totalOps);
+        } else {
+            const grandQty = shared.reduce((s, d) => s + d.totalQty, 0);
+            let remaining = totalOps;
+            for (let i = 0; i < shared.length; i++) {
+                const share = i < shared.length - 1 ? Math.round(totalOps * (shared[i].totalQty / grandQty)) : remaining;
+                remaining -= share;
+                opsMapByDelivery.set(shared[i].deliveryNumber, (opsMapByDelivery.get(shared[i].deliveryNumber) || 0) + share);
+            }
+        }
+    }
+
+    // 4. Periksa distribusi antar Item (dalam SJ yg punya multi-item)
+    console.log("=== CHECKING DELIVERIES WITH MULTIPLE PRODUCTS AND OPS ===\n");
+    for (const sd of deliveries) {
+        const refNum = sd.invoiceNumber || sd.deliveryNumber;
+        const totalOps = opsMapByDelivery.get(sd.deliveryNumber) ?? opsMapByDelivery.get(refNum) ?? opsMap.get(refNum) ?? 0;
+        
+        // Merge items logic
+        const mergedMap = new Map();
+        for (const i of sd.items) {
+            if (mergedMap.has(i.productId)) {
+                mergedMap.get(i.productId).quantity += i.quantity;
+            } else {
+                mergedMap.set(i.productId, { name: i.product.name, quantity: i.quantity });
+            }
+        }
+        const mergedItems = Array.from(mergedMap.values());
+
+        if (mergedItems.length > 1 && totalOps > 0) {
+            console.log(`SJ: ${sd.deliveryNumber} | Invoice: ${sd.invoiceNumber}`);
+            console.log(`Total OPS Delivery: Rp ${totalOps.toLocaleString()} | Products: ${mergedItems.length}`);
+            
+            let remainingOps = totalOps;
+            let remainingQty = sd.items.reduce((s, i) => s + i.quantity, 0);
+            
+            for (const item of mergedItems) {
+                const rowOps = remainingQty > 0 ? Math.round(remainingOps * (item.quantity / remainingQty)) : 0;
+                remainingOps -= rowOps;
+                remainingQty -= item.quantity;
+                console.log(`  - ${item.name.substring(0, 30)} (Qty: ${item.quantity}) -> OPS Share: Rp ${rowOps.toLocaleString()}`);
+            }
             console.log();
         }
     }
 }
 
-verifyDettolOps()
+checkOpsDistribution()
     .catch(console.error)
     .finally(() => prisma.$disconnect());
