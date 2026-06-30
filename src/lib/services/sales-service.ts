@@ -673,47 +673,49 @@ export async function deleteSalesDeliveryService(id: string) {
 
         if (!delivery) throw new Error("Delivery not found");
 
-        for (const item of delivery.items) {
-            await tx.stock.upsert({
-                where: {
-                    productId_warehouseId_vendorName: {
+        if (!delivery.isVoid) {
+            for (const item of delivery.items) {
+                await tx.stock.upsert({
+                    where: {
+                        productId_warehouseId_vendorName: {
+                            productId: item.productId,
+                            warehouseId: delivery.warehouseId,
+                            vendorName: item.vendorName
+                        }
+                    },
+                    create: {
                         productId: item.productId,
                         warehouseId: delivery.warehouseId,
-                        vendorName: item.vendorName
-                    }
-                },
-                create: {
-                    productId: item.productId,
-                    warehouseId: delivery.warehouseId,
-                    vendorName: item.vendorName,
-                    quantity: item.quantity
-                },
-                update: { quantity: { increment: item.quantity } }
-            });
-
-            await tx.stockMovement.create({
-                data: {
-                    productId: item.productId,
-                    warehouseId: delivery.warehouseId,
-                    vendorName: item.vendorName,
-                    quantity: item.quantity,
-                    type: "SALE_DELETE",
-                    reference: delivery.deliveryNumber
-                }
-            });
-
-            // ─── FASE 2d: Restore Lot allocations on Delete ────────────────
-            const allocations = await tx.lotAllocation.findMany({
-                where: { sdItemId: item.id }
-            });
-            for (const alloc of allocations) {
-                await tx.productLot.update({
-                    where: { id: alloc.lotId },
-                    data: { remainingQty: { increment: alloc.qty } }
+                        vendorName: item.vendorName,
+                        quantity: item.quantity
+                    },
+                    update: { quantity: { increment: item.quantity } }
                 });
-                await tx.lotAllocation.delete({ where: { id: alloc.id } });
+
+                await tx.stockMovement.create({
+                    data: {
+                        productId: item.productId,
+                        warehouseId: delivery.warehouseId,
+                        vendorName: item.vendorName,
+                        quantity: item.quantity,
+                        type: "SALE_DELETE",
+                        reference: delivery.deliveryNumber
+                    }
+                });
+
+                // ─── FASE 2d: Restore Lot allocations on Delete ────────────────
+                const allocations = await tx.lotAllocation.findMany({
+                    where: { sdItemId: item.id }
+                });
+                for (const alloc of allocations) {
+                    await tx.productLot.update({
+                        where: { id: alloc.lotId },
+                        data: { remainingQty: { increment: alloc.qty } }
+                    });
+                    await tx.lotAllocation.delete({ where: { id: alloc.id } });
+                }
+                // ──────────────────────────────────────────────────────────────
             }
-            // ──────────────────────────────────────────────────────────────
         }
 
         await tx.salesDeliveryItem.deleteMany({ where: { deliveryId: id } });
