@@ -295,8 +295,10 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
                 const supplierName = bestGR?.receipt?.receivedFrom || '-';
                 const hpp = bestGR ? Number(bestGR.purchasePrice) : Number(sdItem.product.purchasePrice || 0);
                 const purchaseTaxRate = Number(bestGR?.receipt?.taxRate || 0);
-                const hppWithTax = Math.round(hpp * (1 + purchaseTaxRate / 100));
-                const totalBeli = Math.round(hppWithTax * qty);
+                // Use DPP (tanpa PPN) for purchase price to ensure consistent margin comparison
+                // PPN is informational only — margin harus DPP vs DPP
+                const hppDisplay = Math.round(hpp);
+                const totalBeli = Math.round(hpp * qty);
 
                 const grInfo = {
                     taxInvoiceDate: bestGR?.receipt?.taxInvoiceDate || null,
@@ -305,10 +307,10 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
                     taxRate: purchaseTaxRate
                 };
 
-                // DPP (Dasar Pengenaan Pajak / Omzet Jual Bersih) = (Harga Jual per unit * qty) - Total Diskon
+                // DPP Jual (Dasar Pengenaan Pajak / Omzet Jual Bersih) = (Harga Jual per unit * qty) - Total Diskon
                 const dpp = Math.round((sellPrice * qty) - totalDiscount);
 
-                // PPN = DPP * taxRate / 100
+                // PPN Jual = DPP * taxRate / 100
                 const ppn = Math.round(dpp * taxRate / 100);
 
                 // Total Jual (Termasuk PPN) = DPP + PPN
@@ -318,9 +320,9 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
                 remainingInvoiceOps -= rowOps;
                 remainingSdQty -= qty;
 
-                // Margin
-                const margin    = totalJual - totalBeli - rowOps;
-                const marginPct = totalJual > 0 ? (margin / totalJual * 100) : 0;
+                // Margin: DPP Jual vs DPP Beli (keduanya tanpa PPN, konsisten)
+                const margin    = dpp - totalBeli - rowOps;
+                const marginPct = dpp > 0 ? (margin / dpp * 100) : 0;
 
                 rowNo++;
                 rows.push({
@@ -335,7 +337,7 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
                     'NOMOR LPB'        : grNumber,
                     'NAMA SUPPLIER'    : supplierName,
                     'QTY BELI'         : qty,
-                    'HARGA BELI'       : Math.round(hppWithTax),
+                    'HARGA BELI'       : hppDisplay,
                     'OPS'              : rowOps,
                     'TOTAL BELI'       : totalBeli,
                     'F. PAJAK'         : fmtDate(grInfo.taxInvoiceDate),
@@ -349,7 +351,7 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
                     'NAMA PEMBELI'     : buyer,
                     'SALES'            : spJual,
                     'QTY JUAL'         : qty,
-                    'HARGA JUAL'       : Math.round(sellPrice * (1 + taxRate / 100)),
+                    'HARGA JUAL'       : Math.round(sellPrice),
                     'TOTAL JUAL'       : totalJual,
                     'DPP'              : dpp,
                     'PPH'              : ppn,
