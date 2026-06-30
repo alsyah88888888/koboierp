@@ -236,7 +236,36 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
             let remainingInvoiceOps = invoiceOps;
             let remainingSdQty = sdTotalQty;
 
+            // ── MERGE items with same productId within this delivery ──
+            // e.g. 5 pcs + 263 pcs of "Abc Kecap" → 268 pcs combined
+            const mergedItemsMap = new Map<string, any>();
             for (const sdItem of sd.items) {
+                const key = sdItem.productId;
+                if (mergedItemsMap.has(key)) {
+                    const existing = mergedItemsMap.get(key)!;
+                    existing.quantity += sdItem.quantity;
+                    existing.discount = Number(existing.discount) + Number(sdItem.discount || 0);
+                    // Use weighted average salesPrice if different
+                    if (Number(sdItem.salesPrice || 0) !== Number(existing.salesPrice || 0)) {
+                        const totalQty = existing.quantity;
+                        const prevQty = existing.quantity - sdItem.quantity;
+                        existing.salesPrice = (Number(existing.salesPrice) * prevQty + Number(sdItem.salesPrice || 0) * sdItem.quantity) / totalQty;
+                    }
+                } else {
+                    mergedItemsMap.set(key, {
+                        ...sdItem,
+                        quantity: sdItem.quantity,
+                        salesPrice: Number(sdItem.salesPrice || 0),
+                        discount: Number(sdItem.discount || 0),
+                        product: sdItem.product,
+                        productId: sdItem.productId
+                    });
+                }
+            }
+            const mergedItems = Array.from(mergedItemsMap.values());
+
+
+            for (const sdItem of mergedItems) {
                 const barcode   = sdItem.product.barcode || sdItem.product.sku;
                 const namaItem  = sdItem.product.name;
                 const perCt     = sdItem.product.uom || 'PCS';
