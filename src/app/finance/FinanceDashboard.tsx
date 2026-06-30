@@ -2091,15 +2091,40 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                             </div>
                             
                             {isAdminOrFinance && (
-                                <label className="flex items-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-black text-[10px] uppercase tracking-widest cursor-pointer shadow-md hover:shadow-slate-900/10 hover:scale-102 transition-all">
-                                    <Download className="h-3.5 w-3.5" /> Import Mutasi Bank
-                                    <input
-                                        type="file"
-                                        accept=".xlsx,.xls,.csv"
-                                        onChange={handleFileUpload}
-                                        className="hidden"
-                                    />
-                                </label>
+                                <div className="flex items-center gap-2">
+                                    {bankMutations.filter((m: any) => m.bank === selectedBank).length > 0 && (
+                                        <button
+                                            onClick={async () => {
+                                                const count = bankMutations.filter((m: any) => m.bank === selectedBank).length;
+                                                if (!confirm(`Hapus semua ${count} data mutasi bank ${selectedBank}? Tindakan ini tidak dapat dibatalkan.`)) return;
+                                                try {
+                                                    setLoading("deleting-all");
+                                                    const res = await callAction("deleteBankMutationsByBank", selectedBank);
+                                                    alert(`Berhasil menghapus ${res.deletedCount} mutasi bank ${selectedBank}.`);
+                                                    router.refresh();
+                                                } catch {
+                                                    alert("Gagal menghapus data mutasi bank.");
+                                                } finally {
+                                                    setLoading(null);
+                                                }
+                                            }}
+                                            disabled={loading === "deleting-all"}
+                                            className="flex items-center gap-2 px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-black text-[10px] uppercase tracking-widest cursor-pointer shadow-md transition-all disabled:opacity-50"
+                                        >
+                                            <Trash2 className="h-3.5 w-3.5" />
+                                            {loading === "deleting-all" ? "Menghapus..." : `Hapus Semua Data ${selectedBank}`}
+                                        </button>
+                                    )}
+                                    <label className="flex items-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-black text-[10px] uppercase tracking-widest cursor-pointer shadow-md hover:shadow-slate-900/10 hover:scale-102 transition-all">
+                                        <Download className="h-3.5 w-3.5" /> Import Mutasi Bank
+                                        <input
+                                            type="file"
+                                            accept=".xlsx,.xls,.csv"
+                                            onChange={handleFileUpload}
+                                            className="hidden"
+                                        />
+                                    </label>
+                                </div>
                             )}
                         </div>
 
@@ -2175,24 +2200,58 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                                             </td>
                                                             <td className="px-4 py-3.5 text-center whitespace-nowrap" onClick={e => e.stopPropagation()}>
                                                                 {m.isReconciled ? (
-                                                                    <button
-                                                                        onClick={() => handleUnreconcile(m.id)}
-                                                                        className="px-2 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 text-[10px] font-black rounded-lg transition-all uppercase tracking-wider border border-rose-100 cursor-pointer"
-                                                                    >
-                                                                        Batal
-                                                                    </button>
-                                                                ) : (
-                                                                    <button
-                                                                        onClick={() => setSelectedMutationForMatching(isSelected ? null : m)}
-                                                                        className={cn(
-                                                                            "px-2 py-1.5 text-[10px] font-black rounded-lg transition-all uppercase tracking-wider border cursor-pointer",
-                                                                            isSelected
-                                                                                ? "bg-amber-500 text-white border-amber-500 hover:bg-amber-600"
-                                                                                : "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200"
+                                                                    <div className="flex items-center gap-1.5">
+                                                                        <button
+                                                                            onClick={() => handleUnreconcile(m.id)}
+                                                                            className="px-2 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 text-[10px] font-black rounded-lg transition-all uppercase tracking-wider border border-rose-100 cursor-pointer"
+                                                                        >
+                                                                            Batal
+                                                                        </button>
+                                                                        {isAdminOrFinance && (
+                                                                            <button
+                                                                                onClick={async () => {
+                                                                                    if (!confirm('Hapus baris mutasi ini secara permanen?')) return;
+                                                                                    try {
+                                                                                        await callAction("deleteBankMutation", m.id);
+                                                                                        router.refresh();
+                                                                                    } catch { alert("Gagal menghapus mutasi."); }
+                                                                                }}
+                                                                                className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-500 rounded-lg border border-rose-100 transition-all cursor-pointer"
+                                                                                title="Hapus mutasi ini"
+                                                                            >
+                                                                                <Trash2 className="h-3 w-3" />
+                                                                            </button>
                                                                         )}
-                                                                    >
-                                                                        {isSelected ? "Dipilih" : "Match"}
-                                                                    </button>
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="flex items-center gap-1.5">
+                                                                        <button
+                                                                            onClick={() => setSelectedMutationForMatching(isSelected ? null : m)}
+                                                                            className={cn(
+                                                                                "px-2 py-1.5 text-[10px] font-black rounded-lg transition-all uppercase tracking-wider border cursor-pointer",
+                                                                                isSelected
+                                                                                    ? "bg-amber-500 text-white border-amber-500 hover:bg-amber-600"
+                                                                                    : "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200"
+                                                                            )}
+                                                                        >
+                                                                            {isSelected ? "Dipilih" : "Match"}
+                                                                        </button>
+                                                                        {isAdminOrFinance && (
+                                                                            <button
+                                                                                onClick={async () => {
+                                                                                    if (!confirm('Hapus baris mutasi ini secara permanen?')) return;
+                                                                                    try {
+                                                                                        await callAction("deleteBankMutation", m.id);
+                                                                                        router.refresh();
+                                                                                    } catch { alert("Gagal menghapus mutasi."); }
+                                                                                }}
+                                                                                className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-500 rounded-lg border border-rose-100 transition-all cursor-pointer"
+                                                                                title="Hapus mutasi ini"
+                                                                            >
+                                                                                <Trash2 className="h-3 w-3" />
+                                                                            </button>
+                                                                        )}
+                                                                    </div>
                                                                 )}
                                                             </td>
                                                         </tr>

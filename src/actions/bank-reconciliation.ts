@@ -120,3 +120,33 @@ export async function unreconcileMutationAction(mutationId: string) {
     revalidatePath("/finance");
     return { success: true };
 }
+
+/** Delete a single bank mutation by its ID */
+export async function deleteBankMutationAction(id: string) {
+    const { getAuthOptions } = require("@/lib/auth");
+    const { getServerSession } = require("next-auth");
+    const { getPrisma } = require("@/lib/prisma");
+    const prisma = getPrisma();
+
+    const session = (await getServerSession(getAuthOptions())) as any;
+    if (!session?.user?.id) throw new Error("Unauthorized");
+
+    await prisma.bankMutation.delete({ where: { id } });
+    revalidatePath("/finance");
+    return { success: true };
+}
+
+/** Delete ALL bank mutations for a specific bank, e.g. "BCA 678" or "Maybank" */
+export async function deleteBankMutationsByBankAction(bank: string) {
+    const { getAuthOptions } = require("@/lib/auth");
+    const { getServerSession } = require("next-auth");
+    const { getPrisma } = require("@/lib/prisma");
+    const prisma = getPrisma();
+
+    const session = (await getServerSession(getAuthOptions())) as any;
+    if (!session?.user?.id) throw new Error("Unauthorized");
+
+    const { count } = await prisma.bankMutation.deleteMany({ where: { bank } });
+    revalidatePath("/finance");
+    return { success: true, deletedCount: count };
+}

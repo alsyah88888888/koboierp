@@ -101,6 +101,13 @@ export async function callAction(actionName: string, ...args: any[]) {
         case "unreconcileMutation":
             const { unreconcileMutationAction } = await import("@/actions/bank-reconciliation");
             return await unreconcileMutationAction(...args as [string]);
+        case "deleteBankMutation":
+            const { deleteBankMutationAction } = await import("@/actions/bank-reconciliation");
+            return await deleteBankMutationAction(...args as [string]);
+        case "deleteBankMutationsByBank":
+            const { deleteBankMutationsByBankAction } = await import("@/actions/bank-reconciliation");
+            return await deleteBankMutationsByBankAction(...args as [string]);
+
 
         // PURCHASE
         case "createGoodsReceipt":
