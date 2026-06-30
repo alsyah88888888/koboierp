@@ -56,34 +56,6 @@ export default async function ReceiptPrintPage({ params }: { params: Promise<{ i
 
     return (
         <DocumentLayout
-            
-            title="SURAT JALAN MASUK (LPB)"
-            docNumber={receipt.formNumber}
-            date={format(new Date(receipt.date || receipt.createdAt), "dd MMM yyyy")}
-            headerInfo={
-                <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-xs font-bold">
-                    <div className="grid grid-cols-[100px_1fr] gap-2">
-                        <span className="text-slate-400 uppercase">Supplier:</span>
-                        <span className="text-slate-900 uppercase tabular-nums">{receipt.receivedFrom}</span>
-                        <span className="text-slate-400 uppercase">No. SJ/Receipt:</span>
-                        <span className="text-slate-600 uppercase tabular-nums">{receipt.receiptNumber}</span>
-                    </div>
-                    <div className="grid grid-cols-[100px_1fr] gap-2 text-right">
-                        <span className="text-slate-400 uppercase">Sales / PIC:</span>
-                        <span className="text-slate-900 font-black italic">{receipt.salesPerson || "-"}</span>
-                        <span className="text-slate-400 uppercase">Gudang:</span>
-                        <span className="text-slate-600 uppercase">{receipt.warehouse?.name || "-"}</span>
-                    </div>
-                </div>
-            }
-        >
-            <table className="w-full border-collapse border border-slate-900 mb-4">
-                <thead>
-                    <tr className="uppercase text-[10px] font-black tracking-widest">
-                        <th className="border border-slate-900 p-2 text-center w-8">No</th>
-                        <th className="border border-slate-900 p-2 text-left w-32">Barcode</th>
-                        <th className="border border-slate-900 p-2 text-left">Nama Barang</th>
-            
             title="SURAT JALAN MASUK (LPB)"
             docNumber={receipt.formNumber}
             date={format(new Date(receipt.date || receipt.createdAt), "dd MMM yyyy")}
