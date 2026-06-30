@@ -264,13 +264,6 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
             }
             const mergedItems = Array.from(mergedItemsMap.values());
 
-            // ── Distribute header-level discount (diskon nota) proportionally ──
-            // SD.totalDiscount is a global discount that may not be on item level
-            const sdHeaderDiscount = Number(sd.totalDiscount || 0);
-            const sdSubtotal = mergedItems.reduce((sum: number, item: any) => {
-                return sum + (Number(item.salesPrice || 0) * item.quantity - Number(item.discount || 0));
-            }, 0);
-
             for (const sdItem of mergedItems) {
                 const barcode   = sdItem.product.barcode || sdItem.product.sku;
                 const namaItem  = sdItem.product.name;
@@ -278,13 +271,6 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
                 const sellPrice = Number(sdItem.salesPrice || 0);
                 const itemDiscount  = Number(sdItem.discount || 0);
                 const qty       = sdItem.quantity;
-
-                // Calculate proportional share of header discount for this item
-                const lineSubtotal = sellPrice * qty - itemDiscount;
-                const headerDiscountShare = sdSubtotal > 0
-                    ? Math.round(sdHeaderDiscount * (lineSubtotal / sdSubtotal))
-                    : 0;
-                const totalDiscount = itemDiscount + headerDiscountShare;
 
                 // ── SMART MATCHING: Find best purchase for this sale item ──
                 // Use Nearest Purchase Matching instead of FIFO lot allocation
@@ -300,7 +286,6 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
                 // Use the SALES taxRate for BOTH buy and sell sides:
                 //   KB-TRN (taxRate=11%): Beli +11%, Jual +11% → consistent comparison
                 //   KB-TRD (taxRate=0%):  Beli +0%,  Jual +0%  → consistent comparison
-                // This prevents comparing PPN-inclusive buy vs PPN-exclusive sell
                 const hppWithSalesTax = Math.round(hpp * (1 + taxRate / 100));
                 const totalBeli = Math.round(hppWithSalesTax * qty);
 
@@ -311,8 +296,10 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
                     taxRate: purchaseTaxRate
                 };
 
-                // DPP Jual = (Harga Jual per unit * qty) - Total Diskon
-                const dpp = Math.round((sellPrice * qty) - totalDiscount);
+                // DPP Jual = (Harga Jual per unit × qty) - Diskon Item
+                // Catatan: Diskon Nota (SD.totalDiscount) TIDAK didistribusikan per-item
+                // karena akan membuat perbandingan tidak adil (diskon hanya di sisi jual, tidak di sisi beli)
+                const dpp = Math.round((sellPrice * qty) - itemDiscount);
 
                 // PPN Jual = DPP × taxRate (0% for KB-TRD, 11% for KB-TRN)
                 const ppn = Math.round(dpp * taxRate / 100);

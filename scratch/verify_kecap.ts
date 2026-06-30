@@ -2,164 +2,128 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-async function verifyAll() {
-    console.log("=== VERIFIKASI MENYELURUH: LAPORAN TRACEABILITY ===\n");
+async function verifyGatsby() {
+    console.log("=== VERIFIKASI: SJ-833-18062026-001 vs KB-LPBD-03062026-006 ===\n");
 
-    // Check Juni 2026 (the current report period)
-    const startDate = new Date('2026-06-01T00:00:00+07:00');
-    const endDate = new Date('2026-06-30T23:59:59+07:00');
-
-    const deliveries = await prisma.salesDelivery.findMany({
-        where: { isVoid: false, date: { gte: startDate, lte: endDate } },
+    // 1. Sales Delivery
+    const sd = await prisma.salesDelivery.findFirst({
+        where: { deliveryNumber: 'SJ-833-18062026-001' },
         include: {
             items: {
-                include: {
-                    product: { select: { id: true, name: true, barcode: true, purchasePrice: true } }
-                }
+                include: { product: { select: { name: true, barcode: true, sku: true } } }
             }
-        },
-        orderBy: { date: 'asc' }
+        }
     });
 
-    console.log(`Total SalesDelivery (Juni 2026, non-void): ${deliveries.length}`);
+    if (!sd) return console.log("SD not found!");
 
-    // Stats
-    let totalItems = 0;
-    let mergedItems = 0;
-    let kbTrnCount = 0;
-    let kbTrdCount = 0;
-    let otherCount = 0;
-    let negativeMarginCount = 0;
-    let positiveMarginCount = 0;
-    let zeroMarginCount = 0;
+    console.log("=== PENJUALAN ===");
+    console.log(`SJ: ${sd.deliveryNumber} | Invoice: ${sd.invoiceNumber}`);
+    console.log(`Buyer: ${sd.buyerName} | Sales: ${sd.salesPerson}`);
+    console.log(`Tax Rate: ${sd.taxRate}%`);
+    console.log(`Subtotal: Rp ${Number(sd.subtotal).toLocaleString()}`);
+    console.log(`TotalDiscount: Rp ${Number(sd.totalDiscount).toLocaleString()}`);
+    console.log(`TaxAmount: Rp ${Number(sd.taxAmount).toLocaleString()}`);
+    console.log(`GrandTotal: Rp ${Number(sd.grandTotal).toLocaleString()}`);
+    console.log();
 
-    // Fetch all GR items for smart matching verification
-    const productIds = [...new Set(deliveries.flatMap(sd => sd.items.map(i => i.productId)))];
-    const grItems = await prisma.goodsReceiptItem.findMany({
-        where: { productId: { in: productIds }, receipt: { isVoid: false } },
-        include: { receipt: { select: { receiptNumber: true, date: true, receivedFrom: true, taxRate: true } } },
-        orderBy: { receipt: { date: 'asc' } }
+    // Find Gatsby items
+    const gatsbyItems = sd.items.filter(i => i.product.name.includes('Gatsby Water Gloss Soft 100'));
+    console.log(`Gatsby Water Gloss Soft 100 items: ${gatsbyItems.length}`);
+    let totalQty = 0;
+    for (const item of gatsbyItems) {
+        console.log(`  - Qty: ${item.quantity} | SalesPrice: Rp ${Number(item.salesPrice).toLocaleString()} | Disc: Rp ${Number(item.discount).toLocaleString()}`);
+        totalQty += item.quantity;
+    }
+    console.log(`  Total merged qty: ${totalQty}`);
+    
+    const gatsbyPrice = Number(gatsbyItems[0]?.salesPrice || 0);
+    console.log(`  Harga jual per unit (DPP): Rp ${gatsbyPrice.toLocaleString()}`);
+    console.log(`  Harga jual per unit (+PPN 11%): Rp ${Math.round(gatsbyPrice * 1.11).toLocaleString()}`);
+
+    // 2. Goods Receipt
+    console.log("\n=== PEMBELIAN ===");
+    const gr = await prisma.goodsReceipt.findFirst({
+        where: { receiptNumber: 'KB-LPBD-03062026-006' },
+        include: {
+            items: {
+                include: { product: { select: { name: true, sku: true } } }
+            }
+        }
     });
 
-    // Group by product
-    const grByProduct = new Map<string, any[]>();
-    for (const gi of grItems) {
-        if (!grByProduct.has(gi.productId)) grByProduct.set(gi.productId, []);
-        grByProduct.get(gi.productId)!.push(gi);
+    if (!gr) return console.log("GR not found!");
+
+    console.log(`GR: ${gr.receiptNumber}`);
+    console.log(`Supplier: ${gr.receivedFrom}`);
+    console.log(`Tax Rate: ${gr.taxRate}%`);
+    console.log(`Subtotal: Rp ${Number(gr.subtotal).toLocaleString()}`);
+    console.log(`TotalDiscount: Rp ${Number(gr.totalDiscount).toLocaleString()}`);
+    console.log(`TaxAmount: Rp ${Number(gr.taxAmount).toLocaleString()}`);
+    console.log(`GrandTotal: Rp ${Number(gr.grandTotal).toLocaleString()}`);
+    console.log(`Cashbacks: ${JSON.stringify(gr.cashbacks)}`);
+    console.log();
+
+    const grGatsbyItems = gr.items.filter(i => i.product.name.includes('Gatsby Water Gloss Soft 100'));
+    for (const item of grGatsbyItems) {
+        console.log(`  ${item.product.name}`);
+        console.log(`  Qty: ${item.quantity} | PurchasePrice: Rp ${Number(item.purchasePrice).toLocaleString()} | Disc: Rp ${Number(item.discount).toLocaleString()}`);
     }
 
-    // Median prices
-    const medianPrices = new Map<string, number>();
-    for (const [pid, items] of grByProduct) {
-        const prices = items.map((g: any) => Number(g.purchasePrice)).filter((p: number) => p > 0).sort((a: number, b: number) => a - b);
-        if (prices.length > 0) {
-            const mid = Math.floor(prices.length / 2);
-            medianPrices.set(pid, prices.length % 2 === 0 ? (prices[mid-1] + prices[mid]) / 2 : prices[mid]);
-        }
-    }
+    const grPrice = grGatsbyItems.length > 0 ? Number(grGatsbyItems[0].purchasePrice) : 0;
+    console.log(`\n  Harga beli per unit (DPP): Rp ${grPrice.toLocaleString()}`);
+    console.log(`  Harga beli per unit (+PPN 11%): Rp ${Math.round(grPrice * 1.11).toLocaleString()}`);
 
-    for (const sd of deliveries) {
-        const taxRate = Number(sd.taxRate || 0);
-        const invoicePrefix = (sd.invoiceNumber || '').substring(0, 6);
-        
-        if (invoicePrefix === 'KB-TRN') kbTrnCount++;
-        else if (invoicePrefix === 'KB-TRD') kbTrdCount++;
-        else otherCount++;
+    // 3. Masalah
+    console.log("\n=== ANALISIS MASALAH ===");
+    console.log(`Harga Beli per unit: Rp ${grPrice.toLocaleString()}`);
+    console.log(`Harga Jual per unit: Rp ${gatsbyPrice.toLocaleString()}`);
+    console.log(`Harga SAMA? ${Math.abs(grPrice - gatsbyPrice) < 1 ? 'YA ✅' : 'TIDAK ❌ (beda ' + Math.abs(grPrice - gatsbyPrice).toLocaleString() + ')'}`);
 
-        // Merge items by product
-        const mergedMap = new Map<string, { qty: number; price: number; discount: number; productId: string }>();
-        for (const item of sd.items) {
-            totalItems++;
-            const key = item.productId;
-            if (mergedMap.has(key)) {
-                const existing = mergedMap.get(key)!;
-                const prevQty = existing.qty;
-                const newQty = prevQty + item.quantity;
-                existing.price = (existing.price * prevQty + Number(item.salesPrice || 0) * item.quantity) / newQty;
-                existing.qty = newQty;
-                existing.discount += Number(item.discount || 0);
-            } else {
-                mergedMap.set(key, {
-                    qty: item.quantity,
-                    price: Number(item.salesPrice || 0),
-                    discount: Number(item.discount || 0),
-                    productId: item.productId
-                });
-            }
-        }
-        mergedItems += mergedMap.size;
-
-        // Check margin for each merged item
-        const sdHeaderDiscount = Number(sd.totalDiscount || 0);
-        const sdSubtotal = Array.from(mergedMap.values()).reduce((sum, item) => {
-            return sum + (item.price * item.qty - item.discount);
-        }, 0);
-
-        for (const [, item] of mergedMap) {
-            // Smart match GR
-            const candidates = grByProduct.get(item.productId) || [];
-            const median = medianPrices.get(item.productId) || 0;
-            let bestGR: any = null;
-            let bestScore = -Infinity;
-            
-            for (const gr of candidates) {
-                const grPrice = Number(gr.purchasePrice);
-                if (median > 0 && (grPrice > median * 5 || grPrice < median * 0.2)) continue;
-                const grDate = gr.receipt.date;
-                if (!grDate) continue;
-                const daysDiff = Math.abs(sd.date.getTime() - grDate.getTime()) / (1000*60*60*24);
-                const isBeforeSale = grDate.getTime() <= sd.date.getTime();
-                const dateScore = isBeforeSale ? Math.max(0, 100 - daysDiff * 0.5) : Math.max(0, 50 - daysDiff * 2);
-                const priceDeviation = median > 0 ? Math.abs(grPrice - median) / median : 0;
-                const priceScore = Math.max(0, 50 - priceDeviation * 100);
-                const qtyRatio = item.qty > 0 && gr.quantity > 0 ? Math.min(item.qty, gr.quantity) / Math.max(item.qty, gr.quantity) : 0;
-                const qtyScore = qtyRatio * 30;
-                const totalScore = dateScore + priceScore + qtyScore;
-                if (totalScore > bestScore) { bestScore = totalScore; bestGR = gr; }
-            }
-
-            const hpp = bestGR ? Number(bestGR.purchasePrice) : 0;
-            const hppWithSalesTax = Math.round(hpp * (1 + taxRate / 100));
-            const totalBeli = hppWithSalesTax * item.qty;
-
-            const lineSubtotal = item.price * item.qty - item.discount;
-            const headerDiscountShare = sdSubtotal > 0 ? Math.round(sdHeaderDiscount * (lineSubtotal / sdSubtotal)) : 0;
-            const totalDiscount = item.discount + headerDiscountShare;
-            const dpp = Math.round(item.price * item.qty - totalDiscount);
-            const ppn = Math.round(dpp * taxRate / 100);
-            const totalJual = dpp + ppn;
-            const margin = totalJual - totalBeli;
-
-            if (margin < 0) negativeMarginCount++;
-            else if (margin > 0) positiveMarginCount++;
-            else zeroMarginCount++;
-        }
-    }
-
-    console.log(`\n=== HASIL VERIFIKASI ===`);
-    console.log(`\n📊 Transaksi:`);
-    console.log(`   Total SalesDelivery: ${deliveries.length}`);
-    console.log(`   KB-TRN (PPN 11%): ${kbTrnCount}`);
-    console.log(`   KB-TRD (tanpa PPN): ${kbTrdCount}`);
-    console.log(`   Lainnya: ${otherCount}`);
+    // Current report calculation
+    const sdTaxRate = Number(sd.taxRate);
+    const sdHeaderDiscount = Number(sd.totalDiscount);
     
-    console.log(`\n📦 Items:`);
-    console.log(`   Total SD Items (sebelum merge): ${totalItems}`);
-    console.log(`   Total Items (setelah merge): ${mergedItems}`);
-    console.log(`   Items yang di-merge: ${totalItems - mergedItems}`);
+    // Calculate merged item's proportion of header discount
+    const allMergedSubtotal = sd.items.reduce((sum, i) => sum + Number(i.salesPrice || 0) * i.quantity - Number(i.discount || 0), 0);
+    const gatsbyLineSubtotal = gatsbyPrice * totalQty;
+    const headerDiscountShare = allMergedSubtotal > 0 
+        ? Math.round(sdHeaderDiscount * (gatsbyLineSubtotal / allMergedSubtotal)) 
+        : 0;
+
+    console.log(`\n📉 Diskon Nota SD: Rp ${sdHeaderDiscount.toLocaleString()}`);
+    console.log(`   Proporsi Gatsby (${totalQty} pcs): Rp ${headerDiscountShare.toLocaleString()}`);
+    console.log(`   Subtotal item: Rp ${gatsbyLineSubtotal.toLocaleString()}`);
+    console.log(`   Subtotal semua: Rp ${allMergedSubtotal.toLocaleString()}`);
+
+    // What report shows
+    const dpp = Math.round(gatsbyPrice * totalQty - headerDiscountShare);
+    const ppn = Math.round(dpp * sdTaxRate / 100);
+    const totalJual = dpp + ppn;
+    const hppWithSalesTax = Math.round(grPrice * (1 + sdTaxRate / 100));
+    const totalBeli = hppWithSalesTax * totalQty;
+    const margin = totalJual - totalBeli;
+
+    console.log(`\n📊 Laporan saat ini (SALAH):`);
+    console.log(`   Total Beli: hpp × (1+11%) × qty = ${grPrice.toLocaleString()} × 1.11 × ${totalQty} = Rp ${totalBeli.toLocaleString()}`);
+    console.log(`   Total Jual: (sellPrice × qty - diskonNota) × (1+11%) = Rp ${totalJual.toLocaleString()}`);
+    console.log(`   Margin: Rp ${margin.toLocaleString()} ← MINUS karena diskon nota hanya di sisi jual!`);
     
-    console.log(`\n💰 Margin (setelah fix):`);
-    console.log(`   ✅ Margin Positif: ${positiveMarginCount}`);
-    console.log(`   ⚠️  Margin Nol: ${zeroMarginCount}`);
-    console.log(`   ❌ Margin Negatif: ${negativeMarginCount}`);
-    
-    console.log(`\n🔧 Fitur yang diterapkan ke SEMUA transaksi:`);
-    console.log(`   1. Smart Matching (bukan FIFO) - filter harga anomali ✅`);
-    console.log(`   2. Merge item duplikat per delivery ✅`);
-    console.log(`   3. Distribusi diskon nota proporsional ✅`);
-    console.log(`   4. PPN konsisten (SD taxRate untuk kedua sisi) ✅`);
+    // What it should be (discount applied to BOTH sides or NEITHER)
+    console.log(`\n✅ Seharusnya (tanpa distribusi diskon nota):`);
+    const correctDpp = Math.round(gatsbyPrice * totalQty);
+    const correctPpn = Math.round(correctDpp * sdTaxRate / 100);
+    const correctTotalJual = correctDpp + correctPpn;
+    const correctMargin = correctTotalJual - totalBeli;
+    console.log(`   Total Beli: Rp ${totalBeli.toLocaleString()}`);
+    console.log(`   Total Jual: Rp ${correctTotalJual.toLocaleString()}`);
+    console.log(`   Margin: Rp ${correctMargin.toLocaleString()}`);
+
+    // Also check if GR has discount too
+    console.log(`\n📋 GR Discount: Rp ${Number(gr.totalDiscount).toLocaleString()}`);
+    console.log(`   GR Cashbacks: ${JSON.stringify(gr.cashbacks)}`);
 }
 
-verifyAll()
+verifyGatsby()
     .catch(console.error)
     .finally(() => prisma.$disconnect());
