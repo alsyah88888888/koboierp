@@ -29,7 +29,6 @@ export default async function PurchaseRequestPrintPage({ params }: { params: Pro
 
     return (
         <DocumentLayout
-            isA5={true}
             title="Pengajuan Pembelian"
             docNumber={request.number}
             date={format(new Date(request.date || request.createdAt), "dd MMM yyyy")}
