@@ -1592,8 +1592,6 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                             <option value="12">Desember</option>
                                         </select>
                                     </div>
-                                </div>
-                                <div className="overflow-x-auto custom-scrollbar">
                                     <table className="w-full text-sm text-left min-w-[1000px] table-fixed">
                                         <thead className="bg-emerald-50/50 text-emerald-800 border-b border-emerald-100 text-[10px] uppercase tracking-[0.2em] font-black">
                                             <tr>
@@ -1602,6 +1600,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                                 <th className="px-8 py-5 w-48">Ref Number</th>
                                                 <th className="px-8 py-5 w-40 text-center">Tipe</th>
                                                 <th className="px-8 py-5 text-right w-44">Settled Amount</th>
+                                                {isAdminOrFinance && <th className="px-8 py-5 w-44 text-center">Aksi</th>}
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-emerald-50 text-slate-700">
@@ -1625,11 +1624,40 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                                     <td className="px-8 py-5 text-right font-black font-mono tabular-nums tracking-tighter text-base text-emerald-600">
                                                         {formatCurrency(Number(s.total))}
                                                     </td>
+                                                    {isAdminOrFinance && (
+                                                        <td className="px-8 py-5 text-center" onClick={e => e.stopPropagation()}>
+                                                            <div className="flex items-center justify-center gap-2">
+                                                                <button
+                                                                    onClick={() => handleOpenEditPayment(s, 'SALE')}
+                                                                    className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-[10px] font-black rounded-xl transition-all uppercase tracking-widest flex items-center gap-1"
+                                                                    title="Edit Pelunasan"
+                                                                >
+                                                                    <Pencil className="h-3 w-3" /> Edit
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => {
+                                                                        if (confirm(`Batalkan pelunasan piutang ini? Status akan kembali ke CREDIT.`)) {
+                                                                            const id = s.id;
+                                                                            setLoading(id);
+                                                                            callAction("editSettledPayment", 'SALE', id, 0, new Date(), "")
+                                                                                .then(() => { alert("Pelunasan berhasil dibatalkan."); router.refresh(); })
+                                                                                .catch(() => alert("Gagal membatalkan pelunasan."))
+                                                                                .finally(() => setLoading(null));
+                                                                        }
+                                                                    }}
+                                                                    className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 text-[10px] font-black rounded-xl transition-all uppercase tracking-widest flex items-center gap-1"
+                                                                    title="Batal Pelunasan"
+                                                                >
+                                                                    <X className="h-3 w-3" /> Batal
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                    )}
                                                 </tr>
                                             ))}
                                             {filteredSettledSales.length === 0 && (
                                                 <tr>
-                                                    <td colSpan={5} className="px-8 py-12 text-center text-slate-400 italic font-medium uppercase tracking-widest text-[10px]">No settled AR invoices found for {arHistoryMonth === "ALL" ? "all months" : "selected month"}</td>
+                                                    <td colSpan={isAdminOrFinance ? 6 : 5} className="px-8 py-12 text-center text-slate-400 italic font-medium uppercase tracking-widest text-[10px]">No settled AR invoices found for {arHistoryMonth === "ALL" ? "all months" : "selected month"}</td>
                                                 </tr>
                                             )}
                                         </tbody>
@@ -1672,6 +1700,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                                 <th className="px-8 py-5 w-48">Ref Number</th>
                                                 <th className="px-8 py-5 w-40 text-center">Tipe</th>
                                                 <th className="px-8 py-5 text-right w-44">Settled Amount</th>
+                                                {isAdminOrFinance && <th className="px-8 py-5 w-44 text-center">Aksi</th>}
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-rose-50 text-slate-700">
@@ -1695,12 +1724,39 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                                     <td className="px-8 py-5 text-right font-black font-mono tabular-nums tracking-tighter text-base text-rose-600">
                                                         {formatCurrency(Number(p.total))}
                                                     </td>
+                                                    {isAdminOrFinance && (
+                                                        <td className="px-8 py-5 text-center" onClick={e => e.stopPropagation()}>
+                                                            <div className="flex items-center justify-center gap-2">
+                                                                <button
+                                                                    onClick={() => handleOpenEditPayment(p, 'PURCHASE')}
+                                                                    className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-[10px] font-black rounded-xl transition-all uppercase tracking-widest flex items-center gap-1"
+                                                                    title="Edit Pembayaran"
+                                                                >
+                                                                    <Pencil className="h-3 w-3" /> Edit
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => {
+                                                                        if (confirm(`Batalkan pembayaran hutang ini? Status akan kembali ke CREDIT.`)) {
+                                                                            const id = p.id;
+                                                                            setLoading(id);
+                                                                            callAction("editSettledPayment", 'PURCHASE', id, 0, new Date(), "")
+                                                                                .then(() => { alert("Pembayaran berhasil dibatalkan."); router.refresh(); })
+                                                                                .catch(() => alert("Gagal membatalkan pembayaran."))
+                                                                                .finally(() => setLoading(null));
+                                                                        }
+                                                                    }}
+                                                                    className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 text-[10px] font-black rounded-xl transition-all uppercase tracking-widest flex items-center gap-1"
+                                                                    title="Batal Pembayaran"
+                                                                >
+                                                                    <X className="h-3 w-3" /> Batal
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                    )}
                                                 </tr>
                                             ))}
                                             {filteredSettledPurchases.length === 0 && (
                                                 <tr>
-                                                    <td colSpan={5} className="px-8 py-12 text-center text-slate-400 italic font-medium uppercase tracking-widest text-[10px]">No settled AP invoices found for {apHistoryMonth === "ALL" ? "all months" : "selected month"}</td>
-                                                </tr>
                                             )}
                                         </tbody>
                                     </table>
