@@ -22,6 +22,7 @@ import { callAction } from "@/proxy";
 const AVAILABLE_PERMISSIONS = [
   { key: "DASHBOARD", label: "Dashboard Utama" },
   { key: "FINANCE", label: "Keuangan (Bank/Coa)" },
+  { key: "PARTNER_LEDGER", label: "Buku Besar Mitra" },
   { key: "PURCHASE", label: "Pembelian (PO/LPB)" },
   { key: "PURCHASE_REQUEST", label: "Pengajuan Permintaan" },
   { key: "SALES", label: "Penjualan (SJ/Order)" },
