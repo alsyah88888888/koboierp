@@ -26,8 +26,32 @@ export function getAuthOptions(): AuthOptions {
             },
             async jwt({ token, user }) {
                 if (user) {
+                    // First login: set initial data from user object
                     token.role = (user as any).role;
                     token.permissions = (user as any).permissions || [];
+                } else if (token.sub) {
+                    // Subsequent requests: always re-fetch permissions from DB
+                    // so admin changes take effect without requiring re-login
+                    try {
+                        const freshUser = await db.user.findUnique({
+                            where: { id: token.sub },
+                            select: { role: true, permissions: true }
+                        });
+                        if (freshUser) {
+                            token.role = freshUser.role;
+                            let parsedPermissions: string[] = [];
+                            try {
+                                parsedPermissions = freshUser.permissions
+                                    ? JSON.parse(freshUser.permissions as string)
+                                    : [];
+                            } catch {
+                                parsedPermissions = [];
+                            }
+                            token.permissions = parsedPermissions;
+                        }
+                    } catch {
+                        // Keep existing token data if DB fetch fails
+                    }
                 }
                 return token;
             },
