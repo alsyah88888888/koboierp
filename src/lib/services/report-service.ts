@@ -264,14 +264,27 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
             }
             const mergedItems = Array.from(mergedItemsMap.values());
 
+            // ── Distribute header-level discount (diskon nota) proportionally ──
+            // SD.totalDiscount is a global discount that may not be on item level
+            const sdHeaderDiscount = Number(sd.totalDiscount || 0);
+            const sdSubtotal = mergedItems.reduce((sum: number, item: any) => {
+                return sum + (Number(item.salesPrice || 0) * item.quantity - Number(item.discount || 0));
+            }, 0);
 
             for (const sdItem of mergedItems) {
                 const barcode   = sdItem.product.barcode || sdItem.product.sku;
                 const namaItem  = sdItem.product.name;
                 const perCt     = sdItem.product.uom || 'PCS';
                 const sellPrice = Number(sdItem.salesPrice || 0);
-                const discount  = Number(sdItem.discount || 0);
+                const itemDiscount  = Number(sdItem.discount || 0);
                 const qty       = sdItem.quantity;
+
+                // Calculate proportional share of header discount for this item
+                const lineSubtotal = sellPrice * qty - itemDiscount;
+                const headerDiscountShare = sdSubtotal > 0
+                    ? Math.round(sdHeaderDiscount * (lineSubtotal / sdSubtotal))
+                    : 0;
+                const totalDiscount = itemDiscount + headerDiscountShare;
 
                 // ── SMART MATCHING: Find best purchase for this sale item ──
                 // Use Nearest Purchase Matching instead of FIFO lot allocation
@@ -292,11 +305,8 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
                     taxRate: purchaseTaxRate
                 };
 
-                // Hitung diskon proporsional
-                const allocDiscount = discount;
-
-                // DPP (Dasar Pengenaan Pajak / Omzet Jual Bersih) = (Harga Jual per unit * qty) - Diskon
-                const dpp = Math.round((sellPrice * qty) - allocDiscount);
+                // DPP (Dasar Pengenaan Pajak / Omzet Jual Bersih) = (Harga Jual per unit * qty) - Total Diskon
+                const dpp = Math.round((sellPrice * qty) - totalDiscount);
 
                 // PPN = DPP * taxRate / 100
                 const ppn = Math.round(dpp * taxRate / 100);
