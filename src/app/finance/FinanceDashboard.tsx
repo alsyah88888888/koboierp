@@ -54,7 +54,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
     const [editingTransaction, setEditingTransaction] = useState<any | null>(null);
 
     // Bank Reconciliation State
-    const [selectedBank, setSelectedBank] = useState<string>("BCA");
+    const [selectedBank, setSelectedBank] = useState<string>("BCA 678");
     const [reconFilterReconciled, setReconFilterReconciled] = useState<boolean>(false);
     const [selectedMutationForMatching, setSelectedMutationForMatching] = useState<any | null>(null);
     const [bankReconSearchQuery, setBankReconSearchQuery] = useState("");
@@ -375,13 +375,24 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
     };
 
     const handleQuickRecord = (mutation: any) => {
+        const matchedAccount = accounts.find((a: any) => 
+            a.name.toUpperCase().includes(selectedBank.toUpperCase())
+        );
+
         setEditingTransaction({
             transactionType: mutation.type === "CR" ? "RECEIPT" : "PAYMENT",
-            bank: selectedBank === "BCA" ? "Bank BCA" : selectedBank === "Mandiri" ? "Bank Mandiri" : "Bank BNI",
+            bank: matchedAccount ? matchedAccount.name : "Bank BCA 678",
             date: mutation.date ? mutation.date.split("T")[0] : new Date().toISOString().split("T")[0],
             description: mutation.description,
             amount: mutation.amount,
-            journals: []
+            journals: matchedAccount ? [{
+                accountId: matchedAccount.id,
+                account: {
+                    id: matchedAccount.id,
+                    code: matchedAccount.code,
+                    name: matchedAccount.name
+                }
+            }] : []
         });
         setShowModal(true);
     };
@@ -2039,11 +2050,13 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                             setSelectedBank(e.target.value);
                                             setSelectedMutationForMatching(null);
                                         }}
-                                        className="text-xs font-black uppercase bg-white border border-slate-200 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-slate-900/10 transition-all"
+                                        className="text-xs font-black uppercase bg-white border border-slate-200 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-slate-900/10 transition-all cursor-pointer"
                                     >
-                                        <option value="BCA">BCA</option>
-                                        <option value="Mandiri">Mandiri</option>
-                                        <option value="BNI">BNI</option>
+                                        <option value="BCA 678">BCA 678</option>
+                                        <option value="BCA 461">BCA 461</option>
+                                        <option value="BCA 718 (PKP)">BCA 718 (PKP)</option>
+                                        <option value="Maybank 269">Maybank 269</option>
+                                        <option value="Maybank 736">Maybank 736</option>
                                     </select>
                                 </div>
                                 <div className="flex bg-slate-200/60 p-1 rounded-xl gap-1">
