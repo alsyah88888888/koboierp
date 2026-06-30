@@ -95,6 +95,9 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
         const bankCode = info?.code || "";
         const bankAcc = accounts.find(a => a.code === bankCode);
         
+        // For grouped sales, item.id is a fake "GROUP_xxx" ID - use the first real DB id from groupedIds
+        const realId = (item.isGrouped && item.groupedIds?.length > 0) ? item.groupedIds[0] : item.id;
+        
         setEditPaymentAmount(String(Number(item.paidAmount || item.total || 0)));
         setEditPaymentDate(info?.date ? format(new Date(info.date), "yyyy-MM-dd") : (item.updatedAt ? format(new Date(item.updatedAt), "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd")));
         setEditBankId(bankAcc?.id || "");
@@ -102,7 +105,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
         setEditPaymentModal({
             open: true,
             type,
-            id: item.id,
+            id: realId,
             deliveryNumber: refNum,
             buyerName: partyName,
             total: Number(item.total || 0),
@@ -1831,7 +1834,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                                                 <button
                                                                     onClick={() => {
                                                                         if (confirm(`Batalkan pelunasan piutang ini? Status akan kembali ke CREDIT.`)) {
-                                                                            const id = s.id;
+                                                                            const id = (s.isGrouped && s.groupedIds?.length > 0) ? s.groupedIds[0] : s.id;
                                                                             setLoading(id);
                                                                             callAction("editSettledPayment", 'SALE', id, 0, new Date(), "")
                                                                                 .then(() => { alert("Pelunasan berhasil dibatalkan."); router.refresh(); })
