@@ -82,7 +82,7 @@ export default async function PurchaseRequestPrintPage({ params }: { params: Pro
                             <td className="border-2 border-slate-900 p-3 text-right">{formatCurrency(Number(item.quantity) * Number(item.estimatedPrice))}</td>
                         </tr>
                     ))}
-                    {[...Array(Math.max(0, 5 - request.items.length))].map((_, i) => (
+                    {[...Array(Math.max(0, 3 - request.items.length))].map((_, i) => (
                         <tr key={i} className="h-8">
                             <td className="border-2 border-slate-900"></td><td className="border-2 border-slate-900"></td>
                             <td className="border-2 border-slate-900"></td><td className="border-2 border-slate-900"></td>
@@ -110,7 +110,7 @@ export default async function PurchaseRequestPrintPage({ params }: { params: Pro
                 </div>
             </div>
 
-            <div className="mt-8 text-[12px] font-bold text-slate-500 italic">
+            <div className="mt-4 text-[12px] font-bold text-slate-500 italic">
                 * Dokumen ini adalah estimasi biaya pengajuan. Nilai sesungguhnya bergantung pada pembelian aktual.
             </div>
         </DocumentLayout>
