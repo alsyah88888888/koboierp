@@ -295,10 +295,14 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
                 const supplierName = bestGR?.receipt?.receivedFrom || '-';
                 const hpp = bestGR ? Number(bestGR.purchasePrice) : Number(sdItem.product.purchasePrice || 0);
                 const purchaseTaxRate = Number(bestGR?.receipt?.taxRate || 0);
-                // Use DPP (tanpa PPN) for purchase price to ensure consistent margin comparison
-                // PPN is informational only — margin harus DPP vs DPP
-                const hppDisplay = Math.round(hpp);
-                const totalBeli = Math.round(hpp * qty);
+
+                // ── PPN CONSISTENCY RULE ──
+                // Use the SALES taxRate for BOTH buy and sell sides:
+                //   KB-TRN (taxRate=11%): Beli +11%, Jual +11% → consistent comparison
+                //   KB-TRD (taxRate=0%):  Beli +0%,  Jual +0%  → consistent comparison
+                // This prevents comparing PPN-inclusive buy vs PPN-exclusive sell
+                const hppWithSalesTax = Math.round(hpp * (1 + taxRate / 100));
+                const totalBeli = Math.round(hppWithSalesTax * qty);
 
                 const grInfo = {
                     taxInvoiceDate: bestGR?.receipt?.taxInvoiceDate || null,
@@ -307,22 +311,22 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
                     taxRate: purchaseTaxRate
                 };
 
-                // DPP Jual (Dasar Pengenaan Pajak / Omzet Jual Bersih) = (Harga Jual per unit * qty) - Total Diskon
+                // DPP Jual = (Harga Jual per unit * qty) - Total Diskon
                 const dpp = Math.round((sellPrice * qty) - totalDiscount);
 
-                // PPN Jual = DPP * taxRate / 100
+                // PPN Jual = DPP × taxRate (0% for KB-TRD, 11% for KB-TRN)
                 const ppn = Math.round(dpp * taxRate / 100);
 
-                // Total Jual (Termasuk PPN) = DPP + PPN
+                // Total Jual = DPP + PPN
                 const totalJual = dpp + ppn;
 
                 const rowOps = remainingSdQty > 0 ? Math.round(remainingInvoiceOps * (qty / remainingSdQty)) : 0;
                 remainingInvoiceOps -= rowOps;
                 remainingSdQty -= qty;
 
-                // Margin: DPP Jual vs DPP Beli (keduanya tanpa PPN, konsisten)
-                const margin    = dpp - totalBeli - rowOps;
-                const marginPct = dpp > 0 ? (margin / dpp * 100) : 0;
+                // Margin: Total Jual vs Total Beli (keduanya pakai taxRate yang sama)
+                const margin    = totalJual - totalBeli - rowOps;
+                const marginPct = totalJual > 0 ? (margin / totalJual * 100) : 0;
 
                 rowNo++;
                 rows.push({
@@ -337,7 +341,7 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
                     'NOMOR LPB'        : grNumber,
                     'NAMA SUPPLIER'    : supplierName,
                     'QTY BELI'         : qty,
-                    'HARGA BELI'       : hppDisplay,
+                    'HARGA BELI'       : hppWithSalesTax,
                     'OPS'              : rowOps,
                     'TOTAL BELI'       : totalBeli,
                     'F. PAJAK'         : fmtDate(grInfo.taxInvoiceDate),
@@ -351,7 +355,7 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
                     'NAMA PEMBELI'     : buyer,
                     'SALES'            : spJual,
                     'QTY JUAL'         : qty,
-                    'HARGA JUAL'       : Math.round(sellPrice),
+                    'HARGA JUAL'       : Math.round(sellPrice * (1 + taxRate / 100)),
                     'TOTAL JUAL'       : totalJual,
                     'DPP'              : dpp,
                     'PPH'              : ppn,
