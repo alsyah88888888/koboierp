@@ -445,7 +445,7 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
     endDate.setUTCHours(endDate.getUTCHours() - 7);
 
     try {
-        return await calculateProductTraceabilityInternal(startDate, endDate, prefix);
+        return await getBatchTraceabilityService({ startDate, endDate });
     } catch (error: any) {
         console.error('[getProductTraceabilityService] ERROR:', error);
         return { error: (error as Error).message || 'Failed to fetch traceability report' };
@@ -758,16 +758,23 @@ export async function getSalesReturnsDetailService() {
 export async function getBatchTraceabilityService(filters: {
     month?: number;
     year?: number;
+    startDate?: Date;
+    endDate?: Date;
     status?: string;   // AKTIF | HABIS | VOID | ALL
     sku?: string;
     supplier?: string;
 }) {
     const prisma = getPrisma();
 
-    const filterYear  = filters.year  || new Date().getFullYear();
-    const filterMonth = filters.month || (new Date().getMonth() + 1);
-    const startDate   = new Date(filterYear, filterMonth - 1, 1);
-    const endDate     = new Date(filterYear, filterMonth, 0, 23, 59, 59);
+    let startDate = filters.startDate;
+    let endDate = filters.endDate;
+
+    if (!startDate || !endDate) {
+        const filterYear  = filters.year  || new Date().getFullYear();
+        const filterMonth = filters.month || (new Date().getMonth() + 1);
+        startDate   = new Date(filterYear, filterMonth - 1, 1);
+        endDate     = new Date(filterYear, filterMonth, 0, 23, 59, 59);
+    }
 
     // ── Build where clause for ProductLot ────────────────────────────────
     const lotWhere: any = {
@@ -812,7 +819,12 @@ export async function getBatchTraceabilityService(filters: {
                                         recipient: true,
                                         salesPerson: true,
                                         paymentStatus: true,
-                                        orderId: true
+                                        orderId: true,
+                                        subtotal: true,
+                                        totalDiscount: true,
+                                        taxRate: true,
+                                        isPKP: true,
+                                        grandTotal: true
                                     }
                                 }
                             }
@@ -856,6 +868,7 @@ export async function getBatchTraceabilityService(filters: {
             if (lot.isVoided)       statusLot = 'VOID';
             else if (sisaQty <= 0)  statusLot = 'HABIS';
 
+            let rowNo = 1;
             const baseRow = {
                 'No. Lot'            : lot.lotNumber,
                 'No. GR (Batch Beli)': lot.grNumber,
@@ -870,6 +883,17 @@ export async function getBatchTraceabilityService(filters: {
                 'HPP Per Unit (Rp)'  : hpp,
                 'Nilai Sisa (Rp)'    : nilaiSisa,
                 'Status Lot'         : statusLot,
+                
+                // Fields for ReportsDashboard Compatibility
+                'NO'                 : rowNo++,
+                'BARCODE'            : lot.product.sku,
+                'KETERANGAN ITEM'    : lot.product.name,
+                'NAMA SUPPLIER'      : lot.supplierName || '-',
+                'NOMOR LPB'          : lot.grNumber,
+                'TANGGAL BELI'       : lot.grDate ? new Date(lot.grDate).toLocaleDateString('id-ID') : '-',
+                'QTY BELI'           : initialQty,
+                'TOTAL BELI'         : Math.round(initialQty * hpp),
+                'OPS'                : 0,
             };
 
             if (lot.allocations.length === 0) {
@@ -884,17 +908,57 @@ export async function getBatchTraceabilityService(filters: {
                     'QTY Alokasi'       : 0,
                     'HPP Saat Jual (Rp)': hpp,
                     'Status Bayar Jual' : '-',
+
+                    // Fields for ReportsDashboard Compatibility
+                    'NAMA PEMBELI'      : '-',
+                    'SALES'             : '-',
+                    'NOMOR FAKTUR PENJUALAN': '-',
+                    'NOMOR SJ'          : '-',
+                    'TANGGAL JUAL'      : '-',
+                    'QTY JUAL'          : 0,
+                    'TOTAL JUAL'        : 0,
+                    'MARGIN'            : 0,
                 });
             } else {
                 // Satu row per alokasi penjualan
                 for (const alloc of lot.allocations) {
                     const delivery  = alloc.sdItem?.delivery;
+                    const sdItem    = alloc.sdItem;
                     const soNumber  = delivery?.orderId
                         ? (orderNumberMap.get(delivery.orderId) ?? '-')
                         : '-';
+                    
+                    let totalJual = 0;
+                    if (delivery && sdItem) {
+                        const sellPrice = Number(sdItem.salesPrice || 0);
+                        const itemDiscount = Number(sdItem.discount || 0);
+                        const qty = Number(alloc.qty);
+                        
+                        // Ratio of this allocation's quantity to the total sdItem quantity
+                        const allocRatio = Number(sdItem.quantity) > 0 ? qty / Number(sdItem.quantity) : 0;
+                        const allocItemDiscount = itemDiscount * allocRatio;
+                        const sellLineSubtotal = (sellPrice * qty) - allocItemDiscount;
+                        
+                        const sdSubtotal = Number(delivery.subtotal || 0);
+                        const sdHeaderDiscount = Number(delivery.totalDiscount || 0);
+                        const sdDiscountShare = sdSubtotal > 0 ? Math.round(sdHeaderDiscount * (sellLineSubtotal / sdSubtotal)) : 0;
+                        
+                        totalJual = sellLineSubtotal - sdDiscountShare;
+                        
+                        // Applying Tax if PKP
+                        const isPKP = delivery.isPKP || Number(delivery.taxRate || 0) > 0;
+                        if (isPKP) {
+                            const taxRate = Number(delivery.taxRate || 11) / 100;
+                            totalJual = totalJual * (1 + taxRate);
+                        }
+                    }
+                    
+                    const hppTotal = Number(alloc.hppAtTime) * Number(alloc.qty);
+                    const margin = totalJual - hppTotal;
 
                     report.push({
                         ...baseRow,
+                        'NO'                : rowNo++,
                         'Tgl Jual'          : delivery?.date
                             ? new Date(delivery.date).toLocaleDateString('id-ID')
                             : '-',
@@ -905,6 +969,17 @@ export async function getBatchTraceabilityService(filters: {
                         'QTY Alokasi'       : Number(alloc.qty),
                         'HPP Saat Jual (Rp)': Number(alloc.hppAtTime),
                         'Status Bayar Jual' : delivery?.paymentStatus || '-',
+                        
+                        // Fields for ReportsDashboard Compatibility
+                        'NAMA PEMBELI'      : delivery?.buyerName || delivery?.recipient || '-',
+                        'SALES'             : delivery?.salesPerson || 'CIBINONG',
+                        'NOMOR FAKTUR PENJUALAN': soNumber,
+                        'NOMOR SJ'          : delivery?.deliveryNumber || '-',
+                        'TANGGAL JUAL'      : delivery?.date ? new Date(delivery.date).toLocaleDateString('id-ID') : '-',
+                        'QTY JUAL'          : Number(alloc.qty),
+                        'TOTAL JUAL'        : Math.round(totalJual),
+                        'MARGIN'            : Math.round(margin),
+                        'MARGIN %'          : totalJual > 0 ? (margin / totalJual * 100).toFixed(1) + '%' : '0%',
                     });
                 }
             }
@@ -1038,7 +1113,7 @@ export async function getComprehensiveDailyReportService(date?: string, prefix?:
         const traceEndDate = new Date(Date.UTC(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), 23, 59, 59, 999));
         traceEndDate.setUTCHours(traceEndDate.getUTCHours() - 7);
 
-        const dailyTraceability = await calculateProductTraceabilityInternal(traceStartDate, traceEndDate, prefix).catch(() => []);
+        const dailyTraceability = await getBatchTraceabilityService({ startDate: traceStartDate, endDate: traceEndDate }).catch(() => []);
 
         // Calculate summaries
         const totalSales = sales.reduce((s: number, d: any) => s + Number(d.grandTotal || 0), 0);
@@ -1282,7 +1357,7 @@ export async function getComprehensiveWeeklyReportService(weekStartDate?: string
                 include: { product: { select: { sku: true, name: true } } },
                 orderBy: { createdAt: 'asc' }
             }),
-            calculateProductTraceabilityInternal(startDate, endDate, prefix).catch(() => [])
+            getBatchTraceabilityService({ startDate, endDate }).catch(() => [])
         ]);
 
         // Build daily breakdown for the 7 days
@@ -1591,7 +1666,7 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
                 orderBy: { createdAt: 'asc' }
             }),
             // Traceability
-            calculateProductTraceabilityInternal(startDate, endDate, prefix).catch(() => [])
+            getBatchTraceabilityService({ startDate, endDate }).catch(() => [])
         ]);
 
         // ── P&L Calculation ──────────────────────────────────────────────
