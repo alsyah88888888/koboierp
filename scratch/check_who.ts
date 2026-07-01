@@ -8,7 +8,6 @@ async function checkWhoDidIt() {
     
     if (receipt) {
         console.log(`Receipt createdById: ${receipt.createdById}`);
-        console.log(`Receipt updatedBy: ${receipt.updatedById || 'N/A'}`);
     }
     
     const product = await prisma.product.findFirst({ where: { barcode: '8992696527874' } });
