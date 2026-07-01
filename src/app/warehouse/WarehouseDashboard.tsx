@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { Plus, Warehouse as WarehouseIcon, Layers, Trash2, FileText, Search, Activity, Box, ArrowUpRight, ArrowDownLeft, Download, Eye, Edit2, ArrowLeftRight } from "lucide-react";
+import { Plus, Warehouse as WarehouseIcon, Layers, Trash2, FileText, Search, Activity, Box, ArrowUpRight, ArrowDownLeft, Download, Eye, Edit2, ArrowLeftRight, ChevronDown, ChevronRight, AlertTriangle } from "lucide-react";
 import { StockInputModal } from "./StockInputModal";
 import { StockAdjustmentModal } from "./StockAdjustmentModal";
 import { StockTransferModal } from "./StockTransferModal";
@@ -33,7 +33,12 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
     const [selectedStockForTransfer, setSelectedStockForTransfer] = useState<{product: any, stock: any} | null>(null);
     const [showStockCard, setShowStockCard] = useState(false);
     const [selectedProductIdForCard, setSelectedProductIdForCard] = useState<string | undefined>(undefined);
+    const [expandedProducts, setExpandedProducts] = useState<Record<string, boolean>>({});
     const [isClient, setIsClient] = useState(false);
+
+    const toggleProduct = (id: string) => {
+        setExpandedProducts(prev => ({...prev, [id]: !prev[id]}));
+    };
 
     useEffect(() => {
         setIsClient(true);
@@ -371,107 +376,120 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">
-                                            {filteredProducts.flatMap((p: any) => {
-                                                const rows: any[] = [];
-                                                const activeStocks = (p.stocks || []).filter((s: any) => s.quantity > 0);
-                                                activeStocks.forEach((s: any) => {
-                                                    const whName = warehouses.find(w => w.id === s.warehouseId)?.name || "Unknown";
-                                                    const isLow = s.quantity <= p.lowStockThreshold;
-                                                    const meta = getStockMetadata(p.id, s.warehouseId, s.vendorName);
-                                                    const salesPerson = meta.salesPerson;
-                                                    const hpp = meta.hpp || Number(p.purchasePrice) || 0;
-                                                    rows.push(
-                                                        <tr key={`${p.id}-${s.id}`} className="hover:bg-slate-50/70 transition-colors duration-150 group">
-                                                            <td className="px-6 py-4">
-                                                                <div className="font-extrabold text-slate-900 truncate text-xs" title={p.name}>{p.name}</div>
-                                                                <div className="text-[10px] font-mono text-slate-400 group-hover:text-slate-700 transition-colors truncate mt-0.5" title={p.sku}>{p.sku}</div>
-                                                            </td>
-                                                            <td className="px-6 py-4 text-left font-bold text-slate-600 text-xs truncate">
-                                                                {whName}
-                                                            </td>
-                                                            <td className="px-6 py-4 text-left">
-                                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-55 text-slate-700 text-[10px] font-bold border border-slate-200 max-w-full">
-                                                                    <WarehouseIcon className="h-3 w-3 text-slate-400 shrink-0" />
-                                                                    <span className="truncate" title={s.vendorName || "UMUM"}>{s.vendorName || "UMUM"}</span>
-                                                                </span>
-                                                            </td>
-                                                            <td className="px-6 py-4 text-center">
-                                                                {salesPerson !== "-" ? (
-                                                                    <span className={cn(
-                                                                        "px-2 py-0.5 rounded-md text-[9px] font-extrabold border shadow-sm tracking-wide",
-                                                                        salesPerson === "BC" 
-                                                                            ? "bg-indigo-50 text-indigo-700 border-indigo-100" 
-                                                                            : "bg-amber-50 text-amber-700 border-amber-100"
-                                                                    )}>
-                                                                        {salesPerson}
-                                                                    </span>
-                                                                ) : (
-                                                                    <span className="text-slate-400">-</span>
-                                                                )}
-                                                            </td>
-                                                            <td className="px-6 py-4 text-right">
-                                                                <div className="text-sm font-mono font-bold text-slate-955">
-                                                                    {isClient ? (s.quantity || 0).toLocaleString() : "..."} 
-                                                                    <span className="text-[9px] text-slate-400 font-bold uppercase ml-1">{p.uom}</span>
+                                            {filteredProducts.map((p: any) => {
+                                                const activeStocks = (p.stocks || []).filter((s: any) => s.quantity !== 0);
+                                                const totalNetQty = activeStocks.reduce((sum: number, s: any) => sum + Number(s.quantity), 0);
+                                                const isExpanded = expandedProducts[p.id];
+                                                const hasNegative = activeStocks.some((s: any) => s.quantity < 0);
+                                                
+                                                return (
+                                                    <React.Fragment key={p.id}>
+                                                        {/* Parent Row (Product Level) */}
+                                                        <tr className="bg-slate-50/50 hover:bg-slate-100/50 transition-colors cursor-pointer" onClick={() => toggleProduct(p.id)}>
+                                                            <td className="px-6 py-4" colSpan={4}>
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className="p-1.5 bg-white shadow-sm border border-slate-200 rounded-md text-slate-400">
+                                                                        {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                                                                    </div>
+                                                                    <div>
+                                                                        <div className="font-black text-slate-900 text-sm flex items-center gap-2">
+                                                                            {p.name}
+                                                                            {hasNegative && (
+                                                                                <span className="inline-flex items-center gap-1 bg-rose-100 text-rose-700 px-2 py-0.5 rounded text-[10px] uppercase tracking-wider border border-rose-200">
+                                                                                    <AlertTriangle className="h-3 w-3" /> Ada Stok Minus
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                        <div className="text-[10px] font-mono text-slate-500 mt-0.5 tracking-wider">{p.sku} | {activeStocks.length} Gudang/Vendor</div>
+                                                                    </div>
                                                                 </div>
                                                             </td>
-                                                            <td className="px-6 py-4 text-right font-mono font-bold text-slate-605 text-[11px]">
-                                                                    {formatCurrency(hpp)}
-                                                            </td>
-                                                            <td className="px-6 py-4 text-right font-mono font-extrabold text-slate-905 text-xs">
-                                                                    {formatCurrency(hpp * (s.quantity || 0))}
-                                                            </td>
                                                             <td className="px-6 py-4 text-right">
-                                                                <span className={cn(
-                                                                    "px-2 py-0.5 rounded-md text-[9px] font-bold border shadow-sm",
-                                                                    isLow 
-                                                                        ? "bg-rose-50 text-rose-700 border-rose-100" 
-                                                                        : "bg-emerald-50 text-emerald-700 border-emerald-100"
-                                                                )}>
-                                                                    {isLow ? "Low Stock" : "In Stock"}
-                                                                </span>
+                                                                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Total Stok</div>
+                                                                <div className={cn("text-lg font-mono font-black", totalNetQty < 0 ? "text-rose-600" : "text-slate-900")}>
+                                                                    {isClient ? totalNetQty.toLocaleString() : "..."}
+                                                                    <span className="text-[10px] text-slate-400 ml-1">{p.uom}</span>
+                                                                </div>
                                                             </td>
-                                                            {isAdmin && (
-                                                                <td className="px-6 py-4 text-center">
-                                                                    <div className="flex items-center justify-center gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity duration-205">
-                                                                        <button
-                                                                            onClick={() => setSelectedStockForAdjustment({ product: p, stock: s })}
-                                                                            className="p-1.5 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-all"
-                                                                            title="Penyesuaian Stok"
-                                                                        >
-                                                                            <Edit2 className="h-3.5 w-3.5" />
-                                                                        </button>
-                                                                        <button
-                                                                            onClick={() => setSelectedStockForTransfer({ product: p, stock: s })}
-                                                                            className="p-1.5 text-slate-400 hover:text-violet-600 hover:bg-violet-50/50 rounded-lg transition-all"
-                                                                            title="Mutasi / Transfer Stok"
-                                                                        >
-                                                                            <ArrowLeftRight className="h-3.5 w-3.5" />
-                                                                        </button>
-                                                                        <button
-                                                                            onClick={() => {
-                                                                                setSelectedProductIdForCard(p.id);
-                                                                                setShowStockCard(true);
-                                                                            }}
-                                                                            className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50/50 rounded-lg transition-all"
-                                                                            title="Kartu Stok"
-                                                                        >
-                                                                            <FileText className="h-3.5 w-3.5" />
-                                                                        </button>
-                                                                        <button
-                                                                            onClick={() => handleDeleteProduct(p.id)}
-                                                                            className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50/50 rounded-lg transition-all"
-                                                                            title="Hapus Produk"
-                                                                        >
-                                                                            <Trash2 className="h-3.5 w-3.5" />
-                                                                        </button>
-                                                                    </div>
-                                                                </td>
-                                                            )}
+                                                            <td className="px-6 py-4" colSpan={4}></td>
                                                         </tr>
-                                                    );
-                                                });
-                                                return rows;
+                                                        
+                                                        {/* Child Rows (Stock Details) */}
+                                                        {isExpanded && activeStocks.length === 0 && (
+                                                            <tr>
+                                                                <td colSpan={9} className="px-6 py-4 text-center text-slate-400 text-xs italic bg-white">
+                                                                    Tidak ada pergerakan stok
+                                                                </td>
+                                                            </tr>
+                                                        )}
+                                                        {isExpanded && activeStocks.map((s: any) => {
+                                                            const whName = warehouses.find(w => w.id === s.warehouseId)?.name || "Unknown";
+                                                            const isLow = s.quantity > 0 && s.quantity <= p.lowStockThreshold;
+                                                            const isNegative = s.quantity < 0;
+                                                            const meta = getStockMetadata(p.id, s.warehouseId, s.vendorName);
+                                                            const salesPerson = meta.salesPerson;
+                                                            const hpp = meta.hpp || Number(p.purchasePrice) || 0;
+                                                            
+                                                            return (
+                                                                <tr key={`${p.id}-${s.id}`} className="bg-white hover:bg-slate-50/50 transition-colors group border-l-4 border-l-transparent hover:border-l-indigo-400">
+                                                                    <td className="px-6 py-3 pl-12">
+                                                                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Sub-Stok</div>
+                                                                    </td>
+                                                                    <td className="px-6 py-3 text-left font-bold text-slate-600 text-xs truncate">
+                                                                        {whName}
+                                                                    </td>
+                                                                    <td className="px-6 py-3 text-left">
+                                                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-50 text-slate-700 text-[10px] font-bold border border-slate-200">
+                                                                            <WarehouseIcon className="h-3 w-3 text-slate-400 shrink-0" />
+                                                                            <span className="truncate">{s.vendorName || "UMUM"}</span>
+                                                                        </span>
+                                                                    </td>
+                                                                    <td className="px-6 py-3 text-center">
+                                                                        {salesPerson !== "-" ? (
+                                                                            <span className={cn(
+                                                                                "px-2 py-0.5 rounded-md text-[9px] font-extrabold border shadow-sm tracking-wide",
+                                                                                salesPerson === "BC" ? "bg-indigo-50 text-indigo-700 border-indigo-100" : "bg-amber-50 text-amber-700 border-amber-100"
+                                                                            )}>
+                                                                                {salesPerson}
+                                                                            </span>
+                                                                        ) : <span className="text-slate-400">-</span>}
+                                                                    </td>
+                                                                    <td className="px-6 py-3 text-right">
+                                                                        <div className={cn("text-sm font-mono font-bold", isNegative ? "text-rose-600" : "text-slate-900")}>
+                                                                            {isClient ? (s.quantity || 0).toLocaleString() : "..."} 
+                                                                        </div>
+                                                                    </td>
+                                                                    <td className="px-6 py-3 text-right font-mono font-bold text-slate-500 text-[11px]">
+                                                                        {formatCurrency(hpp)}
+                                                                    </td>
+                                                                    <td className="px-6 py-3 text-right font-mono font-bold text-slate-800 text-[11px]">
+                                                                        {formatCurrency(hpp * (s.quantity || 0))}
+                                                                    </td>
+                                                                    <td className="px-6 py-3 text-right">
+                                                                        <span className={cn(
+                                                                            "px-2 py-0.5 rounded-md text-[9px] font-bold border shadow-sm",
+                                                                            isNegative ? "bg-rose-100 text-rose-700 border-rose-200" 
+                                                                            : isLow ? "bg-amber-50 text-amber-700 border-amber-100" 
+                                                                            : "bg-emerald-50 text-emerald-700 border-emerald-100"
+                                                                        )}>
+                                                                            {isNegative ? "Minus" : isLow ? "Low Stock" : "In Stock"}
+                                                                        </span>
+                                                                    </td>
+                                                                    {isAdmin && (
+                                                                        <td className="px-6 py-3 text-center">
+                                                                            <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                                <button onClick={() => setSelectedStockForAdjustment({ product: p, stock: s })} className="p-1.5 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-lg" title="Penyesuaian Stok"><Edit2 className="h-3.5 w-3.5" /></button>
+                                                                                <button onClick={() => setSelectedStockForTransfer({ product: p, stock: s })} className="p-1.5 text-slate-400 hover:text-violet-600 hover:bg-violet-50 rounded-lg" title="Mutasi"><ArrowLeftRight className="h-3.5 w-3.5" /></button>
+                                                                                <button onClick={() => { setSelectedProductIdForCard(p.id); setShowStockCard(true); }} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg" title="Kartu Stok"><FileText className="h-3.5 w-3.5" /></button>
+                                                                                <button onClick={() => handleDeleteProduct(p.id)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg" title="Hapus Produk"><Trash2 className="h-3.5 w-3.5" /></button>
+                                                                            </div>
+                                                                        </td>
+                                                                    )}
+                                                                </tr>
+                                                            );
+                                                        })}
+                                                    </React.Fragment>
+                                                );
                                             })}
                                         </tbody>
                                     </table>
@@ -479,112 +497,104 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
 
                                 {/* MOBILE & TABLET CARD VIEW */}
                                 <div className="lg:hidden divide-y divide-slate-100 overflow-y-auto max-h-[70vh] custom-scrollbar">
-                                    {filteredProducts.flatMap((p: any) => {
-                                        const activeStocks = (p.stocks || []).filter((s: any) => s.quantity > 0);
-                                        return activeStocks.map((s: any) => {
-                                            const whName = warehouses.find(w => w.id === s.warehouseId)?.name || "Unknown";
-                                            const isLow = s.quantity <= p.lowStockThreshold;
-                                            const meta = getStockMetadata(p.id, s.warehouseId, s.vendorName);
-                                            const salesPerson = meta.salesPerson;
-                                            const hpp = meta.hpp || Number(p.purchasePrice) || 0;
-                                            return (
-                                                <div key={`${p.id}-${s.id}`} className="p-4 space-y-3 hover:bg-slate-50 transition-colors">
-                                                    <div className="flex justify-between items-start gap-3">
-                                                        <div className="flex-1 min-w-0">
-                                                            <div className="font-extrabold text-slate-900 text-sm truncate">{p.name}</div>
-                                                            <div className="text-[9px] font-mono text-slate-400 uppercase tracking-wider">{p.sku}</div>
+                                    {filteredProducts.map((p: any) => {
+                                        const activeStocks = (p.stocks || []).filter((s: any) => s.quantity !== 0);
+                                        const totalNetQty = activeStocks.reduce((sum: number, s: any) => sum + Number(s.quantity), 0);
+                                        const isExpanded = expandedProducts[p.id];
+                                        const hasNegative = activeStocks.some((s: any) => s.quantity < 0);
+                                        
+                                        return (
+                                            <div key={p.id} className="bg-white">
+                                                {/* Parent Card */}
+                                                <div 
+                                                    className="p-4 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors"
+                                                    onClick={() => toggleProduct(p.id)}
+                                                >
+                                                    <div className="flex-1 min-w-0 pr-4">
+                                                        <div className="font-black text-slate-900 text-sm flex items-center gap-2 mb-1">
+                                                            <div className="truncate">{p.name}</div>
+                                                            {hasNegative && <AlertTriangle className="h-4 w-4 text-rose-500 shrink-0" />}
                                                         </div>
-                                                        <span className={cn(
-                                                            "shrink-0 px-2 py-0.5 rounded-md text-[9px] font-bold border shadow-sm",
-                                                            isLow 
-                                                                ? "bg-rose-50 text-rose-700 border-rose-100" 
-                                                                : "bg-emerald-50 text-emerald-700 border-emerald-100"
-                                                        )}>
-                                                            {isLow ? "Low Stock" : "Ready"}
-                                                        </span>
+                                                        <div className="text-[10px] font-mono text-slate-500 tracking-widest">{p.sku} | {activeStocks.length} Gudang</div>
                                                     </div>
-
-                                                    <div className="grid grid-cols-2 gap-3 bg-slate-50/50 p-3 rounded-xl border border-slate-100 text-xs">
+                                                    <div className="text-right flex items-center gap-3">
                                                         <div>
-                                                            <div className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Vendor</div>
-                                                            <div className="text-[11px] font-bold text-slate-700 truncate">{s.vendorName || "UMUM"}</div>
-                                                        </div>
-                                                        <div>
-                                                            <div className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-0.5 text-right">Gudang</div>
-                                                            <div className="text-[11px] font-bold text-slate-700 truncate text-right">{whName}</div>
-                                                        </div>
-                                                        <div className="border-t border-slate-200/60 pt-2 col-span-2 flex justify-between items-center">
-                                                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Sales Person</span>
-                                                            {salesPerson !== "-" ? (
-                                                                <span className={cn(
-                                                                    "px-2 py-0.5 rounded-md text-[9px] font-extrabold border shadow-sm",
-                                                                    salesPerson === "BC" 
-                                                                        ? "bg-indigo-50 text-indigo-700 border-indigo-100" 
-                                                                        : "bg-amber-50 text-amber-700 border-amber-100"
-                                                                )}>
-                                                                    {salesPerson}
-                                                                </span>
-                                                            ) : (
-                                                                <span className="text-slate-400 font-bold">-</span>
-                                                            )}
-                                                        </div>
-                                                        <div className="border-t border-slate-200/60 pt-2 col-span-2 flex justify-between text-[11px]">
-                                                            <div>
-                                                                <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest block mb-0.5">HPP per Unit</span>
-                                                                <span className="font-mono font-bold text-slate-700">{formatCurrency(hpp)}</span>
-                                                            </div>
-                                                            <div className="text-right">
-                                                                <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest block mb-0.5">Total Nilai</span>
-                                                                <span className="font-mono font-bold text-slate-900">{formatCurrency(hpp * (s.quantity || 0))}</span>
+                                                            <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Total Stok</div>
+                                                            <div className={cn("text-lg font-black leading-none", totalNetQty < 0 ? "text-rose-600" : "text-slate-900")}>
+                                                                {isClient ? totalNetQty.toLocaleString() : "..."}
                                                             </div>
                                                         </div>
-                                                    </div>
-
-                                                    <div className="flex items-end justify-between pt-1">
-                                                        <div>
-                                                            <div className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-1">Qty Available</div>
-                                                            <div className="text-xl font-mono font-black text-slate-955 leading-none">
-                                                                {isClient ? (s.quantity || 0).toLocaleString() : "..."} 
-                                                                <span className="text-[10px] text-slate-400 font-bold uppercase ml-1">{p.uom}</span>
-                                                            </div>
+                                                        <div className="text-slate-400">
+                                                            {isExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
                                                         </div>
-                                                        {isAdmin && (
-                                                                <div className="flex items-center gap-1.5">
-                                                                    <button
-                                                                        onClick={() => setSelectedStockForAdjustment({ product: p, stock: s })}
-                                                                        className="p-2 text-slate-400 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all active:scale-95"
-                                                                        title="Penyesuaian Stok"
-                                                                    >
-                                                                        <Edit2 className="h-3.5 w-3.5" />
-                                                                    </button>
-                                                                    <button
-                                                                        onClick={() => setSelectedStockForTransfer({ product: p, stock: s })}
-                                                                        className="p-2 text-slate-400 hover:text-violet-600 bg-slate-100 hover:bg-violet-50/50 rounded-xl transition-all active:scale-95"
-                                                                        title="Mutasi / Transfer Stok"
-                                                                    >
-                                                                        <ArrowLeftRight className="h-3.5 w-3.5" />
-                                                                    </button>
-                                                                    <button
-                                                                        onClick={() => {
-                                                                            setSelectedProductIdForCard(p.id);
-                                                                            setShowStockCard(true);
-                                                                        }}
-                                                                        className="p-2 text-slate-400 hover:text-indigo-600 bg-slate-100 hover:bg-indigo-50/50 rounded-xl transition-all active:scale-95"
-                                                                    >
-                                                                        <FileText className="h-3.5 w-3.5" />
-                                                                    </button>
-                                                                    <button
-                                                                        onClick={() => handleDeleteProduct(p.id)}
-                                                                        className="p-2 text-slate-400 hover:text-red-600 bg-slate-100 hover:bg-red-50/50 rounded-xl transition-all active:scale-95"
-                                                                    >
-                                                                        <Trash2 className="h-3.5 w-3.5" />
-                                                                    </button>
-                                                                </div>
-                                                        )}
                                                     </div>
                                                 </div>
-                                            );
-                                        });
+
+                                                {/* Child Cards (Details) */}
+                                                {isExpanded && (
+                                                    <div className="bg-slate-50/50 border-t border-slate-100 divide-y divide-slate-100">
+                                                        {activeStocks.length === 0 && (
+                                                            <div className="p-4 text-center text-xs text-slate-400 italic">Tidak ada stok</div>
+                                                        )}
+                                                        {activeStocks.map((s: any) => {
+                                                            const whName = warehouses.find(w => w.id === s.warehouseId)?.name || "Unknown";
+                                                            const isLow = s.quantity > 0 && s.quantity <= p.lowStockThreshold;
+                                                            const isNegative = s.quantity < 0;
+                                                            const meta = getStockMetadata(p.id, s.warehouseId, s.vendorName);
+                                                            
+                                                            return (
+                                                                <div key={`${p.id}-${s.id}`} className="p-4 pl-6 space-y-3 relative overflow-hidden">
+                                                                    {isNegative && <div className="absolute left-0 top-0 bottom-0 w-1 bg-rose-500" />}
+                                                                    <div className="flex justify-between items-start gap-3">
+                                                                        <div className="flex-1 min-w-0">
+                                                                            <div className="font-bold text-slate-700 text-xs truncate mb-1">{whName}</div>
+                                                                            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-white text-slate-600 text-[10px] font-bold border border-slate-200">
+                                                                                <WarehouseIcon className="h-3 w-3 text-slate-400 shrink-0" />
+                                                                                <span className="truncate">{s.vendorName || "UMUM"}</span>
+                                                                            </span>
+                                                                        </div>
+                                                                        <span className={cn(
+                                                                            "shrink-0 px-2 py-0.5 rounded-md text-[9px] font-bold border shadow-sm",
+                                                                            isNegative ? "bg-rose-100 text-rose-700 border-rose-200"
+                                                                            : isLow ? "bg-amber-50 text-amber-700 border-amber-100" 
+                                                                            : "bg-emerald-50 text-emerald-700 border-emerald-100"
+                                                                        )}>
+                                                                            {isNegative ? "Minus" : isLow ? "Low Stock" : "In Stock"}
+                                                                        </span>
+                                                                    </div>
+                                                                    
+                                                                    <div className="flex items-end justify-between pt-2 border-t border-slate-200/50">
+                                                                        <div>
+                                                                            <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Qty Gudang Ini</div>
+                                                                            <div className={cn("text-xl font-mono font-black leading-none", isNegative ? "text-rose-600" : "text-slate-900")}>
+                                                                                {isClient ? (s.quantity || 0).toLocaleString() : "..."} 
+                                                                                <span className="text-[10px] text-slate-400 font-bold uppercase ml-1">{p.uom}</span>
+                                                                            </div>
+                                                                        </div>
+                                                                        {isAdmin && (
+                                                                            <div className="flex items-center gap-1.5">
+                                                                                <button onClick={() => setSelectedStockForAdjustment({ product: p, stock: s })} className="p-2 text-slate-400 hover:text-slate-900 bg-white border border-slate-200 hover:border-slate-300 rounded-lg shadow-sm">
+                                                                                    <Edit2 className="h-3.5 w-3.5" />
+                                                                                </button>
+                                                                                <button onClick={() => setSelectedStockForTransfer({ product: p, stock: s })} className="p-2 text-slate-400 hover:text-violet-600 bg-white border border-slate-200 hover:border-violet-300 rounded-lg shadow-sm">
+                                                                                    <ArrowLeftRight className="h-3.5 w-3.5" />
+                                                                                </button>
+                                                                                <button onClick={() => { setSelectedProductIdForCard(p.id); setShowStockCard(true); }} className="p-2 text-slate-400 hover:text-indigo-600 bg-white border border-slate-200 hover:border-indigo-300 rounded-lg shadow-sm">
+                                                                                    <FileText className="h-3.5 w-3.5" />
+                                                                                </button>
+                                                                                <button onClick={() => handleDeleteProduct(p.id)} className="p-2 text-slate-400 hover:text-red-600 bg-white border border-slate-200 hover:border-red-300 rounded-lg shadow-sm">
+                                                                                    <Trash2 className="h-3.5 w-3.5" />
+                                                                                </button>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
                                     })}
                                 </div>
 
