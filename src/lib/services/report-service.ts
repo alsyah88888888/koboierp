@@ -823,7 +823,6 @@ export async function getBatchTraceabilityService(filters: {
                                         subtotal: true,
                                         totalDiscount: true,
                                         taxRate: true,
-                                        isPKP: true,
                                         grandTotal: true
                                     }
                                 }
@@ -945,8 +944,8 @@ export async function getBatchTraceabilityService(filters: {
                         
                         totalJual = sellLineSubtotal - sdDiscountShare;
                         
-                        // Applying Tax if PKP
-                        const isPKP = delivery.isPKP || Number(delivery.taxRate || 0) > 0;
+                        // Applying Tax if taxRate > 0
+                        const isPKP = Number(delivery.taxRate || 0) > 0;
                         if (isPKP) {
                             const taxRate = Number(delivery.taxRate || 11) / 100;
                             totalJual = totalJual * (1 + taxRate);
