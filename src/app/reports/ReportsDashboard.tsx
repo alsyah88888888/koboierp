@@ -252,7 +252,8 @@ export function ReportsDashboard() {
 
         if (activeTab === "closing" && monthlyData) {
             const data = monthlyData;
-            const periodLabel = data.period?.label || `${monthNames[selectedMonth - 1]} ${selectedYear}`;
+            const divLabel = closingPrefix !== 'ALL' ? ` — ${closingPrefix} DIV` : ' — ALL DIV';
+            const periodLabel = (data.period?.label || `${monthNames[selectedMonth - 1]} ${selectedYear}`) + divLabel;
             const pl = data.profitLoss || {};
             const traceData = data.details?.monthlyTraceability || [];
             const salesDetail = data.details?.sales || [];
@@ -1037,9 +1038,10 @@ export function ReportsDashboard() {
         else if (activeTab === 'monthly') fetchMonthly();
         else if (activeTab === 'closing') {
             fetchClosingReport(closingPeriod.month, closingPeriod.year, closingPrefix);
-            // Sync selectedMonth/Year with closingPeriod so fetchMonthly uses the correct period for print
+            // Sync selectedMonth/Year and activePrefix with closingPeriod so fetchMonthly uses the correct period & prefix for print
             setSelectedMonth(closingPeriod.month);
             setSelectedYear(closingPeriod.year);
+            setActivePrefix(closingPrefix);
         }
     }, [activeTab, fetchDaily, fetchWeekly, fetchMonthly, closingPeriod, closingPrefix]);
 
