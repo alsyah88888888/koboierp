@@ -45,6 +45,20 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
     const isAdminOrFinance = isAdmin || userRole === "FINANCE";
     const [showModal, setShowModal] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
+    const [filterDay, setFilterDay] = useState<string>("ALL");
+    const [filterMonth, setFilterMonth] = useState<string>("ALL");
+    const [filterYear, setFilterYear] = useState<string>("ALL");
+
+    const matchesDateFilter = (dateVal: any) => {
+        if (filterDay === "ALL" && filterMonth === "ALL" && filterYear === "ALL") return true;
+        if (!dateVal) return false;
+        const d = new Date(dateVal);
+        if (isNaN(d.getTime())) return false;
+        if (filterYear !== "ALL" && d.getFullYear().toString() !== filterYear) return false;
+        if (filterMonth !== "ALL" && (d.getMonth() + 1).toString() !== filterMonth) return false;
+        if (filterDay !== "ALL" && d.getDate().toString() !== filterDay) return false;
+        return true;
+    };
     const [selectedHistoryItem, setSelectedHistoryItem] = useState<any>(null);
     const [arHistoryMonth, setArHistoryMonth] = useState<string>("ALL");
     const [apHistoryMonth, setApHistoryMonth] = useState<string>("ALL");
@@ -415,18 +429,21 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
     };
 
     const filteredLedger = ledger.filter(tx =>
-        (tx.description || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (tx.account?.name || "").toLowerCase().includes(searchTerm.toLowerCase())
+        ((tx.description || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (tx.account?.name || "").toLowerCase().includes(searchTerm.toLowerCase())) &&
+        matchesDateFilter(tx.date)
     );
 
     const filteredPurchases = pendingPurchases.filter(p =>
-        (p.receiptNumber || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (p.receivedFrom || "").toLowerCase().includes(searchTerm.toLowerCase())
+        ((p.receiptNumber || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (p.receivedFrom || "").toLowerCase().includes(searchTerm.toLowerCase())) &&
+        matchesDateFilter(p.date)
     );
 
     const filteredSales = pendingSales.filter(s =>
-        (s.deliveryNumber || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (s.buyerName || "").toLowerCase().includes(searchTerm.toLowerCase())
+        ((s.deliveryNumber || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (s.buyerName || "").toLowerCase().includes(searchTerm.toLowerCase())) &&
+        matchesDateFilter(s.date)
     );
 
     const filteredReturns = pendingReturns.filter(r =>
@@ -1074,14 +1091,33 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                 0
                             } records</p>
                         </div>
-                        <div className="relative w-full md:w-96 group">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
-                            <input
-                                value={searchTerm}
-                                onChange={e => setSearchTerm(e.target.value)}
-                                placeholder="Search by description, ref, or entity..."
-                                className="w-full pl-12 pr-6 py-3.5 bg-slate-50 border-2 border-slate-100 rounded-2xl text-xs font-bold text-slate-600 uppercase tracking-widest outline-none focus:border-primary/50 focus:bg-white transition-all shadow-inner"
-                            />
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <div className="relative group">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 group-focus-within:text-primary transition-colors" />
+                                <input
+                                    value={searchTerm}
+                                    onChange={e => setSearchTerm(e.target.value)}
+                                    placeholder="Search..."
+                                    className="pl-9 pr-4 py-2.5 bg-slate-50 border-2 border-slate-100 rounded-xl text-[10px] font-bold text-slate-600 uppercase tracking-widest outline-none focus:border-primary/50 focus:bg-white transition-all shadow-inner w-48"
+                                />
+                            </div>
+                            <select value={filterDay} onChange={e => setFilterDay(e.target.value)} className="bg-slate-50 border-2 border-slate-100 rounded-xl text-[10px] font-black text-slate-600 uppercase tracking-widest px-3 py-2.5 outline-none focus:border-primary/50 cursor-pointer">
+                                <option value="ALL">Tanggal</option>
+                                {Array.from({ length: 31 }, (_, i) => <option key={i + 1} value={(i + 1).toString()}>{i + 1}</option>)}
+                            </select>
+                            <select value={filterMonth} onChange={e => setFilterMonth(e.target.value)} className="bg-slate-50 border-2 border-slate-100 rounded-xl text-[10px] font-black text-slate-600 uppercase tracking-widest px-3 py-2.5 outline-none focus:border-primary/50 cursor-pointer">
+                                <option value="ALL">Bulan</option>
+                                {['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Ags','Sep','Okt','Nov','Des'].map((m, i) => <option key={i + 1} value={(i + 1).toString()}>{m}</option>)}
+                            </select>
+                            <select value={filterYear} onChange={e => setFilterYear(e.target.value)} className="bg-slate-50 border-2 border-slate-100 rounded-xl text-[10px] font-black text-slate-600 uppercase tracking-widest px-3 py-2.5 outline-none focus:border-primary/50 cursor-pointer">
+                                <option value="ALL">Tahun</option>
+                                {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y.toString()}>{y}</option>)}
+                            </select>
+                            {(filterDay !== 'ALL' || filterMonth !== 'ALL' || filterYear !== 'ALL') && (
+                                <button onClick={() => { setFilterDay('ALL'); setFilterMonth('ALL'); setFilterYear('ALL'); }} className="bg-red-50 text-red-500 border-2 border-red-100 rounded-xl text-[10px] font-black uppercase tracking-widest px-3 py-2.5 hover:bg-red-100 transition-all cursor-pointer">
+                                    ✕ Reset
+                                </button>
+                            )}
                         </div>
                     </div>
 
