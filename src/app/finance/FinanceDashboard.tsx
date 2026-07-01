@@ -2064,7 +2064,6 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                             </div>
                         </div>
                     </div>
-                    </div>
                 )}
 
                 {activeTab === "tax_efaktur" && (
@@ -2805,6 +2804,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
 
             {/* Edit Settled AR/AP Payment Modal */}
             {editPaymentModal && (() => {
+                if (!editPaymentModal) return null;
                 const remaining = editPaymentModal.total;
                 const currentAmount = Number(editPaymentAmount) || 0;
                 const isLunas = currentAmount >= remaining;
@@ -2949,8 +2949,11 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                         </div>
                     </div>
                 );
-            })()}            {/* Unified Professional Payment Modal */}
+            })()}
+
+            {/* Unified Professional Payment Modal */}
             {paymentModal && (() => {
+                if (!paymentModal) return null;
                 const remaining = paymentModal.total - (paymentModal.alreadyPaid || 0);
                 const progress = paymentModal.total > 0 ? Math.round(((paymentModal.alreadyPaid || 0) / paymentModal.total) * 100) : 0;
                 const currentAmount = Number(paymentAmount) || 0;
