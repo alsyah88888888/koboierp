@@ -164,45 +164,57 @@ export function ReportsDashboard() {
         const getCommonStyles = () => `
             <style>
                 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-                body { font-family: 'Inter', sans-serif; padding: 40px; color: #1e293b; line-height: 1.5; }
-                .header { border-bottom: 4px solid #0f172a; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end; }
-                .header h1 { margin: 0; font-weight: 900; text-transform: uppercase; letter-spacing: -1px; font-size: 32px; color: #0f172a; }
-                .summary-grid { display: grid; grid-template-cols: repeat(4, 1fr); gap: 20px; margin-bottom: 40px; }
-                .summary-card { padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background: #fff; }
-                .summary-card p { margin: 0; font-size: 12px; font-weight: 900; text-transform: uppercase; color: #64748b; letter-spacing: 1px; }
-                .summary-card h2 { margin: 8px 0 0; font-size: 24px; font-weight: 900; letter-spacing: -0.5px; }
-                h3 { font-weight: 900; text-transform: uppercase; font-size: 16px; border-left: 4px solid #3b82f6; padding-left: 12px; margin-top: 40px; margin-bottom: 15px; color: #0f172a; }
-                table { width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 13px; }
-                th { background: #f8fafc; padding: 14px 16px; text-align: left; font-weight: 900; text-transform: uppercase; font-size: 11px; border-bottom: 2px solid #e2e8f0; color: #475569; }
-                td { padding: 12px 16px; border-bottom: 1px solid #f1f5f9; color: #334155; }
+                @page { size: A4; margin: 15mm 12mm; }
+                body { font-family: 'Inter', sans-serif; padding: 0; color: #1e293b; line-height: 1.4; font-size: 11px; }
+                .header { border-bottom: 3px solid #0f172a; padding-bottom: 12px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: flex-end; }
+                .header h1 { margin: 0; font-weight: 900; text-transform: uppercase; letter-spacing: -1px; font-size: 22px; color: #0f172a; }
+                .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+                .summary-grid-6 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
+                .summary-card { padding: 10px 14px; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; }
+                .summary-card p { margin: 0; font-size: 9px; font-weight: 900; text-transform: uppercase; color: #64748b; letter-spacing: 0.5px; }
+                .summary-card h2 { margin: 4px 0 0; font-size: 16px; font-weight: 900; letter-spacing: -0.5px; }
+                .summary-card.highlight { background: #f0fdf4; border: 1px solid #059669; }
+                .summary-card.danger { background: #fef2f2; border: 1px solid #dc2626; }
+                h3 { font-weight: 900; text-transform: uppercase; font-size: 12px; border-left: 3px solid #3b82f6; padding-left: 10px; margin-top: 24px; margin-bottom: 10px; color: #0f172a; }
+                table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 9px; }
+                th { background: #f1f5f9; padding: 6px 8px; text-align: left; font-weight: 900; text-transform: uppercase; font-size: 8px; border-bottom: 2px solid #cbd5e1; color: #475569; }
+                td { padding: 5px 8px; border-bottom: 1px solid #f1f5f9; color: #334155; }
+                tr:nth-child(even) { background: #fafafa; }
                 .text-right { text-align: right; }
+                .text-center { text-align: center; }
                 .font-black { font-weight: 900; color: #0f172a; }
-                .footer-sig { margin-top: 80px; display: grid; grid-template-cols: 1fr 1fr; text-align: center; gap: 40px; }
-                .sig-box { border-top: 1px solid #cbd5e1; padding-top: 10px; font-weight: 900; font-size: 14px; margin: 0 auto; width: 220px; }
+                .text-green { color: #059669; }
+                .text-red { color: #dc2626; }
+                .text-blue { color: #2563eb; }
+                .total-row td { font-weight: 900; border-top: 2px solid #0f172a; background: #f8fafc; font-size: 10px; }
+                .section-divider { page-break-before: always; }
+                .footer-sig { margin-top: 40px; display: grid; grid-template-columns: 1fr 1fr; text-align: center; gap: 30px; }
+                .sig-box { border-top: 1px solid #cbd5e1; padding-top: 8px; font-weight: 900; font-size: 11px; margin: 0 auto; width: 180px; }
+                .page-title { font-size: 10px; font-weight: 900; color: #94a3b8; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 4px; }
+                .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
                 @media print { 
                     body { padding: 0; }
-                    .summary-card { border: 1px solid #000; }
-                    h3 { border-left: 4px solid #000; }
+                    .section-divider { page-break-before: always; }
+                    .no-break { page-break-inside: avoid; }
                 }
             </style>
         `;
 
         const getHeaderHTML = (title: string, periodStr: string) => `
             <div class="header">
-                <div style="display: flex; gap: 20px; align-items: center;">
-                    <div style="width: 60px; height: 60px; background: #0f172a; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 900; font-size: 24px;">
+                <div style="display: flex; gap: 14px; align-items: center;">
+                    <div style="width: 48px; height: 48px; background: #0f172a; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 900; font-size: 18px;">
                         KB
                     </div>
                     <div>
-                        <h1 style="margin: 0; font-weight: 900; font-size: 28px; color: #0f172a; letter-spacing: -1px;">PT. KOBOI DIGITAL NUSANTARA</h1>
-                        <p style="margin: 5px 0 0; color: #64748b; font-size: 12px;">Gedung Cyber 1 Lt. 12, Jl. Kuningan Barat No.8, Jakarta Selatan 12710</p>
-                        <p style="margin: 0; color: #64748b; font-size: 12px;">Telp: (021) 1234-5678 | Email: finance@koboi.id</p>
+                        <h1 style="margin: 0; font-weight: 900; font-size: 20px; color: #0f172a; letter-spacing: -1px;">PT. KOLA BORASI INDONESIA</h1>
+                        <p style="margin: 2px 0 0; color: #64748b; font-size: 9px;">Jl. Raya Cibinong No.10, Bogor, Jawa Barat 16911</p>
                     </div>
                 </div>
                 <div class="text-right">
-                    <h2 style="margin: 0; font-weight: 900; color: #3b82f6; font-size: 20px; text-transform: uppercase;">${title}</h2>
-                    <p style="margin: 5px 0 0; font-weight: 700; color: #64748b; font-size: 12px;">Periode: ${periodStr}</p>
-                    <p style="margin: 5px 0 0; font-size: 9px; font-weight: 900; color: #94a3b8; text-transform: uppercase;">Generated at: ${format(new Date(), "dd MMM yyyy HH:mm")}</p>
+                    <h2 style="margin: 0; font-weight: 900; color: #3b82f6; font-size: 16px; text-transform: uppercase;">${title}</h2>
+                    <p style="margin: 3px 0 0; font-weight: 700; color: #64748b; font-size: 10px;">Periode: ${periodStr}</p>
+                    <p style="margin: 2px 0 0; font-size: 8px; font-weight: 900; color: #94a3b8; text-transform: uppercase;">Dicetak: ${format(new Date(), "dd MMM yyyy HH:mm")}</p>
                 </div>
             </div>
         `;
@@ -210,11 +222,11 @@ export function ReportsDashboard() {
         const getFooterHTML = () => `
             <div class="footer-sig">
                 <div>
-                    <p style="font-size: 10px; font-weight: 900; color: #64748b; margin-bottom: 70px; text-transform: uppercase;">Prepared By</p>
+                    <p style="font-size: 9px; font-weight: 900; color: #64748b; margin-bottom: 50px; text-transform: uppercase;">Dibuat Oleh</p>
                     <div class="sig-box">ADMINISTRATOR</div>
                 </div>
                 <div>
-                    <p style="font-size: 10px; font-weight: 900; color: #64748b; margin-bottom: 70px; text-transform: uppercase;">Approved By</p>
+                    <p style="font-size: 9px; font-weight: 900; color: #64748b; margin-bottom: 50px; text-transform: uppercase;">Disetujui Oleh</p>
                     <div class="sig-box">MANAGEMENT</div>
                 </div>
             </div>
@@ -223,111 +235,480 @@ export function ReportsDashboard() {
             </script>
         `;
 
+        const getMiniHeaderHTML = (title: string, periodStr: string) => `
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 14px;">
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <div style="width: 28px; height: 28px; background: #0f172a; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 900; font-size: 10px;">KB</div>
+                    <span style="font-weight: 900; font-size: 11px; color: #0f172a;">PT. KOLA BORASI INDONESIA</span>
+                </div>
+                <div class="text-right">
+                    <span style="font-weight: 900; color: #3b82f6; font-size: 10px; text-transform: uppercase;">${title}</span>
+                    <span style="color: #94a3b8; font-size: 9px; margin-left: 10px;">Periode: ${periodStr}</span>
+                </div>
+            </div>
+        `;
+
         let html = '';
 
-        if (activeTab === "closing" && closingReport) {
+        if (activeTab === "closing" && monthlyData) {
+            const data = monthlyData;
+            const periodLabel = data.period?.label || `${monthNames[selectedMonth - 1]} ${selectedYear}`;
+            const pl = data.profitLoss || {};
+            const traceData = data.details?.monthlyTraceability || [];
+            const salesDetail = data.details?.sales || [];
+            const purchaseDetail = data.details?.purchases || [];
+            const opsDetail = data.details?.operational || [];
+            const arItems = data.arAging?.items || [];
+            const apItems = data.apAging?.items || [];
+            const topBuyers = data.topBuyers || [];
+            const topSuppliers = data.topSuppliers || [];
+            const returnPurchase = data.returnPurchaseSummary?.items || [];
+            const returnSales = data.returnSalesSummary?.items || [];
+            const financeStaff = data.staffActivity?.finance || [];
+            const warehouseStaff = data.staffActivity?.warehouse || [];
+            const expenseByCategory = pl.expenseByCategory || [];
+
+            const totalTraceMargin = traceData.reduce((s: number, r: any) => s + Number(r.MARGIN || 0), 0);
+            const totalTraceJual = traceData.reduce((s: number, r: any) => s + Number(r['TOTAL JUAL'] || 0), 0);
+            const totalTraceBeli = traceData.reduce((s: number, r: any) => s + Number(r['TOTAL BELI'] || 0), 0);
+
             html = `
                 <html>
                     <head>
-                        <title>Laporan Closing Bulanan - ${closingReport.period}</title>
+                        <title>Laporan Closing Bulanan - ${periodLabel}</title>
                         ${getCommonStyles()}
                     </head>
                     <body>
-                        ${getHeaderHTML('Closing Report', closingReport.period)}
+                        <!-- ═══════════════════════════════════════════════════ -->
+                        <!-- HALAMAN 1: RINGKASAN EKSEKUTIF (P&L)              -->
+                        <!-- ═══════════════════════════════════════════════════ -->
+                        ${getHeaderHTML('LAPORAN CLOSING BULANAN', periodLabel)}
+
                         <div class="summary-grid">
                             <div class="summary-card">
-                                <p>Penjualan</p>
-                                <h2>${formatCurrency(closingReport.revenue)}</h2>
+                                <p>Total Penjualan</p>
+                                <h2 class="text-green">${formatCurrency(pl.revenue || 0)}</h2>
                             </div>
                             <div class="summary-card">
-                                <p>Pembelian</p>
-                                <h2>${formatCurrency(closingReport.inventory?.purchases || 0)}</h2>
+                                <p>Total Pembelian</p>
+                                <h2 class="text-blue">${formatCurrency(data.purchases?.total || 0)}</h2>
                             </div>
                             <div class="summary-card">
-                                <p>Operasional</p>
-                                <h2>${formatCurrency(closingReport.expenses)}</h2>
+                                <p>HPP (Harga Pokok)</p>
+                                <h2>${formatCurrency(pl.hpp || 0)}</h2>
                             </div>
-                            <div class="summary-card" style="background: #f8fafc; border: 1px solid #3b82f6;">
-                                <p style="color: #3b82f6;">Profit</p>
-                                <h2 style="color: ${closingReport.netProfit >= 0 ? '#059669' : '#dc2626'}">${formatCurrency(closingReport.netProfit)}</h2>
+                            <div class="summary-card">
+                                <p>Biaya Operasional</p>
+                                <h2>${formatCurrency(pl.expenses || 0)}</h2>
                             </div>
                         </div>
 
-                        <h3>I. Detail Penjualan</h3>
+                        <div class="summary-grid">
+                            <div class="summary-card highlight">
+                                <p>Gross Profit</p>
+                                <h2 style="color: ${(pl.grossProfit || 0) >= 0 ? '#059669' : '#dc2626'}">${formatCurrency(pl.grossProfit || 0)}</h2>
+                                <p style="margin-top: 2px; font-size: 8px;">Margin: ${pl.grossMarginPct || 0}%</p>
+                            </div>
+                            <div class="summary-card ${(pl.netProfit || 0) >= 0 ? 'highlight' : 'danger'}">
+                                <p>Net Profit</p>
+                                <h2 style="color: ${(pl.netProfit || 0) >= 0 ? '#059669' : '#dc2626'}">${formatCurrency(pl.netProfit || 0)}</h2>
+                                <p style="margin-top: 2px; font-size: 8px;">Margin: ${pl.netMarginPct || 0}%</p>
+                            </div>
+                            <div class="summary-card">
+                                <p>Piutang (AR)</p>
+                                <h2 class="text-blue">${formatCurrency(data.arAging?.buckets?.total || 0)}</h2>
+                            </div>
+                            <div class="summary-card">
+                                <p>Hutang (AP)</p>
+                                <h2 class="text-red">${formatCurrency(data.apAging?.buckets?.total || 0)}</h2>
+                            </div>
+                        </div>
+
+                        <h3>Ringkasan Statistik</h3>
+                        <div class="summary-grid-6">
+                            <div class="summary-card"><p>Jumlah SJ (Penjualan)</p><h2>${data.stats?.salesCount || 0}</h2></div>
+                            <div class="summary-card"><p>Jumlah LPB (Pembelian)</p><h2>${data.stats?.purchaseCount || 0}</h2></div>
+                            <div class="summary-card"><p>Jumlah Transaksi Finance</p><h2>${data.stats?.opsCount || 0}</h2></div>
+                        </div>
+
+                        <div class="two-col no-break">
+                            <div>
+                                <h3>Top 10 Buyer</h3>
+                                <table>
+                                    <thead><tr><th>Nama Customer</th><th class="text-right">SJ</th><th class="text-right">Total</th></tr></thead>
+                                    <tbody>
+                                        ${topBuyers.slice(0, 10).map((b: any) => `<tr><td class="font-black">${b.name}</td><td class="text-right">${b.count}</td><td class="text-right font-black">${formatCurrency(b.total)}</td></tr>`).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div>
+                                <h3>Top 10 Supplier</h3>
+                                <table>
+                                    <thead><tr><th>Nama Supplier</th><th class="text-right">LPB</th><th class="text-right">Total</th></tr></thead>
+                                    <tbody>
+                                        ${topSuppliers.slice(0, 10).map((s: any) => `<tr><td class="font-black">${s.name}</td><td class="text-right">${s.count}</td><td class="text-right font-black">${formatCurrency(s.total)}</td></tr>`).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- ═══════════════════════════════════════════════════ -->
+                        <!-- HALAMAN 2: DETAIL PENJUALAN                       -->
+                        <!-- ═══════════════════════════════════════════════════ -->
+                        <div class="section-divider"></div>
+                        ${getMiniHeaderHTML('DETAIL PENJUALAN', periodLabel)}
+
                         <table>
                             <thead>
                                 <tr>
-                                    <th style="width: 12%;">Tanggal SJ</th>
-                                    <th style="width: 20%;">No. Invoice / SJ</th>
-                                    <th style="width: 30%;">Nama Customer</th>
-                                    <th style="width: 12%;">Bank</th>
-                                    <th style="width: 12%;">Tgl Bayar</th>
-                                    <th style="width: 14%;" class="text-right">Nilai Transaksi</th>
+                                    <th style="width:4%">No</th>
+                                    <th style="width:10%">Tanggal</th>
+                                    <th style="width:18%">No. SJ</th>
+                                    <th style="width:22%">Buyer</th>
+                                    <th style="width:6%">Div</th>
+                                    <th class="text-right" style="width:6%">Qty</th>
+                                    <th class="text-right" style="width:12%">Grand Total</th>
+                                    <th class="text-right" style="width:10%">HPP</th>
+                                    <th class="text-right" style="width:12%">Margin</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                ${closingReport.details?.sales?.map((s: any) => `
+                                ${salesDetail.map((s: any, i: number) => `
                                     <tr>
-                                        <td>${format(new Date(s.date), "dd/MM/yyyy")}</td>
+                                        <td>${i + 1}</td>
+                                        <td>${format(new Date(s.date), "dd/MM/yy")}</td>
                                         <td class="font-black">${s.number}</td>
-                                        <td>${s.entity || '-'}</td>
-                                        <td class="font-black" style="color: #3b82f6;">${s.bankCode}</td>
-                                        <td>${s.paymentDate ? format(new Date(s.paymentDate), "dd/MM/yyyy") : '-'}</td>
-                                        <td class="text-right font-black">${formatCurrency(s.grandTotal)}</td>
+                                        <td>${s.buyer || '-'}</td>
+                                        <td>${s.salesPerson || '-'}</td>
+                                        <td class="text-right">${s.totalQty}</td>
+                                        <td class="text-right font-black text-green">${formatCurrency(s.grandTotal)}</td>
+                                        <td class="text-right">${formatCurrency(s.hpp || 0)}</td>
+                                        <td class="text-right font-black" style="color: ${(s.margin || 0) >= 0 ? '#059669' : '#dc2626'}">${formatCurrency(s.margin || 0)} (${(s.marginPct || 0).toFixed(1)}%)</td>
                                     </tr>
-                                `).join('') || '<tr><td colspan="6" style="text-align:center">Tidak ada transaksi penjualan</td></tr>'}
+                                `).join('')}
+                                <tr class="total-row">
+                                    <td colspan="5">TOTAL</td>
+                                    <td class="text-right">${salesDetail.reduce((s: number, d: any) => s + (d.totalQty || 0), 0)}</td>
+                                    <td class="text-right text-green">${formatCurrency(pl.revenue || 0)}</td>
+                                    <td class="text-right">${formatCurrency(pl.hpp || 0)}</td>
+                                    <td class="text-right" style="color: ${(pl.grossProfit || 0) >= 0 ? '#059669' : '#dc2626'}">${formatCurrency(pl.grossProfit || 0)}</td>
+                                </tr>
                             </tbody>
                         </table>
 
-                        <h3>II. Detail Biaya Operasional</h3>
+                        <!-- ═══════════════════════════════════════════════════ -->
+                        <!-- HALAMAN 3: DETAIL PEMBELIAN                       -->
+                        <!-- ═══════════════════════════════════════════════════ -->
+                        <div class="section-divider"></div>
+                        ${getMiniHeaderHTML('DETAIL PEMBELIAN', periodLabel)}
+
                         <table>
                             <thead>
                                 <tr>
-                                    <th style="width: 15%;">Tanggal</th>
-                                    <th style="width: 20%;">Kategori</th>
-                                    <th style="width: 45%;">Deskripsi Biaya</th>
-                                    <th style="width: 20%;" class="text-right">Nominal</th>
+                                    <th style="width:4%">No</th>
+                                    <th style="width:10%">Tanggal</th>
+                                    <th style="width:20%">No. LPB</th>
+                                    <th style="width:26%">Supplier</th>
+                                    <th style="width:6%">Div</th>
+                                    <th class="text-right" style="width:12%">Subtotal</th>
+                                    <th class="text-right" style="width:10%">Pajak</th>
+                                    <th class="text-right" style="width:12%">Grand Total</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                ${closingReport.details?.expenses?.map((e: any) => `
+                                ${purchaseDetail.map((p: any, i: number) => `
                                     <tr>
-                                        <td>${format(new Date(e.date), "dd/MM/yyyy")}</td>
-                                        <td>${e.category || 'OPR'}</td>
-                                        <td>${e.description}</td>
-                                        <td class="text-right font-black">${formatCurrency(Math.abs(e.amount))}</td>
-                                    </tr>
-                                `).join('') || '<tr><td colspan="4" style="text-align:center">Tidak ada pengeluaran operasional</td></tr>'}
-                            </tbody>
-                        </table>
-
-                        <div style="page-break-before: always;"></div>
-
-                        <h3>III. Detail Pembelian Barang</h3>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th style="width: 12%;">Tanggal LPB</th>
-                                    <th style="width: 20%;">No. LPB / GR</th>
-                                    <th style="width: 30%;">Nama Supplier</th>
-                                    <th style="width: 12%;">Bank</th>
-                                    <th style="width: 12%;">Tgl Bayar</th>
-                                    <th style="width: 14%;" class="text-right">Total Tagihan</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${closingReport.details?.purchases?.map((p: any) => `
-                                    <tr>
-                                        <td>${format(new Date(p.date), "dd/MM/yyyy")}</td>
+                                        <td>${i + 1}</td>
+                                        <td>${format(new Date(p.date), "dd/MM/yy")}</td>
                                         <td class="font-black">${p.number}</td>
-                                        <td>${p.entity || '-'}</td>
-                                        <td class="font-black" style="color: #ef4444;">${p.bankCode}</td>
-                                        <td>${p.paymentDate ? format(new Date(p.paymentDate), "dd/MM/yyyy") : '-'}</td>
-                                        <td class="text-right font-black">${formatCurrency(p.grandTotal)}</td>
+                                        <td>${p.supplier || '-'}</td>
+                                        <td>${p.salesPerson || '-'}</td>
+                                        <td class="text-right">${formatCurrency(p.subtotal)}</td>
+                                        <td class="text-right">${formatCurrency(p.tax)}</td>
+                                        <td class="text-right font-black text-blue">${formatCurrency(p.grandTotal)}</td>
                                     </tr>
-                                `).join('') || '<tr><td colspan="6" style="text-align:center">Tidak ada transaksi pembelian</td></tr>'}
+                                `).join('')}
+                                <tr class="total-row">
+                                    <td colspan="5">TOTAL (${purchaseDetail.length} LPB)</td>
+                                    <td class="text-right">${formatCurrency(data.purchases?.subtotal || 0)}</td>
+                                    <td class="text-right">${formatCurrency(purchaseDetail.reduce((s: number, p: any) => s + (p.tax || 0), 0))}</td>
+                                    <td class="text-right text-blue">${formatCurrency(data.purchases?.total || 0)}</td>
+                                </tr>
                             </tbody>
                         </table>
+
+                        <!-- ═══════════════════════════════════════════════════ -->
+                        <!-- HALAMAN 4: TRACEABILITY / MARGIN                  -->
+                        <!-- ═══════════════════════════════════════════════════ -->
+                        <div class="section-divider"></div>
+                        ${getMiniHeaderHTML('TRACEABILITY & MARGIN', periodLabel)}
+
+                        <div class="summary-grid-6" style="margin-bottom: 12px;">
+                            <div class="summary-card"><p>Total Beli (HPP)</p><h2>${formatCurrency(totalTraceBeli)}</h2></div>
+                            <div class="summary-card"><p>Total Jual</p><h2 class="text-green">${formatCurrency(totalTraceJual)}</h2></div>
+                            <div class="summary-card highlight"><p>Total Margin</p><h2 style="color: ${totalTraceMargin >= 0 ? '#059669' : '#dc2626'}">${formatCurrency(totalTraceMargin)} (${totalTraceJual > 0 ? (totalTraceMargin / totalTraceJual * 100).toFixed(1) : 0}%)</h2></div>
+                        </div>
+
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width:3%">No</th>
+                                    <th style="width:8%">Barcode</th>
+                                    <th style="width:16%">Nama Item</th>
+                                    <th style="width:12%">Supplier</th>
+                                    <th style="width:8%">No. LPB</th>
+                                    <th class="text-right" style="width:4%">Qty</th>
+                                    <th class="text-right" style="width:10%">Total Beli</th>
+                                    <th style="width:12%">Buyer</th>
+                                    <th class="text-right" style="width:4%">Qty</th>
+                                    <th class="text-right" style="width:10%">Total Jual</th>
+                                    <th class="text-right" style="width:10%">Margin</th>
+                                    <th class="text-right" style="width:4%">%</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${traceData.map((r: any) => `
+                                    <tr>
+                                        <td>${r.NO}</td>
+                                        <td style="font-size:8px;">${r.BARCODE || '-'}</td>
+                                        <td class="font-black" style="font-size:8px;">${r['KETERANGAN ITEM'] || '-'}</td>
+                                        <td style="font-size:8px;">${r['NAMA SUPPLIER'] || '-'}</td>
+                                        <td style="font-size:7px;">${r['NOMOR LPB'] || '-'}</td>
+                                        <td class="text-right">${r['QTY BELI'] || 0}</td>
+                                        <td class="text-right font-black">${formatCurrency(r['TOTAL BELI'] || 0)}</td>
+                                        <td style="font-size:8px;">${r['NAMA PEMBELI'] || '-'}</td>
+                                        <td class="text-right">${r['QTY JUAL'] || 0}</td>
+                                        <td class="text-right font-black text-green">${formatCurrency(r['TOTAL JUAL'] || 0)}</td>
+                                        <td class="text-right font-black" style="color: ${Number(r.MARGIN || 0) >= 0 ? '#059669' : '#dc2626'}">${formatCurrency(r.MARGIN || 0)}</td>
+                                        <td class="text-right" style="font-size:8px;">${r['MARGIN %'] || '0%'}</td>
+                                    </tr>
+                                `).join('')}
+                                <tr class="total-row">
+                                    <td colspan="6">TOTAL (${traceData.length} baris)</td>
+                                    <td class="text-right">${formatCurrency(totalTraceBeli)}</td>
+                                    <td colspan="2"></td>
+                                    <td class="text-right text-green">${formatCurrency(totalTraceJual)}</td>
+                                    <td class="text-right" style="color: ${totalTraceMargin >= 0 ? '#059669' : '#dc2626'}">${formatCurrency(totalTraceMargin)}</td>
+                                    <td class="text-right">${totalTraceJual > 0 ? (totalTraceMargin / totalTraceJual * 100).toFixed(1) : 0}%</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <!-- ═══════════════════════════════════════════════════ -->
+                        <!-- HALAMAN 5: OUTSTANDING (PIUTANG & HUTANG)         -->
+                        <!-- ═══════════════════════════════════════════════════ -->
+                        <div class="section-divider"></div>
+                        ${getMiniHeaderHTML('PIUTANG & HUTANG OUTSTANDING', periodLabel)}
+
+                        <h3>A. Piutang Usaha (Accounts Receivable)</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width:4%">No</th>
+                                    <th style="width:16%">No. SJ</th>
+                                    <th style="width:22%">Customer</th>
+                                    <th style="width:10%">Tanggal</th>
+                                    <th class="text-right" style="width:14%">Nilai</th>
+                                    <th class="text-right" style="width:14%">Dibayar</th>
+                                    <th class="text-right" style="width:14%">Sisa</th>
+                                    <th class="text-right" style="width:6%">Hari</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${arItems.length > 0 ? arItems.map((r: any, i: number) => `
+                                    <tr>
+                                        <td>${i + 1}</td>
+                                        <td class="font-black">${r.number}</td>
+                                        <td>${r.partner || '-'}</td>
+                                        <td>${format(new Date(r.date), "dd/MM/yy")}</td>
+                                        <td class="text-right">${formatCurrency(r.grandTotal)}</td>
+                                        <td class="text-right text-green">${formatCurrency(r.paidAmount)}</td>
+                                        <td class="text-right font-black text-red">${formatCurrency(r.outstanding)}</td>
+                                        <td class="text-right font-black" style="color: ${r.days > 30 ? '#dc2626' : '#0f172a'}">${r.days}</td>
+                                    </tr>
+                                `).join('') : '<tr><td colspan="8" class="text-center">Tidak ada piutang outstanding</td></tr>'}
+                                ${arItems.length > 0 ? `<tr class="total-row">
+                                    <td colspan="4">TOTAL PIUTANG (${arItems.length} nota)</td>
+                                    <td class="text-right">${formatCurrency(arItems.reduce((s: number, r: any) => s + r.grandTotal, 0))}</td>
+                                    <td class="text-right">${formatCurrency(arItems.reduce((s: number, r: any) => s + r.paidAmount, 0))}</td>
+                                    <td class="text-right text-red">${formatCurrency(data.arAging?.buckets?.total || 0)}</td>
+                                    <td></td>
+                                </tr>` : ''}
+                            </tbody>
+                        </table>
+
+                        <h3>B. Hutang Usaha (Accounts Payable)</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width:4%">No</th>
+                                    <th style="width:16%">No. LPB</th>
+                                    <th style="width:22%">Supplier</th>
+                                    <th style="width:10%">Tanggal</th>
+                                    <th class="text-right" style="width:14%">Nilai</th>
+                                    <th class="text-right" style="width:14%">Dibayar</th>
+                                    <th class="text-right" style="width:14%">Sisa</th>
+                                    <th class="text-right" style="width:6%">Hari</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${apItems.length > 0 ? apItems.map((r: any, i: number) => `
+                                    <tr>
+                                        <td>${i + 1}</td>
+                                        <td class="font-black">${r.number}</td>
+                                        <td>${r.partner || '-'}</td>
+                                        <td>${format(new Date(r.date), "dd/MM/yy")}</td>
+                                        <td class="text-right">${formatCurrency(r.grandTotal)}</td>
+                                        <td class="text-right text-green">${formatCurrency(r.paidAmount)}</td>
+                                        <td class="text-right font-black text-red">${formatCurrency(r.outstanding)}</td>
+                                        <td class="text-right font-black" style="color: ${r.days > 30 ? '#dc2626' : '#0f172a'}">${r.days}</td>
+                                    </tr>
+                                `).join('') : '<tr><td colspan="8" class="text-center">Tidak ada hutang outstanding</td></tr>'}
+                                ${apItems.length > 0 ? `<tr class="total-row">
+                                    <td colspan="4">TOTAL HUTANG (${apItems.length} nota)</td>
+                                    <td class="text-right">${formatCurrency(apItems.reduce((s: number, r: any) => s + r.grandTotal, 0))}</td>
+                                    <td class="text-right">${formatCurrency(apItems.reduce((s: number, r: any) => s + r.paidAmount, 0))}</td>
+                                    <td class="text-right text-red">${formatCurrency(data.apAging?.buckets?.total || 0)}</td>
+                                    <td></td>
+                                </tr>` : ''}
+                            </tbody>
+                        </table>
+
+                        <!-- ═══════════════════════════════════════════════════ -->
+                        <!-- HALAMAN 6: LAPORAN FINANCE (BIAYA OPERASIONAL)    -->
+                        <!-- ═══════════════════════════════════════════════════ -->
+                        <div class="section-divider"></div>
+                        ${getMiniHeaderHTML('LAPORAN KEUANGAN (FINANCE)', periodLabel)}
+
+                        <h3>A. Rincian Biaya Operasional</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width:4%">No</th>
+                                    <th style="width:10%">Tanggal</th>
+                                    <th style="width:40%">Deskripsi</th>
+                                    <th style="width:14%">Kategori</th>
+                                    <th style="width:10%">Bank</th>
+                                    <th class="text-right" style="width:14%">Nominal</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${opsDetail.filter((o: any) => o.amount < 0 || o.category === 'PAYMENT' || o.category === 'EXPENSE').map((o: any, i: number) => `
+                                    <tr>
+                                        <td>${i + 1}</td>
+                                        <td>${format(new Date(o.date), "dd/MM/yy")}</td>
+                                        <td style="font-size:8px;">${o.description || '-'}</td>
+                                        <td>${o.category || '-'}</td>
+                                        <td>${o.bank || '-'}</td>
+                                        <td class="text-right font-black">${formatCurrency(Math.abs(o.amount))}</td>
+                                    </tr>
+                                `).join('') || '<tr><td colspan="6" class="text-center">Tidak ada biaya operasional</td></tr>'}
+                                <tr class="total-row">
+                                    <td colspan="5">TOTAL BIAYA OPERASIONAL</td>
+                                    <td class="text-right text-red">${formatCurrency(pl.expenses || 0)}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h3>B. Ringkasan Per Kategori Biaya</h3>
+                        <table>
+                            <thead><tr><th>Kategori</th><th class="text-right">Total</th></tr></thead>
+                            <tbody>
+                                ${expenseByCategory.map((c: any) => `<tr><td class="font-black">${c.name}</td><td class="text-right font-black">${formatCurrency(c.value)}</td></tr>`).join('')}
+                            </tbody>
+                        </table>
+
+                        <!-- ═══════════════════════════════════════════════════ -->
+                        <!-- HALAMAN 7: LAPORAN ADMIN (PURCHASE & WAREHOUSE)   -->
+                        <!-- ═══════════════════════════════════════════════════ -->
+                        <div class="section-divider"></div>
+                        ${getMiniHeaderHTML('LAPORAN ADMIN PURCHASE & WAREHOUSE', periodLabel)}
+
+                        <h3>A. Aktivitas Admin Finance</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Nama Admin</th>
+                                    <th class="text-right">Jumlah Transaksi</th>
+                                    <th class="text-right">Total Pembayaran</th>
+                                    <th class="text-right">Total Penerimaan</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${financeStaff.length > 0 ? financeStaff.map((f: any) => `
+                                    <tr>
+                                        <td class="font-black">${f.name}</td>
+                                        <td class="text-right">${f.count}</td>
+                                        <td class="text-right text-red">${formatCurrency(f.paymentAmount)}</td>
+                                        <td class="text-right text-green">${formatCurrency(f.receiptAmount)}</td>
+                                    </tr>
+                                `).join('') : '<tr><td colspan="4" class="text-center">Tidak ada data</td></tr>'}
+                            </tbody>
+                        </table>
+
+                        <h3>B. Aktivitas Admin Warehouse</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Nama Admin</th>
+                                    <th class="text-right">LPB Dibuat</th>
+                                    <th class="text-right">LPB Diverifikasi</th>
+                                    <th class="text-right">Total Qty Diterima</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${warehouseStaff.length > 0 ? warehouseStaff.map((w: any) => `
+                                    <tr>
+                                        <td class="font-black">${w.name}</td>
+                                        <td class="text-right">${w.createdCount}</td>
+                                        <td class="text-right">${w.verifiedCount}</td>
+                                        <td class="text-right font-black">${w.totalQtyReceived}</td>
+                                    </tr>
+                                `).join('') : '<tr><td colspan="4" class="text-center">Tidak ada data</td></tr>'}
+                            </tbody>
+                        </table>
+
+                        <!-- ═══════════════════════════════════════════════════ -->
+                        <!-- HALAMAN 8: RETUR & PENUTUP                        -->
+                        <!-- ═══════════════════════════════════════════════════ -->
+                        <div class="section-divider"></div>
+                        ${getMiniHeaderHTML('RETUR & RINGKASAN', periodLabel)}
+
+                        <div class="two-col">
+                            <div>
+                                <h3>A. Retur Pembelian (${returnPurchase.length})</h3>
+                                <table>
+                                    <thead><tr><th>No. Retur</th><th>Tanggal</th><th>Supplier</th><th class="text-right">Qty</th></tr></thead>
+                                    <tbody>
+                                        ${returnPurchase.length > 0 ? returnPurchase.map((r: any) => `
+                                            <tr>
+                                                <td class="font-black">${r.returnNumber}</td>
+                                                <td>${format(new Date(r.date), "dd/MM/yy")}</td>
+                                                <td>${r.supplier || '-'}</td>
+                                                <td class="text-right">${r.totalQty}</td>
+                                            </tr>
+                                        `).join('') : '<tr><td colspan="4" class="text-center">Tidak ada retur pembelian</td></tr>'}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div>
+                                <h3>B. Retur Penjualan (${returnSales.length})</h3>
+                                <table>
+                                    <thead><tr><th>No. Retur</th><th>Tanggal</th><th>Buyer</th><th class="text-right">Qty</th></tr></thead>
+                                    <tbody>
+                                        ${returnSales.length > 0 ? returnSales.map((r: any) => `
+                                            <tr>
+                                                <td class="font-black">${r.returnNumber}</td>
+                                                <td>${format(new Date(r.date), "dd/MM/yy")}</td>
+                                                <td>${r.buyer || '-'}</td>
+                                                <td class="text-right">${r.totalQty}</td>
+                                            </tr>
+                                        `).join('') : '<tr><td colspan="4" class="text-center">Tidak ada retur penjualan</td></tr>'}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
                         ${getFooterHTML()}
                     </body>
                 </html>
@@ -656,6 +1037,7 @@ export function ReportsDashboard() {
         else if (activeTab === 'monthly') fetchMonthly();
         else if (activeTab === 'closing') {
             fetchClosingReport(closingPeriod.month, closingPeriod.year, closingPrefix);
+            fetchMonthly(); // Also fetch comprehensive data for print
         }
     }, [activeTab, fetchDaily, fetchWeekly, fetchMonthly, closingPeriod, closingPrefix]);
 
