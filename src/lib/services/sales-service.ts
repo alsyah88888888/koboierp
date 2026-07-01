@@ -795,6 +795,16 @@ export async function voidSalesDeliveryService(id: string, reason: string) {
             });
         }
 
+        // Clean up ALL previous SALE and SALE_UPDATE movements for this delivery
+        // The SALE_VOID movements we just created are the definitive record;
+        // keeping the old SALE/SALE_UPDATE would cause phantom stock deductions
+        await tx.stockMovement.deleteMany({
+            where: {
+                reference: delivery.deliveryNumber,
+                type: { in: ['SALE', 'SALE_UPDATE'] }
+            }
+        });
+
         // Delete associated journal entries
         await tx.journalEntry.deleteMany({
             where: { description: { contains: delivery.deliveryNumber } }
