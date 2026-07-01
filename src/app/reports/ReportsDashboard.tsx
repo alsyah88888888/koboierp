@@ -1186,7 +1186,7 @@ export function ReportsDashboard() {
                     'Qty Jual': r['QTY JUAL'],
                     'Total Jual (Net)': r['TOTAL JUAL'],
                     'Margin': r.MARGIN,
-                    'Margin %': r.MARGIN_PCT ? `${r.MARGIN_PCT}%` : '0%'
+                    'Margin %': r['MARGIN %'] || '0%'
                 }));
                 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(traceRows), 'Traceability Mingguan');
             }
@@ -1262,7 +1262,7 @@ export function ReportsDashboard() {
                     'Qty Jual': r['QTY JUAL'],
                     'Total Jual (Net)': r['TOTAL JUAL'],
                     'Margin': r.MARGIN,
-                    'Margin %': r.MARGIN_PCT ? `${r.MARGIN_PCT}%` : '0%'
+                    'Margin %': r['MARGIN %'] || '0%'
                 }));
                 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(traceRows), 'Traceability Bulanan');
             }
@@ -1288,8 +1288,140 @@ export function ReportsDashboard() {
             }
         }
 
+        // Closing Bulanan Excel Export — uses monthlyData (comprehensive)
+        if (activeTab === 'closing' && monthlyData) {
+            const cData = monthlyData;
+            const cPl = cData.profitLoss || {};
+
+            // P&L sheet
+            const plRows = [
+                { 'Keterangan': 'PENDAPATAN (Revenue)', 'Jumlah (Rp)': cPl.revenue },
+                { 'Keterangan': '  Subtotal Penjualan', 'Jumlah (Rp)': cPl.revenueSubtotal },
+                { 'Keterangan': '  Diskon', 'Jumlah (Rp)': -(cPl.discount || 0) },
+                { 'Keterangan': '  PPN', 'Jumlah (Rp)': cPl.salesTax },
+                { 'Keterangan': '', 'Jumlah (Rp)': '' },
+                { 'Keterangan': 'HARGA POKOK PENJUALAN (HPP)', 'Jumlah (Rp)': cPl.hpp },
+                { 'Keterangan': '', 'Jumlah (Rp)': '' },
+                { 'Keterangan': 'LABA KOTOR', 'Jumlah (Rp)': cPl.grossProfit },
+                { 'Keterangan': `  Margin Kotor (${cPl.grossMarginPct || 0}%)`, 'Jumlah (Rp)': '' },
+                { 'Keterangan': '', 'Jumlah (Rp)': '' },
+                { 'Keterangan': 'BIAYA OPERASIONAL', 'Jumlah (Rp)': cPl.expenses },
+                ...(cPl.expenseByCategory || []).map((c: any) => ({
+                    'Keterangan': `  ${c.name}`, 'Jumlah (Rp)': c.value
+                })),
+                { 'Keterangan': '', 'Jumlah (Rp)': '' },
+                { 'Keterangan': 'LABA BERSIH', 'Jumlah (Rp)': cPl.netProfit },
+                { 'Keterangan': `  Margin Bersih (${cPl.netMarginPct || 0}%)`, 'Jumlah (Rp)': '' },
+            ];
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(plRows), 'Laba Rugi');
+
+            // Detail Penjualan
+            if (cData.details?.sales?.length) {
+                const rows = cData.details.sales.map((s: any, i: number) => ({
+                    'No': i + 1, 'No. SJ': s.number, 'Tanggal': fmtDate(s.date),
+                    'Buyer': s.buyer, 'Div': s.salesPerson || '-',
+                    'Qty': s.totalQty, 'Grand Total': s.grandTotal,
+                    'HPP': s.hpp, 'Margin': s.margin,
+                    'Margin %': s.marginPct ? `${s.marginPct.toFixed(1)}%` : '0%',
+                    'Dibayar': s.paidAmount, 'Status': s.paymentStatus
+                }));
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Detail Penjualan');
+            }
+
+            // Detail Pembelian
+            if (cData.details?.purchases?.length) {
+                const rows = cData.details.purchases.map((p: any, i: number) => ({
+                    'No': i + 1, 'No. LPB': p.number, 'Tanggal': fmtDate(p.date),
+                    'Supplier': p.supplier, 'Div': p.salesPerson || '-',
+                    'Subtotal': p.subtotal, 'Pajak': p.tax,
+                    'Grand Total': p.grandTotal, 'Status': p.paymentStatus
+                }));
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Detail Pembelian');
+            }
+
+            // Detail Operasional
+            if (cData.details?.operational?.length) {
+                const rows = cData.details.operational.map((o: any, i: number) => ({
+                    'No': i + 1, 'Tanggal': fmtDate(o.date), 'Keterangan': o.description,
+                    'Bank': o.bank, 'Kategori': o.category, 'Jumlah': o.amount
+                }));
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Detail Operasional');
+            }
+
+            // Traceability
+            if (cData.details?.monthlyTraceability?.length) {
+                const traceRows = cData.details.monthlyTraceability.map((r: any) => ({
+                    'No.': r.NO,
+                    'Barcode': r.BARCODE,
+                    'Nama Item': r['KETERANGAN ITEM'],
+                    'Supplier': r['NAMA SUPPLIER'],
+                    'No. LPB': r['NOMOR LPB'],
+                    'Tgl Beli': r['TANGGAL BELI'],
+                    'Qty Beli': r['QTY BELI'],
+                    'Total Beli (HPP)': r['TOTAL BELI'],
+                    'Ops': r.OPS,
+                    'Buyer': r['NAMA PEMBELI'],
+                    'Sales': r.SALES,
+                    'No. Faktur': r['NOMOR FAKTUR PENJUALAN'],
+                    'No. SJ': r['NOMOR SJ'],
+                    'Tgl Jual': r['TANGGAL JUAL'],
+                    'Qty Jual': r['QTY JUAL'],
+                    'Total Jual': r['TOTAL JUAL'],
+                    'Margin': r.MARGIN,
+                    'Margin %': r['MARGIN %'] || '0%'
+                }));
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(traceRows), 'Traceability');
+            }
+
+            // Piutang (AR)
+            if (cData.arAging?.items?.length) {
+                const rows = cData.arAging.items.map((r: any, i: number) => ({
+                    'No': i + 1, 'No. SJ': r.number, 'Customer': r.partner,
+                    'Tanggal': fmtDate(r.date), 'Nilai': r.grandTotal,
+                    'Dibayar': r.paidAmount, 'Sisa': r.outstanding,
+                    'Umur (Hari)': r.days, 'Aging': r.bucket
+                }));
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Piutang (AR)');
+            }
+
+            // Hutang (AP)
+            if (cData.apAging?.items?.length) {
+                const rows = cData.apAging.items.map((r: any, i: number) => ({
+                    'No': i + 1, 'No. LPB': r.number, 'Supplier': r.partner,
+                    'Tanggal': fmtDate(r.date), 'Nilai': r.grandTotal,
+                    'Dibayar': r.paidAmount, 'Sisa': r.outstanding,
+                    'Umur (Hari)': r.days, 'Aging': r.bucket
+                }));
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Hutang (AP)');
+            }
+
+            // Admin Finance
+            if (cData.staffActivity?.finance?.length) {
+                const rows = cData.staffActivity.finance.map((f: any) => ({
+                    'Nama Admin': f.name, 'Jumlah Transaksi': f.count,
+                    'Total Pembayaran': f.paymentAmount, 'Total Penerimaan': f.receiptAmount
+                }));
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Admin Finance');
+            }
+
+            // Admin Warehouse
+            if (cData.staffActivity?.warehouse?.length) {
+                const rows = cData.staffActivity.warehouse.map((w: any) => ({
+                    'Nama Admin': w.name, 'LPB Dibuat': w.createdCount,
+                    'LPB Diverifikasi': w.verifiedCount, 'Total Qty Diterima': w.totalQtyReceived
+                }));
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Admin Warehouse');
+            }
+
+            // Top Buyers & Suppliers
+            if (cData.topBuyers?.length)
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(cData.topBuyers), 'Top Buyer');
+            if (cData.topSuppliers?.length)
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(cData.topSuppliers), 'Top Supplier');
+        }
+
         const prefixSuffix = activePrefix !== 'ALL' ? `_${activePrefix}` : '';
-        const tabLabel = activeTab === 'daily' ? `Harian_${selectedDate}` : activeTab === 'weekly' ? `Mingguan_${selectedWeekStart}` : `Bulanan_${monthNames[selectedMonth - 1]}_${selectedYear}`;
+        const tabLabel = activeTab === 'daily' ? `Harian_${selectedDate}` : activeTab === 'weekly' ? `Mingguan_${selectedWeekStart}` : activeTab === 'closing' ? `Closing_${monthNames[closingPeriod.month - 1]}_${closingPeriod.year}` : `Bulanan_${monthNames[selectedMonth - 1]}_${selectedYear}`;
         XLSX.writeFile(wb, `Laporan_${tabLabel}${prefixSuffix}.xlsx`);
     };
 
