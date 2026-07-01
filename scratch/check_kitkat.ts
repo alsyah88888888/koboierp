@@ -2,41 +2,61 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-async function testStockUpdate() {
-    console.log("=== CHECK STOCK MOVEMENT & SALES DELIVERY ITEMS ===");
-    
-    // Find Kit Kat deliveries
-    const deliveries = await prisma.salesDeliveryItem.findMany({
-        where: {
-            product: { name: { contains: 'KIT KAT', mode: 'insensitive' } }
-        },
+async function checkKitKatStock() {
+    const barcode = '8992696527874';
+
+    console.log(`Checking stock for barcode: ${barcode}`);
+
+    const product = await prisma.product.findFirst({
+        where: { OR: [{ barcode }, { name: { contains: 'KIT KAT CHOCOLATE 24x220ml' } }] },
         include: {
-            delivery: true
+            stocks: {
+                include: { warehouse: true }
+            }
         }
     });
 
-    console.log(`Found ${deliveries.length} deliveries for Kit Kat`);
-    
-    const stock = await prisma.stock.findMany({
-        where: { product: { name: { contains: 'KIT KAT', mode: 'insensitive' } } },
-        include: { product: true }
-    });
-
-    console.log(`Current Stock records:`);
-    for (const s of stock) {
-        console.log(`  - ${s.product.name} | Qty: ${s.quantity} | Vendor: ${s.vendorName}`);
+    if (!product) {
+        console.log('Product not found!');
+        return;
     }
 
+    console.log(`Product found: ${product.name} (ID: ${product.id})`);
+    console.log('Current Stock Entries:');
+    let totalStock = 0;
+    for (const stock of product.stocks) {
+        console.log(`- Warehouse: ${stock.warehouse.name}, Vendor: ${stock.vendorName}, Qty: ${stock.quantity}`);
+        totalStock += Number(stock.quantity);
+    }
+    console.log(`Total System Stock: ${totalStock}`);
+
+    console.log('\nRecent Stock Movements (Last 10):');
     const movements = await prisma.stockMovement.findMany({
-        where: { product: { name: { contains: 'KIT KAT', mode: 'insensitive' } } },
+        where: { productId: product.id },
         orderBy: { createdAt: 'desc' },
-        take: 20
+        take: 10
     });
 
-    console.log(`\nRecent movements:`);
-    for (const m of movements) {
-        console.log(`  - ${m.createdAt} | ${m.type} | Qty: ${m.quantity} | Ref: ${m.reference}`);
+    for (const mov of movements) {
+        console.log(`- ${mov.createdAt.toISOString()} | Type: ${mov.type.padEnd(12)} | Qty: ${String(mov.quantity).padStart(5)} | Ref: ${mov.reference || 'N/A'}`);
     }
+    
+    // Calculate total incoming and outgoing
+    const allMovements = await prisma.stockMovement.findMany({
+        where: { productId: product.id }
+    });
+    
+    let inQty = 0;
+    let outQty = 0;
+    for (const mov of allMovements) {
+        if (['IN', 'PURCHASE', 'SALE_RETURN', 'SALE_VOID', 'SALE_DELETE'].includes(mov.type)) {
+            inQty += Number(mov.quantity);
+        } else if (['OUT', 'SALE', 'SALE_UPDATE'].includes(mov.type)) {
+            outQty += Number(mov.quantity);
+        }
+    }
+    console.log(`\nMovement Summary: IN: ${inQty}, OUT: ${outQty}, BALANCE: ${inQty - outQty}`);
+
 }
 
-testStockUpdate().finally(() => prisma.$disconnect());
+checkKitKatStock().catch(console.error).finally(() => prisma.$disconnect());
