@@ -233,6 +233,7 @@ model GoodsReceipt {
   grandTotal       Decimal                    @default(0)
   paidAmount       Decimal                    @default(0)
   createdAt        DateTime                   @default(now())
+  updatedAt        DateTime                   @default(now()) @updatedAt
   createdById      String?
   isVoid           Boolean                    @default(false)
   voidReason       String?
