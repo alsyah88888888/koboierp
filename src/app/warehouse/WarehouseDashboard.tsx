@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { Plus, Warehouse as WarehouseIcon, Layers, Trash2, FileText, Search, Activity, Box, ArrowUpRight, ArrowDownLeft, Download, Eye, Edit2 } from "lucide-react";
+import { Plus, Warehouse as WarehouseIcon, Layers, Trash2, FileText, Search, Activity, Box, ArrowUpRight, ArrowDownLeft, Download, Eye, Edit2, ArrowLeftRight } from "lucide-react";
 import { StockInputModal } from "./StockInputModal";
 import { StockAdjustmentModal } from "./StockAdjustmentModal";
+import { StockTransferModal } from "./StockTransferModal";
 import { StockCardModal } from "./StockCardModal";
 import { CheckerBoard } from "./CheckerBoard";
 import { DashboardStats } from "../components/DashboardStats";
@@ -29,6 +30,7 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
     const [activeTab, setActiveTab] = useState<"inventory" | "checker">("inventory");
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedStockForAdjustment, setSelectedStockForAdjustment] = useState<{product: any, stock: any} | null>(null);
+    const [selectedStockForTransfer, setSelectedStockForTransfer] = useState<{product: any, stock: any} | null>(null);
     const [showStockCard, setShowStockCard] = useState(false);
     const [selectedProductIdForCard, setSelectedProductIdForCard] = useState<string | undefined>(undefined);
     const [isClient, setIsClient] = useState(false);
@@ -440,6 +442,13 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                                                             <Edit2 className="h-3.5 w-3.5" />
                                                                         </button>
                                                                         <button
+                                                                            onClick={() => setSelectedStockForTransfer({ product: p, stock: s })}
+                                                                            className="p-1.5 text-slate-400 hover:text-violet-600 hover:bg-violet-50/50 rounded-lg transition-all"
+                                                                            title="Mutasi / Transfer Stok"
+                                                                        >
+                                                                            <ArrowLeftRight className="h-3.5 w-3.5" />
+                                                                        </button>
+                                                                        <button
                                                                             onClick={() => {
                                                                                 setSelectedProductIdForCard(p.id);
                                                                                 setShowStockCard(true);
@@ -544,8 +553,16 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                                                     <button
                                                                         onClick={() => setSelectedStockForAdjustment({ product: p, stock: s })}
                                                                         className="p-2 text-slate-400 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all active:scale-95"
+                                                                        title="Penyesuaian Stok"
                                                                     >
                                                                         <Edit2 className="h-3.5 w-3.5" />
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => setSelectedStockForTransfer({ product: p, stock: s })}
+                                                                        className="p-2 text-slate-400 hover:text-violet-600 bg-slate-100 hover:bg-violet-50/50 rounded-xl transition-all active:scale-95"
+                                                                        title="Mutasi / Transfer Stok"
+                                                                    >
+                                                                        <ArrowLeftRight className="h-3.5 w-3.5" />
                                                                     </button>
                                                                     <button
                                                                         onClick={() => {
@@ -665,6 +682,17 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                 setSelectedStockForAdjustment(null);
                                 window.location.reload();
                             }}
+                        />
+                    )}
+
+                    {selectedStockForTransfer && (
+                        <StockTransferModal
+                            products={initialProducts}
+                            warehouses={warehouses}
+                            preselectedProduct={selectedStockForTransfer.product}
+                            preselectedStock={selectedStockForTransfer.stock}
+                            onClose={() => setSelectedStockForTransfer(null)}
+                            onSuccess={() => window.location.reload()}
                         />
                     )}
                 </>

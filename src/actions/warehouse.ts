@@ -161,3 +161,17 @@ export async function getStockCardAction(productId: string, startDate?: string, 
     const { getStockCardService } = require("@/lib/services/warehouse-service");
     return await getStockCardService(productId, startDate, endDate, warehouseId);
 }
+
+export async function transferStockAction(data: {
+    productId: string;
+    fromWarehouseId: string;
+    fromVendorName: string;
+    toWarehouseId: string;
+    toVendorName: string;
+    quantity: number;
+    notes: string;
+    transferredBy: string;
+}) {
+    const { transferStockService } = require("@/lib/services/warehouse-service");
+    return await transferStockService(data);
+}

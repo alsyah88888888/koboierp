@@ -73,6 +73,108 @@ export async function adjustStockService(data: any) {
     }, { timeout: 30000 });
 }
 
+/**
+ * Transfer stock between warehouses (Mutasi Barang)
+ * Atomically decrements source and increments destination.
+ */
+export async function transferStockService(data: {
+    productId: string;
+    fromWarehouseId: string;
+    fromVendorName: string;
+    toWarehouseId: string;
+    toVendorName: string;
+    quantity: number;
+    notes: string;
+    transferredBy: string;
+}) {
+    const { getPrisma } = require("@/lib/prisma");
+    const prisma = getPrisma();
+
+    return await prisma.$transaction(async (tx: any) => {
+        const { productId, fromWarehouseId, fromVendorName, toWarehouseId, toVendorName, quantity, notes, transferredBy } = data;
+
+        if (quantity <= 0) throw new Error("Jumlah mutasi harus lebih dari 0.");
+        if (fromWarehouseId === toWarehouseId && fromVendorName === toVendorName) {
+            throw new Error("Gudang asal dan tujuan tidak boleh sama.");
+        }
+
+        // Check source stock
+        const sourceStock = await tx.stock.findUnique({
+            where: {
+                productId_warehouseId_vendorName: {
+                    productId,
+                    warehouseId: fromWarehouseId,
+                    vendorName: fromVendorName
+                }
+            }
+        });
+
+        const sourceQty = sourceStock ? Number(sourceStock.quantity) : 0;
+        if (sourceQty < quantity) {
+            throw new Error(`Stok gudang asal tidak cukup. Tersedia: ${sourceQty}, Diminta: ${quantity}`);
+        }
+
+        const refCode = `MUT-${transferredBy.substring(0, 3).toUpperCase()}-${Date.now().toString().slice(-6)}`;
+
+        // 1. Deduct from source warehouse
+        await tx.stock.update({
+            where: {
+                productId_warehouseId_vendorName: {
+                    productId,
+                    warehouseId: fromWarehouseId,
+                    vendorName: fromVendorName
+                }
+            },
+            data: { quantity: { decrement: quantity } }
+        });
+
+        await tx.stockMovement.create({
+            data: {
+                productId,
+                warehouseId: fromWarehouseId,
+                vendorName: fromVendorName,
+                quantity: -quantity,
+                type: "TRANSFER_OUT",
+                reference: `${refCode} → ${notes}`
+            }
+        });
+
+        // 2. Add to destination warehouse
+        await tx.stock.upsert({
+            where: {
+                productId_warehouseId_vendorName: {
+                    productId,
+                    warehouseId: toWarehouseId,
+                    vendorName: toVendorName
+                }
+            },
+            update: { quantity: { increment: quantity } },
+            create: {
+                productId,
+                warehouseId: toWarehouseId,
+                vendorName: toVendorName,
+                quantity
+            }
+        });
+
+        await tx.stockMovement.create({
+            data: {
+                productId,
+                warehouseId: toWarehouseId,
+                vendorName: toVendorName,
+                quantity,
+                type: "TRANSFER_IN",
+                reference: `${refCode} ← ${notes}`
+            }
+        });
+
+        revalidatePath("/warehouse");
+        revalidatePath("/");
+        return { success: true, reference: refCode };
+    }, { timeout: 30000 });
+}
+
+
 export async function getProductTrackingService(productId: string, userId: string, prefix: string, isAdmin: boolean) {
     const { getPrisma } = require("@/lib/prisma");
     const prisma = getPrisma();
