@@ -6,7 +6,6 @@ async function checkTrn() {
         where: {
             OR: [
                 { deliveryNumber: { contains: '01072026', mode: 'insensitive' } },
-                { sjNumber: { contains: '01072026', mode: 'insensitive' } },
                 { invoiceNumber: { contains: '01072026', mode: 'insensitive' } }
             ]
         },
