@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Plus, Warehouse as WarehouseIcon, Layers, Trash2, FileText, Search, Activity, Box, ArrowUpRight, ArrowDownLeft, Download, Eye, Edit2, ArrowLeftRight, ChevronDown, ChevronRight, AlertTriangle } from "lucide-react";
 import { StockInputModal } from "./StockInputModal";
 import { StockAdjustmentModal } from "./StockAdjustmentModal";
@@ -57,7 +57,7 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
 
     const getStockMetadata = (productId: string, warehouseId: string, vendorName: string) => {
         const matchingReceipt = unverifiedReceipts.find(r => 
-            (r.receivedFrom || "UMUM").trim().toLowerCase() === (vendorName || "UMUM").trim().toLowerCase() && 
+            (r.receivedFrom || "CIBINONG").trim().toLowerCase() === (vendorName || "CIBINONG").trim().toLowerCase() && 
             r.warehouseId === warehouseId && 
             r.items?.some((item: any) => item.productId === productId)
         );
@@ -91,7 +91,7 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                         return {
                             'SKU': p.sku,
                             'Nama Barang': p.name,
-                            'Vendor / PT': s.vendorName || "UMUM",
+                            'Vendor / PT': s.vendorName || "CIBINONG",
                             'Gudang': warehouses.find(w => w.id === s.warehouseId)?.name || 'Unknown',
                             'Sales Person': meta.salesPerson,
                             'Satuan': p.uom,
@@ -142,7 +142,7 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                         return {
                             'SKU': p.sku,
                             'Nama Barang': p.name,
-                            'Vendor / PT': s.vendorName || "UMUM",
+                            'Vendor / PT': s.vendorName || "CIBINONG",
                             'Gudang': warehouses.find(w => w.id === s.warehouseId)?.name || 'Unknown',
                             'Sales Person': meta.salesPerson,
                             'Satuan': p.uom,
@@ -441,7 +441,7 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                                                     <td className="px-6 py-3 text-left">
                                                                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-50 text-slate-700 text-[10px] font-bold border border-slate-200">
                                                                             <WarehouseIcon className="h-3 w-3 text-slate-400 shrink-0" />
-                                                                            <span className="truncate">{s.vendorName || "UMUM"}</span>
+                                                                            <span className="truncate">{s.vendorName || "CIBINONG"}</span>
                                                                         </span>
                                                                     </td>
                                                                     <td className="px-6 py-3 text-center">
@@ -550,7 +550,7 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                                                             <div className="font-bold text-slate-700 text-xs truncate mb-1">{whName}</div>
                                                                             <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-white text-slate-600 text-[10px] font-bold border border-slate-200">
                                                                                 <WarehouseIcon className="h-3 w-3 text-slate-400 shrink-0" />
-                                                                                <span className="truncate">{s.vendorName || "UMUM"}</span>
+                                                                                <span className="truncate">{s.vendorName || "CIBINONG"}</span>
                                                                             </span>
                                                                         </div>
                                                                         <span className={cn(

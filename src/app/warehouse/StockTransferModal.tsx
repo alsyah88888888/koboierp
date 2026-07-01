@@ -22,7 +22,7 @@ export function StockTransferModal({ products, warehouses, onClose, onSuccess, p
     const [fromWarehouseId, setFromWarehouseId] = useState(preselectedStock?.warehouseId || "");
     const [fromVendorName, setFromVendorName] = useState(preselectedStock?.vendorName || "");
     const [toWarehouseId, setToWarehouseId] = useState("");
-    const [toVendorName, setToVendorName] = useState("UMUM");
+    const [toVendorName, setToVendorName] = useState("CIBINONG");
     const [quantity, setQuantity] = useState<number | "">("");
     const [notes, setNotes] = useState("");
     const [isLoading, setIsLoading] = useState(false);
@@ -56,7 +56,7 @@ export function StockTransferModal({ products, warehouses, onClose, onSuccess, p
         setProductSearch(product.name);
         setShowDropdown(false);
         setFromWarehouseId("");
-        setFromVendorName("UMUM");
+        setFromVendorName("CIBINONG");
         setToWarehouseId("");
         setQuantity("");
     };

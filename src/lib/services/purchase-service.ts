@@ -160,7 +160,7 @@ export async function createGoodsReceiptService(data: any, userId: string) {
             data: {
                 receiptNumber,
                 formNumber: data.formNumber?.trim() || null,
-                receivedFrom: data.receivedFrom || "UMUM",
+                receivedFrom: data.receivedFrom || "CIBINONG",
                 warehouse: { connect: { id: data.warehouseId } },
                 salesPerson: data.salesPerson,
                 notes: updatedNotes,
@@ -188,7 +188,7 @@ export async function createGoodsReceiptService(data: any, userId: string) {
 
         // Always add stock at creation stage (Option A)
         for (const item of data.items) {
-            const vendorName = data.receivedFrom || "UMUM";
+            const vendorName = data.receivedFrom || "CIBINONG";
             await tx.stock.upsert({
                 where: {
                     productId_warehouseId_vendorName: {
@@ -265,7 +265,7 @@ export async function createGoodsReceiptService(data: any, userId: string) {
                         lotNumber,
                         productId: grItem.productId,
                         grItemId: grItem.id,
-                        supplierName: data.receivedFrom || "UMUM",
+                        supplierName: data.receivedFrom || "CIBINONG",
                         purchasePrice: grItem.purchasePrice,
                         landedCost: landedCost,
                         grNumber: receiptNumber,
@@ -301,7 +301,7 @@ export async function updateGoodsReceiptService(id: string, data: any, userId: s
 
         // 1. Revert Old Stock (Always needed for Option A update)
         for (const item of oldReceipt.items) {
-            const vendorName = oldReceipt.receivedFrom || "UMUM";
+            const vendorName = oldReceipt.receivedFrom || "CIBINONG";
             await tx.stock.upsert({
                 where: {
                     productId_warehouseId_vendorName: {
@@ -428,7 +428,7 @@ export async function updateGoodsReceiptService(id: string, data: any, userId: s
         // 4. Apply New Stock (Always for Option A update)
         if (true) {
             for (const item of data.items) {
-                const vendorName = data.receivedFrom || "UMUM";
+                const vendorName = data.receivedFrom || "CIBINONG";
                 await tx.stock.upsert({
                     where: {
                         productId_warehouseId_vendorName: {
@@ -503,7 +503,7 @@ export async function updateGoodsReceiptService(id: string, data: any, userId: s
                         lotNumber,
                         productId: grItem.productId,
                         grItemId: grItem.id,
-                        supplierName: data.receivedFrom || "UMUM",
+                        supplierName: data.receivedFrom || "CIBINONG",
                         purchasePrice: grItem.purchasePrice,
                         landedCost: landedCost,
                         grNumber: currentReceiptNumber,
@@ -573,7 +573,7 @@ export async function createPurchaseReturnService(data: any, userId: string) {
         });
 
         for (const item of data.items) {
-            const vendorName = receipt.receivedFrom || "UMUM";
+            const vendorName = receipt.receivedFrom || "CIBINONG";
             await tx.stock.upsert({
                 where: {
                     productId_warehouseId_vendorName: {
@@ -749,7 +749,7 @@ export async function deletePurchaseReturnService(id: string) {
         if (!ret) throw new Error("Return record not found");
 
         for (const item of ret.items) {
-            const vendorName = ret.receipt.receivedFrom || "UMUM";
+            const vendorName = ret.receipt.receivedFrom || "CIBINONG";
             await tx.stock.upsert({
                 where: {
                     productId_warehouseId_vendorName: {

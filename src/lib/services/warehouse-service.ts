@@ -380,7 +380,7 @@ export async function voidGoodsReceiptService(id: string, reason: string) {
         if (receipt.isVerified) {
             // Revert Stock
             for (const item of receipt.items) {
-                const vendorName = receipt.receivedFrom || "UMUM";
+                const vendorName = receipt.receivedFrom || "CIBINONG";
                 
                 await tx.stock.upsert({
                     where: {
@@ -568,7 +568,7 @@ export async function syncProductStockService(productId: string, syncBy: string)
 
         if (discrepancy === 0) return { success: true, message: "Stok sudah sinkron." };
 
-        // 2. We apply the correction to the 'UMUM' vendor stock in the primary warehouse (or first found)
+        // 2. We apply the correction to the 'CIBINONG' vendor stock in the primary warehouse (or first found)
         const primaryStock = p.stocks[0] || await tx.stock.findFirst({ where: { productId } });
         
         if (!primaryStock) {
@@ -580,7 +580,7 @@ export async function syncProductStockService(productId: string, syncBy: string)
                 data: {
                     productId,
                     warehouseId: warehouse.id,
-                    vendorName: "UMUM",
+                    vendorName: "CIBINONG",
                     quantity: calculatedStock
                 }
             });
@@ -589,7 +589,7 @@ export async function syncProductStockService(productId: string, syncBy: string)
                 data: {
                     productId,
                     warehouseId: warehouse.id,
-                    vendorName: "UMUM",
+                    vendorName: "CIBINONG",
                     quantity: calculatedStock,
                     type: "ADJUSTMENT",
                     reference: `SYNC-INITIAL-${syncBy.substring(0, 3).toUpperCase()}`
@@ -693,7 +693,7 @@ export async function getStockCardService(productId: string, startDate?: string,
             qtyOut: qty < 0 ? Math.abs(qty) : 0,
             balance: currentBalance,
             warehouse: m.warehouse?.name || "Unknown",
-            vendor: m.vendorName || "UMUM"
+            vendor: m.vendorName || "CIBINONG"
         };
     });
 

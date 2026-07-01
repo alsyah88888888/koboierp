@@ -901,7 +901,7 @@ export async function getBatchTraceabilityService(filters: {
                         'No. SJ'            : delivery?.deliveryNumber || '-',
                         'No. SO'            : soNumber,
                         'Buyer'             : delivery?.buyerName || delivery?.recipient || '-',
-                        'Sales Person Jual' : delivery?.salesPerson || 'UMUM',
+                        'Sales Person Jual' : delivery?.salesPerson || 'CIBINONG',
                         'QTY Alokasi'       : Number(alloc.qty),
                         'HPP Saat Jual (Rp)': Number(alloc.hppAtTime),
                         'Status Bayar Jual' : delivery?.paymentStatus || '-',

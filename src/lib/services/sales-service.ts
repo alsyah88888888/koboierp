@@ -140,7 +140,7 @@ export async function createSalesDeliveryService(data: any, userId: string) {
                         quantity: item.quantity,
                         salesPrice: item.salesPrice as any,
                         uom: item.uom,
-                        vendorName: item.vendorName || "UMUM"
+                        vendorName: item.vendorName || "CIBINONG"
                     }))
                 }
             },
@@ -186,7 +186,7 @@ export async function createSalesDeliveryService(data: any, userId: string) {
 
         // 4. Process items, update stock, and update PO quantities
         for (const item of data.items) {
-            const vendorName = item.vendorName || "UMUM";
+            const vendorName = item.vendorName || "CIBINONG";
             
             // --- AUTO-LINK LOGIC ---
             // If linked to an Order but this specific item line doesn't have an orderItemId,
@@ -488,7 +488,7 @@ export async function updateSalesDeliveryService(id: string, data: any, userId: 
         });
 
         for (const item of data.items) {
-            const vendorName = item.vendorName || "UMUM";
+            const vendorName = item.vendorName || "CIBINONG";
 
             const currentStock = await tx.stock.findUnique({
                 where: {
