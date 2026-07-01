@@ -19,7 +19,7 @@ export default async function PartnerLedgerPage() {
             select: {
                 id: true, deliveryNumber: true, invoiceNumber: true,
                 buyerName: true, date: true, grandTotal: true,
-                paidAmount: true, paymentStatus: true,
+                paidAmount: true, paymentStatus: true, updatedAt: true,
                 returns: {
                     where: { isVoid: false },
                     select: {
@@ -34,7 +34,7 @@ export default async function PartnerLedgerPage() {
             orderBy: { date: "desc" },
             select: {
                 id: true, receiptNumber: true, receivedFrom: true,
-                date: true, grandTotal: true, paidAmount: true, paymentStatus: true,
+                date: true, grandTotal: true, paidAmount: true, paymentStatus: true, updatedAt: true,
                 returns: {
                     where: { isVoid: false },
                     select: {

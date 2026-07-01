@@ -229,7 +229,7 @@ export function PartnerLedger({ salesDeliveries, goodsReceipts, purchaseOrders }
                                 {p.overdueCount>0 && (
                                     <div className="mt-3 pt-3 border-t border-slate-100 flex items-center gap-1.5">
                                         <AlertTriangle className="h-3 w-3 text-rose-500"/>
-                                        <span className="text-[9px] font-black text-rose-600 uppercase tracking-wider">{p.overdueCount} Faktur Kadaluarsa — Segera Tagih!</span>
+                                        <span className="text-[9px] font-black text-rose-600 uppercase tracking-wider">{p.overdueCount} Faktur Kadaluarsa — {activeTab==="AP" ? "Segera Bayar!" : "Segera Tagih!"}</span>
                                     </div>
                                 )}
                                 {p.overdueCount===0 && p.dueSoonCount>0 && (
@@ -302,13 +302,14 @@ export function PartnerLedger({ salesDeliveries, goodsReceipts, purchaseOrders }
                                                     <th className="px-5 py-3 whitespace-nowrap">Jatuh Tempo</th>
                                                     <th className="px-5 py-3 text-right whitespace-nowrap">Total</th>
                                                     <th className="px-5 py-3 text-right whitespace-nowrap">Terbayar</th>
+                                                    <th className="px-5 py-3 whitespace-nowrap">Tgl Bayar</th>
                                                     <th className="px-5 py-3 text-right whitespace-nowrap">Sisa</th>
                                                     <th className="px-5 py-3">Status</th>
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-slate-50">
                                                 {filteredInvoices.length===0 && (
-                                                    <tr><td colSpan={7} className="px-5 py-8 text-center text-slate-400 italic text-[10px] uppercase tracking-widest">Tidak ada data</td></tr>
+                                                    <tr><td colSpan={8} className="px-5 py-8 text-center text-slate-400 italic text-[10px] uppercase tracking-widest">Tidak ada data</td></tr>
                                                 )}
                                                 {filteredInvoices.map((inv:any) => (
                                                     <InvoiceRow key={inv.id} inv={inv} activeTab={activeTab}
@@ -351,6 +352,12 @@ function InvoiceRow({ inv, refNum, returns, activeTab, purchaseOrders }: any) {
                 </td>
                 <td className="px-5 py-3.5 text-right font-mono font-bold text-slate-700 whitespace-nowrap">{formatCurrency(Number(inv.grandTotal))}</td>
                 <td className="px-5 py-3.5 text-right font-mono font-bold text-emerald-600 whitespace-nowrap">{formatCurrency(Number(inv.paidAmount))}</td>
+                <td className="px-5 py-3.5 font-mono text-[10px] whitespace-nowrap">
+                    {Number(inv.paidAmount) > 0 && inv.updatedAt
+                        ? <span className="text-emerald-600 font-bold">{format(new Date(inv.updatedAt), "dd/MM/yy")}</span>
+                        : <span className="text-slate-300">—</span>
+                    }
+                </td>
                 <td className="px-5 py-3.5 text-right font-mono font-black whitespace-nowrap">
                     <span className={inv.outstanding>0?(activeTab==="AR"?"text-emerald-700":"text-rose-700"):"text-slate-400"}>{formatCurrency(inv.outstanding)}</span>
                 </td>
@@ -358,7 +365,7 @@ function InvoiceRow({ inv, refNum, returns, activeTab, purchaseOrders }: any) {
             </tr>
             {expanded && (
                 <tr>
-                    <td colSpan={7} className="px-8 py-3 bg-slate-50/80 border-b border-slate-100">
+                    <td colSpan={8} className="px-8 py-3 bg-slate-50/80 border-b border-slate-100">
                         <div className="space-y-3">
                             {returns.length>0 && (
                                 <div>
