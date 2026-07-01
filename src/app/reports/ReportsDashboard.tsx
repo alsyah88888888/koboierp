@@ -1037,9 +1037,18 @@ export function ReportsDashboard() {
         else if (activeTab === 'monthly') fetchMonthly();
         else if (activeTab === 'closing') {
             fetchClosingReport(closingPeriod.month, closingPeriod.year, closingPrefix);
-            fetchMonthly(); // Also fetch comprehensive data for print
+            // Sync selectedMonth/Year with closingPeriod so fetchMonthly uses the correct period for print
+            setSelectedMonth(closingPeriod.month);
+            setSelectedYear(closingPeriod.year);
         }
     }, [activeTab, fetchDaily, fetchWeekly, fetchMonthly, closingPeriod, closingPrefix]);
+
+    // When on closing tab, also fetch comprehensive monthly data for print (synced to closingPeriod)
+    useEffect(() => {
+        if (activeTab === 'closing') {
+            fetchMonthly();
+        }
+    }, [activeTab, selectedMonth, selectedYear, fetchMonthly]);
 
     // ── Helpers ───────────────────────────────────────────────────────────
     const fmtDate = (d: any) => d ? new Date(d).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
