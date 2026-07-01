@@ -671,10 +671,19 @@ export async function getStockCardService(productId: string, startDate?: string,
         let label = m.type;
         if (m.type === "GOODS_RECEIPT") label = "PEMBELIAN";
         if (m.type === "SALE") label = "PENJUALAN";
-        if (m.type === "ADJUSTMENT") label = "ADJUSTMENT";
-        if (m.type === "PURCHASE_VOID") label = "VOID BELI";
+        if (m.type === "SALE_UPDATE") label = "EDIT PENJUALAN";
         if (m.type === "SALE_VOID") label = "VOID JUAL";
         if (m.type === "SALE_DELETE") label = "HAPUS JUAL";
+        if (m.type === "PURCHASE") label = "PEMBELIAN";
+        if (m.type === "PURCHASE_UPDATE") label = "EDIT BELI";
+        if (m.type === "PURCHASE_UPDATE_REVERT") label = "REVERT BELI";
+        if (m.type === "PURCHASE_VOID") label = "VOID BELI";
+        if (m.type === "PURCHASE_RETURN") label = "RETUR BELI";
+        if (m.type === "ADJUSTMENT") label = "PENYESUAIAN";
+        if (m.type === "IN") label = "STOK MASUK";
+        if (m.type === "OUT") label = "STOK KELUAR";
+        if (m.type === "TRANSFER_IN") label = "MUTASI MASUK";
+        if (m.type === "TRANSFER_OUT") label = "MUTASI KELUAR";
 
         return {
             date: m.createdAt,

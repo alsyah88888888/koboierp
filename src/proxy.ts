@@ -272,8 +272,15 @@ export async function callAction(actionName: string, ...args: any[]) {
             const { syncProductStockAction } = await import("@/actions/warehouse");
             return await syncProductStockAction(...args as [string]);
         case "getStockCardAction":
+        case "getStockCard": {
             const { getStockCardAction } = await import("@/actions/warehouse");
+            // Support both object form {productId, startDate, endDate, warehouseId} and positional args
+            const arg = args[0];
+            if (arg && typeof arg === "object" && !Array.isArray(arg)) {
+                return await getStockCardAction(arg.productId, arg.startDate, arg.endDate, arg.warehouseId);
+            }
             return await getStockCardAction(...args as [string, string, string, string]);
+        }
         case "bulkVerifyGoodsReceipt":
             const { bulkVerifyGoodsReceiptAction } = await import("@/actions/warehouse");
             return await bulkVerifyGoodsReceiptAction(...args as [string]);
