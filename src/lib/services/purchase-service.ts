@@ -170,6 +170,7 @@ export async function createGoodsReceiptService(data: any, userId: string) {
                 totalDiscount: totalDiscountNominal,
                 taxRate: taxRatePercent,
                 taxAmount: taxAmount,
+                isTaxCreditable: data.isTaxCreditable !== undefined ? data.isTaxCreditable : true,
                 grandTotal: grandTotal,
                 cashbacks: data.cashbacks || [],
                 isVerified: false,
@@ -257,8 +258,19 @@ export async function createGoodsReceiptService(data: any, userId: string) {
                 const netAfterGlobalDiscount = netAfterItemDiscount - propDiscount;
                 // Potong Cashback
                 const netAfterCb = netAfterGlobalDiscount * (1 - (cbPct / 100));
+
+                // --- PAJAK KAPITALISASI ---
+                const isTaxCreditable = data.isTaxCreditable !== undefined ? data.isTaxCreditable : true;
+                let finalNet = netAfterCb;
+                if (!isTaxCreditable && taxRatePercent > 0) {
+                    const dppBase = subtotal - totalDiscountNominal;
+                    const proporsiDpp = dppBase > 0 ? (netAfterCb / dppBase) : 0;
+                    const itemTax = proporsiDpp * taxAmount;
+                    finalNet += itemTax;
+                }
+
                 // Landed Cost per Pcs
-                const landedCost = (Number(grItem.quantity) || 0) > 0 ? netAfterCb / Number(grItem.quantity) : Number(grItem.purchasePrice);
+                const landedCost = (Number(grItem.quantity) || 0) > 0 ? finalNet / Number(grItem.quantity) : Number(grItem.purchasePrice);
 
                 await tx.productLot.create({
                     data: {
@@ -411,6 +423,7 @@ export async function updateGoodsReceiptService(id: string, data: any, userId: s
                 totalDiscount: totalDiscountNominal,
                 taxRate: taxRatePercent,
                 taxAmount: taxAmount,
+                isTaxCreditable: data.isTaxCreditable !== undefined ? data.isTaxCreditable : true,
                 grandTotal: grandTotal,
                 cashbacks: data.cashbacks || [],
                 items: {
@@ -495,8 +508,19 @@ export async function updateGoodsReceiptService(id: string, data: any, userId: s
                 const netAfterGlobalDiscount = netAfterItemDiscount - propDiscount;
                 // Potong Cashback
                 const netAfterCb = netAfterGlobalDiscount * (1 - (cbPct / 100));
+
+                // --- PAJAK KAPITALISASI ---
+                const isTaxCreditable = data.isTaxCreditable !== undefined ? data.isTaxCreditable : true;
+                let finalNet = netAfterCb;
+                if (!isTaxCreditable && taxRatePercent > 0) {
+                    const dppBase = subtotal - totalDiscountNominal;
+                    const proporsiDpp = dppBase > 0 ? (netAfterCb / dppBase) : 0;
+                    const itemTax = proporsiDpp * taxAmount;
+                    finalNet += itemTax;
+                }
+
                 // Landed Cost per Pcs
-                const landedCost = (Number(grItem.quantity) || 0) > 0 ? netAfterCb / Number(grItem.quantity) : Number(grItem.purchasePrice);
+                const landedCost = (Number(grItem.quantity) || 0) > 0 ? finalNet / Number(grItem.quantity) : Number(grItem.purchasePrice);
 
                 await tx.productLot.create({
                     data: {

@@ -43,6 +43,7 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
     const [error, setError] = useState("");
     const [result, setResult] = useState<any>(null);
     const [notes, setNotes] = useState(initialData?.notes || "");
+    const [isTaxCreditable, setIsTaxCreditable] = useState(initialData?.isTaxCreditable ?? true);
 
     // Cashback (CB) state — each CB has a label and % rate applied to DPP
     const [cashbacks, setCashbacks] = useState<{ label: string; rate: string }[]>(
@@ -201,6 +202,7 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
                 taxInvoiceDate: (hasTaxInvoice && taxInvoiceDate) ? new Date(taxInvoiceDate) : null,
                 totalDiscount: finalDiscountNominal,
                 taxRate: Number(taxRate),
+                isTaxCreditable,
                 cashbacks: cashbacks.filter(cb => parseIndoNumber(cb.rate) > 0),
                 items: items.map(item => ({
                     productId: item.productId,
@@ -650,6 +652,20 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
                                                 <span className="text-[9px] text-blue-400 font-bold uppercase">PPN ({taxRate}%)</span>
                                                 <span className="text-[10px] font-black text-blue-300">+ {formatCurrency(taxAmount)}</span>
                                             </div>
+                                            {Number(taxRate) > 0 && (
+                                                <div className="pt-2 border-t border-white/5">
+                                                    <label className="flex items-center gap-2 cursor-pointer group">
+                                                        <div className={cn("w-4 h-4 rounded border flex items-center justify-center transition-all", isTaxCreditable ? "bg-blue-500 border-blue-500" : "bg-white/5 border-white/20 group-hover:border-white/40")}>
+                                                            {isTaxCreditable && <Check className="w-3 h-3 text-white" />}
+                                                        </div>
+                                                        <input type="checkbox" className="hidden" checked={isTaxCreditable} onChange={(e) => setIsTaxCreditable(e.target.checked)} />
+                                                        <div>
+                                                            <div className="text-[10px] font-bold text-slate-300">PPN BISA DIKREDITKAN (MASUKAN)</div>
+                                                            <div className="text-[8px] text-slate-500 leading-tight">Jika off, PPN dialokasikan ke HPP</div>
+                                                        </div>
+                                                    </label>
+                                                </div>
+                                            )}
                                         </div>
 
                                         {/* TOTAL NETTO */}

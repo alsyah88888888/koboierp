@@ -48,7 +48,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
     const [selectedHistoryItem, setSelectedHistoryItem] = useState<any>(null);
     const [arHistoryMonth, setArHistoryMonth] = useState<string>("ALL");
     const [apHistoryMonth, setApHistoryMonth] = useState<string>("ALL");
-    const [activeTab, setActiveTab] = useState<"ledger" | "ap" | "ar" | "checker" | "purchase_requests" | "history" | "bank_reconciliation">("ledger");
+    const [activeTab, setActiveTab] = useState<"ledger" | "ap" | "ar" | "checker" | "purchase_requests" | "history" | "bank_reconciliation" | "tax_efaktur">("ledger");
     const [loading, setLoading] = useState<string | null>(null);
     const [isClient, setIsClient] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState<any | null>(null);
@@ -717,6 +717,25 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
     ];
     // -----------------------------
 
+    // --- PAJAK & E-FAKTUR ---
+    const ppnKeluaran = [...settledSales, ...pendingSales].reduce((sum: number, sale: any) => {
+        const d = sale.taxInvoiceDate ? new Date(sale.taxInvoiceDate) : new Date(sale.date || sale.createdAt);
+        if (d.getMonth() === currentMonth && d.getFullYear() === currentYear && Number(sale.taxAmount || 0) > 0) {
+            return sum + Number(sale.taxAmount);
+        }
+        return sum;
+    }, 0);
+
+    const ppnMasukan = [...settledPurchases, ...pendingPurchases].reduce((sum: number, purchase: any) => {
+        const d = purchase.taxInvoiceDate ? new Date(purchase.taxInvoiceDate) : new Date(purchase.date || purchase.createdAt);
+        if (d.getMonth() === currentMonth && d.getFullYear() === currentYear && Number(purchase.taxAmount || 0) > 0 && purchase.isTaxCreditable !== false) {
+            return sum + Number(purchase.taxAmount);
+        }
+        return sum;
+    }, 0);
+
+    const kurangLebihBayar = ppnKeluaran - ppnMasukan;
+    // -----------------------------
     return (
         <div className="space-y-8 pb-16 animate-fade-up">
             {/* Header Section */}
@@ -1007,6 +1026,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                     { id: "checker", label: "Checker", icon: CheckCircle2, count: unverifiedReceipts.length },
                     { id: "purchase_requests", label: "Pengajuan", icon: Wallet, count: pendingPurchaseRequests.length },
                     { id: "history", label: "History", icon: Clock, count: (settledPurchases?.length || 0) + (settledSales?.length || 0) },
+                    { id: "tax_efaktur", label: "Pajak & e-Faktur", icon: FileCode2, count: 0 },
                     { id: "bank_reconciliation", label: "Rekonsiliasi Bank", icon: Landmark, count: bankMutations?.filter((m: any) => !m.isReconciled).length || 0 },
                 ].map((tab) => (
                     <button
@@ -2041,6 +2061,81 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                         ))}
                                     </tbody>
                                 </table>
+                            </div>
+                        </div>
+                    </div>
+                    </div>
+                )}
+
+                {activeTab === "tax_efaktur" && (
+                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        {/* Header Tax */}
+                        <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-3xl p-8 text-white shadow-xl relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/3"></div>
+                            <div className="relative z-10 flex flex-col md:flex-row gap-8 justify-between">
+                                <div className="space-y-2">
+                                    <h3 className="text-sm font-black uppercase tracking-[0.2em] text-slate-400">Rekonsiliasi Pajak (Bulan Ini)</h3>
+                                    <p className="text-3xl font-black">
+                                        {formatCurrency(Math.abs(kurangLebihBayar))}
+                                    </p>
+                                    <div className={cn(
+                                        "inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider",
+                                        kurangLebihBayar > 0 ? "bg-rose-500/20 text-rose-300" : "bg-emerald-500/20 text-emerald-300"
+                                    )}>
+                                        {kurangLebihBayar > 0 ? "Kurang Bayar (Hutang PPN)" : "Lebih Bayar (Kompensasi)"}
+                                    </div>
+                                </div>
+                                <div className="flex gap-4">
+                                    <div className="bg-white/10 rounded-2xl p-4 min-w-[160px] border border-white/5">
+                                        <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">PPN Keluaran</div>
+                                        <div className="text-lg font-black text-blue-300">{formatCurrency(ppnKeluaran)}</div>
+                                    </div>
+                                    <div className="bg-white/10 rounded-2xl p-4 min-w-[160px] border border-white/5">
+                                        <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">PPN Masukan (Kredit)</div>
+                                        <div className="text-lg font-black text-amber-300">{formatCurrency(ppnMasukan)}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Export Buttons */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="erp-card p-6 bg-white border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                                <div>
+                                    <div className="flex items-center gap-3 mb-1">
+                                        <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
+                                            <ArrowUpCircle className="h-5 w-5" />
+                                        </div>
+                                        <h4 className="font-black text-slate-900 uppercase tracking-tight text-sm">Faktur Keluaran</h4>
+                                    </div>
+                                    <p className="text-xs text-slate-500 pl-11">Download CSV format e-Faktur DJP untuk transaksi Penjualan.</p>
+                                </div>
+                                <a 
+                                    href={`/api/reports/e-faktur?type=keluaran&month=${currentMonth + 1}&year=${currentYear}`} 
+                                    download
+                                    className="w-full sm:w-auto flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all"
+                                >
+                                    <Download className="h-4 w-4" /> CSV Keluaran
+                                </a>
+                            </div>
+
+                            <div className="erp-card p-6 bg-white border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                                <div>
+                                    <div className="flex items-center gap-3 mb-1">
+                                        <div className="p-2 bg-amber-50 text-amber-600 rounded-lg">
+                                            <ArrowDownCircle className="h-5 w-5" />
+                                        </div>
+                                        <h4 className="font-black text-slate-900 uppercase tracking-tight text-sm">Faktur Masukan</h4>
+                                    </div>
+                                    <p className="text-xs text-slate-500 pl-11">Download CSV format e-Faktur DJP untuk transaksi Pembelian (Bisa Dikreditkan).</p>
+                                </div>
+                                <a 
+                                    href={`/api/reports/e-faktur?type=masukan&month=${currentMonth + 1}&year=${currentYear}`} 
+                                    download
+                                    className="w-full sm:w-auto flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all"
+                                >
+                                    <Download className="h-4 w-4" /> CSV Masukan
+                                </a>
                             </div>
                         </div>
                     </div>
