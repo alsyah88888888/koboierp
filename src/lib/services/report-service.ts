@@ -622,7 +622,7 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
         const totalAR = arRecords.reduce((acc: number, r: any) => acc + (Number(r.grandTotal) - Number(r.paidAmount)), 0);
         const totalAP = apRecords.reduce((acc: number, r: any) => acc + (Number(r.grandTotal) - Number(r.paidAmount)), 0);
 
-        const grossProfit = totalRevenue - totalHpp;
+        const grossProfit = totalRevenue - netPurchases; // User requested: Penjualan - Pembelian
         const netProfit = grossProfit - totalExpenses;
 
         return {
@@ -1144,7 +1144,7 @@ export async function getComprehensiveDailyReportService(date?: string, prefix?:
         // Calculate HPP of items sold from traceability
         const totalHPP = dailyTraceability.reduce((sum: number, t: any) => sum + Number(t['TOTAL BELI'] || 0), 0);
 
-        const grossProfit = totalSales - totalHPP;
+        const grossProfit = totalSales - totalPurchases; // User requested: Penjualan - Pembelian
         const netProfit = grossProfit - totalExpense;
         const grossMarginPct = totalSales > 0 ? (grossProfit / totalSales * 100) : 0;
         const netMarginPct = totalSales > 0 ? (netProfit / totalSales * 100) : 0;
@@ -1456,7 +1456,7 @@ export async function getComprehensiveWeeklyReportService(weekStartDate?: string
         const totalHPP = dailyBreakdown.reduce((sum: number, d: any) => sum + Number(d.hpp || 0), 0);
         const totalExpenses = dailyBreakdown.reduce((sum: number, d: any) => sum + Number(d.opsExpense || 0), 0);
 
-        const grossProfit = totalSales - totalHPP;
+        const grossProfit = totalSales - totalPurchases; // User requested: Penjualan - Pembelian
         const netProfit = grossProfit - totalExpenses;
         const grossMarginPct = totalSales > 0 ? (grossProfit / totalSales * 100) : 0;
         const netMarginPct = totalSales > 0 ? (netProfit / totalSales * 100) : 0;
@@ -1677,9 +1677,12 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
 
         // COGS / HPP — from Traceability for 100% accuracy
         let totalHPP = monthlyTraceability.reduce((sum: number, t: any) => sum + Number(t['TOTAL BELI'] || 0), 0);
+        
+        // Total Purchases (for Cash-flow basis margin)
+        const totalPurchases = purchases.reduce((sum: number, p: any) => sum + Number(p.grandTotal || 0), 0);
 
         // Gross Profit
-        const grossProfit = totalRevenue - totalHPP;
+        const grossProfit = totalRevenue - totalPurchases; // User requested: Penjualan - Pembelian
         const grossMarginPct = totalRevenue > 0 ? (grossProfit / totalRevenue * 100) : 0;
 
         // Operating Expenses
