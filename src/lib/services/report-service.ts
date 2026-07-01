@@ -445,7 +445,7 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
     endDate.setUTCHours(endDate.getUTCHours() - 7);
 
     try {
-        return await getBatchTraceabilityService({ startDate, endDate });
+        return await calculateProductTraceabilityInternal(startDate, endDate, prefix);
     } catch (error: any) {
         console.error('[getProductTraceabilityService] ERROR:', error);
         return { error: (error as Error).message || 'Failed to fetch traceability report' };
@@ -1112,7 +1112,7 @@ export async function getComprehensiveDailyReportService(date?: string, prefix?:
         const traceEndDate = new Date(Date.UTC(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), 23, 59, 59, 999));
         traceEndDate.setUTCHours(traceEndDate.getUTCHours() - 7);
 
-        const dailyTraceability = await getBatchTraceabilityService({ startDate: traceStartDate, endDate: traceEndDate }).catch(() => []);
+        const dailyTraceability = await calculateProductTraceabilityInternal(traceStartDate, traceEndDate, prefix).catch(() => []);
 
         // Calculate summaries
         const totalSales = sales.reduce((s: number, d: any) => s + Number(d.grandTotal || 0), 0);
@@ -1356,7 +1356,7 @@ export async function getComprehensiveWeeklyReportService(weekStartDate?: string
                 include: { product: { select: { sku: true, name: true } } },
                 orderBy: { createdAt: 'asc' }
             }),
-            getBatchTraceabilityService({ startDate, endDate }).catch(() => [])
+            calculateProductTraceabilityInternal(startDate, endDate, prefix).catch(() => [])
         ]);
 
         // Build daily breakdown for the 7 days
@@ -1665,7 +1665,7 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
                 orderBy: { createdAt: 'asc' }
             }),
             // Traceability
-            getBatchTraceabilityService({ startDate, endDate }).catch(() => [])
+            calculateProductTraceabilityInternal(startDate, endDate, prefix).catch(() => [])
         ]);
 
         // ── P&L Calculation ──────────────────────────────────────────────
