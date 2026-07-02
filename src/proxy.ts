@@ -18,6 +18,9 @@ export async function callAction(actionName: string, ...args: any[]) {
         throw new Error(`Action name must be a string. Received: ${typeof actionName}`);
     }
     switch (actionName) {
+        case "reallocateLotAction":
+            const { reallocateLotAction } = await import("@/actions/reports");
+            return await reallocateLotAction(...args as [string, string]);
         // SALES
         case "createSalesDelivery":
             const { createSalesDeliveryAction } = await import("@/actions/sales");
