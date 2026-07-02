@@ -635,12 +635,15 @@ export async function getAvailableLotsForProductAction(productId: string, includ
             where: {
                 productId: productId,
                 isVoided: false,
-                OR: [
-                    { remainingQty: { gt: 0 } },
-                    ...(includeLotId ? [{ id: includeLotId }] : [])
-                ]
+                // Allow selecting any lot (even if remainingQty <= 0) to allow manual HPP correction
+                // We order by grDate descending to show most recent lots first
+                // OR: [
+                //     { remainingQty: { gt: 0 } },
+                //     ...(includeLotId ? [{ id: includeLotId }] : [])
+                // ]
             },
-            orderBy: { grDate: 'asc' },
+            orderBy: { grDate: 'desc' },
+            take: 50, // Limit to last 50 lots to avoid performance issues
             select: {
                 id: true,
                 lotNumber: true,
