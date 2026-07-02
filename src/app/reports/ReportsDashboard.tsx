@@ -146,7 +146,8 @@ export function ReportsDashboard() {
         
         const data = closingReport.details.sales.map((s: any) => ({
             'Tanggal': format(new Date(s.date), 'MM/dd/yyyy'),
-            'No. Invoice': s.number,
+            'No. Invoice': s.invoiceNumber || s.number,
+            'No. Surat Jalan': s.number,
             'Customer': s.entity,
             'Qty': s.totalQty,
             'Total Harga': s.subtotal - s.discount,
@@ -1094,7 +1095,7 @@ export function ReportsDashboard() {
             // Sales sheet
             if (data.details.sales?.length) {
                 const rows = data.details.sales.map((s: any, i: number) => ({
-                    'No': i + 1, 'No. SJ': s.number, 'Tanggal': fmtDate(s.date),
+                    'No': i + 1, 'No. Invoice': s.invoiceNumber || s.number, 'No. Surat Jalan': s.number, 'Tanggal': fmtDate(s.date),
                     'Buyer': s.buyer, 'Sales': s.salesPerson || '-',
                     'Qty': s.totalQty, 'Subtotal': s.subtotal, 'Diskon': s.discount,
                     'PPN': s.tax, 'Grand Total': s.grandTotal,
@@ -1148,6 +1149,7 @@ export function ReportsDashboard() {
                     'Buyer': r['NAMA PEMBELI'],
                     'Sales': r.SALES || '-',
                     'No. Faktur Penjualan': r['NOMOR FAKTUR PENJUALAN'],
+                    'No. Surat Jalan': r['NOMOR SJ'],
                     'Tgl Jual': r['TANGGAL JUAL'],
                     'Total Jual (Net)': r['TOTAL JUAL'],
                     'Margin': r.MARGIN,
@@ -1187,7 +1189,7 @@ export function ReportsDashboard() {
                     'Buyer': r['NAMA PEMBELI'],
                     'Sales': r.SALES,
                     'No. Faktur Penjualan': r['NOMOR FAKTUR PENJUALAN'],
-                    'No. Surat Jalan': r['NOMOR SURAT JALAN'],
+                    'No. Surat Jalan': r['NOMOR SJ'],
                     'Tgl Jual': r['TANGGAL JUAL'],
                     'Qty Jual': r['QTY JUAL'],
                     'Total Jual (Net)': r['TOTAL JUAL'],
@@ -1263,7 +1265,7 @@ export function ReportsDashboard() {
                     'Buyer': r['NAMA PEMBELI'],
                     'Sales': r.SALES,
                     'No. Faktur Penjualan': r['NOMOR FAKTUR PENJUALAN'],
-                    'No. Surat Jalan': r['NOMOR SURAT JALAN'],
+                    'No. Surat Jalan': r['NOMOR SJ'],
                     'Tgl Jual': r['TANGGAL JUAL'],
                     'Qty Jual': r['QTY JUAL'],
                     'Total Jual (Net)': r['TOTAL JUAL'],
