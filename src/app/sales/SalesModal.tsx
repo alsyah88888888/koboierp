@@ -54,7 +54,26 @@ export default function SalesModal({ products, warehouses, customers, orders = [
     const parseIndoNumber = (val: string | number): number => {
         if (typeof val === 'number') return val;
         if (!val) return 0;
-        return Number(String(val).replace(/\./g, "").replace(",", ".")) || 0;
+        
+        let s = String(val).trim();
+        const commaCount = (s.match(/,/g) || []).length;
+        
+        if (commaCount > 0) {
+            return Number(s.replace(/\./g, "").replace(",", ".")) || 0;
+        }
+        
+        const dotCount = (s.match(/\./g) || []).length;
+        if (dotCount > 0) {
+            const parts = s.split('.');
+            const isThousandSeparator = parts.every((part, i) => i === 0 ? (part.length > 0 && part.length <= 3) : part.length === 3);
+            if (isThousandSeparator) {
+                return Number(s.replace(/\./g, "")) || 0;
+            } else {
+                return parseFloat(s) || 0;
+            }
+        }
+        
+        return Number(s) || 0;
     };
 
     useEffect(() => {
@@ -66,7 +85,7 @@ export default function SalesModal({ products, warehouses, customers, orders = [
             setDate(new Date(initialData.createdAt).toISOString().split('T')[0]);
             setPoNumber(initialData.poNumber || "");
             setInvoiceNumber(initialData.invoiceNumber || "");
-            setTotalDiscount(Number(initialData.totalDiscount || 0));
+            setTotalDiscount(initialData.totalDiscount ? String(initialData.totalDiscount).replace('.', ',') : "0");
             const initTax = Number(initialData.taxRate || 0);
             setTaxRate(initTax);
             setIsPKP(initTax > 0);
@@ -84,10 +103,10 @@ export default function SalesModal({ products, warehouses, customers, orders = [
                         productId: i.productId,
                         selectedLotId: i.lotAllocations?.[0]?.lotId || "",
                         sku: i.product?.sku || "",
-                        quantity: i.quantity,
-                        salesPrice: Number(i.salesPrice),
-                        discount: discNominal,
-                        discountPercent: discPercent,
+                        quantity: String(i.quantity).replace('.', ','),
+                        salesPrice: String(Number(i.salesPrice)).replace('.', ','),
+                        discount: String(discNominal).replace('.', ','),
+                        discountPercent: String(discPercent).replace('.', ','),
                         uom: i.uom || i.product?.uom || "",
                         vendorName: i.vendorName || "UMUM"
                     };

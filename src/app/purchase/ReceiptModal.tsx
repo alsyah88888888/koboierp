@@ -28,13 +28,13 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
         productId: item.productId,
         sku: item.product?.sku || "",
         name: item.product?.name || "",
-        quantity: item.quantity.toString(),
-        purchasePrice: item.purchasePrice.toString(),
-        discount: (item.discount || 0).toString(),
+        quantity: String(item.quantity).replace('.', ','),
+        purchasePrice: String(item.purchasePrice).replace('.', ','),
+        discount: String(item.discount || 0).replace('.', ','),
         uom: item.uom || "PCS"
     })) || [{ productId: "", sku: "", name: "", quantity: "1", purchasePrice: "0", discount: "0", uom: "PCS" }]);
 
-    const [totalDiscount, setTotalDiscount] = useState(initialData?.totalDiscount?.toString() || "0");
+    const [totalDiscount, setTotalDiscount] = useState(initialData?.totalDiscount ? String(initialData.totalDiscount).replace('.', ',') : "0");
     const [totalDiscountPercent, setTotalDiscountPercent] = useState("");
     const [taxRate, setTaxRate] = useState(initialData?.taxRate || 0);
     const [showDiscount, setShowDiscount] = useState(items.some(i => Number(i.discount) > 0) || Number(totalDiscount) > 0);
@@ -71,19 +71,24 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
         if (!val) return 0;
         
         let s = String(val).trim();
-        
-        const dotCount = (s.match(/\./g) || []).length;
         const commaCount = (s.match(/,/g) || []).length;
         
-        if (dotCount === 1 && commaCount === 0) {
-            const parts = s.split('.');
-            if (parts.length === 2 && parts[1].length === 3) {
-                return Number(s.replace(/\./g, "")) || 0;
-            }
-            return parseFloat(s) || 0;
+        if (commaCount > 0) {
+            return Number(s.replace(/\./g, "").replace(",", ".")) || 0;
         }
         
-        return Number(s.replace(/\./g, "").replace(",", ".")) || 0;
+        const dotCount = (s.match(/\./g) || []).length;
+        if (dotCount > 0) {
+            const parts = s.split('.');
+            const isThousandSeparator = parts.every((part, i) => i === 0 ? (part.length > 0 && part.length <= 3) : part.length === 3);
+            if (isThousandSeparator) {
+                return Number(s.replace(/\./g, "")) || 0;
+            } else {
+                return parseFloat(s) || 0;
+            }
+        }
+        
+        return Number(s) || 0;
     };
 
     // Derived values — PERSIS seperti format faktur PPN
