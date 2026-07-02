@@ -217,11 +217,6 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
 
                 const grPrice = Number(gr.purchasePrice);
 
-                // Filter anomalous prices (more than 5x or less than 0.2x median)
-                if (medianPrice > 0 && (grPrice > medianPrice * 5 || grPrice < medianPrice * 0.2)) {
-                    continue;
-                }
-
                 // Score 1: Date proximity (prefer purchases BEFORE or ON sale date, penalize future purchases less)
                 const daysDiff = Math.abs(saleDateMs - grDate.getTime()) / (1000 * 60 * 60 * 24);
                 
@@ -236,17 +231,13 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
                     ? Math.max(0, 100 - daysDiff * 0.5) // Purchases before sale: slight decay
                     : Math.max(0, 50 - daysDiff * 2);   // Purchases after sale: heavier penalty
 
-                // Score 2: Price consistency (closer to median = better)
-                const priceDeviation = medianPrice > 0 ? Math.abs(grPrice - medianPrice) / medianPrice : 0;
-                const priceScore = Math.max(0, 50 - priceDeviation * 100);
-
-                // Score 3: Quantity match bonus (exact match or close = bonus)
+                // Score 2: Quantity match bonus (exact match or close = bonus)
                 const qtyRatio = saleQty > 0 && gr.quantity > 0 
                     ? Math.min(saleQty, gr.quantity) / Math.max(saleQty, gr.quantity) 
                     : 0;
                 const qtyScore = qtyRatio * 30; // Up to 30 points for exact qty match
 
-                const totalScore = dateScore + priceScore + qtyScore;
+                const totalScore = dateScore + qtyScore;
 
                 if (totalScore > bestScore) {
                     bestScore = totalScore;
