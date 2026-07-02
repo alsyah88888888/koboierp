@@ -224,7 +224,14 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
 
                 // Score 1: Date proximity (prefer purchases BEFORE or ON sale date, penalize future purchases less)
                 const daysDiff = Math.abs(saleDateMs - grDate.getTime()) / (1000 * 60 * 60 * 24);
-                const isBeforeSale = grDate.getTime() <= saleDateMs;
+                
+                const saleDateDay = new Date(saleDate);
+                saleDateDay.setHours(0, 0, 0, 0);
+                const grDateDay = new Date(grDate);
+                grDateDay.setHours(0, 0, 0, 0);
+                
+                const isBeforeSale = grDateDay.getTime() <= saleDateDay.getTime();
+                
                 const dateScore = isBeforeSale 
                     ? Math.max(0, 100 - daysDiff * 0.5) // Purchases before sale: slight decay
                     : Math.max(0, 50 - daysDiff * 2);   // Purchases after sale: heavier penalty
