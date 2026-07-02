@@ -442,6 +442,11 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
                     'MARGIN'           : margin,
                     'MARGIN %'         : `${marginPct.toFixed(1)}%`,
                     'NOMOR RETUR'      : '-',
+                    '__DATA__'         : {
+                        sdItemId: sdItem.id,
+                        productId: sdItem.productId,
+                        currentLotId: allocLotId
+                    }
                 });
             }
         }
@@ -887,7 +892,7 @@ export async function getBatchTraceabilityService(filters: {
         for (const lot of lots) {
             const hpp        = Number(lot.purchasePrice);
             const sisaQty    = Number(lot.remainingQty);
-            const initialQty = Number(lot.initialQty);
+                    const initialQty = Number(lot.initialQty);
             const terjualQty = lot.allocations.reduce((s: number, a: any) => s + Number(a.qty), 0);
             const nilaiSisa  = Math.round(sisaQty * hpp);
 
@@ -2021,4 +2026,33 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
         console.error('[getComprehensiveMonthlyReportService] ERROR:', error);
         return { error: error.message || 'Failed to generate monthly report' };
     }
+}
+
+export async function reallocateLotService(sdItemId: string, newLotId: string) {
+    const saleItem = await prisma.salesDeliveryItem.findUnique({
+        where: { id: sdItemId }
+    });
+    if (!saleItem) throw new Error("Sale item not found");
+
+    const targetLot = await prisma.productLot.findUnique({
+        where: { id: newLotId }
+    });
+    if (!targetLot) throw new Error("Target lot not found");
+
+    // Delete existing lot allocation(s) for this sale item
+    await prisma.lotAllocation.deleteMany({
+        where: { sdItemId: saleItem.id }
+    });
+    
+    // Create new lot allocation
+    await prisma.lotAllocation.create({
+        data: {
+            sdItemId: saleItem.id,
+            lotId: targetLot.id,
+            qty: saleItem.quantity,
+            hppAtTime: targetLot.purchasePrice
+        }
+    });
+
+    return true;
 }

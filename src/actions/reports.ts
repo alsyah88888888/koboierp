@@ -46,3 +46,14 @@ export async function getComprehensiveMonthlyReportAction(month?: number, year?:
         return { error: error.message || "Failed to generate monthly report" };
     }
 }
+
+export async function reallocateLotAction(sdItemId: string, newLotId: string) {
+    try {
+        const { reallocateLotService } = await import('@/lib/services/report-service');
+        await reallocateLotService(sdItemId, newLotId);
+        revalidatePath('/reports');
+        return { success: true };
+    } catch (e: any) {
+        return { error: e.message || 'Failed to reallocate lot' };
+    }
+}
