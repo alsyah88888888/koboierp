@@ -1150,12 +1150,36 @@ export async function getComprehensiveDailyReportService(date?: string, prefix?:
 
         // Fetch Ops for Sales
         const salesInvoiceNumbers = sales.map((s: any) => s.invoiceNumber).filter(Boolean);
-        const opsForSales = await (prisma as any).financeTransaction.findMany({
-            where: { invoiceNumber: { in: salesInvoiceNumbers } },
-            select: { invoiceNumber: true, amount: true }
-        });
+        
+        let opsForSales: any[] = [];
+        if (salesInvoiceNumbers.length > 0) {
+            const opsMap = new Map();
+            // Process in chunks of 100 to avoid Prisma "too many OR" errors
+            for (let i = 0; i < salesInvoiceNumbers.length; i += 100) {
+                const chunk = salesInvoiceNumbers.slice(i, i + 100);
+                const chunkOps = await (prisma as any).financeTransaction.findMany({
+                    where: {
+                        OR: chunk.map((inv: string) => ({
+                            invoiceNumber: { contains: inv }
+                        }))
+                    },
+                    select: { id: true, invoiceNumber: true, amount: true }
+                });
+                chunkOps.forEach((op: any) => opsMap.set(op.id, op));
+            }
+            opsForSales = Array.from(opsMap.values());
+        }
+
         const opsByInvoice = opsForSales.reduce((acc: any, ops: any) => {
-            acc[ops.invoiceNumber] = (acc[ops.invoiceNumber] || 0) + Math.abs(Number(ops.amount));
+            if (!ops.invoiceNumber) return acc;
+            const invNumbers = ops.invoiceNumber.split(',').map((s: string) => s.trim()).filter(Boolean);
+            const amountPerInv = Math.abs(Number(ops.amount)) / (invNumbers.length || 1);
+            
+            invNumbers.forEach((inv: string) => {
+                if (salesInvoiceNumbers.includes(inv)) {
+                    acc[inv] = (acc[inv] || 0) + amountPerInv;
+                }
+            });
             return acc;
         }, {});
 
