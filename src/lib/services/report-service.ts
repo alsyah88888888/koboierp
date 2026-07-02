@@ -272,11 +272,16 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
             let remainingInvoiceOps = invoiceOps;
             let remainingSdQty = sdTotalQty;
 
-            // ── MERGE items with same productId within this delivery ──
+            // ── MERGE items with same productId and Lot within this delivery ──
             // e.g. 5 pcs + 263 pcs of "Abc Kecap" → 268 pcs combined
             const mergedItemsMap = new Map<string, any>();
             for (const sdItem of sd.items) {
-                const key = sdItem.productId;
+                let lotGr = 'UNKNOWN';
+                if (sdItem.lotAllocations && sdItem.lotAllocations.length > 0) {
+                    lotGr = sdItem.lotAllocations[0].lot.grNumber;
+                }
+                const key = `${sdItem.productId}_${lotGr}`;
+
                 if (mergedItemsMap.has(key)) {
                     const existing = mergedItemsMap.get(key)!;
                     existing.quantity += sdItem.quantity;
@@ -321,14 +326,39 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
                     : 0;
                 const totalSellDiscount = itemDiscount + sdDiscountShare;
 
-                // ── SMART MATCHING: Find best purchase for this sale item ──
-                const bestGR = findBestGR(sdItem.productId, sd.date, qty);
+                // ── PRIORITY 1: USE ACTUAL LOT ALLOCATION (IF EXISTS) ──
+                let bestGR: any = null;
+                let grNumber = '-';
+                let grDate: Date | null = null;
+                let supplierName = '-';
+                let hpp = Number(sdItem.product.purchasePrice || 0);
+                let purchaseTaxRate = 0;
 
-                const grNumber = bestGR?.receipt?.receiptNumber || '-';
-                const grDate = bestGR?.receipt?.date || null;
-                const supplierName = bestGR?.receipt?.receivedFrom || '-';
-                const hpp = bestGR ? Number(bestGR.purchasePrice) : Number(sdItem.product.purchasePrice || 0);
-                const purchaseTaxRate = Number(bestGR?.receipt?.taxRate || 0);
+                if (sdItem.lotAllocations && sdItem.lotAllocations.length > 0) {
+                    const allocLot = sdItem.lotAllocations[0].lot;
+                    grNumber = allocLot.grNumber;
+                    grDate = allocLot.grDate;
+                    supplierName = allocLot.supplierName;
+                    hpp = Number(allocLot.purchasePrice);
+                    
+                    // Lookup receipt info (like taxRate) from pre-fetched GRs
+                    bestGR = grItemsByProduct.get(sdItem.productId)?.find(
+                        (g: any) => g.receipt.receiptNumber === allocLot.grNumber
+                    ) || null;
+                    if (bestGR) {
+                        purchaseTaxRate = Number(bestGR.receipt.taxRate || 0);
+                    }
+                } else {
+                    // ── SMART MATCHING: Fallback if no lot is explicitly allocated ──
+                    bestGR = findBestGR(sdItem.productId, sd.date, qty);
+                    if (bestGR) {
+                        grNumber = bestGR.receipt.receiptNumber;
+                        grDate = bestGR.receipt.date;
+                        supplierName = bestGR.receipt.receivedFrom;
+                        hpp = Number(bestGR.purchasePrice);
+                        purchaseTaxRate = Number(bestGR.receipt.taxRate || 0);
+                    }
+                }
 
                 // ── SISI BELI: Distribute header-level discount (diskon nota GR) ──
                 const grHeaderDiscount = Number(bestGR?.receipt?.totalDiscount || 0);
