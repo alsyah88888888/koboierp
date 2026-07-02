@@ -614,9 +614,10 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
                 if (item.lotAllocations && item.lotAllocations.length > 0) {
                     item.lotAllocations.forEach((alloc: any) => {
                         unitCost = Math.round(Number(alloc.hppAtTime || 0) * taxMultiplier);
-                        totalHpp += (Number(alloc.quantity || 0) * unitCost);
+                        totalHpp += (Number(alloc.qty || 0) * unitCost);
                     });
                 } 
+
                 else {
                     // Priority 2: Historical LPB Price or Master Price
                     unitCost = Math.round((priceMap[item.productId] || Number(item.product?.purchasePrice || 0)) * taxMultiplier);
