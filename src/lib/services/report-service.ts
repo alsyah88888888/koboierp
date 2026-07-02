@@ -1142,6 +1142,17 @@ export async function getComprehensiveDailyReportService(date?: string, prefix?:
 
         const dailyTraceability = await calculateProductTraceabilityInternal(traceStartDate, traceEndDate, prefix).catch(() => []);
 
+        // Fetch Ops for Sales
+        const salesInvoiceNumbers = sales.map((s: any) => s.invoiceNumber).filter(Boolean);
+        const opsForSales = await (prisma as any).financeTransaction.findMany({
+            where: { invoiceNumber: { in: salesInvoiceNumbers } },
+            select: { invoiceNumber: true, amount: true }
+        });
+        const opsByInvoice = opsForSales.reduce((acc: any, ops: any) => {
+            acc[ops.invoiceNumber] = (acc[ops.invoiceNumber] || 0) + Math.abs(Number(ops.amount));
+            return acc;
+        }, {});
+
         // Calculate summaries
         const totalSales = sales.reduce((s: number, d: any) => s + Number(d.grandTotal || 0), 0);
         const totalPurchases = purchases.reduce((s: number, d: any) => s + Number(d.grandTotal || 0), 0);
@@ -1261,7 +1272,9 @@ export async function getComprehensiveDailyReportService(date?: string, prefix?:
                         totalQty: (s.items || []).reduce((q: number, i: any) => q + Number(i.quantity || 0), 0),
                         hpp: saleHpp,
                         margin,
-                        marginPct
+                        marginPct,
+                        opsAmount: opsByInvoice[s.invoiceNumber] || 0,
+                        hasOps: (opsByInvoice[s.invoiceNumber] || 0) > 0
                     };
                 }),
                 purchases: purchases.map((p: any) => ({

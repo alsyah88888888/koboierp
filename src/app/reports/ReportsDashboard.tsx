@@ -1882,7 +1882,7 @@ function DailyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix }:
                 <ReportTable
                     title="Detail Penjualan" icon={<ShoppingBag className="h-4 w-4 text-blue-500" />}
                     count={d.sales.length} totalLabel="Total Penjualan" totalValue={formatCurrency(s.totalSales || 0)}
-                    headers={['No. Penjualan', 'No. Surat Jalan', 'Buyer', 'Alamat', 'Gudang', 'Qty', 'Total Jual', 'Tanggal', 'Status']}
+                    headers={['No. Penjualan', 'No. Surat Jalan', 'Buyer', 'Alamat', 'Gudang', 'Qty', 'Total Jual', 'Biaya Ops', 'Tanggal', 'Status']}
                     rows={d.sales.map((row: any) => [
                         <span className="font-black text-blue-700">{row.invoiceNumber || row.number}</span>,
                         <span className="font-mono text-slate-500 text-xs">{row.number}</span>,
@@ -1891,6 +1891,9 @@ function DailyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix }:
                         <span className="text-[10px] font-black uppercase text-slate-600 bg-slate-100 px-2 py-1 rounded">{row.gudang || '-'}</span>,
                         <span className="tabular-nums font-black">{row.totalQty}</span>,
                         <span className="tabular-nums font-black text-emerald-600">{isClient ? formatCurrency(row.grandTotal) : '...'}</span>,
+                        <span className={cn("tabular-nums font-black", row.hasOps ? "text-amber-600" : "text-rose-500 bg-rose-50 px-1.5 py-0.5 rounded")}>
+                            {isClient ? (row.hasOps ? formatCurrency(row.opsAmount) : 'Belum Ada') : '...'}
+                        </span>,
                         <span className="text-xs text-slate-500">{fmtDate(row.date)}</span>,
                         <PaymentBadge status={row.paymentStatus} />
                     ])}
