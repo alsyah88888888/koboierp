@@ -22,6 +22,7 @@ import {
 } from "@/actions/reports";
 import { callAction } from "@/proxy";
 import { format } from "date-fns";
+import { TraceabilityReallocateModal } from "./TraceabilityReallocateModal";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -1591,6 +1592,16 @@ export function ReportsDashboard() {
                 </div>
             ) : (
                 <>
+                    <TraceabilityReallocateModal
+                        isOpen={isTraceModalOpen}
+                        onClose={() => {
+                            setIsTraceModalOpen(false);
+                            if (activeTab === 'daily') fetchDaily();
+                            if (activeTab === 'weekly') fetchWeekly();
+                            if (activeTab === 'monthly') fetchMonthly();
+                        }}
+                        data={selectedTraceData}
+                    />
                     {activeTab === 'daily' && dailyData && <DailyReport data={dailyData} isClient={isClient} fmtDate={fmtDate} activePrefix={activePrefix} setActivePrefix={setActivePrefix} setIsTraceModalOpen={setIsTraceModalOpen} setSelectedTraceData={setSelectedTraceData} />}
                     {activeTab === 'weekly' && weeklyData && <WeeklyReport data={weeklyData} isClient={isClient} fmtDate={fmtDate} activePrefix={activePrefix} setActivePrefix={setActivePrefix} setIsTraceModalOpen={setIsTraceModalOpen} setSelectedTraceData={setSelectedTraceData} />}
                     {activeTab === 'monthly' && monthlyData && <MonthlyReport data={monthlyData} isClient={isClient} fmtDate={fmtDate} activePrefix={activePrefix} setActivePrefix={setActivePrefix} setIsTraceModalOpen={setIsTraceModalOpen} setSelectedTraceData={setSelectedTraceData} />}
