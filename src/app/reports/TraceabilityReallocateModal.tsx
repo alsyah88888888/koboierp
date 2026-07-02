@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { callAction } from '@/proxy';
 import { Loader2, Save } from 'lucide-react';
-import { toast } from 'sonner';
 
 interface TraceabilityReallocateModalProps {
     isOpen: boolean;
@@ -40,10 +39,10 @@ export function TraceabilityReallocateModal({ isOpen, onClose, data }: Traceabil
             if (!res?.error) {
                 setLots(res);
             } else {
-                toast.error(res.error);
+                alert(res.error);
             }
         } catch (e: any) {
-            toast.error(e.message || 'Gagal memuat daftar pembelian');
+            alert(e.message || 'Gagal memuat daftar pembelian');
         } finally {
             setIsLoading(false);
         }
@@ -61,13 +60,13 @@ export function TraceabilityReallocateModal({ isOpen, onClose, data }: Traceabil
         try {
             const res = await callAction('reallocateLotAction', data.sdItemId, selectedLotId);
             if (res.success) {
-                toast.success('Lot berhasil diubah. HPP dan Margin telah diperbarui.');
+                alert('Lot berhasil diubah. HPP dan Margin telah diperbarui.');
                 onClose();
             } else {
-                toast.error(res.error || 'Gagal merubah lot');
+                alert(res.error || 'Gagal merubah lot');
             }
         } catch (e: any) {
-            toast.error(e.message || 'Gagal merubah lot');
+            alert(e.message || 'Gagal merubah lot');
         } finally {
             setIsSaving(false);
         }

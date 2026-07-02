@@ -316,6 +316,7 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
                 const sellPrice = Number(sdItem.salesPrice || 0);
                 const itemDiscount  = Number(sdItem.discount || 0);
                 const qty       = sdItem.quantity;
+                let allocLotId = null;
 
                 // Distribusi diskon nota SD ke item ini (proporsional)
                 const sellLineSubtotal = sellPrice * qty - itemDiscount;
@@ -333,7 +334,7 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
                 let purchaseTaxRate = 0;
 
                 if (sdItem.lotAllocations && sdItem.lotAllocations.length > 0) {
-                    const allocLot = sdItem.lotAllocations[0].lot;
+                    const allocLot = sdItem.lotAllocations[0].lot; allocLotId = allocLot?.id || null;
                     grNumber = allocLot.grNumber;
                     grDate = allocLot.grDate;
                     supplierName = allocLot.supplierName;
@@ -2029,6 +2030,9 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
 }
 
 export async function reallocateLotService(sdItemId: string, newLotId: string) {
+    const prisma = getPrisma();
+    if (!prisma) throw new Error("Prisma client is not available");
+
     const saleItem = await prisma.salesDeliveryItem.findUnique({
         where: { id: sdItemId }
     });

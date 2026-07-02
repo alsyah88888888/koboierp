@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { getProductTraceabilityService } from "@/lib/services/report-service";
 import {
     getComprehensiveDailyReportService,

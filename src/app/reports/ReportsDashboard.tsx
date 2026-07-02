@@ -11,7 +11,7 @@ import {
     Activity, BarChart3, RefreshCw, Clock, CreditCard, AlertCircle,
     CheckCircle2, ArrowRight, Printer, ChevronLeft, ChevronRight,
     DollarSign, Receipt, Truck, RotateCcw, Shield, Users, Building,
-    FileCode2, Sparkles, Banknote, Search, Download, Eye, ArrowUpCircle, ArrowDownCircle, X
+    FileCode2, Sparkles, Banknote, Search, Download, Eye, ArrowUpCircle, ArrowDownCircle, X, Edit2
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { formatCurrency, cn } from "@/lib/utils";
@@ -62,6 +62,9 @@ export function ReportsDashboard() {
     const [monthlyData, setMonthlyData] = useState<any>(null);
 
     // Closing Report State
+    const [selectedTraceData, setSelectedTraceData] = useState<any>(null);
+    const [isTraceModalOpen, setIsTraceModalOpen] = useState(false);
+
     const [closingReport, setClosingReport] = useState<any>(null);
     const [closingPeriod, setClosingPeriod] = useState({ 
         month: new Date().getMonth() + 1, 
@@ -1588,9 +1591,9 @@ export function ReportsDashboard() {
                 </div>
             ) : (
                 <>
-                    {activeTab === 'daily' && dailyData && <DailyReport data={dailyData} isClient={isClient} fmtDate={fmtDate} activePrefix={activePrefix} setActivePrefix={setActivePrefix} />}
-                    {activeTab === 'weekly' && weeklyData && <WeeklyReport data={weeklyData} isClient={isClient} fmtDate={fmtDate} activePrefix={activePrefix} setActivePrefix={setActivePrefix} />}
-                    {activeTab === 'monthly' && monthlyData && <MonthlyReport data={monthlyData} isClient={isClient} fmtDate={fmtDate} activePrefix={activePrefix} setActivePrefix={setActivePrefix} />}
+                    {activeTab === 'daily' && dailyData && <DailyReport data={dailyData} isClient={isClient} fmtDate={fmtDate} activePrefix={activePrefix} setActivePrefix={setActivePrefix} setIsTraceModalOpen={setIsTraceModalOpen} setSelectedTraceData={setSelectedTraceData} />}
+                    {activeTab === 'weekly' && weeklyData && <WeeklyReport data={weeklyData} isClient={isClient} fmtDate={fmtDate} activePrefix={activePrefix} setActivePrefix={setActivePrefix} setIsTraceModalOpen={setIsTraceModalOpen} setSelectedTraceData={setSelectedTraceData} />}
+                    {activeTab === 'monthly' && monthlyData && <MonthlyReport data={monthlyData} isClient={isClient} fmtDate={fmtDate} activePrefix={activePrefix} setActivePrefix={setActivePrefix} setIsTraceModalOpen={setIsTraceModalOpen} setSelectedTraceData={setSelectedTraceData} />}
                     
                     {activeTab === "closing" && (
                         <div className="space-y-8 animate-in fade-in zoom-in duration-500">
@@ -1842,7 +1845,7 @@ export function ReportsDashboard() {
 // ═══════════════════════════════════════════════════════════════════════════
 // DAILY REPORT SUB-COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════
-function DailyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix }: { data: any; isClient: boolean; fmtDate: (d: any) => string; activePrefix: 'PF' | 'BC' | 'ALL'; setActivePrefix: (val: 'PF' | 'BC' | 'ALL') => void }) {
+function DailyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix, setIsTraceModalOpen, setSelectedTraceData }: { data: any; isClient: boolean; fmtDate: (d: any) => string; activePrefix: 'PF' | 'BC' | 'ALL'; setActivePrefix: (val: 'PF' | 'BC' | 'ALL') => void; setIsTraceModalOpen?: any; setSelectedTraceData?: any }) {
     if (data.error) return <ErrorCard message={data.error} />;
     const s = data.summary || {};
     const d = data.details || {};
@@ -1914,7 +1917,7 @@ function DailyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix }:
                         const marginPct = totalJual > 0 ? (totalMargin / totalJual * 100) : 0;
                         return `${formatCurrency(totalMargin)} (${marginPct.toFixed(1)}%)`;
                     })() : '...'}
-                    headers={['No.', 'Barcode', 'Nama Item', 'Supplier', 'No. LPB', 'Tgl Beli', 'Qty Beli', 'Total Beli (HPP)', 'Ops', 'Buyer', 'Sales', 'No. Faktur Penjualan', 'No. Surat Jalan', 'Tgl Jual', 'Qty Jual', 'Total Jual (Net)', 'Margin', 'Margin %']}
+                    headers={['No.', 'Barcode', 'Nama Item', 'Supplier', 'No. LPB', 'Tgl Beli', 'Qty Beli', 'Total Beli (HPP)', 'Ops', 'Buyer', 'Sales', 'No. Faktur Penjualan', 'No. Surat Jalan', 'Tgl Jual', 'Qty Jual', 'Total Jual (Net)', 'Margin', 'Margin %', 'Aksi']}
                     rows={d.dailyTraceability.map((row: any) => [
                         <span className="font-bold">{row.NO}</span>,
                         row.BARCODE,
@@ -1937,7 +1940,27 @@ function DailyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix }:
                         </span>,
                         <span className={cn("font-black", row.MARGIN >= 0 ? "text-emerald-600" : "text-rose-600")}>
                             {row['MARGIN %']}
-                        </span>
+                        </span>,
+                        row.__DATA__ ? (
+                            <button
+                                onClick={() => {
+                                    setSelectedTraceData({
+                                        sdItemId: row.__DATA__.sdItemId,
+                                        productId: row.__DATA__.productId,
+                                        currentLotId: row.__DATA__.currentLotId,
+                                        productName: row['KETERANGAN ITEM'],
+                                        buyerName: row['NAMA BUYER'],
+                                        sjNumber: row['NOMOR SJ'],
+                                        qty: row['QTY JUAL']
+                                    });
+                                    setIsTraceModalOpen(true);
+                                }}
+                                className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                title="Ubah Rujukan Pembelian (Lot)"
+                            >
+                                <Edit2 className="w-4 h-4" />
+                            </button>
+                        ) : <span className="text-xs text-slate-400">-</span>
                     ])}
                     isClient={isClient}
                 />
@@ -2079,7 +2102,7 @@ function DailyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix }:
 // ═══════════════════════════════════════════════════════════════════════════
 // WEEKLY REPORT SUB-COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════
-function WeeklyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix }: { data: any; isClient: boolean; fmtDate: (d: any) => string; activePrefix: 'PF' | 'BC' | 'ALL'; setActivePrefix: (val: 'PF' | 'BC' | 'ALL') => void }) {
+function WeeklyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix, setIsTraceModalOpen, setSelectedTraceData }: { data: any; isClient: boolean; fmtDate: (d: any) => string; activePrefix: 'PF' | 'BC' | 'ALL'; setActivePrefix: (val: 'PF' | 'BC' | 'ALL') => void; setIsTraceModalOpen?: any; setSelectedTraceData?: any }) {
     if (data.error) return <ErrorCard message={data.error} />;
     const s = data.summary || {};
     const breakdown = data.dailyBreakdown || [];
@@ -2224,7 +2247,7 @@ function WeeklyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix }
                         filename: 'traceability-mingguan',
                         data: data.details.weeklyTraceability
                     }}
-                    headers={['No.', 'Barcode', 'Nama Item', 'Supplier', 'No. LPB', 'Tgl Beli', 'Qty Beli', 'Total Beli (HPP)', 'Ops', 'Buyer', 'Sales', 'No. Faktur Penjualan', 'No. Surat Jalan', 'Tgl Jual', 'Qty Jual', 'Total Jual (Net)', 'Margin', 'Margin %']}
+                    headers={['No.', 'Barcode', 'Nama Item', 'Supplier', 'No. LPB', 'Tgl Beli', 'Qty Beli', 'Total Beli (HPP)', 'Ops', 'Buyer', 'Sales', 'No. Faktur Penjualan', 'No. Surat Jalan', 'Tgl Jual', 'Qty Jual', 'Total Jual (Net)', 'Margin', 'Margin %', 'Aksi']}
                     rows={data.details.weeklyTraceability.map((row: any) => [
                         <span className="font-bold">{row.NO}</span>,
                         row.BARCODE,
@@ -2333,7 +2356,7 @@ function WeeklyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix }
 // ═══════════════════════════════════════════════════════════════════════════
 // MONTHLY REPORT SUB-COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════
-function MonthlyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix }: { data: any; isClient: boolean; fmtDate: (d: any) => string; activePrefix: 'PF' | 'BC' | 'ALL'; setActivePrefix: (val: 'PF' | 'BC' | 'ALL') => void }) {
+function MonthlyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix, setIsTraceModalOpen, setSelectedTraceData }: { data: any; isClient: boolean; fmtDate: (d: any) => string; activePrefix: 'PF' | 'BC' | 'ALL'; setActivePrefix: (val: 'PF' | 'BC' | 'ALL') => void; setIsTraceModalOpen?: any; setSelectedTraceData?: any }) {
     if (data.error) return <ErrorCard message={data.error} />;
     const pl = data.profitLoss || {};
     const stats = data.stats || {};
@@ -2708,7 +2731,7 @@ function MonthlyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix 
                         filename: 'traceability-bulanan',
                         data: data.details.monthlyTraceability
                     }}
-                    headers={['No.', 'Barcode', 'Nama Item', 'Supplier', 'No. LPB', 'Tgl Beli', 'Qty Beli', 'Total Beli (HPP)', 'Ops', 'Buyer', 'Sales', 'No. Faktur Penjualan', 'No. Surat Jalan', 'Tgl Jual', 'Qty Jual', 'Total Jual (Net)', 'Margin', 'Margin %']}
+                    headers={['No.', 'Barcode', 'Nama Item', 'Supplier', 'No. LPB', 'Tgl Beli', 'Qty Beli', 'Total Beli (HPP)', 'Ops', 'Buyer', 'Sales', 'No. Faktur Penjualan', 'No. Surat Jalan', 'Tgl Jual', 'Qty Jual', 'Total Jual (Net)', 'Margin', 'Margin %', 'Aksi']}
                     rows={data.details.monthlyTraceability.map((row: any) => [
                         <span className="font-bold">{row.NO}</span>,
                         row.BARCODE,
