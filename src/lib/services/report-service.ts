@@ -517,7 +517,7 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
     const isAll = !prefix || prefix === 'ALL';
 
     try {
-        const [sales, purchases, expenses, arRecords, apRecords, bankJournals] = await Promise.all([
+        const [sales, purchases, expenses, arRecords, apRecords, bankJournals, companyExpensesRecords] = await Promise.all([
             // 1. Total Sales (Revenue) - From Deliveries (Invoices)
             (prisma as any).salesDelivery.findMany({
                 where: { 
@@ -593,6 +593,13 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
                 },
                 include: { account: true },
                 orderBy: { date: 'asc' }
+            }),
+            // 7. Global Operational Expenses
+            (prisma as any).financeTransaction.findMany({
+                where: {
+                    date: { gte: startDate, lte: endDate },
+                    AND: [ { OR: [ { transactionType: "PAYMENT" }, { transactionType: "EXPENSE" }, { amount: { lt: 0 } } ] } ]
+                }
             })
         ]);
 
@@ -654,6 +661,7 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
         const totalAP = apRecords.reduce((acc: number, r: any) => acc + (Number(r.grandTotal) - Number(r.paidAmount)), 0);
         const grossProfit = totalRevenue - totalHpp; // Menggunakan HPP (Traceability) agar Laba per divisi akurat
         const netProfit = grossProfit - totalExpenses;
+        const companyExpenses = companyExpensesRecords.reduce((acc: number, e: any) => acc + Math.abs(Number(e.amount || 0)), 0);
 
         return {
             period: `${filterMonth}/${filterYear}`,
@@ -661,6 +669,7 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
             hpp: Number(totalHpp || 0),
             grossProfit: Number(grossProfit || 0),
             expenses: Number(totalExpenses || 0),
+            companyExpenses: Number(companyExpenses || 0),
             netProfit: Number(netProfit || 0),
             inventory: {
                 beginning: beginningValue,
@@ -1046,7 +1055,7 @@ export async function getComprehensiveDailyReportService(date?: string, prefix?:
     try {
         const [
             sales, purchases, operational, returns_purchase, returns_sales,
-            stockMovements, auditLogs
+            stockMovements, auditLogs, companyExpensesRecords
         ] = await Promise.all([
             // Sales Deliveries
             (prisma as any).salesDelivery.findMany({
@@ -1134,6 +1143,9 @@ export async function getComprehensiveDailyReportService(date?: string, prefix?:
                 include: { user: { select: { name: true, email: true } } },
                 orderBy: { createdAt: 'desc' },
                 take: 50
+            }),
+            (prisma as any).financeTransaction.findMany({
+                where: { date: { gte: dayStart, lte: dayEnd }, AND: [ { OR: [ { transactionType: "PAYMENT" }, { transactionType: "EXPENSE" }, { amount: { lt: 0 } } ] } ] }
             })
         ]);
 
@@ -1378,7 +1390,7 @@ export async function getComprehensiveWeeklyReportService(weekStartDate?: string
     endDate.setHours(23, 59, 59, 999);
 
     try {
-        const [sales, purchases, operational, stockMovements, weeklyTraceability] = await Promise.all([
+        const [sales, purchases, operational, stockMovements, weeklyTraceability, companyExpensesRecords] = await Promise.all([
             (prisma as any).salesDelivery.findMany({
                 where: { 
                     isVoid: false, 
@@ -1425,7 +1437,10 @@ export async function getComprehensiveWeeklyReportService(weekStartDate?: string
                 include: { product: { select: { sku: true, name: true } } },
                 orderBy: { createdAt: 'asc' }
             }),
-            calculateProductTraceabilityInternal(startDate, endDate, prefix).catch(() => [])
+            calculateProductTraceabilityInternal(startDate, endDate, prefix).catch(() => []),
+            (prisma as any).financeTransaction.findMany({
+                where: { date: { gte: startDate, lte: endDate }, AND: [ { OR: [ { transactionType: "PAYMENT" }, { transactionType: "EXPENSE" }, { amount: { lt: 0 } } ] } ] }
+            })
         ]);
 
         // Build daily breakdown for the 7 days
@@ -1631,7 +1646,7 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
     try {
         const [
             sales, purchases, allOperational, arRecords, apRecords,
-            returnsPurchase, returnsSales, stockMovements, monthlyTraceability
+            returnsPurchase, returnsSales, stockMovements, monthlyTraceability, companyExpensesRecords
         ] = await Promise.all([
             // Sales
             (prisma as any).salesDelivery.findMany({
@@ -1734,7 +1749,10 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
                 orderBy: { createdAt: 'asc' }
             }),
             // Traceability
-            calculateProductTraceabilityInternal(startDate, endDate, prefix).catch(() => [])
+            calculateProductTraceabilityInternal(startDate, endDate, prefix).catch(() => []),
+            (prisma as any).financeTransaction.findMany({
+                where: { date: { gte: startDate, lte: endDate }, AND: [ { OR: [ { transactionType: "PAYMENT" }, { transactionType: "EXPENSE" }, { amount: { lt: 0 } } ] } ] }
+            })
         ]);
 
         // ── P&L Calculation ──────────────────────────────────────────────
@@ -1760,6 +1778,7 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
         const generalOps = expenses.filter((o: any) => !o.invoiceNumber).reduce((s: number, o: any) => s + Math.abs(Number(o.amount || 0)), 0);
         const linkedOpsExpense = monthlyTraceability.reduce((sum: number, t: any) => sum + Number(t['OPS'] || 0), 0);
         const totalExpenses = generalOps + linkedOpsExpense;
+        const companyExpenses = companyExpensesRecords.reduce((acc: number, e: any) => acc + Math.abs(Number(e.amount || 0)), 0);
 
         // Net Profit
         const netProfit = grossProfit - totalExpenses;
@@ -2011,6 +2030,7 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
                 grossProfit,
                 grossMarginPct: Number(grossMarginPct.toFixed(1)),
                 expenses: totalExpenses,
+            companyExpenses: companyExpenses,
                 netProfit,
                 netMarginPct: Number(netMarginPct.toFixed(1)),
                 expenseByCategory

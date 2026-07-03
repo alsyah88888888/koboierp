@@ -1003,6 +1003,16 @@ export function ReportsDashboard() {
         const data = activeTab === 'daily' ? dailyData : activeTab === 'weekly' ? weeklyData : monthlyData;
         if (!data) return;
 
+        // Executive Summary Sheet
+        const companyOps = data.companyExpenses || data.profitLoss?.companyExpenses || 0;
+        const summaryRows = [
+            { 'Informasi Utama': 'Divisi Aktif', 'Nilai': activePrefix === 'ALL' ? 'Semua Divisi' : activePrefix },
+            { 'Informasi Utama': 'Total Ops Perusahaan (Global)', 'Nilai': companyOps },
+            { 'Informasi Utama': 'Dicetak Pada', 'Nilai': new Date().toLocaleString() }
+        ];
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summaryRows), 'Ringkasan');
+
+
         if (activeTab === 'daily' && data.details) {
             // Sales sheet
             if (data.details.sales?.length) {
@@ -1601,7 +1611,7 @@ export function ReportsDashboard() {
                                         {[
                                             { label: "Penjualan", value: closingReport.revenue, color: "text-emerald-500", icon: ArrowUpCircle, type: 'sales', data: closingReport.details?.sales || [] },
                                             { label: "Pembelian", value: closingReport.inventory?.purchases || 0, color: "text-blue-500", icon: ShoppingCart, type: 'purchases', data: closingReport.details?.purchases || [] },
-                                            { label: "Operasional", value: closingReport.expenses, color: "text-amber-500", icon: Wallet, type: 'operational', data: closingReport.details?.operational || [] },
+                                            { label: "Operasional", value: closingReport.expenses, color: "text-amber-500", icon: Wallet, type: 'operational', data: closingReport.details?.operational || [], subtext: closingReport.companyExpenses ? `Global: ${formatCurrency(closingReport.companyExpenses)}` : undefined },
                                             { label: "Gross Margin", value: closingReport.grossProfit, color: "text-emerald-600", icon: Sparkles, type: 'none', data: [] },
                                             { label: "Profit", value: closingReport.netProfit, color: "text-indigo-600", icon: Banknote, type: 'none', data: [] },
                                         ].map((card, i) => (
@@ -1619,6 +1629,7 @@ export function ReportsDashboard() {
                                                 <p className={cn("text-xl font-black tabular-nums tracking-tighter", card.color)}>
                                                     {formatCurrency(card.value)}
                                                 </p>
+                                                {card.subtext && <p className="text-[9px] text-slate-400 mt-1 font-bold truncate" title={card.subtext}>{card.subtext}</p>}
                                             </div>
                                         ))}
                                     </div>
@@ -1793,7 +1804,7 @@ function DailyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix, s
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
                 <KPICard icon={<ShoppingBag className="h-5 w-5 text-blue-500" />} label="Penjualan" value={formatCurrency(s.totalSales || 0)} sub={`${s.salesCount || 0} Invoice • ${s.totalSalesQty || 0} Unit`} color="blue" isClient={isClient} />
                 <KPICard icon={<ShoppingCart className="h-5 w-5 text-emerald-500" />} label="Pembelian" value={formatCurrency(s.totalPurchases || 0)} sub={`${s.purchaseCount || 0} LPB • ${s.totalPurchaseQty || 0} Unit`} color="emerald" isClient={isClient} />
-                <KPICard icon={<Wallet className="h-5 w-5 text-amber-500" />} label="Biaya Operasional" value={formatCurrency(s.totalExpense || 0)} sub={`${s.opsCount || 0} Transaksi`} color="amber" isClient={isClient} />
+                <KPICard icon={<Wallet className="h-5 w-5 text-amber-500" />} label="Biaya Operasional" value={formatCurrency(s.totalExpense || 0)} sub={data.companyExpenses ? `Global: ${formatCurrency(data.companyExpenses)}` : `${s.opsCount || 0} Transaksi`} color="amber" isClient={isClient} />
                 <KPICard icon={<TrendingUp className="h-5 w-5 text-purple-500" />} label="Laba Bersih (Margin)" value={formatCurrency(s.netProfit || 0)} sub={`M. Bersih: ${s.netMarginPct?.toFixed(1) || 0}% • M. Kotor: ${s.grossMarginPct?.toFixed(1) || 0}% (${formatCurrency(s.grossProfit || 0)})`} color="purple" trend={s.netProfit >= 0 ? 'up' : 'down'} isClient={isClient} />
             </div>
 
@@ -2050,7 +2061,7 @@ function WeeklyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix, 
             <div className="grid grid-cols-2 lg:grid-cols-5 gap-5">
                 <KPICard icon={<ShoppingBag className="h-5 w-5 text-blue-500" />} label="Total Penjualan" value={formatCurrency(s.totalSales || 0)} sub={`${s.salesCount || 0} Invoice`} color="blue" isClient={isClient} />
                 <KPICard icon={<ShoppingCart className="h-5 w-5 text-emerald-500" />} label="Total Pembelian" value={formatCurrency(s.totalPurchases || 0)} sub={`${s.purchaseCount || 0} LPB`} color="emerald" isClient={isClient} />
-                <KPICard icon={<Wallet className="h-5 w-5 text-amber-500" />} label="Biaya Operasional" value={formatCurrency(s.totalExpenses || 0)} sub={`${s.opsCount || 0} Transaksi`} color="amber" isClient={isClient} />
+                <KPICard icon={<Wallet className="h-5 w-5 text-amber-500" />} label="Biaya Operasional" value={formatCurrency(s.totalExpenses || 0)} sub={data.companyExpenses ? `Global: ${formatCurrency(data.companyExpenses)}` : `${s.opsCount || 0} Transaksi`} color="amber" isClient={isClient} />
                 <KPICard icon={<TrendingUp className="h-5 w-5 text-purple-500" />} label="Laba Kotor" value={formatCurrency(s.grossProfit || 0)} sub={`M. Kotor: ${s.grossMarginPct?.toFixed(1) || 0}%`} color="purple" trend={s.grossProfit >= 0 ? 'up' : 'down'} isClient={isClient} />
                 <KPICard icon={<DollarSign className="h-5 w-5 text-indigo-500" />} label="Laba Bersih" value={formatCurrency(s.netProfit || 0)} sub={`M. Bersih: ${s.netMarginPct?.toFixed(1) || 0}% • Kotor - Ops`} color="indigo" trend={s.netProfit >= 0 ? 'up' : 'down'} isClient={isClient} />
             </div>
