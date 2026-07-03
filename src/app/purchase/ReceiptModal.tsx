@@ -510,7 +510,7 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
                                     {/* Column: Subtotal */}
                                     <div className={cn("hidden lg:flex items-center justify-end pr-4", showDiscount ? "lg:flex-[2]" : "lg:flex-[3]")}>
                                         <div className="text-[14px] font-black text-slate-800 text-right">
-                                            {formatCurrency((Number(item.quantity) || 0) * (Number(item.purchasePrice) || 0) - (Number(item.discount) || 0)).replace('Rp', '').trim()}
+                                            {formatCurrency((parseIndoNumber(item.quantity) || 0) * (parseIndoNumber(item.purchasePrice) || 0) - (parseIndoNumber(item.discount) || 0)).replace('Rp', '').trim()}
                                         </div>
                                     </div>
 
