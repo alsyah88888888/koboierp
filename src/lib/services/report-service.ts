@@ -650,8 +650,7 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
         // Calculate AR/AP Balances
         const totalAR = arRecords.reduce((acc: number, r: any) => acc + (Number(r.grandTotal) - Number(r.paidAmount)), 0);
         const totalAP = apRecords.reduce((acc: number, r: any) => acc + (Number(r.grandTotal) - Number(r.paidAmount)), 0);
-
-        const grossProfit = totalRevenue - netPurchases; // User requested: Penjualan - Pembelian
+        const grossProfit = totalRevenue - totalHpp; // Using Traceability HPP for exact margin matching
         const netProfit = grossProfit - totalExpenses;
 
         return {
