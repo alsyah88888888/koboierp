@@ -611,36 +611,13 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
             });
         }
 
-        // 2. Calculate Revenue & COGS (HPP) - CASH BASIS
+        // 2. Fetch Traceability for exact HPP (CASH BASIS)
+        const monthlyTraceability = await calculateProductTraceabilityInternal(startDate, endDate, prefix).catch(() => []);
         let totalRevenue = 0;
-        let totalHpp = 0;
+        let totalHpp = monthlyTraceability.reduce((sum: number, t: any) => sum + Number(t['TOTAL BELI'] || 0), 0);
         
         sales.forEach((s: any) => {
-            // Standard Accounting (Accrual Basis) for Monthly Closing: 
-            // Revenue is the total value of invoices issued in that month.
             totalRevenue += Number(s.grandTotal || 0);
-            
-            // For HPP, we calculate it proportionally to the quantity sold
-            const isPKP = s.isPKP || Number(s.taxRate || 0) > 0 || String(s.invoiceNumber || '').includes('TRN');
-            const taxMultiplier = 1 + (isPKP ? 0.11 : 0);
-            (s.items || []).forEach((item: any) => {
-                const qty = Number(item.quantity || 0);
-                let unitCost = 0;
-
-                // Priority 1: FIFO / Lot Allocation
-                if (item.lotAllocations && item.lotAllocations.length > 0) {
-                    item.lotAllocations.forEach((alloc: any) => {
-                        unitCost = Math.round(Number(alloc.hppAtTime || 0) * taxMultiplier);
-                        totalHpp += (Number(alloc.qty || 0) * unitCost);
-                    });
-                } 
-
-                else {
-                    // Priority 2: Historical LPB Price or Master Price
-                    unitCost = Math.round((priceMap[item.productId] || Number(item.product?.purchasePrice || 0)) * taxMultiplier);
-                    totalHpp += (qty * unitCost);
-                }
-            });
         });
 
         // 3. Accounting Style (Cash Basis)
@@ -698,6 +675,7 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
                 priceMapSize: Object.keys(priceMap).length
             },
             details: {
+                monthlyTraceability,
                 sales: sales.map((s: any) => {
                     const relatedBank = bankJournals.find((j: any) => j.description.includes(s.deliveryNumber));
                     return {
@@ -1770,8 +1748,7 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
         // Total Purchases (for Cash-flow basis margin)
         const totalPurchases = purchases.reduce((sum: number, p: any) => sum + Number(p.grandTotal || 0), 0);
 
-        // Gross Profit
-        const grossProfit = totalRevenue - totalPurchases; // User requested: Penjualan - Pembelian
+        const grossProfit = totalRevenue - totalHPP; // Using Traceability HPP for exact margin matching
         const grossMarginPct = totalRevenue > 0 ? (grossProfit / totalRevenue * 100) : 0;
 
         // Operating Expenses
