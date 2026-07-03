@@ -2323,7 +2323,7 @@ function MonthlyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix,
             {/* KPI Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
                 <KPICard icon={<ShoppingBag className="h-5 w-5 text-blue-500" />} label="Total Revenue" value={formatCurrency(pl.revenue || 0)} sub={`${stats.salesCount || 0} Invoice • ${stats.totalSalesQty || 0} Unit`} color="blue" isClient={isClient} />
-                <KPICard icon={<Receipt className="h-5 w-5 text-rose-500" />} label="Total Pembelian" value={formatCurrency(data.purchases?.total || 0)} sub={`Komitmen Pembelian`} color="rose" isClient={isClient} />
+                <KPICard icon={<Receipt className="h-5 w-5 text-rose-500" />} label="Modal Barang (HPP)" value={formatCurrency(pl.hpp || 0)} sub={`Harga Pokok Penjualan`} color="rose" isClient={isClient} />
                 <KPICard icon={<TrendingUp className="h-5 w-5 text-emerald-500" />} label="Laba Kotor" value={formatCurrency(pl.grossProfit || 0)} sub={`Margin: ${pl.grossMarginPct || 0}%`} color="emerald" trend={pl.grossProfit >= 0 ? 'up' : 'down'} isClient={isClient} />
                 <KPICard icon={<DollarSign className="h-5 w-5 text-purple-500" />} label="Laba Bersih" value={formatCurrency(pl.netProfit || 0)} sub={`Margin: ${pl.netMarginPct || 0}%`} color="purple" trend={pl.netProfit >= 0 ? 'up' : 'down'} isClient={isClient} />
             </div>
@@ -2346,7 +2346,7 @@ function MonthlyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix,
                         <PLRow label="  Diskon Penjualan" value={-pl.discount} sub isClient={isClient} />
                         <PLRow label="  PPN Keluaran" value={pl.salesTax} sub isClient={isClient} />
                         <div className="h-3" />
-                        <PLRow label="TOTAL PEMBELIAN" value={data.purchases?.total || 0} bold negative isClient={isClient} />
+                        <PLRow label="MODAL BARANG (HPP)" value={pl.hpp || 0} bold negative isClient={isClient} />
                         <div className="border-t-2 border-slate-900 my-3" />
                         <PLRow label="LABA KOTOR" value={pl.grossProfit} bold highlight={pl.grossProfit >= 0 ? 'green' : 'red'} isClient={isClient} />
                         <PLRow label={`  Margin Kotor`} valueStr={`${pl.grossMarginPct || 0}%`} sub isClient={isClient} />
