@@ -412,64 +412,8 @@ export function ReportsDashboard() {
                         </table>
 
                         <!-- ═══════════════════════════════════════════════════ -->
-                        <!-- HALAMAN 4: TRACEABILITY / MARGIN                  -->
                         <!-- ═══════════════════════════════════════════════════ -->
-                        <div class="section-divider"></div>
-                        ${getMiniHeaderHTML('TRACEABILITY & MARGIN', periodLabel)}
-
-                        <div class="summary-grid-6" style="margin-bottom: 12px;">
-                            <div class="summary-card"><p>Total Beli (HPP)</p><h2>${formatCurrency(totalTraceBeli)}</h2></div>
-                            <div class="summary-card"><p>Total Jual</p><h2 class="text-green">${formatCurrency(totalTraceJual)}</h2></div>
-                            <div class="summary-card highlight"><p>Total Margin</p><h2 style="color: ${totalTraceMargin >= 0 ? '#059669' : '#dc2626'}">${formatCurrency(totalTraceMargin)} (${totalTraceJual > 0 ? (totalTraceMargin / totalTraceJual * 100).toFixed(1) : 0}%)</h2></div>
-                        </div>
-
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th style="width:3%">No</th>
-                                    <th style="width:8%">Barcode</th>
-                                    <th style="width:16%">Nama Item</th>
-                                    <th style="width:12%">Supplier</th>
-                                    <th style="width:8%">No. LPB</th>
-                                    <th class="text-right" style="width:4%">Qty</th>
-                                    <th class="text-right" style="width:10%">Total Beli</th>
-                                    <th style="width:12%">Buyer</th>
-                                    <th class="text-right" style="width:4%">Qty</th>
-                                    <th class="text-right" style="width:10%">Total Jual</th>
-                                    <th class="text-right" style="width:10%">Margin</th>
-                                    <th class="text-right" style="width:4%">%</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${traceData.map((r: any) => `
-                                    <tr>
-                                        <td>${r.NO}</td>
-                                        <td style="font-size:8px;">${r.BARCODE || '-'}</td>
-                                        <td class="font-black" style="font-size:8px;">${r['KETERANGAN ITEM'] || '-'}</td>
-                                        <td style="font-size:8px;">${r['NAMA SUPPLIER'] || '-'}</td>
-                                        <td style="font-size:7px;">${r['NOMOR LPB'] || '-'}</td>
-                                        <td class="text-right">${r['QTY BELI'] || 0}</td>
-                                        <td class="text-right font-black">${formatCurrency(r['TOTAL BELI'] || 0)}</td>
-                                        <td style="font-size:8px;">${r['NAMA PEMBELI'] || '-'}</td>
-                                        <td class="text-right">${r['QTY JUAL'] || 0}</td>
-                                        <td class="text-right font-black text-green">${formatCurrency(r['TOTAL JUAL'] || 0)}</td>
-                                        <td class="text-right font-black" style="color: ${Number(r.MARGIN || 0) >= 0 ? '#059669' : '#dc2626'}">${formatCurrency(r.MARGIN || 0)}</td>
-                                        <td class="text-right" style="font-size:8px;">${r['MARGIN %'] || '0%'}</td>
-                                    </tr>
-                                `).join('')}
-                                <tr class="total-row">
-                                    <td colspan="6">TOTAL (${traceData.length} baris)</td>
-                                    <td class="text-right">${formatCurrency(totalTraceBeli)}</td>
-                                    <td colspan="2"></td>
-                                    <td class="text-right text-green">${formatCurrency(totalTraceJual)}</td>
-                                    <td class="text-right" style="color: ${totalTraceMargin >= 0 ? '#059669' : '#dc2626'}">${formatCurrency(totalTraceMargin)}</td>
-                                    <td class="text-right">${totalTraceJual > 0 ? (totalTraceMargin / totalTraceJual * 100).toFixed(1) : 0}%</td>
-                                </tr>
-                            </tbody>
-                        </table>
-
-                        <!-- ═══════════════════════════════════════════════════ -->
-                        <!-- HALAMAN 5: OUTSTANDING (PIUTANG & HUTANG)         -->
+                        <!-- HALAMAN 4: OUTSTANDING (PIUTANG & HUTANG)         -->
                         <!-- ═══════════════════════════════════════════════════ -->
                         <div class="section-divider"></div>
                         ${getMiniHeaderHTML('PIUTANG & HUTANG OUTSTANDING', periodLabel)}
@@ -1887,7 +1831,7 @@ function DailyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix, s
             )}
 
             {/* Traceability Harian */}
-            {d.dailyTraceability?.length > 0 && (
+            {false && d.dailyTraceability?.length > 0 && (
                 <ReportTable
                     title="Traceability Harian" icon={<FileSpreadsheet className="h-4 w-4 text-emerald-500" />}
                     count={d.dailyTraceability.length}
@@ -2204,8 +2148,8 @@ function WeeklyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix, 
                     <span className="tabular-nums font-black">{row.salesCount}</span>,
                     <span className="tabular-nums">{row.salesQty}</span>,
                     <span className="tabular-nums">{row.purchaseQty}</span>,
-                    <span className={cn("tabular-nums font-black", (row.sales - row.hpp - row.opsExpense) >= 0 ? "text-emerald-600" : "text-rose-600")}>
-                        {isClient ? formatCurrency(row.sales - row.hpp - row.opsExpense) : '...'}
+                    <span className={cn("tabular-nums font-black", (row.sales - row.purchases - row.opsExpense) >= 0 ? "text-emerald-600" : "text-rose-600")}>
+                        {isClient ? formatCurrency(row.sales - row.purchases - row.opsExpense) : '...'}
                     </span>
                 ])}
                 isClient={isClient}
@@ -2213,7 +2157,7 @@ function WeeklyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix, 
             />
 
             {/* Traceability Mingguan */}
-            {data.details?.weeklyTraceability?.length > 0 && (
+            {false && data.details?.weeklyTraceability?.length > 0 && (
                 <ReportTable
                     title="Traceability Mingguan" icon={<FileSpreadsheet className="h-4 w-4 text-emerald-500" />}
                     count={data.details.weeklyTraceability.length}
@@ -2379,7 +2323,7 @@ function MonthlyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix,
             {/* KPI Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
                 <KPICard icon={<ShoppingBag className="h-5 w-5 text-blue-500" />} label="Total Revenue" value={formatCurrency(pl.revenue || 0)} sub={`${stats.salesCount || 0} Invoice • ${stats.totalSalesQty || 0} Unit`} color="blue" isClient={isClient} />
-                <KPICard icon={<Receipt className="h-5 w-5 text-rose-500" />} label="HPP (COGS)" value={formatCurrency(pl.hpp || 0)} sub={`Harga Pokok Penjualan`} color="rose" isClient={isClient} />
+                <KPICard icon={<Receipt className="h-5 w-5 text-rose-500" />} label="Total Pembelian" value={formatCurrency(data.purchases?.total || 0)} sub={`Komitmen Pembelian`} color="rose" isClient={isClient} />
                 <KPICard icon={<TrendingUp className="h-5 w-5 text-emerald-500" />} label="Laba Kotor" value={formatCurrency(pl.grossProfit || 0)} sub={`Margin: ${pl.grossMarginPct || 0}%`} color="emerald" trend={pl.grossProfit >= 0 ? 'up' : 'down'} isClient={isClient} />
                 <KPICard icon={<DollarSign className="h-5 w-5 text-purple-500" />} label="Laba Bersih" value={formatCurrency(pl.netProfit || 0)} sub={`Margin: ${pl.netMarginPct || 0}%`} color="purple" trend={pl.netProfit >= 0 ? 'up' : 'down'} isClient={isClient} />
             </div>
@@ -2402,7 +2346,7 @@ function MonthlyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix,
                         <PLRow label="  Diskon Penjualan" value={-pl.discount} sub isClient={isClient} />
                         <PLRow label="  PPN Keluaran" value={pl.salesTax} sub isClient={isClient} />
                         <div className="h-3" />
-                        <PLRow label="HARGA POKOK PENJUALAN (HPP)" value={pl.hpp} bold negative isClient={isClient} />
+                        <PLRow label="TOTAL PEMBELIAN" value={data.purchases?.total || 0} bold negative isClient={isClient} />
                         <div className="border-t-2 border-slate-900 my-3" />
                         <PLRow label="LABA KOTOR" value={pl.grossProfit} bold highlight={pl.grossProfit >= 0 ? 'green' : 'red'} isClient={isClient} />
                         <PLRow label={`  Margin Kotor`} valueStr={`${pl.grossMarginPct || 0}%`} sub isClient={isClient} />
@@ -2717,7 +2661,7 @@ function MonthlyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix,
             )}
 
             {/* Traceability Bulanan */}
-            {data.details?.monthlyTraceability?.length > 0 && (
+            {false && data.details?.monthlyTraceability?.length > 0 && (
                 <ReportTable
                     title="Traceability Bulanan" icon={<FileSpreadsheet className="h-4 w-4 text-emerald-500" />}
                     count={data.details.monthlyTraceability.length}

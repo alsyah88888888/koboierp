@@ -652,7 +652,7 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
         // Calculate AR/AP Balances
         const totalAR = arRecords.reduce((acc: number, r: any) => acc + (Number(r.grandTotal) - Number(r.paidAmount)), 0);
         const totalAP = apRecords.reduce((acc: number, r: any) => acc + (Number(r.grandTotal) - Number(r.paidAmount)), 0);
-        const grossProfit = totalRevenue - totalHpp; // Using Traceability HPP for exact margin matching
+        const grossProfit = totalRevenue - netPurchases; // Cash-flow basis margin as requested by user
         const netProfit = grossProfit - totalExpenses;
 
         return {
@@ -1749,7 +1749,7 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
         // Total Purchases (for Cash-flow basis margin)
         const totalPurchases = purchases.reduce((sum: number, p: any) => sum + Number(p.grandTotal || 0), 0);
 
-        const grossProfit = totalRevenue - totalHPP; // Using Traceability HPP for exact margin matching
+        const grossProfit = totalRevenue - totalPurchases; // Cash-flow basis margin as requested by user
         const grossMarginPct = totalRevenue > 0 ? (grossProfit / totalRevenue * 100) : 0;
 
         // Operating Expenses
