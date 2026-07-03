@@ -548,17 +548,19 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
             (prisma as any).financeTransaction.findMany({
                 where: {
                     date: { gte: startDate, lte: endDate },
-                    OR: [
-                        { transactionType: "PAYMENT" },
-                        { transactionType: "EXPENSE" },
-                        { amount: { lt: 0 } }
-                    ],
-                    ...(isAll ? {} : { 
-                        OR: [
-                            { description: { contains: prefix, mode: 'insensitive' } },
-                            { salesPerson: prefix }
-                        ]
-                    })
+                    AND: [
+                        { OR: [
+                            { transactionType: "PAYMENT" },
+                            { transactionType: "EXPENSE" },
+                            { amount: { lt: 0 } }
+                        ] },
+                        ...(isAll ? [] : [{
+                            OR: [
+                                { description: { contains: prefix, mode: 'insensitive' } },
+                                { salesPerson: prefix }
+                            ]
+                        }])
+                    ]
                 },
                 orderBy: { date: 'asc' }
             }),
