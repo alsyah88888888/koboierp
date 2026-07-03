@@ -2148,8 +2148,8 @@ function WeeklyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix, 
                     <span className="tabular-nums font-black">{row.salesCount}</span>,
                     <span className="tabular-nums">{row.salesQty}</span>,
                     <span className="tabular-nums">{row.purchaseQty}</span>,
-                    <span className={cn("tabular-nums font-black", (row.sales - row.purchases - row.opsExpense) >= 0 ? "text-emerald-600" : "text-rose-600")}>
-                        {isClient ? formatCurrency(row.sales - row.purchases - row.opsExpense) : '...'}
+                    <span className={cn("tabular-nums font-black", (row.sales - row.hpp - row.opsExpense) >= 0 ? "text-emerald-600" : "text-rose-600")}>
+                        {isClient ? formatCurrency(row.sales - row.hpp - row.opsExpense) : '...'}
                     </span>
                 ])}
                 isClient={isClient}
