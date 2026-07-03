@@ -337,13 +337,13 @@ export function ReportsDashboard() {
                                 <tr>
                                     <th style="width:4%">No</th>
                                     <th style="width:10%">Tanggal</th>
-                                    <th style="width:18%">No. SJ</th>
+                                    <th style="width:18%">No. Penjualan</th>
                                     <th style="width:22%">Buyer</th>
                                     <th style="width:6%">Div</th>
                                     <th class="text-right" style="width:6%">Qty</th>
-                                    <th class="text-right" style="width:12%">Grand Total</th>
-                                    <th class="text-right" style="width:10%">HPP</th>
-                                    <th class="text-right" style="width:12%">Margin</th>
+                                    <th class="text-right" style="width:10%">Subtotal</th>
+                                    <th class="text-right" style="width:10%">Pajak</th>
+                                    <th class="text-right" style="width:14%">Grand Total</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -351,21 +351,21 @@ export function ReportsDashboard() {
                                     <tr>
                                         <td>${i + 1}</td>
                                         <td>${format(new Date(s.date), "dd/MM/yy")}</td>
-                                        <td class="font-black">${s.number}</td>
+                                        <td class="font-black">${s.invoiceNumber || s.number}</td>
                                         <td>${s.buyer || '-'}</td>
                                         <td>${s.salesPerson || '-'}</td>
                                         <td class="text-right">${s.totalQty}</td>
+                                        <td class="text-right">${formatCurrency(s.subtotal)}</td>
+                                        <td class="text-right">${formatCurrency(s.tax)}</td>
                                         <td class="text-right font-black text-green">${formatCurrency(s.grandTotal)}</td>
-                                        <td class="text-right">${formatCurrency(s.hpp || 0)}</td>
-                                        <td class="text-right font-black" style="color: ${(s.margin || 0) >= 0 ? '#059669' : '#dc2626'}">${formatCurrency(s.margin || 0)} (${(s.marginPct || 0).toFixed(1)}%)</td>
                                     </tr>
                                 `).join('')}
                                 <tr class="total-row">
                                     <td colspan="5">TOTAL</td>
                                     <td class="text-right">${salesDetail.reduce((s: number, d: any) => s + (d.totalQty || 0), 0)}</td>
+                                    <td class="text-right">${formatCurrency(pl.revenueSubtotal || 0)}</td>
+                                    <td class="text-right">${formatCurrency(pl.salesTax || 0)}</td>
                                     <td class="text-right text-green">${formatCurrency(pl.revenue || 0)}</td>
-                                    <td class="text-right">${formatCurrency(pl.hpp || 0)}</td>
-                                    <td class="text-right" style="color: ${(pl.grossProfit || 0) >= 0 ? '#059669' : '#dc2626'}">${formatCurrency(pl.grossProfit || 0)}</td>
                                 </tr>
                             </tbody>
                         </table>

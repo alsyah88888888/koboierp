@@ -682,6 +682,7 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
                     return {
                         id: s.id,
                         number: s.deliveryNumber,
+                        invoiceNumber: s.invoiceNumber,
                         date: s.date,
                         entity: s.buyerName || s.recipient,
                         totalQty: (s.items || []).reduce((acc: number, item: any) => acc + Number(item.quantity || 0), 0),
@@ -1924,7 +1925,7 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
             const margin = Number(s.grandTotal || 0) - saleHpp;
             const marginPct = Number(s.grandTotal || 0) > 0 ? (margin / Number(s.grandTotal || 0) * 100) : 0;
             return {
-                number: s.deliveryNumber, date: s.date,
+                number: s.deliveryNumber, invoiceNumber: s.invoiceNumber, date: s.date,
                 buyer: s.buyerName || s.recipient, salesPerson: s.salesPerson,
                 subtotal: Number(s.subtotal || 0), discount: Number(s.totalDiscount || 0),
                 tax: Number(s.taxAmount || 0), grandTotal: Number(s.grandTotal || 0),
