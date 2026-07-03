@@ -255,8 +255,8 @@ export function ReportsDashboard() {
 
         let html = '';
 
-        if (activeTab === "closing" && closingReport) {
-            const data = closingReport;
+        if (activeTab === "closing" && monthlyData) {
+            const data = monthlyData;
             const divLabel = closingPrefix !== 'ALL' ? ` — ${closingPrefix} DIV` : ' — ALL DIV';
             const periodLabel = (data.period?.label || `${monthNames[selectedMonth - 1]} ${selectedYear}`) + divLabel;
             const pl = data.profitLoss || {};
