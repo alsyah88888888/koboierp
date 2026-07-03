@@ -292,69 +292,37 @@ export function ReportsDashboard() {
 
                         <div class="summary-grid">
                             <div class="summary-card">
-                                <p>Total Penjualan</p>
+                                <p>Laporan Penjualan</p>
                                 <h2 class="text-green">${formatCurrency(pl.revenue || 0)}</h2>
                             </div>
                             <div class="summary-card">
-                                <p>Total Pembelian</p>
+                                <p>Laporan Pembelian</p>
                                 <h2 class="text-blue">${formatCurrency(data.purchases?.total || 0)}</h2>
                             </div>
                             <div class="summary-card">
-                                <p>HPP (Harga Pokok)</p>
-                                <h2>${formatCurrency(pl.hpp || 0)}</h2>
-                            </div>
-                            <div class="summary-card">
-                                <p>Biaya Operasional</p>
+                                <p>Laporan Operasional</p>
                                 <h2>${formatCurrency(pl.expenses || 0)}</h2>
+                            </div>
+                            <div class="summary-card highlight">
+                                <p>Laporan Gross Profit</p>
+                                <h2 style="color: ${(pl.grossProfit || 0) >= 0 ? '#059669' : '#dc2626'}">${formatCurrency(pl.grossProfit || 0)}</h2>
+                                <p style="margin-top: 2px; font-size: 8px;">Margin: ${pl.grossMarginPct || 0}%</p>
                             </div>
                         </div>
 
                         <div class="summary-grid">
-                            <div class="summary-card highlight">
-                                <p>Gross Profit</p>
-                                <h2 style="color: ${(pl.grossProfit || 0) >= 0 ? '#059669' : '#dc2626'}">${formatCurrency(pl.grossProfit || 0)}</h2>
-                                <p style="margin-top: 2px; font-size: 8px;">Margin: ${pl.grossMarginPct || 0}%</p>
-                            </div>
                             <div class="summary-card ${(pl.netProfit || 0) >= 0 ? 'highlight' : 'danger'}">
-                                <p>Net Profit</p>
+                                <p>Laporan Net Profit</p>
                                 <h2 style="color: ${(pl.netProfit || 0) >= 0 ? '#059669' : '#dc2626'}">${formatCurrency(pl.netProfit || 0)}</h2>
                                 <p style="margin-top: 2px; font-size: 8px;">Margin: ${pl.netMarginPct || 0}%</p>
                             </div>
                             <div class="summary-card">
-                                <p>Piutang (AR)</p>
+                                <p>Laporan Piutang</p>
                                 <h2 class="text-blue">${formatCurrency(data.arAging?.buckets?.total || 0)}</h2>
                             </div>
                             <div class="summary-card">
-                                <p>Hutang (AP)</p>
+                                <p>Laporan Hutang</p>
                                 <h2 class="text-red">${formatCurrency(data.apAging?.buckets?.total || 0)}</h2>
-                            </div>
-                        </div>
-
-                        <h3>Ringkasan Statistik</h3>
-                        <div class="summary-grid-6">
-                            <div class="summary-card"><p>Jumlah SJ (Penjualan)</p><h2>${data.stats?.salesCount || 0}</h2></div>
-                            <div class="summary-card"><p>Jumlah LPB (Pembelian)</p><h2>${data.stats?.purchaseCount || 0}</h2></div>
-                            <div class="summary-card"><p>Jumlah Transaksi Finance</p><h2>${data.stats?.opsCount || 0}</h2></div>
-                        </div>
-
-                        <div class="two-col no-break">
-                            <div>
-                                <h3>Top 10 Buyer</h3>
-                                <table>
-                                    <thead><tr><th>Nama Customer</th><th class="text-right">SJ</th><th class="text-right">Total</th></tr></thead>
-                                    <tbody>
-                                        ${topBuyers.slice(0, 10).map((b: any) => `<tr><td class="font-black">${b.name}</td><td class="text-right">${b.count}</td><td class="text-right font-black">${formatCurrency(b.total)}</td></tr>`).join('')}
-                                    </tbody>
-                                </table>
-                            </div>
-                            <div>
-                                <h3>Top 10 Supplier</h3>
-                                <table>
-                                    <thead><tr><th>Nama Supplier</th><th class="text-right">LPB</th><th class="text-right">Total</th></tr></thead>
-                                    <tbody>
-                                        ${topSuppliers.slice(0, 10).map((s: any) => `<tr><td class="font-black">${s.name}</td><td class="text-right">${s.count}</td><td class="text-right font-black">${formatCurrency(s.total)}</td></tr>`).join('')}
-                                    </tbody>
-                                </table>
                             </div>
                         </div>
 
