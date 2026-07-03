@@ -154,6 +154,7 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
                 taxInvoiceNumber: string | null;
                 totalDiscount: any;
                 subtotal: any;
+                cashbacks: any;
             };
         };
 
@@ -169,7 +170,7 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
                             receiptNumber: true, date: true, receivedFrom: true,
                             isVoid: true, taxRate: true, formNumber: true,
                             taxInvoiceDate: true, taxInvoiceNumber: true,
-                            totalDiscount: true, subtotal: true
+                            totalDiscount: true, subtotal: true, cashbacks: true
                         }
                     }
                 },
@@ -359,13 +360,29 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
                     }
                 }
 
-                // ── SISI BELI: Distribute header-level discount (diskon nota GR) ──
+                // ── SISI BELI: Distribute header-level discount (diskon nota GR) & Cashback ──
                 const grHeaderDiscount = Number(bestGR?.receipt?.totalDiscount || 0);
                 const grSubtotal = Number(bestGR?.receipt?.subtotal || 0);
                 const buyItemDiscount = Number(bestGR?.discount || 0);
                 const buyLineSubtotal = hpp * qty;
+                
+                let grTotalCashback = 0;
+                if (bestGR?.receipt?.cashbacks) {
+                    try {
+                        const cbArray = typeof bestGR.receipt.cashbacks === 'string' ? JSON.parse(bestGR.receipt.cashbacks) : bestGR.receipt.cashbacks;
+                        if (Array.isArray(cbArray)) {
+                            const grDpp = Math.max(0, grSubtotal - grHeaderDiscount);
+                            for (const cb of cbArray) {
+                                const rateStr = String(cb.rate).replace(/,/g, '.');
+                                const rate = parseFloat(rateStr) || 0;
+                                grTotalCashback += Math.floor(grDpp * (rate / 100));
+                            }
+                        }
+                    } catch(e) {}
+                }
+
                 const grDiscountShare = grSubtotal > 0
-                    ? Math.round(grHeaderDiscount * (buyLineSubtotal / grSubtotal))
+                    ? Math.round((grHeaderDiscount + grTotalCashback) * (buyLineSubtotal / grSubtotal))
                     : 0;
                 const totalBuyDiscount = buyItemDiscount + grDiscountShare;
 
