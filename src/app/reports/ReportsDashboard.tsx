@@ -1842,7 +1842,7 @@ function DailyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix, s
             )}
 
             {/* Traceability Harian */}
-            {false && d.dailyTraceability?.length > 0 && (
+            {d.dailyTraceability?.length > 0 && (
                 <ReportTable
                     title="Traceability Harian" icon={<FileSpreadsheet className="h-4 w-4 text-emerald-500" />}
                     count={d.dailyTraceability.length}
@@ -2168,7 +2168,7 @@ function WeeklyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix, 
             />
 
             {/* Traceability Mingguan */}
-            {false && data.details?.weeklyTraceability?.length > 0 && (
+            {data.details?.weeklyTraceability?.length > 0 && (
                 <ReportTable
                     title="Traceability Mingguan" icon={<FileSpreadsheet className="h-4 w-4 text-emerald-500" />}
                     count={data.details.weeklyTraceability.length}
@@ -2672,7 +2672,7 @@ function MonthlyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix,
             )}
 
             {/* Traceability Bulanan */}
-            {false && data.details?.monthlyTraceability?.length > 0 && (
+            {data.details?.monthlyTraceability?.length > 0 && (
                 <ReportTable
                     title="Traceability Bulanan" icon={<FileSpreadsheet className="h-4 w-4 text-emerald-500" />}
                     count={data.details.monthlyTraceability.length}
