@@ -143,7 +143,7 @@ export function CrossDivisionTab({ data, isClient, fmtDate }: { data: any, isCli
                 {/* PF To BC */}
                 <div className="space-y-6">
                     <KPICard 
-                        label="PF Dipakai Oleh BC" 
+                        label="Pembelian PF - Penjualan BC"
                         value={isClient ? formatCurrency(pfToBcAmount) : '...'} 
                         sub={`${pfToBc.length} Transaksi Silang Ditemukan`} 
                         color="blue" 
@@ -151,11 +151,11 @@ export function CrossDivisionTab({ data, isClient, fmtDate }: { data: any, isCli
                     />
                     
                     <ReportTable
-                        title="Daftar Modal PF Dipakai BC" 
+                        title="Daftar Pembelian PF - Penjualan BC"
                         icon={<FileSpreadsheet className="h-4 w-4 text-blue-500" />}
                         count={pfToBc.length}
                         headers={['Barang', 'Qty', 'No. LPB (Modal)', 'No. SJ (Jual)', 'Total HPP']}
-                        onExport={() => handleExport("PF_Dipakai_BC", pfToBc)}
+                        onExport={() => handleExport("Pembelian_PF_Penjualan_BC", pfToBc)}
                         rows={pfToBc.map((r: any) => [
                             <span className="truncate max-w-[150px] block font-bold" title={r.product}>{r.product}</span>,
                             <span className="font-mono">{r.qty}</span>,
@@ -169,7 +169,7 @@ export function CrossDivisionTab({ data, isClient, fmtDate }: { data: any, isCli
                 {/* BC To PF */}
                 <div className="space-y-6">
                     <KPICard 
-                        label="BC Dipakai Oleh PF" 
+                        label="Pembelian BC - Penjualan PF"
                         value={isClient ? formatCurrency(bcToPfAmount) : '...'} 
                         sub={`${bcToPf.length} Transaksi Silang Ditemukan`} 
                         color="emerald" 
@@ -177,11 +177,11 @@ export function CrossDivisionTab({ data, isClient, fmtDate }: { data: any, isCli
                     />
                     
                     <ReportTable
-                        title="Daftar Modal BC Dipakai PF" 
+                        title="Daftar Pembelian BC - Penjualan PF"
                         icon={<FileSpreadsheet className="h-4 w-4 text-emerald-500" />}
                         count={bcToPf.length}
                         headers={['Barang', 'Qty', 'No. LPB (Modal)', 'No. SJ (Jual)', 'Total HPP']}
-                        onExport={() => handleExport("BC_Dipakai_PF", bcToPf)}
+                        onExport={() => handleExport("Pembelian_BC_Penjualan_PF", bcToPf)}
                         rows={bcToPf.map((r: any) => [
                             <span className="truncate max-w-[150px] block font-bold" title={r.product}>{r.product}</span>,
                             <span className="font-mono">{r.qty}</span>,

@@ -1029,7 +1029,7 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
                     'No. LPB (Beli)': r.lpb, 'Tgl LPB': fmtDate(r.lpbDate),
                     'No. SJ (Jual)': r.sj, 'Tgl SJ': fmtDate(r.sjDate)
                 }));
-                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows1), 'PF Dipakai BC');
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows1), 'Pembelian PF - Penjualan BC');
             }
             if (crossData.bcToPf?.length) {
                 const rows2 = crossData.bcToPf.map((r: any, i: number) => ({
@@ -1038,7 +1038,7 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
                     'No. LPB (Beli)': r.lpb, 'Tgl LPB': fmtDate(r.lpbDate),
                     'No. SJ (Jual)': r.sj, 'Tgl SJ': fmtDate(r.sjDate)
                 }));
-                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows2), 'BC Dipakai PF');
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows2), 'Pembelian BC - Penjualan PF');
             }
             
             const fileName = `Transaksi_Silang_${showAllTimeCross ? 'All_Time' : monthNames[selectedMonth - 1] + '_' + selectedYear}.xlsx`;
