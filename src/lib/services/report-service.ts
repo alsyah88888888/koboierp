@@ -273,34 +273,57 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
             let remainingSdQty = sdTotalQty;
 
             // ── MERGE items with same productId and Lot within this delivery ──
-            // e.g. 5 pcs + 263 pcs of "Abc Kecap" → 268 pcs combined
             const mergedItemsMap = new Map<string, any>();
             for (const sdItem of sd.items) {
-                let lotGr = 'UNKNOWN';
                 if (sdItem.lotAllocations && sdItem.lotAllocations.length > 0) {
-                    lotGr = sdItem.lotAllocations[0].lot.grNumber;
-                }
-                const key = `${sdItem.productId}_${lotGr}`;
+                    for (const alloc of sdItem.lotAllocations) {
+                        const lotGr = alloc.lot.grNumber;
+                        const key = `${sdItem.productId}_${lotGr}`;
+                        
+                        const proportion = alloc.qty / sdItem.quantity;
+                        const allocDiscount = Number(sdItem.discount || 0) * proportion;
 
-                if (mergedItemsMap.has(key)) {
-                    const existing = mergedItemsMap.get(key)!;
-                    existing.quantity += sdItem.quantity;
-                    existing.discount = Number(existing.discount) + Number(sdItem.discount || 0);
-                    // Use weighted average salesPrice if different
-                    if (Number(sdItem.salesPrice || 0) !== Number(existing.salesPrice || 0)) {
-                        const totalQty = existing.quantity;
-                        const prevQty = existing.quantity - sdItem.quantity;
-                        existing.salesPrice = (Number(existing.salesPrice) * prevQty + Number(sdItem.salesPrice || 0) * sdItem.quantity) / totalQty;
+                        if (mergedItemsMap.has(key)) {
+                            const existing = mergedItemsMap.get(key)!;
+                            existing.quantity += alloc.qty;
+                            existing.discount += allocDiscount;
+                            const totalQty = existing.quantity;
+                            const prevQty = existing.quantity - alloc.qty;
+                            existing.salesPrice = (existing.salesPrice * prevQty + Number(sdItem.salesPrice || 0) * alloc.qty) / totalQty;
+                        } else {
+                            mergedItemsMap.set(key, {
+                                ...sdItem,
+                                quantity: alloc.qty,
+                                salesPrice: Number(sdItem.salesPrice || 0),
+                                discount: allocDiscount,
+                                product: sdItem.product,
+                                productId: sdItem.productId,
+                                _specificLotAllocation: alloc 
+                            });
+                        }
                     }
                 } else {
-                    mergedItemsMap.set(key, {
-                        ...sdItem,
-                        quantity: sdItem.quantity,
-                        salesPrice: Number(sdItem.salesPrice || 0),
-                        discount: Number(sdItem.discount || 0),
-                        product: sdItem.product,
-                        productId: sdItem.productId
-                    });
+                    const lotGr = 'UNKNOWN';
+                    const key = `${sdItem.productId}_${lotGr}`;
+                    
+                    if (mergedItemsMap.has(key)) {
+                        const existing = mergedItemsMap.get(key)!;
+                        existing.quantity += sdItem.quantity;
+                        existing.discount += Number(sdItem.discount || 0);
+                        const totalQty = existing.quantity;
+                        const prevQty = existing.quantity - sdItem.quantity;
+                        existing.salesPrice = (existing.salesPrice * prevQty + Number(sdItem.salesPrice || 0) * sdItem.quantity) / totalQty;
+                    } else {
+                        mergedItemsMap.set(key, {
+                            ...sdItem,
+                            quantity: sdItem.quantity,
+                            salesPrice: Number(sdItem.salesPrice || 0),
+                            discount: Number(sdItem.discount || 0),
+                            product: sdItem.product,
+                            productId: sdItem.productId,
+                            _specificLotAllocation: null
+                        });
+                    }
                 }
             }
             const mergedItems = Array.from(mergedItemsMap.values());
@@ -336,8 +359,8 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
                 let purchaseTaxRate = 0;
                 let spBeli = '-';
 
-                if (sdItem.lotAllocations && sdItem.lotAllocations.length > 0) {
-                    const allocLot = sdItem.lotAllocations[0].lot; allocLotId = allocLot?.id || null;
+                if (sdItem._specificLotAllocation) {
+                    const allocLot = sdItem._specificLotAllocation.lot; allocLotId = allocLot?.id || null;
                     grNumber = allocLot.grNumber;
                     grDate = allocLot.grDate;
                     supplierName = allocLot.supplierName;
