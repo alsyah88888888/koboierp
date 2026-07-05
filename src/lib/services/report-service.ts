@@ -2123,3 +2123,95 @@ export async function reallocateLotService(sdItemId: string, newLotId: string) {
 
     return true;
 }
+
+export async function getCrossDivisionSalesService(month: number, year: number) {
+    const prisma = getPrisma();
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0, 23, 59, 59, 999);
+
+    try {
+        const allocations = await prisma.lotAllocation.findMany({
+            where: {
+                sdItem: {
+                    delivery: {
+                        date: { gte: startDate, lte: endDate },
+                        isVoid: false
+                    }
+                }
+            },
+            include: {
+                sdItem: {
+                    include: {
+                        delivery: true,
+                        product: true
+                    }
+                },
+                lot: {
+                    include: {
+                        grItem: {
+                            include: {
+                                receipt: true
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        let pfToBc: any[] = [];
+        let bcToPf: any[] = [];
+        let pfToBcAmount = 0;
+        let bcToPfAmount = 0;
+
+        for (const alloc of allocations) {
+            if (!alloc.sdItem || !alloc.lot || !alloc.lot.grItem || !alloc.lot.grItem.receipt) continue;
+            
+            const seller = alloc.sdItem.delivery.salesPerson;
+            const buyer = alloc.lot.grItem.receipt.salesPerson;
+            
+            const qty = alloc.qty;
+            const purchasePrice = Number(alloc.lot.grItem.purchasePrice || alloc.sdItem.product.purchasePrice || 0);
+            const totalCost = qty * purchasePrice;
+
+            if (seller === 'BC' && buyer === 'PF') {
+                pfToBc.push({
+                    id: alloc.id,
+                    product: alloc.sdItem.product.name,
+                    sku: alloc.sdItem.product.sku,
+                    qty: qty,
+                    sj: alloc.sdItem.delivery.deliveryNumber,
+                    sjDate: alloc.sdItem.delivery.date,
+                    lpb: alloc.lot.grItem.receipt.receiptNumber,
+                    lpbDate: alloc.lot.grItem.receipt.date,
+                    cost: totalCost,
+                    price: purchasePrice
+                });
+                pfToBcAmount += totalCost;
+            } else if (seller === 'PF' && buyer === 'BC') {
+                bcToPf.push({
+                    id: alloc.id,
+                    product: alloc.sdItem.product.name,
+                    sku: alloc.sdItem.product.sku,
+                    qty: qty,
+                    sj: alloc.sdItem.delivery.deliveryNumber,
+                    sjDate: alloc.sdItem.delivery.date,
+                    lpb: alloc.lot.grItem.receipt.receiptNumber,
+                    lpbDate: alloc.lot.grItem.receipt.date,
+                    cost: totalCost,
+                    price: purchasePrice
+                });
+                bcToPfAmount += totalCost;
+            }
+        }
+
+        return {
+            pfToBc,
+            bcToPf,
+            pfToBcAmount,
+            bcToPfAmount
+        };
+    } catch (error: any) {
+        console.error('[getCrossDivisionSalesService] ERROR:', error);
+        return { error: error.message || 'Failed to generate cross division report' };
+    }
+}

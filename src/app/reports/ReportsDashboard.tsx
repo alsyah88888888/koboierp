@@ -20,14 +20,16 @@ import {
     getComprehensiveWeeklyReportAction,
     getComprehensiveMonthlyReportAction
 } from "@/actions/reports";
+import { getCrossDivisionSalesAction } from "@/actions/reports";
 import { callAction } from "@/proxy";
 import { format } from "date-fns";
 import { TraceabilityReallocateModal } from "./TraceabilityReallocateModal";
+import { CrossDivisionReport } from "./CrossDivisionReport";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // TYPES
 // ═══════════════════════════════════════════════════════════════════════════
-type ReportTab = "daily" | "weekly" | "monthly" | "closing";
+type ReportTab = "daily" | "weekly" | "monthly" | "closing" | "cross";
 
 const CHART_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
 const PAYMENT_BADGE: Record<string, string> = {
@@ -40,7 +42,7 @@ const PAYMENT_BADGE: Record<string, string> = {
 // ═══════════════════════════════════════════════════════════════════════════
 // COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════
-export function ReportsDashboard() {
+export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
     const [activeTab, setActiveTab] = useState<ReportTab>("daily");
     const [isLoading, setIsLoading] = useState(false);
     const [isClient, setIsClient] = useState(false);
@@ -61,6 +63,7 @@ export function ReportsDashboard() {
     const [dailyData, setDailyData] = useState<any>(null);
     const [weeklyData, setWeeklyData] = useState<any>(null);
     const [monthlyData, setMonthlyData] = useState<any>(null);
+    const [crossData, setCrossData] = useState<any>(null);
 
     // Closing Report State
     const [selectedTraceData, setSelectedTraceData] = useState<any>(null);
@@ -105,6 +108,15 @@ export function ReportsDashboard() {
         } catch (e) { console.error(e); }
         setIsLoading(false);
     }, [selectedMonth, selectedYear, activePrefix]);
+
+    const fetchCrossDivision = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const data = await getCrossDivisionSalesAction(selectedMonth, selectedYear);
+            setCrossData(data);
+        } catch (e) { console.error(e); }
+        setIsLoading(false);
+    }, [selectedMonth, selectedYear]);
 
     const fetchClosingReport = async (m: number, y: number, pref: 'PF' | 'BC' | 'ALL' = 'ALL') => {
         setIsFetchingClosing(true);
@@ -953,6 +965,7 @@ export function ReportsDashboard() {
         if (activeTab === 'daily') fetchDaily();
         else if (activeTab === 'weekly') fetchWeekly();
         else if (activeTab === 'monthly') fetchMonthly();
+        else if (activeTab === 'cross') fetchCrossDivision();
         else if (activeTab === 'closing') {
             fetchClosingReport(closingPeriod.month, closingPeriod.year, closingPrefix);
             // Sync selectedMonth/Year and activePrefix with closingPeriod so fetchMonthly uses the correct period & prefix for print
@@ -960,7 +973,8 @@ export function ReportsDashboard() {
             setSelectedYear(closingPeriod.year);
             setActivePrefix(closingPrefix);
         }
-    }, [activeTab, fetchDaily, fetchWeekly, fetchMonthly, closingPeriod, closingPrefix]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeTab, fetchDaily, fetchWeekly, fetchMonthly, fetchCrossDivision, closingPeriod, closingPrefix]);
 
     // When on closing tab, also fetch comprehensive monthly data for print (synced to closingPeriod)
     useEffect(() => {
@@ -1413,6 +1427,7 @@ export function ReportsDashboard() {
                         { key: 'weekly' as ReportTab, label: 'Mingguan', icon: Activity },
                         { key: 'monthly' as ReportTab, label: 'Bulanan', icon: BarChart3 },
                         { key: 'closing' as ReportTab, label: 'Closing Bulanan', icon: FileCode2 },
+                        ...(userRole === 'ADMIN' ? [{ key: 'cross' as ReportTab, label: 'Transaksi Silang', icon: Search }] : [])
                     ]).map(tab => (
                         <button
                             key={tab.key}
@@ -1529,6 +1544,7 @@ export function ReportsDashboard() {
                     {activeTab === 'daily' && dailyData && <DailyReport data={dailyData} isClient={isClient} fmtDate={fmtDate} activePrefix={activePrefix} setActivePrefix={setActivePrefix} setIsTraceModalOpen={setIsTraceModalOpen} setSelectedTraceData={setSelectedTraceData} />}
                     {activeTab === 'weekly' && weeklyData && <WeeklyReport data={weeklyData} isClient={isClient} fmtDate={fmtDate} activePrefix={activePrefix} setActivePrefix={setActivePrefix} setIsTraceModalOpen={setIsTraceModalOpen} setSelectedTraceData={setSelectedTraceData} />}
                     {activeTab === 'monthly' && monthlyData && <MonthlyReport data={monthlyData} isClient={isClient} fmtDate={fmtDate} activePrefix={activePrefix} setActivePrefix={setActivePrefix} setIsTraceModalOpen={setIsTraceModalOpen} setSelectedTraceData={setSelectedTraceData} />}
+                    {activeTab === 'cross' && crossData && <CrossDivisionReport data={crossData} isClient={isClient} fmtDate={fmtDate} />}
                     
                     {activeTab === "closing" && (
                         <div className="space-y-8 animate-in fade-in zoom-in duration-500">

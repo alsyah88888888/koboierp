@@ -58,3 +58,13 @@ export async function reallocateLotAction(sdItemId: string, newLotId: string) {
         return { error: e.message || 'Failed to reallocate lot' };
     }
 }
+
+export async function getCrossDivisionSalesAction(month: number, year: number) {
+    try {
+        const { getCrossDivisionSalesService } = await import("@/lib/services/report-service");
+        return await getCrossDivisionSalesService(month, year);
+    } catch (error: any) {
+        console.error("[getCrossDivisionSalesAction] Error:", error);
+        throw error;
+    }
+}

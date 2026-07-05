@@ -30,5 +30,5 @@ export default async function ReportsPage() {
         redirect("/");
     }
 
-    return <ReportsDashboard />;
+    return <ReportsDashboard userRole={userRole} />;
 }
