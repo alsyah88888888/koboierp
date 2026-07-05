@@ -1018,6 +1018,34 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
     // ── Export Excel ──────────────────────────────────────────────────────
     const handleExportExcel = () => {
         const wb = XLSX.utils.book_new();
+        
+        if (activeTab === 'cross') {
+            if (!crossData) return;
+            
+            if (crossData.pfToBc?.length) {
+                const rows1 = crossData.pfToBc.map((r: any, i: number) => ({
+                    'No': i + 1, 'Nama Barang': r.product, 'Qty': r.qty,
+                    'HPP Beli': r.price, 'Total HPP': r.cost,
+                    'No. LPB (Beli)': r.lpb, 'Tgl LPB': fmtDate(r.lpbDate),
+                    'No. SJ (Jual)': r.sj, 'Tgl SJ': fmtDate(r.sjDate)
+                }));
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows1), 'PF Dipakai BC');
+            }
+            if (crossData.bcToPf?.length) {
+                const rows2 = crossData.bcToPf.map((r: any, i: number) => ({
+                    'No': i + 1, 'Nama Barang': r.product, 'Qty': r.qty,
+                    'HPP Beli': r.price, 'Total HPP': r.cost,
+                    'No. LPB (Beli)': r.lpb, 'Tgl LPB': fmtDate(r.lpbDate),
+                    'No. SJ (Jual)': r.sj, 'Tgl SJ': fmtDate(r.sjDate)
+                }));
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows2), 'BC Dipakai PF');
+            }
+            
+            const fileName = `Transaksi_Silang_${showAllTimeCross ? 'All_Time' : monthNames[selectedMonth - 1] + '_' + selectedYear}.xlsx`;
+            XLSX.writeFile(wb, fileName);
+            return;
+        }
+
         const data = activeTab === 'daily' ? dailyData : activeTab === 'weekly' ? weeklyData : monthlyData;
         if (!data) return;
 
