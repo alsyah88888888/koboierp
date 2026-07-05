@@ -131,6 +131,9 @@ export function CrossDivisionTab({ data, isClient, fmtDate }: { data: any, isCli
             const res = await autoFixCrossTransactionAction(deliveryId, correctSalesPerson);
             if ('error' in res && res.error) {
                 alert(res.error as string);
+            } else if ('warning' in res && res.warning) {
+                alert(res.warning as string);
+                window.location.reload();
             } else {
                 alert("Sukses! Transaksi telah dikoreksi.");
                 window.location.reload();

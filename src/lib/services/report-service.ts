@@ -2275,26 +2275,29 @@ export async function autoFixCrossTransactionService(deliveryId: string, correct
     });
 
     let isMixed = false;
+    let mixedCount = 0;
     for (const item of items) {
         for (const alloc of item.lotAllocations) {
             const receiptSalesPerson = alloc.lot.grItem.receipt.salesPerson;
             if (receiptSalesPerson && receiptSalesPerson !== correctSalesPerson) {
                 isMixed = true;
-                break;
+                mixedCount += alloc.qty;
             }
         }
-        if (isMixed) break;
     }
 
-    if (isMixed) {
-        throw new Error("BENTROK: Surat Jalan ini tidak bisa dikoreksi otomatis karena berisi barang yang modalnya diambil dari PF dan BC sekaligus. Silakan pecah Surat Jalan ini secara manual.");
-    }
-
-    // Safe to fix, update the sales delivery
+    // Update the sales delivery forcefully to the correct sales person (Majority)
     await prisma.salesDelivery.update({
         where: { id: deliveryId },
         data: { salesPerson: correctSalesPerson }
     });
+
+    if (isMixed) {
+        return { 
+            success: true, 
+            warning: `Berhasil dikoreksi ke ${correctSalesPerson}. Peringatan: Ada ${mixedCount} pcs barang yang modalnya diambil dari divisi lawan. Transaksi ini akan berbalik menjadi silang sebagian.` 
+        };
+    }
 
     return { success: true };
 }
