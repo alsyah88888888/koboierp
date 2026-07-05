@@ -1591,7 +1591,7 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
                     {activeTab === 'daily' && dailyData && <DailyReport data={dailyData} isClient={isClient} fmtDate={fmtDate} activePrefix={activePrefix} setActivePrefix={setActivePrefix} setIsTraceModalOpen={setIsTraceModalOpen} setSelectedTraceData={setSelectedTraceData} />}
                     {activeTab === 'weekly' && weeklyData && <WeeklyReport data={weeklyData} isClient={isClient} fmtDate={fmtDate} activePrefix={activePrefix} setActivePrefix={setActivePrefix} setIsTraceModalOpen={setIsTraceModalOpen} setSelectedTraceData={setSelectedTraceData} />}
                     {activeTab === 'monthly' && monthlyData && <MonthlyReport data={monthlyData} isClient={isClient} fmtDate={fmtDate} activePrefix={activePrefix} setActivePrefix={setActivePrefix} setIsTraceModalOpen={setIsTraceModalOpen} setSelectedTraceData={setSelectedTraceData} />}
-                    {activeTab === 'cross' && crossData && <CrossDivisionTab data={crossData} isClient={isClient} fmtDate={fmtDate} />}
+                    {activeTab === 'cross' && crossData && <CrossDivisionTab data={crossData} isClient={isClient} fmtDate={fmtDate} onRefresh={fetchCrossDivision} />}
                     
                     {activeTab === "closing" && (
                         <div className="space-y-8 animate-in fade-in zoom-in duration-500">

@@ -84,7 +84,7 @@ function ReportTable({ title, count, totalLabel, totalValue, headers, rows, onEx
     );
 }
 
-export function CrossDivisionTab({ data, isClient, fmtDate }: { data: any, isClient: boolean, fmtDate: (d: any) => string }) {
+export function CrossDivisionTab({ data, isClient, fmtDate, onRefresh }: { data: any, isClient: boolean, fmtDate: (d: any) => string, onRefresh: () => void }) {
     const [loadingFixId, setLoadingFixId] = useState<string | null>(null);
 
     if (!data) return null;
@@ -133,10 +133,10 @@ export function CrossDivisionTab({ data, isClient, fmtDate }: { data: any, isCli
                 alert(res.error as string);
             } else if ('warning' in res && res.warning) {
                 alert(res.warning as string);
-                window.location.reload();
+                onRefresh();
             } else {
                 alert("Sukses! Transaksi telah dikoreksi.");
-                window.location.reload();
+                onRefresh();
             }
         } catch (e: any) {
             alert("Error: " + e.message);
