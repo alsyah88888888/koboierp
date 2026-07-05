@@ -147,6 +147,7 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
                 receiptNumber: string;
                 date: Date | null;
                 receivedFrom: string;
+                salesPerson: string | null;
                 isVoid: boolean;
                 taxRate: any;
                 formNumber: string | null;
@@ -167,7 +168,7 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
                 include: {
                     receipt: {
                         select: {
-                            receiptNumber: true, date: true, receivedFrom: true,
+                            receiptNumber: true, date: true, receivedFrom: true, salesPerson: true,
                             isVoid: true, taxRate: true, formNumber: true,
                             taxInvoiceDate: true, taxInvoiceNumber: true,
                             totalDiscount: true, subtotal: true, cashbacks: true
@@ -333,6 +334,7 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
                 let supplierName = '-';
                 let hpp = Number(sdItem.product.purchasePrice || 0);
                 let purchaseTaxRate = 0;
+                let spBeli = '-';
 
                 if (sdItem.lotAllocations && sdItem.lotAllocations.length > 0) {
                     const allocLot = sdItem.lotAllocations[0].lot; allocLotId = allocLot?.id || null;
@@ -347,6 +349,7 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
                     ) || null;
                     if (bestGR) {
                         purchaseTaxRate = Number(bestGR.receipt.taxRate || 0);
+                        spBeli = bestGR.receipt.salesPerson || '-';
                     }
                 } else {
                     // ── SMART MATCHING: Fallback if no lot is explicitly allocated ──
@@ -357,6 +360,7 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
                         supplierName = bestGR.receipt.receivedFrom;
                         hpp = Number(bestGR.purchasePrice);
                         purchaseTaxRate = Number(bestGR.receipt.taxRate || 0);
+                        spBeli = bestGR.receipt.salesPerson || '-';
                     }
                 }
 
@@ -433,6 +437,7 @@ async function calculateProductTraceabilityInternal(startDate: Date, endDate: Da
                     'TANGGAL BELI'     : fmtDate(grDate),
                     'NOMOR LPB'        : grNumber,
                     'NAMA SUPPLIER'    : supplierName,
+                    'SALES BELI'       : spBeli,
                     'QTY BELI'         : qty,
                     'HARGA BELI'       : hppEffective,
                     'OPS'              : rowOps,

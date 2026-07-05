@@ -1078,6 +1078,7 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
                     'Barcode': r.BARCODE,
                     'Nama Item': r['KETERANGAN ITEM'],
                     'Supplier': r['NAMA SUPPLIER'],
+                    'Sales Beli': r['SALES BELI'] || '-',
                     'No. LPB': r['NOMOR LPB'],
                     'Tgl Beli': r['TANGGAL BELI'],
                     'Total Beli (HPP)': r['TOTAL BELI'],
@@ -1117,6 +1118,7 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
                     'Barcode': r.BARCODE,
                     'Nama Item': r['KETERANGAN ITEM'],
                     'Supplier': r['NAMA SUPPLIER'],
+                    'Sales Beli': r['SALES BELI'] || '-',
                     'No. LPB': r['NOMOR LPB'],
                     'Tgl Beli': r['TANGGAL BELI'],
                     'Qty Beli': r['QTY BELI'],
@@ -1193,6 +1195,7 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
                     'Barcode': r.BARCODE,
                     'Nama Item': r['KETERANGAN ITEM'],
                     'Supplier': r['NAMA SUPPLIER'],
+                    'Sales Beli': r['SALES BELI'] || '-',
                     'No. LPB': r['NOMOR LPB'],
                     'Tgl Beli': r['TANGGAL BELI'],
                     'Qty Beli': r['QTY BELI'],
@@ -1299,6 +1302,7 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
                     'Barcode': r.BARCODE,
                     'Nama Item': r['KETERANGAN ITEM'],
                     'Supplier': r['NAMA SUPPLIER'],
+                    'Sales Beli': r['SALES BELI'] || '-',
                     'No. LPB': r['NOMOR LPB'],
                     'Tgl Beli': r['TANGGAL BELI'],
                     'Qty Beli': r['QTY BELI'],
@@ -1869,12 +1873,13 @@ function DailyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix, s
                         const marginPct = totalJual > 0 ? (totalMargin / totalJual * 100) : 0;
                         return `${formatCurrency(totalMargin)} (${marginPct.toFixed(1)}%)`;
                     })() : '...'}
-                    headers={['No.', 'Barcode', 'Nama Item', 'Supplier', 'No. LPB', 'Tgl Beli', 'Qty Beli', 'Total Beli (HPP)', 'Ops', 'Buyer', 'Sales', 'No. Faktur Penjualan', 'No. Surat Jalan', 'Tgl Jual', 'Qty Jual', 'Total Jual (Net)', 'Margin', 'Margin %', 'Aksi']}
+                    headers={['No.', 'Barcode', 'Nama Item', 'Supplier', 'Sales Beli', 'No. LPB', 'Tgl Beli', 'Qty Beli', 'Total Beli (HPP)', 'Ops', 'Buyer', 'Sales Jual', 'No. Faktur Penjualan', 'No. Surat Jalan', 'Tgl Jual', 'Qty Jual', 'Total Jual (Net)', 'Margin', 'Margin %', 'Aksi']}
                     rows={d.dailyTraceability.map((row: any) => [
                         <span className="font-bold">{row.NO}</span>,
                         row.BARCODE,
                         <span className="truncate max-w-[150px] block font-bold" title={row['KETERANGAN ITEM']}>{row['KETERANGAN ITEM']}</span>,
                         <span className="truncate max-w-[130px] block" title={row['NAMA SUPPLIER']}>{row['NAMA SUPPLIER']}</span>,
+                        row['SALES BELI'] || '-',
                         <span className="font-semibold">{row['NOMOR LPB']}</span>,
                         row['TANGGAL BELI'],
                         <span className="tabular-nums font-bold text-slate-700">{row['QTY BELI']}</span>,
@@ -2199,12 +2204,13 @@ function WeeklyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix, 
                         filename: 'traceability-mingguan',
                         data: data.details.weeklyTraceability
                     }}
-                    headers={['No.', 'Barcode', 'Nama Item', 'Supplier', 'No. LPB', 'Tgl Beli', 'Qty Beli', 'Total Beli (HPP)', 'Ops', 'Buyer', 'Sales', 'No. Faktur Penjualan', 'No. Surat Jalan', 'Tgl Jual', 'Qty Jual', 'Total Jual (Net)', 'Margin', 'Margin %', 'Aksi']}
+                    headers={['No.', 'Barcode', 'Nama Item', 'Supplier', 'Sales Beli', 'No. LPB', 'Tgl Beli', 'Qty Beli', 'Total Beli (HPP)', 'Ops', 'Buyer', 'Sales Jual', 'No. Faktur Penjualan', 'No. Surat Jalan', 'Tgl Jual', 'Qty Jual', 'Total Jual (Net)', 'Margin', 'Margin %', 'Aksi']}
                     rows={data.details.weeklyTraceability.map((row: any) => [
                         <span className="font-bold">{row.NO}</span>,
                         row.BARCODE,
                         <span className="font-black text-slate-900 truncate max-w-[200px] block" title={row['KETERANGAN ITEM']}>{row['KETERANGAN ITEM']}</span>,
                         <span className="truncate max-w-[130px] block" title={row['NAMA SUPPLIER']}>{row['NAMA SUPPLIER']}</span>,
+                        row['SALES BELI'] || '-',
                         <span className="font-semibold">{row['NOMOR LPB']}</span>,
                         row['TANGGAL BELI'],
                         row['QTY BELI'],
@@ -2703,12 +2709,13 @@ function MonthlyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix,
                         filename: 'traceability-bulanan',
                         data: data.details.monthlyTraceability
                     }}
-                    headers={['No.', 'Barcode', 'Nama Item', 'Supplier', 'No. LPB', 'Tgl Beli', 'Qty Beli', 'Total Beli (HPP)', 'Ops', 'Buyer', 'Sales', 'No. Faktur Penjualan', 'No. Surat Jalan', 'Tgl Jual', 'Qty Jual', 'Total Jual (Net)', 'Margin', 'Margin %', 'Aksi']}
+                    headers={['No.', 'Barcode', 'Nama Item', 'Supplier', 'Sales Beli', 'No. LPB', 'Tgl Beli', 'Qty Beli', 'Total Beli (HPP)', 'Ops', 'Buyer', 'Sales Jual', 'No. Faktur Penjualan', 'No. Surat Jalan', 'Tgl Jual', 'Qty Jual', 'Total Jual (Net)', 'Margin', 'Margin %', 'Aksi']}
                     rows={data.details.monthlyTraceability.map((row: any) => [
                         <span className="font-bold">{row.NO}</span>,
                         row.BARCODE,
                         <span className="font-black text-slate-900 truncate max-w-[200px] block" title={row['KETERANGAN ITEM']}>{row['KETERANGAN ITEM']}</span>,
                         <span className="truncate max-w-[120px] block" title={row['NAMA SUPPLIER']}>{row['NAMA SUPPLIER']}</span>,
+                        row['SALES BELI'] || '-',
                         <span className="text-[10px] text-slate-500">{row['NOMOR LPB']}</span>,
                         row['TANGGAL BELI'],
                         <span className="tabular-nums font-bold">{row['QTY BELI']}</span>,
