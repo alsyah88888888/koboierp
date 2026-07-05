@@ -64,6 +64,7 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
     const [weeklyData, setWeeklyData] = useState<any>(null);
     const [monthlyData, setMonthlyData] = useState<any>(null);
     const [crossData, setCrossData] = useState<any>(null);
+    const [showAllTimeCross, setShowAllTimeCross] = useState(false);
 
     // Closing Report State
     const [selectedTraceData, setSelectedTraceData] = useState<any>(null);
@@ -112,11 +113,14 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
     const fetchCrossDivision = useCallback(async () => {
         setIsLoading(true);
         try {
-            const data = await getCrossDivisionSalesAction(selectedMonth, selectedYear);
+            const data = await getCrossDivisionSalesAction(
+                showAllTimeCross ? 0 : selectedMonth,
+                showAllTimeCross ? 0 : selectedYear
+            );
             setCrossData(data);
         } catch (e) { console.error(e); }
         setIsLoading(false);
-    }, [selectedMonth, selectedYear]);
+    }, [selectedMonth, selectedYear, showAllTimeCross]);
 
     const fetchClosingReport = async (m: number, y: number, pref: 'PF' | 'BC' | 'ALL' = 'ALL') => {
         setIsFetchingClosing(true);
@@ -1474,7 +1478,7 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
                                 {weeklyData?.period?.label || `Minggu ${fmtShortDate(selectedWeekStart)}`}
                             </div>
                         )}
-                        {(activeTab === 'monthly' || activeTab === 'cross') && (
+                        {(activeTab === 'monthly' || (activeTab === 'cross' && !showAllTimeCross)) && (
                             <div className="flex items-center gap-2">
                                 <select
                                     value={selectedMonth}
@@ -1495,6 +1499,17 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
                                     ))}
                                 </select>
                             </div>
+                        )}
+                        {activeTab === 'cross' && (
+                            <label className="flex items-center gap-2 text-xs font-bold text-slate-700 bg-white px-3 py-1.5 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50">
+                                <input 
+                                    type="checkbox" 
+                                    checked={showAllTimeCross}
+                                    onChange={(e) => setShowAllTimeCross(e.target.checked)}
+                                    className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-600"
+                                />
+                                Seluruh Waktu (All-Time)
+                            </label>
                         )}
 
                         <button onClick={() => {

@@ -2131,15 +2131,20 @@ export async function reallocateLotService(sdItemId: string, newLotId: string) {
 
 export async function getCrossDivisionSalesService(month: number, year: number) {
     const prisma = getPrisma();
-    const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month, 0, 23, 59, 59, 999);
+    
+    let dateFilter: any = undefined;
+    if (month > 0 && year > 0) {
+        const startDate = new Date(year, month - 1, 1);
+        const endDate = new Date(year, month, 0, 23, 59, 59, 999);
+        dateFilter = { gte: startDate, lte: endDate };
+    }
 
     try {
         const allocations = await prisma.lotAllocation.findMany({
             where: {
                 sdItem: {
                     delivery: {
-                        date: { gte: startDate, lte: endDate },
+                        ...(dateFilter ? { date: dateFilter } : {}),
                         isVoid: false
                     }
                 }
