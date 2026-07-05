@@ -24,7 +24,7 @@ import { getCrossDivisionSalesAction } from "@/actions/reports";
 import { callAction } from "@/proxy";
 import { format } from "date-fns";
 import { TraceabilityReallocateModal } from "./TraceabilityReallocateModal";
-import { CrossDivisionReport } from "./CrossDivisionReport";
+import { CrossDivisionTab } from "./CrossDivisionTab";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -1470,7 +1470,7 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
                                 {weeklyData?.period?.label || `Minggu ${fmtShortDate(selectedWeekStart)}`}
                             </div>
                         )}
-                        {activeTab === 'monthly' && (
+                        {(activeTab === 'monthly' || activeTab === 'cross') && (
                             <div className="flex items-center gap-2">
                                 <select
                                     value={selectedMonth}
@@ -1544,7 +1544,7 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
                     {activeTab === 'daily' && dailyData && <DailyReport data={dailyData} isClient={isClient} fmtDate={fmtDate} activePrefix={activePrefix} setActivePrefix={setActivePrefix} setIsTraceModalOpen={setIsTraceModalOpen} setSelectedTraceData={setSelectedTraceData} />}
                     {activeTab === 'weekly' && weeklyData && <WeeklyReport data={weeklyData} isClient={isClient} fmtDate={fmtDate} activePrefix={activePrefix} setActivePrefix={setActivePrefix} setIsTraceModalOpen={setIsTraceModalOpen} setSelectedTraceData={setSelectedTraceData} />}
                     {activeTab === 'monthly' && monthlyData && <MonthlyReport data={monthlyData} isClient={isClient} fmtDate={fmtDate} activePrefix={activePrefix} setActivePrefix={setActivePrefix} setIsTraceModalOpen={setIsTraceModalOpen} setSelectedTraceData={setSelectedTraceData} />}
-                    {activeTab === 'cross' && crossData && <CrossDivisionReport data={crossData} isClient={isClient} fmtDate={fmtDate} />}
+                    {activeTab === 'cross' && crossData && <CrossDivisionTab data={crossData} isClient={isClient} fmtDate={fmtDate} />}
                     
                     {activeTab === "closing" && (
                         <div className="space-y-8 animate-in fade-in zoom-in duration-500">

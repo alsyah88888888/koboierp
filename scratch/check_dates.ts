@@ -1,12 +1,11 @@
-import { PrismaClient } from '@prisma/client';
-
+const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-async function main() {
-    const d1 = await prisma.salesDelivery.findUnique({ where: { deliveryNumber: 'SJ-182-03062026-001' }});
-    const d2 = await prisma.salesDelivery.findUnique({ where: { deliveryNumber: 'SJ-729-05062026-006' }});
-    
-    console.log(`SJ-182 created at: ${d1?.createdAt}`);
-    console.log(`SJ-729 created at: ${d2?.createdAt}`);
+async function checkDates() {
+    const minDate = await prisma.salesDelivery.aggregate({ _min: { date: true }});
+    const maxDate = await prisma.salesDelivery.aggregate({ _max: { date: true }});
+    console.log("Min date:", minDate._min.date);
+    console.log("Max date:", maxDate._max.date);
 }
-main().catch(console.error).finally(() => prisma.$disconnect());
+
+checkDates().finally(() => prisma.$disconnect());

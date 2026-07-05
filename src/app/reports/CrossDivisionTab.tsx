@@ -82,7 +82,7 @@ function ReportTable({ title, count, totalLabel, totalValue, headers, rows, onEx
     );
 }
 
-export function CrossDivisionReport({ data, isClient, fmtDate }: { data: any, isClient: boolean, fmtDate: (d: any) => string }) {
+export function CrossDivisionTab({ data, isClient, fmtDate }: { data: any, isClient: boolean, fmtDate: (d: any) => string }) {
     if (!data) return null;
     if (data.error) {
         return (
