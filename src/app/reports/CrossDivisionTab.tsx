@@ -2,6 +2,8 @@ import React from 'react';
 import { ShoppingBag, ArrowRightLeft, Download, FileSpreadsheet, AlertCircle } from 'lucide-react';
 import { formatCurrency, cn } from '@/lib/utils';
 import * as XLSX from 'xlsx';
+import { autoFixCrossTransactionAction } from '@/actions/reports';
+import { useState } from 'react';
 
 function KPICard({ label, value, sub, color, icon, trend }: { label: string, value: string, sub: string, color: string, icon: any, trend?: 'up' | 'down' }) {
     return (
@@ -83,6 +85,8 @@ function ReportTable({ title, count, totalLabel, totalValue, headers, rows, onEx
 }
 
 export function CrossDivisionTab({ data, isClient, fmtDate }: { data: any, isClient: boolean, fmtDate: (d: any) => string }) {
+    const [loadingFixId, setLoadingFixId] = useState<string | null>(null);
+
     if (!data) return null;
     if (data.error) {
         return (
@@ -117,6 +121,25 @@ export function CrossDivisionTab({ data, isClient, fmtDate }: { data: any, isCli
         
         XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(exportRows), title.substring(0, 31));
         XLSX.writeFile(wb, `Cross_Division_${title}_${new Date().getTime()}.xlsx`);
+    };
+
+    const handleFix = async (deliveryId: string, correctSalesPerson: 'PF' | 'BC') => {
+        if (!confirm(`Yakin ingin mengoreksi Surat Jalan ini menjadi milik ${correctSalesPerson}?`)) return;
+        
+        setLoadingFixId(deliveryId);
+        try {
+            const res = await autoFixCrossTransactionAction(deliveryId, correctSalesPerson);
+            if ('error' in res && res.error) {
+                alert(res.error as string);
+            } else {
+                alert("Sukses! Transaksi telah dikoreksi.");
+                window.location.reload();
+            }
+        } catch (e: any) {
+            alert("Error: " + e.message);
+        } finally {
+            setLoadingFixId(null);
+        }
     };
 
     return (
@@ -154,14 +177,21 @@ export function CrossDivisionTab({ data, isClient, fmtDate }: { data: any, isCli
                         title="Daftar Pembelian PF - Penjualan BC"
                         icon={<FileSpreadsheet className="h-4 w-4 text-blue-500" />}
                         count={pfToBc.length}
-                        headers={['Barang', 'Qty', 'No. LPB (Modal)', 'No. SJ (Jual)', 'Total HPP']}
+                        headers={['Barang', 'Qty', 'No. LPB (Modal)', 'No. SJ (Jual)', 'Total HPP', 'Aksi']}
                         onExport={() => handleExport("Pembelian_PF_Penjualan_BC", pfToBc)}
                         rows={pfToBc.map((r: any) => [
                             <span className="truncate max-w-[150px] block font-bold" title={r.product}>{r.product}</span>,
                             <span className="font-mono">{r.qty}</span>,
                             <span className="text-[10px] font-black text-slate-500">{r.lpb}</span>,
                             <span className="text-[10px] font-black text-blue-600">{r.sj}</span>,
-                            <span className="font-black tabular-nums">{formatCurrency(r.cost)}</span>
+                            <span className="font-black tabular-nums">{formatCurrency(r.cost)}</span>,
+                            <button 
+                                onClick={() => handleFix(r.deliveryId, 'PF')}
+                                disabled={loadingFixId === r.deliveryId}
+                                className="bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-widest transition-colors disabled:opacity-50"
+                            >
+                                {loadingFixId === r.deliveryId ? '...' : 'Koreksi ke PF'}
+                            </button>
                         ])}
                     />
                 </div>
@@ -180,14 +210,21 @@ export function CrossDivisionTab({ data, isClient, fmtDate }: { data: any, isCli
                         title="Daftar Pembelian BC - Penjualan PF"
                         icon={<FileSpreadsheet className="h-4 w-4 text-emerald-500" />}
                         count={bcToPf.length}
-                        headers={['Barang', 'Qty', 'No. LPB (Modal)', 'No. SJ (Jual)', 'Total HPP']}
+                        headers={['Barang', 'Qty', 'No. LPB (Modal)', 'No. SJ (Jual)', 'Total HPP', 'Aksi']}
                         onExport={() => handleExport("Pembelian_BC_Penjualan_PF", bcToPf)}
                         rows={bcToPf.map((r: any) => [
                             <span className="truncate max-w-[150px] block font-bold" title={r.product}>{r.product}</span>,
                             <span className="font-mono">{r.qty}</span>,
                             <span className="text-[10px] font-black text-slate-500">{r.lpb}</span>,
                             <span className="text-[10px] font-black text-emerald-600">{r.sj}</span>,
-                            <span className="font-black tabular-nums">{formatCurrency(r.cost)}</span>
+                            <span className="font-black tabular-nums">{formatCurrency(r.cost)}</span>,
+                            <button 
+                                onClick={() => handleFix(r.deliveryId, 'BC')}
+                                disabled={loadingFixId === r.deliveryId}
+                                className="bg-emerald-100 hover:bg-emerald-200 text-emerald-700 px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-widest transition-colors disabled:opacity-50"
+                            >
+                                {loadingFixId === r.deliveryId ? '...' : 'Koreksi ke BC'}
+                            </button>
                         ])}
                     />
                 </div>

@@ -2186,6 +2186,7 @@ export async function getCrossDivisionSalesService(month: number, year: number) 
             if (seller === 'BC' && buyer === 'PF') {
                 pfToBc.push({
                     id: alloc.id,
+                    deliveryId: alloc.sdItem.delivery.id,
                     product: alloc.sdItem.product.name,
                     sku: alloc.sdItem.product.sku,
                     qty: qty,
@@ -2200,6 +2201,7 @@ export async function getCrossDivisionSalesService(month: number, year: number) 
             } else if (seller === 'PF' && buyer === 'BC') {
                 bcToPf.push({
                     id: alloc.id,
+                    deliveryId: alloc.sdItem.delivery.id,
                     product: alloc.sdItem.product.name,
                     sku: alloc.sdItem.product.sku,
                     qty: qty,
@@ -2224,4 +2226,52 @@ export async function getCrossDivisionSalesService(month: number, year: number) 
         console.error('[getCrossDivisionSalesService] ERROR:', error);
         return { error: error.message || 'Failed to generate cross division report' };
     }
+}
+
+export async function autoFixCrossTransactionService(deliveryId: string, correctSalesPerson: 'PF' | 'BC') {
+    const prisma = getPrisma();
+    
+    // First, verify if this delivery is safe to fix
+    const items = await prisma.salesDeliveryItem.findMany({
+        where: { deliveryId },
+        include: {
+            lotAllocations: {
+                include: {
+                    lot: {
+                        include: {
+                            grItem: {
+                                include: {
+                                    receipt: true
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    let isMixed = false;
+    for (const item of items) {
+        for (const alloc of item.lotAllocations) {
+            const receiptSalesPerson = alloc.lot.grItem.receipt.salesPerson;
+            if (receiptSalesPerson && receiptSalesPerson !== correctSalesPerson) {
+                isMixed = true;
+                break;
+            }
+        }
+        if (isMixed) break;
+    }
+
+    if (isMixed) {
+        throw new Error("BENTROK: Surat Jalan ini tidak bisa dikoreksi otomatis karena berisi barang yang modalnya diambil dari PF dan BC sekaligus. Silakan pecah Surat Jalan ini secara manual.");
+    }
+
+    // Safe to fix, update the sales delivery
+    await prisma.salesDelivery.update({
+        where: { id: deliveryId },
+        data: { salesPerson: correctSalesPerson }
+    });
+
+    return { success: true };
 }

@@ -68,3 +68,13 @@ export async function getCrossDivisionSalesAction(month: number, year: number) {
         throw error;
     }
 }
+
+export async function autoFixCrossTransactionAction(deliveryId: string, correctSalesPerson: 'PF' | 'BC') {
+    try {
+        const { autoFixCrossTransactionService } = await import('@/lib/services/report-service');
+        const result = await autoFixCrossTransactionService(deliveryId, correctSalesPerson);
+        return result;
+    } catch (e: any) {
+        return { error: e.message || 'Failed to fix cross transaction' };
+    }
+}
