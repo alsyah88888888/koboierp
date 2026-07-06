@@ -10,7 +10,7 @@ export async function calculateProductTraceabilityInternal(startDate: Date, endD
     const prisma = getPrisma();
     const isAll = !prefix || prefix === 'ALL';
     try {
-        const rows: Record<string, any>[] = [];
+        let rows: Record<string, any>[] = [];
 
         // ════════════════════════════════════════════════════════════
         // PRE-FETCH: SalesDeliveries + SO map + GR data
@@ -496,6 +496,54 @@ export async function calculateProductTraceabilityInternal(startDate: Date, endD
                 });
             }
         }
+
+        // STEP 4.5: Merge rows with identical SJ and BARCODE to satisfy user requirement (1 row per product per invoice)
+        const finalRowsMap = new Map<string, any>();
+        for (const row of rows) {
+            const sj = row['NOMOR SJ'];
+            const barcode = row['BARCODE'];
+            // If it's a return, we append 'RETUR' to key so it doesn't merge with sales
+            const isReturn = row['NOMOR RETUR'] !== '-';
+            const key = `${sj}_${barcode}_${isReturn}`;
+            
+            if (finalRowsMap.has(key)) {
+                const existing = finalRowsMap.get(key);
+                existing['QTY BELI'] += row['QTY BELI'];
+                existing['QTY JUAL'] += row['QTY JUAL'];
+                existing['TOTAL BELI'] += row['TOTAL BELI'];
+                existing['TOTAL JUAL'] += row['TOTAL JUAL'];
+                existing['DPP'] += row['DPP'];
+                existing['PPH'] += row['PPH'];
+                existing['OPS'] += row['OPS'];
+                existing['TOTAL'] += row['TOTAL'];
+                existing['MARGIN'] += row['MARGIN'];
+                
+                if (existing['NOMOR LPB'] !== row['NOMOR LPB'] && row['NOMOR LPB'] !== '-') {
+                    if (!existing['NOMOR LPB'].includes(row['NOMOR LPB'])) {
+                        existing['NOMOR LPB'] += `, ${row['NOMOR LPB']}`;
+                    }
+                }
+                if (existing['NAMA SUPPLIER'] !== row['NAMA SUPPLIER'] && row['NAMA SUPPLIER'] !== '-') {
+                    if (!existing['NAMA SUPPLIER'].includes(row['NAMA SUPPLIER'])) {
+                        existing['NAMA SUPPLIER'] += `, ${row['NAMA SUPPLIER']}`;
+                    }
+                }
+                
+                if (existing['QTY BELI'] > 0) {
+                    existing['HARGA BELI'] = Math.round(existing['TOTAL BELI'] / existing['QTY BELI']);
+                }
+                if (existing['QTY JUAL'] > 0) {
+                    existing['HARGA JUAL'] = Math.round(existing['TOTAL JUAL'] / existing['QTY JUAL']);
+                }
+                
+                existing['MARGIN %'] = existing['TOTAL JUAL'] > 0 
+                    ? `${(existing['MARGIN'] / existing['TOTAL JUAL'] * 100).toFixed(1)}%` 
+                    : '0%';
+            } else {
+                finalRowsMap.set(key, { ...row });
+            }
+        }
+        rows = Array.from(finalRowsMap.values());
 
         // STEP 5: Sort kronologis, re-number NO setelah sort
         rows.sort((a, b) => new Date(a._sortDate).getTime() - new Date(b._sortDate).getTime());
