@@ -1,32 +1,45 @@
-import { PrismaClient } from '@prisma/client';
-const prisma = new PrismaClient();
+const isPKP = true;
+const isInputIncludePPN = true;
 
-async function run() {
-    const orderNumber = 'KB-PO-02072026-003';
-    const so = await prisma.salesOrder.findFirst({
-        where: { orderNumber },
-        include: { items: true }
-    });
+const items = [
+    { quantity: 10, salesPrice: 11100, discount: 0 }
+];
 
-    if (!so) return console.log('Not found');
+const getActualPrice = (p: number) => {
+    return (isPKP && isInputIncludePPN) ? Math.round(p / 1.11) : p;
+};
 
-    let newSubtotal = 0;
-    for (const item of so.items) {
-        const p = Math.round(Number(item.salesPrice) || 0);
-        const q = Number(item.quantity) || 0;
-        const disc = Math.round(Number(item.discount) || 0);
-        newSubtotal += (p * q) - disc;
-    }
+const grossAmount = items.reduce((sum, item) => {
+    const q = Number(item.quantity);
+    const p = Number(item.salesPrice);
+    return sum + (q * getActualPrice(p));
+}, 0);
 
-    const totalDiscountNominal = Math.round(Number(so.totalDiscount) || 0);
-    const dpp = newSubtotal - totalDiscountNominal;
-    
-    const taxRatePercent = Number(so.taxRate) || 0;
-    const dppNilaiLain = taxRatePercent > 0 ? Math.round(dpp * 0.916666666666667) : 0;
-    const taxAmount = taxRatePercent > 0 ? Math.floor(dppNilaiLain * 0.12) : 0;
-    const grandTotal = Math.round(dpp + taxAmount);
+const totalItemDiscounts = items.reduce((sum, item) => {
+    return sum + Number(item.discount || 0);
+}, 0);
 
-    console.log(`Excel Way: Subtotal = ${newSubtotal}, PPN = ${taxAmount}, GrandTotal = ${grandTotal}`);
+const subtotal = Math.round(grossAmount - totalItemDiscounts);
+const totalDiscountNominal = 0;
+const dpp = subtotal - totalDiscountNominal;
+const taxRatePercent = 12;
+
+let dppNilaiLain = 0;
+let taxAmount = 0;
+if (taxRatePercent === 12) {
+    dppNilaiLain = Math.round(dpp * (11/12));
+    taxAmount = Math.round(dppNilaiLain * 0.12);
+} else if (taxRatePercent > 0) {
+    taxAmount = Math.round(dpp * (taxRatePercent / 100));
 }
 
-run().finally(() => prisma.$disconnect());
+const grandTotal = Math.round(dpp + taxAmount);
+
+console.log({
+    "Gross Amount": grossAmount,
+    "DPP": dpp,
+    "DPP Nilai Lain": dppNilaiLain,
+    "Tax Amount (PPN)": taxAmount,
+    "Grand Total": grandTotal,
+    "Original Input Total": 10 * 11100
+});

@@ -39,6 +39,7 @@ export default function SalesOrderModal({ products, customers, warehouses, initi
 
     const [isPKP, setIsPKP] = useState(initialData?.taxRate > 0);
     const [taxRate, setTaxRate] = useState(initialData?.taxRate || 0);
+    const [isInputIncludePPN, setIsInputIncludePPN] = useState(false); // Mode Input Include PPN
     const [totalDiscount, setTotalDiscount] = useState(initialData?.totalDiscount || 0);
     const [totalDiscountPercent, setTotalDiscountPercent] = useState(0);
     const [showDiscount, setShowDiscount] = useState(false);
@@ -70,7 +71,11 @@ export default function SalesOrderModal({ products, customers, warehouses, initi
     };
 
     // Calculation logic
-    const grossAmount = items.reduce((acc, item) => acc + (Number(item.quantity) * Number(item.salesPrice)), 0);
+    const getActualPrice = (p: number) => {
+        return (isPKP && isInputIncludePPN) ? Math.round(p / 1.11) : p;
+    };
+
+    const grossAmount = items.reduce((acc, item) => acc + (Number(item.quantity) * getActualPrice(Number(item.salesPrice))), 0);
     const totalItemDiscounts = items.reduce((acc, item) => acc + Number(item.discount || 0), 0);
     const subtotal = Math.round(grossAmount - totalItemDiscounts);
     const totalDiscountNominal = Math.round(Number(totalDiscount) || 0);
@@ -106,8 +111,11 @@ export default function SalesOrderModal({ products, customers, warehouses, initi
                 warehouseId,
                 date: new Date(date),
                 salesPerson,
-                items,
-                taxRate: isPKP ? 11 : 0, // Use 11 to match SalesModal logic
+                items: items.map(i => ({
+                    ...i,
+                    salesPrice: getActualPrice(Number(i.salesPrice))
+                })),
+                taxRate: isPKP ? 12 : 0, // Use 12 to match SalesModal logic
                 totalDiscount,
                 status: isConfirm ? "CONFIRMED" : "DRAFT"
             };
@@ -267,6 +275,18 @@ export default function SalesOrderModal({ products, customers, warehouses, initi
                                 >
                                     <Tag className="h-4 w-4" /> Diskon Item
                                 </button>
+                                {isPKP && (
+                                    <button 
+                                        type="button" 
+                                        onClick={() => setIsInputIncludePPN(!isInputIncludePPN)} 
+                                        className={cn(
+                                            "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border flex items-center gap-2",
+                                            isInputIncludePPN ? "bg-emerald-600 border-emerald-600 text-white shadow-lg shadow-emerald-100" : "bg-white border-slate-200 text-slate-500 hover:border-emerald-400"
+                                        )}
+                                    >
+                                        Harga Include PPN
+                                    </button>
+                                )}
                             </div>
                         </div>
 
@@ -343,7 +363,7 @@ export default function SalesOrderModal({ products, customers, warehouses, initi
 
                                     <div className={cn("hidden lg:flex items-center justify-end pr-6", showDiscount ? "lg:flex-[2]" : "lg:flex-[3]")}>
                                         <div className="text-sm font-black text-slate-800 text-right">
-                                            {((Number(item.quantity) * Number(item.salesPrice)) - Number(item.discount || 0)).toLocaleString('id-ID')}
+                                            {((Number(item.quantity) * getActualPrice(Number(item.salesPrice))) - Number(item.discount || 0)).toLocaleString('id-ID')}
                                         </div>
                                     </div>
 
@@ -385,13 +405,13 @@ export default function SalesOrderModal({ products, customers, warehouses, initi
                                     <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-500 border-b border-white/5 pb-3 font-mono">Financial Summary</h3>
                                     
                                     <div className="flex justify-between items-center px-1">
-                                        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Total Brutto</span>
-                                        <span className="text-base font-black font-mono">Rp {subtotal.toLocaleString('id-ID')}</span>
+                                        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Total (Gross)</span>
+                                        <span className="text-base font-black font-mono">Rp {grossAmount.toLocaleString('id-ID')}</span>
                                     </div>
 
                                     <div className="space-y-1.5">
                                         <label className="text-[11px] font-bold text-orange-400 uppercase tracking-widest flex justify-between ml-1">
-                                            Diskon Global
+                                            Disc (Item + Global)
                                             <span className="text-[10px] lowercase opacity-40 cursor-pointer hover:opacity-100 transition-opacity" onClick={async () => {
                                                 const p = await prompt({ title: "Diskon %", message: "Masukkan % diskon:", defaultValue: String(totalDiscountPercent) || "0", showSlider: true });
                                                 if(p !== null) setTotalDiscountPercent(Number(p));
@@ -401,19 +421,42 @@ export default function SalesOrderModal({ products, customers, warehouses, initi
                                             <span className="text-slate-600 font-black mr-2 text-sm">Rp</span>
                                             <input type="number" value={totalDiscount} onChange={e => setTotalDiscount(Number(e.target.value))} className="w-full bg-transparent py-3 text-base font-black text-white outline-none" placeholder="0" />
                                         </div>
+                                        {totalItemDiscounts > 0 && (
+                                            <div className="text-[10px] text-right text-orange-300 font-mono mt-1 opacity-80">
+                                                (Termasuk Disc Item: Rp {totalItemDiscounts.toLocaleString('id-ID')})
+                                            </div>
+                                        )}
                                     </div>
+
+                                    <div className="flex justify-between items-center px-1 pt-2 border-t border-white/5">
+                                        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">DPP (Total - Disc)</span>
+                                        <span className="text-base font-black font-mono">Rp {dpp.toLocaleString('id-ID')}</span>
+                                    </div>
+
+                                    {isPKP && (
+                                        <>
+                                            <div className="flex justify-between items-center px-1">
+                                                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">DPP Nilai Lain (11/12)</span>
+                                                <span className="text-base font-black font-mono">Rp {dppNilaiLain.toLocaleString('id-ID')}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center px-1">
+                                                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">PPN (12%)</span>
+                                                <span className="text-base font-black font-mono text-rose-400">Rp {taxAmount.toLocaleString('id-ID')}</span>
+                                            </div>
+                                        </>
+                                    )}
 
                                     <div className="space-y-3">
                                         <label className="text-[11px] font-bold text-indigo-400 uppercase tracking-widest ml-1">Tipe Faktur</label>
                                         <div className="flex gap-3">
-                                            <button type="button" onClick={() => { setIsPKP(true); setTaxRate(11); }} className={cn("flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border", isPKP ? 'bg-indigo-600 border-indigo-500 text-white shadow-xl shadow-indigo-600/30' : 'bg-white/5 border-white/10 text-slate-600')}> PKP (11%) </button>
+                                            <button type="button" onClick={() => { setIsPKP(true); setTaxRate(12); }} className={cn("flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border", isPKP ? 'bg-indigo-600 border-indigo-500 text-white shadow-xl shadow-indigo-600/30' : 'bg-white/5 border-white/10 text-slate-600')}> PKP (12%) </button>
                                             <button type="button" onClick={() => { setIsPKP(false); setTaxRate(0); }} className={cn("flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border", !isPKP ? 'bg-slate-700 border-slate-600 text-white shadow-xl shadow-slate-700/30' : 'bg-white/5 border-white/10 text-slate-600')}> Non PKP (0%) </button>
                                         </div>
                                     </div>
 
                                     <div className="pt-6 mt-4 border-t border-white/10">
                                         <div className="flex justify-between items-end mb-1.5">
-                                            <label className="text-[11px] font-bold uppercase tracking-widest text-emerald-400">Total Akhir</label>
+                                            <label className="text-[11px] font-bold uppercase tracking-widest text-emerald-400">Total Netto (DPP + PPN)</label>
                                             <span className="text-[10px] text-slate-600 font-black uppercase tracking-widest mb-1">{totalQty} Items</span>
                                         </div>
                                         <p className="text-4xl font-black text-emerald-400 tracking-tighter leading-none font-mono">Rp {grandTotal.toLocaleString('id-ID')}</p>

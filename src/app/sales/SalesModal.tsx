@@ -43,9 +43,10 @@ export default function SalesModal({ products, warehouses, customers, orders = [
     // Financials
     const [showDiscount, setShowDiscount] = useState(false);
     const [totalDiscount, setTotalDiscount] = useState<number | string>(0);
-    const [totalDiscountPercent, setTotalDiscountPercent] = useState<number | string>("");
+    const [totalDiscountPercent, setTotalDiscountPercent] = useState<number | "">("");
     const [taxRate, setTaxRate] = useState<number | "">(0);
     const [isPKP, setIsPKP] = useState(false); // false = Non-PKP (KB-TRD), true = PKP (KB-TRN)
+    const [isInputIncludePPN, setIsInputIncludePPN] = useState(false); // Mode Input Include PPN
     const [result, setResult] = useState<any>(null);
     const [lotsCache, setLotsCache] = useState<Record<string, any[]>>({});
     const fetchedLotsRef = useRef<Set<string>>(new Set());
@@ -247,10 +248,14 @@ export default function SalesModal({ products, warehouses, customers, orders = [
         return items.reduce((acc, item) => acc + parseIndoNumber(item.quantity), 0);
     }, [items]);
 
+    const getActualPrice = (p: number) => {
+        return (isPKP && isInputIncludePPN) ? Math.round(p / 1.11) : p;
+    };
+
     const grossAmount = items.reduce((sum, item) => {
         const q = parseIndoNumber(item.quantity);
         const p = parseIndoNumber(item.salesPrice);
-        return sum + (q * p);
+        return sum + (q * getActualPrice(p));
     }, 0);
 
     const itemDiscounts = items.reduce((sum, item) => {
@@ -315,12 +320,12 @@ export default function SalesModal({ products, warehouses, customers, orders = [
                 salesPerson,
                 isPKP: isPKP,
                 totalDiscount: Number(finalDiscountNominal) || 0,
-                taxRate: isPKP ? 11 : 0,
+                taxRate: isPKP ? 12 : 0,
                 createdAt: new Date(date),
                 items: items.map(i => ({
                     productId: i.productId,
                     quantity: parseIndoNumber(i.quantity),
-                    salesPrice: parseIndoNumber(i.salesPrice),
+                    salesPrice: getActualPrice(parseIndoNumber(i.salesPrice)),
                     discount: parseIndoNumber(i.discount || 0),
                     uom: i.uom,
                     vendorName: i.vendorName,
@@ -546,6 +551,18 @@ export default function SalesModal({ products, warehouses, customers, orders = [
                                 >
                                     <Tag className="h-3.5 w-3.5" /> Diskon Item
                                 </button>
+                                {isPKP && (
+                                    <button 
+                                        type="button" 
+                                        onClick={() => setIsInputIncludePPN(!isInputIncludePPN)} 
+                                        className={cn(
+                                            "px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all border flex items-center gap-1.5",
+                                            isInputIncludePPN ? "bg-emerald-600 border-emerald-600 text-white" : "bg-white border-slate-200 text-slate-500 hover:border-emerald-400"
+                                        )}
+                                    >
+                                        Harga Include PPN
+                                    </button>
+                                )}
                             </div>
                         </div>
 
@@ -665,7 +682,7 @@ export default function SalesModal({ products, warehouses, customers, orders = [
 
                                     <div className={cn("hidden lg:flex items-center justify-end pr-4", showDiscount ? "lg:flex-[2]" : "lg:flex-[3]")}>
                                         <div className="text-[14px] font-black text-slate-800 text-right">
-                                            {((Number(String(item.quantity).replace(/\./g, '').replace(',', '.')) || 0) * (Number(String(item.salesPrice).replace(/\./g, '').replace(',', '.')) || 0) - (Number(String(item.discount || 0).replace(/\./g, '').replace(',', '.')) || 0)).toLocaleString('id-ID')}
+                                            {((Number(String(item.quantity).replace(/\./g, '').replace(',', '.')) || 0) * getActualPrice(Number(String(item.salesPrice).replace(/\./g, '').replace(',', '.')) || 0) - (Number(String(item.discount || 0).replace(/\./g, '').replace(',', '.')) || 0)).toLocaleString('id-ID')}
                                         </div>
                                     </div>
 
@@ -704,13 +721,13 @@ export default function SalesModal({ products, warehouses, customers, orders = [
                                         <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 border-b border-white/5 pb-2 font-mono">Financial Summary</h3>
                                         
                                         <div className="flex justify-between items-center px-1">
-                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Kotor</span>
+                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total (Gross)</span>
                                             <span className="text-sm font-bold font-mono">Rp {grossAmount.toLocaleString('id-ID')}</span>
                                         </div>
 
                                         <div className="space-y-1">
                                             <label className="text-[10px] font-bold text-orange-400 uppercase tracking-widest flex justify-between ml-1">
-                                                Diskon Global
+                                                Disc (Item + Global)
                                                 <span 
                                                     className="text-[9px] lowercase opacity-50 cursor-pointer"
                                                     onClick={async () => {
@@ -736,7 +753,31 @@ export default function SalesModal({ products, warehouses, customers, orders = [
                                                     placeholder="0"
                                                 />
                                             </div>
+                                            {itemDiscounts > 0 && (
+                                                <div className="text-[9px] text-right text-orange-300 font-mono mt-1 opacity-80">
+                                                    (Termasuk Disc Item: Rp {itemDiscounts.toLocaleString('id-ID')})
+                                                </div>
+                                            )}
                                         </div>
+
+                                        <div className="flex justify-between items-center px-1 pt-2 border-t border-white/5">
+                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">DPP (Total - Disc)</span>
+                                            <span className="text-sm font-bold font-mono">Rp {dpp.toLocaleString('id-ID')}</span>
+                                        </div>
+
+                                        {isPKP && (
+                                            <>
+                                                <div className="flex justify-between items-center px-1">
+                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">DPP Nilai Lain (11/12)</span>
+                                                    <span className="text-sm font-bold font-mono">Rp {dppNilaiLain.toLocaleString('id-ID')}</span>
+                                                </div>
+                                                <div className="flex justify-between items-center px-1">
+                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">PPN (12%)</span>
+                                                    <span className="text-sm font-bold font-mono text-rose-400">Rp {taxAmount.toLocaleString('id-ID')}</span>
+                                                </div>
+                                            </>
+                                        )}
+
 
                                         <div className="space-y-2">
                                             <label className="text-[10px] font-bold text-blue-400 uppercase tracking-widest ml-1">Tipe Faktur</label>
@@ -751,7 +792,7 @@ export default function SalesModal({ products, warehouses, customers, orders = [
                                                     }`}
                                                 >
                                                     PKP
-                                                    <span className="block text-[8px] font-bold opacity-70 mt-0.5">KB-TRN • PPN 11%</span>
+                                                    <span className="block text-[8px] font-bold opacity-70 mt-0.5">KB-TRN • PPN 12%</span>
                                                 </button>
                                                 <button
                                                     type="button"
@@ -770,7 +811,7 @@ export default function SalesModal({ products, warehouses, customers, orders = [
 
                                         <div className="pt-4 mt-2 border-t border-white/10">
                                             <div className="flex justify-between items-end mb-1">
-                                                <label className="text-[10px] font-bold uppercase tracking-widest text-emerald-400">Total Akhir</label>
+                                                <label className="text-[10px] font-bold uppercase tracking-widest text-emerald-400">Total Netto (DPP + PPN)</label>
                                                 <span className="text-[9px] text-slate-500 font-bold uppercase tracking-widest mb-1">{totalQty} Items</span>
                                             </div>
                                             <p className="text-3xl font-black text-emerald-400 tracking-tighter leading-none mb-4 font-mono">Rp {grandTotal.toLocaleString('id-ID')}</p>

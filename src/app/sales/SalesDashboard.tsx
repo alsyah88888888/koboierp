@@ -287,9 +287,17 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                 const printedPrice = roundNormal(price);
                 const printedTotalBrutto = roundNormal(qty * price);
                 const printedDiscLine = roundNormal(discLine);
-                const itemNettoBeforeTax = (qty * price) - discLine;
-                const printedTax = roundNormal(itemNettoBeforeTax * (taxRate > 0 ? 0.11 : 0));
-                const printedNettoTotal = roundNormal(itemNettoBeforeTax * (taxRate > 0 ? 1.11 : 1));
+                const itemNettoBeforeTax = (qty * price) - discLine; // DPP
+                
+                let printedTax = 0;
+                if (taxRate === 12) {
+                    const dppNilaiLain = itemNettoBeforeTax * (11 / 12);
+                    printedTax = roundNormal(dppNilaiLain * 0.12);
+                } else if (taxRate > 0) {
+                    printedTax = roundNormal(itemNettoBeforeTax * (taxRate / 100));
+                }
+                
+                const printedNettoTotal = roundNormal(itemNettoBeforeTax + printedTax);
 
                 exportData.push({
                     'No. Surat Jalan': d.deliveryNumber,
