@@ -59,6 +59,7 @@ export default function SalesOrderModal({ products, customers, warehouses, initi
         const newItems = [...items];
         
         if (field === "sku") {
+            newItems[index].sku = value;
             const product = products.find(p => p.sku === value);
             if (product) {
                 newItems[index].productId = product.id;
