@@ -137,7 +137,7 @@ export function DocumentLayout({ title, docNumber, date, children, headerInfo, i
                 </div>
 
                 {/* Footer Signature */}
-                <div className={`${(isA5 || isContinuous) ? 'mt-4 px-[8mm]' : 'mt-8 px-[8mm]'} pb-[8mm]`}>
+                <div className={`break-inside-avoid ${(isA5 || isContinuous) ? 'mt-4 px-[8mm]' : 'mt-8 px-[8mm]'} pb-[8mm]`}>
                     <div className={`grid grid-cols-3 gap-8 text-center ${(isA5 || isContinuous) ? 'text-[9px]' : 'text-xs'} font-black uppercase tracking-widest text-slate-900`}>
                         <div className={`${(isA5 || isContinuous) ? 'space-y-8' : 'space-y-12'}`}>
                             <p>TANDA TERIMA,</p>
