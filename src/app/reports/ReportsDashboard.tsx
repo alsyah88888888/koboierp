@@ -56,6 +56,13 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
         d.setDate(diff);
         return d.toISOString().split('T')[0];
     });
+    const [selectedWeekEnd, setSelectedWeekEnd] = useState(() => {
+        const d = new Date();
+        const day = d.getDay();
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+        d.setDate(diff + 6);
+        return d.toISOString().split('T')[0];
+    });
     const [selectedMonth, setSelectedMonth] = useState(() => new Date().getMonth() + 1);
     const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
 
@@ -95,11 +102,11 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
     const fetchWeekly = useCallback(async () => {
         setIsLoading(true);
         try {
-            const data = await getComprehensiveWeeklyReportAction(selectedWeekStart, activePrefix);
+            const data = await getComprehensiveWeeklyReportAction(selectedWeekStart, activePrefix, selectedWeekEnd);
             setWeeklyData(data);
         } catch (e) { console.error(e); }
         setIsLoading(false);
-    }, [selectedWeekStart, activePrefix]);
+    }, [selectedWeekStart, selectedWeekEnd, activePrefix]);
 
     const fetchMonthly = useCallback(async () => {
         setIsLoading(true);
@@ -998,9 +1005,13 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
     };
 
     const navigateWeek = (dir: number) => {
-        const d = new Date(selectedWeekStart);
-        d.setDate(d.getDate() + (dir * 7));
-        setSelectedWeekStart(d.toISOString().split('T')[0]);
+        const dStart = new Date(selectedWeekStart);
+        dStart.setDate(dStart.getDate() + (dir * 7));
+        setSelectedWeekStart(dStart.toISOString().split('T')[0]);
+
+        const dEnd = new Date(selectedWeekEnd);
+        dEnd.setDate(dEnd.getDate() + (dir * 7));
+        setSelectedWeekEnd(dEnd.toISOString().split('T')[0]);
     };
 
     const navigateMonth = (dir: number) => {
@@ -1502,8 +1513,20 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
                             />
                         )}
                         {activeTab === 'weekly' && (
-                            <div className="bg-white border-2 border-slate-200/80 px-4 py-1.5 rounded-xl text-xs font-black text-slate-900">
-                                {weeklyData?.period?.label || `Minggu ${fmtShortDate(selectedWeekStart)}`}
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="date"
+                                    value={selectedWeekStart}
+                                    onChange={e => setSelectedWeekStart(e.target.value)}
+                                    className="erp-input !w-auto !h-9 !py-1 !text-xs font-black"
+                                />
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">s/d</span>
+                                <input
+                                    type="date"
+                                    value={selectedWeekEnd}
+                                    onChange={e => setSelectedWeekEnd(e.target.value)}
+                                    className="erp-input !w-auto !h-9 !py-1 !text-xs font-black"
+                                />
                             </div>
                         )}
                         {(activeTab === 'monthly' || (activeTab === 'cross' && !showAllTimeCross)) && (

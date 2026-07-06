@@ -1449,7 +1449,7 @@ export async function getComprehensiveDailyReportService(date?: string, prefix?:
  * COMPREHENSIVE WEEKLY REPORT SERVICE
  * Returns aggregated data for 7 days with daily breakdowns
  */
-export async function getComprehensiveWeeklyReportService(weekStartDate?: string, prefix?: 'PF' | 'BC' | 'ALL') {
+export async function getComprehensiveWeeklyReportService(weekStartDate?: string, prefix?: 'PF' | 'BC' | 'ALL', weekEndDate?: string) {
     const prisma = getPrisma();
     const isAll = !prefix || prefix === 'ALL';
 
@@ -1462,8 +1462,10 @@ export async function getComprehensiveWeeklyReportService(weekStartDate?: string
     }
     startDate.setHours(0, 0, 0, 0);
 
-    const endDate = new Date(startDate);
-    endDate.setDate(endDate.getDate() + 6);
+    const endDate = weekEndDate ? new Date(weekEndDate) : new Date(startDate);
+    if (!weekEndDate) {
+        endDate.setDate(endDate.getDate() + 6);
+    }
     endDate.setHours(23, 59, 59, 999);
 
     try {
@@ -1520,9 +1522,12 @@ export async function getComprehensiveWeeklyReportService(weekStartDate?: string
             })
         ]);
 
-        // Build daily breakdown for the 7 days
+        // Build daily breakdown for the date range
         const dailyBreakdown = [];
-        for (let i = 0; i < 7; i++) {
+        const oneDay = 24 * 60 * 60 * 1000;
+        const diffDays = Math.round(Math.abs((endDate.getTime() - startDate.getTime()) / oneDay));
+        const daysCount = diffDays + 1;
+        for (let i = 0; i < daysCount; i++) {
             const dayStart = new Date(startDate);
             dayStart.setDate(dayStart.getDate() + i);
             dayStart.setHours(0, 0, 0, 0);

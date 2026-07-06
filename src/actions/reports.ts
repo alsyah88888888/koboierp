@@ -28,9 +28,10 @@ export async function getComprehensiveDailyReportAction(date?: string, prefix?: 
     }
 }
 
-export async function getComprehensiveWeeklyReportAction(weekStartDate?: string, prefix?: 'PF' | 'BC' | 'ALL') {
+export async function getComprehensiveWeeklyReportAction(weekStartDate?: string, prefix?: 'PF' | 'BC' | 'ALL', weekEndDate?: string) {
     try {
-        const result = await getComprehensiveWeeklyReportService(weekStartDate, prefix);
+        const { getComprehensiveWeeklyReportService } = await import('@/lib/services/report-service');
+        const result = await getComprehensiveWeeklyReportService(weekStartDate, prefix, weekEndDate);
         return serializeDecimal(result);
     } catch (error: any) {
         console.error("[getComprehensiveWeeklyReportAction] Error:", error);
