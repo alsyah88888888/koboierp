@@ -2998,11 +2998,36 @@ function ReportTable({ title, icon, count, totalLabel, totalValue, headers, rows
             return null;
         };
 
+        const parseDate = (val: any) => {
+            if (typeof val === 'string') {
+                // Matches format D/M/YYYY or DD-MM-YYYY
+                const parts = val.split(/[\/\-]/);
+                if (parts.length === 3) {
+                    const day = parseInt(parts[0], 10);
+                    const month = parseInt(parts[1], 10) - 1;
+                    const year = parseInt(parts[2], 10);
+                    // Ensure the year has 4 digits for a proper date
+                    if (year > 1000) {
+                        const d = new Date(year, month, day);
+                        if (!isNaN(d.getTime())) return d.getTime();
+                    }
+                }
+            }
+            return null;
+        };
+
         const aNum = parseNum(aVal);
         const bNum = parseNum(bVal);
 
         if (aNum !== null && bNum !== null) {
             return sortConfig.direction === 'asc' ? aNum - bNum : bNum - aNum;
+        }
+
+        const aDate = parseDate(aVal);
+        const bDate = parseDate(bVal);
+
+        if (aDate !== null && bDate !== null) {
+            return sortConfig.direction === 'asc' ? aDate - bDate : bDate - aDate;
         }
 
         aVal = String(aVal).toLowerCase();
