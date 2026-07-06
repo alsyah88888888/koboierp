@@ -249,14 +249,14 @@ export default function SalesModal({ products, warehouses, customers, orders = [
     }, [items]);
 
     const getActualPrice = (p: number) => {
-        return (isPKP && isInputIncludePPN) ? Math.round(p / 1.11) : p;
+        return (isPKP && isInputIncludePPN) ? (p / 1.11) : p;
     };
 
-    const grossAmount = items.reduce((sum, item) => {
+    const grossAmount = Math.round(items.reduce((sum, item) => {
         const q = parseIndoNumber(item.quantity);
         const p = parseIndoNumber(item.salesPrice);
         return sum + (q * getActualPrice(p));
-    }, 0);
+    }, 0));
 
     const itemDiscounts = items.reduce((sum, item) => {
         return sum + parseIndoNumber(item.discount);
@@ -682,7 +682,7 @@ export default function SalesModal({ products, warehouses, customers, orders = [
 
                                     <div className={cn("hidden lg:flex items-center justify-end pr-4", showDiscount ? "lg:flex-[2]" : "lg:flex-[3]")}>
                                         <div className="text-[14px] font-black text-slate-800 text-right">
-                                            {((Number(String(item.quantity).replace(/\./g, '').replace(',', '.')) || 0) * getActualPrice(Number(String(item.salesPrice).replace(/\./g, '').replace(',', '.')) || 0) - (Number(String(item.discount || 0).replace(/\./g, '').replace(',', '.')) || 0)).toLocaleString('id-ID')}
+                                            {Math.round(((Number(String(item.quantity).replace(/\./g, '').replace(',', '.')) || 0) * getActualPrice(Number(String(item.salesPrice).replace(/\./g, '').replace(',', '.')) || 0)) - (Number(String(item.discount || 0).replace(/\./g, '').replace(',', '.')) || 0)).toLocaleString('id-ID')}
                                         </div>
                                     </div>
 
