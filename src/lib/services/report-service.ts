@@ -60,6 +60,22 @@ export async function calculateProductTraceabilityInternal(startDate: Date, endD
             })
             : [];
 
+        // Extract ALL distinct invoice numbers from the ops transactions to ensure we get quantities for ALL shared invoices
+        const allInvolvedInvoices = new Set<string>();
+        opsTransactions.forEach((t: any) => {
+            if (t.invoiceNumber) {
+                t.invoiceNumber.split(',').forEach((i: string) => allInvolvedInvoices.add(i.trim()));
+            }
+        });
+        const allInvolvedArray = Array.from(allInvolvedInvoices).filter(Boolean);
+
+        // Fetch ALL deliveries for ALL INVOLVED invoices to get TRUE full quantities for proportional distribution
+        const allDeliveriesForInvoices = allInvolvedArray.length > 0 
+            ? await (prisma as any).salesDelivery.findMany({
+                where: { OR: [ { invoiceNumber: { in: allInvolvedArray } }, { deliveryNumber: { in: allInvolvedArray } } ], isVoid: false },
+                include: { items: { select: { quantity: true } } }
+            }) : [];
+
         const opsMap = new Map<string, number>();
         opsTransactions.forEach((t: any) => {
             if (!t.invoiceNumber) return;
@@ -73,12 +89,14 @@ export async function calculateProductTraceabilityInternal(startDate: Date, endD
                 const qtyMap = new Map<string, number>();
                 
                 invoices.forEach((inv: string) => {
-                    const matchingDelivery = deliveries.find((d: any) => d.invoiceNumber === inv || d.deliveryNumber === inv);
-                    let qty = 1;
-                    if (matchingDelivery && matchingDelivery.items) {
-                        qty = matchingDelivery.items.reduce((sum: number, item: any) => sum + Number(item.quantity || 0), 0);
-                        if (qty === 0) qty = 1;
-                    }
+                    const matchingDeliveries = allDeliveriesForInvoices.filter((d: any) => d.invoiceNumber === inv || d.deliveryNumber === inv);
+                    let qty = 0;
+                    matchingDeliveries.forEach((md: any) => {
+                        if (md.items) {
+                            qty += md.items.reduce((sum: number, item: any) => sum + Number(item.quantity || 0), 0);
+                        }
+                    });
+                    if (qty === 0) qty = 1;
                     totalQty += qty;
                     qtyMap.set(inv, qty);
                 });
@@ -97,9 +115,9 @@ export async function calculateProductTraceabilityInternal(startDate: Date, endD
         });
 
         // ── FIX: When multiple deliveries share the same invoiceNumber,
-        // distribute OPS proportionally by delivery qty instead of assigning all to each ──
+        // distribute OPS proportionally by TRUE delivery qty across all divisions ──
         const invoiceToDeliveries = new Map<string, { deliveryNumber: string; totalQty: number }[]>();
-        for (const sd of deliveries) {
+        for (const sd of allDeliveriesForInvoices) {
             const inv = sd.invoiceNumber || sd.deliveryNumber;
             if (!invoiceToDeliveries.has(inv)) invoiceToDeliveries.set(inv, []);
             const sdQty = sd.items.reduce((sum: number, item: any) => sum + Number(item.quantity || 0), 0) || 1;
@@ -1170,7 +1188,15 @@ export async function getComprehensiveDailyReportService(date?: string, prefix?:
             (prisma as any).financeTransaction.findMany({
                 where: { 
                     date: { gte: dayStart, lte: dayEnd },
-                    ...(isAll ? {} : {
+                    ...(isAll ? {
+                        OR: [
+                            { description: { contains: 'PF', mode: 'insensitive' } },
+                            { salesPerson: 'PF' },
+                            { description: { contains: 'BC', mode: 'insensitive' } },
+                            { salesPerson: 'BC' },
+                            { invoiceNumber: { not: null } }
+                        ]
+                    } : {
                         OR: [
                             { description: { contains: prefix, mode: 'insensitive' } },
                             { salesPerson: prefix }
@@ -1764,7 +1790,15 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
             (prisma as any).financeTransaction.findMany({
                 where: { 
                     date: { gte: startDate, lte: endDate },
-                    ...(isAll ? {} : {
+                    ...(isAll ? {
+                        OR: [
+                            { description: { contains: 'PF', mode: 'insensitive' } },
+                            { salesPerson: 'PF' },
+                            { description: { contains: 'BC', mode: 'insensitive' } },
+                            { salesPerson: 'BC' },
+                            { invoiceNumber: { not: null } }
+                        ]
+                    } : {
                         OR: [
                             { description: { contains: prefix, mode: 'insensitive' } },
                             { salesPerson: prefix }

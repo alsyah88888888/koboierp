@@ -15,7 +15,14 @@ async function main() {
         const allOperational = await prisma.financeTransaction.findMany({
             where: { 
                 date: { gte: startDate, lte: endDate },
-                ...(isAll ? {} : {
+                ...(isAll ? {
+                    OR: [
+                        { description: { contains: 'PF', mode: 'insensitive' } },
+                        { salesPerson: 'PF' },
+                        { description: { contains: 'BC', mode: 'insensitive' } },
+                        { salesPerson: 'BC' }
+                    ]
+                } : {
                     OR: [
                         { description: { contains: prefix, mode: 'insensitive' } },
                         { salesPerson: prefix }
