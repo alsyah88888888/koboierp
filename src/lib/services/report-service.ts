@@ -6,7 +6,7 @@ import { getPrisma } from "@/lib/prisma";
  * NO | TANGGAL | F.PAJAK | NOMOR | TANGGAL(beli) | NAMA PEMBELI | BARCODE |
  * KETERANGAN ITEM | SALES | [BELI: QTY/HARGA/OPS/TOTAL] | [JUAL: NAMA/QTY/HARGA/TOTAL] |
  */
-async function calculateProductTraceabilityInternal(startDate: Date, endDate: Date, prefix?: 'PF' | 'BC' | 'ALL') {
+export async function calculateProductTraceabilityInternal(startDate: Date, endDate: Date, prefix?: 'PF' | 'BC' | 'ALL') {
     const prisma = getPrisma();
     const isAll = !prefix || prefix === 'ALL';
     try {
@@ -1785,24 +1785,17 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
         ]);
 
         // ── P&L Calculation ──────────────────────────────────────────────
-        // Revenue
-        const totalRevenue = sales.reduce((s: number, d: any) => s + Number(d.grandTotal || 0), 0);
-        let totalRevenueSubtotal = 0;
-        let totalDiscount = 0;
-        sales.forEach((d: any) => {
-            const itemDiscounts = (d.items || []).reduce((acc: number, i: any) => acc + Number(i.discount || 0), 0);
-            totalRevenueSubtotal += (Number(d.subtotal || 0) + itemDiscounts);
-            totalDiscount += (itemDiscounts + Number(d.totalDiscount || 0));
-        });
-        const totalSalesTax = sales.reduce((s: number, d: any) => s + Number(d.taxAmount || 0), 0);
+        // Gunakan murni angka Traceability untuk Penjualan & Pembelian agar presisi dan tidak minus
+        const totalRevenue = monthlyTraceability.reduce((sum: number, t: any) => sum + Number(t['TOTAL JUAL'] || 0), 0);
+        let totalRevenueSubtotal = monthlyTraceability.reduce((sum: number, t: any) => sum + Number(t['DPP'] || 0), 0);
+        const totalSalesTax = monthlyTraceability.reduce((sum: number, t: any) => sum + Number(t['PPH'] || 0), 0);
+        let totalDiscount = 0; // Diskon sudah memotong DPP di dalam Traceability, jadi untuk view dashboard kita set 0 atau kita kalkulasi terpisah.
 
-        // COGS / HPP — from Traceability for 100% accuracy
-        let totalHPP = monthlyTraceability.reduce((sum: number, t: any) => sum + Number(t['TOTAL BELI'] || 0), 0);
+        // COGS / HPP (Total Pembelian dari barang yang LAKU)
+        const totalHPP = monthlyTraceability.reduce((sum: number, t: any) => sum + Number(t['TOTAL BELI'] || 0), 0);
         
-        // Total Purchases (for Cash-flow basis margin)
-        const totalPurchases = purchases.reduce((sum: number, p: any) => sum + Number(p.grandTotal || 0), 0);
-
-        const grossProfit = totalRevenue - totalPurchases; // Sesuai permintaan user: Penjualan - Pembelian
+        // Laba Kotor = Penjualan - Pembelian (Traceability)
+        const grossProfit = totalRevenue - totalHPP;
         const grossMarginPct = totalRevenue > 0 ? (grossProfit / totalRevenue * 100) : 0;
 
         // Operating Expenses

@@ -2422,7 +2422,7 @@ function MonthlyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix,
                         <PLRow label="  Diskon Penjualan" value={-pl.discount} sub isClient={isClient} />
                         <PLRow label="  PPN Keluaran" value={pl.salesTax} sub isClient={isClient} />
                         <div className="h-3" />
-                        <PLRow label="TOTAL PEMBELIAN BARANG" value={data.purchases?.total || 0} bold negative isClient={isClient} />
+                        <PLRow label="TOTAL PEMBELIAN BARANG" value={pl.hpp || 0} bold negative isClient={isClient} />
                         <div className="border-t-2 border-slate-900 my-3" />
                         <PLRow label="LABA KOTOR" value={pl.grossProfit} bold highlight={pl.grossProfit >= 0 ? 'green' : 'red'} isClient={isClient} />
                         <PLRow label={`  Margin Kotor`} valueStr={`${pl.grossMarginPct || 0}%`} sub isClient={isClient} />
