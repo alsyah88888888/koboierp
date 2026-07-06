@@ -150,18 +150,19 @@ export async function createSalesDeliveryService(data: any, userId: string) {
         let grossAmount = 0;
         let totalItemDiscounts = 0;
         data.items.forEach((i: any) => {
-            const lineGross = i.quantity * i.salesPrice;
-            const lineDiscount = Number(i.discount || 0);
-            grossAmount += lineGross;
+            const price = Math.round(Number(i.salesPrice) || 0);
+            const qty = Number(i.quantity) || 0;
+            const lineDiscount = Math.round(Number(i.discount || 0));
+            grossAmount += (price * qty);
             totalItemDiscounts += lineDiscount;
         });
 
-        const subtotal = Math.round(grossAmount - totalItemDiscounts);
+        const subtotal = grossAmount - totalItemDiscounts;
         const totalDiscountNominal = Math.round(Number(data.totalDiscount) || 0);
         const taxRatePercent = Number(data.taxRate) || 0;
         const dpp = subtotal - totalDiscountNominal;
         const dppNilaiLain = taxRatePercent > 0 ? Math.round(dpp * 0.916666666666667) : 0;
-        const taxAmount = taxRatePercent > 0 ? Math.floor(dppNilaiLain * 0.12) : 0;
+        const taxAmount = taxRatePercent > 0 ? Math.round(dppNilaiLain * 0.12) : 0;
         const grandTotal = Math.round(dpp + taxAmount);
 
         await tx.salesDelivery.update({
@@ -542,18 +543,19 @@ export async function updateSalesDeliveryService(id: string, data: any, userId: 
         let grossAmount = 0;
         let totalItemDiscounts = 0;
         data.items.forEach((i: any) => {
-            const lineGross = i.quantity * i.salesPrice;
-            const lineDiscount = Number(i.discount || 0);
-            grossAmount += lineGross;
+            const price = Math.round(Number(i.salesPrice) || 0);
+            const qty = Number(i.quantity) || 0;
+            const lineDiscount = Math.round(Number(i.discount || 0));
+            grossAmount += (price * qty);
             totalItemDiscounts += lineDiscount;
         });
 
-        const subtotal = Math.round(grossAmount - totalItemDiscounts);
+        const subtotal = grossAmount - totalItemDiscounts;
         const totalDiscountNominal = Math.round(Number(data.totalDiscount) || 0);
         const taxRatePercent = Number(data.taxRate) || 0;
         const dpp = subtotal - totalDiscountNominal;
         const dppNilaiLain = taxRatePercent > 0 ? Math.round(dpp * 0.916666666666667) : 0;
-        const taxAmount = taxRatePercent > 0 ? Math.floor(dppNilaiLain * 0.12) : 0;
+        const taxAmount = taxRatePercent > 0 ? Math.round(dppNilaiLain * 0.12) : 0;
         const grandTotal = Math.round(dpp + taxAmount);
 
         await tx.salesDelivery.update({
@@ -871,12 +873,19 @@ export async function createSalesOrderService(data: any, userId: string) {
         }
         const orderNumber = `${prefix}${String(maxSeq + 1).padStart(3, '0')}`;
 
-        const subtotal = Math.round(data.items.reduce((acc: number, i: any) => acc + (i.quantity * i.salesPrice) - (i.discount || 0), 0));
+        let newSubtotal = 0;
+        for (const i of data.items) {
+            const price = Math.round(Number(i.salesPrice) || 0);
+            const qty = Number(i.quantity) || 0;
+            const disc = Math.round(Number(i.discount) || 0);
+            newSubtotal += (price * qty) - disc;
+        }
+        const subtotal = newSubtotal;
         const totalDiscountNominal = Math.round(Number(data.totalDiscount) || 0);
         const dpp = subtotal - totalDiscountNominal;
         const taxRatePercent = Number(data.taxRate) || 0;
         const dppNilaiLain = taxRatePercent > 0 ? Math.round(dpp * 0.916666666666667) : 0;
-        const taxAmount = taxRatePercent > 0 ? Math.floor(dppNilaiLain * 0.12) : 0;
+        const taxAmount = taxRatePercent > 0 ? Math.round(dppNilaiLain * 0.12) : 0;
         const grandTotal = Math.round(dpp + taxAmount);
 
         let invoiceNumber = null;
@@ -944,12 +953,19 @@ export async function updateSalesOrderService(id: string, data: any) {
     const prisma = getPrisma();
 
     return await prisma.$transaction(async (tx: any) => {
-        const subtotal = Math.round(data.items.reduce((acc: number, i: any) => acc + (i.quantity * i.salesPrice) - (i.discount || 0), 0));
+        let newSubtotal = 0;
+        for (const i of data.items) {
+            const price = Math.round(Number(i.salesPrice) || 0);
+            const qty = Number(i.quantity) || 0;
+            const disc = Math.round(Number(i.discount) || 0);
+            newSubtotal += (price * qty) - disc;
+        }
+        const subtotal = newSubtotal;
         const totalDiscountNominal = Math.round(Number(data.totalDiscount) || 0);
         const dpp = subtotal - totalDiscountNominal;
         const taxRatePercent = Number(data.taxRate) || 0;
         const dppNilaiLain = taxRatePercent > 0 ? Math.round(dpp * 0.916666666666667) : 0;
-        const taxAmount = taxRatePercent > 0 ? Math.floor(dppNilaiLain * 0.12) : 0;
+        const taxAmount = taxRatePercent > 0 ? Math.round(dppNilaiLain * 0.12) : 0;
         const grandTotal = Math.round(dpp + taxAmount);
 
         await tx.salesOrderItem.deleteMany({ where: { orderId: id } });

@@ -249,15 +249,15 @@ export default function SalesModal({ products, warehouses, customers, orders = [
 
     const grossAmount = items.reduce((sum, item) => {
         const q = parseIndoNumber(item.quantity);
-        const p = parseIndoNumber(item.salesPrice);
+        const p = Math.round(parseIndoNumber(item.salesPrice));
         return sum + (q * p);
     }, 0);
 
     const itemDiscounts = items.reduce((sum, item) => {
-        return sum + parseIndoNumber(item.discount);
+        return sum + Math.round(parseIndoNumber(item.discount));
     }, 0);
 
-    const subtotal = Math.round(grossAmount - itemDiscounts);
+    const subtotal = grossAmount - itemDiscounts;
 
     const finalDiscountNominal = useMemo(() => {
         if (totalDiscountPercent !== "" && Number(totalDiscountPercent) > 0) {
@@ -268,7 +268,7 @@ export default function SalesModal({ products, warehouses, customers, orders = [
 
     const dpp = subtotal - finalDiscountNominal;
     const dppNilaiLain = isPKP ? Math.round(dpp * 0.916666666666667) : 0;
-    const taxAmount = isPKP ? Math.floor(dppNilaiLain * 0.12) : 0;
+    const taxAmount = isPKP ? Math.round(dppNilaiLain * 0.12) : 0;
     const grandTotal = Math.round(dpp + taxAmount);
 
     const handleSubmit = async (e?: React.FormEvent) => {
