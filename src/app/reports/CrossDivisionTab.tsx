@@ -29,6 +29,59 @@ function KPICard({ label, value, sub, color, icon, trend }: { label: string, val
 }
 
 function ReportTable({ title, count, totalLabel, totalValue, headers, rows, onExport, icon }: any) {
+    const [sortConfig, setSortConfig] = useState<{ key: number, direction: 'asc' | 'desc' } | null>(null);
+
+    const sortedRows = [...rows].sort((a, b) => {
+        if (!sortConfig) return 0;
+        
+        const extractValue = (cell: any): any => {
+            if (cell === null || cell === undefined) return '';
+            if (typeof cell === 'string' || typeof cell === 'number') return cell;
+            if (cell.props) {
+                if (cell.props.title) return cell.props.title;
+                if (cell.props.children) {
+                    if (typeof cell.props.children === 'string' || typeof cell.props.children === 'number') return cell.props.children;
+                    if (Array.isArray(cell.props.children)) return cell.props.children.map(extractValue).join('');
+                }
+            }
+            return '';
+        };
+
+        let aVal = extractValue(a[sortConfig.key]);
+        let bVal = extractValue(b[sortConfig.key]);
+
+        const parseNum = (val: any) => {
+            if (typeof val === 'number') return val;
+            if (typeof val === 'string') {
+                const clean = val.replace(/Rp /g, '').replace(/\./g, '').replace(/,/g, '.').replace(/%/g, '').trim();
+                if (clean !== '' && !isNaN(Number(clean))) return Number(clean);
+            }
+            return null;
+        };
+
+        const aNum = parseNum(aVal);
+        const bNum = parseNum(bVal);
+
+        if (aNum !== null && bNum !== null) {
+            return sortConfig.direction === 'asc' ? aNum - bNum : bNum - aNum;
+        }
+
+        aVal = String(aVal).toLowerCase();
+        bVal = String(bVal).toLowerCase();
+
+        if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+    });
+
+    const handleSort = (index: number) => {
+        let direction: 'asc' | 'desc' = 'asc';
+        if (sortConfig && sortConfig.key === index && sortConfig.direction === 'asc') {
+            direction = 'desc';
+        }
+        setSortConfig({ key: index, direction });
+    };
+
     return (
         <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
             <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-slate-50/50">
@@ -58,19 +111,32 @@ function ReportTable({ title, count, totalLabel, totalValue, headers, rows, onEx
                     <thead>
                         <tr className="bg-slate-50/50 text-slate-500 text-[10px] uppercase tracking-widest">
                             {headers.map((h: string, i: number) => (
-                                <th key={i} className="px-4 py-3 font-black border-b border-slate-100">{h}</th>
+                                <th 
+                                    key={i} 
+                                    onClick={() => handleSort(i)}
+                                    className="px-4 py-3 font-black border-b border-slate-100 cursor-pointer hover:bg-slate-100 transition-colors select-none"
+                                >
+                                    <div className="flex items-center gap-1">
+                                        {h}
+                                        {sortConfig?.key === i && (
+                                            <span className="text-blue-500 text-[10px]">
+                                                {sortConfig.direction === 'asc' ? '▲' : '▼'}
+                                            </span>
+                                        )}
+                                    </div>
+                                </th>
                             ))}
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50">
-                        {rows.map((row: any[], i: number) => (
+                        {sortedRows.map((row: any[], i: number) => (
                             <tr key={i} className="hover:bg-slate-50/50 transition-colors">
                                 {row.map((cell: any, j: number) => (
                                     <td key={j} className="px-4 py-3 text-slate-600 font-medium text-xs">{cell}</td>
                                 ))}
                             </tr>
                         ))}
-                        {rows.length === 0 && (
+                        {sortedRows.length === 0 && (
                             <tr>
                                 <td colSpan={headers.length} className="px-4 py-8 text-center text-slate-400 font-medium text-xs">
                                     Tidak ada data untuk periode ini.
