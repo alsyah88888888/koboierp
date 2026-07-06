@@ -1802,7 +1802,7 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
         // Total Purchases (for Cash-flow basis margin)
         const totalPurchases = purchases.reduce((sum: number, p: any) => sum + Number(p.grandTotal || 0), 0);
 
-        const grossProfit = totalRevenue - totalHPP; // Menggunakan HPP (Traceability) agar Laba per divisi akurat
+        const grossProfit = totalRevenue - totalPurchases; // Sesuai permintaan user: Penjualan - Pembelian
         const grossMarginPct = totalRevenue > 0 ? (grossProfit / totalRevenue * 100) : 0;
 
         // Operating Expenses

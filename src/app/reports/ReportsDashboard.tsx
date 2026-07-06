@@ -1177,17 +1177,17 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
         if (activeTab === 'monthly' && data.profitLoss) {
             // P&L sheet
             const plRows = [
-                { 'Keterangan': 'PENDAPATAN (Revenue)', 'Jumlah (Rp)': data.profitLoss.revenue },
+                { 'Keterangan': 'TOTAL PENJUALAN', 'Jumlah (Rp)': data.profitLoss.revenue },
                 { 'Keterangan': '  Subtotal Penjualan', 'Jumlah (Rp)': data.profitLoss.revenueSubtotal },
                 { 'Keterangan': '  Diskon', 'Jumlah (Rp)': -data.profitLoss.discount },
                 { 'Keterangan': '  PPN', 'Jumlah (Rp)': data.profitLoss.salesTax },
                 { 'Keterangan': '', 'Jumlah (Rp)': '' },
-                { 'Keterangan': 'HARGA POKOK PENJUALAN (HPP)', 'Jumlah (Rp)': data.profitLoss.hpp },
+                { 'Keterangan': 'TOTAL PEMBELIAN BARANG', 'Jumlah (Rp)': data.purchases?.total || 0 },
                 { 'Keterangan': '', 'Jumlah (Rp)': '' },
                 { 'Keterangan': 'LABA KOTOR', 'Jumlah (Rp)': data.profitLoss.grossProfit },
                 { 'Keterangan': `  Margin Kotor (${data.profitLoss.grossMarginPct}%)`, 'Jumlah (Rp)': '' },
                 { 'Keterangan': '', 'Jumlah (Rp)': '' },
-                { 'Keterangan': 'BIAYA OPERASIONAL', 'Jumlah (Rp)': data.profitLoss.expenses },
+                { 'Keterangan': 'BIAYA OPERASIONAL (OPS)', 'Jumlah (Rp)': data.profitLoss.expenses },
                 ...(data.profitLoss.expenseByCategory || []).map((c: any) => ({
                     'Keterangan': `  ${c.name}`, 'Jumlah (Rp)': c.value
                 })),
@@ -2417,34 +2417,23 @@ function MonthlyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix,
                 </div>
                 <div className="p-6">
                     <div className="max-w-2xl mx-auto space-y-1">
-                        <PLRow label="PENDAPATAN (Revenue)" value={pl.revenue} bold isClient={isClient} />
+                        <PLRow label="TOTAL PENJUALAN" value={pl.revenue} bold isClient={isClient} />
                         <PLRow label="  Subtotal Penjualan" value={pl.revenueSubtotal} sub isClient={isClient} />
                         <PLRow label="  Diskon Penjualan" value={-pl.discount} sub isClient={isClient} />
                         <PLRow label="  PPN Keluaran" value={pl.salesTax} sub isClient={isClient} />
                         <div className="h-3" />
-                        <PLRow label="MODAL BARANG (HPP)" value={pl.hpp || 0} bold negative isClient={isClient} />
+                        <PLRow label="TOTAL PEMBELIAN BARANG" value={data.purchases?.total || 0} bold negative isClient={isClient} />
                         <div className="border-t-2 border-slate-900 my-3" />
                         <PLRow label="LABA KOTOR" value={pl.grossProfit} bold highlight={pl.grossProfit >= 0 ? 'green' : 'red'} isClient={isClient} />
                         <PLRow label={`  Margin Kotor`} valueStr={`${pl.grossMarginPct || 0}%`} sub isClient={isClient} />
                         <div className="h-3" />
-                        <PLRow label="BIAYA OPERASIONAL" value={pl.expenses} bold negative isClient={isClient} />
+                        <PLRow label="BIAYA OPERASIONAL (OPS)" value={pl.expenses} bold negative isClient={isClient} />
                         {(pl.expenseByCategory || []).map((cat: any, i: number) => (
                             <PLRow key={i} label={`  ${cat.name}`} value={cat.value} sub isClient={isClient} />
                         ))}
                         <div className="border-t-2 border-slate-900 my-3" />
                         <PLRow label="LABA BERSIH" value={pl.netProfit} bold highlight={pl.netProfit >= 0 ? 'green' : 'red'} isClient={isClient} />
                         <PLRow label={`  Margin Bersih`} valueStr={`${pl.netMarginPct || 0}%`} sub isClient={isClient} />
-
-                        <div className="mt-8 pt-6 border-t border-slate-200">
-                            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-2">Info Tambahan (Persediaan)</h4>
-                            <PLRow label="TOTAL BELANJA STOK (Pembelian)" value={data.purchases?.total || 0} bold isClient={isClient} />
-                            <div className="px-2 mt-2">
-                                <p className="text-[9px] font-bold text-slate-500 leading-relaxed bg-slate-50 p-3 rounded-lg border border-slate-100">
-                                    <span className="text-blue-500 uppercase tracking-widest mr-1">Catatan Akuntansi:</span>
-                                    Total Belanja Stok di atas <strong>TIDAK</strong> memotong Laba Bersih secara langsung karena statusnya adalah perpindahan Uang Kas menjadi Aset Barang di gudang. Belanja stok ini baru akan memotong Laba (sebagai HPP) tepat pada saat barang tersebut laku terjual.
-                                </p>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>
