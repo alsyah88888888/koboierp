@@ -137,18 +137,19 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, initialRequ
             items.forEach((item: any) => {
                 const qty = Number(item.quantity) || 0;
                 const buyPrice = Number(item.purchasePrice || 0);
+                const price = Number(item.purchasePrice || 0);
                 const discLine = Number(item.discount || 0);
                 const taxRate = Number(r.taxRate || 0);
 
-                // Terapkan logika pembulatan yang persis SAMA dengan fungsi formatCurrency di print document
-                const round100 = (val: number) => Math.round(val / 100) * 100;
+                // Terapkan pembulatan matematis standar
+                const roundNormal = (val: number) => Math.round(val);
 
-                const printedBuyPrice = round100(buyPrice);
-                const printedTotalBrutto = round100(qty * buyPrice);
-                const printedDiscLine = round100(discLine);
-                const itemNettoBeforeTax = (qty * buyPrice) - discLine;
-                const printedTax = round100(itemNettoBeforeTax * (taxRate > 0 ? 0.11 : 0));
-                const printedNettoTotal = round100(itemNettoBeforeTax * (taxRate > 0 ? 1.11 : 1));
+                const printedPrice = roundNormal(price);
+                const printedTotalBrutto = roundNormal(qty * price);
+                const printedDiscLine = roundNormal(discLine);
+                const itemNettoBeforeTax = (qty * price) - discLine;
+                const printedTax = roundNormal(itemNettoBeforeTax * (taxRate > 0 ? 0.11 : 0));
+                const printedNettoTotal = roundNormal(itemNettoBeforeTax * (taxRate > 0 ? 1.11 : 1));
 
                 exportData.push({
                     'No. Terima': r.receiptNumber,
@@ -160,7 +161,7 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, initialRequ
                     'Nama Barang': item.product?.name || "-",
                     'Qty': qty,
                     'Satuan': item.uom || item.product?.uom || "-",
-                    'Harga Beli': printedBuyPrice,
+                    'Harga Beli': printedPrice,
                     'Potongan Item': printedDiscLine,
                     'Total Brutto (Row)': printedTotalBrutto,
                     'PPN (Header %)': printedTax,

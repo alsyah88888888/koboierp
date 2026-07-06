@@ -281,15 +281,15 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                 const discLine = Number(item.discount || 0);
                 const taxRate = Number(d.taxRate || 0);
 
-                // Terapkan logika pembulatan yang persis SAMA dengan fungsi formatCurrency di print document
-                const round100 = (val: number) => Math.round(val / 100) * 100;
+                // Terapkan pembulatan matematis standar
+                const roundNormal = (val: number) => Math.round(val);
 
-                const printedPrice = round100(price);
-                const printedTotalBrutto = round100(qty * price);
-                const printedDiscLine = round100(discLine);
+                const printedPrice = roundNormal(price);
+                const printedTotalBrutto = roundNormal(qty * price);
+                const printedDiscLine = roundNormal(discLine);
                 const itemNettoBeforeTax = (qty * price) - discLine;
-                const printedTax = round100(itemNettoBeforeTax * (taxRate > 0 ? 0.11 : 0));
-                const printedNettoTotal = round100(itemNettoBeforeTax * (taxRate > 0 ? 1.11 : 1));
+                const printedTax = roundNormal(itemNettoBeforeTax * (taxRate > 0 ? 0.11 : 0));
+                const printedNettoTotal = roundNormal(itemNettoBeforeTax * (taxRate > 0 ? 1.11 : 1));
 
                 exportData.push({
                     'No. Surat Jalan': d.deliveryNumber,

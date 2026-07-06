@@ -269,7 +269,7 @@ export default function SalesModal({ products, warehouses, customers, orders = [
     const dpp = subtotal - finalDiscountNominal;
     const dppNilaiLain = isPKP ? Math.round(dpp * 0.916666666666667) : 0;
     const taxAmount = isPKP ? Math.floor(dppNilaiLain * 0.12) : 0;
-    const grandTotal = Math.ceil((dpp + taxAmount) / 100) * 100;
+    const grandTotal = Math.round(dpp + taxAmount);
 
     const handleSubmit = async (e?: React.FormEvent) => {
         e?.preventDefault();

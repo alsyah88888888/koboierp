@@ -490,9 +490,9 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
             exportToExcel(data, `Laporan_Buku_Besar_${format(new Date(), "yyyyMMdd")}`, 'Ledger');
         } else if (activeTab === "ap") {
             const data = filteredPurchases.map(p => {
-                const round100 = (val: number) => Math.round(val / 100) * 100;
-                const printedTotal = round100(Number(p.grandTotal || 0));
-                const printedPaid = round100(Number(p.paidAmount || 0));
+                const roundNormal = (val: number) => Math.round(val);
+                const printedTotal = roundNormal(Number(p.grandTotal || 0));
+                const printedPaid = roundNormal(Number(p.paidAmount || 0));
                 
                 return {
                     'Bulan': format(new Date(p.date || p.createdAt), "MMMM yyyy"),
@@ -512,9 +512,9 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
             exportToExcel(data, `Laporan_Hutang_Dagang_Kompleks_${format(new Date(), "yyyyMMdd")}`, 'AP');
         } else if (activeTab === "ar") {
             const data = filteredSales.map(s => {
-                const round100 = (val: number) => Math.round(val / 100) * 100;
-                const printedTotal = round100(Number(s.grandTotal || 0));
-                const printedPaid = round100(Number(s.paidAmount || 0));
+                const roundNormal = (val: number) => Math.round(val);
+                const printedTotal = roundNormal(Number(s.grandTotal || 0));
+                const printedPaid = roundNormal(Number(s.paidAmount || 0));
                 const remaining = printedTotal - printedPaid;
                 const agingDays = Math.floor((new Date().getTime() - new Date(s.date || s.createdAt).getTime()) / (1000 * 3600 * 24));
                 
