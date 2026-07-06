@@ -1,7 +1,7 @@
-import { getPrisma } from "./src/lib/prisma";
+import { PrismaClient } from "@prisma/client";
 
 async function testTrace() {
-    const prisma = getPrisma();
+    const prisma = new PrismaClient();
     const startDate = new Date('2026-06-01');
     const endDate = new Date('2026-06-30');
     
@@ -81,7 +81,7 @@ async function testTrace() {
         if (sharedDeliveries.length <= 1) {
             opsMapByDelivery.set(inv, totalOps);
         } else {
-            const grandQty = sharedDeliveries.reduce((sum, d) => 
+            const grandQty = sharedDeliveries.reduce((sum: number, d: any) => 
                 sum + d.items.reduce((s: number, i: any) => s + Number(i.quantity), 0), 0);
             
             let remaining = totalOps;
