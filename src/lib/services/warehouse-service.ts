@@ -456,12 +456,19 @@ export async function runStockAuditService() {
         }
     });
 
+    // Sales returns are recorded twice in raw history: once as a SalesReturnItem, and again as an
+    // ADJUSTMENT StockMovement (written by createSalesReturnAction/updateSalesReturnAction). Exclude
+    // ADJUSTMENT rows whose reference is a known SalesReturn.returnNumber so they aren't double-counted
+    // alongside totalSalesReturned below.
+    const salesReturnNumbers = (await prisma.salesReturn.findMany({ select: { returnNumber: true } }))
+        .map((sr: any) => sr.returnNumber);
+
     // 2. Aggregate counts from history using database groupBy (Massively faster)
     const [
-        purchasedAgg, 
-        soldAgg, 
-        purchRetAgg, 
-        salesRetAgg, 
+        purchasedAgg,
+        soldAgg,
+        purchRetAgg,
+        salesRetAgg,
         adjAgg
     ] = await Promise.all([
         prisma.goodsReceiptItem.groupBy({
@@ -486,7 +493,7 @@ export async function runStockAuditService() {
         }),
         prisma.stockMovement.groupBy({
             by: ['productId'],
-            where: { type: "ADJUSTMENT" },
+            where: { type: "ADJUSTMENT", reference: { notIn: salesReturnNumbers } },
             _sum: { quantity: true }
         })
     ]);
@@ -541,6 +548,13 @@ export async function syncProductStockService(productId: string, syncBy: string)
     const prisma = getPrisma();
 
     return await prisma.$transaction(async (tx: any) => {
+        // Sales returns are recorded twice in raw history: once as a SalesReturnItem, and again as an
+        // ADJUSTMENT StockMovement (written by createSalesReturnAction/updateSalesReturnAction). Exclude
+        // ADJUSTMENT rows whose reference is a known SalesReturn.returnNumber so they aren't double-counted
+        // alongside totalSalesReturned below.
+        const salesReturnNumbers = (await tx.salesReturn.findMany({ select: { returnNumber: true } }))
+            .map((sr: any) => sr.returnNumber);
+
         // 1. Calculate History
         const p = await tx.product.findUnique({
             where: { id: productId },
@@ -550,7 +564,7 @@ export async function syncProductStockService(productId: string, syncBy: string)
                 salesItems: { where: { delivery: { isVoid: false } }, select: { quantity: true } },
                 purchaseReturnItems: { where: { purchaseReturn: { isVoid: false } }, select: { quantity: true } },
                 salesReturnItems: { where: { salesReturn: { isVoid: false } }, select: { quantity: true } },
-                movements: { where: { type: "ADJUSTMENT" }, select: { quantity: true } }
+                movements: { where: { type: "ADJUSTMENT", reference: { notIn: salesReturnNumbers } }, select: { quantity: true } }
             }
         });
 
