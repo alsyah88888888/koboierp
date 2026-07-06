@@ -249,15 +249,15 @@ export default function SalesModal({ products, warehouses, customers, orders = [
 
     const grossAmount = items.reduce((sum, item) => {
         const q = parseIndoNumber(item.quantity);
-        const p = Math.round(parseIndoNumber(item.salesPrice));
+        const p = parseIndoNumber(item.salesPrice);
         return sum + (q * p);
     }, 0);
 
     const itemDiscounts = items.reduce((sum, item) => {
-        return sum + Math.round(parseIndoNumber(item.discount));
+        return sum + parseIndoNumber(item.discount);
     }, 0);
 
-    const subtotal = grossAmount - itemDiscounts;
+    const subtotal = Math.round(grossAmount - itemDiscounts);
 
     const finalDiscountNominal = useMemo(() => {
         if (totalDiscountPercent !== "" && Number(totalDiscountPercent) > 0) {

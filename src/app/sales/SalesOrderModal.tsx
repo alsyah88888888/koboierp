@@ -70,9 +70,9 @@ export default function SalesOrderModal({ products, customers, warehouses, initi
     };
 
     // Calculation logic
-    const grossAmount = items.reduce((acc, item) => acc + (Number(item.quantity) * Math.round(Number(item.salesPrice))), 0);
-    const totalItemDiscounts = items.reduce((acc, item) => acc + Math.round(Number(item.discount || 0)), 0);
-    const subtotal = grossAmount - totalItemDiscounts;
+    const grossAmount = items.reduce((acc, item) => acc + (Number(item.quantity) * Number(item.salesPrice)), 0);
+    const totalItemDiscounts = items.reduce((acc, item) => acc + Number(item.discount || 0), 0);
+    const subtotal = Math.round(grossAmount - totalItemDiscounts);
     const totalDiscountNominal = Math.round(Number(totalDiscount) || 0);
     const dpp = subtotal - totalDiscountNominal;
     const dppNilaiLain = taxRate > 0 ? Math.round(dpp * 0.916666666666667) : 0;

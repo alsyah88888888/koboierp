@@ -150,14 +150,13 @@ export async function createSalesDeliveryService(data: any, userId: string) {
         let grossAmount = 0;
         let totalItemDiscounts = 0;
         data.items.forEach((i: any) => {
-            const price = Math.round(Number(i.salesPrice) || 0);
-            const qty = Number(i.quantity) || 0;
-            const lineDiscount = Math.round(Number(i.discount || 0));
-            grossAmount += (price * qty);
+            const lineGross = Number(i.quantity) * Number(i.salesPrice);
+            const lineDiscount = Number(i.discount || 0);
+            grossAmount += lineGross;
             totalItemDiscounts += lineDiscount;
         });
 
-        const subtotal = grossAmount - totalItemDiscounts;
+        const subtotal = Math.round(grossAmount - totalItemDiscounts);
         const totalDiscountNominal = Math.round(Number(data.totalDiscount) || 0);
         const taxRatePercent = Number(data.taxRate) || 0;
         const dpp = subtotal - totalDiscountNominal;
@@ -543,14 +542,13 @@ export async function updateSalesDeliveryService(id: string, data: any, userId: 
         let grossAmount = 0;
         let totalItemDiscounts = 0;
         data.items.forEach((i: any) => {
-            const price = Math.round(Number(i.salesPrice) || 0);
-            const qty = Number(i.quantity) || 0;
-            const lineDiscount = Math.round(Number(i.discount || 0));
-            grossAmount += (price * qty);
+            const lineGross = Number(i.quantity) * Number(i.salesPrice);
+            const lineDiscount = Number(i.discount || 0);
+            grossAmount += lineGross;
             totalItemDiscounts += lineDiscount;
         });
 
-        const subtotal = grossAmount - totalItemDiscounts;
+        const subtotal = Math.round(grossAmount - totalItemDiscounts);
         const totalDiscountNominal = Math.round(Number(data.totalDiscount) || 0);
         const taxRatePercent = Number(data.taxRate) || 0;
         const dpp = subtotal - totalDiscountNominal;
@@ -873,14 +871,7 @@ export async function createSalesOrderService(data: any, userId: string) {
         }
         const orderNumber = `${prefix}${String(maxSeq + 1).padStart(3, '0')}`;
 
-        let newSubtotal = 0;
-        for (const i of data.items) {
-            const price = Math.round(Number(i.salesPrice) || 0);
-            const qty = Number(i.quantity) || 0;
-            const disc = Math.round(Number(i.discount) || 0);
-            newSubtotal += (price * qty) - disc;
-        }
-        const subtotal = newSubtotal;
+        const subtotal = Math.round(data.items.reduce((acc: number, i: any) => acc + (Number(i.quantity) * Number(i.salesPrice)) - Number(i.discount || 0), 0));
         const totalDiscountNominal = Math.round(Number(data.totalDiscount) || 0);
         const dpp = subtotal - totalDiscountNominal;
         const taxRatePercent = Number(data.taxRate) || 0;
@@ -953,14 +944,7 @@ export async function updateSalesOrderService(id: string, data: any) {
     const prisma = getPrisma();
 
     return await prisma.$transaction(async (tx: any) => {
-        let newSubtotal = 0;
-        for (const i of data.items) {
-            const price = Math.round(Number(i.salesPrice) || 0);
-            const qty = Number(i.quantity) || 0;
-            const disc = Math.round(Number(i.discount) || 0);
-            newSubtotal += (price * qty) - disc;
-        }
-        const subtotal = newSubtotal;
+        const subtotal = Math.round(data.items.reduce((acc: number, i: any) => acc + (Number(i.quantity) * Number(i.salesPrice)) - Number(i.discount || 0), 0));
         const totalDiscountNominal = Math.round(Number(data.totalDiscount) || 0);
         const dpp = subtotal - totalDiscountNominal;
         const taxRatePercent = Number(data.taxRate) || 0;
