@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { X, Plus, Trash2, Save, Calculator, FileText, CheckCircle, ChevronRight, ShoppingCart, Tag, Loader2, AlertCircle } from "lucide-react";
 import { callAction } from "@/proxy";
 import { useDialog } from "@/components/ui/DialogProvider";
@@ -44,6 +44,8 @@ export default function SalesOrderModal({ products, customers, warehouses, initi
     const [totalDiscountPercent, setTotalDiscountPercent] = useState(0);
     const [showDiscount, setShowDiscount] = useState(false);
     const [isManualBuyer, setIsManualBuyer] = useState(false);
+    const [lotsCache, setLotsCache] = useState<Record<string, any[]>>({});
+    const fetchedLotsRef = useRef<Set<string>>(new Set());
 
     const addItem = () => {
         setItems([...items, { productId: "", sku: "", quantity: 1, salesPrice: 0, discount: 0, uom: "", vendorName: "UMUM" }]);
@@ -55,7 +57,6 @@ export default function SalesOrderModal({ products, customers, warehouses, initi
 
     const updateItem = (index: number, field: string, value: any) => {
         const newItems = [...items];
-        newItems[index][field] = value;
         
         if (field === "sku") {
             const product = products.find(p => p.sku === value);
@@ -63,9 +64,24 @@ export default function SalesOrderModal({ products, customers, warehouses, initi
                 newItems[index].productId = product.id;
                 newItems[index].salesPrice = Number(product.salesPrice);
                 newItems[index].uom = product.uom;
+                newItems[index].vendorName = "UMUM";
+                newItems[index].selectedLotId = "";
             } else {
                 newItems[index].productId = "";
+                newItems[index].vendorName = "UMUM";
+                newItems[index].selectedLotId = "";
             }
+        } else if (field === 'sourceLpb') {
+            const lot = lotsCache[newItems[index].productId]?.find((l: any) => l.id === value);
+            if (lot) {
+                newItems[index].selectedLotId = value;
+                newItems[index].vendorName = lot.supplierName || "UMUM";
+            } else {
+                newItems[index].selectedLotId = "";
+                newItems[index].vendorName = value; // fallback to vendorName
+            }
+        } else {
+            newItems[index][field] = value;
         }
         setItems(newItems);
     };
@@ -91,6 +107,20 @@ export default function SalesOrderModal({ products, customers, warehouses, initi
             setTotalDiscount(calculated);
         }
     }, [totalDiscountPercent, subtotal]);
+
+    useEffect(() => {
+        const fetchLots = async () => {
+            const productIds = items.map(i => i.productId).filter(id => id && !fetchedLotsRef.current.has(id));
+            if (productIds.length > 0) {
+                for (const pid of productIds) {
+                    fetchedLotsRef.current.add(pid);
+                    const lots = await callAction("getAvailableLotsForProductAction", pid, "");
+                    setLotsCache(prev => ({ ...prev, [pid]: lots }));
+                }
+            }
+        };
+        fetchLots();
+    }, [items]);
 
     const handleSubmit = async (isConfirm: boolean = false) => {
         if (!buyerName) {
@@ -318,14 +348,30 @@ export default function SalesOrderModal({ products, customers, warehouses, initi
                                     </div>
 
                                     <div className="w-full lg:flex-[2] min-w-0">
-                                        <label className="lg:hidden text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Vendor</label>
+                                        <label className="lg:hidden text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Source / Vendor</label>
                                         <select
-                                            value={item.vendorName}
-                                            onChange={e => updateItem(index, 'vendorName', e.target.value)}
+                                            value={item.selectedLotId || item.vendorName || ""}
+                                            onChange={e => updateItem(index, 'sourceLpb', e.target.value)}
                                             className="w-full bg-slate-50 border border-transparent px-2 py-2 rounded-lg text-[11px] font-bold outline-none focus:bg-white focus:border-indigo-500"
                                         >
-                                            <option value="UMUM">UMUM</option>
-                                            <option value="MATAHARI">MATAHARI</option>
+                                            <option value="">Pilih Sumber...</option>
+                                            {item.productId && lotsCache[item.productId] && lotsCache[item.productId].length > 0 && (
+                                                <optgroup label="Dari Pembelian (LPB)">
+                                                    {lotsCache[item.productId].map((lot: any) => (
+                                                        <option key={lot.id} value={lot.id}>
+                                                            {lot.grNumber} ({lot.remainingQty} {item.uom}) - {lot.supplierName}
+                                                        </option>
+                                                    ))}
+                                                </optgroup>
+                                            )}
+                                            <optgroup label="Vendor Default">
+                                                {item.productId && Array.isArray(products) && products.find(p => p.id === item.productId)?.stocks?.map((s: any) => (
+                                                    <option key={`vendor-${s.vendorName}`} value={s.vendorName}>
+                                                        {s.vendorName} (Stok: {s.quantity})
+                                                    </option>
+                                                ))}
+                                                {!item.productId && <option value="UMUM">UMUM</option>}
+                                            </optgroup>
                                         </select>
                                     </div>
 

@@ -946,7 +946,8 @@ export async function createSalesOrderService(data: any, userId: string) {
                         quantity: Math.round(Number(item.quantity) || 0),
                         salesPrice: Number(item.salesPrice) || 0,
                         discount: Number(item.discount || 0),
-                        uom: item.uom
+                        uom: item.uom,
+                        vendorName: item.vendorName || "UMUM"
                     }))
                 }
             }
@@ -1085,7 +1086,8 @@ export async function updateSalesOrderService(id: string, data: any) {
                         quantity: Math.round(Number(item.quantity) || 0),
                         salesPrice: Number(item.salesPrice) || 0,
                         discount: Number(item.discount || 0),
-                        uom: item.uom
+                        uom: item.uom,
+                        vendorName: item.vendorName || "UMUM"
                     }))
                 }
             }
