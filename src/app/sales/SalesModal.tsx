@@ -43,7 +43,7 @@ export default function SalesModal({ products, warehouses, customers, orders = [
     // Financials
     const [showDiscount, setShowDiscount] = useState(false);
     const [totalDiscount, setTotalDiscount] = useState<number | string>(0);
-    const [totalDiscountPercent, setTotalDiscountPercent] = useState<number | "">("");
+    const [totalDiscountPercent, setTotalDiscountPercent] = useState<number | string>("");
     const [taxRate, setTaxRate] = useState<number | "">(0);
     const [isPKP, setIsPKP] = useState(false); // false = Non-PKP (KB-TRD), true = PKP (KB-TRN)
     const [isInputIncludePPN, setIsInputIncludePPN] = useState(false); // Mode Input Include PPN
@@ -737,7 +737,7 @@ export default function SalesModal({ products, warehouses, customers, orders = [
                                                             defaultValue: String(totalDiscountPercent) || "0",
                                                             showSlider: true
                                                         });
-                                                        if(p !== null) setTotalDiscountPercent(p);
+                                                        if(p !== null) setTotalDiscountPercent(Number(p));
                                                     }}
                                                 >
                                                     {totalDiscountPercent ? `${totalDiscountPercent}%` : "set freq"}
