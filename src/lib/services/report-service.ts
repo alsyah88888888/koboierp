@@ -1328,11 +1328,12 @@ export async function getComprehensiveDailyReportService(date?: string, prefix?:
                     });
                     const margin = Number(s.grandTotal || 0) - saleHpp;
                     const marginPct = Number(s.grandTotal || 0) > 0 ? (margin / Number(s.grandTotal || 0) * 100) : 0;
+                    const itemDiscounts = (s.items || []).reduce((acc: number, i: any) => acc + Number(i.discount || 0), 0);
                     return {
                         id: s.id, number: s.deliveryNumber, invoiceNumber: s.invoiceNumber, date: s.date,
                         buyer: s.buyerName || s.recipient, salesPerson: s.salesPerson,
                         alamat: s.recipient, gudang: s.warehouse?.name,
-                        subtotal: Number(s.subtotal || 0), discount: Number(s.totalDiscount || 0),
+                        subtotal: Number(s.subtotal || 0) + itemDiscounts, discount: Number(s.totalDiscount || 0) + itemDiscounts,
                         tax: Number(s.taxAmount || 0), grandTotal: Number(s.grandTotal || 0),
                         paidAmount: Number(s.paidAmount || 0), paymentStatus: s.paymentStatus,
                         operator: s.createdBy?.name || 'System',
@@ -1786,8 +1787,13 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
         // ── P&L Calculation ──────────────────────────────────────────────
         // Revenue
         const totalRevenue = sales.reduce((s: number, d: any) => s + Number(d.grandTotal || 0), 0);
-        const totalRevenueSubtotal = sales.reduce((s: number, d: any) => s + Number(d.subtotal || 0), 0);
-        const totalDiscount = sales.reduce((s: number, d: any) => s + Number(d.totalDiscount || 0), 0);
+        let totalRevenueSubtotal = 0;
+        let totalDiscount = 0;
+        sales.forEach((d: any) => {
+            const itemDiscounts = (d.items || []).reduce((acc: number, i: any) => acc + Number(i.discount || 0), 0);
+            totalRevenueSubtotal += (Number(d.subtotal || 0) + itemDiscounts);
+            totalDiscount += (itemDiscounts + Number(d.totalDiscount || 0));
+        });
         const totalSalesTax = sales.reduce((s: number, d: any) => s + Number(d.taxAmount || 0), 0);
 
         // COGS / HPP — from Traceability for 100% accuracy
@@ -1971,10 +1977,11 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
             
             const margin = Number(s.grandTotal || 0) - saleHpp;
             const marginPct = Number(s.grandTotal || 0) > 0 ? (margin / Number(s.grandTotal || 0) * 100) : 0;
+            const itemDiscounts = (s.items || []).reduce((acc: number, i: any) => acc + Number(i.discount || 0), 0);
             return {
                 number: s.deliveryNumber, invoiceNumber: s.invoiceNumber, date: s.date,
                 buyer: s.buyerName || s.recipient, salesPerson: s.salesPerson,
-                subtotal: Number(s.subtotal || 0), discount: Number(s.totalDiscount || 0),
+                subtotal: Number(s.subtotal || 0) + itemDiscounts, discount: Number(s.totalDiscount || 0) + itemDiscounts,
                 tax: Number(s.taxAmount || 0), grandTotal: Number(s.grandTotal || 0),
                 paidAmount: Number(s.paidAmount || 0), paymentStatus: s.paymentStatus,
                 totalQty: (s.items || []).reduce((q: number, i: any) => q + Number(i.quantity || 0), 0),
