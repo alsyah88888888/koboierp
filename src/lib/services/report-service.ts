@@ -275,6 +275,8 @@ export async function calculateProductTraceabilityInternal(startDate: Date, endD
             // ── MERGE items with same productId and Lot within this delivery ──
             const mergedItemsMap = new Map<string, any>();
             for (const sdItem of sd.items) {
+                let unallocatedQty = sdItem.quantity;
+
                 if (sdItem.lotAllocations && sdItem.lotAllocations.length > 0) {
                     for (const alloc of sdItem.lotAllocations) {
                         const lotGr = alloc.lot.grNumber;
@@ -301,27 +303,33 @@ export async function calculateProductTraceabilityInternal(startDate: Date, endD
                                 _specificLotAllocation: alloc 
                             });
                         }
+                        unallocatedQty -= alloc.qty;
                     }
-                } else {
+                }
+                
+                // If there's any remaining quantity that wasn't allocated to a lot (or if no lots existed)
+                if (unallocatedQty > 0) {
                     const lotGr = 'UNKNOWN';
                     const key = `${sdItem.productId}_${lotGr}`;
+                    const proportion = unallocatedQty / sdItem.quantity;
+                    const allocDiscount = Number(sdItem.discount || 0) * proportion;
                     
                     if (mergedItemsMap.has(key)) {
                         const existing = mergedItemsMap.get(key)!;
-                        existing.quantity += sdItem.quantity;
-                        existing.discount += Number(sdItem.discount || 0);
+                        existing.quantity += unallocatedQty;
+                        existing.discount += allocDiscount;
                         const totalQty = existing.quantity;
-                        const prevQty = existing.quantity - sdItem.quantity;
-                        existing.salesPrice = (existing.salesPrice * prevQty + Number(sdItem.salesPrice || 0) * sdItem.quantity) / totalQty;
+                        const prevQty = existing.quantity - unallocatedQty;
+                        existing.salesPrice = (existing.salesPrice * prevQty + Number(sdItem.salesPrice || 0) * unallocatedQty) / totalQty;
                     } else {
                         mergedItemsMap.set(key, {
                             ...sdItem,
-                            quantity: sdItem.quantity,
+                            quantity: unallocatedQty,
                             salesPrice: Number(sdItem.salesPrice || 0),
-                            discount: Number(sdItem.discount || 0),
+                            discount: allocDiscount,
                             product: sdItem.product,
                             productId: sdItem.productId,
-                            _specificLotAllocation: null
+                            _specificLotAllocation: null 
                         });
                     }
                 }
@@ -518,16 +526,8 @@ export async function calculateProductTraceabilityInternal(startDate: Date, endD
                 existing['TOTAL'] += row['TOTAL'];
                 existing['MARGIN'] += row['MARGIN'];
                 
-                if (existing['NOMOR LPB'] !== row['NOMOR LPB'] && row['NOMOR LPB'] !== '-') {
-                    if (!existing['NOMOR LPB'].includes(row['NOMOR LPB'])) {
-                        existing['NOMOR LPB'] += `, ${row['NOMOR LPB']}`;
-                    }
-                }
-                if (existing['NAMA SUPPLIER'] !== row['NAMA SUPPLIER'] && row['NAMA SUPPLIER'] !== '-') {
-                    if (!existing['NAMA SUPPLIER'].includes(row['NAMA SUPPLIER'])) {
-                        existing['NAMA SUPPLIER'] += `, ${row['NAMA SUPPLIER']}`;
-                    }
-                }
+                // We purposefully do NOT concatenate NOMOR LPB or NAMA SUPPLIER anymore,
+                // so it stays neat with just one primary LPB instead of a comma-separated list.
                 
                 if (existing['QTY BELI'] > 0) {
                     existing['HARGA BELI'] = Math.round(existing['TOTAL BELI'] / existing['QTY BELI']);
