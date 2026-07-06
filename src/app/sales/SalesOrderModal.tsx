@@ -92,13 +92,13 @@ export default function SalesOrderModal({ products, customers, warehouses, initi
         return (isPKP && isInputIncludePPN) ? (p / 1.11) : p;
     };
 
-    const grossAmount = Math.round(items.reduce((acc, item) => acc + (Number(item.quantity) * getActualPrice(Number(item.salesPrice))), 0));
+    const grossAmount = items.reduce((acc, item) => acc + (Number(item.quantity) * getActualPrice(Number(item.salesPrice))), 0);
     const totalItemDiscounts = items.reduce((acc, item) => acc + Number(item.discount || 0), 0);
-    const subtotal = Math.round(grossAmount - totalItemDiscounts);
-    const totalDiscountNominal = Math.round(Number(totalDiscount) || 0);
+    const subtotal = grossAmount - totalItemDiscounts;
+    const totalDiscountNominal = Number(totalDiscount) || 0;
     const dpp = subtotal - totalDiscountNominal;
-    const dppNilaiLain = taxRate > 0 ? Math.round(dpp * 0.916666666666667) : 0;
-    const taxAmount = taxRate > 0 ? Math.round(dppNilaiLain * 0.12) : 0;
+    const dppNilaiLain = taxRate > 0 ? (dpp * 0.916666666666667) : 0;
+    const taxAmount = taxRate > 0 ? (dppNilaiLain * 0.12) : 0;
     const grandTotal = Math.round(dpp + taxAmount);
     const totalQty = items.reduce((acc, item) => acc + Number(item.quantity || 0), 0);
 
@@ -451,9 +451,9 @@ export default function SalesOrderModal({ products, customers, warehouses, initi
                                 <div className="relative z-10 space-y-6">
                                     <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-500 border-b border-white/5 pb-3 font-mono">Financial Summary</h3>
                                     
-                                    <div className="flex justify-between items-center px-1">
-                                        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Total (Gross)</span>
-                                        <span className="text-base font-black font-mono">Rp {grossAmount.toLocaleString('id-ID')}</span>
+                                    <div className="flex justify-between items-center pb-6 border-b border-white/5">
+                                        <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Total (Gross)</span>
+                                        <span className="text-base font-black font-mono">Rp {grossAmount.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                     </div>
 
                                     <div className="space-y-1.5">
@@ -470,27 +470,28 @@ export default function SalesOrderModal({ products, customers, warehouses, initi
                                         </div>
                                         {totalItemDiscounts > 0 && (
                                             <div className="text-[10px] text-right text-orange-300 font-mono mt-1 opacity-80">
-                                                (Termasuk Disc Item: Rp {totalItemDiscounts.toLocaleString('id-ID')})
+                                                (Termasuk Disc Item: Rp {totalItemDiscounts.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
                                             </div>
                                         )}
                                     </div>
 
-                                    <div className="flex justify-between items-center px-1 pt-2 border-t border-white/5">
-                                        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">DPP (Total - Disc)</span>
-                                        <span className="text-base font-black font-mono">Rp {dpp.toLocaleString('id-ID')}</span>
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">DPP (Total - Disc)</span>
+                                        <span className="text-base font-black font-mono">Rp {dpp.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                     </div>
 
-                                    {isPKP && (
-                                        <>
-                                            <div className="flex justify-between items-center px-1">
-                                                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">DPP Nilai Lain (11/12)</span>
-                                                <span className="text-base font-black font-mono">Rp {dppNilaiLain.toLocaleString('id-ID')}</span>
-                                            </div>
-                                            <div className="flex justify-between items-center px-1">
-                                                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">PPN (12%)</span>
-                                                <span className="text-base font-black font-mono text-rose-400">Rp {taxAmount.toLocaleString('id-ID')}</span>
-                                            </div>
-                                        </>
+                                    {taxRate > 0 && taxRate === 12 && (
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">DPP Nilai Lain (11/12)</span>
+                                            <span className="text-base font-black font-mono">Rp {dppNilaiLain.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                        </div>
+                                    )}
+
+                                    {taxRate > 0 && (
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">PPN ({taxRate}%)</span>
+                                            <span className="text-base font-black font-mono text-rose-400">Rp {taxAmount.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                        </div>
                                     )}
 
                                     <div className="space-y-3">

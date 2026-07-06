@@ -252,28 +252,28 @@ export default function SalesModal({ products, warehouses, customers, orders = [
         return (isPKP && isInputIncludePPN) ? (p / 1.11) : p;
     };
 
-    const grossAmount = Math.round(items.reduce((sum, item) => {
+    const grossAmount = items.reduce((sum, item) => {
         const q = parseIndoNumber(item.quantity);
         const p = parseIndoNumber(item.salesPrice);
         return sum + (q * getActualPrice(p));
-    }, 0));
+    }, 0);
 
     const itemDiscounts = items.reduce((sum, item) => {
         return sum + parseIndoNumber(item.discount);
     }, 0);
 
-    const subtotal = Math.round(grossAmount - itemDiscounts);
+    const subtotal = grossAmount - itemDiscounts;
 
     const finalDiscountNominal = useMemo(() => {
         if (totalDiscountPercent !== "" && Number(totalDiscountPercent) > 0) {
-            return Math.round(subtotal * (Number(totalDiscountPercent) / 100));
+            return (subtotal * (Number(totalDiscountPercent) / 100));
         }
         return parseIndoNumber(totalDiscount);
     }, [subtotal, totalDiscountPercent, totalDiscount]);
 
     const dpp = subtotal - finalDiscountNominal;
-    const dppNilaiLain = isPKP ? Math.round(dpp * 0.916666666666667) : 0;
-    const taxAmount = isPKP ? Math.round(dppNilaiLain * 0.12) : 0;
+    const dppNilaiLain = isPKP ? (dpp * 0.916666666666667) : 0;
+    const taxAmount = isPKP ? (dppNilaiLain * 0.12) : 0;
     const grandTotal = Math.round(dpp + taxAmount);
 
     const handleSubmit = async (e?: React.FormEvent) => {
@@ -720,10 +720,10 @@ export default function SalesModal({ products, warehouses, customers, orders = [
                                     <div className="relative z-10 space-y-4">
                                         <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 border-b border-white/5 pb-2 font-mono">Financial Summary</h3>
                                         
-                                        <div className="flex justify-between items-center px-1">
-                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total (Gross)</span>
-                                            <span className="text-sm font-bold font-mono">Rp {grossAmount.toLocaleString('id-ID')}</span>
-                                        </div>
+                                        <div className="flex justify-between items-center pb-6 border-b border-white/5">
+                                        <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Total (Gross)</span>
+                                        <span className="text-base font-black font-mono">Rp {grossAmount.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                    </div>
 
                                         <div className="space-y-1">
                                             <label className="text-[10px] font-bold text-orange-400 uppercase tracking-widest flex justify-between ml-1">
@@ -755,28 +755,28 @@ export default function SalesModal({ products, warehouses, customers, orders = [
                                             </div>
                                             {itemDiscounts > 0 && (
                                                 <div className="text-[9px] text-right text-orange-300 font-mono mt-1 opacity-80">
-                                                    (Termasuk Disc Item: Rp {itemDiscounts.toLocaleString('id-ID')})
+                                                    (Termasuk Disc Item: Rp {itemDiscounts.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
                                                 </div>
                                             )}
                                         </div>
 
-                                        <div className="flex justify-between items-center px-1 pt-2 border-t border-white/5">
-                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">DPP (Total - Disc)</span>
-                                            <span className="text-sm font-bold font-mono">Rp {dpp.toLocaleString('id-ID')}</span>
-                                        </div>
+                                        <div className="flex justify-between items-center">
+                                        <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">DPP (Total - Disc)</span>
+                                        <span className="text-base font-black font-mono">Rp {dpp.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                    </div>
 
-                                        {isPKP && (
-                                            <>
-                                                <div className="flex justify-between items-center px-1">
-                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">DPP Nilai Lain (11/12)</span>
-                                                    <span className="text-sm font-bold font-mono">Rp {dppNilaiLain.toLocaleString('id-ID')}</span>
-                                                </div>
-                                                <div className="flex justify-between items-center px-1">
-                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">PPN (12%)</span>
-                                                    <span className="text-sm font-bold font-mono text-rose-400">Rp {taxAmount.toLocaleString('id-ID')}</span>
-                                                </div>
-                                            </>
-                                        )}
+                                    {isPKP && (
+                                        <>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">DPP Nilai Lain (11/12)</span>
+                                                <span className="text-base font-black font-mono">Rp {dppNilaiLain.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">PPN (12%)</span>
+                                                <span className="text-base font-black font-mono text-rose-400">Rp {taxAmount.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                            </div>
+                                        </>
+                                    )}
 
 
                                         <div className="space-y-2">
