@@ -124,23 +124,23 @@ export default async function SalesOrderPrintPage({ params }: { params: Promise<
                 <div className="space-y-1 border border-slate-900 p-2 font-black bg-slate-50/50">
                     <div className="flex justify-between text-[9px]">
                         <span className="text-slate-400 uppercase">Subtotal Brutto</span>
-                        <span>Rp {subTotal.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        <span>Rp {Math.round(subTotal).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
                     {Number(order.totalDiscount) > 0 && (
                         <div className="flex justify-between text-[9px] text-orange-600 italic">
                             <span className="text-slate-400 uppercase">Diskon</span>
-                            <span>- Rp {Number(order.totalDiscount).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                            <span>- Rp {Math.round(Number(order.totalDiscount)).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                         </div>
                     )}
                     {taxAmount > 0 && (
                         <div className="flex justify-between text-[9px] text-indigo-600">
                             <span className="text-slate-400 uppercase">PPN</span>
-                            <span>+ Rp {taxAmount.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                            <span>+ Rp {Math.round(taxAmount).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                         </div>
                     )}
                     <div className="border-t-2 border-slate-900 mt-1 pt-1 flex justify-between text-sm text-primary font-black bg-white px-2 rounded border-x shadow-sm">
                         <span className="uppercase text-[10px] mt-0.5">TOTAL NETTO PEMBAYARAN</span>
-                        <span>Rp {grandTotal.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        <span>Rp {Math.round(grandTotal).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
                 </div>
             </div>
