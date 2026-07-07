@@ -489,12 +489,32 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
             }));
             exportToExcel(data, `Laporan_Buku_Besar_${format(new Date(), "yyyyMMdd")}`, 'Ledger');
         } else if (activeTab === "ap") {
-            const data = filteredPurchases.map(p => {
+            const data = filteredPurchases.flatMap(p => {
                 const roundNormal = (val: number) => Math.round(val);
                 const printedTotal = roundNormal(Number(p.grandTotal || 0));
                 const printedPaid = roundNormal(Number(p.paidAmount || 0));
                 
-                return {
+                if (!p.items || p.items.length === 0) {
+                    return [{
+                        'Bulan': format(new Date(p.date || p.createdAt), "MMMM yyyy"),
+                        'Tanggal Terima': format(new Date(p.date || p.createdAt), "dd/MM/yyyy"),
+                        'No. Terima (LPB)': p.receiptNumber,
+                        'No. Invoice Vendor': p.formNumber || '-',
+                        'Supplier': p.receivedFrom,
+                        'No. Faktur Pajak': p.taxInvoiceNumber || '-',
+                        'Total Tagihan': printedTotal,
+                        'Sudah Dibayar': printedPaid,
+                        'Sisa Hutang': printedTotal - printedPaid,
+                        'Status': p.paymentStatus === 'PAID' ? 'DONE' : p.paymentStatus,
+                        'Sales Person Vendor': p.salesPerson || '-',
+                        'Gudang': p.warehouse?.name || '-',
+                        'Nama Barang': '-',
+                        'Qty': 0,
+                        'Satuan': '-'
+                    }];
+                }
+
+                return p.items.map((i: any) => ({
                     'Bulan': format(new Date(p.date || p.createdAt), "MMMM yyyy"),
                     'Tanggal Terima': format(new Date(p.date || p.createdAt), "dd/MM/yyyy"),
                     'No. Terima (LPB)': p.receiptNumber,
@@ -507,19 +527,42 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                     'Status': p.paymentStatus === 'PAID' ? 'DONE' : p.paymentStatus,
                     'Sales Person Vendor': p.salesPerson || '-',
                     'Gudang': p.warehouse?.name || '-',
-                    'Rincian Item': p.items?.map((i: any) => `${i.product?.name || 'Unknown'} (${i.quantity} ${i.uom || 'PCS'})`).join(', ') || '-'
-                };
+                    'Nama Barang': i.product?.name || 'Unknown',
+                    'Qty': i.quantity || 0,
+                    'Satuan': i.uom || i.product?.uom || 'PCS'
+                }));
             });
             exportToExcel(data, `Laporan_Hutang_Dagang_Kompleks_${format(new Date(), "yyyyMMdd")}`, 'AP');
         } else if (activeTab === "ar") {
-            const data = filteredSales.map(s => {
+            const data = filteredSales.flatMap(s => {
                 const roundNormal = (val: number) => Math.round(val);
                 const printedTotal = roundNormal(Number(s.grandTotal || 0));
                 const printedPaid = roundNormal(Number(s.paidAmount || 0));
                 const remaining = printedTotal - printedPaid;
                 const agingDays = Math.floor((new Date().getTime() - new Date(s.date || s.createdAt).getTime()) / (1000 * 3600 * 24));
                 
-                return {
+                if (!s.items || s.items.length === 0) {
+                    return [{
+                        'Bulan': format(new Date(s.date || s.createdAt), "MMMM yyyy"),
+                        'Tanggal SO': s.order?.date ? format(new Date(s.order.date), "dd/MM/yyyy") : '-',
+                        'Tanggal SJ': format(new Date(s.date || s.createdAt), "dd/MM/yyyy"),
+                        'No. SJ': s.deliveryNumber,
+                        'PO BUYER': s.poNumber || '-',
+                        'Pelanggan': s.buyerName,
+                        'Sales Person': s.salesPerson || '-',
+                        'Total Tagihan': printedTotal,
+                        'Sudah Dibayar': printedPaid,
+                        'Sisa Piutang': remaining,
+                        'Status': s.paymentStatus === 'PAID' ? 'DONE' : s.paymentStatus,
+                        'Umur Piutang (Hari)': agingDays > 0 ? agingDays : 0,
+                        'Gudang Asal': s.warehouse?.name || '-',
+                        'Nama Barang': '-',
+                        'Qty': 0,
+                        'Satuan': '-'
+                    }];
+                }
+
+                return s.items.map((i: any) => ({
                     'Bulan': format(new Date(s.date || s.createdAt), "MMMM yyyy"),
                     'Tanggal SO': s.order?.date ? format(new Date(s.order.date), "dd/MM/yyyy") : '-',
                     'Tanggal SJ': format(new Date(s.date || s.createdAt), "dd/MM/yyyy"),
@@ -533,8 +576,10 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                     'Status': s.paymentStatus === 'PAID' ? 'DONE' : s.paymentStatus,
                     'Umur Piutang (Hari)': agingDays > 0 ? agingDays : 0,
                     'Gudang Asal': s.warehouse?.name || '-',
-                    'Rincian Item': s.items?.map((i: any) => `${i.product?.name || 'Unknown'} (${i.quantity} ${i.uom || 'PCS'})`).join(', ') || '-'
-                };
+                    'Nama Barang': i.product?.name || 'Unknown',
+                    'Qty': i.quantity || 0,
+                    'Satuan': i.uom || i.product?.uom || 'PCS'
+                }));
             });
             exportToExcel(data, `Laporan_Piutang_Dagang_Kompleks_${format(new Date(), "yyyyMMdd")}`, 'AR');
         } else if (activeTab === "checker") {
