@@ -1923,14 +1923,10 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
         });
 
         // ── Expense by Category ──────────────────────────────────────────
-        const categoryMap: Record<string, number> = {};
-        expenses.forEach((o: any) => {
-            const cat = o.category || o.transactionType || 'Lainnya';
-            categoryMap[cat] = (categoryMap[cat] || 0) + Math.abs(Number(o.amount || 0));
-        });
-        const expenseByCategory = Object.entries(categoryMap)
-            .map(([name, value]) => ({ name, value }))
-            .sort((a, b) => b.value - a.value);
+        const expenseByCategory = [
+            { name: "Ops Terikat (Traceability)", value: linkedOpsExpense },
+            { name: "Ops Umum (Global)", value: generalOps }
+        ].filter(x => x.value > 0);
 
         // ── Top Buyers ───────────────────────────────────────────────────
         const buyerMap: Record<string, { total: number; count: number; totalQty: number }> = {};
