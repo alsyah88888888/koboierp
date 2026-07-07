@@ -1924,8 +1924,8 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
 
         // ── Expense by Category ──────────────────────────────────────────
         const expenseByCategory = [
-            { name: "Ops Terikat (Traceability)", value: linkedOpsExpense },
-            { name: "Ops Umum (Global)", value: generalOps }
+            { name: "Ops Kirim dan Muat", value: linkedOpsExpense },
+            { name: "Ops", value: generalOps }
         ].filter(x => x.value > 0);
 
         // ── Top Buyers ───────────────────────────────────────────────────
@@ -2142,6 +2142,7 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
                 month: filterMonth, year: filterYear,
                 label: `${monthNames[filterMonth - 1]} ${filterYear}`
             },
+            inventory: { ending: await (prisma as any).stock.findMany({ include: { product: { select: { purchasePrice: true } } } }).then((s: any[]) => s.reduce((acc: number, st: any) => acc + (Number(st.quantity || 0) * Number(st.product?.purchasePrice || 0)), 0)).catch(() => 0) },
             profitLoss: {
                 revenue: totalRevenue,
                 revenueSubtotal: totalRevenueSubtotal,

@@ -2471,9 +2471,9 @@ function MonthlyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix,
                         <PLRow label="  Diskon Penjualan" value={-pl.discount} sub isClient={isClient} />
                         <PLRow label="  PPN Keluaran" value={pl.salesTax} sub isClient={isClient} />
                         <div className="h-3" />
-                        <PLRow label="TOTAL PEMBELIAN BARANG" value={pl.hpp || 0} bold negative isClient={isClient} />
+                        <PLRow label="TOTAL PEMBELIAN" value={pl.hpp || 0} bold negative isClient={isClient} />
                         <div className="border-t-2 border-slate-900 my-3" />
-                        <PLRow label="LABA KOTOR" value={pl.grossProfit} bold highlight={pl.grossProfit >= 0 ? 'green' : 'red'} isClient={isClient} />
+                        <PLRow label="HASIL" value={pl.grossProfit} bold highlight={pl.grossProfit >= 0 ? 'green' : 'red'} isClient={isClient} />
                         <PLRow label={`  Margin Kotor`} valueStr={`${pl.grossMarginPct || 0}%`} sub isClient={isClient} />
                         <div className="h-3" />
                         <PLRow label="BIAYA OPERASIONAL (OPS)" value={pl.expenses} bold negative isClient={isClient} />
@@ -2481,8 +2481,12 @@ function MonthlyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix,
                             <PLRow key={i} label={`  ${cat.name}`} value={cat.value} sub isClient={isClient} />
                         ))}
                         <div className="border-t-2 border-slate-900 my-3" />
-                        <PLRow label="LABA BERSIH" value={pl.netProfit} bold highlight={pl.netProfit >= 0 ? 'green' : 'red'} isClient={isClient} />
+                        <PLRow label="MARGIN" value={pl.netProfit} bold highlight={pl.netProfit >= 0 ? 'green' : 'red'} isClient={isClient} />
                         <PLRow label={`  Margin Bersih`} valueStr={`${pl.netMarginPct || 0}%`} sub isClient={isClient} />
+                        <div className="border-t-2 border-slate-900 my-3" />
+                        <PLRow label="STOCK BARANG (ALL DIV)" value={data.inventory?.ending || 0} bold isClient={isClient} />
+                        <PLRow label="  Stock (PF)" valueStr="Terpusat (All Div)" sub isClient={isClient} />
+                        <PLRow label="  Stock (BC)" valueStr="Terpusat (All Div)" sub isClient={isClient} />
                     </div>
                 </div>
             </div>
