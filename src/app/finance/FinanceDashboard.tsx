@@ -1299,10 +1299,18 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                             <td className="px-8 py-5">
                                                 <div className="font-black text-slate-900 tracking-tight mb-1 truncate max-w-[250px]" title={p.receivedFrom}>{p.receivedFrom}</div>
                                                 <div className={cn(
-                                                    "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-[0.2em] border",
+                                                    "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-[0.2em] border mb-2",
                                                     p.isVerified ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-amber-50 text-amber-600 border-amber-100"
                                                 )}>
                                                     {p.isVerified ? "Warehouse Verified" : "Awaiting Warehouse"}
+                                                </div>
+                                                <div className="flex flex-col gap-0.5 max-h-16 overflow-y-auto custom-scrollbar border-t border-slate-100 pt-1.5 mt-0.5">
+                                                    {p.items?.map((item: any) => (
+                                                        <div key={item.id} className="text-[9px] text-slate-500 font-medium truncate flex justify-between gap-2 border-b border-slate-50 pb-0.5" title={item.product?.name}>
+                                                            <span className="truncate">{item.product?.name || 'Unknown Item'}</span>
+                                                            <span className="font-mono flex-shrink-0">{item.quantity} {item.uom || 'PCS'}</span>
+                                                        </div>
+                                                    ))}
                                                 </div>
                                             </td>
                                             <td className="px-8 py-5">
@@ -1399,6 +1407,14 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                         </div>
                                         <div className="mb-4">
                                             <div className="font-black text-slate-900 text-sm leading-tight mb-2">{p.receivedFrom}</div>
+                                            <div className="flex flex-col gap-1 max-h-24 overflow-y-auto custom-scrollbar mb-3 bg-slate-50/50 p-2 rounded-xl border border-slate-100">
+                                                {p.items?.map((item: any) => (
+                                                    <div key={item.id} className="text-[10px] text-slate-600 font-medium truncate flex justify-between gap-2 border-b border-slate-100/50 pb-1" title={item.product?.name}>
+                                                        <span className="truncate">{item.product?.name || 'Unknown Item'}</span>
+                                                        <span className="font-mono flex-shrink-0 font-bold">{item.quantity} {item.uom || 'PCS'}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
                                             <div className="flex justify-between items-center bg-slate-50/50 p-3 rounded-xl border border-slate-100/50">
                                                 <div className="flex flex-col">
                                                     <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Due Balance</span>
@@ -1514,6 +1530,14 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                             </td>
                                             <td className="px-8 py-5">
                                                 <div className="font-black text-slate-900 tracking-tight truncate max-w-[250px]" title={s.buyerName}>{s.buyerName}</div>
+                                                <div className="mt-2 flex flex-col gap-0.5 max-h-16 overflow-y-auto custom-scrollbar border-t border-slate-100 pt-1.5">
+                                                    {s.items?.map((item: any) => (
+                                                        <div key={item.id} className="text-[9px] text-slate-500 font-medium truncate flex justify-between gap-2 border-b border-slate-50 pb-0.5" title={item.product?.name}>
+                                                            <span className="truncate">{item.product?.name || 'Unknown Item'}</span>
+                                                            <span className="font-mono flex-shrink-0">{item.quantity} {item.uom || 'PCS'}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
                                             </td>
                                             <td className="px-8 py-5">
                                                 <div className="flex items-center gap-2">
@@ -1610,6 +1634,14 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                                         </div>
                                         <div className="mb-4">
                                             <div className="font-black text-slate-900 text-sm leading-tight mb-2">{s.buyerName}</div>
+                                            <div className="flex flex-col gap-1 max-h-24 overflow-y-auto custom-scrollbar mb-3 bg-slate-50/50 p-2 rounded-xl border border-slate-100">
+                                                {s.items?.map((item: any) => (
+                                                    <div key={item.id} className="text-[10px] text-slate-600 font-medium truncate flex justify-between gap-2 border-b border-slate-100/50 pb-1" title={item.product?.name}>
+                                                        <span className="truncate">{item.product?.name || 'Unknown Item'}</span>
+                                                        <span className="font-mono flex-shrink-0 font-bold">{item.quantity} {item.uom || 'PCS'}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
                                             <div className="flex justify-between items-center bg-slate-50/50 p-3 rounded-xl border border-slate-100/50">
                                                 <div className="flex flex-col">
                                                     <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Value</span>

@@ -66,7 +66,7 @@ export default async function FinancePage() {
         prisma.goodsReceipt.findMany({
             where: { isVoid: false, paymentStatus: { not: "PAID" } },
             orderBy: { createdAt: 'desc' },
-            include: { items: true, warehouse: true }
+            include: { items: { include: { product: true } }, warehouse: true }
         }).catch(() => []),
         prisma.salesDelivery.findMany({
             where: { isVoid: false, paymentStatus: { not: "PAID" } },
