@@ -1944,7 +1944,7 @@ function DailyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix, s
                         const marginPct = totalJual > 0 ? (totalMargin / totalJual * 100) : 0;
                         return `${formatCurrency(totalMargin)} (${marginPct.toFixed(1)}%)`;
                     })() : '...'}
-                    headers={['No.', 'Barcode', 'Nama Item', 'Supplier', 'Sales Beli', 'No. LPB', 'Tgl Beli', 'Qty Beli', 'Harga Beli /Pcs', 'Total Beli (HPP)', 'Ops', 'Buyer', 'Sales Jual', 'No. Penjualan', 'No. Faktur Penjualan', 'No. Surat Jalan', 'Tgl Jual', 'Qty Jual', 'Harga Jual /Pcs', 'Total Jual (Net)', 'Margin', 'Margin %', 'Aksi']}
+                    headers={['No.', 'Barcode', 'Nama Item', 'Supplier', 'Sales Beli', 'No. LPB', 'Tgl Beli', 'Qty Beli', 'Harga Beli /Pcs', 'Total Beli (HPP)', 'Ops', 'Buyer', 'Sales Jual', 'No. PO', 'No. Penjualan', 'No. Faktur Penjualan', 'No. Surat Jalan', 'Tgl Jual', 'Qty Jual', 'Harga Jual /Pcs', 'Total Jual (Net)', 'Margin', 'Margin %', 'Aksi']}
                     rows={d.dailyTraceability.map((row: any) => [
                         <span className="font-bold">{row.NO}</span>,
                         row.BARCODE,
@@ -1959,6 +1959,7 @@ function DailyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix, s
                         <span className="tabular-nums font-bold text-amber-600">{isClient ? formatCurrency(row.OPS) : '...'}</span>,
                         <span className="truncate max-w-[130px] block" title={row['NAMA PEMBELI']}>{row['NAMA PEMBELI']}</span>,
                         row.SALES || '-',
+                        <span className="font-semibold text-xs text-slate-500">{row['NOMOR PO'] || '-'}</span>,
                         <span className="font-semibold text-blue-700">{row['NOMOR INVOICE PENJUALAN']}</span>,
                         <span className="font-black text-slate-900">{row['NOMOR FAKTUR PENJUALAN']}</span>,
                         <span className="font-semibold text-slate-600">{row['NOMOR SJ']}</span>,
@@ -2278,7 +2279,7 @@ function WeeklyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix, 
                         filename: 'traceability-mingguan',
                         data: data.details.weeklyTraceability
                     }}
-                    headers={['No.', 'Barcode', 'Nama Item', 'Supplier', 'Sales Beli', 'No. LPB', 'Tgl Beli', 'Qty Beli', 'Harga Beli /Pcs', 'Total Beli (HPP)', 'Ops', 'Buyer', 'Sales Jual', 'No. Penjualan', 'No. Faktur Penjualan', 'No. Surat Jalan', 'Tgl Jual', 'Qty Jual', 'Harga Jual /Pcs', 'Total Jual (Net)', 'Margin', 'Margin %', 'Aksi']}
+                    headers={['No.', 'Barcode', 'Nama Item', 'Supplier', 'Sales Beli', 'No. LPB', 'Tgl Beli', 'Qty Beli', 'Harga Beli /Pcs', 'Total Beli (HPP)', 'Ops', 'Buyer', 'Sales Jual', 'No. PO', 'No. Penjualan', 'No. Faktur Penjualan', 'No. Surat Jalan', 'Tgl Jual', 'Qty Jual', 'Harga Jual /Pcs', 'Total Jual (Net)', 'Margin', 'Margin %', 'Aksi']}
                     rows={data.details.weeklyTraceability.map((row: any) => [
                         <span className="font-bold">{row.NO}</span>,
                         row.BARCODE,
@@ -2293,6 +2294,7 @@ function WeeklyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix, 
                         <span className="tabular-nums text-amber-600">{isClient ? formatCurrency(row.OPS || 0) : '...'}</span>,
                         <span className="font-semibold truncate max-w-[130px] block" title={row['NAMA PEMBELI']}>{row['NAMA PEMBELI']}</span>,
                         row.SALES,
+                        <span className="font-semibold text-xs text-slate-500">{row['NOMOR PO'] || '-'}</span>,
                         <span className="font-semibold text-xs text-blue-700">{row['NOMOR INVOICE PENJUALAN']}</span>,
                         <span className="font-semibold text-xs">{row['NOMOR FAKTUR PENJUALAN']}</span>,
                         <span className="font-semibold text-xs text-slate-500">{row['NOMOR SJ']}</span>,
@@ -2786,7 +2788,7 @@ function MonthlyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix,
                         filename: 'traceability-bulanan',
                         data: data.details.monthlyTraceability
                     }}
-                    headers={['No.', 'Barcode', 'Nama Item', 'Supplier', 'Sales Beli', 'No. LPB', 'Tgl Beli', 'Qty Beli', 'Harga Beli /Pcs', 'Total Beli (HPP)', 'Ops', 'Buyer', 'Sales Jual', 'No. Penjualan', 'No. Faktur Penjualan', 'No. Surat Jalan', 'Tgl Jual', 'Qty Jual', 'Harga Jual /Pcs', 'Total Jual (Net)', 'Margin', 'Margin %', 'Aksi']}
+                    headers={['No.', 'Barcode', 'Nama Item', 'Supplier', 'Sales Beli', 'No. LPB', 'Tgl Beli', 'Qty Beli', 'Harga Beli /Pcs', 'Total Beli (HPP)', 'Ops', 'Buyer', 'Sales Jual', 'No. PO', 'No. Penjualan', 'No. Faktur Penjualan', 'No. Surat Jalan', 'Tgl Jual', 'Qty Jual', 'Harga Jual /Pcs', 'Total Jual (Net)', 'Margin', 'Margin %', 'Aksi']}
                     rows={data.details.monthlyTraceability.map((row: any) => [
                         <span className="font-bold">{row.NO}</span>,
                         row.BARCODE,
@@ -2801,6 +2803,7 @@ function MonthlyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix,
                         <span className="tabular-nums text-slate-500">{isClient ? formatCurrency(row.OPS) : '...'}</span>,
                         <span className="truncate max-w-[120px] block font-bold" title={row['NAMA PEMBELI']}>{row['NAMA PEMBELI']}</span>,
                         <span className="text-[10px] uppercase font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">{row.SALES}</span>,
+                        <span className="text-[10px] font-semibold text-slate-500">{row['NOMOR PO'] || '-'}</span>,
                         <span className="font-semibold text-blue-700">{row['NOMOR INVOICE PENJUALAN']}</span>,
                         <span className="text-[10px] text-slate-500">{row['NOMOR FAKTUR PENJUALAN']}</span>,
                         <span className="text-[10px] text-slate-500">{row['NOMOR SJ']}</span>,

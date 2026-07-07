@@ -500,8 +500,9 @@ export async function calculateProductTraceabilityInternal(startDate: Date, endD
                     // ─ PENJUALAN (COLUMNS SECOND) ─
                     'TANGGAL JUAL'     : tglJual,
                     'NOMOR SJ'         : sd.deliveryNumber,
-                    'NOMOR INVOICE PENJUALAN': sd.invoiceNumber || '-',
-                    'NOMOR FAKTUR PENJUALAN': sd.taxInvoiceNumber || '-',
+                    'NOMOR PO'         : sd.poNumber || '-',
+                    'NOMOR INVOICE PENJUALAN': soNumber,
+                    'NOMOR FAKTUR PENJUALAN': sd.invoiceNumber || '-',
                     'NAMA PEMBELI'     : buyer,
                     'SALES'            : spJual,
                     'QTY JUAL'         : qty,
@@ -1112,8 +1113,9 @@ export async function getBatchTraceabilityService(filters: {
                         // Fields for ReportsDashboard Compatibility
                         'NAMA PEMBELI'      : delivery?.buyerName || delivery?.recipient || '-',
                         'SALES'             : delivery?.salesPerson || 'CIBINONG',
-                        'NOMOR INVOICE PENJUALAN': delivery?.invoiceNumber || '-',
-                        'NOMOR FAKTUR PENJUALAN': delivery?.taxInvoiceNumber || '-',
+                        'NOMOR PO'          : delivery?.poNumber || '-',
+                        'NOMOR INVOICE PENJUALAN': soNumber,
+                        'NOMOR FAKTUR PENJUALAN': delivery?.invoiceNumber || '-',
                         'NOMOR SJ'          : delivery?.deliveryNumber || '-',
                         'TANGGAL JUAL'      : delivery?.date ? new Date(delivery.date).toLocaleDateString('id-ID') : '-',
                         'QTY JUAL'          : Number(alloc.qty),
