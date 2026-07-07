@@ -96,7 +96,7 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
         const qty = parseIndoNumber(item.quantity);
         const price = parseIndoNumber(item.purchasePrice);
         const disc = parseIndoNumber(item.discount);
-        return sum + (qty * price) - disc;
+        return sum + Math.round((qty * price) - disc);
     }, 0);
 
     const finalDiscountNominal = totalDiscountPercent 
