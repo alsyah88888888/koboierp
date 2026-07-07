@@ -1944,7 +1944,7 @@ function DailyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix, s
                         const marginPct = totalJual > 0 ? (totalMargin / totalJual * 100) : 0;
                         return `${formatCurrency(totalMargin)} (${marginPct.toFixed(1)}%)`;
                     })() : '...'}
-                    headers={['No.', 'Barcode', 'Nama Item', 'Supplier', 'Sales Beli', 'No. LPB', 'Tgl Beli', 'Qty Beli', 'Total Beli (HPP)', 'Ops', 'Buyer', 'Sales Jual', 'No. Penjualan', 'No. Faktur Penjualan', 'No. Surat Jalan', 'Tgl Jual', 'Qty Jual', 'Total Jual (Net)', 'Margin', 'Margin %', 'Aksi']}
+                    headers={['No.', 'Barcode', 'Nama Item', 'Supplier', 'Sales Beli', 'No. LPB', 'Tgl Beli', 'Qty Beli', 'Harga Beli /Pcs', 'Total Beli (HPP)', 'Ops', 'Buyer', 'Sales Jual', 'No. Penjualan', 'No. Faktur Penjualan', 'No. Surat Jalan', 'Tgl Jual', 'Qty Jual', 'Harga Jual /Pcs', 'Total Jual (Net)', 'Margin', 'Margin %', 'Aksi']}
                     rows={d.dailyTraceability.map((row: any) => [
                         <span className="font-bold">{row.NO}</span>,
                         row.BARCODE,
@@ -1954,6 +1954,7 @@ function DailyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix, s
                         <span className="font-semibold">{row['NOMOR LPB']}</span>,
                         row['TANGGAL BELI'],
                         <span className="tabular-nums font-bold text-slate-700">{row['QTY BELI']}</span>,
+                        <span className="tabular-nums text-slate-500">{isClient ? formatCurrency(row['HARGA BELI'] || 0) : '...'}</span>,
                         <span className="tabular-nums font-bold text-rose-600">{isClient ? formatCurrency(row['TOTAL BELI']) : '...'}</span>,
                         <span className="tabular-nums font-bold text-amber-600">{isClient ? formatCurrency(row.OPS) : '...'}</span>,
                         <span className="truncate max-w-[130px] block" title={row['NAMA PEMBELI']}>{row['NAMA PEMBELI']}</span>,
@@ -1963,6 +1964,7 @@ function DailyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix, s
                         <span className="font-semibold text-slate-600">{row['NOMOR SJ']}</span>,
                         row['TANGGAL JUAL'],
                         <span className="tabular-nums font-bold text-slate-700">{row['QTY JUAL']}</span>,
+                        <span className="tabular-nums text-slate-500">{isClient ? formatCurrency(row['HARGA JUAL'] || 0) : '...'}</span>,
                         <span className="tabular-nums font-bold text-blue-600">{isClient ? formatCurrency(row['TOTAL JUAL']) : '...'}</span>,
                         <span className={cn("tabular-nums font-black", row.MARGIN >= 0 ? "text-emerald-600" : "text-rose-600")}>
                             {isClient ? formatCurrency(row.MARGIN) : '...'}
@@ -2276,7 +2278,7 @@ function WeeklyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix, 
                         filename: 'traceability-mingguan',
                         data: data.details.weeklyTraceability
                     }}
-                    headers={['No.', 'Barcode', 'Nama Item', 'Supplier', 'Sales Beli', 'No. LPB', 'Tgl Beli', 'Qty Beli', 'Total Beli (HPP)', 'Ops', 'Buyer', 'Sales Jual', 'No. Penjualan', 'No. Faktur Penjualan', 'No. Surat Jalan', 'Tgl Jual', 'Qty Jual', 'Total Jual (Net)', 'Margin', 'Margin %', 'Aksi']}
+                    headers={['No.', 'Barcode', 'Nama Item', 'Supplier', 'Sales Beli', 'No. LPB', 'Tgl Beli', 'Qty Beli', 'Harga Beli /Pcs', 'Total Beli (HPP)', 'Ops', 'Buyer', 'Sales Jual', 'No. Penjualan', 'No. Faktur Penjualan', 'No. Surat Jalan', 'Tgl Jual', 'Qty Jual', 'Harga Jual /Pcs', 'Total Jual (Net)', 'Margin', 'Margin %', 'Aksi']}
                     rows={data.details.weeklyTraceability.map((row: any) => [
                         <span className="font-bold">{row.NO}</span>,
                         row.BARCODE,
@@ -2286,6 +2288,7 @@ function WeeklyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix, 
                         <span className="font-semibold">{row['NOMOR LPB']}</span>,
                         row['TANGGAL BELI'],
                         row['QTY BELI'],
+                        <span className="tabular-nums text-slate-500">{isClient ? formatCurrency(row['HARGA BELI'] || 0) : '...'}</span>,
                         <span className="tabular-nums text-rose-600">{isClient ? formatCurrency(row['TOTAL BELI']) : '...'}</span>,
                         <span className="tabular-nums text-amber-600">{isClient ? formatCurrency(row.OPS || 0) : '...'}</span>,
                         <span className="font-semibold truncate max-w-[130px] block" title={row['NAMA PEMBELI']}>{row['NAMA PEMBELI']}</span>,
@@ -2295,6 +2298,7 @@ function WeeklyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix, 
                         <span className="font-semibold text-xs text-slate-500">{row['NOMOR SJ']}</span>,
                         row['TANGGAL JUAL'],
                         row['QTY JUAL'],
+                        <span className="tabular-nums text-slate-500">{isClient ? formatCurrency(row['HARGA JUAL'] || 0) : '...'}</span>,
                         <span className="tabular-nums font-black text-blue-600">{isClient ? formatCurrency(row['TOTAL JUAL']) : '...'}</span>,
                         <span className={cn("tabular-nums font-black", Number(row.MARGIN) >= 0 ? "text-emerald-600" : "text-rose-600")}>
                             {isClient ? formatCurrency(row.MARGIN) : '...'}
@@ -2782,7 +2786,7 @@ function MonthlyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix,
                         filename: 'traceability-bulanan',
                         data: data.details.monthlyTraceability
                     }}
-                    headers={['No.', 'Barcode', 'Nama Item', 'Supplier', 'Sales Beli', 'No. LPB', 'Tgl Beli', 'Qty Beli', 'Total Beli (HPP)', 'Ops', 'Buyer', 'Sales Jual', 'No. Penjualan', 'No. Faktur Penjualan', 'No. Surat Jalan', 'Tgl Jual', 'Qty Jual', 'Total Jual (Net)', 'Margin', 'Margin %', 'Aksi']}
+                    headers={['No.', 'Barcode', 'Nama Item', 'Supplier', 'Sales Beli', 'No. LPB', 'Tgl Beli', 'Qty Beli', 'Harga Beli /Pcs', 'Total Beli (HPP)', 'Ops', 'Buyer', 'Sales Jual', 'No. Penjualan', 'No. Faktur Penjualan', 'No. Surat Jalan', 'Tgl Jual', 'Qty Jual', 'Harga Jual /Pcs', 'Total Jual (Net)', 'Margin', 'Margin %', 'Aksi']}
                     rows={data.details.monthlyTraceability.map((row: any) => [
                         <span className="font-bold">{row.NO}</span>,
                         row.BARCODE,
@@ -2792,14 +2796,17 @@ function MonthlyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix,
                         <span className="text-[10px] text-slate-500">{row['NOMOR LPB']}</span>,
                         row['TANGGAL BELI'],
                         <span className="tabular-nums font-bold">{row['QTY BELI']}</span>,
+                        <span className="tabular-nums text-slate-500">{isClient ? formatCurrency(row['HARGA BELI'] || 0) : '...'}</span>,
                         <span className="tabular-nums font-black text-emerald-600">{isClient ? formatCurrency(row['TOTAL BELI']) : '...'}</span>,
                         <span className="tabular-nums text-slate-500">{isClient ? formatCurrency(row.OPS) : '...'}</span>,
                         <span className="truncate max-w-[120px] block font-bold" title={row['NAMA PEMBELI']}>{row['NAMA PEMBELI']}</span>,
                         <span className="text-[10px] uppercase font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">{row.SALES}</span>,
+                        <span className="font-semibold text-blue-700">{row['NOMOR INVOICE PENJUALAN']}</span>,
                         <span className="text-[10px] text-slate-500">{row['NOMOR FAKTUR PENJUALAN']}</span>,
                         <span className="text-[10px] text-slate-500">{row['NOMOR SJ']}</span>,
                         row['TANGGAL JUAL'],
                         <span className="tabular-nums font-bold">{row['QTY JUAL']}</span>,
+                        <span className="tabular-nums text-slate-500">{isClient ? formatCurrency(row['HARGA JUAL'] || 0) : '...'}</span>,
                         <span className="tabular-nums font-black text-blue-600">{isClient ? formatCurrency(row['TOTAL JUAL']) : '...'}</span>,
                         <span className={cn("tabular-nums font-black", Number(row.MARGIN) >= 0 ? "text-emerald-600" : "text-rose-600")}>
                             {isClient ? formatCurrency(row.MARGIN) : '...'}

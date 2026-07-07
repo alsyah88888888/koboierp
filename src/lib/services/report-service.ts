@@ -1053,8 +1053,10 @@ export async function getBatchTraceabilityService(filters: {
                     'NOMOR SJ'          : '-',
                     'TANGGAL JUAL'      : '-',
                     'QTY JUAL'          : 0,
+                    'HARGA JUAL'        : 0,
                     'TOTAL JUAL'        : 0,
                     'MARGIN'            : 0,
+                    'HARGA BELI'        : hpp,
                 });
             } else {
                 // Satu row per alokasi penjualan
@@ -1110,12 +1112,15 @@ export async function getBatchTraceabilityService(filters: {
                         // Fields for ReportsDashboard Compatibility
                         'NAMA PEMBELI'      : delivery?.buyerName || delivery?.recipient || '-',
                         'SALES'             : delivery?.salesPerson || 'CIBINONG',
-                        'NOMOR FAKTUR PENJUALAN': soNumber,
+                        'NOMOR INVOICE PENJUALAN': delivery?.invoiceNumber || '-',
+                        'NOMOR FAKTUR PENJUALAN': delivery?.taxInvoiceNumber || '-',
                         'NOMOR SJ'          : delivery?.deliveryNumber || '-',
                         'TANGGAL JUAL'      : delivery?.date ? new Date(delivery.date).toLocaleDateString('id-ID') : '-',
                         'QTY JUAL'          : Number(alloc.qty),
+                        'HARGA JUAL'        : Number(alloc.qty) > 0 ? Math.round(totalJual / Number(alloc.qty)) : 0,
                         'TOTAL JUAL'        : Math.round(totalJual),
                         'MARGIN'            : Math.round(margin),
+                        'HARGA BELI'        : Number(alloc.hppAtTime),
                         'MARGIN %'          : totalJual > 0 ? (margin / totalJual * 100).toFixed(1) + '%' : '0%',
                     });
                 }
