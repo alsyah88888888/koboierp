@@ -410,7 +410,7 @@ export default function SalesOrderModal({ products, customers, warehouses, initi
 
                                     <div className={cn("hidden lg:flex items-center justify-end pr-6", showDiscount ? "lg:flex-[2]" : "lg:flex-[3]")}>
                                         <div className="text-sm font-black text-slate-800 text-right">
-                                            {Math.round((Number(item.quantity) * getActualPrice(Number(item.salesPrice))) - Number(item.discount || 0)).toLocaleString('id-ID')}
+                                            {((Number(item.quantity) * getActualPrice(Number(item.salesPrice))) - Number(item.discount || 0)).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                         </div>
                                     </div>
 
