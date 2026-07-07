@@ -1199,22 +1199,18 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
             // P&L sheet
             const plRows = [
                 { 'Keterangan': 'TOTAL PENJUALAN', 'Jumlah (Rp)': data.profitLoss.revenue },
-                { 'Keterangan': '  Subtotal Penjualan', 'Jumlah (Rp)': data.profitLoss.revenueSubtotal },
-                { 'Keterangan': '  Diskon', 'Jumlah (Rp)': -data.profitLoss.discount },
-                { 'Keterangan': '  PPN', 'Jumlah (Rp)': data.profitLoss.salesTax },
+                { 'Keterangan': 'TOTAL PEMBELIAN BARANG', 'Jumlah (Rp)': data.profitLoss.hpp || 0 },
                 { 'Keterangan': '', 'Jumlah (Rp)': '' },
-                { 'Keterangan': 'TOTAL PEMBELIAN BARANG', 'Jumlah (Rp)': data.purchases?.total || 0 },
-                { 'Keterangan': '', 'Jumlah (Rp)': '' },
-                { 'Keterangan': 'LABA KOTOR', 'Jumlah (Rp)': data.profitLoss.grossProfit },
-                { 'Keterangan': `  Margin Kotor (${data.profitLoss.grossMarginPct}%)`, 'Jumlah (Rp)': '' },
+                { 'Keterangan': 'Gross Margin', 'Jumlah (Rp)': data.profitLoss.grossProfit },
                 { 'Keterangan': '', 'Jumlah (Rp)': '' },
                 { 'Keterangan': 'BIAYA OPERASIONAL (OPS)', 'Jumlah (Rp)': data.profitLoss.expenses },
                 ...(data.profitLoss.expenseByCategory || []).map((c: any) => ({
                     'Keterangan': `  ${c.name}`, 'Jumlah (Rp)': c.value
                 })),
                 { 'Keterangan': '', 'Jumlah (Rp)': '' },
-                { 'Keterangan': 'LABA BERSIH', 'Jumlah (Rp)': data.profitLoss.netProfit },
-                { 'Keterangan': `  Margin Bersih (${data.profitLoss.netMarginPct}%)`, 'Jumlah (Rp)': '' },
+                { 'Keterangan': 'Margin', 'Jumlah (Rp)': data.profitLoss.netProfit },
+                { 'Keterangan': '', 'Jumlah (Rp)': '' },
+                { 'Keterangan': 'STOCK BARANG (ALL DIV)', 'Jumlah (Rp)': data.inventory?.ending || 0 }
             ];
             XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(plRows), 'Laba Rugi');
 
@@ -2467,26 +2463,18 @@ function MonthlyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix,
                 <div className="p-6">
                     <div className="max-w-2xl mx-auto space-y-1">
                         <PLRow label="TOTAL PENJUALAN" value={pl.revenue} bold isClient={isClient} />
-                        <PLRow label="  Subtotal Penjualan" value={pl.revenueSubtotal} sub isClient={isClient} />
-                        <PLRow label="  Diskon Penjualan" value={-pl.discount} sub isClient={isClient} />
-                        <PLRow label="  PPN Keluaran" value={pl.salesTax} sub isClient={isClient} />
+                        <PLRow label="TOTAL PEMBELIAN BARANG" value={pl.hpp || 0} bold negative isClient={isClient} />
                         <div className="h-3" />
-                        <PLRow label="TOTAL PEMBELIAN" value={pl.hpp || 0} bold negative isClient={isClient} />
-                        <div className="border-t-2 border-slate-900 my-3" />
-                        <PLRow label="HASIL" value={pl.grossProfit} bold highlight={pl.grossProfit >= 0 ? 'green' : 'red'} isClient={isClient} />
-                        <PLRow label={`  Margin Kotor`} valueStr={`${pl.grossMarginPct || 0}%`} sub isClient={isClient} />
+                        <PLRow label="Gross Margin" value={pl.grossProfit} bold highlight={pl.grossProfit >= 0 ? 'green' : 'red'} isClient={isClient} />
                         <div className="h-3" />
                         <PLRow label="BIAYA OPERASIONAL (OPS)" value={pl.expenses} bold negative isClient={isClient} />
                         {(pl.expenseByCategory || []).map((cat: any, i: number) => (
                             <PLRow key={i} label={`  ${cat.name}`} value={cat.value} sub isClient={isClient} />
                         ))}
-                        <div className="border-t-2 border-slate-900 my-3" />
-                        <PLRow label="MARGIN" value={pl.netProfit} bold highlight={pl.netProfit >= 0 ? 'green' : 'red'} isClient={isClient} />
-                        <PLRow label={`  Margin Bersih`} valueStr={`${pl.netMarginPct || 0}%`} sub isClient={isClient} />
+                        <div className="h-3" />
+                        <PLRow label="Margin" value={pl.netProfit} bold highlight={pl.netProfit >= 0 ? 'green' : 'red'} isClient={isClient} />
                         <div className="border-t-2 border-slate-900 my-3" />
                         <PLRow label="STOCK BARANG (ALL DIV)" value={data.inventory?.ending || 0} bold isClient={isClient} />
-                        <PLRow label="  Stock (PF)" valueStr="Terpusat (All Div)" sub isClient={isClient} />
-                        <PLRow label="  Stock (BC)" valueStr="Terpusat (All Div)" sub isClient={isClient} />
                     </div>
                 </div>
             </div>
