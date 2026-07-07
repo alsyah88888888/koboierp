@@ -6,6 +6,23 @@ import { revalidatePath } from "next/cache";
  * Strictly server-side logic for finance operations.
  */
 
+async function syncCustomerBalanceAfterPayment(tx: any, buyerName: string) {
+    const deliveries = await tx.salesDelivery.findMany({
+        where: { buyerName: buyerName, isVoid: false },
+        select: { grandTotal: true, paidAmount: true, paymentStatus: true }
+    });
+    const correctBalance = deliveries.reduce((sum: number, r: any) => {
+        if (r.paymentStatus !== "PAID") {
+            return sum + Math.max(0, Number(r.grandTotal || 0) - Number(r.paidAmount || 0));
+        }
+        return sum;
+    }, 0);
+    const customer = await tx.customer.findFirst({ where: { name: buyerName } });
+    if (customer) {
+        await tx.customer.update({ where: { id: customer.id }, data: { balance: correctBalance } });
+    }
+}
+
 async function syncVendorBalanceAfterPayment(tx: any, vendorName: string) {
     const receipts = await tx.goodsReceipt.findMany({
         where: { receivedFrom: vendorName, isVoid: false },
@@ -21,6 +38,133 @@ async function syncVendorBalanceAfterPayment(tx: any, vendorName: string) {
     if (vendor) {
         await tx.vendor.update({ where: { id: vendor.id }, data: { balance: correctBalance } });
     }
+}
+
+export async function transferFundService(
+    fromAccountId: string,
+    toAccountId: string,
+    amount: number,
+    description: string,
+    date: Date,
+    userId?: string
+) {
+    const { getPrisma } = require("@/lib/prisma");
+    const prisma = getPrisma();
+
+    if (fromAccountId === toAccountId) {
+        throw new Error("Akun asal dan tujuan tidak boleh sama.");
+    }
+
+    if (amount <= 0) {
+        throw new Error("Jumlah transfer harus lebih dari 0.");
+    }
+
+    return await prisma.$transaction(async (tx: any) => {
+        // 1. Validate accounts
+        const fromAcc = await tx.financeAccount.findUnique({ where: { id: fromAccountId } });
+        const toAcc = await tx.financeAccount.findUnique({ where: { id: toAccountId } });
+
+        if (!fromAcc || !toAcc) {
+            throw new Error("Akun tidak ditemukan.");
+        }
+
+        // 2. Create Journal Entries
+        // Debit to Destination (Uang Masuk)
+        await tx.journalEntry.create({
+            data: {
+                description: `Transfer Dana: ${description}`,
+                amount: amount,
+                type: "DEBIT",
+                accountId: toAcc.id,
+                date: date,
+                createdById: userId
+            }
+        });
+
+        // Credit from Source (Uang Keluar)
+        await tx.journalEntry.create({
+            data: {
+                description: `Transfer Dana: ${description}`,
+                amount: amount,
+                type: "CREDIT",
+                accountId: fromAcc.id,
+                date: date,
+                createdById: userId
+            }
+        });
+
+        // 3. Create Finance Transaction for traceability in Bank Mutations
+        await tx.financeTransaction.create({
+            data: {
+                transactionType: "TRANSFER",
+                bank: `${fromAcc.name} -> ${toAcc.name}`,
+                date: date,
+                referenceNumber: `TRF-${Date.now()}`,
+                description: `Pindah Dana: ${description}`,
+                amount: amount,
+                category: "TRANSFER",
+                createdById: userId
+            }
+        });
+
+        return { success: true, message: "Transfer dana berhasil dicatat." };
+    });
+}
+
+export async function voidPaymentStatusService(
+    type: "PURCHASE" | "SALE", 
+    id: string,
+    userId?: string
+) {
+    const { getPrisma } = require("@/lib/prisma");
+    const prisma = getPrisma();
+
+    return await prisma.$transaction(async (tx: any) => {
+        let reference = "";
+        let party = "";
+
+        if (type === "PURCHASE") {
+            const receipt = await tx.goodsReceipt.findUnique({ where: { id } });
+            if (!receipt) throw new Error("Receipt not found");
+            reference = receipt.receiptNumber;
+            party = receipt.receivedFrom;
+
+            await tx.goodsReceipt.update({
+                where: { id },
+                data: { paymentStatus: "PENDING", paidAmount: 0 }
+            });
+            await syncVendorBalanceAfterPayment(tx, party);
+        } else {
+            const delivery = await tx.salesDelivery.findUnique({ where: { id } });
+            if (!delivery) throw new Error("Delivery not found");
+            reference = delivery.deliveryNumber;
+            party = delivery.buyerName;
+
+            await tx.salesDelivery.update({
+                where: { id },
+                data: { paymentStatus: "PENDING", paidAmount: 0 }
+            });
+            await syncCustomerBalanceAfterPayment(tx, party);
+        }
+
+        // Delete related Journal Entries
+        await tx.journalEntry.deleteMany({
+            where: { description: { contains: reference } }
+        });
+
+        // Delete related Finance Transactions
+        await tx.financeTransaction.deleteMany({
+            where: { 
+                OR: [
+                    { referenceNumber: reference },
+                    { invoiceNumber: reference },
+                    { receiptNumber: reference }
+                ]
+            }
+        });
+
+        return { success: true, message: `Pelunasan untuk ${reference} telah dibatalkan.` };
+    });
 }
 
 export async function updatePaymentStatusService(
@@ -103,6 +247,7 @@ export async function updatePaymentStatusService(
                     const dpDate = paymentDate || new Date();
                     await tx.journalEntry.create({ data: { description: `Pembayaran DP Hutang: ${reference} (${party})`, amount: toPay as any, type: "DEBIT", accountId: apAccount.id, date: dpDate, createdById: userId } });
                     await tx.journalEntry.create({ data: { description: `Kas Bank (Keluar DP): ${reference} (${party})`, amount: toPay as any, type: "CREDIT", accountId: bankAccount.id, date: dpDate, createdById: userId } });
+                    await tx.financeTransaction.create({ data: { transactionType: "EXPENSE", bank: bankAccount.name, date: dpDate, referenceNumber: reference, description: `Pembayaran DP Pembelian ke ${party}`, amount: toPay as any, category: "PEMBELIAN", receiptNumber: reference, createdById: userId } });
                     await syncVendorBalanceAfterPayment(tx, party);
                 }
             } else if (previousStatus === "PENDING" && status === "PAID") {
@@ -115,6 +260,7 @@ export async function updatePaymentStatusService(
                     const payDate = paymentDate || new Date();
                     await tx.journalEntry.create({ data: { description: `Persediaan (Lunas Kas): ${reference} (${party})`, amount: subtotal as any, type: "DEBIT", accountId: invAccount.id, date: payDate, createdById: userId } });
                     await tx.journalEntry.create({ data: { description: `Pembelian Tunai (Bank): ${reference} (${party})`, amount: finalGrandTotal as any, type: "CREDIT", accountId: bankAccount.id, date: payDate, createdById: userId } });
+                    await tx.financeTransaction.create({ data: { transactionType: "EXPENSE", bank: bankAccount.name, date: payDate, referenceNumber: reference, description: `Pembayaran Lunas Pembelian ke ${party}`, amount: finalGrandTotal as any, category: "PEMBELIAN", receiptNumber: reference, createdById: userId } });
 
                     if (taxAccount && taxAmount > 0) {
                         await tx.journalEntry.create({ data: { description: `PPN Masukan: ${reference}`, amount: taxAmount as any, type: "DEBIT", accountId: taxAccount.id, date: payDate, createdById: userId } });
@@ -128,6 +274,7 @@ export async function updatePaymentStatusService(
                     const activePayDate = paymentDate || new Date();
                     await tx.journalEntry.create({ data: { description: `Pembayaran ${status === "PARTIAL" ? "DP/Sebagian" : "Pelunasan"} Hutang: ${reference} (${party})`, amount: toPay as any, type: "DEBIT", accountId: apAccount.id, date: activePayDate, createdById: userId } });
                     await tx.journalEntry.create({ data: { description: `Kas Bank (Keluar): ${reference} (${party})`, amount: toPay as any, type: "CREDIT", accountId: bankAccount.id, date: activePayDate, createdById: userId } });
+                    await tx.financeTransaction.create({ data: { transactionType: "EXPENSE", bank: bankAccount.name, date: activePayDate, referenceNumber: reference, description: `Pelunasan Hutang ke ${party}`, amount: toPay as any, category: "PEMBELIAN", receiptNumber: reference, createdById: userId } });
                 }
                 await syncVendorBalanceAfterPayment(tx, party);
             }

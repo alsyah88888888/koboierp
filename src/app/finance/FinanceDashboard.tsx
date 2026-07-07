@@ -100,6 +100,35 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
     const [editPaymentAmount, setEditPaymentAmount] = useState("");
     const [editPaymentDate, setEditPaymentDate] = useState("");
     const [editBankId, setEditBankId] = useState("");
+    const [transferModal, setTransferModal] = useState(false);
+    const [transferFrom, setTransferFrom] = useState("");
+    const [transferTo, setTransferTo] = useState("");
+    const [transferAmount, setTransferAmount] = useState("");
+    const [transferDate, setTransferDate] = useState(format(new Date(), "yyyy-MM-dd"));
+    const [transferDesc, setTransferDesc] = useState("");
+
+    const handleTransferSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!transferFrom || !transferTo || !transferAmount || !transferDate || !transferDesc) return alert("Semua kolom harus diisi.");
+        if (transferFrom === transferTo) return alert("Rekening asal dan tujuan tidak boleh sama.");
+        
+        const rawAmount = parseInt(transferAmount.replace(/\D/g, ""), 10);
+        if (rawAmount <= 0) return alert("Jumlah harus lebih dari 0.");
+
+        setLoading("transfer");
+        try {
+            await callAction("transferFund", transferFrom, transferTo, rawAmount, transferDesc, new Date(transferDate));
+            alert("Transfer dana berhasil dicatat.");
+            setTransferModal(false);
+            setTransferFrom(""); setTransferTo(""); setTransferAmount(""); setTransferDesc("");
+            router.refresh();
+        } catch (error: any) {
+            alert(error?.message || "Gagal mencatat transfer dana.");
+        } finally {
+            setLoading(null);
+        }
+    };
+
 
     const handleOpenEditPayment = (item: any, type: "PURCHASE" | "SALE") => {
         const refNum = type === "SALE" ? item.deliveryNumber : item.receiptNumber;

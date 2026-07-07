@@ -33,6 +33,8 @@ export default function SalesModal({ products, warehouses, customers, orders = [
     const [salesPerson, setSalesPerson] = useState("BC");
     const [poNumber, setPoNumber] = useState("");
     const [invoiceNumber, setInvoiceNumber] = useState("");
+    const [taxInvoiceNumber, setTaxInvoiceNumber] = useState(initialData?.taxInvoiceNumber || "");
+    const [taxInvoiceDate, setTaxInvoiceDate] = useState(initialData?.taxInvoiceDate ? new Date(initialData.taxInvoiceDate).toISOString().split('T')[0] : "");
     const [vehicleNumber, setVehicleNumber] = useState("");
     const [isManualBuyer, setIsManualBuyer] = useState(false);
     const [selectedOrderId, setSelectedOrderId] = useState(initialData?.orderId || "");
@@ -421,7 +423,7 @@ export default function SalesModal({ products, warehouses, customers, orders = [
                         )}
 
                         <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
+                            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-7 gap-3">
                                 <div className="space-y-1">
                                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Buyer / Customer</label>
                                     <input

@@ -8,6 +8,45 @@ import { revalidatePath } from "next/cache";
  * Use dynamic imports for services to satisfy build boundaries.
  */
 
+export async function transferFundAction(
+    fromAccountId: string,
+    toAccountId: string,
+    amount: number,
+    description: string,
+    date: Date
+) {
+    const { getAuthOptions } = require("@/lib/auth");
+    const { getServerSession } = require("next-auth");
+    const { transferFundService } = require("@/lib/services/finance-service");
+ 
+    const session = (await getServerSession(getAuthOptions())) as any;
+    if (!session?.user?.id) throw new Error("Unauthorized");
+ 
+    if (session?.user?.role?.toUpperCase() !== "ADMIN" && session?.user?.role?.toUpperCase() !== "FINANCE") {
+        throw new Error("Only Admin or Finance can transfer funds.");
+    }
+
+    return await transferFundService(fromAccountId, toAccountId, amount, description, date, session.user.id);
+}
+
+export async function voidPaymentStatusAction(
+    type: "PURCHASE" | "SALE", 
+    id: string
+) {
+    const { getAuthOptions } = require("@/lib/auth");
+    const { getServerSession } = require("next-auth");
+    const { voidPaymentStatusService } = require("@/lib/services/finance-service");
+ 
+    const session = (await getServerSession(getAuthOptions())) as any;
+    if (!session?.user?.id) throw new Error("Unauthorized");
+ 
+    if (session?.user?.role?.toUpperCase() !== "ADMIN" && session?.user?.role?.toUpperCase() !== "FINANCE") {
+        throw new Error("Only Admin or Finance can void payments.");
+    }
+
+    return await voidPaymentStatusService(type, id, session.user.id);
+}
+
 export async function updatePaymentStatusAction(
     type: "PURCHASE" | "SALE", 
     id: string, 
