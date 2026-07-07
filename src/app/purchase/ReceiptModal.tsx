@@ -96,24 +96,27 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
         const qty = parseIndoNumber(item.quantity);
         const price = parseIndoNumber(item.purchasePrice);
         const disc = parseIndoNumber(item.discount);
-        return sum + Math.round((qty * price) - disc);
+        return sum + (qty * price) - disc;
     }, 0);
 
     const finalDiscountNominal = totalDiscountPercent 
         ? (subtotal * (parseIndoNumber(totalDiscountPercent) / 100)) 
         : (parseIndoNumber(totalDiscount) || 0);
 
-    // DPP = Subtotal setelah diskon header
-    const dpp = Math.round(subtotal - finalDiscountNominal);
+    // DPP = Subtotal setelah diskon header (Gunakan presisi eksak untuk kalkulasi PPN agar hasilnya akurat)
+    const exactDpp = subtotal - finalDiscountNominal;
+    const dpp = Math.round(exactDpp);
 
     // DPP Nilai Lain = DPP × 11/12 (PMK 131/2024 — PPN 12%)
-    const dppNilaiLain = Number(taxRate) === 12 ? Math.round(dpp * (11 / 12)) : dpp;
+    const exactDppNilaiLain = Number(taxRate) === 12 ? (exactDpp * (11 / 12)) : exactDpp;
+    const dppNilaiLain = Math.round(exactDppNilaiLain);
 
     // PPN = DPP Nilai Lain × taxRate%
-    const taxAmount = Math.round(dppNilaiLain * (Number(taxRate) / 100));
+    const exactTaxAmount = exactDppNilaiLain * (Number(taxRate) / 100);
+    const taxAmount = Math.round(exactTaxAmount);
 
     // Total Netto (yang tercetak di faktur) = DPP + PPN
-    const grandTotal = Math.round(dpp + taxAmount);
+    const grandTotal = Math.round(exactDpp + exactTaxAmount);
 
     // Cashback: dihitung dari DPP (bukan dari Total Netto)
     const cashbackDetails = cashbacks.map(cb => ({
