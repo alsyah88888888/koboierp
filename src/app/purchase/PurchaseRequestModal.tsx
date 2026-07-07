@@ -252,6 +252,10 @@ export function PurchaseRequestModal({
                                                     onChange={(e) => setSalesSearch(e.target.value)}
                                                     onClick={(e) => e.stopPropagation()}
                                                 />
+                                                <div className="flex justify-between items-center px-1 mb-1">
+                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Bisa pilih lebih dari satu</span>
+                                                    <button type="button" onClick={() => {setIsSalesDropdownOpen(false); setIsPurchaseDropdownOpen(false);}} className="text-xs font-bold text-primary hover:text-primary/80">Tutup</button>
+                                                </div>
                                                 <div className="space-y-1 max-h-48 overflow-y-auto">
                                                     {filteredSalesRefs.length === 0 ? (
                                                         <div className="p-3 text-[10px] font-bold text-slate-400 text-center uppercase tracking-wider">
@@ -263,12 +267,18 @@ export function PurchaseRequestModal({
                                                                 key={ref.invoiceNumber}
                                                                 type="button"
                                                                 onClick={() => {
-                                                                    setInvoiceNumber(ref.invoiceNumber);
-                                                                    setSalesPerson(ref.salesPerson || salesPerson);
-                                                                    setIsSalesDropdownOpen(false);
-                                                                    setSalesSearch("");
+                                                                    const currentInvoices = invoiceNumber ? invoiceNumber.split(',').map((s: string) => s.trim()) : [];
+                                                                    if (currentInvoices.includes(ref.invoiceNumber)) {
+                                                                        const newInvoices = currentInvoices.filter((r: string) => r !== ref.invoiceNumber);
+                                                                        setInvoiceNumber(newInvoices.join(', '));
+                                                                    } else {
+                                                                        currentInvoices.push(ref.invoiceNumber);
+                                                                        setInvoiceNumber(currentInvoices.join(', '));
+                                                                        setSalesPerson(ref.salesPerson || salesPerson);
+                                                                    }
+                                                                    // Keep dropdown open for multiple selections
                                                                 }}
-                                                                className="w-full text-left p-3 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer flex flex-col gap-1 border border-transparent hover:border-slate-100"
+                                                                className={`w-full text-left p-3 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer flex flex-col gap-1 border ${(invoiceNumber || '').includes(ref.invoiceNumber) ? 'bg-primary/5 border-primary shadow-sm' : 'border-transparent hover:border-slate-100'}`}
                                                             >
                                                                 <span className="text-sm font-bold text-slate-800 tracking-tight">
                                                                     {ref.invoiceNumber}
@@ -314,6 +324,10 @@ export function PurchaseRequestModal({
                                                     onChange={(e) => setPurchaseSearch(e.target.value)}
                                                     onClick={(e) => e.stopPropagation()}
                                                 />
+                                                <div className="flex justify-between items-center px-1 mb-1">
+                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Bisa pilih lebih dari satu</span>
+                                                    <button type="button" onClick={() => {setIsSalesDropdownOpen(false); setIsPurchaseDropdownOpen(false);}} className="text-xs font-bold text-primary hover:text-primary/80">Tutup</button>
+                                                </div>
                                                 <div className="space-y-1 max-h-48 overflow-y-auto">
                                                     {filteredPurchaseRefs.length === 0 ? (
                                                         <div className="p-3 text-[10px] font-bold text-slate-400 text-center uppercase tracking-wider">
@@ -325,11 +339,17 @@ export function PurchaseRequestModal({
                                                                 key={ref.receiptNumber}
                                                                 type="button"
                                                                 onClick={() => {
-                                                                    setReceiptNumber(ref.receiptNumber);
-                                                                    setIsPurchaseDropdownOpen(false);
-                                                                    setPurchaseSearch("");
+                                                                    const currentReceipts = receiptNumber ? receiptNumber.split(',').map((s: string) => s.trim()) : [];
+                                                                    if (currentReceipts.includes(ref.receiptNumber)) {
+                                                                        const newReceipts = currentReceipts.filter((r: string) => r !== ref.receiptNumber);
+                                                                        setReceiptNumber(newReceipts.join(', '));
+                                                                    } else {
+                                                                        currentReceipts.push(ref.receiptNumber);
+                                                                        setReceiptNumber(currentReceipts.join(', '));
+                                                                    }
+                                                                    // Keep dropdown open for multiple selections
                                                                 }}
-                                                                className="w-full text-left p-3 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer flex flex-col gap-1 border border-transparent hover:border-slate-100"
+                                                                className={`w-full text-left p-3 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer flex flex-col gap-1 border ${(receiptNumber || '').includes(ref.receiptNumber) ? 'bg-emerald-50 border-emerald-400 shadow-sm' : 'border-transparent hover:border-slate-100'}`}
                                                             >
                                                                 <span className="text-sm font-bold text-slate-800 tracking-tight">
                                                                     {ref.receiptNumber}
