@@ -89,28 +89,17 @@ export default function SalesOrderModal({ products, customers, warehouses, initi
 
     // Calculation logic
     const getActualPrice = (p: number) => {
-        // Menggunakan input harga nilai full tanpa pemotongan
-        return p; 
+        return (isPKP && isInputIncludePPN) ? (p / 1.11) : p;
     };
 
     const grossAmount = items.reduce((acc, item) => acc + (Number(item.quantity) * getActualPrice(Number(item.salesPrice))), 0);
     const totalItemDiscounts = items.reduce((acc, item) => acc + Number(item.discount || 0), 0);
     const subtotal = grossAmount - totalItemDiscounts;
     const totalDiscountNominal = Number(totalDiscount) || 0;
-    
-    const subtotalAfterDisc = subtotal - totalDiscountNominal;
-    
-    // 1. DPP HARGA JUAL (dibagi 1.11 jika PKP)
-    const dppHargaJual = taxRate > 0 ? (subtotalAfterDisc / 1.11) : subtotalAfterDisc;
-    
-    // 2. DPP NILAI LAIN (11/12 dari DPP HARGA JUAL)
-    const dppNilaiLain = taxRate > 0 ? (dppHargaJual * (11 / 12)) : 0;
-    
-    // 3. PPN 12% dari DPP NILAI LAIN
-    const taxAmount = taxRate > 0 ? (dppNilaiLain * (taxRate / 100)) : 0;
-    
-    // 4. TOTAL TERMASUK PPN
-    const grandTotal = Math.round(dppHargaJual + taxAmount); // Akan selalu sama dengan subtotalAfterDisc
+    const dpp = subtotal - totalDiscountNominal;
+    const dppNilaiLain = taxRate > 0 ? (dpp * 0.916666666666667) : 0;
+    const taxAmount = taxRate > 0 ? (dppNilaiLain * 0.12) : 0;
+    const grandTotal = Math.round(dpp + taxAmount);
     const totalQty = items.reduce((acc, item) => acc + Number(item.quantity || 0), 0);
 
     useEffect(() => {
@@ -154,14 +143,10 @@ export default function SalesOrderModal({ products, customers, warehouses, initi
                 date: new Date(date),
                 salesPerson,
                 items: items.map(i => ({
-                    productId: i.productId,
-                    quantity: Number(i.quantity),
-                    salesPrice: getActualPrice(Number(i.salesPrice)),
-                    discount: Number(i.discount || 0),
-                    vendorName: i.vendorName,
-                    selectedLotId: i.selectedLotId
+                    ...i,
+                    salesPrice: getActualPrice(Number(i.salesPrice))
                 })),
-                taxRate: isPKP ? 12 : 0, 
+                taxRate: isPKP ? 12 : 0, // Use 12 to match SalesModal logic
                 totalDiscount,
                 status: isConfirm ? "CONFIRMED" : "DRAFT"
             };
@@ -491,18 +476,11 @@ export default function SalesOrderModal({ products, customers, warehouses, initi
                                     </div>
 
                                     <div className="flex justify-between items-center">
-                                        <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Sub Total After Disc</span>
-                                        <span className="text-base font-black font-mono">Rp {subtotalAfterDisc.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                        <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">DPP (Total - Disc)</span>
+                                        <span className="text-base font-black font-mono">Rp {dpp.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                     </div>
 
-                                    {taxRate > 0 && (
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">DPP Harga Jual</span>
-                                            <span className="text-base font-black font-mono">Rp {dppHargaJual.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                                        </div>
-                                    )}
-
-                                    {taxRate > 0 && (
+                                    {taxRate > 0 && taxRate === 12 && (
                                         <div className="flex justify-between items-center">
                                             <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">DPP Nilai Lain (11/12)</span>
                                             <span className="text-base font-black font-mono">Rp {dppNilaiLain.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
@@ -526,7 +504,7 @@ export default function SalesOrderModal({ products, customers, warehouses, initi
 
                                     <div className="pt-6 mt-4 border-t border-white/10">
                                         <div className="flex justify-between items-end mb-1.5">
-                                            <label className="text-[11px] font-bold uppercase tracking-widest text-emerald-400">Total Termasuk PPN</label>
+                                            <label className="text-[11px] font-bold uppercase tracking-widest text-emerald-400">Total Netto (DPP + PPN)</label>
                                             <span className="text-[10px] text-slate-600 font-black uppercase tracking-widest mb-1">{totalQty} Items</span>
                                         </div>
                                         <p className="text-4xl font-black text-emerald-400 tracking-tighter leading-none font-mono">Rp {grandTotal.toLocaleString('id-ID')}</p>
