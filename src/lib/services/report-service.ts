@@ -1899,12 +1899,17 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
         const expenses = allOperational.filter((o: any) =>
             o.transactionType === 'PAYMENT' || o.transactionType === 'EXPENSE' || Number(o.amount) < 0
         );
-        const generalOps = expenses.filter((o: any) => !o.invoiceNumber).reduce((s: number, o: any) => s + Math.abs(Number(o.amount || 0)), 0);
+        const cashFlowExpenses = expenses.reduce((s: number, o: any) => s + Math.abs(Number(o.amount || 0)), 0);
         const linkedOpsExpense = monthlyTraceability.reduce((sum: number, t: any) => sum + Number(t['OPS'] || 0), 0);
-        const totalExpenses = generalOps + linkedOpsExpense;
+        
+        // User requested: Total Expenses = Total Cash Flow (47.6M)
+        const totalExpenses = cashFlowExpenses;
+        // Ops Umum (Global) = Total Cash Flow - Ops Terikat
+        const generalOps = totalExpenses - linkedOpsExpense;
+
         const companyExpenses = companyExpensesRecords.reduce((acc: number, e: any) => acc + Math.abs(Number(e.amount || 0)), 0);
 
-        // Net Profit
+        // Net Profit (MARGIN)
         const netProfit = grossProfit - totalExpenses;
         const netMarginPct = totalRevenue > 0 ? (netProfit / totalRevenue * 100) : 0;
 
@@ -2142,7 +2147,19 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
                 month: filterMonth, year: filterYear,
                 label: `${monthNames[filterMonth - 1]} ${filterYear}`
             },
-            inventory: { ending: await (prisma as any).stock.findMany({ include: { product: { select: { purchasePrice: true } } } }).then((s: any[]) => s.reduce((acc: number, st: any) => acc + (Number(st.quantity || 0) * Number(st.product?.purchasePrice || 0)), 0)).catch(() => 0) },
+            inventory: { ending: await (async () => {
+                const stocks = await (prisma as any).stock.findMany({ include: { product: true } });
+                const recentReceipts = await (prisma as any).goodsReceipt.findMany({ where: { isVoid: false }, include: { items: true }, orderBy: { createdAt: 'desc' } });
+                let totalVal = 0;
+                stocks.forEach((s: any) => {
+                    const matchingReceipt = recentReceipts.find((r: any) => (r.receivedFrom || "CIBINONG").trim().toLowerCase() === (s.vendorName || "CIBINONG").trim().toLowerCase() && r.items?.some((item: any) => item.productId === s.productId));
+                    const matchingItem = matchingReceipt?.items?.find((item: any) => item.productId === s.productId);
+                    let hpp = matchingItem?.purchasePrice ? Number(matchingItem.purchasePrice) : 0;
+                    if (!hpp || hpp === 0) hpp = Number(s.product?.purchasePrice || 0);
+                    totalVal += (Number(s.quantity || 0) * hpp);
+                });
+                return totalVal;
+            })().catch(() => 0) },
             profitLoss: {
                 revenue: totalRevenue,
                 revenueSubtotal: totalRevenueSubtotal,
