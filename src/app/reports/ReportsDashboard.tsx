@@ -1117,23 +1117,24 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
             // Traceability Harian sheet
             if (data.details.dailyTraceability?.length) {
                 const rows = data.details.dailyTraceability.map((r: any) => ({
-                    'No': r.NO,
-                    'Barcode': r.BARCODE,
-                    'Nama Item': r['KETERANGAN ITEM'],
-                    'Supplier': r['NAMA SUPPLIER'],
-                    'Sales Beli': r['SALES BELI'] || '-',
-                    'No. LPB': r['NOMOR LPB'],
-                    'Tgl Beli': r['TANGGAL BELI'],
-                    'Total Beli (HPP)': r['TOTAL BELI'],
-                    'Ops': r.OPS,
-                    'Buyer': r['NAMA PEMBELI'],
-                    'Sales': r.SALES || '-',
-                    'No. Faktur Penjualan': r['NOMOR FAKTUR PENJUALAN'],
-                    'No. Surat Jalan': r['NOMOR SJ'],
-                    'Tgl Jual': r['TANGGAL JUAL'],
-                    'Total Jual (Net)': r['TOTAL JUAL'],
-                    'Margin': r.MARGIN,
-                    'Margin %': r['MARGIN %']
+                    'KETERANGAN ITEM': r['KETERANGAN ITEM'],
+                    '.T': '',
+                    'SALES': r.SALES || '-',
+                    'QTY': r['QTY BELI'] || r['QTY JUAL'] || 0,
+                    'HARGA BELI': Math.round(Number(r['TOTAL BELI'] || 0) / Math.max(1, Number(r['QTY BELI'] || r['QTY JUAL'] || 1))),
+                    'TOTAL BELI': r['TOTAL BELI'],
+                    'TANGGAL': r['TANGGAL JUAL'],
+                    'NAMA': r['NAMA PEMBELI'],
+                    ' QTY ': r['QTY JUAL'] || 0,
+                    'HARGA JUAL': Math.round(Number(r['TOTAL JUAL'] || 0) / Math.max(1, Number(r['QTY JUAL'] || 1))),
+                    'TOTAL JUAL': r['TOTAL JUAL'],
+                    'MARGIN': r.MARGIN,
+                    ' MARGIN ': Math.round(Number(r.MARGIN || 0) / Math.max(1, Number(r['QTY JUAL'] || 1))),
+                    'TOTAL': '',
+                    ' TANGGAL ': '',
+                    'BANK': '',
+                    'Ref LPB': r['NOMOR LPB'],
+                    'Ref SJ': r['NOMOR SJ']
                 }));
                 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Traceability Harian');
             }
@@ -1157,25 +1158,24 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
             // Traceability Mingguan
             if (data.details?.weeklyTraceability?.length) {
                 const traceRows = data.details.weeklyTraceability.map((r: any) => ({
-                    'No.': r.NO,
-                    'Barcode': r.BARCODE,
-                    'Nama Item': r['KETERANGAN ITEM'],
-                    'Supplier': r['NAMA SUPPLIER'],
-                    'Sales Beli': r['SALES BELI'] || '-',
-                    'No. LPB': r['NOMOR LPB'],
-                    'Tgl Beli': r['TANGGAL BELI'],
-                    'Qty Beli': r['QTY BELI'],
-                    'Total Beli (HPP)': r['TOTAL BELI'],
-                    'Ops': r.OPS,
-                    'Buyer': r['NAMA PEMBELI'],
-                    'Sales': r.SALES,
-                    'No. Faktur Penjualan': r['NOMOR FAKTUR PENJUALAN'],
-                    'No. Surat Jalan': r['NOMOR SJ'],
-                    'Tgl Jual': r['TANGGAL JUAL'],
-                    'Qty Jual': r['QTY JUAL'],
-                    'Total Jual (Net)': r['TOTAL JUAL'],
-                    'Margin': r.MARGIN,
-                    'Margin %': r['MARGIN %'] || '0%'
+                    'KETERANGAN ITEM': r['KETERANGAN ITEM'],
+                    '.T': '',
+                    'SALES': r.SALES || '-',
+                    'QTY': r['QTY BELI'] || r['QTY JUAL'] || 0,
+                    'HARGA BELI': Math.round(Number(r['TOTAL BELI'] || 0) / Math.max(1, Number(r['QTY BELI'] || r['QTY JUAL'] || 1))),
+                    'TOTAL BELI': r['TOTAL BELI'],
+                    'TANGGAL': r['TANGGAL JUAL'],
+                    'NAMA': r['NAMA PEMBELI'],
+                    ' QTY ': r['QTY JUAL'] || 0,
+                    'HARGA JUAL': Math.round(Number(r['TOTAL JUAL'] || 0) / Math.max(1, Number(r['QTY JUAL'] || 1))),
+                    'TOTAL JUAL': r['TOTAL JUAL'],
+                    'MARGIN': r.MARGIN,
+                    ' MARGIN ': Math.round(Number(r.MARGIN || 0) / Math.max(1, Number(r['QTY JUAL'] || 1))),
+                    'TOTAL': '',
+                    ' TANGGAL ': '',
+                    'BANK': '',
+                    'Ref LPB': r['NOMOR LPB'],
+                    'Ref SJ': r['NOMOR SJ']
                 }));
                 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(traceRows), 'Traceability Mingguan');
             }
@@ -1234,25 +1234,24 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
             }
             if (data.details?.monthlyTraceability?.length) {
                 const traceRows = data.details.monthlyTraceability.map((r: any) => ({
-                    'No.': r.NO,
-                    'Barcode': r.BARCODE,
-                    'Nama Item': r['KETERANGAN ITEM'],
-                    'Supplier': r['NAMA SUPPLIER'],
-                    'Sales Beli': r['SALES BELI'] || '-',
-                    'No. LPB': r['NOMOR LPB'],
-                    'Tgl Beli': r['TANGGAL BELI'],
-                    'Qty Beli': r['QTY BELI'],
-                    'Total Beli (HPP)': r['TOTAL BELI'],
-                    'Ops': r.OPS,
-                    'Buyer': r['NAMA PEMBELI'],
-                    'Sales': r.SALES,
-                    'No. Faktur Penjualan': r['NOMOR FAKTUR PENJUALAN'],
-                    'No. Surat Jalan': r['NOMOR SJ'],
-                    'Tgl Jual': r['TANGGAL JUAL'],
-                    'Qty Jual': r['QTY JUAL'],
-                    'Total Jual (Net)': r['TOTAL JUAL'],
-                    'Margin': r.MARGIN,
-                    'Margin %': r['MARGIN %'] || '0%'
+                    'KETERANGAN ITEM': r['KETERANGAN ITEM'],
+                    '.T': '',
+                    'SALES': r.SALES || '-',
+                    'QTY': r['QTY BELI'] || r['QTY JUAL'] || 0,
+                    'HARGA BELI': Math.round(Number(r['TOTAL BELI'] || 0) / Math.max(1, Number(r['QTY BELI'] || r['QTY JUAL'] || 1))),
+                    'TOTAL BELI': r['TOTAL BELI'],
+                    'TANGGAL': r['TANGGAL JUAL'],
+                    'NAMA': r['NAMA PEMBELI'],
+                    ' QTY ': r['QTY JUAL'] || 0,
+                    'HARGA JUAL': Math.round(Number(r['TOTAL JUAL'] || 0) / Math.max(1, Number(r['QTY JUAL'] || 1))),
+                    'TOTAL JUAL': r['TOTAL JUAL'],
+                    'MARGIN': r.MARGIN,
+                    ' MARGIN ': Math.round(Number(r.MARGIN || 0) / Math.max(1, Number(r['QTY JUAL'] || 1))),
+                    'TOTAL': '',
+                    ' TANGGAL ': '',
+                    'BANK': '',
+                    'Ref LPB': r['NOMOR LPB'],
+                    'Ref SJ': r['NOMOR SJ']
                 }));
                 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(traceRows), 'Traceability Bulanan');
             }
