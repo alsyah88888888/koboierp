@@ -711,7 +711,7 @@ export async function executePurchaseRequestService(id: string, paymentData: any
             data: {
                 transactionType: "PAYMENT",
                 bank: paymentData.bank,
-                date: new Date(),
+                date: pr.date || new Date(),
                 referenceNumber: pr.number,
                 description: `Payment for PR: ${pr.number} - ${pr.notes || ""}`,
                 amount: totalAmount,
