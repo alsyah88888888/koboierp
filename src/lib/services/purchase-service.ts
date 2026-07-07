@@ -142,13 +142,17 @@ export async function createGoodsReceiptService(data: any, userId: string) {
             totalItemDiscounts += lineDiscount;
         });
 
-        const subtotal = Math.round(grossAmount - totalItemDiscounts);
+        const subtotalExact = grossAmount - totalItemDiscounts;
         const totalDiscountNominal = Math.round(Number(data.totalDiscount) || 0);
         const taxRatePercent = Number(data.taxRate) || 0;
-        const dpp = subtotal - totalDiscountNominal;
-        const dppNilaiLain = taxRatePercent === 12 ? Math.round(dpp * (11 / 12)) : dpp;
-        const taxAmount = taxRatePercent > 0 ? Math.round(dppNilaiLain * (taxRatePercent / 100)) : 0;
-        const grandTotal = Math.round(dpp + taxAmount);
+        
+        const exactDpp = subtotalExact - totalDiscountNominal;
+        const exactDppNilaiLain = taxRatePercent === 12 ? (exactDpp * (11 / 12)) : exactDpp;
+        const exactTaxAmount = taxRatePercent > 0 ? (exactDppNilaiLain * (taxRatePercent / 100)) : 0;
+        
+        const subtotal = Math.round(subtotalExact);
+        const taxAmount = Math.round(exactTaxAmount);
+        const grandTotal = Math.round(exactDpp + exactTaxAmount);
 
         let updatedNotes = data.notes || "";
         if (data.cashbacks && Array.isArray(data.cashbacks)) {
@@ -362,13 +366,17 @@ export async function updateGoodsReceiptService(id: string, data: any, userId: s
             totalItemDiscounts += lineDiscount;
         });
 
-        const subtotal = Math.round(grossAmount - totalItemDiscounts);
+        const subtotalExact = grossAmount - totalItemDiscounts;
         const totalDiscountNominal = Math.round(Number(data.totalDiscount) || 0);
         const taxRatePercent = Number(data.taxRate) || 0;
-        const dpp = subtotal - totalDiscountNominal;
-        const dppNilaiLain = taxRatePercent === 12 ? Math.round(dpp * (11 / 12)) : dpp;
-        const taxAmount = taxRatePercent > 0 ? Math.round(dppNilaiLain * (taxRatePercent / 100)) : 0;
-        const grandTotal = Math.round(dpp + taxAmount);
+        
+        const exactDpp = subtotalExact - totalDiscountNominal;
+        const exactDppNilaiLain = taxRatePercent === 12 ? (exactDpp * (11 / 12)) : exactDpp;
+        const exactTaxAmount = taxRatePercent > 0 ? (exactDppNilaiLain * (taxRatePercent / 100)) : 0;
+        
+        const subtotal = Math.round(subtotalExact);
+        const taxAmount = Math.round(exactTaxAmount);
+        const grandTotal = Math.round(exactDpp + exactTaxAmount);
 
         // ─── LOGIC: Auto-update Receipt Number if PKP status changes ─────
         let currentReceiptNumber = oldReceipt.receiptNumber;
