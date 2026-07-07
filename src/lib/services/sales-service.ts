@@ -156,19 +156,18 @@ export async function createSalesDeliveryService(data: any, userId: string) {
             totalItemDiscounts += lineDiscount;
         });
 
-        const subtotal = Math.round(grossAmount - totalItemDiscounts);
-        const totalDiscountNominal = Math.round(Number(data.totalDiscount) || 0);
+        const subtotalExact = grossAmount - totalItemDiscounts;
+        const totalDiscountNominal = Number(data.totalDiscount) || 0;
         const taxRatePercent = Number(data.taxRate) || 0;
-        const dpp = subtotal - totalDiscountNominal;
-        let dppNilaiLain = 0;
-        let taxAmount = 0;
-        if (taxRatePercent === 12) {
-            dppNilaiLain = Math.round(dpp * (11/12));
-            taxAmount = Math.round(dppNilaiLain * 0.12);
-        } else if (taxRatePercent > 0) {
-            taxAmount = Math.round(dpp * (taxRatePercent / 100));
-        }
-        const grandTotal = Math.round(dpp + taxAmount);
+        
+        const exactDpp = subtotalExact - totalDiscountNominal;
+        const exactDppNilaiLain = taxRatePercent === 12 ? (exactDpp * (11 / 12)) : exactDpp;
+        const exactTaxAmount = taxRatePercent > 0 ? (exactDppNilaiLain * (taxRatePercent / 100)) : 0;
+        
+        const subtotal = Math.round(subtotalExact);
+        const taxAmount = Math.round(exactTaxAmount);
+        const grandTotal = Math.round(exactDpp + exactTaxAmount);
+        const dpp = Math.round(exactDpp);
 
         await tx.salesDelivery.update({
             where: { id: delivery.id },
@@ -554,19 +553,18 @@ export async function updateSalesDeliveryService(id: string, data: any, userId: 
             totalItemDiscounts += lineDiscount;
         });
 
-        const subtotal = Math.round(grossAmount - totalItemDiscounts);
-        const totalDiscountNominal = Math.round(Number(data.totalDiscount) || 0);
+        const subtotalExact = grossAmount - totalItemDiscounts;
+        const totalDiscountNominal = Number(data.totalDiscount) || 0;
         const taxRatePercent = Number(data.taxRate) || 0;
-        const dpp = subtotal - totalDiscountNominal;
-        let dppNilaiLain = 0;
-        let taxAmount = 0;
-        if (taxRatePercent === 12) {
-            dppNilaiLain = Math.round(dpp * (11/12));
-            taxAmount = Math.round(dppNilaiLain * 0.12);
-        } else if (taxRatePercent > 0) {
-            taxAmount = Math.round(dpp * (taxRatePercent / 100));
-        }
-        const grandTotal = Math.round(dpp + taxAmount);
+        
+        const exactDpp = subtotalExact - totalDiscountNominal;
+        const exactDppNilaiLain = taxRatePercent === 12 ? (exactDpp * (11 / 12)) : exactDpp;
+        const exactTaxAmount = taxRatePercent > 0 ? (exactDppNilaiLain * (taxRatePercent / 100)) : 0;
+        
+        const subtotal = Math.round(subtotalExact);
+        const taxAmount = Math.round(exactTaxAmount);
+        const grandTotal = Math.round(exactDpp + exactTaxAmount);
+        const dpp = Math.round(exactDpp);
 
         await tx.salesDelivery.update({
             where: { id },
@@ -883,19 +881,18 @@ export async function createSalesOrderService(data: any, userId: string) {
         }
         const orderNumber = `${prefix}${String(maxSeq + 1).padStart(3, '0')}`;
 
-        const subtotal = Math.round(data.items.reduce((acc: number, i: any) => acc + (Number(i.quantity) * Number(i.salesPrice)) - Number(i.discount || 0), 0));
-        const totalDiscountNominal = Math.round(Number(data.totalDiscount) || 0);
-        const dpp = subtotal - totalDiscountNominal;
+        const subtotalExact = data.items.reduce((acc: number, i: any) => acc + (Number(i.quantity) * Number(i.salesPrice)) - Number(i.discount || 0), 0);
+        const totalDiscountNominal = Number(data.totalDiscount) || 0;
         const taxRatePercent = Number(data.taxRate) || 0;
-        let dppNilaiLain = 0;
-        let taxAmount = 0;
-        if (taxRatePercent === 12) {
-            dppNilaiLain = Math.round(dpp * (11/12));
-            taxAmount = Math.round(dppNilaiLain * 0.12);
-        } else if (taxRatePercent > 0) {
-            taxAmount = Math.round(dpp * (taxRatePercent / 100));
-        }
-        const grandTotal = Math.round(dpp + taxAmount);
+        
+        const exactDpp = subtotalExact - totalDiscountNominal;
+        const exactDppNilaiLain = taxRatePercent === 12 ? (exactDpp * (11 / 12)) : exactDpp;
+        const exactTaxAmount = taxRatePercent > 0 ? (exactDppNilaiLain * (taxRatePercent / 100)) : 0;
+        
+        const subtotal = Math.round(subtotalExact);
+        const taxAmount = Math.round(exactTaxAmount);
+        const grandTotal = Math.round(exactDpp + exactTaxAmount);
+        const dpp = Math.round(exactDpp);
 
         let invoiceNumber = null;
         if (isConfirm) {
@@ -963,19 +960,18 @@ export async function updateSalesOrderService(id: string, data: any) {
     const prisma = getPrisma();
 
     return await prisma.$transaction(async (tx: any) => {
-        const subtotal = Math.round(data.items.reduce((acc: number, i: any) => acc + (Number(i.quantity) * Number(i.salesPrice)) - Number(i.discount || 0), 0));
-        const totalDiscountNominal = Math.round(Number(data.totalDiscount) || 0);
-        const dpp = subtotal - totalDiscountNominal;
+        const subtotalExact = data.items.reduce((acc: number, i: any) => acc + (Number(i.quantity) * Number(i.salesPrice)) - Number(i.discount || 0), 0);
+        const totalDiscountNominal = Number(data.totalDiscount) || 0;
         const taxRatePercent = Number(data.taxRate) || 0;
-        let dppNilaiLain = 0;
-        let taxAmount = 0;
-        if (taxRatePercent === 12) {
-            dppNilaiLain = Math.round(dpp * (11/12));
-            taxAmount = Math.round(dppNilaiLain * 0.12);
-        } else if (taxRatePercent > 0) {
-            taxAmount = Math.round(dpp * (taxRatePercent / 100));
-        }
-        const grandTotal = Math.round(dpp + taxAmount);
+        
+        const exactDpp = subtotalExact - totalDiscountNominal;
+        const exactDppNilaiLain = taxRatePercent === 12 ? (exactDpp * (11 / 12)) : exactDpp;
+        const exactTaxAmount = taxRatePercent > 0 ? (exactDppNilaiLain * (taxRatePercent / 100)) : 0;
+        
+        const subtotal = Math.round(subtotalExact);
+        const taxAmount = Math.round(exactTaxAmount);
+        const grandTotal = Math.round(exactDpp + exactTaxAmount);
+        const dpp = Math.round(exactDpp);
 
         await tx.salesOrderItem.deleteMany({ where: { orderId: id } });
 
