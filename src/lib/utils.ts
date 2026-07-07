@@ -6,14 +6,12 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatCurrency(amount: number) {
-    // Pembulatan ke satuan terdekat (menghilangkan desimal/sen)
-    const roundedAmount = Math.round(amount);
-
+    // Tampilkan hingga 2 desimal jika ada
     const formatted = new Intl.NumberFormat("id-ID", {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-    }).format(Math.abs(roundedAmount));
-    const sign = roundedAmount < 0 ? "-" : "";
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    }).format(Math.abs(amount));
+    const sign = amount < 0 ? "-" : "";
     return `${sign}Rp ${formatted}`;
 }
 
