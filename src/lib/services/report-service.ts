@@ -445,10 +445,13 @@ export async function calculateProductTraceabilityInternal(startDate: Date, endD
                 //   KB-LPB  (purchaseTaxRate=0%):  HPP sudah termasuk net → Total Beli = DPP (tanpa PPN)
                 // Sisi JUAL: tetap gunakan taxRate dari SD (KB-TRN=11%, KB-TRD=0%)
 
-                // DPP Beli = (HPP × qty) - Diskon Beli (item + nota GR)
-                const dppBeli = Math.round((hpp * qty) - totalBuyDiscount);
-                const totalBeli = Math.round(dppBeli * (1 + purchaseTaxRate / 100));
-                const hppEffective = qty > 0 ? Math.round(dppBeli / qty * (1 + purchaseTaxRate / 100)) : 0;
+                // Exact DPP Beli without intermediate rounding
+                const exactDppBeli = (hpp * qty) - totalBuyDiscount;
+                const totalBeli = Math.round(exactDppBeli * (1 + purchaseTaxRate / 100));
+                
+                // Keep dppBeli for backward compatibility or other uses if needed, though we just use exactDppBeli
+                const dppBeli = Math.round(exactDppBeli);
+                const hppEffective = qty > 0 ? Math.round(exactDppBeli / qty * (1 + purchaseTaxRate / 100)) : 0;
 
                 const grInfo = {
                     taxInvoiceDate: bestGR?.receipt?.taxInvoiceDate || null,
@@ -457,14 +460,13 @@ export async function calculateProductTraceabilityInternal(startDate: Date, endD
                     taxRate: purchaseTaxRate
                 };
 
-                // DPP Jual = (Harga Jual × qty) - Diskon Jual (item + nota SD)
-                const dpp = Math.round((sellPrice * qty) - totalSellDiscount);
+                // Exact DPP Jual without intermediate rounding
+                const exactDppJual = (sellPrice * qty) - totalSellDiscount;
+                const exactPpnJual = exactDppJual * taxRate / 100;
+                const totalJual = Math.round(exactDppJual + exactPpnJual);
 
-                // PPN Jual = DPP × taxRate
-                const ppn = Math.round(dpp * taxRate / 100);
-
-                // Total Jual = DPP + PPN
-                const totalJual = dpp + ppn;
+                const dpp = Math.round(exactDppJual);
+                const ppn = Math.round(exactPpnJual);
 
                 const rowOps = remainingSdQty > 0 ? Math.round(remainingInvoiceOps * (qty / remainingSdQty)) : 0;
                 remainingInvoiceOps -= rowOps;
