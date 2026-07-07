@@ -6,10 +6,10 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatCurrency(amount: number) {
-    // Tampilkan hingga 2 desimal jika ada
+    // Tampilkan desimal sesuai dengan aslinya (dinamis)
     const formatted = new Intl.NumberFormat("id-ID", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 10,
     }).format(Math.abs(amount));
     const sign = amount < 0 ? "-" : "";
     return `${sign}Rp ${formatted}`;
