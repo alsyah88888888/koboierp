@@ -498,7 +498,8 @@ export async function calculateProductTraceabilityInternal(startDate: Date, endD
                     // ─ PENJUALAN (COLUMNS SECOND) ─
                     'TANGGAL JUAL'     : tglJual,
                     'NOMOR SJ'         : sd.deliveryNumber,
-                    'NOMOR FAKTUR PENJUALAN': sd.invoiceNumber || sd.deliveryNumber || '-',
+                    'NOMOR INVOICE PENJUALAN': sd.invoiceNumber || '-',
+                    'NOMOR FAKTUR PENJUALAN': sd.taxInvoiceNumber || '-',
                     'NAMA PEMBELI'     : buyer,
                     'SALES'            : spJual,
                     'QTY JUAL'         : qty,
