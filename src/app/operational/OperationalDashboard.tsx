@@ -12,7 +12,9 @@ import {
     Receipt,
     Wallet,
     TrendingUp,
-    Download
+    Download,
+    ChevronUp,
+    ChevronDown
 } from "lucide-react";
 import { formatCurrency, cn } from "@/lib/utils";
 import { exportToExcel } from "@/lib/excel";
@@ -45,6 +47,15 @@ export function OperationalDashboard({
     const [filterMonth, setFilterMonth] = useState<string>("ALL");
     const [filterYear, setFilterYear] = useState<string>(new Date().getFullYear().toString());
     const [filterDate, setFilterDate] = useState<string>("");
+    const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null);
+
+    const handleSort = (key: string) => {
+        let direction: 'asc' | 'desc' = 'asc';
+        if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
+        }
+        setSortConfig({ key, direction });
+    };
 
     const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
     const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
@@ -138,6 +149,24 @@ export function OperationalDashboard({
         }
 
         return matchSearch && matchType && matchDate;
+    });
+
+    const sortedTransactions = [...filteredTransactions].sort((a, b) => {
+        if (!sortConfig) return 0;
+        
+        const getKeyValue = (item: any, key: string) => {
+            if (key === 'category') return item.journals?.[0]?.account?.name || "Uncategorized";
+            if (key === 'amount') return Number(item.amount);
+            if (key === 'date') return new Date(item.date).getTime();
+            return item[key] || "";
+        };
+
+        const aValue = getKeyValue(a, sortConfig.key);
+        const bValue = getKeyValue(b, sortConfig.key);
+
+        if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
     });
 
     const handleDelete = async (id: string) => {
@@ -386,16 +415,24 @@ export function OperationalDashboard({
                     <table className="w-full text-left table-fixed min-w-[900px]">
                         <thead className="text-[10px] font-black uppercase tracking-widest text-slate-500 bg-accent/30 border-b">
                             <tr>
-                                <th className="px-6 py-4 w-32">Tanggal</th>
-                                <th className="px-6 py-4">Deskripsi</th>
-                                <th className="px-6 py-4 w-40">Kategori</th>
-                                <th className="px-6 py-4 text-right w-40">Jumlah</th>
+                                <th className="px-6 py-4 w-32 cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => handleSort('date')}>
+                                    <div className="flex items-center justify-between">Tanggal {sortConfig?.key === 'date' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}</div>
+                                </th>
+                                <th className="px-6 py-4 cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => handleSort('description')}>
+                                    <div className="flex items-center justify-between">Deskripsi {sortConfig?.key === 'description' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}</div>
+                                </th>
+                                <th className="px-6 py-4 w-40 cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => handleSort('category')}>
+                                    <div className="flex items-center justify-between">Kategori {sortConfig?.key === 'category' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}</div>
+                                </th>
+                                <th className="px-6 py-4 text-right w-40 cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => handleSort('amount')}>
+                                    <div className="flex items-center justify-end gap-1">Jumlah {sortConfig?.key === 'amount' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}</div>
+                                </th>
                                 <th className="px-6 py-4 w-32">Metode</th>
                                 <th className="px-6 py-4 text-center w-20">Aksi</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y text-sm">
-                            {filteredTransactions.map((t) => (
+                            {sortedTransactions.map((t) => (
                                 <tr key={t.id} className="hover:bg-accent/20 transition-colors group">
                                     <td className="px-6 py-4 font-bold text-slate-500">
                                         <div className="flex items-center gap-2">
