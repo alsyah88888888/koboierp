@@ -506,7 +506,8 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                     'Sisa Hutang': printedTotal - printedPaid,
                     'Status': p.paymentStatus === 'PAID' ? 'DONE' : p.paymentStatus,
                     'Sales Person Vendor': p.salesPerson || '-',
-                    'Gudang': p.warehouse?.name || '-'
+                    'Gudang': p.warehouse?.name || '-',
+                    'Rincian Item': p.items?.map((i: any) => `${i.product?.name || 'Unknown'} (${i.quantity} ${i.uom || 'PCS'})`).join(', ') || '-'
                 };
             });
             exportToExcel(data, `Laporan_Hutang_Dagang_Kompleks_${format(new Date(), "yyyyMMdd")}`, 'AP');
@@ -531,7 +532,8 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                     'Sisa Piutang': remaining,
                     'Status': s.paymentStatus === 'PAID' ? 'DONE' : s.paymentStatus,
                     'Umur Piutang (Hari)': agingDays > 0 ? agingDays : 0,
-                    'Gudang Asal': s.warehouse?.name || '-'
+                    'Gudang Asal': s.warehouse?.name || '-',
+                    'Rincian Item': s.items?.map((i: any) => `${i.product?.name || 'Unknown'} (${i.quantity} ${i.uom || 'PCS'})`).join(', ') || '-'
                 };
             });
             exportToExcel(data, `Laporan_Piutang_Dagang_Kompleks_${format(new Date(), "yyyyMMdd")}`, 'AR');
