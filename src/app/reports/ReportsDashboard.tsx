@@ -1098,11 +1098,23 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
             }
             // Operational sheet
             if (data.details.operational?.length) {
-                const rows = data.details.operational.map((o: any, i: number) => ({
-                    'No': i + 1, 'Tanggal': fmtDate(o.date), 'Keterangan': o.description,
-                    'Bank': o.bank, 'Kategori': o.category, 'Jumlah': o.amount,
-                    'Sales': o.salesPerson || '-', 'Operator': o.operator
-                }));
+                const rows = data.details.operational.map((o: any, i: number) => {
+                    const desc = o.description || '';
+                    const prMatch = desc.match(/(KB-PR-\d{8}-\d{3})/);
+                    const kodePR = prMatch ? prMatch[1] : '-';
+                    const trnMatch = desc.match(/(KB-TR[ND]-\d{8}-\d{3})/);
+                    const kodeSJ = trnMatch ? trnMatch[1] : '-';
+                    
+                    let cleanDesc = desc;
+                    if (kodePR !== '-') cleanDesc = cleanDesc.replace(`Payment for PR: ${kodePR}`, '').replace(kodePR, '').replace(' - - ', ' - ').trim();
+                    if (kodeSJ !== '-') cleanDesc = cleanDesc.replace(kodeSJ, '').trim();
+                    cleanDesc = cleanDesc.replace(/^-\s*/, '').trim();
+
+                    return {
+                        'No': i + 1, 'Tanggal': fmtDate(o.date), 'Kode PR': kodePR, 'Bank': o.bank, 'Kategori': o.category, 'Jumlah': o.amount, 'Keterangan': cleanDesc || '-',
+                        'Sales': o.salesPerson || '-', 'Operator': o.operator
+                    };
+                });
                 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Operasional');
             }
             // Stock Movements sheet
@@ -1234,10 +1246,22 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
                 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Detail Pembelian');
             }
             if (data.details?.operational?.length) {
-                const rows = data.details.operational.map((o: any, i: number) => ({
-                    'No': i + 1, 'Tanggal': fmtDate(o.date), 'Keterangan': o.description,
-                    'Bank': o.bank, 'Kategori': o.category, 'Jumlah': o.amount
-                }));
+                const rows = data.details.operational.map((o: any, i: number) => {
+                    const desc = o.description || '';
+                    const prMatch = desc.match(/(KB-PR-\d{8}-\d{3})/);
+                    const kodePR = prMatch ? prMatch[1] : '-';
+                    const trnMatch = desc.match(/(KB-TR[ND]-\d{8}-\d{3})/);
+                    const kodeSJ = trnMatch ? trnMatch[1] : '-';
+                    
+                    let cleanDesc = desc;
+                    if (kodePR !== '-') cleanDesc = cleanDesc.replace(`Payment for PR: ${kodePR}`, '').replace(kodePR, '').replace(' - - ', ' - ').trim();
+                    if (kodeSJ !== '-') cleanDesc = cleanDesc.replace(kodeSJ, '').trim();
+                    cleanDesc = cleanDesc.replace(/^-\s*/, '').trim();
+
+                    return {
+                        'No': i + 1, 'Tanggal': fmtDate(o.date), 'Kode PR': kodePR, 'Bank': o.bank, 'Kategori': o.category, 'Jumlah': o.amount, 'Keterangan': cleanDesc || '-'
+                    };
+                });
                 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Detail Operasional');
             }
             if (data.details?.monthlyTraceability?.length) {
@@ -1344,10 +1368,22 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
 
             // Detail Operasional
             if (cData.details?.operational?.length) {
-                const rows = cData.details.operational.map((o: any, i: number) => ({
-                    'No': i + 1, 'Tanggal': fmtDate(o.date), 'Keterangan': o.description,
-                    'Bank': o.bank, 'Kategori': o.category, 'Jumlah': o.amount
-                }));
+                const rows = cData.details.operational.map((o: any, i: number) => {
+                    const desc = o.description || '';
+                    const prMatch = desc.match(/(KB-PR-\d{8}-\d{3})/);
+                    const kodePR = prMatch ? prMatch[1] : '-';
+                    const trnMatch = desc.match(/(KB-TR[ND]-\d{8}-\d{3})/);
+                    const kodeSJ = trnMatch ? trnMatch[1] : '-';
+                    
+                    let cleanDesc = desc;
+                    if (kodePR !== '-') cleanDesc = cleanDesc.replace(`Payment for PR: ${kodePR}`, '').replace(kodePR, '').replace(' - - ', ' - ').trim();
+                    if (kodeSJ !== '-') cleanDesc = cleanDesc.replace(kodeSJ, '').trim();
+                    cleanDesc = cleanDesc.replace(/^-\s*/, '').trim();
+
+                    return {
+                        'No': i + 1, 'Tanggal': fmtDate(o.date), 'Kode PR': kodePR, 'Bank': o.bank, 'Kategori': o.category, 'Jumlah': o.amount, 'Keterangan': cleanDesc || '-'
+                    };
+                });
                 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Detail Operasional');
             }
 
