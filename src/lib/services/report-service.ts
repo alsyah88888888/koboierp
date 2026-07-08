@@ -57,7 +57,7 @@ export async function calculateProductTraceabilityInternal(startDate: Date, endD
                     OR: invoiceNumbers.map((inv: string) => ({ invoiceNumber: { contains: inv } })),
                     category: { notIn: ["PEMBELIAN", "PENJUALAN", "TRANSFER"] }
                 },
-                select: { invoiceNumber: true, amount: true, transactionType: true }
+                select: { invoiceNumber: true, amount: true, transactionType: true, description: true, bank: true, category: true, referenceNumber: true }
             })
             : [];
 
@@ -86,6 +86,10 @@ export async function calculateProductTraceabilityInternal(startDate: Date, endD
             
             const invoices = t.invoiceNumber.split(',').map((inv: string) => inv.trim()).filter(Boolean);
             if (invoices.length > 0) {
+                const prMatch = (t.description || '').match(/(KB-PR-\\d{8}-\\d{3})/);
+                const prCode = prMatch ? prMatch[1] : (t.referenceNumber || '-');
+                const detailStr = `${prCode} (${t.bank || '-'}): ${Math.abs(Number(t.amount))}`;
+
                 let totalQty = 0;
                 const qtyMap = new Map<string, number>();
                 
@@ -118,6 +122,25 @@ export async function calculateProductTraceabilityInternal(startDate: Date, endD
         // ── FIX: When multiple deliveries share the same invoiceNumber,
         // distribute OPS proportionally by TRUE delivery qty across all divisions ──
         const invoiceToDeliveries = new Map<string, { deliveryNumber: string; totalQty: number }[]>();
+        const opsDetailsMap = new Map<string, string[]>();
+
+        opsTransactions.forEach((t: any) => {
+            if (!t.invoiceNumber) return;
+            const invoices = t.invoiceNumber.split(',').map((inv: string) => inv.trim()).filter(Boolean);
+            if (invoices.length > 0) {
+                const prMatch = (t.description || '').match(/(KB-PR-\\d{8}-\\d{3})/);
+                const prCode = prMatch ? prMatch[1] : (t.referenceNumber || '-');
+                const detailStr = `${prCode} (${t.bank || '-'}) Rp${Math.abs(Number(t.amount)).toLocaleString('id-ID')}`;
+                
+                invoices.forEach((inv: string) => {
+                    if (!opsDetailsMap.has(inv)) opsDetailsMap.set(inv, []);
+                    if (!opsDetailsMap.get(inv)!.includes(detailStr)) {
+                        opsDetailsMap.get(inv)!.push(detailStr);
+                    }
+                });
+            }
+        });
+
         for (const sd of allDeliveriesForInvoices) {
             const inv = sd.invoiceNumber || sd.deliveryNumber;
             if (!invoiceToDeliveries.has(inv)) invoiceToDeliveries.set(inv, []);
@@ -144,6 +167,18 @@ export async function calculateProductTraceabilityInternal(startDate: Date, endD
                     opsMapByDelivery.set(sharedDeliveries[i].deliveryNumber, 
                         (opsMapByDelivery.get(sharedDeliveries[i].deliveryNumber) || 0) + share);
                 }
+            }
+        }
+
+        const opsDetailsByDelivery = new Map<string, string>();
+        for (const [inv, details] of opsDetailsMap) {
+            const sharedDeliveries = invoiceToDeliveries.get(inv) || [];
+            if (sharedDeliveries.length <= 1) {
+                opsDetailsByDelivery.set(inv, details.join(' | '));
+            } else {
+                sharedDeliveries.forEach(d => {
+                    opsDetailsByDelivery.set(d.deliveryNumber, details.join(' | '));
+                });
             }
         }
 
@@ -497,6 +532,7 @@ export async function calculateProductTraceabilityInternal(startDate: Date, endD
                     'F. PAJAK'         : fmtDate(grInfo.taxInvoiceDate),
                     'NO. FAKTUR'       : grInfo.formNumber || grNumber || '-',
                     'NO. PAJAK'        : grInfo.taxInvoiceNumber || '-',
+                    'DETAIL OPS'       : opsDetailsByDelivery.get(sd.deliveryNumber) ?? opsDetailsByDelivery.get(refNum) ?? '-',
                     
                     // ─ PENJUALAN (COLUMNS SECOND) ─
                     'TANGGAL JUAL'     : tglJual,
@@ -548,6 +584,8 @@ export async function calculateProductTraceabilityInternal(startDate: Date, endD
                 existing['OPS'] += row['OPS'];
                 existing['TOTAL'] += row['TOTAL'];
                 existing['MARGIN'] += row['MARGIN'];
+                
+                if (existing['DETAIL OPS'] === '-') existing['DETAIL OPS'] = row['DETAIL OPS'];
                 
                 // We purposefully do NOT concatenate NOMOR LPB or NAMA SUPPLIER anymore,
                 // so it stays neat with just one primary LPB instead of a comma-separated list.
