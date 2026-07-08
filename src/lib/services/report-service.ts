@@ -1,5 +1,67 @@
 import { getPrisma } from "@/lib/prisma";
 
+export async function distributeOperationalCosts(operationalData: any[], salesPersonPrefix: string | null) {
+    if (!salesPersonPrefix || salesPersonPrefix === 'ALL') {
+        return operationalData;
+    }
+    
+    const prisma = getPrisma();
+    const result: any[] = [];
+    
+    for (const ops of operationalData) {
+        if (!ops.invoiceNumber) {
+            // Unlinked ops, just check if it belongs to this division
+            if ((ops.salesPerson || '').startsWith(salesPersonPrefix)) {
+                result.push({ ...ops });
+            }
+            continue;
+        }
+
+        const invoices = ops.invoiceNumber.split(',').map((inv: string) => inv.trim()).filter(Boolean);
+        if (invoices.length === 0) {
+            if ((ops.salesPerson || '').startsWith(salesPersonPrefix)) {
+                result.push({ ...ops });
+            }
+            continue;
+        }
+
+        const deliveries = await (prisma as any).salesDelivery.findMany({
+            where: { OR: [ { invoiceNumber: { in: invoices } }, { deliveryNumber: { in: invoices } } ], isVoid: false },
+            include: { items: { select: { quantity: true } } }
+        });
+        
+        let totalQtyAll = 0;
+        let totalQtyDivision = 0;
+        
+        deliveries.forEach((d: any) => {
+            const qty = d.items.reduce((q: number, i: any) => q + Number(i.quantity || 0), 0) || 1;
+            totalQtyAll += qty;
+            if ((d.salesPerson || '').startsWith(salesPersonPrefix)) {
+                totalQtyDivision += qty;
+            }
+        });
+
+        if (totalQtyAll === 0) {
+            if ((ops.salesPerson || '').startsWith(salesPersonPrefix)) {
+                result.push({ ...ops });
+            }
+            continue;
+        }
+
+        if (totalQtyDivision > 0) {
+            // Even if the raw amount is negative, Math.abs is not used here so it scales negative numbers correctly
+            const propAmount = Math.round(Number(ops.amount || 0) * (totalQtyDivision / totalQtyAll));
+            if (propAmount !== 0) {
+                result.push({
+                    ...ops,
+                    amount: propAmount
+                });
+            }
+        }
+    }
+    return result;
+}
+
 /**
  * FIFO TRACEABILITY SERVICE — v4 (Format Spreadsheet)
  * Kolom disesuaikan persis dengan format gambar referensi:
@@ -1199,7 +1261,7 @@ export async function getComprehensiveDailyReportService(date?: string, prefix?:
 
     try {
         const [
-            sales, purchases, operational, returns_purchase, returns_sales,
+            sales, purchases, rawOperational, returns_purchase, returns_sales,
             stockMovements, auditLogs, companyExpensesRecords
         ] = await Promise.all([
             // Sales Deliveries
@@ -1239,20 +1301,7 @@ export async function getComprehensiveDailyReportService(date?: string, prefix?:
             (prisma as any).financeTransaction.findMany({
                 where: { 
                     date: { gte: dayStart, lte: dayEnd },
-                    ...(isAll ? {
-                        OR: [
-                            { description: { contains: 'PF', mode: 'insensitive' } },
-                            { salesPerson: 'PF' },
-                            { description: { contains: 'BC', mode: 'insensitive' } },
-                            { salesPerson: 'BC' },
-                            { invoiceNumber: { not: null } }
-                        ]
-                    } : {
-                        OR: [
-                            { description: { contains: prefix, mode: 'insensitive' } },
-                            { salesPerson: prefix }
-                        ]
-                    })
+                    category: 'OPERASIONAL'
                 },
                 include: { createdBy: { select: { name: true } } },
                 orderBy: { date: 'asc' }
@@ -1301,6 +1350,8 @@ export async function getComprehensiveDailyReportService(date?: string, prefix?:
                 where: { date: { gte: dayStart, lte: dayEnd }, AND: [ { OR: [ { transactionType: "PAYMENT" }, { transactionType: "EXPENSE" }, { amount: { lt: 0 } } ] } ] }
             })
         ]);
+
+        const operational = await distributeOperationalCosts(rawOperational, isAll ? null : prefix);
 
         // Traceability time range (aligned to UTC+7 timezone)
         const traceStartDate = new Date(Date.UTC(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), 0, 0, 0));
@@ -1546,7 +1597,7 @@ export async function getComprehensiveWeeklyReportService(weekStartDate?: string
     endDate.setHours(23, 59, 59, 999);
 
     try {
-        const [sales, purchases, operational, stockMovements, weeklyTraceability, companyExpensesRecords] = await Promise.all([
+        const [sales, purchases, rawOperational, stockMovements, weeklyTraceability, companyExpensesRecords] = await Promise.all([
             (prisma as any).salesDelivery.findMany({
                 where: { 
                     isVoid: false, 
@@ -1578,12 +1629,7 @@ export async function getComprehensiveWeeklyReportService(weekStartDate?: string
             (prisma as any).financeTransaction.findMany({
                 where: { 
                     date: { gte: startDate, lte: endDate },
-                    ...(isAll ? {} : {
-                        OR: [
-                            { description: { contains: prefix, mode: 'insensitive' } },
-                            { salesPerson: prefix }
-                        ]
-                    })
+                    category: 'OPERASIONAL'
                 },
                 include: { createdBy: { select: { name: true } } },
                 orderBy: { date: 'asc' }
@@ -1598,6 +1644,8 @@ export async function getComprehensiveWeeklyReportService(weekStartDate?: string
                 where: { date: { gte: startDate, lte: endDate }, AND: [ { OR: [ { transactionType: "PAYMENT" }, { transactionType: "EXPENSE" }, { amount: { lt: 0 } } ] } ] }
             })
         ]);
+
+        const operational = await distributeOperationalCosts(rawOperational, isAll ? null : prefix);
 
         // Build daily breakdown for the date range
         const dailyBreakdown = [];
@@ -1804,7 +1852,7 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
 
     try {
         const [
-            sales, purchases, allOperational, arRecords, apRecords,
+            sales, purchases, rawOperational, arRecords, apRecords,
             returnsPurchase, returnsSales, stockMovements, monthlyTraceability, companyExpensesRecords
         ] = await Promise.all([
             // Sales
@@ -1841,20 +1889,7 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
             (prisma as any).financeTransaction.findMany({
                 where: { 
                     date: { gte: startDate, lte: endDate },
-                    ...(isAll ? {
-                        OR: [
-                            { description: { contains: 'PF', mode: 'insensitive' } },
-                            { salesPerson: 'PF' },
-                            { description: { contains: 'BC', mode: 'insensitive' } },
-                            { salesPerson: 'BC' },
-                            { invoiceNumber: { not: null } }
-                        ]
-                    } : {
-                        OR: [
-                            { description: { contains: prefix, mode: 'insensitive' } },
-                            { salesPerson: prefix }
-                        ]
-                    })
+                    category: 'OPERASIONAL'
                 },
                 include: { createdBy: { select: { name: true } } },
                 orderBy: { date: 'asc' }
@@ -1921,6 +1956,8 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
                 where: { date: { gte: startDate, lte: endDate }, AND: [ { OR: [ { transactionType: "PAYMENT" }, { transactionType: "EXPENSE" }, { amount: { lt: 0 } } ] } ] }
             })
         ]);
+
+        const allOperational = await distributeOperationalCosts(rawOperational, isAll ? null : prefix);
 
         // ── P&L Calculation ──────────────────────────────────────────────
         // Gunakan murni angka Traceability untuk Penjualan & Pembelian agar presisi dan tidak minus
