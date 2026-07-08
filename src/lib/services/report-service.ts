@@ -128,7 +128,7 @@ export async function calculateProductTraceabilityInternal(startDate: Date, endD
             if (!t.invoiceNumber) return;
             const invoices = t.invoiceNumber.split(',').map((inv: string) => inv.trim()).filter(Boolean);
             if (invoices.length > 0) {
-                const prMatch = (t.description || '').match(/(KB-PR-\\d{8}-\\d{3})/) || (t.referenceNumber || '').match(/(KB-PR-\\d{8}-\\d{3})/);
+                const prMatch = (t.description || '').match(/(KB-PR-\d{8}-\d{3})/) || (t.referenceNumber || '').match(/(KB-PR-\d{8}-\d{3})/);
                 if (prMatch) {
                     const prCode = prMatch[1];
                     const detailStr = `${prCode} (${t.bank || '-'}) Rp${Math.abs(Number(t.amount)).toLocaleString('id-ID')}`;
