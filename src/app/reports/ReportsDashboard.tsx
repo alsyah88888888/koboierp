@@ -1111,7 +1111,7 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
                     cleanDesc = cleanDesc.replace(/^-\s*/, '').trim();
 
                     return {
-                        'No': i + 1, 'Tanggal': fmtDate(o.date), 'Kode PR': kodePR, 'Bank': o.bank, 'Kategori': o.category, 'Jumlah': o.amount, 'Keterangan': cleanDesc || '-',
+                        'No': i + 1, 'Tanggal': fmtDate(o.date), 'Kode PR': kodePR, 'Ref / SJ': o.referenceNumber || kodeSJ || '-', 'Bank': o.bank, 'Kategori': o.category, 'Jumlah': o.amount, 'Keterangan': cleanDesc || '-',
                         'Sales': o.salesPerson || '-', 'Operator': o.operator
                     };
                 });
@@ -1259,7 +1259,7 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
                     cleanDesc = cleanDesc.replace(/^-\s*/, '').trim();
 
                     return {
-                        'No': i + 1, 'Tanggal': fmtDate(o.date), 'Kode PR': kodePR, 'Bank': o.bank, 'Kategori': o.category, 'Jumlah': o.amount, 'Keterangan': cleanDesc || '-'
+                        'No': i + 1, 'Tanggal': fmtDate(o.date), 'Kode PR': kodePR, 'Ref / SJ': o.referenceNumber || kodeSJ || '-', 'Bank': o.bank, 'Kategori': o.category, 'Jumlah': o.amount, 'Keterangan': cleanDesc || '-'
                     };
                 });
                 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Detail Operasional');
@@ -1381,7 +1381,7 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
                     cleanDesc = cleanDesc.replace(/^-\s*/, '').trim();
 
                     return {
-                        'No': i + 1, 'Tanggal': fmtDate(o.date), 'Kode PR': kodePR, 'Bank': o.bank, 'Kategori': o.category, 'Jumlah': o.amount, 'Keterangan': cleanDesc || '-'
+                        'No': i + 1, 'Tanggal': fmtDate(o.date), 'Kode PR': kodePR, 'Ref / SJ': o.referenceNumber || kodeSJ || '-', 'Bank': o.bank, 'Kategori': o.category, 'Jumlah': o.amount, 'Keterangan': cleanDesc || '-'
                     };
                 });
                 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Detail Operasional');
