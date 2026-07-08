@@ -3083,14 +3083,16 @@ function ReportTable({ title, icon, count, totalLabel, totalValue, headers, rows
                         <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">{title}</h3>
                         <p className="text-[10px] font-bold text-slate-400 mt-0.5">{count} Records Found</p>
                     </div>
-                    {actions && <div className="ml-4 flex items-center gap-2">{actions}</div>}
                 </div>
-                {totalLabel && (
-                    <div className="text-right sm:text-right bg-slate-900 px-4 py-2 rounded-xl shadow-inner">
-                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{totalLabel}</p>
-                        <p className="text-base font-black text-white tabular-nums">{isClient ? totalValue : 'Rp ---'}</p>
-                    </div>
-                )}
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                    {actions && <div className="flex items-center">{actions}</div>}
+                    {totalLabel && (
+                        <div className="text-right sm:text-right bg-slate-900 px-4 py-2 rounded-xl shadow-inner">
+                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{totalLabel}</p>
+                            <p className="text-base font-black text-white tabular-nums">{isClient ? totalValue : 'Rp ---'}</p>
+                        </div>
+                    )}
+                </div>
             </div>
             <div className="overflow-x-auto max-h-[600px] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
                 <table className="w-full text-xs">
