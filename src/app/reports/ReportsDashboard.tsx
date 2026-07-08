@@ -3075,48 +3075,52 @@ function ReportTable({ title, icon, count, totalLabel, totalValue, headers, rows
     };
 
     return (
-        <div className="erp-card overflow-hidden">
-            <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/40">
-                <div className="flex items-center gap-2">
-                    {icon}
-                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">{title}</h3>
-                    <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">{count}</span>
+        <div className="erp-card overflow-hidden shadow-xl shadow-slate-200/50 border-0 ring-1 ring-slate-100">
+            <div className="px-6 py-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between bg-gradient-to-r from-slate-50 to-white gap-4">
+                <div className="flex items-center gap-3">
+                    <div className="p-2 bg-white rounded-lg shadow-sm border border-slate-100">{icon}</div>
+                    <div>
+                        <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">{title}</h3>
+                        <p className="text-[10px] font-bold text-slate-400 mt-0.5">{count} Records Found</p>
+                    </div>
                     {actions && <div className="ml-4 flex items-center gap-2">{actions}</div>}
                 </div>
                 {totalLabel && (
-                    <div className="text-right">
+                    <div className="text-right sm:text-right bg-slate-900 px-4 py-2 rounded-xl shadow-inner">
                         <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{totalLabel}</p>
-                        <p className="text-base font-black text-slate-900 tabular-nums">{isClient ? totalValue : 'Rp ---'}</p>
+                        <p className="text-base font-black text-white tabular-nums">{isClient ? totalValue : 'Rp ---'}</p>
                     </div>
                 )}
             </div>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto max-h-[600px] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
                 <table className="w-full text-xs">
-                    <thead>
-                        <tr className="bg-slate-900 text-white">
+                    <thead className="sticky top-0 z-10 shadow-sm">
+                        <tr className="bg-slate-900/95 backdrop-blur-md text-slate-300">
                             {headers.map((h: string, i: number) => (
                                 <th 
                                     key={i} 
                                     onClick={() => handleSort(i)}
-                                    className="px-5 py-4 text-left font-black uppercase tracking-wider whitespace-nowrap text-[11px] cursor-pointer hover:bg-slate-800 transition-colors select-none"
+                                    className="px-4 py-3.5 text-left font-black uppercase tracking-widest whitespace-nowrap text-[10px] cursor-pointer hover:bg-slate-800 hover:text-white transition-all select-none group border-b border-white/10"
                                 >
-                                    <div className="flex items-center gap-1">
+                                    <div className="flex items-center gap-1.5">
                                         {h}
-                                        {sortConfig?.key === i && (
-                                            <span className="text-blue-400 text-[10px]">
+                                        {sortConfig?.key === i ? (
+                                            <span className="text-emerald-400 text-[10px] font-black transition-all">
                                                 {sortConfig.direction === 'asc' ? '▲' : '▼'}
                                             </span>
+                                        ) : (
+                                            <span className="opacity-0 group-hover:opacity-30 transition-opacity">↕</span>
                                         )}
                                     </div>
                                 </th>
                             ))}
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody className="divide-y divide-slate-100">
                         {sortedRows.map((row: any[], i: number) => (
-                            <tr key={i} className={cn("border-b border-slate-100 hover:bg-blue-50/50 transition-colors", i % 2 === 0 ? 'bg-white' : 'bg-slate-50/30')}>
+                            <tr key={i} className={cn("hover:bg-blue-50/50 transition-colors", i % 2 === 0 ? 'bg-white' : 'bg-slate-50/30')}>
                                 {row.map((cell: any, j: number) => (
-                                    <td key={j} className="px-5 py-3.5 text-slate-800 whitespace-nowrap">{cell}</td>
+                                    <td key={j} className="px-4 py-3 text-slate-700 whitespace-nowrap">{cell}</td>
                                 ))}
                             </tr>
                         ))}
