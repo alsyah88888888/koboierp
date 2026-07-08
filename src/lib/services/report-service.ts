@@ -578,11 +578,13 @@ export async function calculateProductTraceabilityInternal(startDate: Date, endD
 
                 // Exact DPP Beli without intermediate rounding
                 const exactDppBeli = (hpp * qty) - totalBuyDiscount;
-                const totalBeli = Math.round(exactDppBeli * (1 + purchaseTaxRate / 100));
                 
-                // Keep dppBeli for backward compatibility or other uses if needed, though we just use exactDppBeli
+                // Calculate effective unit price first, then total Beli to avoid 1-rupiah discrepancy
+                const hppEffective = qty > 0 ? Math.round((exactDppBeli / qty) * (1 + purchaseTaxRate / 100)) : 0;
+                const totalBeli = hppEffective * qty;
+                
+                // Keep dppBeli for backward compatibility or other uses if needed
                 const dppBeli = Math.round(exactDppBeli);
-                const hppEffective = qty > 0 ? Math.round(exactDppBeli / qty * (1 + purchaseTaxRate / 100)) : 0;
 
                 const grInfo = {
                     taxInvoiceDate: bestGR?.receipt?.taxInvoiceDate || null,
