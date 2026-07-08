@@ -183,16 +183,32 @@ export function OperationalDashboard({
     };
 
     const handleExport = () => {
-        const data: any[] = filteredTransactions.map(t => ({
-            'Tanggal': format(new Date(t.date), "dd/MM/yyyy"),
-            'Kategori': t.category || 'N/A',
-            'Keterangan': t.description,
-            'Referensi': t.referenceNumber || '-',
-            'Metode': t.bank,
-            'PIC': t.salesPerson || '-',
-            'Tipe': t.transactionType,
-            'Jumlah': Number(t.amount)
-        }));
+        const data: any[] = filteredTransactions.map((t, index) => {
+            const desc = t.description || '';
+            const prMatch = desc.match(/(KB-PR-\d{8}-\d{3})/);
+            const kodePR = prMatch ? prMatch[1] : '-';
+            
+            const trnMatch = desc.match(/(KB-TR[ND]-\d{8}-\d{3})/);
+            const kodeSJ = trnMatch ? trnMatch[1] : '-';
+            
+            let cleanDesc = desc;
+            if (kodePR !== '-') cleanDesc = cleanDesc.replace(`Payment for PR: ${kodePR}`, '').replace(kodePR, '').replace(' - - ', ' - ').trim();
+            if (kodeSJ !== '-') cleanDesc = cleanDesc.replace(kodeSJ, '').trim();
+            cleanDesc = cleanDesc.replace(/^-\s*/, '').trim();
+
+            return {
+                'No': index + 1,
+                'Tanggal': format(new Date(t.date), "dd MMM yyyy"),
+                'Kode PR': kodePR,
+                'Ref / SJ': t.referenceNumber || kodeSJ || '-',
+                'Bank': t.bank || '-',
+                'Kategori': t.category || 'N/A',
+                'Jumlah': Math.abs(Number(t.amount)),
+                'Keterangan': cleanDesc || '-',
+                'Keterangan Asli': desc,
+                'Tipe': t.transactionType
+            };
+        });
 
         // Summary Data (BC & PF Performance)
         data.push({}); // Empty line
