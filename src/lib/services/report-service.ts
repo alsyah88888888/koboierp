@@ -1,5 +1,36 @@
 import { getPrisma } from "@/lib/prisma";
 
+async function fetchHybridOperationalData(prisma: any, startDate: Date, endDate: Date, deliveryInvoices: string[]) {
+    const unlinkedOps = await prisma.financeTransaction.findMany({
+        where: {
+            date: { gte: startDate, lte: endDate },
+            category: 'OPERASIONAL',
+            OR: [{ invoiceNumber: null }, { invoiceNumber: '' }]
+        },
+        include: { createdBy: { select: { name: true } } },
+        orderBy: { date: 'asc' }
+    });
+
+    const opsMap = new Map();
+    unlinkedOps.forEach((op: any) => opsMap.set(op.id, op));
+
+    if (deliveryInvoices.length > 0) {
+        for (let i = 0; i < deliveryInvoices.length; i += 100) {
+            const chunk = deliveryInvoices.slice(i, i + 100);
+            const chunkOps = await prisma.financeTransaction.findMany({
+                where: {
+                    OR: chunk.map((inv: string) => ({ invoiceNumber: { contains: inv } })),
+                    category: { notIn: ["PEMBELIAN", "PENJUALAN", "TRANSFER"] }
+                },
+                include: { createdBy: { select: { name: true } } }
+            });
+            chunkOps.forEach((op: any) => opsMap.set(op.id, op));
+        }
+    }
+
+    return Array.from(opsMap.values()).sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
+}
+
 export async function distributeOperationalCosts(operationalData: any[], salesPersonPrefix: string | null) {
     if (!salesPersonPrefix || salesPersonPrefix === 'ALL') {
         return operationalData;
@@ -1261,7 +1292,7 @@ export async function getComprehensiveDailyReportService(date?: string, prefix?:
 
     try {
         const [
-            sales, purchases, rawOperational, returns_purchase, returns_sales,
+            sales, purchases, returns_purchase, returns_sales,
             stockMovements, auditLogs, companyExpensesRecords
         ] = await Promise.all([
             // Sales Deliveries
@@ -1297,15 +1328,7 @@ export async function getComprehensiveDailyReportService(date?: string, prefix?:
                 },
                 orderBy: { date: 'asc' }
             }),
-            // Operational / Finance Transactions
-            (prisma as any).financeTransaction.findMany({
-                where: { 
-                    date: { gte: dayStart, lte: dayEnd },
-                    category: 'OPERASIONAL'
-                },
-                include: { createdBy: { select: { name: true } } },
-                orderBy: { date: 'asc' }
-            }),
+
             // Purchase Returns
             (prisma as any).purchaseReturn.findMany({
                 where: { 
@@ -1351,6 +1374,8 @@ export async function getComprehensiveDailyReportService(date?: string, prefix?:
             })
         ]);
 
+        const deliveryInvoices = sales.map((s: any) => s.invoiceNumber || s.deliveryNumber).filter(Boolean);
+        const rawOperational = await fetchHybridOperationalData(prisma, dayStart, dayEnd, deliveryInvoices);
         const operational = await distributeOperationalCosts(rawOperational, isAll ? null : prefix);
 
         // Traceability time range (aligned to UTC+7 timezone)
@@ -1597,7 +1622,7 @@ export async function getComprehensiveWeeklyReportService(weekStartDate?: string
     endDate.setHours(23, 59, 59, 999);
 
     try {
-        const [sales, purchases, rawOperational, stockMovements, weeklyTraceability, companyExpensesRecords] = await Promise.all([
+        const [sales, purchases, stockMovements, weeklyTraceability, companyExpensesRecords] = await Promise.all([
             (prisma as any).salesDelivery.findMany({
                 where: { 
                     isVoid: false, 
@@ -1626,14 +1651,7 @@ export async function getComprehensiveWeeklyReportService(weekStartDate?: string
                 },
                 orderBy: { date: 'asc' }
             }),
-            (prisma as any).financeTransaction.findMany({
-                where: { 
-                    date: { gte: startDate, lte: endDate },
-                    category: 'OPERASIONAL'
-                },
-                include: { createdBy: { select: { name: true } } },
-                orderBy: { date: 'asc' }
-            }),
+
             (prisma as any).stockMovement.findMany({
                 where: { createdAt: { gte: startDate, lte: endDate } },
                 include: { product: { select: { sku: true, name: true } } },
@@ -1645,6 +1663,8 @@ export async function getComprehensiveWeeklyReportService(weekStartDate?: string
             })
         ]);
 
+        const deliveryInvoices = sales.map((s: any) => s.invoiceNumber || s.deliveryNumber).filter(Boolean);
+        const rawOperational = await fetchHybridOperationalData(prisma, startDate, endDate, deliveryInvoices);
         const operational = await distributeOperationalCosts(rawOperational, isAll ? null : prefix);
 
         // Build daily breakdown for the date range
@@ -1852,7 +1872,7 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
 
     try {
         const [
-            sales, purchases, rawOperational, arRecords, apRecords,
+            sales, purchases, arRecords, apRecords,
             returnsPurchase, returnsSales, stockMovements, monthlyTraceability, companyExpensesRecords
         ] = await Promise.all([
             // Sales
@@ -1885,15 +1905,7 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
                 },
                 orderBy: { date: 'asc' }
             }),
-            // All Finance Transactions
-            (prisma as any).financeTransaction.findMany({
-                where: { 
-                    date: { gte: startDate, lte: endDate },
-                    category: 'OPERASIONAL'
-                },
-                include: { createdBy: { select: { name: true } } },
-                orderBy: { date: 'asc' }
-            }),
+
             // AR — unpaid sales deliveries up to end of month
             (prisma as any).salesDelivery.findMany({
                 where: {
@@ -1957,6 +1969,8 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
             })
         ]);
 
+        const deliveryInvoices = sales.map((s: any) => s.invoiceNumber || s.deliveryNumber).filter(Boolean);
+        const rawOperational = await fetchHybridOperationalData(prisma, startDate, endDate, deliveryInvoices);
         const allOperational = await distributeOperationalCosts(rawOperational, isAll ? null : prefix);
 
         // ── P&L Calculation ──────────────────────────────────────────────
