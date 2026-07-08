@@ -578,8 +578,11 @@ export async function calculateProductTraceabilityInternal(startDate: Date, endD
 
                 // Exact DPP Beli without intermediate rounding
                 const exactDppBeli = (hpp * qty) - totalBuyDiscount;
+                const totalBeli = Math.round(exactDppBeli * (1 + purchaseTaxRate / 100));
+                
+                // Keep dppBeli for backward compatibility or other uses if needed, though we just use exactDppBeli
                 const dppBeli = Math.round(exactDppBeli);
-                const hppEffective = qty > 0 ? Math.round(exactDppBeli / qty) : 0;
+                const hppEffective = qty > 0 ? Math.round(exactDppBeli / qty * (1 + purchaseTaxRate / 100)) : 0;
 
                 const grInfo = {
                     taxInvoiceDate: bestGR?.receipt?.taxInvoiceDate || null,
@@ -591,18 +594,18 @@ export async function calculateProductTraceabilityInternal(startDate: Date, endD
                 // Exact DPP Jual without intermediate rounding
                 const exactDppJual = (sellPrice * qty) - totalSellDiscount;
                 const exactPpnJual = exactDppJual * taxRate / 100;
-                
+                const totalJual = Math.round(exactDppJual + exactPpnJual);
+
                 const dpp = Math.round(exactDppJual);
                 const ppn = Math.round(exactPpnJual);
-                const grandTotalJual = dpp + ppn;
 
                 const rowOps = remainingSdQty > 0 ? Math.round(remainingInvoiceOps * (qty / remainingSdQty)) : 0;
                 remainingInvoiceOps -= rowOps;
                 remainingSdQty -= qty;
 
-                // Margin: DPP Jual vs DPP Beli (keduanya diskon nota sudah didistribusikan)
-                const margin    = dpp - dppBeli - rowOps;
-                const marginPct = dpp > 0 ? (margin / dpp * 100) : 0;
+                // Margin: Total Jual vs Total Beli (keduanya diskon nota sudah didistribusikan)
+                const margin    = totalJual - totalBeli - rowOps;
+                const marginPct = totalJual > 0 ? (margin / totalJual * 100) : 0;
 
                 rowNo++;
                 rows.push({
@@ -620,7 +623,7 @@ export async function calculateProductTraceabilityInternal(startDate: Date, endD
                     'QTY BELI'         : qty,
                     'HARGA BELI'       : hppEffective,
                     'OPS'              : rowOps,
-                    'TOTAL BELI'       : dppBeli,
+                    'TOTAL BELI'       : totalBeli,
                     'F. PAJAK'         : fmtDate(grInfo.taxInvoiceDate),
                     'NO. FAKTUR'       : grInfo.formNumber || grNumber || '-',
                     'NO. PAJAK'        : grInfo.taxInvoiceNumber || '-',
@@ -635,11 +638,11 @@ export async function calculateProductTraceabilityInternal(startDate: Date, endD
                     'NAMA PEMBELI'     : buyer,
                     'SALES'            : spJual,
                     'QTY JUAL'         : qty,
-                    'HARGA JUAL'       : Math.round(sellPrice),
-                    'TOTAL JUAL'       : dpp,
+                    'HARGA JUAL'       : Math.round(sellPrice * (1 + taxRate / 100)),
+                    'TOTAL JUAL'       : totalJual,
                     'DPP'              : dpp,
                     'PPH'              : ppn,
-                    'TOTAL'            : grandTotalJual,
+                    'TOTAL'            : totalJual,
                     'NO. PO'           : soNumber,
                     'PAYMENT'          : sd.paymentStatus || 'PENDING',
                     
@@ -1215,6 +1218,13 @@ export async function getBatchTraceabilityService(filters: {
                         const sdDiscountShare = sdSubtotal > 0 ? Math.round(sdHeaderDiscount * (sellLineSubtotal / sdSubtotal)) : 0;
                         
                         totalJual = sellLineSubtotal - sdDiscountShare;
+                        
+                        // Applying Tax if taxRate > 0
+                        const isPKP = Number(delivery.taxRate || 0) > 0;
+                        if (isPKP) {
+                            const taxRate = Number(delivery.taxRate || 11) / 100;
+                            totalJual = totalJual * (1 + taxRate);
+                        }
                     }
                     
                     const hppTotal = Number(alloc.hppAtTime) * Number(alloc.qty);
