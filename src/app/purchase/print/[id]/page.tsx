@@ -96,8 +96,8 @@ export default async function ReceiptPrintPage({ params }: { params: Promise<{ i
                             <td className="border border-slate-900 p-2.5 uppercase">{item.product.name}</td>
                             <td className="border border-slate-900 p-2.5 text-center">{formatNumber(item.quantity)}</td>
                             <td className="border border-slate-900 p-2.5 text-center uppercase">{(item.uom || item.product.uom || "-").replace(/KARTOON/gi, 'KARTON')}</td>
-                            <td className="border border-slate-900 p-2.5 text-right font-medium">{formatCurrency(Number(item.purchasePrice))}</td>
-                            <td className="border border-slate-900 p-2.5 text-right font-black">{formatCurrency(Number(item.quantity) * Number(item.purchasePrice))}</td>
+                            <td className="border border-slate-900 p-2.5 text-right font-medium">{formatCurrency(Math.round(Number(item.purchasePrice) * 100) / 100)}</td>
+                            <td className="border border-slate-900 p-2.5 text-right font-black">{formatCurrency(Math.round(Number(item.quantity) * Number(item.purchasePrice)))}</td>
                         </tr>
                     ))}
                     {[...Array(Math.max(0, 3 - groupedItems.length))].map((_, i) => (

@@ -131,8 +131,8 @@ export default async function InvoicePrintPage({ params }: { params: Promise<{ i
                             <td className="border border-slate-900 p-1.5 uppercase truncate max-w-[150px]">{item.product.name}</td>
                             <td className="border border-slate-900 p-1.5 text-center font-black">{formatNumber(item.quantity)}</td>
                             <td className="border border-slate-900 p-1.5 text-center uppercase tracking-tighter">{(item.uom || item.product.uom || "-").replace(/KARTOON/gi, 'KARTON')}</td>
-                            <td className="border border-slate-900 p-1.5 text-right font-medium">{formatCurrency(Number(item.salesPrice))}</td>
-                            <td className="border border-slate-900 p-1.5 text-right font-black">{formatCurrency(Number(item.quantity) * Number(item.salesPrice))}</td>
+                            <td className="border border-slate-900 p-1.5 text-right font-medium">{formatCurrency(Math.round(Number(item.salesPrice) * 100) / 100)}</td>
+                            <td className="border border-slate-900 p-1.5 text-right font-black">{formatCurrency(Math.round(Number(item.quantity) * Number(item.salesPrice)))}</td>
                         </tr>
                     ))}
                     {[...Array(Math.max(0, 4 - groupedItems.length))].map((_, i) => (
