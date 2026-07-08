@@ -595,9 +595,12 @@ export async function calculateProductTraceabilityInternal(startDate: Date, endD
 
                 // Exact DPP Jual without intermediate rounding
                 const exactDppJual = (sellPrice * qty) - totalSellDiscount;
-                const exactPpnJual = exactDppJual * taxRate / 100;
-                const totalJual = Math.round(exactDppJual + exactPpnJual);
+                
+                // Calculate effective unit price first, then total Jual to avoid 1-rupiah discrepancy
+                const hargaJualEffective = qty > 0 ? Math.round((exactDppJual / qty) * (1 + taxRate / 100)) : 0;
+                const totalJual = hargaJualEffective * qty;
 
+                const exactPpnJual = exactDppJual * taxRate / 100;
                 const dpp = Math.round(exactDppJual);
                 const ppn = Math.round(exactPpnJual);
 
@@ -640,7 +643,7 @@ export async function calculateProductTraceabilityInternal(startDate: Date, endD
                     'NAMA PEMBELI'     : buyer,
                     'SALES'            : spJual,
                     'QTY JUAL'         : qty,
-                    'HARGA JUAL'       : Math.round(sellPrice * (1 + taxRate / 100)),
+                    'HARGA JUAL'       : hargaJualEffective,
                     'TOTAL JUAL'       : totalJual,
                     'DPP'              : dpp,
                     'PPH'              : ppn,
