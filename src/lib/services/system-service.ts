@@ -399,7 +399,10 @@ export async function getTraceabilitySummaryService() {
 
     // Fetch the detailed linked traceability (linked purchase + sales)
     const detailedTraceability = await getProductTraceabilityService().catch(() => []);
-    const recentDetailed = detailedTraceability.slice(-20).reverse(); // Last 20 records
+    const todayStr = new Date().toLocaleDateString('id-ID');
+    const recentDetailed = detailedTraceability
+        .filter((row: any) => row['Tgl Jual'] === todayStr || row['Tgl Beli'] === todayStr)
+        .reverse();
 
     const { serializeDecimal: sd } = require("@/lib/utils");
     return sd({
