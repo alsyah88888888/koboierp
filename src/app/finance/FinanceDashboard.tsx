@@ -1005,7 +1005,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                         </div>
                         <div className="flex-1 min-h-[250px] w-full">
                             {isClient ? (
-                            <ResponsiveContainer width="100%" height="100%">
+                            <ResponsiveContainer width="100%" height="100%" minHeight={250} minWidth={0}>
                                 <AreaChart data={reversedMonthlyStats} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                                     <defs>
                                         <linearGradient id="colorAr" x1="0" y1="0" x2="0" y2="1">
@@ -1050,7 +1050,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                         </div>
                         <div className="flex-1 mt-4 h-[120px] w-full">
                             {isClient ? (
-                            <ResponsiveContainer width="100%" height="100%">
+                            <ResponsiveContainer width="100%" height="100%" minHeight={120} minWidth={0}>
                                 <BarChart data={cashFlowData} layout="vertical" margin={{ top: 0, right: 30, left: 0, bottom: 0 }}>
                                     <XAxis type="number" hide />
                                     <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} fontSize={11} width={80} fontWeight="bold" />
@@ -1079,7 +1079,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                         <div className="flex-1 mt-4 h-[150px] w-full relative flex items-center justify-center">
                             {topExpenses.length > 0 ? (
                                 isClient ? (
-                                <ResponsiveContainer width="100%" height="100%">
+                                <ResponsiveContainer width="100%" height="100%" minHeight={150} minWidth={0}>
                                     <PieChart>
                                         <Tooltip 
                                             formatter={(value: any) => formatCurrency(Number(value))}
