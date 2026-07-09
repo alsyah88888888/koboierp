@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { format } from "date-fns";
-import { Search, Filter, Activity, ShieldAlert, FileText, Database, UserCheck, CreditCard, Box, Settings } from "lucide-react";
+import { Search, Filter, Activity, ShieldAlert, FileText, Database, UserCheck, CreditCard, Box, Settings, Printer } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function AuditDashboard({ initialLogs }: { initialLogs: any[] }) {
@@ -66,18 +66,25 @@ export function AuditDashboard({ initialLogs }: { initialLogs: any[] }) {
 
     return (
         <div className="flex flex-col h-screen overflow-hidden bg-slate-50">
-            <div className="bg-white border-b-2 border-slate-200 px-6 py-4 flex items-center justify-between z-10 sticky top-0 shadow-sm">
+            <div className="bg-white border-b-2 border-slate-200 px-6 py-4 flex items-center justify-between z-10 sticky top-0 shadow-sm print:hidden">
                 <h1 className="text-xl font-black text-slate-800 tracking-tight flex items-center gap-2">
                     <ShieldAlert className="h-5 w-5 text-indigo-600" />
                     Riwayat Aktivitas
                 </h1>
+                <button
+                    onClick={() => window.print()}
+                    className="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border-2 border-indigo-200 px-4 py-2 rounded-xl font-bold flex items-center gap-2 transition-all"
+                >
+                    <Printer className="w-4 h-4" />
+                    <span>Cetak Log</span>
+                </button>
             </div>
             
             <div className="flex-1 overflow-auto p-4 md:p-8">
                 <div className="max-w-7xl mx-auto space-y-6">
                     
                     {/* Header & Filters */}
-                    <div className="erp-card p-6 bg-white flex flex-col md:flex-row gap-4 items-center justify-between border-slate-200">
+                    <div className="erp-card p-6 bg-white flex flex-col md:flex-row gap-4 items-center justify-between border-slate-200 print:hidden">
                         <div className="flex-1 w-full">
                             <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">
                                 <ShieldAlert className="w-5 h-5 text-indigo-500" />
