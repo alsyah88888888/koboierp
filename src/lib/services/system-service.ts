@@ -401,7 +401,7 @@ export async function getTraceabilitySummaryService() {
     const detailedTraceability = await getProductTraceabilityService().catch(() => []);
     const todayStr = new Date().toLocaleDateString('id-ID');
     const recentDetailed = detailedTraceability
-        .filter((row: any) => row['Tgl Jual'] === todayStr || row['Tgl Beli'] === todayStr)
+        .filter((row: any) => row['TANGGAL JUAL'] === todayStr || row['TANGGAL BELI'] === todayStr)
         .reverse();
 
     const { serializeDecimal: sd } = require("@/lib/utils");

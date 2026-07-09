@@ -194,13 +194,13 @@ export function AdminDashboard({
             {/* Role-Specific SOP Guideline */}
             <RoleGuideline role={role} />
 
-            {/* ═══════ PO STATUS — PALING ATAS ═══════ */}
+            {/* ═══════ SO STATUS — PALING ATAS ═══════ */}
             {traceabilityData ? (
             <div className="space-y-4">
                 <div className="flex items-center justify-between px-2">
                     <div className="flex items-center gap-3">
                         <div className="h-5 w-2 bg-gradient-to-b from-amber-400 to-amber-600 rounded-full" />
-                        <h2 className="text-lg font-black text-slate-900 uppercase tracking-tight">Status Purchase Order</h2>
+                        <h2 className="text-lg font-black text-slate-900 uppercase tracking-tight">Status Sales Order</h2>
                     </div>
                     <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest">
                         <span className="flex items-center gap-1.5 text-amber-600"><AlertCircle className="h-3.5 w-3.5" /> Open: {traceabilityData.poSummary?.open || 0}</span>
@@ -212,7 +212,7 @@ export function AdminDashboard({
                 <div className="erp-card overflow-hidden border-amber-200/60">
                     <div className="overflow-x-auto"><table className="w-full text-[11px]">
                         <thead><tr className="bg-slate-900 text-white">
-                            <th className="px-4 py-2.5 text-left font-black uppercase tracking-wider">No. PO</th>
+                            <th className="px-4 py-2.5 text-left font-black uppercase tracking-wider">No. SO</th>
                             <th className="px-4 py-2.5 text-left font-black uppercase tracking-wider">Buyer</th>
                             <th className="px-4 py-2.5 text-right font-black uppercase tracking-wider w-20">Total Qty</th>
                             <th className="px-4 py-2.5 text-right font-black uppercase tracking-wider w-20">Terkirim</th>
@@ -236,7 +236,7 @@ export function AdminDashboard({
                 </div>
                 ) : (
                 <div className="erp-card p-5 text-center border-emerald-200/60 bg-emerald-50/30">
-                    <p className="text-[11px] font-black text-emerald-700 uppercase tracking-widest flex items-center justify-center gap-2"><CheckCircle2 className="h-4 w-4" /> Semua PO sudah CLOSED — {traceabilityData.poSummary?.closed || 0} PO selesai</p>
+                    <p className="text-[11px] font-black text-emerald-700 uppercase tracking-widest flex items-center justify-center gap-2"><CheckCircle2 className="h-4 w-4" /> Semua SO sudah CLOSED — {traceabilityData.poSummary?.closed || 0} SO selesai</p>
                 </div>
                 )}
                 </div>
