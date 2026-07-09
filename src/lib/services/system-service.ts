@@ -313,7 +313,8 @@ export async function getTraceabilitySummaryService() {
         topSuppliers,
         topBuyers,
         purchaseVol30d,
-        salesVol30d
+        salesVol30d,
+        purchaseRequests
     ] = await Promise.all([
         // SO Status breakdown (All Sales Orders)
         prisma.salesOrder.findMany({
@@ -365,6 +366,14 @@ export async function getTraceabilitySummaryService() {
         prisma.salesDeliveryItem.aggregate({
             where: { delivery: { isVoid: false, date: { gte: thirtyDaysAgo } } },
             _sum: { quantity: true }
+        }),
+        // Purchase Requests (PR & Operational)
+        prisma.purchaseRequest.findMany({
+            select: { id: true, number: true, status: true, category: true, date: true, 
+                      requestedBy: { select: { name: true } },
+                      items: { select: { quantity: true, estimatedPrice: true } } },
+            orderBy: { date: 'desc' },
+            take: 100
         })
     ]);
 
@@ -405,6 +414,27 @@ export async function getTraceabilitySummaryService() {
         .reverse();
 
     const { serializeDecimal: sd } = require("@/lib/utils");
+    
+    // Process Purchase Requests for PEMBELIAN and OPERASIONAL
+    const prOrders = purchaseRequests.filter((pr: any) => pr.category === 'PEMBELIAN');
+    const opOrders = purchaseRequests.filter((pr: any) => pr.category === 'OPERASIONAL');
+
+    const prPending = prOrders.filter((pr: any) => pr.status === 'PENDING' || pr.status === 'VERIFIED_BY_FINANCE');
+    const prExecuted = prOrders.filter((pr: any) => pr.status === 'EXECUTED');
+    
+    const opPending = opOrders.filter((pr: any) => pr.status === 'PENDING' || pr.status === 'VERIFIED_BY_FINANCE');
+    const opExecuted = opOrders.filter((pr: any) => pr.status === 'EXECUTED');
+
+    const formatPR = (pr: any) => ({
+        orderNumber: pr.number,
+        buyerName: pr.requestedBy?.name || '-',
+        grandTotal: pr.items.reduce((sum: number, item: any) => sum + (Number(item.estimatedPrice) * Number(item.quantity)), 0),
+        date: pr.date,
+        totalQty: pr.items.reduce((s: number, i: any) => s + (i.quantity || 0), 0),
+        shippedQty: pr.items.reduce((s: number, i: any) => s + (i.quantity || 0), 0),
+        status: pr.status
+    });
+
     return sd({
         soSummary: {
             open: soOpen.length,
@@ -427,6 +457,20 @@ export async function getTraceabilitySummaryService() {
                 totalQty: o.items.reduce((s: number, i: any) => s + (i.quantity || 0), 0),
                 shippedQty: o.items.reduce((s: number, i: any) => s + (i.shippedQuantity || 0), 0)
             }))
+        },
+        prSummary: {
+            pending: prPending.length,
+            executed: prExecuted.length,
+            total: prOrders.length,
+            pendingOrders: prPending.slice(0, 5).map(formatPR),
+            executedOrders: prExecuted.slice(0, 5).map(formatPR)
+        },
+        opSummary: {
+            pending: opPending.length,
+            executed: opExecuted.length,
+            total: opOrders.length,
+            pendingOrders: opPending.slice(0, 5).map(formatPR),
+            executedOrders: opExecuted.slice(0, 5).map(formatPR)
         },
         movements,
         recentDetailed,

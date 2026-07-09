@@ -241,6 +241,90 @@ export function AdminDashboard({
                 )}
             </div>
             ) : null}
+            {/* ═══════ PR & OP STATUS — BAWAH SO ═══════ */}
+            {traceabilityData ? (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6 mb-6">
+                {/* Status Purchase Order (Pembelian) */}
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between px-2">
+                        <div className="flex items-center gap-3">
+                            <div className="h-5 w-2 bg-gradient-to-b from-amber-400 to-amber-600 rounded-full" />
+                            <h2 className="text-lg font-black text-slate-900 uppercase tracking-tight">Status Purchase Order <span className="text-sm font-bold text-slate-400 normal-case tracking-normal ml-1">(Pembelian)</span></h2>
+                        </div>
+                        <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest">
+                            <span className="flex items-center gap-1.5 text-amber-600"><AlertCircle className="h-3.5 w-3.5" /> Pending: {traceabilityData.prSummary?.pending || 0}</span>
+                            <span className="flex items-center gap-1.5 text-emerald-600"><CheckCircle2 className="h-3.5 w-3.5" /> Executed: {traceabilityData.prSummary?.executed || 0}</span>
+                        </div>
+                    </div>
+                    {((traceabilityData.prSummary?.pending || 0)) > 0 ? (
+                    <div className="erp-card overflow-hidden border-amber-200/60">
+                        <div className="overflow-x-auto"><table className="w-full text-[11px]">
+                            <thead><tr className="bg-slate-900 text-white">
+                                <th className="px-4 py-2.5 text-left font-black uppercase tracking-wider">No. PR</th>
+                                <th className="px-4 py-2.5 text-left font-black uppercase tracking-wider">Pemohon</th>
+                                <th className="px-4 py-2.5 text-right font-black uppercase tracking-wider w-24">Total Harga</th>
+                                <th className="px-4 py-2.5 text-center font-black uppercase tracking-wider w-24">Status</th>
+                            </tr></thead>
+                            <tbody>
+                                {[...(traceabilityData.prSummary?.pendingOrders || [])].map((pr: any, i: number) => {
+                                    return (<tr key={i} className={`border-b border-slate-100 hover:bg-amber-50/30 ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
+                                        <td className="px-4 py-2 font-black text-slate-900">{pr.orderNumber}</td>
+                                        <td className="px-4 py-2 font-bold text-slate-700 truncate max-w-[200px]">{pr.buyerName}</td>
+                                        <td className="px-4 py-2 text-right font-black tabular-nums">Rp {pr.grandTotal.toLocaleString('id-ID')}</td>
+                                        <td className="px-4 py-2 text-center"><span className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-amber-100 text-amber-700">PENDING</span></td>
+                                    </tr>);
+                                })}
+                            </tbody>
+                        </table></div>
+                    </div>
+                    ) : (
+                    <div className="erp-card p-5 text-center border-emerald-200/60 bg-emerald-50/30 h-full flex flex-col justify-center min-h-[120px]">
+                        <p className="text-[11px] font-black text-emerald-700 uppercase tracking-widest flex items-center justify-center gap-2"><CheckCircle2 className="h-4 w-4" /> Semua PR Pembelian EXECUTED — {traceabilityData.prSummary?.executed || 0} PR selesai</p>
+                    </div>
+                    )}
+                </div>
+
+                {/* Status Operasional */}
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between px-2">
+                        <div className="flex items-center gap-3">
+                            <div className="h-5 w-2 bg-gradient-to-b from-purple-400 to-purple-600 rounded-full" />
+                            <h2 className="text-lg font-black text-slate-900 uppercase tracking-tight">Status Operasional</h2>
+                        </div>
+                        <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest">
+                            <span className="flex items-center gap-1.5 text-purple-600"><AlertCircle className="h-3.5 w-3.5" /> Pending: {traceabilityData.opSummary?.pending || 0}</span>
+                            <span className="flex items-center gap-1.5 text-emerald-600"><CheckCircle2 className="h-3.5 w-3.5" /> Executed: {traceabilityData.opSummary?.executed || 0}</span>
+                        </div>
+                    </div>
+                    {((traceabilityData.opSummary?.pending || 0)) > 0 ? (
+                    <div className="erp-card overflow-hidden border-purple-200/60">
+                        <div className="overflow-x-auto"><table className="w-full text-[11px]">
+                            <thead><tr className="bg-slate-900 text-white">
+                                <th className="px-4 py-2.5 text-left font-black uppercase tracking-wider">No. Pengajuan</th>
+                                <th className="px-4 py-2.5 text-left font-black uppercase tracking-wider">Pemohon</th>
+                                <th className="px-4 py-2.5 text-right font-black uppercase tracking-wider w-24">Total Harga</th>
+                                <th className="px-4 py-2.5 text-center font-black uppercase tracking-wider w-24">Status</th>
+                            </tr></thead>
+                            <tbody>
+                                {[...(traceabilityData.opSummary?.pendingOrders || [])].map((op: any, i: number) => {
+                                    return (<tr key={i} className={`border-b border-slate-100 hover:bg-purple-50/30 ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
+                                        <td className="px-4 py-2 font-black text-slate-900">{op.orderNumber}</td>
+                                        <td className="px-4 py-2 font-bold text-slate-700 truncate max-w-[200px]">{op.buyerName}</td>
+                                        <td className="px-4 py-2 text-right font-black tabular-nums">Rp {op.grandTotal.toLocaleString('id-ID')}</td>
+                                        <td className="px-4 py-2 text-center"><span className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-purple-100 text-purple-700">PENDING</span></td>
+                                    </tr>);
+                                })}
+                            </tbody>
+                        </table></div>
+                    </div>
+                    ) : (
+                    <div className="erp-card p-5 text-center border-emerald-200/60 bg-emerald-50/30 h-full flex flex-col justify-center min-h-[120px]">
+                        <p className="text-[11px] font-black text-emerald-700 uppercase tracking-widest flex items-center justify-center gap-2"><CheckCircle2 className="h-4 w-4" /> Semua Pengajuan Operasional EXECUTED — {traceabilityData.opSummary?.executed || 0} selesai</p>
+                    </div>
+                    )}
+                </div>
+            </div>
+            ) : null}
 
             {/* ═══════ STATUS PENJUALAN & PEMBELIAN HARI INI ═══════ */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
