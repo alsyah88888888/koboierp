@@ -352,6 +352,7 @@ export async function updatePaymentStatusService(
                     const dpRecDate = paymentDate || new Date();
                     await tx.journalEntry.create({ data: { description: `Kas Bank (Terima DP): ${reference} (${party})`, amount: toReceive as any, type: "DEBIT", accountId: bankAccount.id, date: dpRecDate, createdById: userId } });
                     await tx.journalEntry.create({ data: { description: `Penyelesaian Piutang (DP): ${reference} (${party})`, amount: toReceive as any, type: "CREDIT", accountId: arAccount.id, date: dpRecDate, createdById: userId } });
+                    await tx.financeTransaction.create({ data: { transactionType: "INCOME", bank: bankAccount.name, date: dpRecDate, referenceNumber: reference, description: `Terima DP Penjualan dari ${party}`, amount: toReceive as any, category: "PENJUALAN", receiptNumber: reference, createdById: userId } });
                     const customerAgain = await tx.customer.findFirst({ where: { name: party } });
                     if (customerAgain) {
                         await tx.customer.update({ where: { id: customerAgain.id }, data: { balance: { decrement: toReceive } } });
@@ -362,6 +363,7 @@ export async function updatePaymentStatusService(
                     const fullRecDate = paymentDate || new Date();
                     await tx.journalEntry.create({ data: { description: `Kas Bank (Penjualan Tunai): ${reference} (${party})`, amount: amount as any, type: "DEBIT", accountId: bankAccount.id, date: fullRecDate, createdById: userId } });
                     await tx.journalEntry.create({ data: { description: `Pendapatan Penjualan: ${reference}`, amount: grossAmount as any, type: "CREDIT", accountId: salesAccount.id, date: fullRecDate, createdById: userId } });
+                    await tx.financeTransaction.create({ data: { transactionType: "INCOME", bank: bankAccount.name, date: fullRecDate, referenceNumber: reference, description: `Penerimaan Lunas Penjualan dari ${party}`, amount: amount as any, category: "PENJUALAN", receiptNumber: reference, createdById: userId } });
 
                     if (discountAccount && totalAllDiscounts > 0) {
                         await tx.journalEntry.create({ data: { description: `Potongan Penjualan: ${reference}`, amount: totalAllDiscounts as any, type: "DEBIT", accountId: discountAccount.id, date: fullRecDate, createdById: userId } });
@@ -375,6 +377,7 @@ export async function updatePaymentStatusService(
                     const instRecDate = paymentDate || new Date();
                     await tx.journalEntry.create({ data: { description: `Penerimaan ${status === "PARTIAL" ? "DP/Sebagian" : "Pelunasan"} Piutang: ${reference} (${party})`, amount: toReceive as any, type: "DEBIT", accountId: bankAccount.id, date: instRecDate, createdById: userId } });
                     await tx.journalEntry.create({ data: { description: `Penyelesaian Piutang: ${reference} (${party})`, amount: toReceive as any, type: "CREDIT", accountId: arAccount.id, date: instRecDate, createdById: userId } });
+                    await tx.financeTransaction.create({ data: { transactionType: "INCOME", bank: bankAccount.name, date: instRecDate, referenceNumber: reference, description: `Penerimaan Piutang dari ${party}`, amount: toReceive as any, category: "PENJUALAN", receiptNumber: reference, createdById: userId } });
                 }
                 const customer = await tx.customer.findFirst({ where: { name: party } });
                 if (customer && toReceive > 0) {
