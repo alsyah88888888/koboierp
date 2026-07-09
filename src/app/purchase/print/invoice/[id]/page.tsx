@@ -35,13 +35,14 @@ export default async function PurchaseInvoicePrintPage({ params }: { params: Pro
     const groupedItems = Object.values(groupedItemsMap) as any[];
 
     const totalQty = receipt.items.reduce((acc: number, item: any) => acc + (Number(item.quantity) || 0), 0);
-    const subTotal = Number(receipt.subtotal || 0);
+    const subTotal = receipt.items.reduce((acc: number, item: any) => acc + Math.round(Math.round(Number(item.purchasePrice || item.price || 0) * 100) / 100 * Number(item.quantity)), 0);
     const totalDiscount = Number(receipt.totalDiscount || 0);
-    const taxAmount = Number(receipt.taxAmount || 0);
+    
     const taxRate = Number(receipt.taxRate || 0);
     const grandTotal = Number(receipt.grandTotal || 0);
 
     const dpp = subTotal - totalDiscount;
+    const taxAmount = taxRate > 0 ? (grandTotal - dpp) : 0;
     const isPPN12 = taxRate === 12;
     const dppNilaiLain = isPPN12 ? Math.round(dpp * (11 / 12)) : dpp;
     

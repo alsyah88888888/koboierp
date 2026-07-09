@@ -73,9 +73,8 @@ export default async function InvoicePrintPage({ params }: { params: Promise<{ i
     const groupedItems = Object.values(groupedItemsMap) as any[];
 
     const totalQty = groupedItems.reduce((acc: number, item: any) => acc + (Number(item.quantity) || 0), 0);
-    const subTotal = Number(delivery.subtotal || 0);
+    const subTotal = groupedItems.reduce((acc: number, item: any) => acc + Math.round(Math.round(Number(item.salesPrice) * 100) / 100 * Number(item.quantity)), 0);
     const totalDiscount = Number(delivery.totalDiscount || 0);
-    const taxAmount = Number(delivery.taxAmount || 0);
     const taxRate = Number(delivery.taxRate || 0);
     const grandTotal = Number(delivery.grandTotal || 0);
 
@@ -83,6 +82,7 @@ export default async function InvoicePrintPage({ params }: { params: Promise<{ i
     const dpp = subTotal - totalDiscount;
     const isPPN12 = taxRate === 12;
     const dppNilaiLain = isPPN12 ? Math.round(dpp * (11 / 12)) : dpp;
+    const taxAmount = taxRate > 0 ? (grandTotal - dpp) : 0;
     const netTransfer = grandTotal; 
 
     return (
@@ -132,7 +132,7 @@ export default async function InvoicePrintPage({ params }: { params: Promise<{ i
                             <td className="border border-slate-900 p-1.5 text-center font-black">{formatNumber(item.quantity)}</td>
                             <td className="border border-slate-900 p-1.5 text-center uppercase tracking-tighter">{(item.uom || item.product.uom || "-").replace(/KARTOON/gi, 'KARTON')}</td>
                             <td className="border border-slate-900 p-1.5 text-right font-medium">{formatCurrency(Math.round(Number(item.salesPrice) * 100) / 100)}</td>
-                            <td className="border border-slate-900 p-1.5 text-right font-black">{formatCurrency(Math.round(Number(item.quantity) * Number(item.salesPrice)))}</td>
+                            <td className="border border-slate-900 p-1.5 text-right font-black">{formatCurrency(Math.round(Math.round(Number(item.salesPrice) * 100) / 100 * Number(item.quantity)))}</td>
                         </tr>
                     ))}
                     {[...Array(Math.max(0, 4 - groupedItems.length))].map((_, i) => (

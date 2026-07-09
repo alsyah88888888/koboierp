@@ -38,13 +38,13 @@ export default async function SalesOrderPrintPage({ params }: { params: Promise<
 
     const isDraft = order.status === "DRAFT";
     const totalQty = groupedItems.reduce((acc: number, item: any) => acc + (Number(item.quantity) || 0), 0);
-    const subTotal = Number(order.subtotal || 0);
-    const taxAmount = Number(order.taxAmount || 0);
+    const subTotal = groupedItems.reduce((acc: number, item: any) => acc + Math.round(Math.round(Number(item.salesPrice) * 100) / 100 * Number(item.quantity)), 0);
     const grandTotal = Number(order.grandTotal || 0);
     const taxRate = Number(order.taxRate || 0);
     const isPPN12 = taxRate === 12;
     const totalDiscount = Number(order.totalDiscount || 0);
     const dpp = subTotal - totalDiscount;
+    const taxAmount = taxRate > 0 ? (grandTotal - dpp) : 0;
     const dppNilaiLain = isPPN12 ? (dpp * 11) / 12 : 0;
 
     return (
@@ -100,7 +100,7 @@ export default async function SalesOrderPrintPage({ params }: { params: Promise<
                             <td className="border border-slate-900 p-1.5 text-center font-black">{formatNumber(item.quantity)}</td>
                             <td className="border border-slate-900 p-1.5 text-center uppercase tracking-tighter">{item.uom || item.product?.uom || "-"}</td>
                             <td className="border border-slate-900 p-1.5 text-right font-medium">{formatCurrency(Math.round(Number(item.salesPrice) * 100) / 100)}</td>
-                            <td className="border border-slate-900 p-1.5 text-right font-black">{formatCurrency(Math.round(Number(item.quantity) * Number(item.salesPrice)))}</td>
+                            <td className="border border-slate-900 p-1.5 text-right font-black">{formatCurrency(Math.round(Math.round(Number(item.salesPrice) * 100) / 100 * Number(item.quantity)))}</td>
                         </tr>
                     ))}
                     {[...Array(Math.max(0, 4 - groupedItems.length))].map((_, i) => (

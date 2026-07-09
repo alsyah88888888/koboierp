@@ -580,7 +580,8 @@ export async function calculateProductTraceabilityInternal(startDate: Date, endD
                 const exactDppBeli = (hpp * qty) - totalBuyDiscount;
                 
                 // Calculate effective unit price first, then total Beli to avoid 1-rupiah discrepancy
-                const hppEffective = qty > 0 ? Math.round((exactDppBeli / qty) * (1 + purchaseTaxRate / 100)) : 0;
+                const effectivePurchaseTaxRate = purchaseTaxRate === 12 ? 11 : purchaseTaxRate;
+                const hppEffective = qty > 0 ? Math.round((exactDppBeli / qty) * (1 + effectivePurchaseTaxRate / 100)) : 0;
                 const totalBeli = hppEffective * qty;
                 
                 // Keep dppBeli for backward compatibility or other uses if needed
@@ -597,7 +598,8 @@ export async function calculateProductTraceabilityInternal(startDate: Date, endD
                 const exactDppJual = (sellPrice * qty) - totalSellDiscount;
                 
                 // Calculate effective unit price first, then total Jual to avoid 1-rupiah discrepancy
-                const hargaJualEffective = qty > 0 ? Math.round((exactDppJual / qty) * (1 + taxRate / 100)) : 0;
+                const effectiveTaxRate = taxRate === 12 ? 11 : taxRate;
+                const hargaJualEffective = qty > 0 ? Math.round((exactDppJual / qty) * (1 + effectiveTaxRate / 100)) : 0;
                 const totalJual = hargaJualEffective * qty;
 
                 const exactPpnJual = exactDppJual * taxRate / 100;
@@ -1227,8 +1229,9 @@ export async function getBatchTraceabilityService(filters: {
                         // Applying Tax if taxRate > 0
                         const isPKP = Number(delivery.taxRate || 0) > 0;
                         if (isPKP) {
-                            const taxRate = Number(delivery.taxRate || 11) / 100;
-                            totalJual = totalJual * (1 + taxRate);
+                            const rawRate = Number(delivery.taxRate || 11);
+                            const effectiveTaxRate = rawRate === 12 ? 0.11 : (rawRate / 100);
+                            totalJual = totalJual * (1 + effectiveTaxRate);
                         }
                     }
                     
