@@ -194,52 +194,101 @@ export function AdminDashboard({
             {/* Role-Specific SOP Guideline */}
             <RoleGuideline role={role} />
 
-            {/* ═══════ SO STATUS — PALING ATAS ═══════ */}
+            {/* ═══════ PO STATUS & SO STATUS — PALING ATAS ═══════ */}
             {traceabilityData ? (
-            <div className="space-y-4">
-                <div className="flex items-center justify-between px-2">
-                    <div className="flex items-center gap-3">
-                        <div className="h-5 w-2 bg-gradient-to-b from-amber-400 to-amber-600 rounded-full" />
-                        <h2 className="text-lg font-black text-slate-900 uppercase tracking-tight">Status Sales Order</h2>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Status Purchase Order (Customer POs: PI / PO) */}
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between px-2">
+                        <div className="flex items-center gap-3">
+                            <div className="h-5 w-2 bg-gradient-to-b from-amber-400 to-amber-600 rounded-full" />
+                            <h2 className="text-lg font-black text-slate-900 uppercase tracking-tight">Status Purchase Order</h2>
+                        </div>
+                        <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest">
+                            <span className="flex items-center gap-1.5 text-amber-600"><AlertCircle className="h-3.5 w-3.5" /> Open: {traceabilityData.poSummary?.open || 0}</span>
+                            <span className="flex items-center gap-1.5 text-blue-600"><Truck className="h-3.5 w-3.5" /> Partial: {traceabilityData.poSummary?.partial || 0}</span>
+                            <span className="flex items-center gap-1.5 text-emerald-600"><CheckCircle2 className="h-3.5 w-3.5" /> Closed: {traceabilityData.poSummary?.closed || 0}</span>
+                        </div>
                     </div>
-                    <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest">
-                        <span className="flex items-center gap-1.5 text-amber-600"><AlertCircle className="h-3.5 w-3.5" /> Open: {traceabilityData.poSummary?.open || 0}</span>
-                        <span className="flex items-center gap-1.5 text-blue-600"><Truck className="h-3.5 w-3.5" /> Partial: {traceabilityData.poSummary?.partial || 0}</span>
-                        <span className="flex items-center gap-1.5 text-emerald-600"><CheckCircle2 className="h-3.5 w-3.5" /> Closed: {traceabilityData.poSummary?.closed || 0}</span>
+                    {((traceabilityData.poSummary?.open || 0) + (traceabilityData.poSummary?.partial || 0)) > 0 ? (
+                    <div className="erp-card overflow-hidden border-amber-200/60">
+                        <div className="overflow-x-auto"><table className="w-full text-[11px]">
+                            <thead><tr className="bg-slate-900 text-white">
+                                <th className="px-4 py-2.5 text-left font-black uppercase tracking-wider">No. PO</th>
+                                <th className="px-4 py-2.5 text-left font-black uppercase tracking-wider">Buyer</th>
+                                <th className="px-4 py-2.5 text-right font-black uppercase tracking-wider w-20">Total Qty</th>
+                                <th className="px-4 py-2.5 text-right font-black uppercase tracking-wider w-20">Terkirim</th>
+                                <th className="px-4 py-2.5 text-center font-black uppercase tracking-wider w-28">Progress</th>
+                                <th className="px-4 py-2.5 text-center font-black uppercase tracking-wider w-20">Status</th>
+                            </tr></thead>
+                            <tbody>
+                                {[...(traceabilityData.poSummary?.openOrders || []), ...(traceabilityData.poSummary?.partialOrders || [])].map((po: any, i: number) => {
+                                    const pct = Math.round((po.shippedQty / Math.max(1, po.totalQty)) * 100);
+                                    return (<tr key={i} className={`border-b border-slate-100 hover:bg-amber-50/30 ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
+                                        <td className="px-4 py-2 font-black text-slate-900">{po.orderNumber}</td>
+                                        <td className="px-4 py-2 font-bold text-slate-700 truncate max-w-[200px]">{po.buyerName}</td>
+                                        <td className="px-4 py-2 text-right font-black tabular-nums">{po.totalQty}</td>
+                                        <td className="px-4 py-2 text-right font-black tabular-nums">{po.shippedQty}</td>
+                                        <td className="px-4 py-2"><div className="flex items-center gap-2"><div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden"><div className={`h-full rounded-full ${pct >= 100 ? 'bg-emerald-500' : pct > 50 ? 'bg-blue-500' : 'bg-amber-400'}`} style={{ width: `${Math.min(100, pct)}%` }} /></div><span className="text-[10px] font-black text-slate-500 tabular-nums w-8 text-right">{pct}%</span></div></td>
+                                        <td className="px-4 py-2 text-center"><span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${pct > 0 ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}`}>{pct > 0 ? 'PARTIAL' : 'OPEN'}</span></td>
+                                    </tr>);
+                                })}
+                            </tbody>
+                        </table></div>
                     </div>
+                    ) : (
+                    <div className="erp-card p-5 text-center border-emerald-200/60 bg-emerald-50/30 h-full flex flex-col justify-center">
+                        <p className="text-[11px] font-black text-emerald-700 uppercase tracking-widest flex items-center justify-center gap-2"><CheckCircle2 className="h-4 w-4" /> Semua PO sudah CLOSED — {traceabilityData.poSummary?.closed || 0} PO selesai</p>
+                    </div>
+                    )}
                 </div>
-                {((traceabilityData.poSummary?.open || 0) + (traceabilityData.poSummary?.partial || 0)) > 0 ? (
-                <div className="erp-card overflow-hidden border-amber-200/60">
-                    <div className="overflow-x-auto"><table className="w-full text-[11px]">
-                        <thead><tr className="bg-slate-900 text-white">
-                            <th className="px-4 py-2.5 text-left font-black uppercase tracking-wider">No. SO</th>
-                            <th className="px-4 py-2.5 text-left font-black uppercase tracking-wider">Buyer</th>
-                            <th className="px-4 py-2.5 text-right font-black uppercase tracking-wider w-20">Total Qty</th>
-                            <th className="px-4 py-2.5 text-right font-black uppercase tracking-wider w-20">Terkirim</th>
-                            <th className="px-4 py-2.5 text-center font-black uppercase tracking-wider w-28">Progress</th>
-                            <th className="px-4 py-2.5 text-center font-black uppercase tracking-wider w-20">Status</th>
-                        </tr></thead>
-                        <tbody>
-                            {[...(traceabilityData.poSummary?.openOrders || []), ...(traceabilityData.poSummary?.partialOrders || [])].map((po: any, i: number) => {
-                                const pct = Math.round((po.shippedQty / Math.max(1, po.totalQty)) * 100);
-                                return (<tr key={i} className={`border-b border-slate-100 hover:bg-amber-50/30 ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
-                                    <td className="px-4 py-2 font-black text-slate-900">{po.orderNumber}</td>
-                                    <td className="px-4 py-2 font-bold text-slate-700 truncate max-w-[200px]">{po.buyerName}</td>
-                                    <td className="px-4 py-2 text-right font-black tabular-nums">{po.totalQty}</td>
-                                    <td className="px-4 py-2 text-right font-black tabular-nums">{po.shippedQty}</td>
-                                    <td className="px-4 py-2"><div className="flex items-center gap-2"><div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden"><div className={`h-full rounded-full ${pct >= 100 ? 'bg-emerald-500' : pct > 50 ? 'bg-blue-500' : 'bg-amber-400'}`} style={{ width: `${Math.min(100, pct)}%` }} /></div><span className="text-[10px] font-black text-slate-500 tabular-nums w-8 text-right">{pct}%</span></div></td>
-                                    <td className="px-4 py-2 text-center"><span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${pct > 0 ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}`}>{pct > 0 ? 'PARTIAL' : 'OPEN'}</span></td>
-                                </tr>);
-                            })}
-                        </tbody>
-                    </table></div>
+
+                {/* Status Sales Order (Internal SOs: TRN / TRD) */}
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between px-2">
+                        <div className="flex items-center gap-3">
+                            <div className="h-5 w-2 bg-gradient-to-b from-blue-400 to-blue-600 rounded-full" />
+                            <h2 className="text-lg font-black text-slate-900 uppercase tracking-tight">Status Sales Order</h2>
+                        </div>
+                        <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest">
+                            <span className="flex items-center gap-1.5 text-blue-600"><AlertCircle className="h-3.5 w-3.5" /> Open: {traceabilityData.soSummary?.open || 0}</span>
+                            <span className="flex items-center gap-1.5 text-indigo-600"><Truck className="h-3.5 w-3.5" /> Partial: {traceabilityData.soSummary?.partial || 0}</span>
+                            <span className="flex items-center gap-1.5 text-emerald-600"><CheckCircle2 className="h-3.5 w-3.5" /> Closed: {traceabilityData.soSummary?.closed || 0}</span>
+                        </div>
+                    </div>
+                    {((traceabilityData.soSummary?.open || 0) + (traceabilityData.soSummary?.partial || 0)) > 0 ? (
+                    <div className="erp-card overflow-hidden border-blue-200/60">
+                        <div className="overflow-x-auto"><table className="w-full text-[11px]">
+                            <thead><tr className="bg-slate-900 text-white">
+                                <th className="px-4 py-2.5 text-left font-black uppercase tracking-wider">No. SO</th>
+                                <th className="px-4 py-2.5 text-left font-black uppercase tracking-wider">Buyer</th>
+                                <th className="px-4 py-2.5 text-right font-black uppercase tracking-wider w-20">Total Qty</th>
+                                <th className="px-4 py-2.5 text-right font-black uppercase tracking-wider w-20">Terkirim</th>
+                                <th className="px-4 py-2.5 text-center font-black uppercase tracking-wider w-28">Progress</th>
+                                <th className="px-4 py-2.5 text-center font-black uppercase tracking-wider w-20">Status</th>
+                            </tr></thead>
+                            <tbody>
+                                {[...(traceabilityData.soSummary?.openOrders || []), ...(traceabilityData.soSummary?.partialOrders || [])].map((so: any, i: number) => {
+                                    const pct = Math.round((so.shippedQty / Math.max(1, so.totalQty)) * 100);
+                                    return (<tr key={i} className={`border-b border-slate-100 hover:bg-blue-50/30 ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
+                                        <td className="px-4 py-2 font-black text-slate-900">{so.orderNumber}</td>
+                                        <td className="px-4 py-2 font-bold text-slate-700 truncate max-w-[200px]">{so.buyerName}</td>
+                                        <td className="px-4 py-2 text-right font-black tabular-nums">{so.totalQty}</td>
+                                        <td className="px-4 py-2 text-right font-black tabular-nums">{so.shippedQty}</td>
+                                        <td className="px-4 py-2"><div className="flex items-center gap-2"><div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden"><div className={`h-full rounded-full ${pct >= 100 ? 'bg-emerald-500' : pct > 50 ? 'bg-indigo-500' : 'bg-blue-400'}`} style={{ width: `${Math.min(100, pct)}%` }} /></div><span className="text-[10px] font-black text-slate-500 tabular-nums w-8 text-right">{pct}%</span></div></td>
+                                        <td className="px-4 py-2 text-center"><span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${pct > 0 ? 'bg-indigo-100 text-indigo-700' : 'bg-blue-100 text-blue-700'}`}>{pct > 0 ? 'PARTIAL' : 'OPEN'}</span></td>
+                                    </tr>);
+                                })}
+                            </tbody>
+                        </table></div>
+                    </div>
+                    ) : (
+                    <div className="erp-card p-5 text-center border-emerald-200/60 bg-emerald-50/30 h-full flex flex-col justify-center">
+                        <p className="text-[11px] font-black text-emerald-700 uppercase tracking-widest flex items-center justify-center gap-2"><CheckCircle2 className="h-4 w-4" /> Semua SO sudah CLOSED — {traceabilityData.soSummary?.closed || 0} SO selesai</p>
+                    </div>
+                    )}
                 </div>
-                ) : (
-                <div className="erp-card p-5 text-center border-emerald-200/60 bg-emerald-50/30">
-                    <p className="text-[11px] font-black text-emerald-700 uppercase tracking-widest flex items-center justify-center gap-2"><CheckCircle2 className="h-4 w-4" /> Semua SO sudah CLOSED — {traceabilityData.poSummary?.closed || 0} SO selesai</p>
-                </div>
-                )}
-                </div>
+            </div>
             ) : null}
 
             {/* ═══════ STATUS PENJUALAN & PEMBELIAN HARI INI ═══════ */}

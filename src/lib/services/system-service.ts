@@ -368,10 +368,17 @@ export async function getTraceabilitySummaryService() {
         })
     ]);
 
-    // Process PO status
-    const poOpen = salesOrders.filter((o: any) => o.status === 'OPEN' || o.status === 'DRAFT' || o.status === 'CONFIRMED');
-    const poPartial = salesOrders.filter((o: any) => o.status === 'PARTIAL');
-    const poClosed = salesOrders.filter((o: any) => o.status === 'CLOSED');
+    // Process PO and SO status
+    const poOrders = salesOrders.filter((o: any) => o.orderNumber.includes('-PO-') || o.orderNumber.includes('-PI-'));
+    const soOrders = salesOrders.filter((o: any) => !o.orderNumber.includes('-PO-') && !o.orderNumber.includes('-PI-'));
+
+    const poOpen = poOrders.filter((o: any) => o.status === 'OPEN' || o.status === 'DRAFT' || o.status === 'CONFIRMED');
+    const poPartial = poOrders.filter((o: any) => o.status === 'PARTIAL');
+    const poClosed = poOrders.filter((o: any) => o.status === 'CLOSED');
+
+    const soOpen = soOrders.filter((o: any) => o.status === 'OPEN' || o.status === 'DRAFT' || o.status === 'CONFIRMED');
+    const soPartial = soOrders.filter((o: any) => o.status === 'PARTIAL');
+    const soClosed = soOrders.filter((o: any) => o.status === 'CLOSED');
 
     // Build movement timeline (last 15 combined, sorted by date desc)
     const movements = [
@@ -410,7 +417,7 @@ export async function getTraceabilitySummaryService() {
             open: poOpen.length,
             partial: poPartial.length,
             closed: poClosed.length,
-            total: salesOrders.length,
+            total: poOrders.length,
             openOrders: poOpen.slice(0, 5).map((o: any) => ({
                 orderNumber: o.orderNumber,
                 buyerName: o.buyerName,
@@ -420,6 +427,28 @@ export async function getTraceabilitySummaryService() {
                 shippedQty: o.items.reduce((s: number, i: any) => s + (i.shippedQuantity || 0), 0)
             })),
             partialOrders: poPartial.slice(0, 5).map((o: any) => ({
+                orderNumber: o.orderNumber,
+                buyerName: o.buyerName,
+                grandTotal: Number(o.grandTotal || 0),
+                date: o.date,
+                totalQty: o.items.reduce((s: number, i: any) => s + (i.quantity || 0), 0),
+                shippedQty: o.items.reduce((s: number, i: any) => s + (i.shippedQuantity || 0), 0)
+            }))
+        },
+        soSummary: {
+            open: soOpen.length,
+            partial: soPartial.length,
+            closed: soClosed.length,
+            total: soOrders.length,
+            openOrders: soOpen.slice(0, 5).map((o: any) => ({
+                orderNumber: o.orderNumber,
+                buyerName: o.buyerName,
+                grandTotal: Number(o.grandTotal || 0),
+                date: o.date,
+                totalQty: o.items.reduce((s: number, i: any) => s + (i.quantity || 0), 0),
+                shippedQty: o.items.reduce((s: number, i: any) => s + (i.shippedQuantity || 0), 0)
+            })),
+            partialOrders: soPartial.slice(0, 5).map((o: any) => ({
                 orderNumber: o.orderNumber,
                 buyerName: o.buyerName,
                 grandTotal: Number(o.grandTotal || 0),
