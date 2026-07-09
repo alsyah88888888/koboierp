@@ -307,8 +307,7 @@ export async function getTraceabilitySummaryService() {
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
     const [
-        poOrders,
-        soOrders,
+        salesOrders,
         recentPurchases,
         recentSales,
         topSuppliers,
@@ -316,17 +315,8 @@ export async function getTraceabilitySummaryService() {
         purchaseVol30d,
         salesVol30d
     ] = await Promise.all([
-        // PO Status breakdown (Customer POs: PI / PO)
+        // SO Status breakdown (All Sales Orders)
         prisma.salesOrder.findMany({
-            where: { OR: [{ orderNumber: { contains: '-PO-' } }, { orderNumber: { contains: '-PI-' } }] },
-            select: { id: true, orderNumber: true, status: true, buyerName: true, grandTotal: true, date: true, 
-                      items: { select: { quantity: true, shippedQuantity: true } } },
-            orderBy: { date: 'desc' },
-            take: 100
-        }),
-        // SO Status breakdown (Internal SOs: TRN / TRD)
-        prisma.salesOrder.findMany({
-            where: { OR: [{ orderNumber: { contains: '-TRN-' } }, { orderNumber: { contains: '-TRD-' } }] },
             select: { id: true, orderNumber: true, status: true, buyerName: true, grandTotal: true, date: true, 
                       items: { select: { quantity: true, shippedQuantity: true } } },
             orderBy: { date: 'desc' },
@@ -378,15 +368,10 @@ export async function getTraceabilitySummaryService() {
         })
     ]);
 
-    // Process PO and SO status
-
-    const poOpen = poOrders.filter((o: any) => o.status === 'OPEN' || o.status === 'DRAFT' || o.status === 'CONFIRMED');
-    const poPartial = poOrders.filter((o: any) => o.status === 'PARTIAL');
-    const poClosed = poOrders.filter((o: any) => o.status === 'CLOSED');
-
-    const soOpen = soOrders.filter((o: any) => o.status === 'OPEN' || o.status === 'DRAFT' || o.status === 'CONFIRMED');
-    const soPartial = soOrders.filter((o: any) => o.status === 'PARTIAL');
-    const soClosed = soOrders.filter((o: any) => o.status === 'CLOSED');
+    // Process SO status (All Sales Orders including customer POs)
+    const soOpen = salesOrders.filter((o: any) => o.status === 'OPEN' || o.status === 'DRAFT' || o.status === 'CONFIRMED');
+    const soPartial = salesOrders.filter((o: any) => o.status === 'PARTIAL');
+    const soClosed = salesOrders.filter((o: any) => o.status === 'CLOSED');
 
     // Build movement timeline (last 15 combined, sorted by date desc)
     const movements = [
@@ -421,33 +406,11 @@ export async function getTraceabilitySummaryService() {
 
     const { serializeDecimal: sd } = require("@/lib/utils");
     return sd({
-        poSummary: {
-            open: poOpen.length,
-            partial: poPartial.length,
-            closed: poClosed.length,
-            total: poOrders.length,
-            openOrders: poOpen.slice(0, 5).map((o: any) => ({
-                orderNumber: o.orderNumber,
-                buyerName: o.buyerName,
-                grandTotal: Number(o.grandTotal || 0),
-                date: o.date,
-                totalQty: o.items.reduce((s: number, i: any) => s + (i.quantity || 0), 0),
-                shippedQty: o.items.reduce((s: number, i: any) => s + (i.shippedQuantity || 0), 0)
-            })),
-            partialOrders: poPartial.slice(0, 5).map((o: any) => ({
-                orderNumber: o.orderNumber,
-                buyerName: o.buyerName,
-                grandTotal: Number(o.grandTotal || 0),
-                date: o.date,
-                totalQty: o.items.reduce((s: number, i: any) => s + (i.quantity || 0), 0),
-                shippedQty: o.items.reduce((s: number, i: any) => s + (i.shippedQuantity || 0), 0)
-            }))
-        },
         soSummary: {
             open: soOpen.length,
             partial: soPartial.length,
             closed: soClosed.length,
-            total: soOrders.length,
+            total: salesOrders.length,
             openOrders: soOpen.slice(0, 5).map((o: any) => ({
                 orderNumber: o.orderNumber,
                 buyerName: o.buyerName,
