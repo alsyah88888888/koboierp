@@ -41,6 +41,11 @@ export default async function SalesOrderPrintPage({ params }: { params: Promise<
     const subTotal = Number(order.subtotal || 0);
     const taxAmount = Number(order.taxAmount || 0);
     const grandTotal = Number(order.grandTotal || 0);
+    const taxRate = Number(order.taxRate || 0);
+    const isPPN12 = taxRate === 12;
+    const totalDiscount = Number(order.totalDiscount || 0);
+    const dpp = subTotal - totalDiscount;
+    const dppNilaiLain = isPPN12 ? (dpp * 11) / 12 : 0;
 
     return (
         <DocumentLayout
@@ -132,12 +137,21 @@ export default async function SalesOrderPrintPage({ params }: { params: Promise<
                             <span>- Rp {Math.round(Number(order.totalDiscount)).toLocaleString('id-ID')}</span>
                         </div>
                     )}
-                    {taxAmount > 0 && (
-                        <div className="flex justify-between text-[9px] text-indigo-600">
-                            <span className="text-slate-400 uppercase">PPN</span>
-                            <span>+ Rp {Math.round(taxAmount).toLocaleString('id-ID')}</span>
-                        </div>
-                    )}
+                    
+                    <div className="border-y border-slate-200 py-0.5 flex justify-between text-[10px] bg-slate-100/50 px-1 mt-1 mb-1">
+                        <span className="text-slate-900 uppercase">DPP</span>
+                        <span>Rp {Math.round(dpp).toLocaleString('id-ID')}</span>
+                    </div>
+
+                    <div className="flex justify-between text-[8px] italic text-slate-500 px-1">
+                        <span>DPP NILAI LAIN</span>
+                        <span>Rp {Math.round(dppNilaiLain).toLocaleString('id-ID')}</span>
+                    </div>
+
+                    <div className="flex justify-between text-[9px] text-indigo-600 mt-1">
+                        <span className="text-slate-400 uppercase">PPN</span>
+                        <span>+ Rp {Math.round(taxAmount).toLocaleString('id-ID')}</span>
+                    </div>
                     <div className="border-t-2 border-slate-900 mt-1 pt-1 flex justify-between text-sm text-primary font-black bg-white px-2 rounded border-x shadow-sm">
                         <span className="uppercase text-[10px] mt-0.5">TOTAL NETTO PEMBAYARAN</span>
                         <span>Rp {Math.round(grandTotal).toLocaleString('id-ID')}</span>
