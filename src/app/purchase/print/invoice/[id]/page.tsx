@@ -151,7 +151,7 @@ export default async function PurchaseInvoicePrintPage({ params }: { params: Pro
                     )}
                     
                     <div className="border-y border-slate-200 py-1 flex justify-between text-[11px] bg-slate-100/50 px-1">
-                        <span className="text-slate-900 uppercase">DPP (DASAR PENGENAAN PAJAK)</span>
+                        <span className="text-slate-900 uppercase">DPP</span>
                         <span>{formatCurrency(dpp)}</span>
                     </div>
 
