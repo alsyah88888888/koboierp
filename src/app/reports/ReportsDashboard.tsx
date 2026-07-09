@@ -1223,10 +1223,8 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
                 })),
                 { 'Keterangan': '', 'Jumlah (Rp)': '' },
                 { 'Keterangan': 'Margin', 'Jumlah (Rp)': data.profitLoss.netProfit },
-                { 'Keterangan': '', 'Jumlah (Rp)': '' },
-                { 'Keterangan': 'STOCK BARANG (ALL DIV)', 'Jumlah (Rp)': data.inventory?.ending || 0 }
             ];
-            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(plRows), 'Laba Rugi');
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(plRows), 'Summary');
 
             // Details
             if (data.details?.sales?.length) {
@@ -1340,7 +1338,7 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
                 { 'Keterangan': 'LABA BERSIH', 'Jumlah (Rp)': cPl.netProfit },
                 { 'Keterangan': `  Margin Bersih (${cPl.netMarginPct || 0}%)`, 'Jumlah (Rp)': '' },
             ];
-            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(plRows), 'Laba Rugi');
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(plRows), 'Summary');
 
             // Detail Penjualan
             if (cData.details?.sales?.length) {
@@ -2497,7 +2495,7 @@ function MonthlyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix,
                     <div className="flex items-center gap-3">
                         <DollarSign className="h-5 w-5 text-emerald-400" />
                         <div>
-                            <h3 className="text-sm font-black uppercase tracking-tight">Laporan Laba Rugi</h3>
+                            <h3 className="text-sm font-black uppercase tracking-tight">Laporan Summary</h3>
                             <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{data.period?.label || '-'}</p>
                         </div>
                     </div>
@@ -2515,8 +2513,6 @@ function MonthlyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix,
                         ))}
                         <div className="h-3" />
                         <PLRow label="Margin" value={pl.netProfit} bold highlight={pl.netProfit >= 0 ? 'green' : 'red'} isClient={isClient} />
-                        <div className="border-t-2 border-slate-900 my-3" />
-                        <PLRow label="STOCK BARANG (ALL DIV)" value={data.inventory?.ending || 0} bold isClient={isClient} />
                     </div>
                 </div>
             </div>
