@@ -66,6 +66,8 @@ export async function updatePaymentStatusAction(
         return await updateGroupedPaymentStatusService(id.replace("GROUP_", ""), status, partialAmount, paymentDate, session.user.id, bankAccountId);
     }
 
+    const { logAction } = require("@/lib/audit");
+    await logAction({ userId: session?.user?.id, action: "UPDATE_PAYMENT_STATUS", resource: type, resourceId: id, details: { status, partialAmount, paymentDate, bankAccountId } });
     return await updatePaymentStatusService(type, id, status, partialAmount, paymentDate, session.user.id, bankAccountId);
 }
 

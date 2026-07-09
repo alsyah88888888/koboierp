@@ -551,7 +551,9 @@ export async function voidSalesDeliveryAction(id: string, reason: string) {
             return { success: true };
         }
 
-        return await voidSalesDeliveryService(id, reason);
+        const { logAction } = require("@/lib/audit");
+    await logAction({ userId: session?.user?.id, action: "VOID_SALES_DELIVERY", resource: "SalesDelivery", resourceId: id, details: { reason } });
+    return await voidSalesDeliveryService(id, reason);
     } catch (err: any) {
         console.error("[voidSalesDeliveryAction] CRITICAL ERROR:", err);
         return { error: err.message || "An unexpected error occurred while voiding the delivery." };
@@ -598,7 +600,9 @@ export async function updateSalesOrderAction(id: string, data: any) {
         const session = (await getServerSession(getAuthOptions())) as any;
         if (!session?.user?.id) throw new Error("Unauthorized");
 
-        return await updateSalesOrderService(id, data);
+        const { logAction } = require("@/lib/audit");
+    await logAction({ userId: session?.user?.id, action: "UPDATE_SALES_ORDER", resource: "SalesOrder", resourceId: id, details: data });
+    return await updateSalesOrderService(id, data);
     } catch (err: any) {
         console.error("[updateSalesOrderAction] ERROR:", err);
         return { error: err.message || "Failed to update sales order." };
@@ -614,7 +618,9 @@ export async function deleteSalesOrderAction(id: string) {
         const session = (await getServerSession(getAuthOptions())) as any;
         if (!session?.user?.id) throw new Error("Unauthorized");
 
-        return await deleteSalesOrderService(id);
+        const { logAction } = require("@/lib/audit");
+    await logAction({ userId: session?.user?.id, action: "DELETE_SALES_ORDER", resource: "SalesOrder", resourceId: id });
+    return await deleteSalesOrderService(id);
     } catch (err: any) {
         console.error("[deleteSalesOrderAction] ERROR:", err);
         return { error: err.message || "Failed to delete sales order." };

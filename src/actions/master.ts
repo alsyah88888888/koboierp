@@ -14,6 +14,8 @@ export async function createProductAction(data: any) {
     const { createProductService } = require("@/lib/services/master-service");
 
     const session = (await getServerSession(getAuthOptions())) as any;
+    const { logAction } = require("@/lib/audit");
+    await logAction({ userId: session?.user?.id, action: "CREATE_PRODUCT", resource: "Product", details: data });
     return await createProductService(data, session?.user?.id, session?.user?.role);
 }
 
@@ -23,6 +25,8 @@ export async function updateProductAction(id: string, data: any) {
     const { updateProductService } = require("@/lib/services/master-service");
 
     const session = (await getServerSession(getAuthOptions())) as any;
+    const { logAction } = require("@/lib/audit");
+    await logAction({ userId: session?.user?.id, action: "UPDATE_PRODUCT", resource: "Product", resourceId: id, details: data });
     return await updateProductService(id, data, session?.user?.role);
 }
 
@@ -82,6 +86,7 @@ export async function createVendorAction(data: any) {
 
     const session = (await getServerSession(getAuthOptions())) as any;
     try {
+        const { logAction } = require("@/lib/audit"); await logAction({ userId: session?.user?.id, action: "CREATE_VENDOR", resource: "Vendor", details: data });
         await prisma.vendor.create({
             data: { ...data, createdById: session?.user?.id }
         });
@@ -97,6 +102,11 @@ export async function updateVendorAction(id: string, data: any) {
     const { getPrisma } = require("@/lib/prisma");
     const prisma = getPrisma();
 
+    const { getAuthOptions } = require("@/lib/auth");
+    const { getServerSession } = require("next-auth");
+    const session = (await getServerSession(getAuthOptions())) as any;
+    const { logAction } = require("@/lib/audit");
+    await logAction({ userId: session?.user?.id, action: "UPDATE_VENDOR", resource: "Vendor", resourceId: id, details: data });
     await prisma.vendor.update({ where: { id }, data });
     revalidatePath("/settings");
     return { success: true };
@@ -113,6 +123,11 @@ export async function deleteVendorAction(id: string) {
     if (vendor?._count.purchaseOrders || (vendor?.balance && Number(vendor.balance) !== 0)) {
         throw new Error("Vendor tidak bisa dihapus karena memiliki riwayat transaksi atau saldo.");
     }
+    const { getAuthOptions } = require("@/lib/auth");
+    const { getServerSession } = require("next-auth");
+    const session = (await getServerSession(getAuthOptions())) as any;
+    const { logAction } = require("@/lib/audit");
+    await logAction({ userId: session?.user?.id, action: "DELETE_VENDOR", resource: "Vendor", resourceId: id });
     await prisma.vendor.delete({ where: { id } });
     revalidatePath("/settings");
     return { success: true };
@@ -126,6 +141,7 @@ export async function createCustomerAction(data: any) {
 
     const session = (await getServerSession(getAuthOptions())) as any;
     try {
+        const { logAction } = require("@/lib/audit"); await logAction({ userId: session?.user?.id, action: "CREATE_CUSTOMER", resource: "Customer", details: data });
         await prisma.customer.create({
             data: { ...data, createdById: session?.user?.id }
         });
@@ -141,6 +157,11 @@ export async function updateCustomerAction(id: string, data: any) {
     const { getPrisma } = require("@/lib/prisma");
     const prisma = getPrisma();
 
+    const { getAuthOptions } = require("@/lib/auth");
+    const { getServerSession } = require("next-auth");
+    const session = (await getServerSession(getAuthOptions())) as any;
+    const { logAction } = require("@/lib/audit");
+    await logAction({ userId: session?.user?.id, action: "UPDATE_CUSTOMER", resource: "Customer", resourceId: id, details: data });
     await prisma.customer.update({ where: { id }, data });
     revalidatePath("/settings");
     return { success: true };
@@ -155,6 +176,11 @@ export async function deleteCustomerAction(id: string) {
     if (usageCount > 0 || (customer?.balance && Number(customer.balance) !== 0)) {
         throw new Error("Customer tidak bisa dihapus karena memiliki riwayat transaksi atau saldo.");
     }
+    const { getAuthOptions } = require("@/lib/auth");
+    const { getServerSession } = require("next-auth");
+    const session = (await getServerSession(getAuthOptions())) as any;
+    const { logAction } = require("@/lib/audit");
+    await logAction({ userId: session?.user?.id, action: "DELETE_CUSTOMER", resource: "Customer", resourceId: id });
     await prisma.customer.delete({ where: { id } });
     revalidatePath("/settings");
     return { success: true };
@@ -164,6 +190,10 @@ export async function createWarehouseAction(data: any) {
     const { getPrisma } = require("@/lib/prisma");
     const prisma = getPrisma();
 
+    const { getAuthOptions } = require("@/lib/auth");
+    const { getServerSession } = require("next-auth");
+    const session = (await getServerSession(getAuthOptions())) as any;
+    const { logAction } = require("@/lib/audit"); await logAction({ userId: session?.user?.id, action: "CREATE_WAREHOUSE", resource: "Warehouse", details: data });
     await prisma.warehouse.create({ data });
     revalidatePath("/settings");
     revalidatePath("/warehouse");
@@ -174,6 +204,11 @@ export async function updateWarehouseAction(id: string, data: any) {
     const { getPrisma } = require("@/lib/prisma");
     const prisma = getPrisma();
 
+    const { getAuthOptions } = require("@/lib/auth");
+    const { getServerSession } = require("next-auth");
+    const session = (await getServerSession(getAuthOptions())) as any;
+    const { logAction } = require("@/lib/audit");
+    await logAction({ userId: session?.user?.id, action: "UPDATE_WAREHOUSE", resource: "Warehouse", resourceId: id, details: data });
     await prisma.warehouse.update({ where: { id }, data });
     revalidatePath("/settings");
     revalidatePath("/warehouse");
@@ -186,6 +221,11 @@ export async function deleteWarehouseAction(id: string) {
 
     const stocks = await prisma.stock.count({ where: { warehouseId: id } });
     if (stocks > 0) throw new Error("Gudang tidak bisa dihapus karena masih ada stok.");
+    const { getAuthOptions } = require("@/lib/auth");
+    const { getServerSession } = require("next-auth");
+    const session = (await getServerSession(getAuthOptions())) as any;
+    const { logAction } = require("@/lib/audit");
+    await logAction({ userId: session?.user?.id, action: "DELETE_WAREHOUSE", resource: "Warehouse", resourceId: id });
     await prisma.warehouse.delete({ where: { id } });
     revalidatePath("/settings");
     return { success: true };
