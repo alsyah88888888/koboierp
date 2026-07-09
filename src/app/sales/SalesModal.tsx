@@ -322,7 +322,7 @@ export default function SalesModal({ products, warehouses, customers, orders = [
                 salesPerson,
                 isPKP: isPKP,
                 totalDiscount: Number(finalDiscountNominal) || 0,
-                taxRate: isPKP ? 12 : 0,
+                taxRate: isPKP ? 11 : 0,
                 createdAt: new Date(date),
                 items: items.map(i => ({
                     productId: i.productId,

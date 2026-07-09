@@ -146,7 +146,7 @@ export default function SalesOrderModal({ products, customers, warehouses, initi
                     ...i,
                     salesPrice: getActualPrice(Number(i.salesPrice))
                 })),
-                taxRate: isPKP ? 12 : 0, // Use 12 to match SalesModal logic
+                taxRate: isPKP ? 11 : 0, // Use 11 to match SalesModal logic
                 totalDiscount,
                 status: isConfirm ? "CONFIRMED" : "DRAFT"
             };
@@ -497,7 +497,7 @@ export default function SalesOrderModal({ products, customers, warehouses, initi
                                     <div className="space-y-3">
                                         <label className="text-[11px] font-bold text-indigo-400 uppercase tracking-widest ml-1">Tipe Faktur</label>
                                         <div className="flex gap-3">
-                                            <button type="button" onClick={() => { setIsPKP(true); setTaxRate(12); }} className={cn("flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border", isPKP ? 'bg-indigo-600 border-indigo-500 text-white shadow-xl shadow-indigo-600/30' : 'bg-white/5 border-white/10 text-slate-600')}> PKP </button>
+                                            <button type="button" onClick={() => { setIsPKP(true); setTaxRate(11); }} className={cn("flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border", isPKP ? 'bg-indigo-600 border-indigo-500 text-white shadow-xl shadow-indigo-600/30' : 'bg-white/5 border-white/10 text-slate-600')}> PKP </button>
                                             <button type="button" onClick={() => { setIsPKP(false); setTaxRate(0); }} className={cn("flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border", !isPKP ? 'bg-slate-700 border-slate-600 text-white shadow-xl shadow-slate-700/30' : 'bg-white/5 border-white/10 text-slate-600')}> Non PKP </button>
                                         </div>
                                     </div>

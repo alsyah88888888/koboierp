@@ -43,8 +43,8 @@ export default async function PurchaseInvoicePrintPage({ params }: { params: Pro
 
     const dpp = subTotal - totalDiscount;
     const taxAmount = taxRate > 0 ? (grandTotal - dpp) : 0;
-    const isPPN12 = taxRate === 12;
-    const dppNilaiLain = isPPN12 ? Math.round(dpp * (11 / 12)) : dpp;
+    const isPKP = taxRate > 0;
+    const dppNilaiLain = dpp;
     
     // Calculate cashback total from the new cashbacks JSON field
     const cashbacksArray = Array.isArray(receipt.cashbacks) ? receipt.cashbacks : [];
@@ -155,7 +155,7 @@ export default async function PurchaseInvoicePrintPage({ params }: { params: Pro
                         <span>{formatCurrency(dpp)}</span>
                     </div>
 
-                    {isPPN12 && (
+                    {isPKP && (
                         <div className="flex justify-between text-[9px] italic text-slate-500 px-1">
                             <span>DPP NILAI LAIN</span>
                             <span>{formatCurrency(dppNilaiLain)}</span>

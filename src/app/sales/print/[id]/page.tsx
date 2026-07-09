@@ -80,8 +80,8 @@ export default async function InvoicePrintPage({ params }: { params: Promise<{ i
 
     // Tax and Financial Logic
     const dpp = subTotal - totalDiscount;
-    const isPPN12 = taxRate === 12;
-    const dppNilaiLain = isPPN12 ? Math.round(dpp * (11 / 12)) : dpp;
+    const isPKP = taxRate > 0;
+    const dppNilaiLain = dpp;
     const taxAmount = taxRate > 0 ? (grandTotal - dpp) : 0;
     const netTransfer = grandTotal; 
 
@@ -186,7 +186,7 @@ export default async function InvoicePrintPage({ params }: { params: Promise<{ i
                         <span>{formatCurrency(dpp)}</span>
                     </div>
 
-                    {isPPN12 && (
+                    {isPKP && (
                         <div className="flex justify-between text-[8px] italic text-slate-500 px-1">
                             <span>DPP NILAI LAIN</span>
                             <span>{formatCurrency(dppNilaiLain)}</span>

@@ -41,11 +41,11 @@ export default async function SalesOrderPrintPage({ params }: { params: Promise<
     const subTotal = groupedItems.reduce((acc: number, item: any) => acc + Math.round(Math.round(Number(item.salesPrice) * 100) / 100 * Number(item.quantity)), 0);
     const grandTotal = Number(order.grandTotal || 0);
     const taxRate = Number(order.taxRate || 0);
-    const isPPN12 = taxRate === 12;
+    const isPKP = taxRate > 0;
     const totalDiscount = Number(order.totalDiscount || 0);
     const dpp = subTotal - totalDiscount;
     const taxAmount = taxRate > 0 ? (grandTotal - dpp) : 0;
-    const dppNilaiLain = isPPN12 ? (dpp * 11) / 12 : 0;
+    const dppNilaiLain = isPKP ? dpp : 0;
 
     return (
         <DocumentLayout
@@ -143,7 +143,7 @@ export default async function SalesOrderPrintPage({ params }: { params: Promise<
                         <span>Rp {Math.round(dpp).toLocaleString('id-ID')}</span>
                     </div>
 
-                    {isPPN12 && (
+                    {isPKP && (
                         <div className="flex justify-between text-[8px] italic text-slate-500 px-1">
                             <span>DPP NILAI LAIN</span>
                             <span>Rp {Math.round(dppNilaiLain).toLocaleString('id-ID')}</span>

@@ -42,8 +42,8 @@ export default async function ReceiptPrintPage({ params }: { params: Promise<{ i
     const taxRate = Number(receipt.taxRate || 0);
     const grandTotal = Number(receipt.grandTotal || 0);
     const dpp = subTotal - totalDiscount;
-    const isPPN12 = taxRate === 12;
-    const dppNilaiLain = isPPN12 ? Math.round(dpp * (11 / 12)) : dpp;
+    const isPKP = taxRate > 0;
+    const dppNilaiLain = dpp;
     
     // Calculate cashback total from the new cashbacks JSON field
     const cashbacksArray = Array.isArray(receipt.cashbacks) ? receipt.cashbacks : [];
@@ -152,7 +152,7 @@ export default async function ReceiptPrintPage({ params }: { params: Promise<{ i
                     </div>
                     {taxAmount > 0 && (
                         <div className="flex justify-between items-center text-[10px] text-indigo-600">
-                            <span className="text-slate-400 uppercase font-bold">PPN {taxRate}% {isPPN12 ? "(Nilai Lain)" : ""}</span>
+                            <span className="text-slate-400 uppercase font-bold">PPN {taxRate}% {isPKP ? "(Nilai Lain)" : ""}</span>
                             <span>+ {formatCurrency(taxAmount)}</span>
                         </div>
                     )}
