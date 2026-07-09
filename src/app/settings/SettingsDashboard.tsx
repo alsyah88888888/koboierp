@@ -21,7 +21,8 @@ import {
     X,
     Banknote,
     Pencil,
-    Megaphone
+    Megaphone,
+    ShieldAlert
 } from "lucide-react";
 import BroadcastModal from "./BroadcastModal";
 import { callAction } from "@/proxy";
@@ -194,6 +195,7 @@ export function SettingsDashboard() {
         { name: "Customer / Buyer", icon: Users, count: `${counts.customer} Customers`, href: "/sales", type: "customer" },
         { name: "Gudang / Cabang", icon: Warehouse, count: `${counts.warehouse} Locations`, href: "/warehouse", type: "warehouse" },
         { name: "Karyawan & Akses", icon: Users, count: "Kelola User", href: "/settings/users", type: "users" },
+        { name: "Riwayat Aktivitas", icon: ShieldAlert, count: "Audit Log", href: "/settings/audit", type: "audit" },
     ];
 
     return (
