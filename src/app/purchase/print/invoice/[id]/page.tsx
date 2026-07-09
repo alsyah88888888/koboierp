@@ -156,14 +156,14 @@ export default async function PurchaseInvoicePrintPage({ params }: { params: Pro
 
                     {isPPN12 && (
                         <div className="flex justify-between text-[9px] italic text-slate-500 px-1">
-                            <span>DPP NILAI LAIN (11/12)</span>
+                            <span>DPP NILAI LAIN</span>
                             <span>{formatCurrency(dppNilaiLain)}</span>
                         </div>
                     )}
 
                     {taxAmount > 0 && (
                         <div className="flex justify-between text-[10px] text-indigo-600">
-                            <span className="text-slate-400 uppercase">PPN {taxRate}% {isPPN12 ? "(NILAI LAIN)" : ""}</span>
+                            <span className="text-slate-400 uppercase">PPN</span>
                             <span>+ {formatCurrency(taxAmount)}</span>
                         </div>
                     )}

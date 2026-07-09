@@ -482,14 +482,14 @@ export default function SalesOrderModal({ products, customers, warehouses, initi
 
                                     {taxRate > 0 && taxRate === 12 && (
                                         <div className="flex justify-between items-center">
-                                            <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">DPP Nilai Lain (11/12)</span>
+                                            <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">DPP Nilai Lain</span>
                                             <span className="text-base font-black font-mono">Rp {dppNilaiLain.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                         </div>
                                     )}
 
                                     {taxRate > 0 && (
                                         <div className="flex justify-between items-center">
-                                            <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">PPN ({taxRate}%)</span>
+                                            <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">PPN</span>
                                             <span className="text-base font-black font-mono text-rose-400">Rp {taxAmount.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                         </div>
                                     )}
