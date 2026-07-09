@@ -307,7 +307,8 @@ export async function getTraceabilitySummaryService() {
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
     const [
-        salesOrders,
+        poOrders,
+        soOrders,
         recentPurchases,
         recentSales,
         topSuppliers,
@@ -315,8 +316,17 @@ export async function getTraceabilitySummaryService() {
         purchaseVol30d,
         salesVol30d
     ] = await Promise.all([
-        // PO Status breakdown
+        // PO Status breakdown (Customer POs: PI / PO)
         prisma.salesOrder.findMany({
+            where: { OR: [{ orderNumber: { contains: '-PO-' } }, { orderNumber: { contains: '-PI-' } }] },
+            select: { id: true, orderNumber: true, status: true, buyerName: true, grandTotal: true, date: true, 
+                      items: { select: { quantity: true, shippedQuantity: true } } },
+            orderBy: { date: 'desc' },
+            take: 100
+        }),
+        // SO Status breakdown (Internal SOs: TRN / TRD)
+        prisma.salesOrder.findMany({
+            where: { OR: [{ orderNumber: { contains: '-TRN-' } }, { orderNumber: { contains: '-TRD-' } }] },
             select: { id: true, orderNumber: true, status: true, buyerName: true, grandTotal: true, date: true, 
                       items: { select: { quantity: true, shippedQuantity: true } } },
             orderBy: { date: 'desc' },
@@ -369,8 +379,6 @@ export async function getTraceabilitySummaryService() {
     ]);
 
     // Process PO and SO status
-    const poOrders = salesOrders.filter((o: any) => o.orderNumber.includes('-PO-') || o.orderNumber.includes('-PI-'));
-    const soOrders = salesOrders.filter((o: any) => !o.orderNumber.includes('-PO-') && !o.orderNumber.includes('-PI-'));
 
     const poOpen = poOrders.filter((o: any) => o.status === 'OPEN' || o.status === 'DRAFT' || o.status === 'CONFIRMED');
     const poPartial = poOrders.filter((o: any) => o.status === 'PARTIAL');
