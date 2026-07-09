@@ -186,10 +186,12 @@ export default async function InvoicePrintPage({ params }: { params: Promise<{ i
                         <span>{formatCurrency(dpp)}</span>
                     </div>
 
-                    <div className="flex justify-between text-[8px] italic text-slate-500 px-1">
-                        <span>DPP NILAI LAIN</span>
-                        <span>{formatCurrency(dppNilaiLain)}</span>
-                    </div>
+                    {isPPN12 && (
+                        <div className="flex justify-between text-[8px] italic text-slate-500 px-1">
+                            <span>DPP NILAI LAIN</span>
+                            <span>{formatCurrency(dppNilaiLain)}</span>
+                        </div>
+                    )}
 
                     <div className="flex justify-between text-[9px] text-indigo-600">
                         <span className="text-slate-400 uppercase">PPN</span>

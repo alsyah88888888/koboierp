@@ -143,10 +143,12 @@ export default async function SalesOrderPrintPage({ params }: { params: Promise<
                         <span>Rp {Math.round(dpp).toLocaleString('id-ID')}</span>
                     </div>
 
-                    <div className="flex justify-between text-[8px] italic text-slate-500 px-1">
-                        <span>DPP NILAI LAIN</span>
-                        <span>Rp {Math.round(dppNilaiLain).toLocaleString('id-ID')}</span>
-                    </div>
+                    {isPPN12 && (
+                        <div className="flex justify-between text-[8px] italic text-slate-500 px-1">
+                            <span>DPP NILAI LAIN</span>
+                            <span>Rp {Math.round(dppNilaiLain).toLocaleString('id-ID')}</span>
+                        </div>
+                    )}
 
                     <div className="flex justify-between text-[9px] text-indigo-600 mt-1">
                         <span className="text-slate-400 uppercase">PPN</span>
