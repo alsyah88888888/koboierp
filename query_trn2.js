@@ -2,40 +2,19 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 async function main() {
-  const numberToFind = 'KB-TRN-28062026-005';
-  
-  const sdDelivery = await prisma.salesDelivery.findFirst({
-    where: { deliveryNumber: numberToFind }
-  });
-  
-  const sdInvoice = await prisma.salesDelivery.findFirst({
-    where: { invoiceNumber: numberToFind }
-  });
-
-  const so = await prisma.salesOrder.findFirst({
-    where: { orderNumber: numberToFind }
+  console.log("=== Stock Records for PT INTI CAKRAWALA CITRA ===");
+  const stocks = await prisma.stock.findMany({
+    where: {
+      vendorName: { contains: 'PT INTI CAKRAWALA CITRA' }
+    },
+    include: {
+      product: true
+    }
   });
 
-  const sr = await prisma.salesReturn.findFirst({
-    where: { returnNumber: numberToFind }
+  stocks.forEach(s => {
+    console.log(`Product: ${s.product.sku} - ${s.product.name} | Vendor: '${s.vendorName}' | Qty: ${s.quantity}`);
   });
-
-  const sdDeliveryContains = await prisma.salesDelivery.findMany({
-    where: { deliveryNumber: { contains: '28062026-005' } }
-  });
-
-  const sdInvoiceContains = await prisma.salesDelivery.findMany({
-    where: { invoiceNumber: { contains: '28062026-005' } }
-  });
-  
-  console.dir({
-    exactDelivery: sdDelivery,
-    exactInvoice: sdInvoice,
-    exactOrder: so,
-    exactReturn: sr,
-    containsDelivery: sdDeliveryContains,
-    containsInvoice: sdInvoiceContains
-  }, { depth: null });
 }
 
 main().catch(console.error).finally(() => prisma.$disconnect());
