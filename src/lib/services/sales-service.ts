@@ -225,23 +225,21 @@ export async function createSalesDeliveryService(data: any, userId: string) {
                 }
             }
 
-            // Update Stock
-            const currentStock = await tx.stock.findUnique({
+            // Update Stock - Check total available stock of the product in this warehouse (robust against vendor spelling variations)
+            const warehouseStocks = await tx.stock.findMany({
                 where: {
-                    productId_warehouseId_vendorName: {
-                        productId: item.productId,
-                        warehouseId: data.warehouseId,
-                        vendorName: vendorName
-                    }
+                    productId: item.productId,
+                    warehouseId: data.warehouseId
                 }
             });
+            const totalAvailableStock = warehouseStocks.reduce((sum: number, s: any) => sum + s.quantity, 0);
 
-            if (!currentStock || currentStock.quantity < item.quantity) {
+            if (totalAvailableStock < item.quantity) {
                 const product = await tx.product.findUnique({ where: { id: item.productId } });
-                throw new Error(`Stok tidak mencukupi untuk produk ${product?.name || item.productId} dari vendor ${vendorName}`);
+                throw new Error(`Stok tidak mencukupi untuk produk ${product?.name || item.productId}. Tersedia: ${totalAvailableStock}, Dibutuhkan: ${item.quantity}`);
             }
 
-            await tx.stock.update({
+            await tx.stock.upsert({
                 where: {
                     productId_warehouseId_vendorName: {
                         productId: item.productId,
@@ -249,7 +247,13 @@ export async function createSalesDeliveryService(data: any, userId: string) {
                         vendorName: vendorName
                     }
                 },
-                data: { quantity: { decrement: item.quantity } }
+                update: { quantity: { decrement: item.quantity } },
+                create: {
+                    productId: item.productId,
+                    warehouseId: data.warehouseId,
+                    vendorName: vendorName,
+                    quantity: -item.quantity
+                }
             });
 
             await tx.stockMovement.create({
@@ -499,19 +503,17 @@ export async function updateSalesDeliveryService(id: string, data: any, userId: 
         for (const item of data.items) {
             const vendorName = item.vendorName || "CIBINONG";
 
-            const currentStock = await tx.stock.findUnique({
+            const warehouseStocks = await tx.stock.findMany({
                 where: {
-                    productId_warehouseId_vendorName: {
-                        productId: item.productId,
-                        warehouseId: data.warehouseId,
-                        vendorName: vendorName
-                    }
+                    productId: item.productId,
+                    warehouseId: data.warehouseId
                 }
             });
+            const totalAvailableStock = warehouseStocks.reduce((sum: number, s: any) => sum + s.quantity, 0);
 
-            if (!currentStock || currentStock.quantity < item.quantity) {
+            if (totalAvailableStock < item.quantity) {
                 const product = await tx.product.findUnique({ where: { id: item.productId } });
-                throw new Error(`Stok tidak mencukupi untuk produk ${product?.name || item.productId} dari vendor ${vendorName}. Tersedia: ${currentStock?.quantity || 0}, Dibutuhkan: ${item.quantity}`);
+                throw new Error(`Stok tidak mencukupi untuk produk ${product?.name || item.productId}. Tersedia: ${totalAvailableStock}, Dibutuhkan: ${item.quantity}`);
             }
 
             await tx.salesDeliveryItem.create({
@@ -525,7 +527,7 @@ export async function updateSalesDeliveryService(id: string, data: any, userId: 
                 }
             });
 
-            await tx.stock.update({
+            await tx.stock.upsert({
                 where: {
                     productId_warehouseId_vendorName: {
                         productId: item.productId,
@@ -533,7 +535,13 @@ export async function updateSalesDeliveryService(id: string, data: any, userId: 
                         vendorName: vendorName
                     }
                 },
-                data: { quantity: { decrement: item.quantity } }
+                update: { quantity: { decrement: item.quantity } },
+                create: {
+                    productId: item.productId,
+                    warehouseId: data.warehouseId,
+                    vendorName: vendorName,
+                    quantity: -item.quantity
+                }
             });
 
             await tx.stockMovement.create({
