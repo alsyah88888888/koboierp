@@ -1026,6 +1026,49 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
     const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
         'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 
+    // ── Helper: Build "Margin per Faktur" sheet rows from traceability data ──
+    const buildMarginPerFakturRows = (traceabilityRows: any[]) => {
+        const grouped = new Map<string, any>();
+        for (const row of traceabilityRows) {
+            const faktur = row['NOMOR INVOICE PENJUALAN'] || row['NOMOR FAKTUR PENJUALAN'] || row['NOMOR SJ'] || '-';
+            const buyer  = row['NAMA PEMBELI'] || '-';
+            const sales  = row.SALES || '-';
+            const totalJual = Number(row['TOTAL JUAL'] || 0);
+            const totalBeli = Number(row['TOTAL BELI'] || 0);
+            const ops       = Number(row['OPS'] || 0);
+            // Extract Kode PR from DETAIL OPS
+            const detailOps  = row['DETAIL OPS'] || '';
+            const prMatches  = [...detailOps.matchAll(/(KB-PR-\d{8}-\d{3})/g)].map((m: any) => m[1]);
+            const kodePR     = prMatches.length > 0 ? [...new Set(prMatches)].join(', ') : '-';
+
+            if (!grouped.has(faktur)) {
+                grouped.set(faktur, { faktur, buyer, sales, totalJual: 0, totalBeli: 0, ops: 0, prSet: new Set<string>() });
+            }
+            const g = grouped.get(faktur);
+            g.totalJual += totalJual;
+            g.totalBeli += totalBeli;
+            g.ops       += ops;
+            if (kodePR !== '-') kodePR.split(', ').forEach((p: string) => g.prSet.add(p));
+        }
+
+        return [...grouped.values()].map((g: any, i: number) => {
+            const netMargin    = g.totalJual - g.totalBeli - g.ops;
+            const marginPct    = g.totalJual > 0 ? ((netMargin / g.totalJual) * 100).toFixed(1) + '%' : '0%';
+            return {
+                'No'               : i + 1,
+                'No. Faktur Penjualan': g.faktur,
+                'Customer'         : g.buyer,
+                'Sales'            : g.sales,
+                'Total Penjualan'  : g.totalJual,
+                'Total Pembelian'  : g.totalBeli,
+                'Total Operasional': g.ops,
+                'Kode PR'          : g.prSet.size > 0 ? [...g.prSet].join(', ') : '-',
+                'Net Margin'       : netMargin,
+                'Net Margin %'     : marginPct,
+            };
+        });
+    };
+
     // ── Export Excel ──────────────────────────────────────────────────────
     const handleExportExcel = () => {
         const wb = XLSX.utils.book_new();
@@ -1155,6 +1198,12 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
                     'Margin %': row['MARGIN %'] || '0%'
                 }));
                 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Traceability Harian');
+
+                // Margin per Faktur sheet (Harian)
+                const marginRows = buildMarginPerFakturRows(data.details.dailyTraceability);
+                if (marginRows.length > 0) {
+                    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(marginRows), 'Margin per Faktur');
+                }
             }
         }
 
@@ -1202,6 +1251,12 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
                     'Margin %': row['MARGIN %'] || '0%'
                 }));
                 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(traceRows), 'Traceability Mingguan');
+
+                // Margin per Faktur sheet (Mingguan)
+                const marginRowsWeekly = buildMarginPerFakturRows(data.details.weeklyTraceability);
+                if (marginRowsWeekly.length > 0) {
+                    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(marginRowsWeekly), 'Margin per Faktur');
+                }
             }
             if (data.topBuyers?.length)
                 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data.topBuyers), 'Top Buyer');
@@ -1290,6 +1345,12 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
                     'Margin %': row['MARGIN %'] || '0%'
                 }));
                 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(traceRows), 'Traceability Bulanan');
+
+                // Margin per Faktur sheet (Bulanan)
+                const marginRowsMonthly = buildMarginPerFakturRows(data.details.monthlyTraceability);
+                if (marginRowsMonthly.length > 0) {
+                    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(marginRowsMonthly), 'Margin per Faktur');
+                }
             }
             // AR
             if (data.arAging?.items?.length) {
@@ -1414,6 +1475,12 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
                     'Margin %': r['MARGIN %'] || '0%'
                 }));
                 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(traceRows), 'Traceability');
+
+                // Margin per Faktur sheet (Closing)
+                const marginRowsClosing = buildMarginPerFakturRows(cData.details.monthlyTraceability);
+                if (marginRowsClosing.length > 0) {
+                    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(marginRowsClosing), 'Margin per Faktur');
+                }
             }
 
             // Piutang (AR)
