@@ -979,22 +979,18 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
         else if (activeTab === 'cross') fetchCrossDivision();
         else if (activeTab === 'closing') {
             fetchClosingReport(closingPeriod.month, closingPeriod.year, closingPrefix);
-            // Sync selectedMonth/Year and activePrefix with closingPeriod so fetchMonthly uses the correct period & prefix for print
             setSelectedMonth(closingPeriod.month);
             setSelectedYear(closingPeriod.year);
             setActivePrefix(closingPrefix);
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activeTab, fetchDaily, fetchWeekly, fetchMonthly, fetchCrossDivision, closingPeriod, closingPrefix]);
 
-    // When on closing tab, also fetch comprehensive monthly data for print (synced to closingPeriod)
     useEffect(() => {
         if (activeTab === 'closing') {
             fetchMonthly();
         }
     }, [activeTab, selectedMonth, selectedYear, fetchMonthly]);
 
-    // ── Helpers ───────────────────────────────────────────────────────────
     const fmtDate = (d: any) => d ? new Date(d).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
     const fmtShortDate = (d: any) => d ? new Date(d).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' }) : '-';
 
@@ -1030,41 +1026,51 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
     const buildMarginPerFakturRows = (traceabilityRows: any[]) => {
         const grouped = new Map<string, any>();
         for (const row of traceabilityRows) {
-            const faktur = row['NOMOR INVOICE PENJUALAN'] || row['NOMOR FAKTUR PENJUALAN'] || row['NOMOR SJ'] || '-';
-            const buyer  = row['NAMA PEMBELI'] || '-';
-            const sales  = row.SALES || '-';
+            const faktur    = row['NOMOR INVOICE PENJUALAN'] || row['NOMOR FAKTUR PENJUALAN'] || row['NOMOR SJ'] || '-';
+            const buyer     = row['NAMA PEMBELI'] || '-';
+            const sales     = row.SALES || '-';
             const totalJual = Number(row['TOTAL JUAL'] || 0);
             const totalBeli = Number(row['TOTAL BELI'] || 0);
             const ops       = Number(row['OPS'] || 0);
-            // Extract Kode PR from DETAIL OPS
-            const detailOps  = row['DETAIL OPS'] || '';
-            const prMatches  = [...detailOps.matchAll(/(KB-PR-\d{8}-\d{3})/g)].map((m: any) => m[1]);
-            const kodePR     = prMatches.length > 0 ? [...new Set(prMatches)].join(', ') : '-';
+
+            // Collect No. Pembelian (LPB) from NOMOR LPB field
+            const noLPB     = (row['NOMOR LPB'] || '').toString().trim();
+
+            // Collect No. Operasional (PR) from DETAIL OPS field
+            const detailOps = row['DETAIL OPS'] || '';
+            const prMatches = [...detailOps.matchAll(/(KB-PR-\d{8}-\d{3})/g)].map((m: any) => m[1]);
 
             if (!grouped.has(faktur)) {
-                grouped.set(faktur, { faktur, buyer, sales, totalJual: 0, totalBeli: 0, ops: 0, prSet: new Set<string>() });
+                grouped.set(faktur, {
+                    faktur, buyer, sales,
+                    totalJual: 0, totalBeli: 0, ops: 0,
+                    lpbSet: new Set<string>(),
+                    prSet: new Set<string>(),
+                });
             }
             const g = grouped.get(faktur);
             g.totalJual += totalJual;
             g.totalBeli += totalBeli;
             g.ops       += ops;
-            if (kodePR !== '-') kodePR.split(', ').forEach((p: string) => g.prSet.add(p));
+            if (noLPB && noLPB !== '-' && noLPB !== '') g.lpbSet.add(noLPB);
+            prMatches.forEach((p: string) => g.prSet.add(p));
         }
 
         return [...grouped.values()].map((g: any, i: number) => {
-            const netMargin    = g.totalJual - g.totalBeli - g.ops;
-            const marginPct    = g.totalJual > 0 ? ((netMargin / g.totalJual) * 100).toFixed(1) + '%' : '0%';
+            const netMargin = g.totalJual - g.totalBeli - g.ops;
+            const marginPct = g.totalJual > 0 ? ((netMargin / g.totalJual) * 100).toFixed(1) + '%' : '0%';
             return {
-                'No'               : i + 1,
-                'No. Faktur Penjualan': g.faktur,
-                'Customer'         : g.buyer,
-                'Sales'            : g.sales,
-                'Total Penjualan'  : g.totalJual,
-                'Total Pembelian'  : g.totalBeli,
-                'Total Operasional': g.ops,
-                'Kode PR'          : g.prSet.size > 0 ? [...g.prSet].join(', ') : '-',
-                'Net Margin'       : netMargin,
-                'Net Margin %'     : marginPct,
+                'No'                  : i + 1,
+                'No. Penjualan'       : g.faktur,
+                'Customer'            : g.buyer,
+                'Sales'               : g.sales,
+                'Total Penjualan'     : g.totalJual,
+                'No. Pembelian (LPB)' : g.lpbSet.size > 0 ? [...g.lpbSet].join(', ') : '-',
+                'Total Pembelian'     : g.totalBeli,
+                'No. Operasional (PR)': g.prSet.size > 0 ? [...g.prSet].join(', ') : '-',
+                'Total Operasional'   : g.ops,
+                'Net Margin'          : netMargin,
+                'Net Margin %'        : marginPct,
             };
         });
     };
