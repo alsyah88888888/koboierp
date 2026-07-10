@@ -630,19 +630,23 @@ export default function SalesModal({ products, warehouses, customers, orders = [
                                             <option value="">Pilih Sumber...</option>
                                             {item.productId && lotsCache[item.productId] && lotsCache[item.productId].length > 0 && (
                                                 <optgroup label="Dari Pembelian (LPB)">
-                                                    {lotsCache[item.productId].map((lot: any) => (
-                                                        <option key={lot.id} value={lot.id}>
-                                                            {lot.grNumber} ({lot.remainingQty} {item.uom}) - {lot.supplierName}
-                                                        </option>
-                                                    ))}
+                                                    {lotsCache[item.productId]
+                                                        .filter((lot: any) => lot.remainingQty > 0 || lot.id === item.selectedLotId)
+                                                        .map((lot: any) => (
+                                                            <option key={lot.id} value={lot.id}>
+                                                                {lot.grNumber} ({lot.remainingQty} {item.uom}) - {lot.supplierName}
+                                                            </option>
+                                                        ))}
                                                 </optgroup>
                                             )}
                                             <optgroup label="Vendor Default">
-                                                {item.productId && Array.isArray(products) && products.find(p => p.id === item.productId)?.stocks?.map((s: any) => (
-                                                    <option key={`vendor-${s.vendorName}`} value={s.vendorName}>
-                                                        {s.vendorName} (Stok: {s.quantity})
-                                                    </option>
-                                                ))}
+                                                {item.productId && Array.isArray(products) && products.find(p => p.id === item.productId)?.stocks
+                                                    ?.filter((s: any) => s.quantity > 0 || s.vendorName === item.vendorName)
+                                                    ?.map((s: any) => (
+                                                        <option key={`vendor-${s.vendorName}`} value={s.vendorName}>
+                                                            {s.vendorName} (Stok: {s.quantity})
+                                                        </option>
+                                                    ))}
                                                 {!item.productId && <option value="UMUM">UMUM</option>}
                                             </optgroup>
                                         </select>
