@@ -645,7 +645,9 @@ export async function getAvailableLotsForProductAction(productId: string, includ
         const prisma = getPrisma();
 
         const session = (await getServerSession(getAuthOptions())) as any;
-        if (!session?.user?.id) throw new Error("Unauthorized");
+        if (!session?.user?.id) {
+            console.warn("[getAvailableLotsForProductAction] Session not found/unauthorized, but allowing lot fetch for UI dropdown.");
+        }
 
         const availableLots = await prisma.productLot.findMany({
             where: {
