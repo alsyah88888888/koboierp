@@ -46,12 +46,22 @@ export async function updateSalesDeliveryAction(id: string, data: any) {
         const { getAuthOptions } = require("@/lib/auth");
         const { getServerSession } = require("next-auth");
         const { updateSalesDeliveryService } = require("@/lib/services/sales-service");
+        const { logAction } = require("@/lib/audit");
 
         const session = (await getServerSession(getAuthOptions())) as any;
         const role = session?.user?.role?.toUpperCase();
         if (role !== "ADMIN" && role !== "SALES") throw new Error("Unauthorized: Only Admin or Sales can update deliveries");
 
         const result = await updateSalesDeliveryService(id, data, session.user.id);
+
+        await logAction({
+            userId: session.user.id,
+            action: "UPDATE_SALES_DELIVERY",
+            resource: "SalesDelivery",
+            resourceId: id,
+            details: { deliveryNumber: result.deliveryNumber || data.deliveryNumber }
+        });
+
         revalidatePath("/sales");
         revalidatePath(`/sales/print/${id}`);
         return result;
