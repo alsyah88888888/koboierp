@@ -29,8 +29,8 @@ export async function createSalesDeliveryAction(data: any) {
             userId: session.user.id,
             action: "CREATE_SALES_DELIVERY",
             resource: "SalesDelivery",
-            resourceId: result.id,
-            details: { deliveryNumber: result.deliveryNumber, grandTotal: result.grandTotal }
+            resourceId: result.deliveryNumber,
+            details: { deliveryNumber: result.deliveryNumber }
         });
         revalidatePath("/sales");
         revalidatePath(`/sales/print/${result.id}`);

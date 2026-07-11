@@ -59,8 +59,8 @@ export async function createGoodsReceiptAction(data: any) {
             userId: session.user.id,
             action: "CREATE_GOODS_RECEIPT",
             resource: "GoodsReceipt",
-            resourceId: res.id,
-            details: { receiptNumber: res.receiptNumber, grandTotal: res.grandTotal }
+            resourceId: res.receiptNumber,
+            details: { receiptNumber: res.receiptNumber }
         });
 
         return res;

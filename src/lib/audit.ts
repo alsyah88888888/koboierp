@@ -10,7 +10,8 @@ export async function logAction(params: {
 }) {
     const prisma = getPrisma();
     const headerList = await headers();
-    const ip = headerList.get("x-forwarded-for") || "unknown";
+    const rawIp = headerList.get("x-forwarded-for") || headerList.get("x-real-ip") || "unknown";
+    const ip = rawIp.includes(",") ? rawIp.split(",")[0].trim() : rawIp;
     const userAgent = headerList.get("user-agent") || "unknown";
 
     try {

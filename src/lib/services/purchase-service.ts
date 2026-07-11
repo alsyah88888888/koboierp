@@ -299,7 +299,7 @@ export async function createGoodsReceiptService(data: any, userId: string) {
         revalidatePath("/finance", "layout");
         revalidatePath("/", "layout");
 
-        return { success: true, receiptNumber };
+        return { success: true, id: receipt.id, receiptNumber };
     }, { timeout: 30000 });
 }
 

@@ -391,7 +391,7 @@ export async function createSalesDeliveryService(data: any, userId: string) {
         revalidatePath("/reports");
         revalidatePath("/");
 
-        return { success: true, deliveryNumber };
+        return { success: true, id: delivery.id, deliveryNumber };
     }, { timeout: 30000 });
 }
 
