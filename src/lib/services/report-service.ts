@@ -1630,7 +1630,10 @@ export async function getComprehensiveWeeklyReportService(weekStartDate?: string
     endDate.setHours(23, 59, 59, 999);
 
     try {
-        const [sales, purchases, stockMovements, weeklyTraceability, companyExpensesRecords] = await Promise.all([
+        const [
+            sales, purchases, stockMovements, weeklyTraceability, companyExpensesRecords,
+            arRecords, apRecords
+        ] = await Promise.all([
             (prisma as any).salesDelivery.findMany({
                 where: { 
                     isVoid: false, 
@@ -1668,6 +1671,32 @@ export async function getComprehensiveWeeklyReportService(weekStartDate?: string
             calculateProductTraceabilityInternal(startDate, endDate, prefix).catch(() => []),
             (prisma as any).financeTransaction.findMany({
                 where: { date: { gte: startDate, lte: endDate }, AND: [ { OR: [ { transactionType: "PAYMENT" }, { transactionType: "EXPENSE" }, { amount: { lt: 0 } } ] } ] }
+            }),
+            // AR — unpaid sales deliveries up to end of week
+            (prisma as any).salesDelivery.findMany({
+                where: {
+                    isVoid: false, date: { lte: endDate },
+                    paymentStatus: { in: ['PENDING', 'PARTIAL'] },
+                    ...(isAll ? {} : { salesPerson: prefix })
+                },
+                select: {
+                    deliveryNumber: true, buyerName: true, recipient: true, date: true,
+                    grandTotal: true, paidAmount: true, paymentStatus: true
+                },
+                orderBy: { date: 'asc' }
+            }),
+            // AP — unpaid goods receipts up to end of week
+            (prisma as any).goodsReceipt.findMany({
+                where: {
+                    isVoid: false, date: { lte: endDate },
+                    paymentStatus: { in: ['PENDING', 'PARTIAL'] },
+                    ...(isAll ? {} : { salesPerson: prefix })
+                },
+                select: {
+                    receiptNumber: true, receivedFrom: true, date: true,
+                    grandTotal: true, paidAmount: true, paymentStatus: true
+                },
+                orderBy: { date: 'asc' }
             })
         ]);
 
@@ -1768,6 +1797,77 @@ export async function getComprehensiveWeeklyReportService(weekStartDate?: string
             .map(([name, value]) => ({ name, value }))
             .sort((a, b) => b.value - a.value);
 
+        // --- Sales Detail Table ---
+        const salesDetail = sales.map((s: any) => {
+            const saleTraceRows = weeklyTraceability.filter((t: any) => t['NOMOR SJ'] === s.deliveryNumber);
+            const saleHpp = saleTraceRows.reduce((sum: number, t: any) => sum + Number(t['TOTAL BELI'] || 0), 0);
+            
+            const margin = Number(s.grandTotal || 0) - saleHpp;
+            const marginPct = Number(s.grandTotal || 0) > 0 ? (margin / Number(s.grandTotal || 0) * 100) : 0;
+            const itemDiscounts = (s.items || []).reduce((acc: number, i: any) => acc + Number(i.discount || 0), 0);
+            return {
+                number: s.deliveryNumber, invoiceNumber: s.invoiceNumber, date: s.date,
+                buyer: s.buyerName || s.recipient, salesPerson: s.salesPerson,
+                subtotal: Number(s.subtotal || 0) + itemDiscounts, discount: Number(s.totalDiscount || 0) + itemDiscounts,
+                tax: Number(s.taxAmount || 0), grandTotal: Number(s.grandTotal || 0),
+                paidAmount: Number(s.paidAmount || 0), paymentStatus: s.paymentStatus,
+                totalQty: (s.items || []).reduce((q: number, i: any) => q + Number(i.quantity || 0), 0),
+                hpp: saleHpp,
+                margin,
+                marginPct
+            };
+        });
+
+        // --- Purchase Detail Table ---
+        const purchaseDetail = purchases.map((p: any) => ({
+            number: p.receiptNumber, date: p.date,
+            supplier: p.receivedFrom, salesPerson: p.salesPerson,
+            subtotal: Number(p.subtotal || 0), discount: Number(p.totalDiscount || 0),
+            tax: Number(p.taxAmount || 0), grandTotal: Number(p.grandTotal || 0),
+            paidAmount: Number(p.paidAmount || 0), paymentStatus: p.paymentStatus
+        }));
+
+        // --- Operational Detail Table ---
+        const opsDetail = operational.map((o: any) => ({
+            date: o.date, description: o.description,
+            bank: o.bank, category: o.category || o.transactionType,
+            amount: Number(o.amount || 0), salesPerson: o.salesPerson,
+            referenceNumber: o.referenceNumber
+        }));
+
+        const now = new Date();
+        const agingBuckets = (records: any[], dateField: string) => {
+            const buckets = { current: 0, d30: 0, d60: 0, d90: 0, over90: 0, total: 0 };
+            const items: any[] = [];
+            records.forEach((r: any) => {
+                const outstanding = Number(r.grandTotal || 0) - Number(r.paidAmount || 0);
+                if (outstanding <= 0) return;
+                const days = Math.floor((now.getTime() - new Date(r[dateField] || r.date).getTime()) / (1000 * 60 * 60 * 24));
+                let bucket = 'current';
+                if (days > 90) bucket = 'over90';
+                else if (days > 60) bucket = 'd90';
+                else if (days > 30) bucket = 'd60';
+                else if (days > 0) bucket = 'd30';
+                (buckets as any)[bucket] += outstanding;
+                buckets.total += outstanding;
+                items.push({
+                    number: r.deliveryNumber || r.receiptNumber,
+                    partner: r.buyerName || r.recipient || r.receivedFrom,
+                    date: r.date,
+                    grandTotal: Number(r.grandTotal || 0),
+                    paidAmount: Number(r.paidAmount || 0),
+                    outstanding,
+                    days,
+                    bucket,
+                    status: r.paymentStatus
+                });
+            });
+            return { buckets, items: items.sort((a, b) => b.outstanding - a.outstanding) };
+        };
+
+        const arAging = agingBuckets(arRecords || [], 'date');
+        const apAging = agingBuckets(apRecords || [], 'date');
+
         // Totals
         const totalSales = sales.reduce((s: number, d: any) => s + Number(d.grandTotal || 0), 0);
         const totalPurchases = purchases.reduce((s: number, d: any) => s + Number(d.grandTotal || 0), 0);
@@ -1825,18 +1925,41 @@ export async function getComprehensiveWeeklyReportService(weekStartDate?: string
             }
         }
 
+        const linkedOpsExpense = weeklyTraceability.reduce((sum: number, t: any) => sum + Number(t['OPS'] || 0), 0);
+        const generalOps = totalExpenses - linkedOpsExpense;
+
         return {
             staffActivity: {
                 finance: Array.from(financeActivity.values()),
                 warehouse: Array.from(warehouseActivity.values())
             },
             details: {
+                sales: salesDetail,
+                purchases: purchaseDetail,
+                operational: opsDetail,
                 weeklyTraceability
             },
             period: {
                 start: startDate.toISOString(),
                 end: endDate.toISOString(),
                 label: `${startDate.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })} - ${endDate.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}`
+            },
+            profitLoss: {
+                revenue: totalSales,
+                revenueSubtotal: totalSales,
+                discount: 0,
+                salesTax: 0,
+                hpp: totalHPP,
+                grossProfit,
+                grossMarginPct: Number(grossMarginPct.toFixed(1)),
+                expenses: totalExpenses,
+                companyExpenses: totalExpenses, // Match the totalExpenses
+                netProfit,
+                netMarginPct: Number(netMarginPct.toFixed(1)),
+                expenseByCategory: [
+                    { name: "Ops Kirim dan Muat", value: linkedOpsExpense },
+                    { name: "Ops", value: generalOps }
+                ].filter(x => x.value > 0)
             },
             summary: {
                 totalSales, totalPurchases, totalExpenses,
@@ -1854,10 +1977,15 @@ export async function getComprehensiveWeeklyReportService(weekStartDate?: string
                     s + (d.items || []).reduce((q: number, i: any) => q + Number(i.quantity || 0), 0), 0),
                 salesByTeam: { BC: salesBC, PF: salesPF, Other: salesOther }
             },
+            arAging,
+            apAging,
             dailyBreakdown,
             topBuyers,
             topSuppliers,
-            expenseByCategory
+            expenseByCategory: [
+                { name: "Ops Kirim dan Muat", value: linkedOpsExpense },
+                { name: "Ops", value: generalOps }
+            ].filter(x => x.value > 0)
         };
     } catch (error: any) {
         console.error('[getComprehensiveWeeklyReportService] ERROR:', error);

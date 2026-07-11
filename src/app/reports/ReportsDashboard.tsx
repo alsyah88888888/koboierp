@@ -1213,20 +1213,61 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
             }
         }
 
-        if (activeTab === 'weekly' && data.dailyBreakdown) {
-            const rows = data.dailyBreakdown.map((d: any) => ({
-                'Hari': d.dayName,
-                'Tanggal': d.dateLabel,
-                'Pembelian': d.purchases,
-                'Penjualan': d.sales,
-                'Ops': d.opsExpense,
-                'Jumlah Surat Pembelian': d.purchaseCount,
-                'Jumlah Surat Penjualan': d.salesCount,
-                'Qty Jual': d.salesQty,
-                'Qty Beli': d.purchaseQty,
-                'Margin': d.sales - d.hpp - d.opsExpense
-            }));
-            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Breakdown Harian');
+        if (activeTab === 'weekly') {
+            // P&L sheet
+            if (data.profitLoss) {
+                const plRows = [
+                    { 'Keterangan': 'TOTAL PENJUALAN', 'Jumlah (Rp)': data.profitLoss.revenue },
+                    { 'Keterangan': 'TOTAL PEMBELIAN BARANG', 'Jumlah (Rp)': data.profitLoss.hpp || 0 },
+                    { 'Keterangan': '', 'Jumlah (Rp)': '' },
+                    { 'Keterangan': 'Gross Margin', 'Jumlah (Rp)': data.profitLoss.grossProfit },
+                    { 'Keterangan': '', 'Jumlah (Rp)': '' },
+                    { 'Keterangan': 'BIAYA OPERASIONAL (OPS)', 'Jumlah (Rp)': data.profitLoss.expenses },
+                    ...(data.profitLoss.expenseByCategory || []).map((c: any) => ({
+                        'Keterangan': `  ${c.name}`, 'Jumlah (Rp)': c.value
+                    })),
+                    { 'Keterangan': '', 'Jumlah (Rp)': '' },
+                    { 'Keterangan': 'Margin', 'Jumlah (Rp)': data.profitLoss.netProfit },
+                ];
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(plRows), 'Summary');
+            }
+
+            // Details
+            if (data.details?.sales?.length) {
+                const rows = data.details.sales.map((s: any, i: number) => ({
+                    'No': i + 1, 'No. Penjualan': s.invoiceNumber || s.number, 'No. Surat Jalan': s.number,
+                    'Buyer': s.buyer, 'Alamat': s.alamat || '-', 'Gudang': s.gudang || '-',
+                    'Qty': s.totalQty, 'Total Jual': s.grandTotal,
+                    'Tanggal': fmtDate(s.date), 'Status': s.paymentStatus
+                }));
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Detail Penjualan');
+            }
+            if (data.details?.purchases?.length) {
+                const rows = data.details.purchases.map((p: any, i: number) => ({
+                    'No': i + 1, 'No. LPB': p.number, 'Tanggal': fmtDate(p.date),
+                    'Supplier': p.supplier, 'Grand Total': p.grandTotal, 'Status': p.paymentStatus
+                }));
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Detail Pembelian');
+            }
+            if (data.details?.operational?.length) {
+                const rows = data.details.operational.map((o: any, i: number) => {
+                    const desc = o.description || '';
+                    const prMatch = desc.match(/(KB-PR-\d{8}-\d{3})/);
+                    const kodePR = prMatch ? prMatch[1] : '-';
+                    const trnMatch = desc.match(/(KB-TR[ND]-\d{8}-\d{3})/);
+                    const kodeSJ = trnMatch ? trnMatch[1] : '-';
+                    
+                    let cleanDesc = desc;
+                    if (kodePR !== '-') cleanDesc = cleanDesc.replace(`Payment for PR: ${kodePR}`, '').replace(kodePR, '').replace(' - - ', ' - ').trim();
+                    if (kodeSJ !== '-') cleanDesc = cleanDesc.replace(kodeSJ, '').trim();
+                    cleanDesc = cleanDesc.replace(/^-\s*/, '').trim();
+
+                    return {
+                        'No': i + 1, 'Tanggal': fmtDate(o.date), 'Kode PR': kodePR, 'Ref / SJ': o.referenceNumber || kodeSJ || '-', 'Bank': o.bank, 'Kategori': o.category, 'Jumlah': o.amount, 'Keterangan': cleanDesc || '-'
+                    };
+                });
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Detail Operasional');
+            }
 
             // Traceability Mingguan
             if (data.details?.weeklyTraceability?.length) {
@@ -1264,6 +1305,45 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
                     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(marginRowsWeekly), 'Margin per Faktur');
                 }
             }
+
+            // AR
+            if (data.arAging?.items?.length) {
+                const rows = data.arAging.items.map((r: any, i: number) => ({
+                    'No': i + 1, 'No. SJ': r.number, 'Buyer': r.partner,
+                    'Tanggal': fmtDate(r.date), 'Grand Total': r.grandTotal,
+                    'Dibayar': r.paidAmount, 'Outstanding': r.outstanding,
+                    'Hari': r.days, 'Aging': r.bucket
+                }));
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Piutang (AR)');
+            }
+            // AP
+            if (data.apAging?.items?.length) {
+                const rows = data.apAging.items.map((r: any, i: number) => ({
+                    'No': i + 1, 'No. LPB': r.number, 'Supplier': r.partner,
+                    'Tanggal': fmtDate(r.date), 'Grand Total': r.grandTotal,
+                    'Dibayar': r.paidAmount, 'Outstanding': r.outstanding,
+                    'Hari': r.days, 'Aging': r.bucket
+                }));
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Hutang (AP)');
+            }
+
+            // Breakdown Harian
+            if (data.dailyBreakdown) {
+                const rows = data.dailyBreakdown.map((d: any) => ({
+                    'Hari': d.dayName,
+                    'Tanggal': d.dateLabel,
+                    'Pembelian': d.purchases,
+                    'Penjualan': d.sales,
+                    'Ops': d.opsExpense,
+                    'Jumlah Surat Pembelian': d.purchaseCount,
+                    'Jumlah Surat Penjualan': d.salesCount,
+                    'Qty Jual': d.salesQty,
+                    'Qty Beli': d.purchaseQty,
+                    'Margin': d.sales - d.hpp - d.opsExpense
+                }));
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Breakdown Harian');
+            }
+
             if (data.topBuyers?.length)
                 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data.topBuyers), 'Top Buyer');
             if (data.topSuppliers?.length)
