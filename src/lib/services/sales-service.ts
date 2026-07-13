@@ -319,25 +319,34 @@ export async function createSalesDeliveryService(data: any, userId: string) {
                         where: { id: inputItem.selectedLotId }
                     });
 
-                    if (specificLot && !specificLot.isVoided) {
-                        const consume = remaining;
-                        
-                        await tx.lotAllocation.create({
-                            data: {
-                                lotId: specificLot.id,
-                                sdItemId: sdItem.id,
-                                qty: consume,
-                                hppAtTime: specificLot.landedCost ?? specificLot.purchasePrice
-                            }
-                        });
-
-                        await tx.productLot.update({
-                            where: { id: specificLot.id },
-                            data: { remainingQty: { decrement: consume } }
-                        });
-
-                        remaining = 0;
+                    if (!specificLot) {
+                        throw new Error("Rujukan pembelian (lot) yang dipilih tidak ditemukan.");
                     }
+                    if (specificLot.isVoided) {
+                        throw new Error(`Rujukan pembelian (lot) ${specificLot.lotNumber} telah dibatalkan (void).`);
+                    }
+                    if (specificLot.remainingQty < remaining) {
+                        const product = await tx.product.findUnique({ where: { id: sdItem.productId } });
+                        throw new Error(`Stok pada lot ${specificLot.lotNumber} (${specificLot.supplierName || 'UMUM'}) untuk produk ${product?.name || sdItem.productId} tidak mencukupi. Tersedia: ${specificLot.remainingQty}, Dibutuhkan: ${remaining}`);
+                    }
+
+                    const consume = remaining;
+                    
+                    await tx.lotAllocation.create({
+                        data: {
+                            lotId: specificLot.id,
+                            sdItemId: sdItem.id,
+                            qty: consume,
+                            hppAtTime: specificLot.landedCost ?? specificLot.purchasePrice
+                        }
+                    });
+
+                    await tx.productLot.update({
+                        where: { id: specificLot.id },
+                        data: { remainingQty: { decrement: consume } }
+                    });
+
+                    remaining = 0;
                 }
 
                 if (remaining <= 0) continue;
@@ -625,25 +634,34 @@ export async function updateSalesDeliveryService(id: string, data: any, userId: 
                         where: { id: inputItem.selectedLotId }
                     });
 
-                    if (specificLot && !specificLot.isVoided) {
-                        const consume = remaining;
-                        
-                        await tx.lotAllocation.create({
-                            data: {
-                                lotId: specificLot.id,
-                                sdItemId: sdItem.id,
-                                qty: consume,
-                                hppAtTime: specificLot.landedCost ?? specificLot.purchasePrice
-                            }
-                        });
-
-                        await tx.productLot.update({
-                            where: { id: specificLot.id },
-                            data: { remainingQty: { decrement: consume } }
-                        });
-
-                        remaining = 0;
+                    if (!specificLot) {
+                        throw new Error("Rujukan pembelian (lot) yang dipilih tidak ditemukan.");
                     }
+                    if (specificLot.isVoided) {
+                        throw new Error(`Rujukan pembelian (lot) ${specificLot.lotNumber} telah dibatalkan (void).`);
+                    }
+                    if (specificLot.remainingQty < remaining) {
+                        const product = await tx.product.findUnique({ where: { id: sdItem.productId } });
+                        throw new Error(`Stok pada lot ${specificLot.lotNumber} (${specificLot.supplierName || 'UMUM'}) untuk produk ${product?.name || sdItem.productId} tidak mencukupi. Tersedia: ${specificLot.remainingQty}, Dibutuhkan: ${remaining}`);
+                    }
+
+                    const consume = remaining;
+                    
+                    await tx.lotAllocation.create({
+                        data: {
+                            lotId: specificLot.id,
+                            sdItemId: sdItem.id,
+                            qty: consume,
+                            hppAtTime: specificLot.landedCost ?? specificLot.purchasePrice
+                        }
+                    });
+
+                    await tx.productLot.update({
+                        where: { id: specificLot.id },
+                        data: { remainingQty: { decrement: consume } }
+                    });
+
+                    remaining = 0;
                 }
 
                 if (remaining <= 0) continue;
