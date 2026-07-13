@@ -319,8 +319,8 @@ export async function createSalesDeliveryService(data: any, userId: string) {
                         where: { id: inputItem.selectedLotId }
                     });
 
-                    if (specificLot && specificLot.remainingQty > 0 && !specificLot.isVoided) {
-                        const consume = Math.min(remaining, specificLot.remainingQty);
+                    if (specificLot && !specificLot.isVoided) {
+                        const consume = remaining;
                         
                         await tx.lotAllocation.create({
                             data: {
@@ -336,7 +336,7 @@ export async function createSalesDeliveryService(data: any, userId: string) {
                             data: { remainingQty: { decrement: consume } }
                         });
 
-                        remaining -= consume;
+                        remaining = 0;
                     }
                 }
 
@@ -625,8 +625,8 @@ export async function updateSalesDeliveryService(id: string, data: any, userId: 
                         where: { id: inputItem.selectedLotId }
                     });
 
-                    if (specificLot && specificLot.remainingQty > 0 && !specificLot.isVoided) {
-                        const consume = Math.min(remaining, specificLot.remainingQty);
+                    if (specificLot && !specificLot.isVoided) {
+                        const consume = remaining;
                         
                         await tx.lotAllocation.create({
                             data: {
@@ -642,7 +642,7 @@ export async function updateSalesDeliveryService(id: string, data: any, userId: 
                             data: { remainingQty: { decrement: consume } }
                         });
 
-                        remaining -= consume;
+                        remaining = 0;
                     }
                 }
 
