@@ -45,7 +45,7 @@ export default async function SalesOrderPrintPage({ params }: { params: Promise<
     const totalDiscount = Number(order.totalDiscount || 0);
     const dpp = subTotal - totalDiscount;
     const taxAmount = taxRate > 0 ? (grandTotal - dpp) : 0;
-    const dppNilaiLain = isPKP ? Math.round(dpp * 11 / 12) : 0;
+    const dppNilaiLain = isPKP ? (dpp * 0.9166666666666667) : 0;
 
     return (
         <DocumentLayout

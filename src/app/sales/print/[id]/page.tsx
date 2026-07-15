@@ -81,7 +81,7 @@ export default async function InvoicePrintPage({ params }: { params: Promise<{ i
     // Tax and Financial Logic
     const dpp = subTotal - totalDiscount;
     const isPKP = taxRate > 0;
-    const dppNilaiLain = isPKP ? Math.round(dpp * 11 / 12) : 0;
+    const dppNilaiLain = isPKP ? (dpp * 0.9166666666666667) : 0;
     const taxAmount = taxRate > 0 ? (grandTotal - dpp) : 0;
     const netTransfer = grandTotal; 
 
