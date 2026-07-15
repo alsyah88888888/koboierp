@@ -31,28 +31,30 @@ export async function createSalesDeliveryService(data: any, userId: string) {
         // --- AUTO-GENERATED INVOICE NUMBER LOGIC ---
         let invoiceNumber = data.invoiceNumber || null;
         if (!invoiceNumber) {
-            // 1. If linked to an order, check if the SalesOrder itself has a locked invoiceNumber
+            let piDate = txDate; // Default to delivery date
             if (data.orderId) {
                 const linkedOrder = await tx.salesOrder.findUnique({
                     where: { id: data.orderId },
-                    select: { invoiceNumber: true }
+                    select: { invoiceNumber: true, date: true }
                 });
-                if (linkedOrder && linkedOrder.invoiceNumber) {
-                    invoiceNumber = linkedOrder.invoiceNumber;
-                } else {
-                    const existingDelivery = await tx.salesDelivery.findFirst({
-                        where: { orderId: data.orderId, NOT: [{ invoiceNumber: null }, { invoiceNumber: "" }] },
-                        select: { invoiceNumber: true }
-                    });
-                    if (existingDelivery) {
-                        invoiceNumber = existingDelivery.invoiceNumber;
+                if (linkedOrder) {
+                    if (linkedOrder.invoiceNumber) {
+                        invoiceNumber = linkedOrder.invoiceNumber;
+                    }
+                    if (linkedOrder.date) {
+                        piDate = new Date(linkedOrder.date);
                     }
                 }
             }
 
-            // 2. If still no invoiceNumber (brand new PO or manual delivery), generate a new one automatically
+            // If linked order doesn't have locked invoiceNumber, generate a new one using the linked order's date (PI date)
             if (!invoiceNumber) {
-                const invPrefix = isPKP ? `KB-TRN-${dateStr}-` : `KB-TRD-${dateStr}-`;
+                const piDay = String(piDate.getDate()).padStart(2, '0');
+                const piMonth = String(piDate.getMonth() + 1).padStart(2, '0');
+                const piYear = piDate.getFullYear();
+                const piDateStr = `${piDay}${piMonth}${piYear}`;
+
+                const invPrefix = isPKP ? `KB-TRN-${piDateStr}-` : `KB-TRD-${piDateStr}-`;
                 const latestInv = await tx.salesDelivery.findFirst({
                     where: { invoiceNumber: { startsWith: invPrefix } },
                     orderBy: { invoiceNumber: 'desc' }
@@ -466,7 +468,24 @@ export async function updateSalesDeliveryService(id: string, data: any, userId: 
 
         // REGENERATE INVOICE NUMBER IF PKP STATUS CHANGED
         if (isPKP !== oldIsPKP || !invoiceNumber) {
-            const prefix = isPKP ? `KB-TRN-${dateStr}-` : `KB-TRD-${dateStr}-`;
+            let piDate = txDate;
+            const effectiveOrderId = data.orderId || oldDelivery.orderId;
+            if (effectiveOrderId) {
+                const linkedOrder = await tx.salesOrder.findUnique({
+                    where: { id: effectiveOrderId },
+                    select: { date: true }
+                });
+                if (linkedOrder && linkedOrder.date) {
+                    piDate = new Date(linkedOrder.date);
+                }
+            }
+
+            const piDay = String(piDate.getDate()).padStart(2, '0');
+            const piMonth = String(piDate.getMonth() + 1).padStart(2, '0');
+            const piYear = piDate.getFullYear();
+            const piDateStr = `${piDay}${piMonth}${piYear}`;
+
+            const prefix = isPKP ? `KB-TRN-${piDateStr}-` : `KB-TRD-${piDateStr}-`;
             const latest = await tx.salesDelivery.findFirst({
                 where: { invoiceNumber: { startsWith: prefix } },
                 orderBy: { invoiceNumber: 'desc' }
