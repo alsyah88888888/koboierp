@@ -4,36 +4,35 @@ const prisma = new PrismaClient();
 async function main() {
   const sd = await prisma.salesDelivery.findFirst({
     where: {
-      invoiceNumber: 'KB-TRN-14072026-006'
+      OR: [
+        { invoiceNumber: 'KB-TRN-22062026-012' },
+        { invoiceNumber: { contains: '22062026-012' } },
+        { deliveryNumber: { contains: 'KB-TRN-22062026-012' } }
+      ]
     },
     include: {
-      items: {
-        include: {
-          product: true
-        }
-      }
+      order: true
     }
   });
 
   if (!sd) {
-    console.log("Sales delivery KB-TRN-14072026-006 not found!");
+    console.log("Sales delivery not found!");
     return;
   }
 
   console.log("=== Sales Delivery Details ===");
   console.log("Invoice Number:", sd.invoiceNumber);
   console.log("Delivery Number:", sd.deliveryNumber);
-  console.log("Date:", sd.date);
-  console.log("Subtotal:", sd.subtotal);
-  console.log("Total Discount:", sd.totalDiscount);
-  console.log("Tax Rate:", sd.taxRate);
-  console.log("Tax Amount:", sd.taxAmount);
-  console.log("Grand Total:", sd.grandTotal);
-  
-  console.log("\n=== Items ===");
-  sd.items.forEach(item => {
-    console.log(`SKU: ${item.product.sku} | Name: ${item.product.name} | Qty: ${item.quantity} | Price: ${item.salesPrice} | Discount: ${item.discount}`);
-  });
+  console.log("Delivery Date:", sd.date);
+  console.log("Delivery CreatedAt:", sd.createdAt);
+  console.log("OrderId:", sd.orderId);
+  if (sd.order) {
+    console.log("=== Linked Sales Order (PI) Details ===");
+    console.log("SO Order Number:", sd.order.orderNumber);
+    console.log("SO Date:", sd.order.date);
+    console.log("SO CreatedAt:", sd.order.createdAt);
+    console.log("SO Invoice Number:", sd.order.invoiceNumber);
+  }
 }
 
 main().catch(console.error).finally(() => prisma.$disconnect());

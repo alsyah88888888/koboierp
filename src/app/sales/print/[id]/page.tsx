@@ -85,11 +85,29 @@ export default async function InvoicePrintPage({ params }: { params: Promise<{ i
     const taxAmount = taxRate > 0 ? (grandTotal - dpp) : 0;
     const netTransfer = grandTotal; 
 
+    // Extract invoice date from invoiceNumber (DDMMYYYY) if available, to align with PI creation date
+    let invoiceDate = new Date(delivery.date || delivery.createdAt);
+    if (delivery.invoiceNumber) {
+        const parts = delivery.invoiceNumber.split('-');
+        if (parts.length >= 3) {
+            const dateStr = parts[2];
+            if (dateStr.length === 8 && /^\d+$/.test(dateStr)) {
+                const day = parseInt(dateStr.slice(0, 2));
+                const month = parseInt(dateStr.slice(2, 4)) - 1;
+                const year = parseInt(dateStr.slice(4, 8));
+                const parsedDate = new Date(year, month, day);
+                if (!isNaN(parsedDate.getTime())) {
+                    invoiceDate = parsedDate;
+                }
+            }
+        }
+    }
+
     return (
         <DocumentLayout
             title="Faktur Penjualan"
             docNumber={delivery.invoiceNumber || delivery.deliveryNumber}
-            date={format(new Date(delivery.date || delivery.createdAt), "dd MMM yyyy")}
+            date={format(invoiceDate, "dd MMM yyyy")}
             headerInfo={
                 <div className="flex flex-col gap-2">
                     <div className="flex justify-between items-start gap-4 text-[10px] font-bold uppercase italic border border-slate-900 p-3 bg-slate-50/20">
