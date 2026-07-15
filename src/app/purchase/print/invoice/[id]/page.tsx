@@ -44,7 +44,7 @@ export default async function PurchaseInvoicePrintPage({ params }: { params: Pro
     const dpp = subTotal - totalDiscount;
     const taxAmount = taxRate > 0 ? (grandTotal - dpp) : 0;
     const isPKP = taxRate > 0;
-    const dppNilaiLain = dpp;
+    const dppNilaiLain = isPKP ? Math.round(dpp * 11 / 12) : 0;
     
     // Calculate cashback total from the new cashbacks JSON field
     const cashbacksArray = Array.isArray(receipt.cashbacks) ? receipt.cashbacks : [];
