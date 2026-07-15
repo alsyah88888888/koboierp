@@ -19,7 +19,7 @@ async function main() {
         include: { items: true, deliveries: true }
     });
     if (so) {
-        console.log("Sales Order:", so.poNumber, so.totalAmount);
+        console.log("Sales Order:", so.poNumber, so.grandTotal);
     }
 }
 
