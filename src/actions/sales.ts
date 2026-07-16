@@ -75,6 +75,9 @@ export async function deleteSalesDeliveryAction(id: string) {
     const { getAuthOptions } = require("@/lib/auth");
     const { getServerSession } = require("next-auth");
     const { deleteSalesDeliveryService } = require("@/lib/services/sales-service");
+    const { getPrisma } = require("@/lib/prisma");
+    const prisma = getPrisma();
+    const { logAction } = require("@/lib/audit");
 
     const session = (await getServerSession(getAuthOptions())) as any;
     const role = session?.user?.role?.toUpperCase();
@@ -82,17 +85,45 @@ export async function deleteSalesDeliveryAction(id: string) {
 
     if (id.startsWith("GROUP_")) {
         const invoiceNumber = id.replace("GROUP_", "");
-        const { getPrisma } = require("@/lib/prisma");
-        const prisma = getPrisma();
         const deliveries = await prisma.salesDelivery.findMany({
             where: { OR: [ { invoiceNumber: invoiceNumber }, { deliveryNumber: invoiceNumber } ] }
         });
         for (const d of deliveries) {
+            await logAction({
+                userId: session?.user?.id,
+                action: "DELETE_SALES_DELIVERY",
+                resource: "SalesDelivery",
+                resourceId: d.deliveryNumber,
+                details: {
+                    id: d.id,
+                    deliveryNumber: d.deliveryNumber,
+                    invoiceNumber: d.invoiceNumber,
+                    buyerName: d.buyerName,
+                    grandTotal: Number(d.grandTotal || 0)
+                }
+            });
             await deleteSalesDeliveryService(d.id);
         }
         const { revalidatePath } = require("next/cache");
         revalidatePath("/sales");
         return { success: true };
+    }
+
+    const d = await prisma.salesDelivery.findUnique({ where: { id } });
+    if (d) {
+        await logAction({
+            userId: session?.user?.id,
+            action: "DELETE_SALES_DELIVERY",
+            resource: "SalesDelivery",
+            resourceId: d.deliveryNumber,
+            details: {
+                id: d.id,
+                deliveryNumber: d.deliveryNumber,
+                invoiceNumber: d.invoiceNumber,
+                buyerName: d.buyerName,
+                grandTotal: Number(d.grandTotal || 0)
+            }
+        });
     }
 
     const res = await deleteSalesDeliveryService(id);

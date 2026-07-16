@@ -71,8 +71,34 @@ export async function createGoodsReceiptAction(data: any) {
 }
 
 export async function deleteGoodsReceiptAction(id: string) {
+    const { getAuthOptions } = require("@/lib/auth");
+    const { getServerSession } = require("next-auth");
     const { getPrisma } = require("@/lib/prisma");
+    const { logAction } = require("@/lib/audit");
     const prisma = getPrisma();
+
+    const session = (await getServerSession(getAuthOptions())) as any;
+    const role = session?.user?.role?.toUpperCase();
+    if (role !== "ADMIN" && role !== "PURCHASE") throw new Error("Unauthorized: Only Admin or Purchase can delete receipts");
+
+    const receiptData = await prisma.goodsReceipt.findUnique({
+        where: { id }
+    });
+
+    if (receiptData) {
+        await logAction({
+            userId: session?.user?.id,
+            action: "DELETE_GOODS_RECEIPT",
+            resource: "GoodsReceipt",
+            resourceId: receiptData.receiptNumber,
+            details: {
+                id: receiptData.id,
+                receiptNumber: receiptData.receiptNumber,
+                receivedFrom: receiptData.receivedFrom,
+                grandTotal: Number(receiptData.grandTotal || 0)
+            }
+        });
+    }
 
     return await prisma.$transaction(async (tx: any) => {
         const receipt = await tx.goodsReceipt.findUnique({
