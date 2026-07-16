@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, Fragment } from "react";
-import { Plus, Clock, FileText, Search, Truck, Trash2, Eye, Edit2, BarChart3, TrendingUp, TrendingDown, Users, Download, Wallet, XCircle, Undo2, ChevronRight, Printer } from "lucide-react";
+import { Plus, Clock, FileText, Search, Truck, Trash2, Eye, Edit2, BarChart3, TrendingUp, TrendingDown, Users, Download, Wallet, XCircle, Undo2, ChevronRight, Printer, X } from "lucide-react";
 import { format } from "date-fns";
 import SalesModal from "@/app/sales/SalesModal";
 import { useSession } from "next-auth/react";
@@ -46,6 +46,8 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
     const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
     const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
     const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+    const [showExportModal, setShowExportModal] = useState(false);
+    const [exportType, setExportType] = useState<"SJ" | "INVOICE" | "PI">("INVOICE");
 
     useEffect(() => {
         setIsClient(true);
@@ -275,6 +277,10 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
     });
 
     const handleExport = () => {
+        setShowExportModal(true);
+    };
+
+    const runExport = (type: "SJ" | "INVOICE" | "PI") => {
         const exportData: any[] = [];
         
         // Filter out any VOIDed transactions explicitly
@@ -282,58 +288,306 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
             const isVoided = d.isVoid === true || String(d.isVoid).toLowerCase() === "true";
             return !isVoided;
         });
-        
-        activeDeliveries.forEach(d => {
-            const items = d.items || [];
-            items.forEach((item: any) => {
-                const qty = Number(item.quantity) || 0;
-                const price = Number(item.salesPrice) || 0;
-                const discLine = Number(item.discount || 0);
-                const taxRate = Number(d.taxRate || 0);
 
-                // Terapkan pembulatan matematis standar
-                const roundNormal = (val: number) => Math.round(val);
+        const roundNormal = (val: number) => Math.round(val);
 
-                const printedPrice = roundNormal(price);
-                const printedTotalBrutto = roundNormal(qty * price);
-                const printedDiscLine = roundNormal(discLine);
-                const itemNettoBeforeTax = (qty * price) - discLine; // DPP
-                
-                let printedTax = 0;
-                if (taxRate === 12) {
-                    const dppNilaiLain = itemNettoBeforeTax * (11 / 12);
-                    printedTax = roundNormal(dppNilaiLain * 0.12);
-                } else if (taxRate > 0) {
-                    printedTax = roundNormal(itemNettoBeforeTax * (taxRate / 100));
-                }
-                
-                const printedNettoTotal = roundNormal(itemNettoBeforeTax + printedTax);
+        if (type === "SJ") {
+            activeDeliveries.forEach(d => {
+                const items = d.items || [];
+                items.forEach((item: any) => {
+                    const qty = Number(item.quantity) || 0;
+                    const price = Number(item.salesPrice) || 0;
+                    const discLine = Number(item.discount || 0);
+                    const taxRate = Number(d.taxRate || 0);
 
-                exportData.push({
-                    'No. Surat Jalan': d.deliveryNumber,
-                    'No. Penjualan': d.invoiceNumber || "-",
-                    'No. PO Buyer': d.poNumber || "-",
-                    'Tanggal': format(new Date(d.createdAt), "yyyy-MM-dd"),
-                    'Buyer / Customer': d.buyerName,
-                    'Barcode / SKU': item.product?.sku || "-",
-                    'Nama Barang': item.product?.name || "-",
-                    'Qty': qty,
-                    'Satuan': item.uom || item.product?.uom || "-",
-                    'Harga Satuan': printedPrice,
-                    'Total Harga': printedTotalBrutto,
-                    'Potongan Item': printedDiscLine,
-                    'Tgl SJ': format(new Date(d.createdAt), "yyyy-MM-dd"),
-                    'Gudang': d.warehouse?.name || "-",
-                    'Sales Person': d.salesPerson || "-",
-                    '': '', // Empty separator
-                    'Hasil PPN 11%': printedTax,
-                    'Hasil Grand Total Netto': printedNettoTotal,
-                    'Status Pembayaran': d.paymentStatus === 'PAID' ? 'PAID / DONE' : 'PENDING'
+                    const printedPrice = roundNormal(price);
+                    const printedTotalBrutto = roundNormal(qty * price);
+                    const printedDiscLine = roundNormal(discLine);
+                    const itemNettoBeforeTax = (qty * price) - discLine; // DPP
+                    
+                    let printedTax = 0;
+                    if (taxRate === 12) {
+                        const dppNilaiLain = itemNettoBeforeTax * (11 / 12);
+                        printedTax = roundNormal(dppNilaiLain * 0.12);
+                    } else if (taxRate > 0) {
+                        printedTax = roundNormal(itemNettoBeforeTax * (taxRate / 100));
+                    }
+                    
+                    const printedNettoTotal = roundNormal(itemNettoBeforeTax + printedTax);
+
+                    exportData.push({
+                        'No. Surat Jalan': d.deliveryNumber,
+                        'No. Penjualan': d.invoiceNumber || "-",
+                        'No. PO Buyer': d.poNumber || "-",
+                        'Tanggal': format(new Date(d.createdAt), "yyyy-MM-dd"),
+                        'Buyer / Customer': d.buyerName,
+                        'Barcode / SKU': item.product?.sku || "-",
+                        'Nama Barang': item.product?.name || "-",
+                        'Qty': qty,
+                        'Satuan': item.uom || item.product?.uom || "-",
+                        'Harga Satuan': printedPrice,
+                        'Total Harga': printedTotalBrutto,
+                        'Potongan Item': printedDiscLine,
+                        'Tgl SJ': format(new Date(d.createdAt), "yyyy-MM-dd"),
+                        'Gudang': d.warehouse?.name || "-",
+                        'Sales Person': d.salesPerson || "-",
+                        '': '',
+                        'Hasil PPN 11%': printedTax,
+                        'Hasil Grand Total Netto': printedNettoTotal,
+                        'Status Pembayaran': d.paymentStatus === 'PAID' ? 'PAID / DONE' : 'PENDING'
+                    });
                 });
             });
-        });
+            exportToExcel(exportData, `Laporan_Penjualan_SJ_${format(new Date(), "yyyyMMdd")}`, 'Penjualan_SJ');
+        } else if (type === "INVOICE") {
+            const grouped = new Map<string, {
+                invoiceNumber: string;
+                deliveryNumbers: string[];
+                poNumbers: string[];
+                date: Date;
+                buyerName: string;
+                salesPerson: string;
+                paymentStatus: string;
+                warehouseName: string;
+                taxRate: number;
+                items: Map<string, {
+                    product: any;
+                    quantity: number;
+                    salesPrice: number;
+                    discount: number;
+                    uom: string;
+                }>;
+            }>();
 
-        exportToExcel(exportData, `Laporan_Penjualan_Detail_${format(new Date(), "yyyyMMdd")}`, 'Penjualan');
+            activeDeliveries.forEach(d => {
+                const key = d.invoiceNumber || d.deliveryNumber;
+                
+                let invoiceDate = new Date(d.date || d.createdAt);
+                if (d.invoiceNumber) {
+                    const parts = d.invoiceNumber.split('-');
+                    if (parts.length >= 3) {
+                        const dateStr = parts[2];
+                        if (dateStr.length === 8 && /^\d+$/.test(dateStr)) {
+                            const day = parseInt(dateStr.slice(0, 2));
+                            const month = parseInt(dateStr.slice(2, 4)) - 1;
+                            const year = parseInt(dateStr.slice(4, 8));
+                            const parsedDate = new Date(year, month, day);
+                            if (!isNaN(parsedDate.getTime())) {
+                                invoiceDate = parsedDate;
+                            }
+                        }
+                    }
+                }
+
+                if (!grouped.has(key)) {
+                    grouped.set(key, {
+                        invoiceNumber: d.invoiceNumber || "-",
+                        deliveryNumbers: [],
+                        poNumbers: [],
+                        date: invoiceDate,
+                        buyerName: d.buyerName,
+                        salesPerson: d.salesPerson || "-",
+                        paymentStatus: d.paymentStatus || "PENDING",
+                        warehouseName: d.warehouse?.name || "-",
+                        taxRate: Number(d.taxRate || 0),
+                        items: new Map()
+                    });
+                }
+
+                const group = grouped.get(key)!;
+                if (!group.deliveryNumbers.includes(d.deliveryNumber)) {
+                    group.deliveryNumbers.push(d.deliveryNumber);
+                }
+                if (d.poNumber && !group.poNumbers.includes(d.poNumber)) {
+                    group.poNumbers.push(d.poNumber);
+                }
+
+                const items = d.items || [];
+                items.forEach((item: any) => {
+                    const sku = item.product?.sku || "-";
+                    const price = Number(item.salesPrice || 0);
+                    const itemKey = `${sku}_${price}`;
+
+                    if (!group.items.has(itemKey)) {
+                        group.items.set(itemKey, {
+                            product: item.product,
+                            quantity: 0,
+                            salesPrice: price,
+                            discount: 0,
+                            uom: item.uom || item.product?.uom || "-"
+                        });
+                    }
+
+                    const groupedItem = group.items.get(itemKey)!;
+                    groupedItem.quantity += Number(item.quantity) || 0;
+                    groupedItem.discount += Number(item.discount || 0);
+                });
+            });
+
+            grouped.forEach((group, invNum) => {
+                group.items.forEach((item) => {
+                    const qty = item.quantity;
+                    const price = item.salesPrice;
+                    const discLine = item.discount;
+                    
+                    const printedPrice = roundNormal(price);
+                    const printedTotalBrutto = roundNormal(qty * price);
+                    const printedDiscLine = roundNormal(discLine);
+                    const itemNettoBeforeTax = (qty * price) - discLine; // DPP
+                    
+                    let printedTax = 0;
+                    if (group.taxRate === 12) {
+                        const dppNilaiLain = itemNettoBeforeTax * (11 / 12);
+                        printedTax = roundNormal(dppNilaiLain * 0.12);
+                    } else if (group.taxRate > 0) {
+                        printedTax = roundNormal(itemNettoBeforeTax * (group.taxRate / 100));
+                    }
+                    
+                    const printedNettoTotal = roundNormal(itemNettoBeforeTax + printedTax);
+
+                    exportData.push({
+                        'No. Penjualan (Invoice)': group.invoiceNumber,
+                        'No. Surat Jalan': group.deliveryNumbers.join(", "),
+                        'No. PO Buyer': group.poNumbers.join(", ") || "-",
+                        'Tanggal Faktur': format(new Date(group.date), "yyyy-MM-dd"),
+                        'Buyer / Customer': group.buyerName,
+                        'Barcode / SKU': item.product?.sku || "-",
+                        'Nama Barang': item.product?.name || "-",
+                        'Qty': qty,
+                        'Satuan': item.uom,
+                        'Harga Satuan': printedPrice,
+                        'Total Harga': printedTotalBrutto,
+                        'Potongan Item': printedDiscLine,
+                        'Gudang': group.warehouseName,
+                        'Sales Person': group.salesPerson,
+                        '': '',
+                        'Hasil PPN 11%': printedTax,
+                        'Hasil Grand Total Netto': printedNettoTotal,
+                        'Status Pembayaran': group.paymentStatus === 'PAID' ? 'PAID / DONE' : 'PENDING'
+                    });
+                });
+            });
+
+            exportToExcel(exportData, `Laporan_Penjualan_Invoice_${format(new Date(), "yyyyMMdd")}`, 'Penjualan_Invoice');
+        } else if (type === "PI") {
+            const grouped = new Map<string, {
+                orderNumber: string;
+                proformaNumber: string;
+                deliveryNumbers: string[];
+                invoiceNumbers: string[];
+                date: Date;
+                buyerName: string;
+                salesPerson: string;
+                paymentStatus: string;
+                warehouseName: string;
+                taxRate: number;
+                items: Map<string, {
+                    product: any;
+                    quantity: number;
+                    salesPrice: number;
+                    discount: number;
+                    uom: string;
+                }>;
+            }>();
+
+            activeDeliveries.forEach(d => {
+                const orderNum = d.order?.orderNumber || d.order?.proformaNumber || d.invoiceNumber || d.deliveryNumber;
+                const key = orderNum;
+                
+                const orderDate = d.order?.date ? new Date(d.order.date) : new Date(d.createdAt);
+
+                if (!grouped.has(key)) {
+                    grouped.set(key, {
+                        orderNumber: d.order?.orderNumber || "-",
+                        proformaNumber: d.order?.proformaNumber || "-",
+                        deliveryNumbers: [],
+                        invoiceNumbers: [],
+                        date: orderDate,
+                        buyerName: d.buyerName,
+                        salesPerson: d.salesPerson || "-",
+                        paymentStatus: d.paymentStatus || "PENDING",
+                        warehouseName: d.warehouse?.name || "-",
+                        taxRate: Number(d.taxRate || 0),
+                        items: new Map()
+                    });
+                }
+
+                const group = grouped.get(key)!;
+                if (!group.deliveryNumbers.includes(d.deliveryNumber)) {
+                    group.deliveryNumbers.push(d.deliveryNumber);
+                }
+                if (d.invoiceNumber && !group.invoiceNumbers.includes(d.invoiceNumber)) {
+                    group.invoiceNumbers.push(d.invoiceNumber);
+                }
+
+                const items = d.items || [];
+                items.forEach((item: any) => {
+                    const sku = item.product?.sku || "-";
+                    const price = Number(item.salesPrice || 0);
+                    const itemKey = `${sku}_${price}`;
+
+                    if (!group.items.has(itemKey)) {
+                        group.items.set(itemKey, {
+                            product: item.product,
+                            quantity: 0,
+                            salesPrice: price,
+                            discount: 0,
+                            uom: item.uom || item.product?.uom || "-"
+                        });
+                    }
+
+                    const groupedItem = group.items.get(itemKey)!;
+                    groupedItem.quantity += Number(item.quantity) || 0;
+                    groupedItem.discount += Number(item.discount || 0);
+                });
+            });
+
+            grouped.forEach((group, orderNum) => {
+                group.items.forEach((item) => {
+                    const qty = item.quantity;
+                    const price = item.salesPrice;
+                    const discLine = item.discount;
+                    
+                    const printedPrice = roundNormal(price);
+                    const printedTotalBrutto = roundNormal(qty * price);
+                    const printedDiscLine = roundNormal(discLine);
+                    const itemNettoBeforeTax = (qty * price) - discLine; // DPP
+                    
+                    let printedTax = 0;
+                    if (group.taxRate === 12) {
+                        const dppNilaiLain = itemNettoBeforeTax * (11 / 12);
+                        printedTax = roundNormal(dppNilaiLain * 0.12);
+                    } else if (group.taxRate > 0) {
+                        printedTax = roundNormal(itemNettoBeforeTax * (group.taxRate / 100));
+                    }
+                    
+                    const printedNettoTotal = roundNormal(itemNettoBeforeTax + printedTax);
+
+                    exportData.push({
+                        'No. Proforma / SO (PI)': group.orderNumber || group.proformaNumber,
+                        'No. Penjualan (Invoice)': group.invoiceNumbers.join(", ") || "-",
+                        'No. Surat Jalan': group.deliveryNumbers.join(", "),
+                        'Tanggal PI': format(new Date(group.date), "yyyy-MM-dd"),
+                        'Buyer / Customer': group.buyerName,
+                        'Barcode / SKU': item.product?.sku || "-",
+                        'Nama Barang': item.product?.name || "-",
+                        'Qty': qty,
+                        'Satuan': item.uom,
+                        'Harga Satuan': printedPrice,
+                        'Total Harga': printedTotalBrutto,
+                        'Potongan Item': printedDiscLine,
+                        'Gudang': group.warehouseName,
+                        'Sales Person': group.salesPerson,
+                        '': '',
+                        'Hasil PPN 11%': printedTax,
+                        'Hasil Grand Total Netto': printedNettoTotal,
+                        'Status Pembayaran': group.paymentStatus === 'PAID' ? 'PAID / DONE' : 'PENDING'
+                    });
+                });
+            });
+
+            exportToExcel(exportData, `Laporan_Penjualan_PI_${format(new Date(), "yyyyMMdd")}`, 'Penjualan_PI');
+        }
     };
 
     const handleExportReturn = async () => {
@@ -1083,6 +1337,100 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                     onClose={() => setShowPreview(false)}
                     onExport={handleExport}
                 />
+            )}
+
+            {showExportModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+                    <div className="bg-white rounded-[2.5rem] p-8 max-w-md w-full shadow-2xl border border-slate-100 flex flex-col gap-6 animate-zoom-in">
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <h3 className="text-xl font-black text-slate-900 tracking-tight">Ekspor Penjualan</h3>
+                                <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 mt-1">Pilih Format Laporan Excel</p>
+                            </div>
+                            <button 
+                                onClick={() => setShowExportModal(false)}
+                                className="p-2 hover:bg-slate-50 rounded-xl transition-colors text-slate-400 hover:text-slate-600"
+                            >
+                                <X className="h-5 w-5" />
+                            </button>
+                        </div>
+
+                        <div className="flex flex-col gap-3">
+                            <label className={cn(
+                                "p-4 border rounded-2xl cursor-pointer transition-all flex gap-4 items-start select-none",
+                                exportType === "INVOICE" ? "border-indigo-600 bg-indigo-50/20 shadow-sm" : "border-slate-200 hover:border-indigo-200"
+                            )}>
+                                <input 
+                                    type="radio" 
+                                    name="exportType" 
+                                    value="INVOICE" 
+                                    checked={exportType === "INVOICE"}
+                                    onChange={() => setExportType("INVOICE")}
+                                    className="mt-1 accent-indigo-600" 
+                                />
+                                <div>
+                                    <div className="text-xs font-black text-slate-900 uppercase tracking-wider">Faktur Penjualan (KB-TRN/TRD)</div>
+                                    <div className="text-[10px] text-slate-500 font-bold mt-1">Mengelompokkan transaksi per nomor faktur dengan tanggal faktur/PI. Direkomendasikan untuk pembukuan & laporan pajak.</div>
+                                </div>
+                            </label>
+
+                            <label className={cn(
+                                "p-4 border rounded-2xl cursor-pointer transition-all flex gap-4 items-start select-none",
+                                exportType === "PI" ? "border-indigo-600 bg-indigo-50/20 shadow-sm" : "border-slate-200 hover:border-indigo-200"
+                            )}>
+                                <input 
+                                    type="radio" 
+                                    name="exportType" 
+                                    value="PI" 
+                                    checked={exportType === "PI"}
+                                    onChange={() => setExportType("PI")}
+                                    className="mt-1 accent-indigo-600" 
+                                />
+                                <div>
+                                    <div className="text-xs font-black text-slate-900 uppercase tracking-wider">Proforma Invoice (PI / KB-PO)</div>
+                                    <div className="text-[10px] text-slate-500 font-bold mt-1">Mengelompokkan transaksi per nomor pesanan PI/SO dengan tanggal pembuatan PI. Cocok untuk rekonsiliasi PO buyer.</div>
+                                </div>
+                            </label>
+
+                            <label className={cn(
+                                "p-4 border rounded-2xl cursor-pointer transition-all flex gap-4 items-start select-none",
+                                exportType === "SJ" ? "border-slate-400 bg-slate-50/50 shadow-sm" : "border-slate-200 hover:border-slate-300"
+                            )}>
+                                <input 
+                                    type="radio" 
+                                    name="exportType" 
+                                    value="SJ" 
+                                    checked={exportType === "SJ"}
+                                    onChange={() => setExportType("SJ")}
+                                    className="mt-1 accent-slate-600" 
+                                />
+                                <div>
+                                    <div className="text-xs font-black text-slate-900 uppercase tracking-wider">Surat Jalan (SJ)</div>
+                                    <div className="text-[10px] text-slate-500 font-bold mt-1">Menampilkan baris detail per dokumen pengiriman barang fisik. Cocok untuk operasional gudang & logistik.</div>
+                                </div>
+                            </label>
+                        </div>
+
+                        <div className="flex gap-3 justify-end mt-2">
+                            <button
+                                onClick={() => setShowExportModal(false)}
+                                className="px-6 py-3 border border-slate-200 text-slate-600 hover:bg-slate-50 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all"
+                            >
+                                Batal
+                            </button>
+                            <button
+                                onClick={() => {
+                                    runExport(exportType);
+                                    setShowExportModal(false);
+                                }}
+                                className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-indigo-100 transition-all flex items-center gap-2"
+                            >
+                                <Download className="h-4 w-4" />
+                                <span>Unduh Excel</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
 
             <VoidReasonModal 
