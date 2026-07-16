@@ -254,15 +254,25 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
         }
     };
 
-    const filteredReturns = initialReturns.filter(r =>
-        r.returnNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.delivery?.buyerName.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredReturns = initialReturns.filter(r => {
+        const rDate = new Date(r.date || r.createdAt);
+        const matchesMonth = selectedDate ? true : (rDate.getMonth() + 1) === selectedMonth;
+        const matchesYear = selectedDate ? true : rDate.getFullYear() === selectedYear;
+        const matchesDate = selectedDate ? format(rDate, 'yyyy-MM-dd') === selectedDate : true;
+        const matchesSearch = r.returnNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                             r.delivery?.buyerName.toLowerCase().includes(searchTerm.toLowerCase());
+        return matchesMonth && matchesYear && matchesDate && matchesSearch;
+    });
     
-    const filteredOrders = initialSalesOrders.filter(o =>
-        o.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        o.buyerName.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredOrders = initialSalesOrders.filter(o => {
+        const oDate = new Date(o.date || o.createdAt);
+        const matchesMonth = selectedDate ? true : (oDate.getMonth() + 1) === selectedMonth;
+        const matchesYear = selectedDate ? true : oDate.getFullYear() === selectedYear;
+        const matchesDate = selectedDate ? format(oDate, 'yyyy-MM-dd') === selectedDate : true;
+        const matchesSearch = o.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                             o.buyerName.toLowerCase().includes(searchTerm.toLowerCase());
+        return matchesMonth && matchesYear && matchesDate && matchesSearch;
+    });
 
     const handleExport = () => {
         const exportData: any[] = [];
