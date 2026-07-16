@@ -762,6 +762,14 @@ export async function deleteSalesDeliveryService(id: string) {
                     }
                 });
 
+                // Decrement shippedQuantity on SalesOrderItem if linked
+                if (item.orderItemId) {
+                    await tx.salesOrderItem.update({
+                        where: { id: item.orderItemId },
+                        data: { shippedQuantity: { decrement: item.quantity } }
+                    });
+                }
+
                 // ─── FASE 2d: Restore Lot allocations on Delete ────────────────
                 const allocations = await tx.lotAllocation.findMany({
                     where: { sdItemId: item.id }
@@ -774,6 +782,20 @@ export async function deleteSalesDeliveryService(id: string) {
                     await tx.lotAllocation.delete({ where: { id: alloc.id } });
                 }
                 // ──────────────────────────────────────────────────────────────
+            }
+
+            // Update linked SalesOrder status
+            if (delivery.orderId) {
+                const orderItems = await tx.salesOrderItem.findMany({
+                    where: { orderId: delivery.orderId }
+                });
+                const allShipped = orderItems.every((oi: any) => oi.shippedQuantity >= oi.quantity);
+                const someShipped = orderItems.some((oi: any) => oi.shippedQuantity > 0);
+                
+                await tx.salesOrder.update({
+                    where: { id: delivery.orderId },
+                    data: { status: allShipped ? "CLOSED" : someShipped ? "PARTIAL" : "OPEN" }
+                });
             }
         }
 
@@ -818,6 +840,28 @@ export async function voidSalesDeliveryService(id: string, reason: string) {
                     // Delete the allocation record
                     await tx.lotAllocation.delete({ where: { id: alloc.id } });
                 }
+
+                // Decrement shippedQuantity on SalesOrderItem if linked
+                if (sdItem.orderItemId) {
+                    await tx.salesOrderItem.update({
+                        where: { id: sdItem.orderItemId },
+                        data: { shippedQuantity: { decrement: sdItem.quantity } }
+                    });
+                }
+            }
+
+            // Update linked SalesOrder status
+            if (delivery.orderId) {
+                const orderItems = await tx.salesOrderItem.findMany({
+                    where: { orderId: delivery.orderId }
+                });
+                const allShipped = orderItems.every((oi: any) => oi.shippedQuantity >= oi.quantity);
+                const someShipped = orderItems.some((oi: any) => oi.shippedQuantity > 0);
+                
+                await tx.salesOrder.update({
+                    where: { id: delivery.orderId },
+                    data: { status: allShipped ? "CLOSED" : someShipped ? "PARTIAL" : "OPEN" }
+                });
             }
         }
         // ─────────────────────────────────────────────────────────────────
