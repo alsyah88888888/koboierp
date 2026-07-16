@@ -2,37 +2,57 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 async function main() {
-  const sd = await prisma.salesDelivery.findFirst({
+  const poNum = 'KB-PO-10062026-008';
+  
+  // Find SalesOrder (PI) including its items and deliveries
+  const order = await prisma.salesOrder.findFirst({
     where: {
-      OR: [
-        { invoiceNumber: 'KB-TRN-22062026-012' },
-        { invoiceNumber: { contains: '22062026-012' } },
-        { deliveryNumber: { contains: 'KB-TRN-22062026-012' } }
-      ]
+      orderNumber: poNum
     },
     include: {
-      order: true
+      items: {
+        include: {
+          product: true
+        }
+      },
+      deliveries: {
+        include: {
+          items: {
+            include: {
+              product: true
+            }
+          }
+        }
+      }
     }
   });
 
-  if (!sd) {
-    console.log("Sales delivery not found!");
+  if (!order) {
+    console.log(`SalesOrder ${poNum} not found!`);
     return;
   }
 
-  console.log("=== Sales Delivery Details ===");
-  console.log("Invoice Number:", sd.invoiceNumber);
-  console.log("Delivery Number:", sd.deliveryNumber);
-  console.log("Delivery Date:", sd.date);
-  console.log("Delivery CreatedAt:", sd.createdAt);
-  console.log("OrderId:", sd.orderId);
-  if (sd.order) {
-    console.log("=== Linked Sales Order (PI) Details ===");
-    console.log("SO Order Number:", sd.order.orderNumber);
-    console.log("SO Date:", sd.order.date);
-    console.log("SO CreatedAt:", sd.order.createdAt);
-    console.log("SO Invoice Number:", sd.order.invoiceNumber);
-  }
+  console.log("=== Sales Order Details ===");
+  console.log("Order Number:", order.orderNumber);
+  console.log("Status:", order.status);
+  console.log("Date:", order.date);
+  console.log("Buyer Name:", order.buyerName);
+  console.log("Grand Total:", order.grandTotal);
+  console.log("Invoice Number:", order.invoiceNumber);
+
+  console.log("\n=== Sales Order Items ===");
+  order.items.forEach(item => {
+    console.log(`SKU: ${item.product.sku} | Qty Ordered: ${item.quantity} | Shipped: ${item.shippedQuantity}`);
+  });
+
+  console.log("\n=== Linked Sales Deliveries ===");
+  console.log(`Count: ${order.deliveries.length}`);
+  order.deliveries.forEach(d => {
+    console.log(`Delivery Number: ${d.deliveryNumber} | Invoice Number: ${d.invoiceNumber} | Status: ${d.isVoid ? 'VOID' : 'ACTIVE'} | Date: ${d.date}`);
+    d.items.forEach(item => {
+      console.log(`  SKU: ${item.product.sku} | Qty Shipped: ${item.quantity}`);
+    });
+  });
 }
 
 main().catch(console.error).finally(() => prisma.$disconnect());
