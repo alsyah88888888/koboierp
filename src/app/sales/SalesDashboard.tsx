@@ -759,59 +759,59 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                 <DashboardStats month={selectedMonth} year={selectedYear} />
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-[1400px]">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-[1400px]">
                 {/* BC Performance Card */}
                 {(isAdmin || bcStats.sjCount > 0) && (
-                    <div className="erp-card p-6 md:p-8 relative overflow-hidden group">
+                    <div className="bg-white border border-slate-200 rounded-[2rem] p-6 md:p-8 relative overflow-hidden group hover:shadow-xl hover:shadow-indigo-500/5 transition-all duration-300">
                         <div className="absolute -right-12 -top-12 h-48 w-48 bg-indigo-50 rounded-full blur-3xl transition-transform group-hover:scale-110 opacity-60" />
                         
                         <div className="relative z-10">
-                            <div className="flex justify-between items-start mb-8">
-                                <div className="flex items-center gap-5">
-                                    <div className="bg-indigo-600 text-white p-4 rounded-2xl shadow-xl shadow-indigo-100">
-                                        <TrendingUp className="h-6 w-6" />
+                            <div className="flex justify-between items-start mb-6">
+                                <div className="flex items-center gap-4">
+                                    <div className="bg-indigo-50 text-indigo-600 p-3.5 rounded-[1.5rem] shadow-sm border border-indigo-100/50 group-hover:scale-110 transition-transform duration-300">
+                                        <TrendingUp className="h-5 w-5" />
                                     </div>
                                     <div>
-                                        <h3 className="text-xl font-black text-slate-900 tracking-tight">Performance: BC</h3>
+                                        <h3 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Performance: BC</h3>
                                         <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 mt-1">Enterprise Sales Lead</p>
                                     </div>
                                 </div>
-                                <div className="bg-indigo-50 text-indigo-700 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-indigo-100 shadow-sm">Lead Active</div>
+                                <div className="bg-indigo-50 text-indigo-700 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-indigo-100 shadow-sm hidden sm:block">Lead Active</div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-6">
-                                <div className="p-5 bg-white/50 backdrop-blur-sm border border-slate-100 rounded-[2rem] shadow-sm group-hover:border-indigo-100 transition-colors">
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Total Delivery</p>
-                                    <p className="text-3xl font-black text-indigo-600 tracking-tighter">{bcStats.sjCount}</p>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="p-4 bg-slate-50/50 backdrop-blur-sm border border-slate-100 rounded-2xl group-hover:border-indigo-100 transition-colors">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Total Delivery</p>
+                                    <p className="text-2xl font-black text-indigo-600 tracking-tighter">{bcStats.sjCount}</p>
                                 </div>
-                                <div className="p-5 bg-white/50 backdrop-blur-sm border border-slate-100 rounded-[2rem] shadow-sm group-hover:border-indigo-100 transition-colors">
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Total Quantity</p>
-                                    <p className="text-3xl font-black text-indigo-600 tracking-tighter">{bcStats.totalQty}</p>
+                                <div className="p-4 bg-slate-50/50 backdrop-blur-sm border border-slate-100 rounded-2xl group-hover:border-indigo-100 transition-colors">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Total Quantity</p>
+                                    <p className="text-2xl font-black text-indigo-600 tracking-tighter">{bcStats.totalQty}</p>
                                 </div>
                             </div>
 
-                            <div className="mt-8 pt-6 border-t border-slate-100/60">
+                            <div className="mt-6 pt-5 border-t border-slate-100">
                                 <div className="flex items-center justify-between mb-4">
                                     <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Recent Shipments</span>
                                     <div className="h-1 w-8 bg-indigo-200 rounded-full" />
                                 </div>
                                 {bcStats.recentDeliveries.length > 0 ? (
-                                    <div className="space-y-3">
+                                    <div className="space-y-2">
                                         {bcStats.recentDeliveries.map((delivery, idx) => (
-                                            <div key={idx} className="flex justify-between items-center text-xs p-4 bg-white border border-slate-100 rounded-2xl hover:shadow-md hover:border-indigo-100 transition-all cursor-default group/item">
+                                            <div key={idx} className="flex justify-between items-center text-xs p-3 bg-white border border-slate-100 rounded-xl hover:shadow-md hover:border-indigo-100 transition-all cursor-default">
                                                 <div className="min-w-0">
-                                                    <p className="font-black text-slate-800 text-[13px] tracking-tight">{delivery.deliveryNumber}</p>
+                                                    <p className="font-black text-slate-800 text-[12px] tracking-tight">{delivery.deliveryNumber}</p>
                                                     <p className="text-[10px] font-bold text-slate-400 truncate mt-0.5">{delivery.buyerName}</p>
                                                 </div>
-                                                <div className="text-right shrink-0 ml-4 flex flex-col items-end">
-                                                    <p className="font-black text-indigo-600 text-[13px]">{delivery.items.reduce((s: number, i: any) => s + i.quantity, 0)} <span className="text-[9px] uppercase">Pcs</span></p>
-                                                    <p className="text-[10px] font-bold text-slate-400 mt-0.5">{isClient ? format(new Date(delivery.createdAt), "dd MMM") : "..."}</p>
+                                                <div className="text-right shrink-0 ml-4">
+                                                    <p className="font-black text-indigo-600 text-[12px]">{delivery.items.reduce((s: number, i: any) => s + i.quantity, 0)} <span className="text-[9px] uppercase">Pcs</span></p>
+                                                    <p className="text-[9px] font-bold text-slate-400 mt-0.5">{isClient ? format(new Date(delivery.createdAt), "dd MMM") : "..."}</p>
                                                 </div>
                                             </div>
                                         ))}
                                     </div>
                                 ) : (
-                                    <div className="py-10 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                                    <div className="py-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
                                         <p className="text-[10px] font-black text-slate-400 italic uppercase tracking-widest">Belum ada pengiriman</p>
                                     </div>
                                 )}
@@ -822,56 +822,56 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
 
                 {/* PF Performance Card */}
                 {(isAdmin || pfStats.sjCount > 0) && (
-                    <div className="erp-card p-6 md:p-8 relative overflow-hidden group">
+                    <div className="bg-white border border-slate-200 rounded-[2rem] p-6 md:p-8 relative overflow-hidden group hover:shadow-xl hover:shadow-amber-500/5 transition-all duration-300">
                         <div className="absolute -right-12 -top-12 h-48 w-48 bg-amber-50 rounded-full blur-3xl transition-transform group-hover:scale-110 opacity-60" />
                         
                         <div className="relative z-10">
-                            <div className="flex justify-between items-start mb-8">
-                                <div className="flex items-center gap-5">
-                                    <div className="bg-amber-600 text-white p-4 rounded-2xl shadow-xl shadow-amber-100">
-                                        <Users className="h-6 w-6" />
+                            <div className="flex justify-between items-start mb-6">
+                                <div className="flex items-center gap-4">
+                                    <div className="bg-amber-50 text-amber-600 p-3.5 rounded-[1.5rem] shadow-sm border border-amber-100/50 group-hover:scale-110 transition-transform duration-300">
+                                        <Users className="h-5 w-5" />
                                     </div>
                                     <div>
-                                        <h3 className="text-xl font-black text-slate-900 tracking-tight">Performance: PF</h3>
+                                        <h3 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Performance: PF</h3>
                                         <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 mt-1">Direct Sales Channel</p>
                                     </div>
                                 </div>
-                                <div className="bg-amber-100 text-amber-700 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-amber-100 shadow-sm">Lead Active</div>
+                                <div className="bg-amber-50 text-amber-700 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-amber-100 shadow-sm hidden sm:block">Lead Active</div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-6">
-                                <div className="p-5 bg-white/50 backdrop-blur-sm border border-slate-100 rounded-[2rem] shadow-sm group-hover:border-amber-100 transition-colors">
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Total Delivery</p>
-                                    <p className="text-3xl font-black text-indigo-600 tracking-tighter">{pfStats.sjCount}</p>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="p-4 bg-slate-50/50 backdrop-blur-sm border border-slate-100 rounded-2xl group-hover:border-amber-100 transition-colors">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Total Delivery</p>
+                                    <p className="text-2xl font-black text-amber-600 tracking-tighter">{pfStats.sjCount}</p>
                                 </div>
-                                <div className="p-5 bg-white/50 backdrop-blur-sm border border-slate-100 rounded-[2rem] shadow-sm group-hover:border-amber-100 transition-colors">
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Total Quantity</p>
-                                    <p className="text-3xl font-black text-indigo-600 tracking-tighter">{pfStats.totalQty}</p>
+                                <div className="p-4 bg-slate-50/50 backdrop-blur-sm border border-slate-100 rounded-2xl group-hover:border-amber-100 transition-colors">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Total Quantity</p>
+                                    <p className="text-2xl font-black text-amber-600 tracking-tighter">{pfStats.totalQty}</p>
                                 </div>
                             </div>
 
-                            <div className="mt-8 pt-6 border-t border-slate-100/60">
+                            <div className="mt-6 pt-5 border-t border-slate-100">
                                 <div className="flex items-center justify-between mb-4">
                                     <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Recent Shipments</span>
                                     <div className="h-1 w-8 bg-amber-200 rounded-full" />
                                 </div>
                                 {pfStats.recentDeliveries.length > 0 ? (
-                                    <div className="space-y-3">
+                                    <div className="space-y-2">
                                         {pfStats.recentDeliveries.map((delivery, idx) => (
-                                            <div key={idx} className="flex justify-between items-center text-xs p-4 bg-white border border-slate-100 rounded-2xl hover:shadow-md hover:border-amber-100 transition-all cursor-default group/item">
+                                            <div key={idx} className="flex justify-between items-center text-xs p-3 bg-white border border-slate-100 rounded-xl hover:shadow-md hover:border-amber-100 transition-all cursor-default">
                                                 <div className="min-w-0">
-                                                    <p className="font-black text-slate-800 text-[13px] tracking-tight">{delivery.deliveryNumber}</p>
+                                                    <p className="font-black text-slate-800 text-[12px] tracking-tight">{delivery.deliveryNumber}</p>
                                                     <p className="text-[10px] font-bold text-slate-400 truncate mt-0.5">{delivery.buyerName}</p>
                                                 </div>
-                                                <div className="text-right shrink-0 ml-4 flex flex-col items-end">
-                                                    <p className="font-black text-amber-600 text-[13px]">{delivery.items.reduce((s: number, i: any) => s + i.quantity, 0)} <span className="text-[9px] uppercase">Pcs</span></p>
-                                                    <p className="text-[10px] font-bold text-slate-400 mt-0.5">{isClient ? format(new Date(delivery.createdAt), "dd MMM") : "..."}</p>
+                                                <div className="text-right shrink-0 ml-4">
+                                                    <p className="font-black text-amber-600 text-[12px]">{delivery.items.reduce((s: number, i: any) => s + i.quantity, 0)} <span className="text-[9px] uppercase">Pcs</span></p>
+                                                    <p className="text-[9px] font-bold text-slate-400 mt-0.5">{isClient ? format(new Date(delivery.createdAt), "dd MMM") : "..."}</p>
                                                 </div>
                                             </div>
                                         ))}
                                     </div>
                                 ) : (
-                                    <div className="py-10 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                                    <div className="py-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
                                         <p className="text-[10px] font-black text-slate-400 italic uppercase tracking-widest">Belum ada pengiriman</p>
                                     </div>
                                 )}

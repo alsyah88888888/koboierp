@@ -29,9 +29,9 @@ export function DashboardStats({ month, year }: { month?: number; year?: number 
     }, [month, year]);
 
     if (!stats) return (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 animate-pulse">
-            {[1, 2, 3, 4].map(i => (
-                <div key={i} className="h-32 bg-slate-100 rounded-2xl border border-slate-200" />
+        <div className="grid gap-4 md:grid-cols-3 animate-pulse">
+            {[1, 2, 3].map(i => (
+                <div key={i} className="h-32 bg-slate-100 rounded-[2rem] border border-slate-200" />
             ))}
         </div>
     );
@@ -39,19 +39,21 @@ export function DashboardStats({ month, year }: { month?: number; year?: number 
     const items = [
         {
             label: "Total Revenue",
-            value: formatCurrency(Number(stats?.totalRevenue || 0)),
+            value: formatCurrency(Math.round(Number(stats?.totalRevenue || 0))),
             icon: DollarSign,
             color: "text-emerald-600",
             bg: "bg-emerald-50",
-            border: "border-emerald-100"
+            border: "border-emerald-100",
+            subtitle: "Pendapatan kotor bulan ini"
         },
         {
             label: "Asset Value (Stock)",
-            value: formatCurrency(Number(stats?.assetValue || 0)),
+            value: formatCurrency(Math.round(Number(stats?.assetValue || 0))),
             icon: Box,
             color: "text-blue-600",
             bg: "bg-blue-50",
-            border: "border-blue-100"
+            border: "border-blue-100",
+            subtitle: "Estimasi nilai persediaan saat ini"
         },
         {
             label: "Purchases (This Month)",
@@ -60,42 +62,38 @@ export function DashboardStats({ month, year }: { month?: number; year?: number 
             color: "text-amber-600",
             bg: "bg-amber-50",
             border: "border-amber-100",
-            suffix: " Items"
-        },
-        {
-            label: "Cash/Bank Balance",
-            value: formatCurrency(Number(stats?.cashBalance || 0)),
-            icon: Wallet,
-            color: "text-indigo-600",
-            bg: "bg-indigo-50",
-            border: "border-indigo-100"
+            suffix: " Items",
+            subtitle: "Total barang yang dibeli bulan ini"
         }
     ].filter(item => {
-        if (userRole === "WAREHOUSE" && (item.label === "Total Revenue" || item.label === "Cash/Bank Balance")) {
+        if (userRole === "WAREHOUSE" && item.label === "Total Revenue") {
             return false;
         }
         return true;
     });
 
     return (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-6 md:grid-cols-3">
             {items.map((item, i) => (
-                <div key={i} className={`erp-card p-6 md:p-7 relative group transition-all hover:scale-[1.03] active:scale-[0.98] border-slate-200/40`}>
+                <div key={i} className="bg-white border border-slate-200 rounded-[2rem] p-6 md:p-7 relative group transition-all duration-300 hover:shadow-xl hover:shadow-indigo-500/5 hover:-translate-y-1 overflow-hidden">
                     {/* Decorative Background Glow */}
-                    <div className={`absolute -right-10 -top-10 h-32 w-32 rounded-full opacity-[0.03] group-hover:opacity-[0.08] blur-3xl transition-all ${item.bg}`} />
+                    <div className={cn("absolute -right-10 -top-10 h-40 w-40 rounded-full opacity-[0.05] group-hover:opacity-[0.1] blur-3xl transition-all duration-500", item.bg)} />
                     
                     <div className="relative flex flex-col justify-between h-full space-y-6">
                         <div className="flex items-center justify-between">
-                            <div className={cn(item.bg, "p-3 rounded-2xl shadow-sm border border-white/50 backdrop-blur-md")}>
-                                <item.icon className={`h-5 w-5 ${item.color}`} />
+                            <div className={cn(item.bg, "p-4 rounded-[1.5rem] shadow-sm border transition-transform duration-300 group-hover:scale-110", item.border)}>
+                                <item.icon className={cn("h-6 w-6", item.color)} />
                             </div>
                         </div>
                         
-                        <div>
-                            <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 mb-2 truncate">{item.label}</p>
-                            <h3 className={`text-xl md:text-2xl font-black ${item.color} tracking-tighter leading-none`}>
+                        <div className="space-y-1">
+                            <p className="text-[11px] font-black uppercase tracking-widest text-slate-400 truncate">{item.label}</p>
+                            <h3 className={cn("text-2xl md:text-3xl font-black tracking-tighter leading-none", item.color)}>
                                 {isClient ? item.value : "Rp ---"}{isClient && item.suffix}
                             </h3>
+                            {item.subtitle && (
+                                <p className="text-[10px] font-bold text-slate-400/80 mt-2">{item.subtitle}</p>
+                            )}
                         </div>
                     </div>
                 </div>
