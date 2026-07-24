@@ -284,80 +284,30 @@ export function OperationalDashboard({
                 </div>
             </div>
 
-            {/* Nett Margin Cards for Sales */}
-            {/* Nett Margin Cards for Sales */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-[1400px]">
-                <div className="bg-white border border-slate-100 p-6 md:p-8 relative overflow-hidden group shadow-xl shadow-slate-200/40 rounded-[2rem] hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
-                    <div className="absolute -right-12 -top-12 h-48 w-48 bg-indigo-50 rounded-full blur-3xl transition-transform group-hover:scale-110 opacity-60" />
-                    <div className="relative z-10">
-                        <div className="flex justify-between items-start mb-6">
-                            <div className="flex items-center gap-4">
-                                <div className="bg-indigo-600 text-white p-3 rounded-2xl shadow-lg shadow-indigo-200">
-                                    <TrendingUp className="h-5 w-5" />
-                                </div>
-                                <div className="space-y-0.5">
-                                    <h3 className="text-lg font-black text-slate-900 tracking-tight">Performance: BC</h3>
-                                    <p className="text-[9px] font-black uppercase tracking-widest text-indigo-500 bg-indigo-50 px-2.5 py-1 rounded-full inline-block border border-indigo-100">Sales Channel</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-center">
-                            <div className="space-y-2">
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Nett Margin</p>
-                                <p className={`text-3xl lg:text-4xl font-black tracking-tighter ${bcStats.margin >= 0 ? 'text-indigo-600' : 'text-rose-600'}`}>
-                                    {formatCurrency(bcStats.margin)}
-                                </p>
-                            </div>
-                            <div className="space-y-3">
-                                <div className="px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl flex justify-between items-center transition-colors hover:bg-emerald-50 hover:border-emerald-100 group/item">
-                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest group-hover/item:text-emerald-600">Sales</span>
-                                    <span className="text-sm font-black text-slate-700 group-hover/item:text-emerald-700">{formatCurrency(bcStats.salesVal)}</span>
-                                </div>
-                                <div className="px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl flex justify-between items-center transition-colors hover:bg-rose-50 hover:border-rose-100 group/item">
-                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest group-hover/item:text-rose-600">Ops / Purchase</span>
-                                    <span className="text-sm font-black text-slate-700 group-hover/item:text-rose-700">{formatCurrency(bcStats.purchaseVal + bcStats.expenseVal)}</span>
-                                </div>
-                            </div>
-                        </div>
+            {/* Jumlah Operasional Cards */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="bg-white border border-slate-100 shadow-xl shadow-slate-200/40 p-6 rounded-3xl flex items-center gap-5 hover:-translate-y-1 transition-all duration-300">
+                    <div className="p-4 bg-indigo-50 text-indigo-500 rounded-2xl shadow-inner">
+                        <TrendingUp className="w-7 h-7" />
+                    </div>
+                    <div>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Jumlah Operasional BC</p>
+                        <p className="text-2xl font-black tracking-tighter text-slate-900 mt-1">
+                            {formatCurrency(bcStats.expenseVal + bcStats.purchaseVal)}
+                        </p>
                     </div>
                 </div>
 
-                {/* Only show Sales PF if not Bu Cici */}
                 {userEmail !== 'chici@kolaborasi.id' && (
-                    <div className="bg-white border border-slate-100 p-6 md:p-8 relative overflow-hidden group shadow-xl shadow-slate-200/40 rounded-[2rem] hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
-                        <div className="absolute -right-12 -top-12 h-48 w-48 bg-amber-50 rounded-full blur-3xl transition-transform group-hover:scale-110 opacity-60" />
-                        <div className="relative z-10">
-                            <div className="flex justify-between items-start mb-6">
-                                <div className="flex items-center gap-4">
-                                    <div className="bg-amber-500 text-white p-3 rounded-2xl shadow-lg shadow-amber-200">
-                                        <Wallet className="h-5 w-5" />
-                                    </div>
-                                    <div className="space-y-0.5">
-                                        <h3 className="text-lg font-black text-slate-900 tracking-tight">Performance: PF</h3>
-                                        <p className="text-[9px] font-black uppercase tracking-widest text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full inline-block border border-amber-100">Direct Channel</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-center">
-                                <div className="space-y-2">
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Nett Margin</p>
-                                    <p className={`text-3xl lg:text-4xl font-black tracking-tighter ${pfStats.margin >= 0 ? 'text-amber-500' : 'text-rose-600'}`}>
-                                        {formatCurrency(pfStats.margin)}
-                                    </p>
-                                </div>
-                                <div className="space-y-3">
-                                    <div className="px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl flex justify-between items-center transition-colors hover:bg-emerald-50 hover:border-emerald-100 group/item">
-                                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest group-hover/item:text-emerald-600">Sales</span>
-                                        <span className="text-sm font-black text-slate-700 group-hover/item:text-emerald-700">{formatCurrency(pfStats.salesVal)}</span>
-                                    </div>
-                                    <div className="px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl flex justify-between items-center transition-colors hover:bg-rose-50 hover:border-rose-100 group/item">
-                                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest group-hover/item:text-rose-600">Ops / Purchase</span>
-                                        <span className="text-sm font-black text-slate-700 group-hover/item:text-rose-700">{formatCurrency(pfStats.purchaseVal + pfStats.expenseVal)}</span>
-                                    </div>
-                                </div>
-                            </div>
+                    <div className="bg-white border border-slate-100 shadow-xl shadow-slate-200/40 p-6 rounded-3xl flex items-center gap-5 hover:-translate-y-1 transition-all duration-300">
+                        <div className="p-4 bg-amber-50 text-amber-500 rounded-2xl shadow-inner">
+                            <Wallet className="w-7 h-7" />
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Jumlah Operasional PF</p>
+                            <p className="text-2xl font-black tracking-tighter text-slate-900 mt-1">
+                                {formatCurrency(pfStats.expenseVal + pfStats.purchaseVal)}
+                            </p>
                         </div>
                     </div>
                 )}
@@ -398,7 +348,7 @@ export function OperationalDashboard({
             </div>
 
             <div className="bg-white border border-slate-100 shadow-xl shadow-slate-200/40 rounded-[2rem] overflow-hidden flex flex-col flex-1">
-                <div className="p-5 border-b border-slate-100 flex flex-col xl:flex-row justify-between items-stretch xl:items-center gap-4 bg-slate-50/50">
+                <div className="p-5 flex flex-col xl:flex-row justify-between items-stretch xl:items-center gap-4">
                     <div className="flex flex-col md:flex-row gap-3 w-full xl:max-w-4xl">
                         <div className="relative w-full md:w-72 shrink-0 group">
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-primary transition-colors" />
