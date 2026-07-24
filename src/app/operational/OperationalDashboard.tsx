@@ -355,7 +355,7 @@ export function OperationalDashboard({
                             <input
                                 type="text"
                                 placeholder="Cari transaksi..."
-                                className="w-full bg-white border border-slate-200 rounded-2xl py-2.5 pl-11 pr-4 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium shadow-sm h-[42px] outline-none"
+                                className="w-full bg-slate-100/80 border-none rounded-2xl py-2.5 pl-11 pr-4 text-sm focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all font-medium h-[42px] outline-none"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
@@ -365,7 +365,7 @@ export function OperationalDashboard({
                         <div className="flex flex-wrap items-center gap-2 md:gap-3">
                             <input
                                 type="date"
-                                className="bg-white border border-slate-200 rounded-2xl py-2.5 px-4 text-[11px] font-black uppercase tracking-widest text-slate-600 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none h-[42px] shadow-sm cursor-pointer"
+                                className="bg-slate-100/80 border-none rounded-2xl py-2.5 px-4 text-[11px] font-black uppercase tracking-widest text-slate-600 focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all outline-none h-[42px] cursor-pointer"
                                 value={filterDate}
                                 onChange={(e) => {
                                     setFilterDate(e.target.value);
@@ -380,7 +380,7 @@ export function OperationalDashboard({
                                     <select
                                         value={filterMonth}
                                         onChange={(e) => setFilterMonth(e.target.value)}
-                                        className="bg-white border border-slate-200 rounded-2xl py-2.5 pl-4 pr-8 text-[11px] font-black uppercase tracking-widest text-slate-600 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none cursor-pointer h-[42px] shadow-sm"
+                                        className="bg-slate-100/80 border-none rounded-2xl py-2.5 pl-4 pr-8 text-[11px] font-black uppercase tracking-widest text-slate-600 focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all outline-none cursor-pointer h-[42px]"
                                     >
                                         <option value="ALL">Semua Bulan</option>
                                         {months.map((m, i) => (
@@ -390,7 +390,7 @@ export function OperationalDashboard({
                                     <select
                                         value={filterYear}
                                         onChange={(e) => setFilterYear(e.target.value)}
-                                        className="bg-white border border-slate-200 rounded-2xl py-2.5 pl-4 pr-8 text-[11px] font-black uppercase tracking-widest text-slate-600 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none cursor-pointer h-[42px] shadow-sm"
+                                        className="bg-slate-100/80 border-none rounded-2xl py-2.5 pl-4 pr-8 text-[11px] font-black uppercase tracking-widest text-slate-600 focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all outline-none cursor-pointer h-[42px]"
                                     >
                                         <option value="ALL">Semua Tahun</option>
                                         {years.map(y => (
@@ -402,7 +402,7 @@ export function OperationalDashboard({
                             <select
                                 value={filterDivision}
                                 onChange={(e) => setFilterDivision(e.target.value)}
-                                className="bg-white border border-slate-200 rounded-2xl py-2.5 pl-4 pr-8 text-[11px] font-black uppercase tracking-widest text-slate-600 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none cursor-pointer h-[42px] shadow-sm"
+                                className="bg-slate-100/80 border-none rounded-2xl py-2.5 pl-4 pr-8 text-[11px] font-black uppercase tracking-widest text-slate-600 focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all outline-none cursor-pointer h-[42px]"
                             >
                                 <option value="ALL">Semua Divisi</option>
                                 {uniqueDivisions.map(div => (
