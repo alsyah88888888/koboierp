@@ -47,6 +47,7 @@ export function OperationalDashboard({
     const [filterMonth, setFilterMonth] = useState<string>("ALL");
     const [filterYear, setFilterYear] = useState<string>(new Date().getFullYear().toString());
     const [filterDate, setFilterDate] = useState<string>("");
+    const [filterDivision, setFilterDivision] = useState<string>("ALL");
     const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null);
 
     const handleSort = (key: string) => {
@@ -59,6 +60,31 @@ export function OperationalDashboard({
 
     const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
     const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
+
+    const getTransactionDivisions = (t: any) => {
+        const divs = new Set<string>();
+        const refStr = (t.invoiceNumber || t.referenceNumber || "").toUpperCase();
+        if (refStr.includes('KB-TRN') || refStr.includes('SJ-')) {
+            const refs = refStr.split(',').map((r: string) => r.trim()).filter(Boolean);
+            const matchingDeliveries = initialDeliveries.filter((d: any) => 
+                refs.some((r: string) => d.deliveryNumber?.includes(r) || d.invoiceNumber?.includes(r))
+            );
+            if (matchingDeliveries.length > 0) {
+                matchingDeliveries.forEach((d: any) => {
+                    if (d.salesPerson) divs.add(d.salesPerson);
+                });
+                return Array.from(divs);
+            }
+        }
+        if (t.salesPerson) divs.add(t.salesPerson);
+        return Array.from(divs);
+    };
+
+    const uniqueDivisions = Array.from(new Set([
+        ...initialDeliveries.map((d: any) => d.salesPerson),
+        ...initialReceipts.map((r: any) => r.salesPerson),
+        ...transactions.map((t: any) => t.salesPerson)
+    ])).filter(Boolean).sort();
 
     useEffect(() => {
         setIsClient(true);
@@ -148,7 +174,13 @@ export function OperationalDashboard({
             matchDate = matchYear && matchMonth;
         }
 
-        return matchSearch && matchType && matchDate;
+        let matchDivision = true;
+        if (filterDivision !== "ALL") {
+            const divs = getTransactionDivisions(t);
+            matchDivision = divs.includes(filterDivision);
+        }
+
+        return matchSearch && matchType && matchDate && matchDivision;
     });
 
     const sortedTransactions = [...filteredTransactions].sort((a, b) => {
@@ -210,13 +242,21 @@ export function OperationalDashboard({
             };
         });
 
-        // Summary Data (BC & PF Performance)
+        // Summary Data (Performance)
         data.push({}); // Empty line
         data.push({ 'Keterangan': '--- RINGKASAN PERFORMA ---' });
-        data.push({ 'Keterangan': 'PERFORMA BC', 'Jumlah': bcStats.margin });
-        data.push({ 'Keterangan': 'PERFORMA PF', 'Jumlah': pfStats.margin });
+        
+        if (filterDivision === "ALL") {
+            uniqueDivisions.forEach(div => {
+                const stats = getStats(div as string);
+                data.push({ 'Keterangan': `PERFORMA ${div}`, 'Jumlah': stats.margin });
+            });
+        } else {
+            const stats = getStats(filterDivision);
+            data.push({ 'Keterangan': `PERFORMA ${filterDivision}`, 'Jumlah': stats.margin });
+        }
 
-        exportToExcel(data, 'Laporan_Hasil_Operasional', 'Operasional');
+        exportToExcel(data, `Laporan_Hasil_Operasional_${filterDivision}`, 'Operasional');
     };
 
     return (
@@ -409,6 +449,16 @@ export function OperationalDashboard({
                                     </select>
                                 </>
                             )}
+                            <select
+                                value={filterDivision}
+                                onChange={(e) => setFilterDivision(e.target.value)}
+                                className="bg-accent/50 border-none rounded-2xl py-2 pl-4 pr-8 text-[10px] font-black uppercase tracking-widest text-slate-600 focus:ring-2 focus:ring-primary/20 transition-all outline-none cursor-pointer h-[36px]"
+                            >
+                                <option value="ALL">Semua Divisi</option>
+                                {uniqueDivisions.map(div => (
+                                    <option key={div as string} value={div as string}>{div as string}</option>
+                                ))}
+                            </select>
                         </div>
                     </div>
                     <div className="flex flex-wrap gap-2 text-[10px] md:text-xs font-black uppercase tracking-widest justify-center shrink-0">
