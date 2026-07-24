@@ -239,6 +239,15 @@ export default function SalesOrderModal({ products, customers, warehouses, initi
                                         const customer = customers.find(c => c.name === val);
                                         if (customer && customer.address) setRecipient(customer.address);
                                     }}
+                                    onBlur={e => {
+                                        // Force sync on blur to capture datalist selection
+                                        const val = e.target.value.trim();
+                                        if (val) {
+                                            setBuyerName(val);
+                                            const customer = customers.find(c => c.name === val);
+                                            if (customer && customer.address) setRecipient(customer.address);
+                                        }
+                                    }}
                                     className="w-full bg-slate-50 border border-slate-100 px-4 py-2.5 rounded-xl text-sm font-black focus:border-indigo-500 outline-none transition-all"
                                     placeholder="Search customer..."
                                 />

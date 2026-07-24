@@ -88,6 +88,8 @@ export default function SalesModal({ products, warehouses, customers, orders = [
             setDate(new Date(initialData.createdAt).toISOString().split('T')[0]);
             setPoNumber(initialData.poNumber || "");
             setInvoiceNumber(initialData.invoiceNumber || "");
+            setTaxInvoiceNumber(initialData.taxInvoiceNumber || "");
+            setTaxInvoiceDate(initialData.taxInvoiceDate ? new Date(initialData.taxInvoiceDate).toISOString().split('T')[0] : "");
             setTotalDiscount(initialData.totalDiscount ? String(initialData.totalDiscount).replace('.', ',') : "0");
             const initTax = Number(initialData.taxRate || 0);
             setTaxRate(initTax);
@@ -119,7 +121,7 @@ export default function SalesModal({ products, warehouses, customers, orders = [
                 setShowDiscount(true);
             }
         }
-    }, [initialData]);
+    }, [initialData?.id]); // Depend on id to prevent re-run on every render
 
     useEffect(() => {
         items.forEach(async (item) => {
@@ -436,6 +438,11 @@ export default function SalesModal({ products, warehouses, customers, orders = [
                                                 const customer = customers.find(c => c.name === val);
                                                 if (customer && customer.address) setRecipient(customer.address);
                                             }
+                                        }}
+                                        onBlur={e => {
+                                            // Force sync on blur to capture datalist selection
+                                            const val = e.target.value.trim();
+                                            if (val) setBuyerName(val);
                                         }}
                                         className="w-full bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg text-sm font-bold focus:border-primary outline-none transition-all"
                                         placeholder={isManualBuyer ? "Manual Buyer..." : "Search customer..."}
