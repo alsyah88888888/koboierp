@@ -12,6 +12,7 @@ import {
     Receipt,
     Wallet,
     TrendingUp,
+    ShoppingBag,
     Download,
     ChevronUp,
     ChevronDown
@@ -90,33 +91,74 @@ export function OperationalDashboard({
         setIsClient(true);
     }, []);
 
-    // Calculate Performance for BC & PF
+    // Tanggal filter terpusat — dipakai untuk transactions, deliveries, dan receipts
+    // supaya kartu KPI & tabel konsisten mengacu ke rentang waktu yang sama.
+    const matchDateFilter = (dateInput: any) => {
+        const d = new Date(dateInput);
+        if (filterDate) {
+            // Adjust for local timezone to ensure date matches what the user selected locally
+            const localDateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            return localDateStr === filterDate;
+        }
+        const txYear = d.getFullYear().toString();
+        const txMonth = (d.getMonth() + 1).toString();
+        const matchYear = filterYear === "ALL" || txYear === filterYear;
+        const matchMonth = filterMonth === "ALL" || txMonth === filterMonth;
+        return matchYear && matchMonth;
+    };
+
+    const filteredTransactions = transactions.filter(t => {
+        const matchSearch = t.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            t.referenceNumber?.toLowerCase().includes(searchTerm.toLowerCase());
+
+        let matchType = true;
+        if (filterType === "INCOME") matchType = t.transactionType === "RECEIPT";
+        if (filterType === "EXPENSE") matchType = t.transactionType === "PAYMENT";
+
+        const matchDate = matchDateFilter(t.date);
+
+        let matchDivision = true;
+        if (filterDivision !== "ALL") {
+            const divs = getTransactionDivisions(t);
+            matchDivision = divs.includes(filterDivision);
+        }
+
+        return matchSearch && matchType && matchDate && matchDivision;
+    });
+
+    // Dataset turunan untuk kartu KPI per-divisi, ikut filter tanggal yang sama.
+    const filteredDeliveriesForStats = initialDeliveries.filter((d: any) => matchDateFilter(d.date));
+    const filteredReceiptsForStats = initialReceipts.filter((r: any) => matchDateFilter(r.date || r.createdAt));
+
+    // Calculate Performance for BC & PF — closure atas dataset yang SUDAH terfilter
     const getStats = (id: string) => {
-        const sales = initialDeliveries.filter((d: any) => d.salesPerson === id);
-        const purchases = initialReceipts.filter((r: any) => r.salesPerson === id);
-        const expenses = transactions.filter(e => e.salesPerson === id);
+        const sales = filteredDeliveriesForStats.filter((d: any) => d.salesPerson === id);
+        const purchases = filteredReceiptsForStats.filter((r: any) => r.salesPerson === id);
 
         const salesVal = sales.reduce((acc, d) => acc + d.items.reduce((sum: number, i: any) => sum + (i.quantity * Number(i.salesPrice || 0)), 0), 0);
         const purchaseVal = purchases.reduce((acc, r) => acc + r.items.reduce((sum: number, i: any) => sum + (i.quantity * Number(i.purchasePrice || 0)), 0), 0);
         let expenseVal = 0;
 
-        transactions.forEach(e => {
+        filteredTransactions.forEach(e => {
             const isExpense = (e.transactionType === "PAYMENT");
             const amt = isExpense ? Number(e.amount) : -Number(e.amount);
-            
+
             const refStr = (e.invoiceNumber || e.referenceNumber || "").toUpperCase();
             if (refStr.includes('KB-TRN') || refStr.includes('SJ-')) {
-                // Find all matching deliveries
+                // Find all matching deliveries — sengaja pakai initialDeliveries MENTAH
+                // (bukan filteredDeliveriesForStats): rasio split BC/PF pada satu SJ adalah
+                // fakta historis tetap, tidak boleh hilang hanya karena SJ tsb kebetulan
+                // jatuh di luar rentang filter tanggal aktif.
                 const refs = refStr.split(',').map((r: string) => r.trim()).filter(Boolean);
-                const matchingDeliveries = initialDeliveries.filter((d: any) => 
+                const matchingDeliveries = initialDeliveries.filter((d: any) =>
                     refs.some((r: string) => d.deliveryNumber?.includes(r) || d.invoiceNumber?.includes(r))
                 );
-                
+
                 if (matchingDeliveries.length > 0) {
                     // Split proportionally by total items quantity
                     let totalQty = 0;
                     let qtyForId = 0;
-                    
+
                     matchingDeliveries.forEach((d: any) => {
                         const dQty = d.items?.reduce((sum: number, i: any) => sum + (i.quantity || 0), 0) || 1;
                         totalQty += dQty;
@@ -124,14 +166,14 @@ export function OperationalDashboard({
                             qtyForId += dQty;
                         }
                     });
-                    
+
                     if (totalQty > 0) {
                         expenseVal += (amt * (qtyForId / totalQty));
                     }
                     return; // Done with this transaction
                 }
             }
-            
+
             // Fallback: If no deliveries match, use the transaction's own salesPerson field
             if (e.salesPerson === id) {
                 expenseVal += amt;
@@ -148,40 +190,6 @@ export function OperationalDashboard({
 
     const bcStats = getStats("BC");
     const pfStats = getStats("PF");
-
-    const filteredTransactions = transactions.filter(t => {
-        const matchSearch = t.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            t.referenceNumber?.toLowerCase().includes(searchTerm.toLowerCase());
-        
-        let matchType = true;
-        if (filterType === "INCOME") matchType = t.transactionType === "RECEIPT";
-        if (filterType === "EXPENSE") matchType = t.transactionType === "PAYMENT";
-
-        let matchDate = true;
-        if (filterDate) {
-            const txDate = new Date(t.date);
-            // Adjust for local timezone to ensure date matches what the user selected locally
-            const localDateStr = `${txDate.getFullYear()}-${String(txDate.getMonth() + 1).padStart(2, '0')}-${String(txDate.getDate()).padStart(2, '0')}`;
-            matchDate = localDateStr === filterDate;
-        } else {
-            const txDate = new Date(t.date);
-            const txYear = txDate.getFullYear().toString();
-            const txMonth = (txDate.getMonth() + 1).toString();
-            
-            const matchYear = filterYear === "ALL" || txYear === filterYear;
-            const matchMonth = filterMonth === "ALL" || txMonth === filterMonth;
-            
-            matchDate = matchYear && matchMonth;
-        }
-
-        let matchDivision = true;
-        if (filterDivision !== "ALL") {
-            const divs = getTransactionDivisions(t);
-            matchDivision = divs.includes(filterDivision);
-        }
-
-        return matchSearch && matchType && matchDate && matchDivision;
-    });
 
     const sortedTransactions = [...filteredTransactions].sort((a, b) => {
         if (!sortConfig) return 0;
@@ -284,32 +292,58 @@ export function OperationalDashboard({
                 </div>
             </div>
 
-            {/* Jumlah Operasional Cards */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Biaya Operasional & Nilai Pembelian Cards */}
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
                 <div className="bg-white border border-slate-100 shadow-xl shadow-slate-200/40 p-6 rounded-3xl flex items-center gap-5 hover:-translate-y-1 transition-all duration-300">
                     <div className="p-4 bg-indigo-50 text-indigo-500 rounded-2xl shadow-inner">
                         <TrendingUp className="w-7 h-7" />
                     </div>
                     <div>
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Jumlah Operasional BC</p>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Biaya Operasional BC</p>
                         <p className="text-2xl font-black tracking-tighter text-slate-900 mt-1">
-                            {formatCurrency(bcStats.expenseVal + bcStats.purchaseVal)}
+                            {formatCurrency(bcStats.expenseVal)}
+                        </p>
+                    </div>
+                </div>
+
+                <div className="bg-white border border-slate-100 shadow-xl shadow-slate-200/40 p-6 rounded-3xl flex items-center gap-5 hover:-translate-y-1 transition-all duration-300">
+                    <div className="p-4 bg-cyan-50 text-cyan-500 rounded-2xl shadow-inner">
+                        <ShoppingBag className="w-7 h-7" />
+                    </div>
+                    <div>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nilai Pembelian BC</p>
+                        <p className="text-2xl font-black tracking-tighter text-slate-900 mt-1">
+                            {formatCurrency(bcStats.purchaseVal)}
                         </p>
                     </div>
                 </div>
 
                 {userEmail !== 'chici@kolaborasi.id' && (
-                    <div className="bg-white border border-slate-100 shadow-xl shadow-slate-200/40 p-6 rounded-3xl flex items-center gap-5 hover:-translate-y-1 transition-all duration-300">
-                        <div className="p-4 bg-amber-50 text-amber-500 rounded-2xl shadow-inner">
-                            <Wallet className="w-7 h-7" />
+                    <>
+                        <div className="bg-white border border-slate-100 shadow-xl shadow-slate-200/40 p-6 rounded-3xl flex items-center gap-5 hover:-translate-y-1 transition-all duration-300">
+                            <div className="p-4 bg-amber-50 text-amber-500 rounded-2xl shadow-inner">
+                                <Wallet className="w-7 h-7" />
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Biaya Operasional PF</p>
+                                <p className="text-2xl font-black tracking-tighter text-slate-900 mt-1">
+                                    {formatCurrency(pfStats.expenseVal)}
+                                </p>
+                            </div>
                         </div>
-                        <div>
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Jumlah Operasional PF</p>
-                            <p className="text-2xl font-black tracking-tighter text-slate-900 mt-1">
-                                {formatCurrency(pfStats.expenseVal + pfStats.purchaseVal)}
-                            </p>
+
+                        <div className="bg-white border border-slate-100 shadow-xl shadow-slate-200/40 p-6 rounded-3xl flex items-center gap-5 hover:-translate-y-1 transition-all duration-300">
+                            <div className="p-4 bg-violet-50 text-violet-500 rounded-2xl shadow-inner">
+                                <ShoppingBag className="w-7 h-7" />
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nilai Pembelian PF</p>
+                                <p className="text-2xl font-black tracking-tighter text-slate-900 mt-1">
+                                    {formatCurrency(pfStats.purchaseVal)}
+                                </p>
+                            </div>
                         </div>
-                    </div>
+                    </>
                 )}
             </div>
 
@@ -321,7 +355,7 @@ export function OperationalDashboard({
                     <div>
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Pengeluaran</p>
                         <p className="text-2xl font-black tracking-tighter text-slate-900 mt-1">
-                            {isClient ? formatCurrency(Math.round(transactions.filter(t => t.transactionType === "PAYMENT").reduce((sum, t) => sum + Number(t.amount), 0))) : "Rp ---"}
+                            {isClient ? formatCurrency(Math.round(filteredTransactions.filter(t => t.transactionType === "PAYMENT").reduce((sum, t) => sum + Number(t.amount), 0))) : "Rp ---"}
                         </p>
                     </div>
                 </div>
@@ -332,7 +366,7 @@ export function OperationalDashboard({
                     <div>
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Pemasukan</p>
                         <p className="text-2xl font-black tracking-tighter text-slate-900 mt-1">
-                            {isClient ? formatCurrency(Math.round(transactions.filter(t => t.transactionType === "RECEIPT").reduce((sum, t) => sum + Number(t.amount), 0))) : "Rp ---"}
+                            {isClient ? formatCurrency(Math.round(filteredTransactions.filter(t => t.transactionType === "RECEIPT").reduce((sum, t) => sum + Number(t.amount), 0))) : "Rp ---"}
                         </p>
                     </div>
                 </div>
@@ -342,7 +376,7 @@ export function OperationalDashboard({
                     </div>
                     <div>
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Banyak Transaksi</p>
-                        <p className="text-2xl font-black tracking-tighter text-slate-900 mt-1">{transactions.length}</p>
+                        <p className="text-2xl font-black tracking-tighter text-slate-900 mt-1">{filteredTransactions.length}</p>
                     </div>
                 </div>
             </div>
