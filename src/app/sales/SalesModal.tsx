@@ -424,9 +424,9 @@ export default function SalesModal({ products, warehouses, customers, orders = [
                             </div>
                         )}
 
-                        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
-                            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-7 gap-3">
-                                <div className="space-y-1">
+                        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+                            <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+                                <div className="lg:col-span-2 space-y-1.5">
                                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Buyer / Customer</label>
                                     <input
                                         list={isManualBuyer ? undefined : "customer-list-sales"}
@@ -440,11 +440,10 @@ export default function SalesModal({ products, warehouses, customers, orders = [
                                             }
                                         }}
                                         onBlur={e => {
-                                            // Force sync on blur to capture datalist selection
                                             const val = e.target.value.trim();
                                             if (val) setBuyerName(val);
                                         }}
-                                        className="w-full bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg text-sm font-bold focus:border-primary outline-none transition-all"
+                                        className="w-full bg-slate-50 hover:bg-slate-100 border border-slate-200 px-3 py-2 rounded-xl text-sm font-bold focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                                         placeholder={isManualBuyer ? "Manual Buyer..." : "Search customer..."}
                                         required
                                     />
@@ -454,50 +453,63 @@ export default function SalesModal({ products, warehouses, customers, orders = [
                                         </datalist>
                                     )}
                                 </div>
-
-                                <div className="space-y-1 min-w-0">
+                                <div className="lg:col-span-3 space-y-1.5">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1 flex justify-between items-center">
+                                        Ship To / Address
+                                        <button 
+                                            type="button"
+                                            onClick={() => setIsManualBuyer(!isManualBuyer)}
+                                            className="text-[9px] bg-slate-100 hover:bg-slate-200 text-slate-500 px-2.5 py-1 rounded-md font-bold uppercase transition-colors flex items-center gap-1"
+                                        >
+                                            {isManualBuyer ? "Mode Otomatis" : "Input Manual"}
+                                        </button>
+                                    </label>
+                                    <input
+                                        value={recipient}
+                                        onChange={e => setRecipient(e.target.value)}
+                                        placeholder="Address..."
+                                        className="w-full bg-slate-50 hover:bg-slate-100 border border-slate-200 px-3 py-2 rounded-xl text-sm font-medium focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                                        required
+                                    />
+                                </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="space-y-1.5 min-w-0">
                                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">PO Number / SJ Date</label>
-                                    <div className="flex gap-1">
-                                        <div className="relative flex-[2] min-w-0">
-                                            <input
-                                                value={poNumber}
-                                                onChange={e => setPoNumber(e.target.value)}
-                                                placeholder="PO"
-                                                className="w-full bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg text-sm font-bold focus:border-primary outline-none transition-all placeholder:text-slate-300"
-                                            />
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <input
-                                                type="date"
-                                                value={date}
-                                                onChange={e => setDate(e.target.value)}
-                                                className="w-full bg-slate-50 border border-slate-200 px-2 py-1.5 rounded-lg text-xs font-bold focus:border-primary outline-none cursor-pointer"
-                                                required
-                                            />
-                                        </div>
+                                    <div className="flex gap-2">
+                                        <input
+                                            value={poNumber}
+                                            onChange={e => setPoNumber(e.target.value)}
+                                            placeholder="PO Number"
+                                            className="w-full flex-[3] bg-slate-50 hover:bg-slate-100 border border-slate-200 px-3 py-2 rounded-xl text-sm font-bold focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all placeholder:text-slate-300 min-w-0"
+                                        />
+                                        <input
+                                            type="date"
+                                            value={date}
+                                            onChange={e => setDate(e.target.value)}
+                                            className="w-full flex-[2] bg-slate-50 hover:bg-slate-100 border border-slate-200 px-2 py-2 rounded-xl text-[13px] font-bold focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none cursor-pointer transition-all min-w-0"
+                                            required
+                                        />
                                     </div>
                                 </div>
 
-                                <div className="space-y-1">
+                                <div className="space-y-1.5">
                                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">No. Kendaraan & Invoice</label>
-                                    <div className="flex gap-1">
-                                        <div className="flex-[2] min-w-0">
-                                            <input
-                                                list="vehicle-list-sales"
-                                                value={vehicleNumber}
-                                                onChange={e => setVehicleNumber(e.target.value)}
-                                                placeholder="F 0000 XX"
-                                                className="w-full bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg text-sm font-bold focus:border-primary outline-none transition-all placeholder:text-slate-300"
-                                            />
-                                        </div>
-                                        <div className="flex-[2] min-w-0">
-                                            <input
-                                                value={invoiceNumber}
-                                                onChange={e => setInvoiceNumber(e.target.value)}
-                                                placeholder="No. Invoice"
-                                                className="w-full bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg text-sm font-bold focus:border-primary outline-none transition-all placeholder:text-slate-300"
-                                            />
-                                        </div>
+                                    <div className="flex gap-2">
+                                        <input
+                                            list="vehicle-list-sales"
+                                            value={vehicleNumber}
+                                            onChange={e => setVehicleNumber(e.target.value)}
+                                            placeholder="F 0000 XX"
+                                            className="w-full flex-1 bg-slate-50 hover:bg-slate-100 border border-slate-200 px-3 py-2 rounded-xl text-sm font-bold focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all placeholder:text-slate-300 min-w-0"
+                                        />
+                                        <input
+                                            value={invoiceNumber}
+                                            onChange={e => setInvoiceNumber(e.target.value)}
+                                            placeholder="No. Invoice"
+                                            className="w-full flex-1 bg-slate-50 hover:bg-slate-100 border border-slate-200 px-3 py-2 rounded-xl text-sm font-bold focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all placeholder:text-slate-300 min-w-0"
+                                        />
                                     </div>
                                     <datalist id="vehicle-list-sales">
                                         <option value="F 8440 GY - Karno" />
@@ -507,36 +519,26 @@ export default function SalesModal({ products, warehouses, customers, orders = [
                                     </datalist>
                                 </div>
 
-                                <div className="space-y-1">
+                                <div className="space-y-1.5">
                                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Gudang & Sales</label>
-                                    <div className="flex gap-1">
-                                        <select value={warehouseId} onChange={e => setWarehouseId(e.target.value)} className="w-full bg-slate-50 border border-slate-200 px-2 py-1.5 rounded-lg text-xs font-bold focus:border-primary outline-none" required>
+                                    <div className="flex gap-2">
+                                        <select 
+                                            value={warehouseId} 
+                                            onChange={e => setWarehouseId(e.target.value)} 
+                                            className="w-full flex-[2] bg-slate-50 hover:bg-slate-100 border border-slate-200 px-3 py-2 rounded-xl text-sm font-bold focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none cursor-pointer transition-all min-w-0" 
+                                            required
+                                        >
                                             {Array.isArray(warehouses) && warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
                                         </select>
-                                        <select value={salesPerson} onChange={e => setSalesPerson(e.target.value)} className="w-full bg-slate-50 border border-slate-200 px-2 py-1.5 rounded-lg text-xs font-bold focus:border-primary outline-none">
+                                        <select 
+                                            value={salesPerson} 
+                                            onChange={e => setSalesPerson(e.target.value)} 
+                                            className="w-full flex-1 bg-slate-50 hover:bg-slate-100 border border-slate-200 px-3 py-2 rounded-xl text-sm font-bold focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none cursor-pointer transition-all min-w-0"
+                                        >
                                             <option value="BC">BC</option>
                                             <option value="PF">PF</option>
                                         </select>
                                     </div>
-                                </div>
-
-                                <div className="space-y-1">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1 flex justify-between">
-                                        Ship To / Address
-                                        <span 
-                                            className="text-primary hover:underline lowercase cursor-pointer"
-                                            onClick={() => setIsManualBuyer(!isManualBuyer)}
-                                        >
-                                            {isManualBuyer ? "auto" : "man"}
-                                        </span>
-                                    </label>
-                                    <input
-                                        value={recipient}
-                                        onChange={e => setRecipient(e.target.value)}
-                                        placeholder="Address..."
-                                        className="w-full bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg text-sm font-medium focus:border-primary outline-none"
-                                        required
-                                    />
                                 </div>
                             </div>
                         </div>
