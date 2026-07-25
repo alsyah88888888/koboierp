@@ -1,5 +1,118 @@
 import { getPrisma } from "@/lib/prisma";
 
+/**
+ * Splits each linked operational transaction's amount across the ACTUAL SalesDelivery
+ * records referenced by its invoiceNumber field, using the same two-level
+ * (per invoice-number group, then per delivery within that group) qty-proportional
+ * split as calculateProductTraceabilityInternal (report-service.ts ~line 174-266).
+ *
+ * One FinanceTransaction can reference multiple invoice numbers, and a single invoice
+ * number can itself be reused by more than one SalesDelivery (e.g. an SO shipped in
+ * partial deliveries across different months). This returns one row per
+ * (transaction, delivery) pair actually touched, each tagged with that delivery's own
+ * date and salesPerson — so callers can filter/attribute by period or division without
+ * mixing in cost that belongs to a different month's delivery.
+ *
+ * Transactions whose invoiceNumber doesn't match any known delivery are returned
+ * unchanged (fallback) so nothing silently disappears from the report.
+ */
+async function splitLinkedOpsByDelivery(prisma: any, linkedOps: any[]): Promise<any[]> {
+    if (linkedOps.length === 0) return [];
+
+    const allInvolvedInvoices = new Set<string>();
+    linkedOps.forEach((op: any) => {
+        String(op.invoiceNumber || '').split(',').map((s: string) => s.trim()).filter(Boolean)
+            .forEach((inv: string) => allInvolvedInvoices.add(inv));
+    });
+    const invoicesArr = Array.from(allInvolvedInvoices);
+
+    const deliveries = invoicesArr.length > 0
+        ? await prisma.salesDelivery.findMany({
+            where: { OR: [{ invoiceNumber: { in: invoicesArr } }, { deliveryNumber: { in: invoicesArr } }], isVoid: false },
+            include: { items: { select: { quantity: true } } }
+        })
+        : [];
+
+    const deliveriesByInvoice = new Map<string, any[]>();
+    deliveries.forEach((d: any) => {
+        const key = d.invoiceNumber || d.deliveryNumber;
+        if (!deliveriesByInvoice.has(key)) deliveriesByInvoice.set(key, []);
+        deliveriesByInvoice.get(key)!.push(d);
+    });
+    const qtyOf = (d: any) => d.items.reduce((q: number, i: any) => q + Number(i.quantity || 0), 0) || 1;
+
+    const result: any[] = [];
+
+    for (const op of linkedOps) {
+        const invoices = String(op.invoiceNumber || '').split(',').map((s: string) => s.trim()).filter(Boolean);
+        if (invoices.length === 0) {
+            result.push({ ...op });
+            continue;
+        }
+
+        // Level 1: split the transaction amount across its distinct invoice-number groups by qty
+        let totalQty = 0;
+        const qtyByInvoice = new Map<string, number>();
+        invoices.forEach((inv: string) => {
+            const ds = deliveriesByInvoice.get(inv) || [];
+            const qty = ds.reduce((s: number, d: any) => s + qtyOf(d), 0);
+            qtyByInvoice.set(inv, qty);
+            totalQty += qty;
+        });
+
+        if (totalQty === 0) {
+            // None of the referenced invoice numbers match a real delivery — keep as-is
+            result.push({ ...op });
+            continue;
+        }
+
+        let remainingAmt = Number(op.amount || 0);
+        let remainingQty = totalQty;
+        let anyRowProduced = false;
+
+        invoices.forEach((inv: string, index: number) => {
+            const qty = qtyByInvoice.get(inv) || 0;
+            const invoiceAmt = remainingQty > 0
+                ? Math.round(remainingAmt * (qty / remainingQty))
+                : Math.round(remainingAmt / (invoices.length - index));
+            remainingAmt -= invoiceAmt;
+            remainingQty -= qty;
+
+            const ds = deliveriesByInvoice.get(inv) || [];
+            if (ds.length === 0) return;
+
+            // Level 2: split this invoice group's share across the deliveries that share it
+            const grandQty = ds.reduce((s: number, d: any) => s + qtyOf(d), 0);
+            let remainingInvoiceAmt = invoiceAmt;
+            ds.forEach((d: any, dIdx: number) => {
+                const dQty = qtyOf(d);
+                const share = dIdx < ds.length - 1
+                    ? Math.round(invoiceAmt * (dQty / grandQty))
+                    : remainingInvoiceAmt; // last delivery in the group gets the remainder
+                remainingInvoiceAmt -= share;
+                if (share !== 0) {
+                    anyRowProduced = true;
+                    result.push({
+                        ...op,
+                        amount: share,
+                        date: d.date,
+                        salesPerson: d.salesPerson || op.salesPerson,
+                        _sourceDeliveryNumber: d.deliveryNumber,
+                        _sourceInvoiceGroup: inv,
+                    });
+                }
+            });
+        });
+
+        if (!anyRowProduced) {
+            // Defensive fallback: matched invoices existed but produced no rows (e.g. zero amount)
+            result.push({ ...op });
+        }
+    }
+
+    return result;
+}
+
 async function fetchHybridOperationalData(prisma: any, startDate: Date, endDate: Date, deliveryInvoices: string[]) {
     const unlinkedOps = await prisma.financeTransaction.findMany({
         where: {
@@ -11,9 +124,7 @@ async function fetchHybridOperationalData(prisma: any, startDate: Date, endDate:
         orderBy: { date: 'asc' }
     });
 
-    const opsMap = new Map();
-    unlinkedOps.forEach((op: any) => opsMap.set(op.id, op));
-
+    const linkedTxnMap = new Map<string, any>();
     if (deliveryInvoices.length > 0) {
         for (let i = 0; i < deliveryInvoices.length; i += 100) {
             const chunk = deliveryInvoices.slice(i, i + 100);
@@ -24,9 +135,23 @@ async function fetchHybridOperationalData(prisma: any, startDate: Date, endDate:
                 },
                 include: { createdBy: { select: { name: true } } }
             });
-            chunkOps.forEach((op: any) => opsMap.set(op.id, op));
+            chunkOps.forEach((op: any) => linkedTxnMap.set(op.id, op));
         }
     }
+
+    // Split each linked transaction across the deliveries it actually references, then keep
+    // only the portions whose delivery date falls within THIS report's period. This prevents
+    // a transaction that spans a partial delivery in another month from double-counting its
+    // whole amount into every month it happens to match an invoice number for.
+    const splitLinked = await splitLinkedOpsByDelivery(prisma, Array.from(linkedTxnMap.values()));
+    const periodLinked = splitLinked.filter((op: any) => {
+        const d = new Date(op.date);
+        return d >= startDate && d <= endDate;
+    });
+
+    const opsMap = new Map();
+    unlinkedOps.forEach((op: any) => opsMap.set(op.id, op));
+    periodLinked.forEach((op: any, idx: number) => opsMap.set(`${op.id}_${op._sourceDeliveryNumber || idx}`, op));
 
     return Array.from(opsMap.values()).sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
 }
@@ -35,62 +160,10 @@ export async function distributeOperationalCosts(operationalData: any[], salesPe
     if (!salesPersonPrefix || salesPersonPrefix === 'ALL') {
         return operationalData;
     }
-    
-    const prisma = getPrisma();
-    const result: any[] = [];
-    
-    for (const ops of operationalData) {
-        if (!ops.invoiceNumber) {
-            // Unlinked ops, just check if it belongs to this division
-            if ((ops.salesPerson || '').startsWith(salesPersonPrefix)) {
-                result.push({ ...ops });
-            }
-            continue;
-        }
-
-        const invoices = ops.invoiceNumber.split(',').map((inv: string) => inv.trim()).filter(Boolean);
-        if (invoices.length === 0) {
-            if ((ops.salesPerson || '').startsWith(salesPersonPrefix)) {
-                result.push({ ...ops });
-            }
-            continue;
-        }
-
-        const deliveries = await (prisma as any).salesDelivery.findMany({
-            where: { OR: [ { invoiceNumber: { in: invoices } }, { deliveryNumber: { in: invoices } } ], isVoid: false },
-            include: { items: { select: { quantity: true } } }
-        });
-        
-        let totalQtyAll = 0;
-        let totalQtyDivision = 0;
-        
-        deliveries.forEach((d: any) => {
-            const qty = d.items.reduce((q: number, i: any) => q + Number(i.quantity || 0), 0) || 1;
-            totalQtyAll += qty;
-            if ((d.salesPerson || '').startsWith(salesPersonPrefix)) {
-                totalQtyDivision += qty;
-            }
-        });
-
-        if (totalQtyAll === 0) {
-            if ((ops.salesPerson || '').startsWith(salesPersonPrefix)) {
-                result.push({ ...ops });
-            }
-            continue;
-        }
-
-        if (totalQtyDivision > 0) {
-            // Even if the raw amount is negative, Math.abs is not used here so it scales negative numbers correctly
-            const propAmount = Math.round(Number(ops.amount || 0) * (totalQtyDivision / totalQtyAll));
-            if (propAmount !== 0) {
-                result.push({
-                    ...ops,
-                    amount: propAmount
-                });
-            }
-        }
-    }
-    return result;
+    // Each row is already attributed to a single division (either its own salesPerson tag for
+    // unlinked ops, or the referenced delivery's salesPerson after splitLinkedOpsByDelivery) —
+    // no further qty-proportional recomputation is needed here.
+    return operationalData.filter((ops: any) => (ops.salesPerson || '').startsWith(salesPersonPrefix));
 }
 
 /**
