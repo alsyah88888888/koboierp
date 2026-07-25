@@ -166,6 +166,22 @@ export async function distributeOperationalCosts(operationalData: any[], salesPe
     return operationalData.filter((ops: any) => (ops.salesPerson || '').startsWith(salesPersonPrefix));
 }
 
+// Splits real finance-transaction operational costs into "linked to a delivery/invoice"
+// (Ops Kirim dan Muat) vs "general" (Ops) buckets. This is the single source of truth for
+// that breakdown — it must NOT be recomputed from calculateProductTraceabilityInternal's
+// per-row OPS split, which uses an independent qty/rounding allocation and can end up a few
+// rupiah off from the real transaction total, leaking the gap into the "Ops" bucket.
+function splitOpsExpenses(ops: any[]): { linked: number; unlinked: number; total: number } {
+    let linked = 0, unlinked = 0;
+    for (const o of ops) {
+        const isExpense = o.transactionType === 'PAYMENT' || o.transactionType === 'EXPENSE' || Number(o.amount) < 0;
+        if (!isExpense) continue;
+        const amt = Math.abs(Number(o.amount || 0));
+        if (o.invoiceNumber) linked += amt; else unlinked += amt;
+    }
+    return { linked, unlinked, total: linked + unlinked };
+}
+
 /**
  * FIFO TRACEABILITY SERVICE — v4 (Format Spreadsheet)
  * Kolom disesuaikan persis dengan format gambar referensi:
@@ -1515,14 +1531,9 @@ export async function getComprehensiveDailyReportService(date?: string, prefix?:
         const incomeTransactions = operational.filter((o: any) =>
             o.transactionType === 'RECEIPT' || Number(o.amount) > 0
         );
-        const expenseTransactions = operational.filter((o: any) =>
-            (o.transactionType === 'PAYMENT' || o.transactionType === 'EXPENSE' || Number(o.amount) < 0) && !o.invoiceNumber
-        );
         const totalIncome = incomeTransactions.reduce((s: number, o: any) => s + Math.abs(Number(o.amount || 0)), 0);
-        
-        const generalExpense = expenseTransactions.reduce((s: number, o: any) => s + Math.abs(Number(o.amount || 0)), 0);
-        const linkedOpsExpense = dailyTraceability.reduce((sum: number, t: any) => sum + Number(t['OPS'] || 0), 0);
-        const totalExpense = generalExpense + linkedOpsExpense;
+
+        const { linked: linkedOpsExpense, unlinked: generalExpense, total: totalExpense } = splitOpsExpenses(operational);
 
         // Payment status breakdown
         const salesPaid = sales.filter((s: any) => s.paymentStatus === 'PAID').length;
@@ -1802,14 +1813,7 @@ export async function getComprehensiveWeeklyReportService(weekStartDate?: string
             const dayTraceRows = weeklyTraceability.filter((t: any) => daySalesDeliveries.includes(t['NOMOR SJ']));
 
             let dayHPP = dayTraceRows.reduce((sum: number, t: any) => sum + Number(t['TOTAL BELI'] || 0), 0);
-            const linkedOpsExpense = dayTraceRows.reduce((sum: number, t: any) => sum + Number(t['OPS'] || 0), 0);
-
-            // General Ops that occurred today (unlinked)
-            const generalOps = dayOps.filter((o: any) => 
-                (o.transactionType === 'PAYMENT' || o.transactionType === 'EXPENSE' || Number(o.amount) < 0) && !o.invoiceNumber
-            ).reduce((s: number, o: any) => s + Math.abs(Number(o.amount || 0)), 0);
-
-            const opsExpense = generalOps + linkedOpsExpense;
+            const { total: opsExpense } = splitOpsExpenses(dayOps);
             const dayGrossProfit = salesTotal - dayHPP;
             const dayMarginPct = salesTotal > 0 ? (dayGrossProfit / salesTotal * 100) : 0;
 
@@ -1998,8 +2002,7 @@ export async function getComprehensiveWeeklyReportService(weekStartDate?: string
             }
         }
 
-        const linkedOpsExpense = weeklyTraceability.reduce((sum: number, t: any) => sum + Number(t['OPS'] || 0), 0);
-        const generalOps = totalExpenses - linkedOpsExpense;
+        const { linked: linkedOpsExpense, unlinked: generalOps } = splitOpsExpenses(operational);
 
         return {
             staffActivity: {
@@ -2201,12 +2204,12 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
             o.transactionType === 'PAYMENT' || o.transactionType === 'EXPENSE' || Number(o.amount) < 0
         );
         const cashFlowExpenses = expenses.reduce((s: number, o: any) => s + Math.abs(Number(o.amount || 0)), 0);
-        const linkedOpsExpense = monthlyTraceability.reduce((sum: number, t: any) => sum + Number(t['OPS'] || 0), 0);
-        
+
         // User requested: Total Expenses = Total Cash Flow (47.6M)
         const totalExpenses = cashFlowExpenses;
-        // Ops Umum (Global) = Total Cash Flow - Ops Terikat
-        const generalOps = totalExpenses - linkedOpsExpense;
+        // Ops Kirim dan Muat (linked to a delivery/invoice) vs Ops Umum (unlinked) — both derived
+        // from the same real transactions backing totalExpenses, so they always add up exactly.
+        const { linked: linkedOpsExpense, unlinked: generalOps } = splitOpsExpenses(expenses);
 
         const companyExpenses = companyExpensesRecords.reduce((acc: number, e: any) => acc + Math.abs(Number(e.amount || 0)), 0);
 
@@ -2319,14 +2322,7 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
             const dayTraceRows = monthlyTraceability.filter((t: any) => daySalesDeliveries.includes(t['NOMOR SJ']));
 
             let dayHPP = dayTraceRows.reduce((sum: number, t: any) => sum + Number(t['TOTAL BELI'] || 0), 0);
-            const linkedOpsExpense = dayTraceRows.reduce((sum: number, t: any) => sum + Number(t['OPS'] || 0), 0);
-
-            // General Ops that occurred today (unlinked)
-            const generalOpsToday = dayOps.filter((o: any) => 
-                (o.transactionType === 'PAYMENT' || o.transactionType === 'EXPENSE' || Number(o.amount) < 0) && !o.invoiceNumber
-            ).reduce((s: number, o: any) => s + Math.abs(Number(o.amount || 0)), 0);
-
-            const opsExpense = generalOpsToday + linkedOpsExpense;
+            const { total: opsExpense } = splitOpsExpenses(dayOps);
 
             dailyBreakdown.push({
                 day: d,
