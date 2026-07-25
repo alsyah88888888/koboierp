@@ -418,9 +418,10 @@ export async function updateSalesDeliveryService(id: string, data: any, userId: 
 
         if (!oldDelivery) throw new Error("Delivery not found");
 
-        const isItemsUnchanged = data.items.length === oldDelivery.items.length && data.items.every((newItem: any) => {
-            const oldItem = oldDelivery.items.find((i: any) => i.productId === newItem.productId);
+        const isItemsUnchanged = data.items.length === oldDelivery.items.length && data.items.every((newItem: any, index: number) => {
+            const oldItem = oldDelivery.items[index];
             if (!oldItem) return false;
+            if (oldItem.productId !== newItem.productId) return false;
             if (Number(oldItem.quantity) !== Number(newItem.quantity)) return false;
             if (oldItem.vendorName !== newItem.vendorName && newItem.vendorName !== undefined) return false;
             return true;
@@ -463,9 +464,10 @@ export async function updateSalesDeliveryService(id: string, data: any, userId: 
 
         await tx.salesDeliveryItem.deleteMany({ where: { deliveryId: id } });
         } else {
-            for (const newItem of data.items) {
-                const oldItem = oldDelivery.items.find((i: any) => i.productId === newItem.productId);
-                if (oldItem && (oldItem.salesPrice?.toNumber() !== Number(newItem.salesPrice) || oldItem.discount?.toNumber() !== Number(newItem.discount))) {
+            for (let index = 0; index < data.items.length; index++) {
+                const newItem = data.items[index];
+                const oldItem = oldDelivery.items[index];
+                if (oldItem && oldItem.productId === newItem.productId && (oldItem.salesPrice?.toNumber() !== Number(newItem.salesPrice) || oldItem.discount?.toNumber() !== Number(newItem.discount))) {
                     await tx.salesDeliveryItem.update({
                         where: { id: oldItem.id },
                         data: {
