@@ -418,6 +418,16 @@ export async function updateSalesDeliveryService(id: string, data: any, userId: 
 
         if (!oldDelivery) throw new Error("Delivery not found");
 
+        const isItemsUnchanged = data.items.length === oldDelivery.items.length && data.items.every((newItem: any) => {
+            const oldItem = oldDelivery.items.find((i: any) => i.productId === newItem.productId);
+            if (!oldItem) return false;
+            if (Number(oldItem.quantity) !== Number(newItem.quantity)) return false;
+            if (oldItem.vendorName !== newItem.vendorName && newItem.vendorName !== undefined) return false;
+            return true;
+        });
+
+        if (!isItemsUnchanged) {
+
         // Restore Old Stock before applying new updates
         for (const item of oldDelivery.items) {
             await tx.stock.upsert({
@@ -452,6 +462,20 @@ export async function updateSalesDeliveryService(id: string, data: any, userId: 
         }
 
         await tx.salesDeliveryItem.deleteMany({ where: { deliveryId: id } });
+        } else {
+            for (const newItem of data.items) {
+                const oldItem = oldDelivery.items.find((i: any) => i.productId === newItem.productId);
+                if (oldItem && (oldItem.salesPrice?.toNumber() !== Number(newItem.salesPrice) || oldItem.discount?.toNumber() !== Number(newItem.discount))) {
+                    await tx.salesDeliveryItem.update({
+                        where: { id: oldItem.id },
+                        data: {
+                            salesPrice: Number(newItem.salesPrice) || 0,
+                            discount: Number(newItem.discount) || 0
+                        }
+                    });
+                }
+            }
+        }
 
         const txDate = data.createdAt || new Date();
         const day = String(txDate.getDate()).padStart(2, '0');
@@ -528,6 +552,7 @@ export async function updateSalesDeliveryService(id: string, data: any, userId: 
             }
         });
 
+        if (!isItemsUnchanged) {
         for (const item of data.items) {
             const vendorName = item.vendorName || "CIBINONG";
 
@@ -584,6 +609,8 @@ export async function updateSalesDeliveryService(id: string, data: any, userId: 
             });
         }
 
+        }
+
         let grossAmount = 0;
         let totalItemDiscounts = 0;
         data.items.forEach((i: any) => {
@@ -632,6 +659,7 @@ export async function updateSalesDeliveryService(id: string, data: any, userId: 
         revalidatePath("/reports");
         revalidatePath("/");
 
+        if (!isItemsUnchanged) {
         // ─── FASE 3c: Re-allocate Lots for the updated items ────────────
         const updatedDelivery = await tx.salesDelivery.findUnique({
             where: { id },
@@ -714,6 +742,7 @@ export async function updateSalesDeliveryService(id: string, data: any, userId: 
             }
         }
         // ────────────────────────────────────────────────────────────────
+        }
 
         return { success: true, deliveryNumber: deliveryNumber };
     }, { timeout: 30000 });
