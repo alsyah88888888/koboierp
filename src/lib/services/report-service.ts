@@ -231,139 +231,44 @@ export async function calculateProductTraceabilityInternal(startDate: Date, endD
             : [];
         const soMap = new Map<string, string>(salesOrders.map((o: any) => [o.id, o.orderNumber]));
 
-        // Fetch operational transactions linked to these deliveries/invoices
+        // Fetch operational transactions linked to these deliveries/invoices — reuse the exact
+        // same per-delivery split (fetchHybridOperationalData + splitLinkedOpsByDelivery) that
+        // the report summary uses for "Ops Kirim dan Muat" (see splitOpsExpenses), instead of
+        // recomputing an independent proportional split here. Two separately-implemented
+        // Math.round-based allocations of the same transactions could disagree by a few rupiah,
+        // which is exactly what caused the Traceability sheet's OPS total to drift from the
+        // summary before. Sourcing both from the same function keeps them identical by construction.
         const invoiceNumbers = deliveries.map((d: any) => d.invoiceNumber || d.deliveryNumber).filter(Boolean);
-        const opsTransactions = invoiceNumbers.length > 0
-            ? await prisma.financeTransaction.findMany({
-                where: {
-                    OR: invoiceNumbers.map((inv: string) => ({ invoiceNumber: { contains: inv } })),
-                    category: { notIn: ["PEMBELIAN", "PENJUALAN", "TRANSFER"] }
-                },
-                select: { invoiceNumber: true, amount: true, transactionType: true, description: true, bank: true, category: true, referenceNumber: true }
-            })
+        const rawLinkedOps = invoiceNumbers.length > 0
+            ? await fetchHybridOperationalData(prisma, startDate, endDate, invoiceNumbers)
             : [];
 
-        // Extract ALL distinct invoice numbers from the ops transactions to ensure we get quantities for ALL shared invoices
-        const allInvolvedInvoices = new Set<string>();
-        opsTransactions.forEach((t: any) => {
-            if (t.invoiceNumber) {
-                t.invoiceNumber.split(',').forEach((i: string) => allInvolvedInvoices.add(i.trim()));
-            }
-        });
-        const allInvolvedArray = Array.from(allInvolvedInvoices).filter(Boolean);
-
-        // Fetch ALL deliveries for ALL INVOLVED invoices to get TRUE full quantities for proportional distribution
-        const allDeliveriesForInvoices = allInvolvedArray.length > 0 
-            ? await (prisma as any).salesDelivery.findMany({
-                where: { OR: [ { invoiceNumber: { in: allInvolvedArray } }, { deliveryNumber: { in: allInvolvedArray } } ], isVoid: false },
-                include: { items: { select: { quantity: true } } }
-            }) : [];
-
-        const opsMap = new Map<string, number>();
-        opsTransactions.forEach((t: any) => {
-            if (!t.invoiceNumber) return;
-            const amt = (t.transactionType === "PAYMENT" || t.transactionType === "EXPENSE" || Number(t.amount) < 0)
-                ? Math.abs(Number(t.amount))
-                : -Math.abs(Number(t.amount));
-            
-            const invoices = t.invoiceNumber.split(',').map((inv: string) => inv.trim()).filter(Boolean);
-            if (invoices.length > 0) {
-                const prMatch = (t.description || '').match(/(KB-PR-\\d{8}-\\d{3})/);
-                const prCode = prMatch ? prMatch[1] : (t.referenceNumber || '-');
-                const detailStr = `${prCode} (${t.bank || '-'}): ${Math.abs(Number(t.amount))}`;
-
-                let totalQty = 0;
-                const qtyMap = new Map<string, number>();
-                
-                invoices.forEach((inv: string) => {
-                    const matchingDeliveries = allDeliveriesForInvoices.filter((d: any) => d.invoiceNumber === inv || d.deliveryNumber === inv);
-                    let qty = 0;
-                    matchingDeliveries.forEach((md: any) => {
-                        if (md.items) {
-                            qty += md.items.reduce((sum: number, item: any) => sum + Number(item.quantity || 0), 0);
-                        }
-                    });
-                    if (qty === 0) qty = 1;
-                    totalQty += qty;
-                    qtyMap.set(inv, qty);
-                });
-
-                let remainingAmt = amt;
-                let remainingQty = totalQty;
-                
-                invoices.forEach((inv: string, index: number) => {
-                    const qty = qtyMap.get(inv) || 1;
-                    const splitAmt = remainingQty > 0 ? Math.round(remainingAmt * (qty / remainingQty)) : Math.round(remainingAmt / (invoices.length - index));
-                    remainingAmt -= splitAmt;
-                    remainingQty -= qty;
-                    opsMap.set(inv, (opsMap.get(inv) || 0) + splitAmt);
-                });
-            }
-        });
-
-        // ── FIX: When multiple deliveries share the same invoiceNumber,
-        // distribute OPS proportionally by TRUE delivery qty across all divisions ──
-        const invoiceToDeliveries = new Map<string, { deliveryNumber: string; totalQty: number }[]>();
-        const opsDetailsMap = new Map<string, string[]>();
-
-        opsTransactions.forEach((t: any) => {
-            if (!t.invoiceNumber) return;
-            const invoices = t.invoiceNumber.split(',').map((inv: string) => inv.trim()).filter(Boolean);
-            if (invoices.length > 0) {
-                const prMatch = (t.description || '').match(/(KB-PR-\d{8}-\d{3})/) || (t.referenceNumber || '').match(/(KB-PR-\d{8}-\d{3})/);
-                if (prMatch) {
-                    const prCode = prMatch[1];
-                    const detailStr = `${prCode} (${t.bank || '-'}) Rp${Math.abs(Number(t.amount)).toLocaleString('id-ID')}`;
-                    
-                    invoices.forEach((inv: string) => {
-                        if (!opsDetailsMap.has(inv)) opsDetailsMap.set(inv, []);
-                        if (!opsDetailsMap.get(inv)!.includes(detailStr)) {
-                            opsDetailsMap.get(inv)!.push(detailStr);
-                        }
-                    });
-                }
-            }
-        });
-
-        for (const sd of allDeliveriesForInvoices) {
-            const inv = sd.invoiceNumber || sd.deliveryNumber;
-            if (!invoiceToDeliveries.has(inv)) invoiceToDeliveries.set(inv, []);
-            const sdQty = sd.items.reduce((sum: number, item: any) => sum + Number(item.quantity || 0), 0) || 1;
-            invoiceToDeliveries.get(inv)!.push({ deliveryNumber: sd.deliveryNumber, totalQty: sdQty });
-        }
-
-        // Re-key opsMap from invoiceNumber → deliveryNumber for shared invoices
         const opsMapByDelivery = new Map<string, number>();
-        for (const [inv, totalOps] of opsMap) {
-            const sharedDeliveries = invoiceToDeliveries.get(inv) || [];
-            if (sharedDeliveries.length <= 1) {
-                // Only 1 delivery uses this invoice → assign all OPS
-                opsMapByDelivery.set(inv, totalOps);
-            } else {
-                // Multiple deliveries share this invoice → distribute by qty
-                const grandQty = sharedDeliveries.reduce((s, d) => s + d.totalQty, 0);
-                let remaining = totalOps;
-                for (let i = 0; i < sharedDeliveries.length; i++) {
-                    const share = i < sharedDeliveries.length - 1
-                        ? Math.round(totalOps * (sharedDeliveries[i].totalQty / grandQty))
-                        : remaining; // Last one gets remainder to avoid rounding errors
-                    remaining -= share;
-                    opsMapByDelivery.set(sharedDeliveries[i].deliveryNumber, 
-                        (opsMapByDelivery.get(sharedDeliveries[i].deliveryNumber) || 0) + share);
+        const opsDetailsByDeliveryArr = new Map<string, string[]>();
+
+        rawLinkedOps.forEach((t: any) => {
+            const dn = t._sourceDeliveryNumber as string | undefined;
+            if (!dn) return; // unlinked ops (no invoiceNumber) have no delivery to attach to
+            const isExpense = t.transactionType === "PAYMENT" || t.transactionType === "EXPENSE" || Number(t.amount) < 0;
+            if (!isExpense) return; // match the same filter splitOpsExpenses() uses for the summary total
+
+            const amt = Math.abs(Number(t.amount || 0));
+            opsMapByDelivery.set(dn, (opsMapByDelivery.get(dn) || 0) + amt);
+
+            const prMatch = (t.description || '').match(/(KB-PR-\d{8}-\d{3})/) || (t.referenceNumber || '').match(/(KB-PR-\d{8}-\d{3})/);
+            if (prMatch) {
+                const prCode = prMatch[1];
+                const detailStr = `${prCode} (${t.bank || '-'}) Rp${amt.toLocaleString('id-ID')}`;
+                if (!opsDetailsByDeliveryArr.has(dn)) opsDetailsByDeliveryArr.set(dn, []);
+                if (!opsDetailsByDeliveryArr.get(dn)!.includes(detailStr)) {
+                    opsDetailsByDeliveryArr.get(dn)!.push(detailStr);
                 }
             }
-        }
+        });
 
         const opsDetailsByDelivery = new Map<string, string>();
-        for (const [inv, details] of opsDetailsMap) {
-            const sharedDeliveries = invoiceToDeliveries.get(inv) || [];
-            if (sharedDeliveries.length <= 1) {
-                opsDetailsByDelivery.set(inv, details.join(' | '));
-            } else {
-                sharedDeliveries.forEach(d => {
-                    opsDetailsByDelivery.set(d.deliveryNumber, details.join(' | '));
-                });
-            }
+        for (const [dn, details] of opsDetailsByDeliveryArr) {
+            opsDetailsByDelivery.set(dn, details.join(' | '));
         }
 
         // ════════════════════════════════════════════════════════════
@@ -504,8 +409,7 @@ export async function calculateProductTraceabilityInternal(startDate: Date, endD
             const taxRate   = Number(sd.taxRate || 0);
             const sdTotalQty = sd.items.reduce((sum: number, item: any) => sum + item.quantity, 0);
             const refNum     = sd.invoiceNumber || sd.deliveryNumber;
-            // Use delivery-specific OPS (handles shared invoices), fallback to invoice-level
-            const invoiceOps = opsMapByDelivery.get(sd.deliveryNumber) ?? opsMapByDelivery.get(refNum) ?? opsMap.get(refNum) ?? 0;
+            const invoiceOps = opsMapByDelivery.get(sd.deliveryNumber) ?? 0;
 
             let remainingInvoiceOps = invoiceOps;
             let remainingSdQty = sdTotalQty;
