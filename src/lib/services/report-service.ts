@@ -659,14 +659,17 @@ export async function calculateProductTraceabilityInternal(startDate: Date, endD
             }
         }
 
-        // STEP 4.5: Merge rows with identical SJ and BARCODE to satisfy user requirement (1 row per product per invoice)
+        // STEP 4.5: Merge rows with identical SJ, BARCODE, and LPB (1 row per product per LPB per invoice).
+        // NOMOR LPB is part of the key so purchases from different LPB/lot batches — which can have
+        // different buy prices — are never blended into one averaged row under a single LPB label.
         const finalRowsMap = new Map<string, any>();
         for (const row of rows) {
             const sj = row['NOMOR SJ'];
             const barcode = row['BARCODE'];
+            const lpb = row['NOMOR LPB'];
             // If it's a return, we append 'RETUR' to key so it doesn't merge with sales
             const isReturn = row['NOMOR RETUR'] !== '-';
-            const key = `${sj}_${barcode}_${isReturn}`;
+            const key = `${sj}_${barcode}_${lpb}_${isReturn}`;
             
             if (finalRowsMap.has(key)) {
                 const existing = finalRowsMap.get(key);
