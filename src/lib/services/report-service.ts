@@ -18,7 +18,7 @@ import { splitOpsAmountsByDelivery, buildDeliveriesByInvoiceMap } from "@/lib/ut
  * Transactions whose invoiceNumber doesn't match any known delivery are returned
  * unchanged (fallback) so nothing silently disappears from the report.
  */
-async function splitLinkedOpsByDelivery(prisma: any, linkedOps: any[]): Promise<any[]> {
+async function splitLinkedOpsByDelivery(prisma: any, linkedOps: any[], options?: { preserveDate?: boolean }): Promise<any[]> {
     if (linkedOps.length === 0) return [];
 
     const allInvolvedInvoices = new Set<string>();
@@ -36,72 +36,62 @@ async function splitLinkedOpsByDelivery(prisma: any, linkedOps: any[]): Promise<
         : [];
 
     const deliveriesByInvoice = buildDeliveriesByInvoiceMap(deliveries);
-    return splitOpsAmountsByDelivery(linkedOps, deliveriesByInvoice);
+    return splitOpsAmountsByDelivery(linkedOps, deliveriesByInvoice, options);
 }
 
-async function fetchHybridOperationalData(prisma: any, startDate: Date, endDate: Date, deliveryInvoices: string[]) {
+/**
+ * Dipakai KHUSUS oleh Traceability untuk mengisi kolom OPS per baris SJ: mencari semua
+ * transaksi yang invoiceNumber-nya menunjuk ke salah satu SJ yang diberikan, TANPA
+ * memandang tanggal transaksi itu sendiri dicatat kapan (ongkos kirim bisa dibayar bulan
+ * berikutnya). Ini terpisah dari fetchHybridOperationalData, yang sebaliknya HARUS
+ * mengiris berdasarkan tanggal transaksi supaya totalnya sama dengan modul Operasional.
+ */
+async function fetchOpsForDeliveries(prisma: any, deliveryInvoices: string[]): Promise<any[]> {
+    if (deliveryInvoices.length === 0) return [];
+
+    const linkedTxnMap = new Map<string, any>();
+    for (let i = 0; i < deliveryInvoices.length; i += 100) {
+        const chunk = deliveryInvoices.slice(i, i + 100);
+        const chunkOps = await prisma.financeTransaction.findMany({
+            where: {
+                OR: chunk.map((inv: string) => ({ invoiceNumber: { contains: inv } })),
+                category: { notIn: ["PEMBELIAN", "PENJUALAN", "TRANSFER"] }
+            },
+            include: { createdBy: { select: { name: true } } }
+        });
+        chunkOps.forEach((op: any) => linkedTxnMap.set(op.id, op));
+    }
+
+    return splitLinkedOpsByDelivery(prisma, Array.from(linkedTxnMap.values()));
+}
+
+/**
+ * Sumber tunggal untuk total & daftar "Biaya Operasional" di semua laporan (Harian,
+ * Mingguan, Bulanan, Closing). Keanggotaan periode SELALU memakai tanggal transaksi asli
+ * (persis kriteria yang dipakai modul Operasional), bukan tanggal SJ/pengiriman —
+ * dikonfirmasi supaya total di kedua modul selalu identik untuk periode yang sama.
+ * Transaksi yang terkait SJ tetap dipecah proporsional per SJ/divisi (untuk atribusi
+ * BC/PF), tapi pemecahan itu TIDAK mengganti tanggalnya.
+ */
+async function fetchHybridOperationalData(prisma: any, startDate: Date, endDate: Date) {
     const categoryScope = { notIn: ["PEMBELIAN", "PENJUALAN", "TRANSFER"] };
 
-    const unlinkedOps = await prisma.financeTransaction.findMany({
+    const opsInPeriod = await prisma.financeTransaction.findMany({
         where: {
             date: { gte: startDate, lte: endDate },
-            category: categoryScope,
-            OR: [{ invoiceNumber: null }, { invoiceNumber: '' }]
+            category: categoryScope
         },
         include: { createdBy: { select: { name: true } } },
         orderBy: { date: 'asc' }
     });
 
-    // Kandidat "linked": (a) transaksi yang TERCATAT di periode ini dan invoiceNumber-nya
-    // terisi — apapun isinya, termasuk yang tidak cocok SJ manapun (salah ketik, kode PR,
-    // SJ void/terhapus) — supaya tidak hilang begitu saja dari Laporan; dan (b) transaksi
-    // dari periode LAIN yang invoiceNumber-nya menunjuk ke SJ yang terkirim di periode ini,
-    // supaya biayanya tetap "menempel" ke bulan pengiriman sesuai kesepakatan.
-    const linkedTxnMap = new Map<string, any>();
+    const withoutInvoice = opsInPeriod.filter((op: any) => !op.invoiceNumber);
+    const withInvoice = opsInPeriod.filter((op: any) => !!op.invoiceNumber);
 
-    const inPeriodWithInvoice = await prisma.financeTransaction.findMany({
-        where: {
-            date: { gte: startDate, lte: endDate },
-            category: categoryScope,
-            NOT: { OR: [{ invoiceNumber: null }, { invoiceNumber: '' }] }
-        },
-        include: { createdBy: { select: { name: true } } }
-    });
-    inPeriodWithInvoice.forEach((op: any) => linkedTxnMap.set(op.id, op));
+    const splitLinked = await splitLinkedOpsByDelivery(prisma, withInvoice, { preserveDate: true });
 
-    if (deliveryInvoices.length > 0) {
-        for (let i = 0; i < deliveryInvoices.length; i += 100) {
-            const chunk = deliveryInvoices.slice(i, i + 100);
-            const chunkOps = await prisma.financeTransaction.findMany({
-                where: {
-                    OR: chunk.map((inv: string) => ({ invoiceNumber: { contains: inv } })),
-                    category: categoryScope
-                },
-                include: { createdBy: { select: { name: true } } }
-            });
-            chunkOps.forEach((op: any) => linkedTxnMap.set(op.id, op));
-        }
-    }
-
-    // Split each linked transaction across the deliveries it actually references, then keep
-    // only the portions whose delivery date falls within THIS report's period. This prevents
-    // a transaction that spans a partial delivery in another month from double-counting its
-    // whole amount into every month it happens to match an invoice number for. Transactions
-    // whose invoiceNumber doesn't resolve to any real delivery fall back unchanged (original
-    // date/amount) — since they came from the in-period query above, their original date
-    // already falls inside this window, so they still pass the filter below instead of
-    // vanishing.
-    const splitLinked = await splitLinkedOpsByDelivery(prisma, Array.from(linkedTxnMap.values()));
-    const periodLinked = splitLinked.filter((op: any) => {
-        const d = new Date(op.date);
-        return d >= startDate && d <= endDate;
-    });
-
-    const opsMap = new Map();
-    unlinkedOps.forEach((op: any) => opsMap.set(op.id, op));
-    periodLinked.forEach((op: any, idx: number) => opsMap.set(`${op.id}_${op._sourceDeliveryNumber || idx}`, op));
-
-    return Array.from(opsMap.values()).sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    return [...withoutInvoice, ...splitLinked]
+        .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
 }
 
 export async function distributeOperationalCosts(operationalData: any[], salesPersonPrefix: string | null) {
@@ -179,17 +169,15 @@ export async function calculateProductTraceabilityInternal(startDate: Date, endD
             : [];
         const soMap = new Map<string, string>(salesOrders.map((o: any) => [o.id, o.orderNumber]));
 
-        // Fetch operational transactions linked to these deliveries/invoices — reuse the exact
-        // same per-delivery split (fetchHybridOperationalData + splitLinkedOpsByDelivery) that
-        // the report summary uses for "Ops Kirim dan Muat" (see splitOpsExpenses), instead of
-        // recomputing an independent proportional split here. Two separately-implemented
-        // Math.round-based allocations of the same transactions could disagree by a few rupiah,
-        // which is exactly what caused the Traceability sheet's OPS total to drift from the
-        // summary before. Sourcing both from the same function keeps them identical by construction.
+        // Fetch operational transactions linked to these deliveries/invoices — dipakai untuk
+        // mengisi kolom OPS per baris SJ. Sengaja pakai fetchOpsForDeliveries (bukan
+        // fetchHybridOperationalData): kolom ini butuh menemukan ongkos kirim yang dibayar
+        // bulan berapa pun selama nomor SJ-nya cocok, sedangkan fetchHybridOperationalData
+        // sekarang mengiris berdasarkan tanggal transaksi (supaya total bulanan sama dengan
+        // modul Operasional) — dua kebutuhan yang berbeda, dua fungsi yang berbeda pula, biar
+        // tidak saling mengganggu.
         const invoiceNumbers = deliveries.map((d: any) => d.invoiceNumber || d.deliveryNumber).filter(Boolean);
-        const rawLinkedOps = invoiceNumbers.length > 0
-            ? await fetchHybridOperationalData(prisma, startDate, endDate, invoiceNumbers)
-            : [];
+        const rawLinkedOps = await fetchOpsForDeliveries(prisma, invoiceNumbers);
 
         const opsMapByDelivery = new Map<string, number>();
         const opsDetailsByDeliveryArr = new Map<string, string[]>();
@@ -761,8 +749,7 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
         // Operational Expenses — reuse the exact same hybrid fetch + split-by-delivery +
         // isExpense definition as the Bulanan report, so Closing and Bulanan never disagree
         // for the same month/prefix (see getComprehensiveMonthlyReportService).
-        const deliveryInvoices = sales.map((s: any) => s.invoiceNumber || s.deliveryNumber).filter(Boolean);
-        const rawOperational = await fetchHybridOperationalData(prisma, startDate, endDate, deliveryInvoices);
+        const rawOperational = await fetchHybridOperationalData(prisma, startDate, endDate);
         const allOperational = await distributeOperationalCosts(rawOperational, isAll ? null : prefix);
         const expenses = allOperational.filter((o: any) =>
             o.transactionType === 'PAYMENT' || o.transactionType === 'EXPENSE' || Number(o.amount) < 0
@@ -1305,8 +1292,7 @@ export async function getComprehensiveDailyReportService(date?: string, prefix?:
             })
         ]);
 
-        const deliveryInvoices = sales.map((s: any) => s.invoiceNumber || s.deliveryNumber).filter(Boolean);
-        const rawOperational = await fetchHybridOperationalData(prisma, dayStart, dayEnd, deliveryInvoices);
+        const rawOperational = await fetchHybridOperationalData(prisma, dayStart, dayEnd);
         const operational = await distributeOperationalCosts(rawOperational, isAll ? null : prefix);
 
         // Traceability memakai window WIB yang sama persis dengan dayStart/dayEnd di atas,
@@ -1612,8 +1598,7 @@ export async function getComprehensiveWeeklyReportService(weekStartDate?: string
             })
         ]);
 
-        const deliveryInvoices = sales.map((s: any) => s.invoiceNumber || s.deliveryNumber).filter(Boolean);
-        const rawOperational = await fetchHybridOperationalData(prisma, startDate, endDate, deliveryInvoices);
+        const rawOperational = await fetchHybridOperationalData(prisma, startDate, endDate);
         const operational = await distributeOperationalCosts(rawOperational, isAll ? null : prefix);
 
         // Build daily breakdown for the date range
@@ -2005,8 +1990,7 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
             calculateProductTraceabilityInternal(startDate, endDate, prefix).catch(() => [])
         ]);
 
-        const deliveryInvoices = sales.map((s: any) => s.invoiceNumber || s.deliveryNumber).filter(Boolean);
-        const rawOperational = await fetchHybridOperationalData(prisma, startDate, endDate, deliveryInvoices);
+        const rawOperational = await fetchHybridOperationalData(prisma, startDate, endDate);
         const allOperational = await distributeOperationalCosts(rawOperational, isAll ? null : prefix);
 
         // ── P&L Calculation ──────────────────────────────────────────────

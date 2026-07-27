@@ -8,8 +8,13 @@
  * memanggil fungsi ini supaya hasil split (termasuk pembulatan) identik, bukan
  * dua implementasi terpisah yang bisa berbeda beberapa rupiah.
  */
-export function splitOpsAmountsByDelivery(linkedOps: any[], deliveriesByInvoice: Map<string, any[]>): any[] {
+export function splitOpsAmountsByDelivery(
+    linkedOps: any[],
+    deliveriesByInvoice: Map<string, any[]>,
+    options?: { preserveDate?: boolean }
+): any[] {
     if (linkedOps.length === 0) return [];
+    const preserveDate = options?.preserveDate ?? false;
 
     const qtyOf = (d: any) => (d.items || []).reduce((q: number, i: any) => q + Number(i.quantity || 0), 0) || 1;
 
@@ -67,7 +72,7 @@ export function splitOpsAmountsByDelivery(linkedOps: any[], deliveriesByInvoice:
                     result.push({
                         ...op,
                         amount: share,
-                        date: d.date,
+                        ...(preserveDate ? {} : { date: d.date }),
                         salesPerson: d.salesPerson || op.salesPerson,
                         _sourceDeliveryNumber: d.deliveryNumber,
                         _sourceInvoiceGroup: inv,
