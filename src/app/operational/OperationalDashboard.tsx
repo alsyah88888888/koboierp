@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
     Plus,
     Search,
@@ -23,6 +23,7 @@ import { format } from "date-fns";
 import { OperationalModal } from "./OperationalModal";
 import { toast } from "react-hot-toast";
 import { callAction } from "@/proxy";
+import { splitOpsAmountsByDelivery, buildDeliveriesByInvoiceMap } from "@/lib/utils/ops-split";
 
 
 interface OperationalDashboardProps {
@@ -130,6 +131,26 @@ export function OperationalDashboard({
     const filteredDeliveriesForStats = initialDeliveries.filter((d: any) => matchDateFilter(d.date));
     const filteredReceiptsForStats = initialReceipts.filter((r: any) => matchDateFilter(r.date || r.createdAt));
 
+    // Lookup SJ/invoice -> deliveries, dibangun dari initialDeliveries MENTAH (bukan
+    // filteredDeliveriesForStats): rasio split BC/PF pada satu SJ adalah fakta historis
+    // tetap, tidak boleh hilang hanya karena SJ tsb kebetulan jatuh di luar rentang filter
+    // tanggal aktif.
+    const deliveriesByInvoiceMap = useMemo(
+        () => buildDeliveriesByInvoiceMap(initialDeliveries),
+        [initialDeliveries]
+    );
+
+    // Pecah setiap transaksi yang terkait SJ/invoice proporsional terhadap qty tiap SJ,
+    // memakai algoritma murni yang sama (splitOpsAmountsByDelivery) dengan yang dipakai
+    // modul Laporan — supaya persentase split per divisi tidak pernah berbeda pembulatan.
+    const splitExpenseRows = useMemo(() => {
+        const opsForSplit = filteredTransactions.map((t: any) => ({
+            ...t,
+            invoiceNumber: t.invoiceNumber || t.referenceNumber || ''
+        }));
+        return splitOpsAmountsByDelivery(opsForSplit, deliveriesByInvoiceMap);
+    }, [filteredTransactions, deliveriesByInvoiceMap]);
+
     // Calculate Performance for BC & PF — closure atas dataset yang SUDAH terfilter
     const getStats = (id: string) => {
         const sales = filteredDeliveriesForStats.filter((d: any) => d.salesPerson === id);
@@ -139,45 +160,10 @@ export function OperationalDashboard({
         const purchaseVal = purchases.reduce((acc, r) => acc + r.items.reduce((sum: number, i: any) => sum + (i.quantity * Number(i.purchasePrice || 0)), 0), 0);
         let expenseVal = 0;
 
-        filteredTransactions.forEach(e => {
-            const isExpense = (e.transactionType === "PAYMENT");
-            const amt = isExpense ? Number(e.amount) : -Number(e.amount);
-
-            const refStr = (e.invoiceNumber || e.referenceNumber || "").toUpperCase();
-            if (refStr.includes('KB-TRN') || refStr.includes('SJ-')) {
-                // Find all matching deliveries — sengaja pakai initialDeliveries MENTAH
-                // (bukan filteredDeliveriesForStats): rasio split BC/PF pada satu SJ adalah
-                // fakta historis tetap, tidak boleh hilang hanya karena SJ tsb kebetulan
-                // jatuh di luar rentang filter tanggal aktif.
-                const refs = refStr.split(',').map((r: string) => r.trim()).filter(Boolean);
-                const matchingDeliveries = initialDeliveries.filter((d: any) =>
-                    refs.some((r: string) => d.deliveryNumber?.includes(r) || d.invoiceNumber?.includes(r))
-                );
-
-                if (matchingDeliveries.length > 0) {
-                    // Split proportionally by total items quantity
-                    let totalQty = 0;
-                    let qtyForId = 0;
-
-                    matchingDeliveries.forEach((d: any) => {
-                        const dQty = d.items?.reduce((sum: number, i: any) => sum + (i.quantity || 0), 0) || 1;
-                        totalQty += dQty;
-                        if (d.salesPerson === id) {
-                            qtyForId += dQty;
-                        }
-                    });
-
-                    if (totalQty > 0) {
-                        expenseVal += (amt * (qtyForId / totalQty));
-                    }
-                    return; // Done with this transaction
-                }
-            }
-
-            // Fallback: If no deliveries match, use the transaction's own salesPerson field
-            if (e.salesPerson === id) {
-                expenseVal += amt;
-            }
+        splitExpenseRows.forEach((row: any) => {
+            if ((row.salesPerson || '') !== id) return;
+            const isExpense = row.transactionType === 'PAYMENT' || row.transactionType === 'EXPENSE' || Number(row.amount) < 0;
+            expenseVal += isExpense ? Math.abs(Number(row.amount)) : -Math.abs(Number(row.amount));
         });
 
         return {

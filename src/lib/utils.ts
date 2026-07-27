@@ -5,6 +5,31 @@ export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
 }
 
+/**
+ * Batas awal/akhir hari dalam zona waktu Asia/Jakarta (UTC+7), terlepas dari
+ * timezone tempat proses Node berjalan. Dipakai supaya semua laporan yang
+ * mengiris data per-hari mengacu ke hari WIB yang sama persis.
+ */
+export function getJakartaDayRange(dateInput?: string | Date): { start: Date; end: Date } {
+    const targetDate = dateInput ? new Date(dateInput) : new Date();
+    const start = new Date(Date.UTC(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), 0, 0, 0));
+    start.setUTCHours(start.getUTCHours() - 7);
+    const end = new Date(Date.UTC(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), 23, 59, 59, 999));
+    end.setUTCHours(end.getUTCHours() - 7);
+    return { start, end };
+}
+
+/**
+ * Batas awal/akhir bulan kalender dalam zona waktu Asia/Jakarta (UTC+7).
+ */
+export function getJakartaMonthRange(month: number, year: number): { start: Date; end: Date } {
+    const start = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0));
+    start.setUTCHours(start.getUTCHours() - 7);
+    const end = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
+    end.setUTCHours(end.getUTCHours() - 7);
+    return { start, end };
+}
+
 export function formatCurrency(amount: number) {
     // Tampilkan desimal sesuai dengan aslinya (dinamis)
     const formatted = new Intl.NumberFormat("id-ID", {

@@ -1,4 +1,6 @@
 import { getPrisma } from "@/lib/prisma";
+import { getJakartaDayRange, getJakartaMonthRange } from "@/lib/utils";
+import { splitOpsAmountsByDelivery, buildDeliveriesByInvoiceMap } from "@/lib/utils/ops-split";
 
 /**
  * Splits each linked operational transaction's amount across the ACTUAL SalesDelivery
@@ -33,91 +35,15 @@ async function splitLinkedOpsByDelivery(prisma: any, linkedOps: any[]): Promise<
         })
         : [];
 
-    const deliveriesByInvoice = new Map<string, any[]>();
-    deliveries.forEach((d: any) => {
-        const key = d.invoiceNumber || d.deliveryNumber;
-        if (!deliveriesByInvoice.has(key)) deliveriesByInvoice.set(key, []);
-        deliveriesByInvoice.get(key)!.push(d);
-    });
-    const qtyOf = (d: any) => d.items.reduce((q: number, i: any) => q + Number(i.quantity || 0), 0) || 1;
-
-    const result: any[] = [];
-
-    for (const op of linkedOps) {
-        const invoices = String(op.invoiceNumber || '').split(',').map((s: string) => s.trim()).filter(Boolean);
-        if (invoices.length === 0) {
-            result.push({ ...op });
-            continue;
-        }
-
-        // Level 1: split the transaction amount across its distinct invoice-number groups by qty
-        let totalQty = 0;
-        const qtyByInvoice = new Map<string, number>();
-        invoices.forEach((inv: string) => {
-            const ds = deliveriesByInvoice.get(inv) || [];
-            const qty = ds.reduce((s: number, d: any) => s + qtyOf(d), 0);
-            qtyByInvoice.set(inv, qty);
-            totalQty += qty;
-        });
-
-        if (totalQty === 0) {
-            // None of the referenced invoice numbers match a real delivery — keep as-is
-            result.push({ ...op });
-            continue;
-        }
-
-        let remainingAmt = Number(op.amount || 0);
-        let remainingQty = totalQty;
-        let anyRowProduced = false;
-
-        invoices.forEach((inv: string, index: number) => {
-            const qty = qtyByInvoice.get(inv) || 0;
-            const invoiceAmt = remainingQty > 0
-                ? Math.round(remainingAmt * (qty / remainingQty))
-                : Math.round(remainingAmt / (invoices.length - index));
-            remainingAmt -= invoiceAmt;
-            remainingQty -= qty;
-
-            const ds = deliveriesByInvoice.get(inv) || [];
-            if (ds.length === 0) return;
-
-            // Level 2: split this invoice group's share across the deliveries that share it
-            const grandQty = ds.reduce((s: number, d: any) => s + qtyOf(d), 0);
-            let remainingInvoiceAmt = invoiceAmt;
-            ds.forEach((d: any, dIdx: number) => {
-                const dQty = qtyOf(d);
-                const share = dIdx < ds.length - 1
-                    ? Math.round(invoiceAmt * (dQty / grandQty))
-                    : remainingInvoiceAmt; // last delivery in the group gets the remainder
-                remainingInvoiceAmt -= share;
-                if (share !== 0) {
-                    anyRowProduced = true;
-                    result.push({
-                        ...op,
-                        amount: share,
-                        date: d.date,
-                        salesPerson: d.salesPerson || op.salesPerson,
-                        _sourceDeliveryNumber: d.deliveryNumber,
-                        _sourceInvoiceGroup: inv,
-                    });
-                }
-            });
-        });
-
-        if (!anyRowProduced) {
-            // Defensive fallback: matched invoices existed but produced no rows (e.g. zero amount)
-            result.push({ ...op });
-        }
-    }
-
-    return result;
+    const deliveriesByInvoice = buildDeliveriesByInvoiceMap(deliveries);
+    return splitOpsAmountsByDelivery(linkedOps, deliveriesByInvoice);
 }
 
 async function fetchHybridOperationalData(prisma: any, startDate: Date, endDate: Date, deliveryInvoices: string[]) {
     const unlinkedOps = await prisma.financeTransaction.findMany({
         where: {
             date: { gte: startDate, lte: endDate },
-            category: 'OPERASIONAL',
+            category: { notIn: ["PEMBELIAN", "PENJUALAN", "TRANSFER"] },
             OR: [{ invoiceNumber: null }, { invoiceNumber: '' }]
         },
         include: { createdBy: { select: { name: true } } },
@@ -746,17 +672,16 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
     const prisma = getPrisma();
     const filterYear = year || new Date().getFullYear();
     const filterMonth = month || (new Date().getMonth() + 1);
-    const startDate = new Date(filterYear, filterMonth - 1, 1);
-    const endDate = new Date(filterYear, filterMonth, 0, 23, 59, 59);
+    const { start: startDate, end: endDate } = getJakartaMonthRange(filterMonth, filterYear);
 
     const isAll = !prefix || prefix === 'ALL';
 
     try {
-        const [sales, purchases, expenses, arRecords, apRecords, bankJournals, companyExpensesRecords] = await Promise.all([
+        const [sales, purchases, arRecords, apRecords, bankJournals] = await Promise.all([
             // 1. Total Sales (Revenue) - From Deliveries (Invoices)
             (prisma as any).salesDelivery.findMany({
-                where: { 
-                    isVoid: false, 
+                where: {
+                    isVoid: false,
                     date: { gte: startDate, lte: endDate },
                     ...(isAll ? {} : { salesPerson: prefix })
                 },
@@ -772,54 +697,34 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
             }),
             // 2. Total Purchases (Inventory Additions)
             (prisma as any).goodsReceipt.findMany({
-                where: { 
-                    isVoid: false, 
-                    date: { gte: startDate, lte: endDate },
-                    ...(isAll ? {} : { salesPerson: prefix })
-                },
-                orderBy: { date: 'asc' }
-            }),
-            // 3. Operational Expenses (Money Out)
-            (prisma as any).financeTransaction.findMany({
                 where: {
+                    isVoid: false,
                     date: { gte: startDate, lte: endDate },
-                    AND: [
-                        { OR: [
-                            { transactionType: "PAYMENT" },
-                            { transactionType: "EXPENSE" },
-                            { amount: { lt: 0 } }
-                        ] },
-                        ...(isAll ? [] : [{
-                            OR: [
-                                { description: { contains: prefix, mode: 'insensitive' } },
-                                { salesPerson: prefix }
-                            ]
-                        }])
-                    ]
+                    ...(isAll ? {} : { salesPerson: prefix })
                 },
                 orderBy: { date: 'asc' }
             }),
-            // 4. Accounts Receivable (Unpaid Deliveries)
+            // 3. Accounts Receivable (Unpaid Deliveries)
             (prisma as any).salesDelivery.findMany({
-                where: { 
-                    isVoid: false, 
+                where: {
+                    isVoid: false,
                     date: { lte: endDate },
                     paymentStatus: { in: ["PENDING", "PARTIAL"] },
                     ...(isAll ? {} : { salesPerson: prefix })
                 },
                 select: { grandTotal: true, paidAmount: true }
             }),
-            // 5. Accounts Payable (Unpaid LPB)
+            // 4. Accounts Payable (Unpaid LPB)
             (prisma as any).goodsReceipt.findMany({
-                where: { 
-                    isVoid: false, 
+                where: {
+                    isVoid: false,
                     date: { lte: endDate },
                     paymentStatus: { in: ["PENDING", "PARTIAL"] },
                     ...(isAll ? {} : { salesPerson: prefix })
                 },
                 select: { grandTotal: true, paidAmount: true }
             }),
-            // 6. Fetch Journal Entries for Bank Info mapping
+            // 5. Fetch Journal Entries for Bank Info mapping
             (prisma as any).journalEntry.findMany({
                 where: {
                     date: { gte: startDate, lte: endDate },
@@ -828,15 +733,18 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
                 },
                 include: { account: true },
                 orderBy: { date: 'asc' }
-            }),
-            // 7. Global Operational Expenses
-            (prisma as any).financeTransaction.findMany({
-                where: {
-                    date: { gte: startDate, lte: endDate },
-                    AND: [ { OR: [ { transactionType: "PAYMENT" }, { transactionType: "EXPENSE" }, { amount: { lt: 0 } } ] } ]
-                }
             })
         ]);
+
+        // Operational Expenses — reuse the exact same hybrid fetch + split-by-delivery +
+        // isExpense definition as the Bulanan report, so Closing and Bulanan never disagree
+        // for the same month/prefix (see getComprehensiveMonthlyReportService).
+        const deliveryInvoices = sales.map((s: any) => s.invoiceNumber || s.deliveryNumber).filter(Boolean);
+        const rawOperational = await fetchHybridOperationalData(prisma, startDate, endDate, deliveryInvoices);
+        const allOperational = await distributeOperationalCosts(rawOperational, isAll ? null : prefix);
+        const expenses = allOperational.filter((o: any) =>
+            o.transactionType === 'PAYMENT' || o.transactionType === 'EXPENSE' || Number(o.amount) < 0
+        );
 
         // 1. Build an efficient Price Dictionary for SOLD products only
         const productIdsInSales = Array.from(new Set(
@@ -896,7 +804,9 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
         const totalAP = apRecords.reduce((acc: number, r: any) => acc + (Number(r.grandTotal) - Number(r.paidAmount)), 0);
         const grossProfit = totalRevenue - totalHpp; // Menggunakan HPP (Traceability) agar Laba per divisi akurat
         const netProfit = grossProfit - totalExpenses;
-        const companyExpenses = companyExpensesRecords.reduce((acc: number, e: any) => acc + Math.abs(Number(e.amount || 0)), 0);
+        // companyExpenses = totalExpenses: satu sumber yang sama dengan laporan Bulanan/Mingguan,
+        // supaya tidak ada lagi dua angka "total ops" berbeda untuk bulan yang sama.
+        const companyExpenses = totalExpenses;
 
         return {
             period: `${filterMonth}/${filterYear}`,
@@ -1048,8 +958,9 @@ export async function getBatchTraceabilityService(filters: {
     if (!startDate || !endDate) {
         const filterYear  = filters.year  || new Date().getFullYear();
         const filterMonth = filters.month || (new Date().getMonth() + 1);
-        startDate   = new Date(filterYear, filterMonth - 1, 1);
-        endDate     = new Date(filterYear, filterMonth, 0, 23, 59, 59);
+        const range = getJakartaMonthRange(filterMonth, filterYear);
+        startDate   = range.start;
+        endDate     = range.end;
     }
 
     // ── Build where clause for ProductLot ────────────────────────────────
@@ -1289,15 +1200,12 @@ export async function getComprehensiveDailyReportService(date?: string, prefix?:
     const isAll = !prefix || prefix === 'ALL';
 
     const targetDate = date ? new Date(date) : new Date();
-    const dayStart = new Date(targetDate);
-    dayStart.setHours(0, 0, 0, 0);
-    const dayEnd = new Date(targetDate);
-    dayEnd.setHours(23, 59, 59, 999);
+    const { start: dayStart, end: dayEnd } = getJakartaDayRange(targetDate);
 
     try {
         const [
             sales, purchases, returns_purchase, returns_sales,
-            stockMovements, auditLogs, companyExpensesRecords
+            stockMovements, auditLogs
         ] = await Promise.all([
             // Sales Deliveries
             (prisma as any).salesDelivery.findMany({
@@ -1372,9 +1280,6 @@ export async function getComprehensiveDailyReportService(date?: string, prefix?:
                 include: { user: { select: { name: true, email: true } } },
                 orderBy: { createdAt: 'desc' },
                 take: 50
-            }),
-            (prisma as any).financeTransaction.findMany({
-                where: { date: { gte: dayStart, lte: dayEnd }, AND: [ { OR: [ { transactionType: "PAYMENT" }, { transactionType: "EXPENSE" }, { amount: { lt: 0 } } ] } ] }
             })
         ]);
 
@@ -1382,14 +1287,10 @@ export async function getComprehensiveDailyReportService(date?: string, prefix?:
         const rawOperational = await fetchHybridOperationalData(prisma, dayStart, dayEnd, deliveryInvoices);
         const operational = await distributeOperationalCosts(rawOperational, isAll ? null : prefix);
 
-        // Traceability time range (aligned to UTC+7 timezone)
-        const traceStartDate = new Date(Date.UTC(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), 0, 0, 0));
-        traceStartDate.setUTCHours(traceStartDate.getUTCHours() - 7);
-
-        const traceEndDate = new Date(Date.UTC(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), 23, 59, 59, 999));
-        traceEndDate.setUTCHours(traceEndDate.getUTCHours() - 7);
-
-        const dailyTraceability = await calculateProductTraceabilityInternal(traceStartDate, traceEndDate, prefix).catch(() => []);
+        // Traceability memakai window WIB yang sama persis dengan dayStart/dayEnd di atas,
+        // supaya sheet Traceability dan sheet lain (Penjualan/Pembelian/Operasional) tidak
+        // pernah mengiris hari yang berbeda.
+        const dailyTraceability = await calculateProductTraceabilityInternal(dayStart, dayEnd, prefix).catch(() => []);
 
         // Fetch Ops for Sales
         const salesInvoiceNumbers = sales.map((s: any) => s.invoiceNumber).filter(Boolean);
@@ -1605,24 +1506,25 @@ export async function getComprehensiveWeeklyReportService(weekStartDate?: string
     const prisma = getPrisma();
     const isAll = !prefix || prefix === 'ALL';
 
-    const startDate = weekStartDate ? new Date(weekStartDate) : new Date();
+    const weekStartCalendar = weekStartDate ? new Date(weekStartDate) : new Date();
     if (!weekStartDate) {
         // Default to Monday of current week
-        const day = startDate.getDay();
-        const diff = startDate.getDate() - day + (day === 0 ? -6 : 1);
-        startDate.setDate(diff);
+        const day = weekStartCalendar.getDay();
+        const diff = weekStartCalendar.getDate() - day + (day === 0 ? -6 : 1);
+        weekStartCalendar.setDate(diff);
     }
-    startDate.setHours(0, 0, 0, 0);
 
-    const endDate = weekEndDate ? new Date(weekEndDate) : new Date(startDate);
+    const weekEndCalendar = weekEndDate ? new Date(weekEndDate) : new Date(weekStartCalendar);
     if (!weekEndDate) {
-        endDate.setDate(endDate.getDate() + 6);
+        weekEndCalendar.setDate(weekEndCalendar.getDate() + 6);
     }
-    endDate.setHours(23, 59, 59, 999);
+
+    const startDate = getJakartaDayRange(weekStartCalendar).start;
+    const endDate = getJakartaDayRange(weekEndCalendar).end;
 
     try {
         const [
-            sales, purchases, stockMovements, weeklyTraceability, companyExpensesRecords,
+            sales, purchases, stockMovements, weeklyTraceability,
             arRecords, apRecords
         ] = await Promise.all([
             (prisma as any).salesDelivery.findMany({
@@ -1660,9 +1562,6 @@ export async function getComprehensiveWeeklyReportService(weekStartDate?: string
                 orderBy: { createdAt: 'asc' }
             }),
             calculateProductTraceabilityInternal(startDate, endDate, prefix).catch(() => []),
-            (prisma as any).financeTransaction.findMany({
-                where: { date: { gte: startDate, lte: endDate }, AND: [ { OR: [ { transactionType: "PAYMENT" }, { transactionType: "EXPENSE" }, { amount: { lt: 0 } } ] } ] }
-            }),
             // AR — unpaid sales deliveries up to end of week
             (prisma as any).salesDelivery.findMany({
                 where: {
@@ -1985,14 +1884,13 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
     const prisma = getPrisma();
     const filterYear = year || new Date().getFullYear();
     const filterMonth = month || (new Date().getMonth() + 1);
-    const startDate = new Date(filterYear, filterMonth - 1, 1);
-    const endDate = new Date(filterYear, filterMonth, 0, 23, 59, 59, 999);
+    const { start: startDate, end: endDate } = getJakartaMonthRange(filterMonth, filterYear);
     const isAll = !prefix || prefix === 'ALL';
 
     try {
         const [
             sales, purchases, arRecords, apRecords,
-            returnsPurchase, returnsSales, stockMovements, monthlyTraceability, companyExpensesRecords
+            returnsPurchase, returnsSales, stockMovements, monthlyTraceability
         ] = await Promise.all([
             // Sales
             (prisma as any).salesDelivery.findMany({
@@ -2082,10 +1980,7 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
                 orderBy: { createdAt: 'asc' }
             }),
             // Traceability
-            calculateProductTraceabilityInternal(startDate, endDate, prefix).catch(() => []),
-            (prisma as any).financeTransaction.findMany({
-                where: { date: { gte: startDate, lte: endDate }, AND: [ { OR: [ { transactionType: "PAYMENT" }, { transactionType: "EXPENSE" }, { amount: { lt: 0 } } ] } ] }
-            })
+            calculateProductTraceabilityInternal(startDate, endDate, prefix).catch(() => [])
         ]);
 
         const deliveryInvoices = sales.map((s: any) => s.invoiceNumber || s.deliveryNumber).filter(Boolean);
@@ -2118,7 +2013,9 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
         // from the same real transactions backing totalExpenses, so they always add up exactly.
         const { linked: linkedOpsExpense, unlinked: generalOps } = splitOpsExpenses(expenses);
 
-        const companyExpenses = companyExpensesRecords.reduce((acc: number, e: any) => acc + Math.abs(Number(e.amount || 0)), 0);
+        // companyExpenses = totalExpenses: satu sumber yang sama dengan Detail Operasional,
+        // supaya "Ringkasan" dan "Detail Operasional" tidak lagi menampilkan dua total berbeda.
+        const companyExpenses = totalExpenses;
 
         // Net Profit (MARGIN)
         const netProfit = grossProfit - totalExpenses;
@@ -2210,8 +2107,7 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
         const daysInMonth = new Date(filterYear, filterMonth, 0).getDate();
         const dailyBreakdown = [];
         for (let d = 1; d <= daysInMonth; d++) {
-            const dayStart = new Date(filterYear, filterMonth - 1, d, 0, 0, 0);
-            const dayEnd = new Date(filterYear, filterMonth - 1, d, 23, 59, 59, 999);
+            const { start: dayStart, end: dayEnd } = getJakartaDayRange(new Date(filterYear, filterMonth - 1, d));
             const daySales = sales.filter((s: any) => {
                 const dt = new Date(s.date);
                 return dt >= dayStart && dt <= dayEnd;

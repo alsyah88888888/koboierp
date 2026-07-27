@@ -77,13 +77,11 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
     const [selectedTraceData, setSelectedTraceData] = useState<any>(null);
     const [isTraceModalOpen, setIsTraceModalOpen] = useState(false);
 
-    const [closingReport, setClosingReport] = useState<any>(null);
-    const [closingPeriod, setClosingPeriod] = useState({ 
-        month: new Date().getMonth() + 1, 
-        year: new Date().getFullYear() 
+    const [closingPeriod, setClosingPeriod] = useState({
+        month: new Date().getMonth() + 1,
+        year: new Date().getFullYear()
     });
     const [drillDownData, setDrillDownData] = useState<{title: string, data: any[], type: string} | null>(null);
-    const [isFetchingClosing, setIsFetchingClosing] = useState(false);
     const [closingPrefix, setClosingPrefix] = useState<'PF' | 'BC' | 'ALL'>('ALL');
     const [activePrefix, setActivePrefix] = useState<'PF' | 'BC' | 'ALL'>('ALL');
 
@@ -129,30 +127,16 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
         setIsLoading(false);
     }, [selectedMonth, selectedYear, showAllTimeCross]);
 
-    const fetchClosingReport = async (m: number, y: number, pref: 'PF' | 'BC' | 'ALL' = 'ALL') => {
-        setIsFetchingClosing(true);
-        setClosingReport(null);
-        try {
-            const data = await callAction("getMonthlyClosingReport", m, y, pref);
-            setClosingReport(data);
-        } catch (err) {
-            console.error("Fetch Failed:", err);
-            setClosingReport({ error: "Koneksi terputus atau server sibuk." });
-        } finally {
-            setIsFetchingClosing(false);
-        }
-    };
-
     const downloadPurchasesExcel = () => {
-        if (!closingReport?.details?.purchases) return;
-        
-        const data = closingReport.details.purchases.map((p: any) => ({
+        if (!monthlyData?.details?.purchases) return;
+
+        const data = monthlyData.details.purchases.map((p: any) => ({
             'Tanggal': format(new Date(p.date), 'MM/dd/yyyy'),
             'No. LPB': p.number,
-            'Supplier': p.entity,
+            'Supplier': p.supplier,
             'Subtotal': p.subtotal,
             'Diskon': p.discount,
-            'PPN %': p.taxRate / 100, // Format 11 as 0.11
+            'PPN %': p.subtotal > 0 ? Math.round((p.tax / p.subtotal) * 100) / 100 : 0,
             'Pajak Rp': p.tax,
             'Grand Total Netto': p.grandTotal,
             'Sudah Dibayarkan (BCA)': p.paidAmount
@@ -165,13 +149,13 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
     };
 
     const downloadSalesExcel = () => {
-        if (!closingReport?.details?.sales) return;
-        
-        const data = closingReport.details.sales.map((s: any) => ({
+        if (!monthlyData?.details?.sales) return;
+
+        const data = monthlyData.details.sales.map((s: any) => ({
             'Tanggal': format(new Date(s.date), 'MM/dd/yyyy'),
             'No. Invoice': s.invoiceNumber || s.number,
             'No. Surat Jalan': s.number,
-            'Customer': s.entity,
+            'Customer': s.buyer,
             'Qty': s.totalQty,
             'Total Harga': s.subtotal - s.discount,
             'PPN 11%': s.tax,
@@ -978,7 +962,8 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
         else if (activeTab === 'monthly') fetchMonthly();
         else if (activeTab === 'cross') fetchCrossDivision();
         else if (activeTab === 'closing') {
-            fetchClosingReport(closingPeriod.month, closingPeriod.year, closingPrefix);
+            // Tab Closing memakai monthlyData yang sama dengan tab Bulanan (lihat efek di
+            // bawah), supaya angka di layar Closing tidak pernah berbeda dengan hasil export.
             setSelectedMonth(closingPeriod.month);
             setSelectedYear(closingPeriod.year);
             setActivePrefix(closingPrefix);
@@ -1831,15 +1816,10 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
                                     <div>
                                         <h3 className="text-2xl font-black text-slate-900 tracking-tight">Period Closing Report</h3>
                                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Consolidated Financial Review</p>
-                                        {closingReport?.debug && (
-                                            <p className="text-[8px] font-mono text-slate-300 mt-2">
-                                                DEBUG: Sales({closingReport.debug.salesCount}) Items({closingReport.debug.totalItemsInSales}) Prices({closingReport.debug.priceMapSize})
-                                            </p>
-                                        )}
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-3 bg-slate-50 p-2 rounded-2xl border border-slate-100">
-                                    <select 
+                                    <select
                                         value={closingPrefix}
                                         onChange={(e) => setClosingPrefix(e.target.value as any)}
                                         className="bg-transparent font-black text-sm outline-none px-4 py-2 border-r border-slate-200"
@@ -1848,7 +1828,7 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
                                         <option value="PF">PF DIV</option>
                                         <option value="BC">BC DIV</option>
                                     </select>
-                                    <select 
+                                    <select
                                         value={closingPeriod.month}
                                         onChange={(e) => setClosingPeriod(prev => ({ ...prev, month: parseInt(e.target.value) }))}
                                         className="bg-transparent font-black text-sm outline-none px-4 py-2"
@@ -1857,7 +1837,7 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
                                             <option key={i+1} value={i+1}>{format(new Date(2024, i, 1), "MMMM")}</option>
                                         ))}
                                     </select>
-                                    <select 
+                                    <select
                                         value={closingPeriod.year}
                                         onChange={(e) => setClosingPeriod(prev => ({ ...prev, year: parseInt(e.target.value) }))}
                                         className="bg-transparent font-black text-sm outline-none px-4 py-2"
@@ -1866,17 +1846,17 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
                                             <option key={y} value={y}>{y}</option>
                                         ))}
                                     </select>
-                                    <button 
-                                        onClick={() => fetchClosingReport(closingPeriod.month, closingPeriod.year, closingPrefix)}
-                                        disabled={isFetchingClosing}
+                                    <button
+                                        onClick={() => fetchMonthly()}
+                                        disabled={isLoading}
                                         className="p-2 bg-white rounded-xl shadow-sm hover:shadow-md transition-all active:scale-95 text-primary"
                                     >
-                                        <Search className={cn("h-5 w-5", isFetchingClosing && "animate-spin")} />
+                                        <Search className={cn("h-5 w-5", isLoading && "animate-spin")} />
                                     </button>
                                 </div>
                             </div>
 
-                            {isFetchingClosing ? (
+                            {isLoading ? (
                                 <div className="p-32 text-center bg-white rounded-[2.5rem] border-2 border-slate-50 shadow-inner flex flex-col items-center justify-center gap-6 animate-pulse">
                                     <div className="p-4 bg-primary/5 rounded-full">
                                         <Clock className="h-12 w-12 text-primary/30 animate-spin" />
@@ -1886,25 +1866,25 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
                                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">Mohon tunggu sebentar, sedang sinkronisasi data seluruh departemen...</p>
                                     </div>
                                 </div>
-                            ) : !closingReport ? (
+                            ) : !monthlyData ? (
                                 <div className="p-20 text-center bg-white rounded-[2.5rem] border-2 border-dashed border-slate-100 text-slate-300">
                                     <p className="font-black uppercase tracking-widest text-xs">Pilih periode dan klik cari untuk memuat data closing</p>
                                 </div>
-                            ) : closingReport.error ? (
+                            ) : monthlyData.error ? (
                                 <div className="p-20 text-center bg-rose-50 rounded-[2.5rem] border-2 border-dashed border-rose-100 text-rose-400">
-                                    <p className="font-black uppercase tracking-widest text-xs">Gagal Memuat Data: {closingReport.error}</p>
-                                    <button onClick={() => fetchClosingReport(closingPeriod.month, closingPeriod.year, closingPrefix)} className="mt-4 px-6 py-2 bg-rose-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest">Coba Lagi</button>
+                                    <p className="font-black uppercase tracking-widest text-xs">Gagal Memuat Data: {monthlyData.error}</p>
+                                    <button onClick={() => fetchMonthly()} className="mt-4 px-6 py-2 bg-rose-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest">Coba Lagi</button>
                                 </div>
                             ) : (
                                 <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
                                     {/* Metric Grid */}
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
                                         {[
-                                            { label: "Penjualan", value: closingReport.revenue, color: "text-emerald-500", icon: ArrowUpCircle, type: 'sales', data: closingReport.details?.sales || [] },
-                                            { label: "Pembelian", value: closingReport.inventory?.purchases || 0, color: "text-blue-500", icon: ShoppingCart, type: 'purchases', data: closingReport.details?.purchases || [] },
-                                            { label: "Operasional", value: closingReport.expenses, color: "text-amber-500", icon: Wallet, type: 'operational', data: closingReport.details?.operational || [], subtext: closingReport.companyExpenses ? `Global: ${formatCurrency(closingReport.companyExpenses)}` : undefined },
-                                            { label: "Gross Margin", value: closingReport.grossProfit, color: "text-emerald-600", icon: Sparkles, type: 'none', data: [] },
-                                            { label: "Profit", value: closingReport.netProfit, color: "text-indigo-600", icon: Banknote, type: 'none', data: [] },
+                                            { label: "Penjualan", value: monthlyData.profitLoss?.revenue || 0, color: "text-emerald-500", icon: ArrowUpCircle, type: 'sales', data: monthlyData.details?.sales || [] },
+                                            { label: "Pembelian", value: monthlyData.purchases?.total || 0, color: "text-blue-500", icon: ShoppingCart, type: 'purchases', data: monthlyData.details?.purchases || [] },
+                                            { label: "Operasional", value: monthlyData.profitLoss?.expenses || 0, color: "text-amber-500", icon: Wallet, type: 'operational', data: monthlyData.details?.operational || [], subtext: monthlyData.profitLoss?.companyExpenses ? `Global: ${formatCurrency(monthlyData.profitLoss.companyExpenses)}` : undefined },
+                                            { label: "Gross Margin", value: monthlyData.profitLoss?.grossProfit || 0, color: "text-emerald-600", icon: Sparkles, type: 'none', data: [] },
+                                            { label: "Profit", value: monthlyData.profitLoss?.netProfit || 0, color: "text-indigo-600", icon: Banknote, type: 'none', data: [] },
                                         ].map((card, i) => (
                                             <div 
                                                 key={i} 
@@ -1936,11 +1916,11 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
                                                         <div className="flex justify-between items-end">
                                                             <div>
                                                                 <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Total Piutang (AR)</p>
-                                                                <p 
-                                                                    onClick={() => setDrillDownData({ title: 'Rincian Piutang (AR)', data: closingReport.arAging?.items || [], type: 'ar' })}
+                                                                <p
+                                                                    onClick={() => setDrillDownData({ title: 'Rincian Piutang (AR)', data: monthlyData.arAging?.items || [], type: 'ar' })}
                                                                     className="text-2xl font-black text-slate-900 tabular-nums tracking-tighter cursor-pointer hover:underline"
                                                                 >
-                                                                    {formatCurrency(closingReport.outstandingAR)}
+                                                                    {formatCurrency(monthlyData.arAging?.buckets?.total || 0)}
                                                                 </p>
                                                             </div>
                                                             <ArrowUpCircle className="h-8 w-8 text-emerald-100" />
@@ -1954,11 +1934,11 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
                                                         <div className="flex justify-between items-end">
                                                             <div>
                                                                 <p className="text-[10px] font-black text-rose-600 uppercase tracking-widest">Total Hutang (AP)</p>
-                                                                <p 
-                                                                    onClick={() => setDrillDownData({ title: 'Rincian Hutang (AP)', data: closingReport.apAging?.items || [], type: 'ap' })}
+                                                                <p
+                                                                    onClick={() => setDrillDownData({ title: 'Rincian Hutang (AP)', data: monthlyData.apAging?.items || [], type: 'ap' })}
                                                                     className="text-2xl font-black text-slate-900 tabular-nums tracking-tighter cursor-pointer hover:underline"
                                                                 >
-                                                                    {formatCurrency(closingReport.outstandingAP)}
+                                                                    {formatCurrency(monthlyData.apAging?.buckets?.total || 0)}
                                                                 </p>
                                                             </div>
                                                             <ArrowDownCircle className="h-8 w-8 text-rose-100" />
@@ -1980,7 +1960,7 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
                                                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Operational Insight</p>
                                                 <h4 className="text-2xl font-black tracking-tight">Closing Efficiency</h4>
                                                 <p className="text-sm text-slate-400 mt-4 leading-relaxed">
-                                                    Periode ini memiliki <strong>{closingReport.stats.salesCount}</strong> transaksi penjualan dan <strong>{closingReport.stats.purchaseCount}</strong> penerimaan barang.
+                                                    Periode ini memiliki <strong>{monthlyData.stats?.salesCount || 0}</strong> transaksi penjualan dan <strong>{monthlyData.stats?.purchaseCount || 0}</strong> penerimaan barang.
                                                 </p>
                                             </div>
                                             <div className="relative z-10 mt-12 space-y-4">
