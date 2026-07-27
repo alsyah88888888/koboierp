@@ -40,24 +40,42 @@ async function splitLinkedOpsByDelivery(prisma: any, linkedOps: any[]): Promise<
 }
 
 async function fetchHybridOperationalData(prisma: any, startDate: Date, endDate: Date, deliveryInvoices: string[]) {
+    const categoryScope = { notIn: ["PEMBELIAN", "PENJUALAN", "TRANSFER"] };
+
     const unlinkedOps = await prisma.financeTransaction.findMany({
         where: {
             date: { gte: startDate, lte: endDate },
-            category: { notIn: ["PEMBELIAN", "PENJUALAN", "TRANSFER"] },
+            category: categoryScope,
             OR: [{ invoiceNumber: null }, { invoiceNumber: '' }]
         },
         include: { createdBy: { select: { name: true } } },
         orderBy: { date: 'asc' }
     });
 
+    // Kandidat "linked": (a) transaksi yang TERCATAT di periode ini dan invoiceNumber-nya
+    // terisi — apapun isinya, termasuk yang tidak cocok SJ manapun (salah ketik, kode PR,
+    // SJ void/terhapus) — supaya tidak hilang begitu saja dari Laporan; dan (b) transaksi
+    // dari periode LAIN yang invoiceNumber-nya menunjuk ke SJ yang terkirim di periode ini,
+    // supaya biayanya tetap "menempel" ke bulan pengiriman sesuai kesepakatan.
     const linkedTxnMap = new Map<string, any>();
+
+    const inPeriodWithInvoice = await prisma.financeTransaction.findMany({
+        where: {
+            date: { gte: startDate, lte: endDate },
+            category: categoryScope,
+            NOT: { OR: [{ invoiceNumber: null }, { invoiceNumber: '' }] }
+        },
+        include: { createdBy: { select: { name: true } } }
+    });
+    inPeriodWithInvoice.forEach((op: any) => linkedTxnMap.set(op.id, op));
+
     if (deliveryInvoices.length > 0) {
         for (let i = 0; i < deliveryInvoices.length; i += 100) {
             const chunk = deliveryInvoices.slice(i, i + 100);
             const chunkOps = await prisma.financeTransaction.findMany({
                 where: {
                     OR: chunk.map((inv: string) => ({ invoiceNumber: { contains: inv } })),
-                    category: { notIn: ["PEMBELIAN", "PENJUALAN", "TRANSFER"] }
+                    category: categoryScope
                 },
                 include: { createdBy: { select: { name: true } } }
             });
@@ -68,7 +86,11 @@ async function fetchHybridOperationalData(prisma: any, startDate: Date, endDate:
     // Split each linked transaction across the deliveries it actually references, then keep
     // only the portions whose delivery date falls within THIS report's period. This prevents
     // a transaction that spans a partial delivery in another month from double-counting its
-    // whole amount into every month it happens to match an invoice number for.
+    // whole amount into every month it happens to match an invoice number for. Transactions
+    // whose invoiceNumber doesn't resolve to any real delivery fall back unchanged (original
+    // date/amount) — since they came from the in-period query above, their original date
+    // already falls inside this window, so they still pass the filter below instead of
+    // vanishing.
     const splitLinked = await splitLinkedOpsByDelivery(prisma, Array.from(linkedTxnMap.values()));
     const periodLinked = splitLinked.filter((op: any) => {
         const d = new Date(op.date);
