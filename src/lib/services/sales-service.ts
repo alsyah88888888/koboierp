@@ -11,6 +11,37 @@ function revalidatePath(path: string) {
 }
 
 /**
+ * Consume `qty` from a lot and record the allocation atomically. The guarded
+ * `updateMany` (decrement only WHERE remainingQty >= qty) makes this safe under
+ * concurrent deliveries drawing from the same lot — Postgres row-locks the matched
+ * row during the UPDATE, so two concurrent calls can never both succeed and push
+ * remainingQty negative; the loser's `count` comes back 0 and the caller re-checks
+ * what's actually left before retrying elsewhere. Returns false if `qty` is no
+ * longer available (either raced away, or was never enough to begin with).
+ */
+async function tryConsumeLot(tx: any, lotId: string, sdItemId: string, qty: number, hppAtTime: any): Promise<boolean> {
+    if (qty <= 0) return true;
+    const result = await tx.productLot.updateMany({
+        where: { id: lotId, remainingQty: { gte: qty } },
+        data: { remainingQty: { decrement: qty } }
+    });
+    if (result.count === 0) return false;
+    await tx.lotAllocation.create({ data: { lotId, sdItemId, qty, hppAtTime } });
+    return true;
+}
+
+/**
+ * Lot backfill historis (LOT-HIST-*) dibuat lewat migrasi data lama dengan
+ * remainingQty = initialQty "best-effort" (lihat prisma/backfill_lots.js) — tidak
+ * memperhitungkan penjualan yang sudah terjadi sebelum sistem lot ada. Sisa qty-nya
+ * semu, jadi TIDAK boleh ikut diambil oleh alokasi FIFO otomatis untuk penjualan baru
+ * (itu yang menyebabkan penjualan terbaru "kembali" ke harga bertahun-tahun lalu).
+ */
+function isHistoricalLotNumber(lotNumber: string): boolean {
+    return lotNumber.startsWith('LOT-HIST-');
+}
+
+/**
  * SALES SERVICES
  * Strictly server-side logic for sales operations.
  */
@@ -327,34 +358,22 @@ export async function createSalesDeliveryService(data: any, userId: string) {
                     if (specificLot.isVoided) {
                         throw new Error(`Rujukan pembelian (lot) ${specificLot.lotNumber} telah dibatalkan (void).`);
                     }
-                    if (specificLot.remainingQty < remaining) {
-                        const product = await tx.product.findUnique({ where: { id: sdItem.productId } });
-                        throw new Error(`Stok pada lot ${specificLot.lotNumber} (${specificLot.supplierName || 'UMUM'}) untuk produk ${product?.name || sdItem.productId} tidak mencukupi. Tersedia: ${specificLot.remainingQty}, Dibutuhkan: ${remaining}`);
-                    }
-
                     const consume = remaining;
-                    
-                    await tx.lotAllocation.create({
-                        data: {
-                            lotId: specificLot.id,
-                            sdItemId: sdItem.id,
-                            qty: consume,
-                            hppAtTime: specificLot.landedCost ?? specificLot.purchasePrice
-                        }
-                    });
-
-                    await tx.productLot.update({
-                        where: { id: specificLot.id },
-                        data: { remainingQty: { decrement: consume } }
-                    });
+                    const consumed = await tryConsumeLot(tx, specificLot.id, sdItem.id, consume, specificLot.landedCost ?? specificLot.purchasePrice);
+                    if (!consumed) {
+                        const product = await tx.product.findUnique({ where: { id: sdItem.productId } });
+                        const fresh = await tx.productLot.findUnique({ where: { id: specificLot.id } });
+                        throw new Error(`Stok pada lot ${specificLot.lotNumber} (${specificLot.supplierName || 'UMUM'}) untuk produk ${product?.name || sdItem.productId} tidak mencukupi. Tersedia: ${fresh?.remainingQty ?? 0}, Dibutuhkan: ${remaining}`);
+                    }
 
                     remaining = 0;
                 }
 
                 if (remaining <= 0) continue;
 
-                // 2. Get available lots for this product, FIFO order (oldest first)
-                const availableLots = await tx.productLot.findMany({
+                // 2. Get available lots for this product, FIFO order (oldest first). Lot
+                // historis (LOT-HIST-*) sengaja dikecualikan — lihat isHistoricalLotNumber.
+                const candidateLots = await tx.productLot.findMany({
                     where: {
                         productId: sdItem.productId,
                         remainingQty: { gt: 0 },
@@ -367,28 +386,22 @@ export async function createSalesDeliveryService(data: any, userId: string) {
                     },
                     orderBy: { grDate: 'asc' }
                 });
+                const availableLots = candidateLots.filter((l: any) => !isHistoricalLotNumber(l.lotNumber));
 
                 for (const lot of availableLots) {
                     if (remaining <= 0) break;
-                    const consume = Math.min(remaining, lot.remainingQty);
-
-                    // Create LotAllocation record
-                    await tx.lotAllocation.create({
-                        data: {
-                            lotId: lot.id,
-                            sdItemId: sdItem.id,
-                            qty: consume,
-                            hppAtTime: lot.landedCost ?? lot.purchasePrice
+                    let consume = Math.min(remaining, lot.remainingQty);
+                    while (consume > 0) {
+                        const consumed = await tryConsumeLot(tx, lot.id, sdItem.id, consume, lot.landedCost ?? lot.purchasePrice);
+                        if (consumed) {
+                            remaining -= consume;
+                            break;
                         }
-                    });
-
-                    // Decrement lot remaining qty
-                    await tx.productLot.update({
-                        where: { id: lot.id },
-                        data: { remainingQty: { decrement: consume } }
-                    });
-
-                    remaining -= consume;
+                        // Race: another transaction drew from this lot concurrently — re-check
+                        // what's actually left before retrying, instead of assuming our stale read.
+                        const fresh = await tx.productLot.findUnique({ where: { id: lot.id }, select: { remainingQty: true } });
+                        consume = Math.min(remaining, fresh?.remainingQty ?? 0);
+                    }
                 }
                 // If remaining > 0: unallocated qty (stok beli belum ada / historis)
                 // This is safe — report-service will still handle it gracefully
@@ -689,34 +702,22 @@ export async function updateSalesDeliveryService(id: string, data: any, userId: 
                     if (specificLot.isVoided) {
                         throw new Error(`Rujukan pembelian (lot) ${specificLot.lotNumber} telah dibatalkan (void).`);
                     }
-                    if (specificLot.remainingQty < remaining) {
-                        const product = await tx.product.findUnique({ where: { id: sdItem.productId } });
-                        throw new Error(`Stok pada lot ${specificLot.lotNumber} (${specificLot.supplierName || 'UMUM'}) untuk produk ${product?.name || sdItem.productId} tidak mencukupi. Tersedia: ${specificLot.remainingQty}, Dibutuhkan: ${remaining}`);
-                    }
-
                     const consume = remaining;
-                    
-                    await tx.lotAllocation.create({
-                        data: {
-                            lotId: specificLot.id,
-                            sdItemId: sdItem.id,
-                            qty: consume,
-                            hppAtTime: specificLot.landedCost ?? specificLot.purchasePrice
-                        }
-                    });
-
-                    await tx.productLot.update({
-                        where: { id: specificLot.id },
-                        data: { remainingQty: { decrement: consume } }
-                    });
+                    const consumed = await tryConsumeLot(tx, specificLot.id, sdItem.id, consume, specificLot.landedCost ?? specificLot.purchasePrice);
+                    if (!consumed) {
+                        const product = await tx.product.findUnique({ where: { id: sdItem.productId } });
+                        const fresh = await tx.productLot.findUnique({ where: { id: specificLot.id } });
+                        throw new Error(`Stok pada lot ${specificLot.lotNumber} (${specificLot.supplierName || 'UMUM'}) untuk produk ${product?.name || sdItem.productId} tidak mencukupi. Tersedia: ${fresh?.remainingQty ?? 0}, Dibutuhkan: ${remaining}`);
+                    }
 
                     remaining = 0;
                 }
 
                 if (remaining <= 0) continue;
 
-                // 2. Get available lots for this product, FIFO order (oldest first)
-                 const availableLots = await tx.productLot.findMany({
+                // 2. Get available lots for this product, FIFO order (oldest first). Lot
+                // historis (LOT-HIST-*) sengaja dikecualikan — lihat isHistoricalLotNumber.
+                const candidateLots = await tx.productLot.findMany({
                     where: {
                         productId: sdItem.productId,
                         remainingQty: { gt: 0 },
@@ -729,17 +730,19 @@ export async function updateSalesDeliveryService(id: string, data: any, userId: 
                     },
                     orderBy: { grDate: 'asc' }
                 });
+                const availableLots = candidateLots.filter((l: any) => !isHistoricalLotNumber(l.lotNumber));
                 for (const lot of availableLots) {
                     if (remaining <= 0) break;
-                    const consume = Math.min(remaining, lot.remainingQty);
-                    await tx.lotAllocation.create({
-                        data: { lotId: lot.id, sdItemId: sdItem.id, qty: consume, hppAtTime: lot.landedCost ?? lot.purchasePrice }
-                    });
-                    await tx.productLot.update({
-                        where: { id: lot.id },
-                        data: { remainingQty: { decrement: consume } }
-                    });
-                    remaining -= consume;
+                    let consume = Math.min(remaining, lot.remainingQty);
+                    while (consume > 0) {
+                        const consumed = await tryConsumeLot(tx, lot.id, sdItem.id, consume, lot.landedCost ?? lot.purchasePrice);
+                        if (consumed) {
+                            remaining -= consume;
+                            break;
+                        }
+                        const fresh = await tx.productLot.findUnique({ where: { id: lot.id }, select: { remainingQty: true } });
+                        consume = Math.min(remaining, fresh?.remainingQty ?? 0);
+                    }
                 }
             }
         }

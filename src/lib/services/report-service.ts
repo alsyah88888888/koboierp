@@ -2373,20 +2373,25 @@ export async function reallocateLotService(sdItemId: string, newLotId: string) {
             where: { sdItemId: saleItem.id }
         });
         
-        // 3. Create new lot allocation
+        // 3. Deduct qty from new lot — guarded so a concurrent allocation into the same
+        // lot can never push remainingQty negative (Postgres row-locks the matched row).
+        const deducted = await tx.productLot.updateMany({
+            where: { id: targetLot.id, remainingQty: { gte: saleItem.quantity } },
+            data: { remainingQty: { decrement: saleItem.quantity } }
+        });
+        if (deducted.count === 0) {
+            const fresh = await tx.productLot.findUnique({ where: { id: targetLot.id } });
+            throw new Error(`Stok pada lot ${targetLot.lotNumber} tidak mencukupi. Tersedia: ${fresh?.remainingQty ?? 0}, dibutuhkan: ${saleItem.quantity}`);
+        }
+
+        // 4. Create new lot allocation
         await tx.lotAllocation.create({
             data: {
                 sdItemId: saleItem.id,
                 lotId: targetLot.id,
                 qty: saleItem.quantity,
-                hppAtTime: targetLot.purchasePrice
+                hppAtTime: targetLot.landedCost ?? targetLot.purchasePrice
             }
-        });
-
-        // 4. Deduct qty from new lot
-        await tx.productLot.update({
-            where: { id: targetLot.id },
-            data: { remainingQty: { decrement: saleItem.quantity } }
         });
     });
 

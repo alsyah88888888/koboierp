@@ -400,10 +400,16 @@ export async function deleteSalesReturnAction(id: string) {
                     if (reConsumeRemaining <= 0) break;
                     // We consume from the lots that were originally allocated
                     const consume = Math.min(reConsumeRemaining, alloc.qty);
-                    await tx.productLot.update({
-                        where: { id: alloc.lotId },
+                    // Guarded decrement — never push remainingQty negative if another
+                    // transaction touched this same lot concurrently.
+                    const updated = await tx.productLot.updateMany({
+                        where: { id: alloc.lotId, remainingQty: { gte: consume } },
                         data: { remainingQty: { decrement: consume } }
                     });
+                    if (updated.count === 0) {
+                        const fresh = await tx.productLot.findUnique({ where: { id: alloc.lotId } });
+                        throw new Error(`Stok pada lot ${fresh?.lotNumber || alloc.lotId} tidak mencukupi untuk membatalkan retur ini. Tersedia: ${fresh?.remainingQty ?? 0}, dibutuhkan: ${consume}`);
+                    }
                     reConsumeRemaining -= consume;
                 }
             }
