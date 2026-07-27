@@ -121,6 +121,24 @@ function splitOpsExpenses(ops: any[]): { linked: number; unlinked: number; total
 }
 
 /**
+ * Kumpulan Nomor SJ yang benar-benar muncul di sheet Traceability laporan ini, dipakai
+ * untuk menandai tiap baris Detail Operasional: apakah biayanya sudah ikut terhitung di
+ * kolom OPS Traceability (SJ-nya ada di daftar ini) atau belum (biaya umum / SJ-nya tidak
+ * termasuk dalam periode Traceability yang sedang ditampilkan).
+ */
+function buildTraceDeliverySet(traceabilityRows: any[]): Set<string> {
+    return new Set(traceabilityRows.map((t: any) => t['NOMOR SJ']).filter(Boolean));
+}
+
+function tagTraceabilityStatus(opsRow: any, traceDeliverySet: Set<string>) {
+    const sourceDeliveryNumber = opsRow._sourceDeliveryNumber || null;
+    return {
+        sourceDeliveryNumber,
+        adaDiTraceability: !!(sourceDeliveryNumber && traceDeliverySet.has(sourceDeliveryNumber))
+    };
+}
+
+/**
  * FIFO TRACEABILITY SERVICE — v4 (Format Spreadsheet)
  * Kolom disesuaikan persis dengan format gambar referensi:
  * NO | TANGGAL | F.PAJAK | NOMOR | TANGGAL(beli) | NAMA PEMBELI | BARCODE |
@@ -1299,6 +1317,7 @@ export async function getComprehensiveDailyReportService(date?: string, prefix?:
         // supaya sheet Traceability dan sheet lain (Penjualan/Pembelian/Operasional) tidak
         // pernah mengiris hari yang berbeda.
         const dailyTraceability = await calculateProductTraceabilityInternal(dayStart, dayEnd, prefix).catch(() => []);
+        const dailyTraceDeliverySet = buildTraceDeliverySet(dailyTraceability);
 
         // Fetch Ops for Sales
         const salesInvoiceNumbers = sales.map((s: any) => s.invoiceNumber).filter(Boolean);
@@ -1470,7 +1489,8 @@ export async function getComprehensiveDailyReportService(date?: string, prefix?:
                     bank: o.bank, category: o.category || o.transactionType,
                     amount: Number(o.amount || 0), salesPerson: o.salesPerson,
                     referenceNumber: o.referenceNumber,
-                    operator: o.createdBy?.name || 'System'
+                    operator: o.createdBy?.name || 'System',
+                    ...tagTraceabilityStatus(o, dailyTraceDeliverySet)
                 })),
                 returnsPurchase: returns_purchase.map((r: any) => ({
                     returnNumber: r.returnNumber, date: r.date, status: r.status,
@@ -1718,11 +1738,13 @@ export async function getComprehensiveWeeklyReportService(weekStartDate?: string
         }));
 
         // --- Operational Detail Table ---
+        const weeklyTraceDeliverySet = buildTraceDeliverySet(weeklyTraceability);
         const opsDetail = operational.map((o: any) => ({
             date: o.date, description: o.description,
             bank: o.bank, category: o.category || o.transactionType,
             amount: Number(o.amount || 0), salesPerson: o.salesPerson,
-            referenceNumber: o.referenceNumber
+            referenceNumber: o.referenceNumber,
+            ...tagTraceabilityStatus(o, weeklyTraceDeliverySet)
         }));
 
         const now = new Date();
@@ -2198,11 +2220,13 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
         }));
 
         // ── Operational Detail Table ─────────────────────────────────────
+        const monthlyTraceDeliverySet = buildTraceDeliverySet(monthlyTraceability);
         const opsDetail = allOperational.map((o: any) => ({
             date: o.date, description: o.description,
             bank: o.bank, category: o.category || o.transactionType,
             amount: Number(o.amount || 0), salesPerson: o.salesPerson,
-            referenceNumber: o.referenceNumber
+            referenceNumber: o.referenceNumber,
+            ...tagTraceabilityStatus(o, monthlyTraceDeliverySet)
         }));
 
         const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
