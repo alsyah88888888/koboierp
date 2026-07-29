@@ -52,6 +52,7 @@ export default async function SalesOrderPrintPage({ params }: { params: Promise<
             title={isDraft ? "Proforma Invoice (PI)" : "Sales Order (SO)"}
             docNumber={order.orderNumber}
             date={format(new Date(order.date), "dd MMM yyyy")}
+            showBankAccountInHeader={!isDraft}
             headerInfo={
                 <div className="flex flex-col gap-2">
                     <div className="flex justify-between items-start gap-4 text-[10px] font-bold uppercase italic border border-slate-900 p-3 bg-slate-50/20">
@@ -125,6 +126,11 @@ export default async function SalesOrderPrintPage({ params }: { params: Promise<
                     * Dokumen ini adalah bukti pemesanan resmi yang mengikat.<br />
                     * Barang akan dikirimkan sesuai dengan ketersediaan stok.<br />
                     * Status Order: <span className="text-slate-900 font-black">{order.status}</span>
+                    {isDraft && (
+                        <p className="mt-2 text-[7pt] font-black text-slate-500 uppercase tracking-widest not-italic">
+                            BCA 682-5671718 a.n PT KOLA BORASI INDONESIA
+                        </p>
+                    )}
                 </div>
                 <div className="space-y-1 border border-slate-900 p-2 font-black bg-slate-50/50">
                     <div className="flex justify-between text-[9px]">

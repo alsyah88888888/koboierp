@@ -5,6 +5,8 @@ import { Printer, ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { ClientBarcode as Barcode } from "@/components/print/ClientBarcode";
 
+const BANK_ACCOUNT_TEXT = "BCA 682-5671718 a.n PT KOLA BORASI INDONESIA";
+
 interface DocumentLayoutProps {
     title: string;
     docNumber: string;
@@ -13,9 +15,12 @@ interface DocumentLayoutProps {
     headerInfo?: React.ReactNode;
     isA5?: boolean;
     isContinuous?: boolean; // New prop for LX-310 Support
+    showBankAccountInHeader?: boolean; // Default true. Set false when the page itself
+    // renders the bank account elsewhere (e.g. Proforma Invoice puts it below the
+    // "Status Order: DRAFT" note instead of under the website link).
 }
 
-export function DocumentLayout({ title, docNumber, date, children, headerInfo, isA5, isContinuous }: DocumentLayoutProps) {
+export function DocumentLayout({ title, docNumber, date, children, headerInfo, isA5, isContinuous, showBankAccountInHeader = true }: DocumentLayoutProps) {
     const router = useRouter();
 
     useEffect(() => {
@@ -96,6 +101,11 @@ export function DocumentLayout({ title, docNumber, date, children, headerInfo, i
                                 <p className="text-[7pt] font-bold text-slate-400 uppercase tracking-widest">
                                     PHONE: <span className="text-slate-500">0857-7444-4805</span> | WEB: <span className="text-slate-500">www.kolaborasiindonesia.com</span>
                                 </p>
+                                {showBankAccountInHeader && (
+                                    <p className="text-[7pt] font-black text-slate-500 uppercase tracking-widest">
+                                        {BANK_ACCOUNT_TEXT}
+                                    </p>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -156,8 +166,7 @@ export function DocumentLayout({ title, docNumber, date, children, headerInfo, i
                         </div>
                     </div>
 
-                    <div className={`mt-4 pt-2 border-t border-slate-100 ${(isA5 || isContinuous) ? 'text-[7px]' : 'text-[10px]'} font-bold text-slate-400 flex justify-between uppercase tracking-widest`}>
-                        <span>BCA 682-5671718 a.n PT KOLA BORASI INDONESIA</span>
+                    <div className={`mt-4 pt-2 border-t border-slate-100 ${(isA5 || isContinuous) ? 'text-[7px]' : 'text-[10px]'} font-bold text-slate-400 flex justify-end uppercase tracking-widest`}>
                         <span>Doc Ref: {docNumber}</span>
                     </div>
                 </div>
