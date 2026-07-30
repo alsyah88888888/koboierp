@@ -704,9 +704,11 @@ export async function getAvailableLotsForProductAction(productId: string, includ
                 lotNumber: true,
                 grNumber: true,
                 grDate: true,
+                createdAt: true,
                 supplierName: true,
                 remainingQty: true,
-                purchasePrice: true
+                purchasePrice: true,
+                landedCost: true
             }
         });
 
@@ -714,7 +716,9 @@ export async function getAvailableLotsForProductAction(productId: string, includ
         return availableLots.map((lot: any) => ({
             ...lot,
             grDate: lot.grDate ? lot.grDate.toISOString() : null,
-            purchasePrice: Number(lot.purchasePrice)
+            createdAt: lot.createdAt ? lot.createdAt.toISOString() : null,
+            purchasePrice: Number(lot.purchasePrice),
+            landedCost: lot.landedCost ? Number(lot.landedCost) : null
         }));
     } catch (err: any) {
         console.error("[getAvailableLotsForProductAction] ERROR:", err);

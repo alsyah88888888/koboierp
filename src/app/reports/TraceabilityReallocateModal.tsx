@@ -113,7 +113,7 @@ export function TraceabilityReallocateModal({ isOpen, onClose, data }: Traceabil
                                 <option value="" disabled>-- Pilih Pembelian --</option>
                                 {lots.map((lot: any) => (
                                     <option key={lot.id} value={lot.id}>
-                                        {lot.grNumber} | Tgl: {new Date(lot.createdAt).toLocaleDateString('id-ID')} | {lot.supplierName} | Harga: Rp {Number(lot.purchasePrice).toLocaleString('id-ID')}
+                                        {lot.grNumber} | Tgl: {new Date(lot.grDate || lot.createdAt || Date.now()).toLocaleDateString('id-ID')} | {lot.supplierName} | Harga: Rp {Number(lot.landedCost ?? lot.purchasePrice).toLocaleString('id-ID')}
                                     </option>
                                 ))}
                             </select>

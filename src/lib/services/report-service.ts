@@ -2353,38 +2353,15 @@ export async function reallocateLotService(sdItemId: string, newLotId: string) {
     });
     if (!targetLot) throw new Error("Target lot not found");
 
-    // Find existing lot allocations for this sale item
-    const existingAllocations = await prisma.lotAllocation.findMany({
-        where: { sdItemId: saleItem.id }
-    });
-
-    // Run transaction to ensure atomicity
+    // Run transaction to ensure atomicity without affecting lot inventory (remainingQty)
     await prisma.$transaction(async (tx: any) => {
-        // 1. Restore qty to old lots
-        for (const alloc of existingAllocations) {
-            await tx.productLot.update({
-                where: { id: alloc.lotId },
-                data: { remainingQty: { increment: alloc.qty } }
-            });
-        }
-
-        // 2. Delete existing lot allocation(s) for this sale item
+        // 1. Delete existing lot allocation(s) for this sale item without altering lot remainingQty
         await tx.lotAllocation.deleteMany({
             where: { sdItemId: saleItem.id }
         });
-        
-        // 3. Deduct qty from new lot — guarded so a concurrent allocation into the same
-        // lot can never push remainingQty negative (Postgres row-locks the matched row).
-        const deducted = await tx.productLot.updateMany({
-            where: { id: targetLot.id, remainingQty: { gte: saleItem.quantity } },
-            data: { remainingQty: { decrement: saleItem.quantity } }
-        });
-        if (deducted.count === 0) {
-            const fresh = await tx.productLot.findUnique({ where: { id: targetLot.id } });
-            throw new Error(`Stok pada lot ${targetLot.lotNumber} tidak mencukupi. Tersedia: ${fresh?.remainingQty ?? 0}, dibutuhkan: ${saleItem.quantity}`);
-        }
 
-        // 4. Create new lot allocation
+        // 2. Create new lot allocation with the new lot's buy price (hppAtTime)
+        // Does not deduct remainingQty or check stock availability so it never affects other inventory values
         await tx.lotAllocation.create({
             data: {
                 sdItemId: saleItem.id,
