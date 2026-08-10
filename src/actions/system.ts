@@ -83,15 +83,17 @@ export async function getSystemSettingsAction() {
         prisma.warehouse.count(),
     ]);
 
-    return {
+    const { serializeDecimal } = await import("@/lib/utils");
+    return serializeDecimal({
         settings: settings || {
             companyName: "PT. Kola Borasi Indonesia",
             address: "Jl. Arjuna IV Green Kartika Residence Blok EE NO.2, CIBINONG, KAB. BOGOR",
             taxId: "01.234.567.8-012.000",
-            website: "www.kolaborasiindonesia.com"
+            website: "www.kolaborasiindonesia.com",
+            initialCapital: 0
         },
         counts: { product: productCount, vendor: vendorCount, customer: customerCount, warehouse: warehouseCount }
-    };
+    });
 }
 export async function updateSystemSettingsAction(data: any) {
     const prisma = getPrisma();
@@ -110,6 +112,44 @@ export async function updateSystemSettingsAction(data: any) {
     }
 
     revalidatePath("/settings");
+    return { success: true };
+}
+
+/**
+ * SYSTEM: Set Opening Balance / Modal Awal
+ * Menyimpan modal awal (kas/bank) sebelum go-live ke SystemSetting.
+ */
+export async function setOpeningBalanceAction(data: { amount: number }) {
+    const session = (await getServerSession(getAuthOptions())) as any;
+    if (!session?.user?.id) throw new Error("Unauthorized");
+
+    const prisma = getPrisma();
+    const amount = Number(data.amount) || 0;
+
+    try {
+        await prisma.systemSetting.upsert({
+            where: { id: "global" },
+            update: { initialCapital: amount },
+            create: {
+                id: "global",
+                companyName: "PT. Kola Borasi Indonesia",
+                address: "Jl. Arjuna IV Green Kartika Residence Blok EE NO.2, CIBINONG, KAB. BOGOR - JAWA BARAT, 16911",
+                taxId: "01.234.567.8-012.000",
+                website: "www.kolaborasiindonesia.com",
+                initialCapital: amount
+            }
+        });
+    } catch (e) {
+        // Fallback for environments without Decimal support in upsert
+        await prisma.$executeRaw`
+            INSERT INTO "SystemSetting" (id, "companyName", address, "taxId", website, "initialCapital", "updatedAt")
+            VALUES ('global', 'PT. Kola Borasi Indonesia', 'Jl. Arjuna IV', '01.234.567.8-012.000', 'www.kolaborasiindonesia.com', ${amount}, CURRENT_TIMESTAMP)
+            ON CONFLICT(id) DO UPDATE SET "initialCapital" = ${amount}, "updatedAt" = CURRENT_TIMESTAMP
+        `;
+    }
+
+    revalidatePath("/settings");
+    revalidatePath("/reports");
     return { success: true };
 }
 

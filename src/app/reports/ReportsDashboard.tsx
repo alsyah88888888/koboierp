@@ -1340,6 +1340,10 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
         if (activeTab === 'monthly' && data.profitLoss) {
             // P&L sheet
             const plRows = [
+                ...(data.profitLoss.initialCapital > 0 ? [
+                    { 'Keterangan': 'MODAL AWAL (Kas/Bank)', 'Jumlah (Rp)': data.profitLoss.initialCapital },
+                    { 'Keterangan': '', 'Jumlah (Rp)': '' },
+                ] : []),
                 { 'Keterangan': 'TOTAL PENJUALAN', 'Jumlah (Rp)': data.profitLoss.revenue },
                 { 'Keterangan': 'TOTAL PEMBELIAN BARANG', 'Jumlah (Rp)': data.profitLoss.hpp || 0 },
                 { 'Keterangan': '', 'Jumlah (Rp)': '' },
@@ -2639,6 +2643,17 @@ function MonthlyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix,
                 </div>
                 <div className="p-6">
                     <div className="max-w-2xl mx-auto space-y-1">
+                        {pl.initialCapital > 0 && (
+                            <>
+                                <div className="flex items-center justify-between py-1.5 px-2 rounded-lg bg-emerald-50 border border-emerald-100 mb-1">
+                                    <span className="text-xs font-black uppercase tracking-widest text-emerald-700">Modal Awal (Kas/Bank)</span>
+                                    <span className="text-sm font-black text-emerald-800">
+                                        {isClient ? `Rp ${Number(pl.initialCapital).toLocaleString('id-ID')}` : '...'}
+                                    </span>
+                                </div>
+                                <div className="h-2" />
+                            </>
+                        )}
                         <PLRow label="TOTAL PENJUALAN" value={pl.revenue} bold isClient={isClient} />
                         <PLRow label="TOTAL PEMBELIAN BARANG" value={pl.hpp || 0} bold negative isClient={isClient} />
                         <div className="h-3" />

@@ -109,13 +109,21 @@ export async function distributeOperationalCosts(operationalData: any[], salesPe
 // that breakdown — it must NOT be recomputed from calculateProductTraceabilityInternal's
 // per-row OPS split, which uses an independent qty/rounding allocation and can end up a few
 // rupiah off from the real transaction total, leaking the gap into the "Ops" bucket.
+//
+// Discriminator: _sourceDeliveryNumber (set by splitOpsAmountsByDelivery only when a valid,
+// non-voided SJ is actually found). Rows with invoiceNumber but whose SJ is voided or absent
+// fall through as a fallback with no _sourceDeliveryNumber — they belong in "Ops Umum", not
+// "Ops Kirim dan Muat", otherwise they inflate the linked bucket without being traceable.
 function splitOpsExpenses(ops: any[]): { linked: number; unlinked: number; total: number } {
     let linked = 0, unlinked = 0;
     for (const o of ops) {
         const isExpense = o.transactionType === 'PAYMENT' || o.transactionType === 'EXPENSE' || Number(o.amount) < 0;
         if (!isExpense) continue;
         const amt = Math.abs(Number(o.amount || 0));
-        if (o.invoiceNumber) linked += amt; else unlinked += amt;
+        // Use _sourceDeliveryNumber (only present after a successful per-delivery split) rather
+        // than invoiceNumber so that orphaned ops (invoiceNumber points to a voided/missing SJ)
+        // are correctly classified as "Ops Umum" instead of inflating "Ops Kirim dan Muat".
+        if (o._sourceDeliveryNumber) linked += amt; else unlinked += amt;
     }
     return { linked, unlinked, total: linked + unlinked };
 }
@@ -2015,6 +2023,10 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
         const rawOperational = await fetchHybridOperationalData(prisma, startDate, endDate);
         const allOperational = await distributeOperationalCosts(rawOperational, isAll ? null : prefix);
 
+        // Fetch Modal Awal (initial capital) from SystemSetting
+        const systemSetting = await (prisma as any).systemSetting.findUnique({ where: { id: 'global' } }).catch(() => null);
+        const initialCapital = Number(systemSetting?.initialCapital || 0);
+
         // ── P&L Calculation ──────────────────────────────────────────────
         // Gunakan murni angka Traceability untuk Penjualan & Pembelian agar presisi dan tidak minus
         const totalRevenue = monthlyTraceability.reduce((sum: number, t: any) => sum + Number(t['TOTAL JUAL'] || 0), 0);
@@ -2299,10 +2311,11 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
                 grossProfit,
                 grossMarginPct: Number(grossMarginPct.toFixed(1)),
                 expenses: totalExpenses,
-            companyExpenses: companyExpenses,
+                companyExpenses: companyExpenses,
                 netProfit,
                 netMarginPct: Number(netMarginPct.toFixed(1)),
-                expenseByCategory
+                expenseByCategory,
+                initialCapital
             },
             purchases: {
                 total: netPurchases,

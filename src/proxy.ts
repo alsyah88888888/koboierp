@@ -210,6 +210,9 @@ export async function callAction(actionName: string, ...args: any[]) {
         case "updateSystemSettings":
             const { updateSystemSettingsAction } = await import("@/actions/system");
             return await updateSystemSettingsAction(...args as [any]);
+        case "setOpeningBalance":
+            const { setOpeningBalanceAction } = await import("@/actions/system");
+            return await setOpeningBalanceAction(...args as [{ amount: number }]);
         case "wipeDatabase":
             const { wipeDatabaseAction } = await import("@/actions/system");
             return await wipeDatabaseAction();

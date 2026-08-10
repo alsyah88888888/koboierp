@@ -46,6 +46,7 @@ export function SettingsDashboard() {
     const [mdForm, setMdForm] = useState({
         accountId: "", amount: 0
     });
+    const [initialCapital, setInitialCapital] = useState(0);
 
     const [company, setCompany] = useState({
         name: "PT. Kola Borasi Indonesia",
@@ -70,11 +71,10 @@ export function SettingsDashboard() {
             website: settingsData.settings.website
         });
         setCounts(settingsData.counts);
-
+        setInitialCapital(Number(settingsData.settings.initialCapital || 0));
 
         const md = await callAction("getMD");
         setCoa(md.coa);
-
     };
 
     const [mounted, setMounted] = useState(false);
@@ -87,8 +87,7 @@ export function SettingsDashboard() {
     const handleMDSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            if (showMDModal === "opening") await callAction("setOpeningBalance", { accountId: mdForm.accountId, amount: mdForm.amount });
-
+            if (showMDModal === "opening") await callAction("setOpeningBalance", { amount: mdForm.amount });
 
             alert("Data berhasil disimpan.");
             setShowMDModal(null);
@@ -361,10 +360,31 @@ export function SettingsDashboard() {
 
                 <div className="space-y-6">
                     <div className="bg-white border-2 border-slate-200 rounded-3xl p-6 shadow-sm">
-                        <div className="flex justify-between items-center mb-6">
+                        <div className="flex justify-between items-center mb-4">
                             <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest">Master Data Summary</h3>
-                            <button onClick={() => setShowMDModal("opening")} className="text-[10px] font-bold text-primary hover:underline flex items-center gap-1">
-                                <Banknote className="h-3 w-3" /> Set Saldo Awal
+                        </div>
+                        {/* Modal Awal Banner */}
+                        <div className="mb-4 flex items-center justify-between p-3 rounded-2xl bg-emerald-50 border-2 border-emerald-100">
+                            <div className="flex items-center gap-2">
+                                <Banknote className="h-4 w-4 text-emerald-600" />
+                                <div>
+                                    <p className="text-[10px] font-black uppercase text-emerald-600 tracking-widest">Modal Awal (Kas/Bank)</p>
+                                    <p className="text-sm font-black text-emerald-800">
+                                        {initialCapital > 0
+                                            ? `Rp ${initialCapital.toLocaleString('id-ID')}`
+                                            : <span className="text-slate-400 font-medium text-xs">Belum diset</span>
+                                        }
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    setMdForm({ accountId: "", amount: initialCapital });
+                                    setShowMDModal("opening");
+                                }}
+                                className="text-[10px] font-bold text-emerald-700 hover:underline flex items-center gap-1 bg-white px-3 py-1.5 rounded-xl border border-emerald-200"
+                            >
+                                <Pencil className="h-3 w-3" /> Ubah
                             </button>
                         </div>
                         <div className="grid grid-cols-1 gap-4">
@@ -429,29 +449,26 @@ export function SettingsDashboard() {
                         <form onSubmit={handleMDSubmit} className="space-y-4">
                             {showMDModal === "opening" && (
                                 <>
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black uppercase text-slate-400">Account (COA)</label>
-                                        <select
-                                            value={mdForm.accountId}
-                                            onChange={e => setMdForm({ ...mdForm, accountId: e.target.value })}
-                                            className="w-full bg-slate-50 border-2 border-slate-100 px-4 py-3 rounded-xl outline-none focus:border-primary font-bold text-sm"
-                                            required
-                                        >
-                                            <option value="">Select Account</option>
-                                            {coa.map(a => (
-                                                <option key={a.id} value={a.id}>({a.code}) {a.name}</option>
-                                            ))}
-                                        </select>
+                                    <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 mb-2">
+                                        <p className="text-xs text-blue-700 font-medium">
+                                            Modal Awal adalah total kas/bank yang dimiliki perusahaan sebelum mulai menggunakan aplikasi ini. Nilai ini akan ditampilkan di laporan P&amp;L bulanan.
+                                        </p>
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black uppercase text-slate-400">Amount (IDR)</label>
+                                        <label className="text-[10px] font-black uppercase text-slate-400">Modal Awal — Kas / Bank (IDR)</label>
                                         <input
                                             type="number"
                                             value={mdForm.amount}
                                             onChange={e => setMdForm({ ...mdForm, amount: Number(e.target.value) })}
                                             className="w-full bg-slate-50 border-2 border-slate-100 px-4 py-3 rounded-xl outline-none focus:border-primary font-bold text-sm"
+                                            placeholder="Contoh: 500000000"
                                             required
                                         />
+                                        {mdForm.amount > 0 && (
+                                            <p className="text-xs text-slate-400 font-medium">
+                                                = Rp {Number(mdForm.amount).toLocaleString('id-ID')}
+                                            </p>
+                                        )}
                                     </div>
                                 </>
                             )}
