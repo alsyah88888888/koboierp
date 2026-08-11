@@ -4,6 +4,7 @@ import { DocumentLayout } from "@/components/print/DocumentLayout";
 import { format } from "date-fns";
 import { formatCurrency, formatNumber, serializeDecimal } from "@/lib/utils";
 import { headers } from "next/headers";
+import { ClientBarcode as Barcode } from "@/components/print/ClientBarcode";
 
 export default async function SalesOrderPrintPage({ params }: { params: Promise<{ id: string }> }) {
     await headers();
@@ -91,6 +92,14 @@ export default async function SalesOrderPrintPage({ params }: { params: Promise<
                             <td className="border border-slate-900 p-1.5 text-center font-black">{idx + 1}</td>
                             <td className="border border-slate-900 p-1.5 uppercase">
                                 <div className="font-black text-slate-900">{item.product?.name}</div>
+                                {item.product?.barcode && (
+                                    <div className="mt-1.5 flex flex-col items-start">
+                                        <Barcode value={item.product.barcode} format="CODE128" width={1} height={18} displayValue={false} margin={0} background="transparent" />
+                                        <div className="text-[6.5pt] text-slate-500 font-bold font-mono tracking-widest mt-0.5 uppercase">
+                                            NO. BARCODE: {item.product.barcode}
+                                        </div>
+                                    </div>
+                                )}
                                 {Number(item.shippedQuantity) > 0 && (
                                     <div className="text-[7pt] text-slate-400 font-bold italic mt-0.5 tracking-tight">
                                         SUDAH KIRIM: <span className="text-slate-700">{formatNumber(item.shippedQuantity)}</span> | 
