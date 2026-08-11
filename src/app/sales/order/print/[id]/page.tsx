@@ -79,6 +79,7 @@ export default async function SalesOrderPrintPage({ params }: { params: Promise<
                 <thead>
                     <tr className="uppercase text-[9px] font-black bg-slate-50">
                         <th className="border border-slate-900 p-1.5 text-center w-8">NO</th>
+                        <th className="border border-slate-900 p-1.5 text-center w-28">BARCODE</th>
                         <th className="border border-slate-900 p-1.5 text-left">NAMA / DESKRIPSI BARANG</th>
                         <th className="border border-slate-900 p-1.5 text-center w-12">QTY</th>
                         <th className="border border-slate-900 p-1.5 text-center w-20">SATUAN</th>
@@ -90,16 +91,11 @@ export default async function SalesOrderPrintPage({ params }: { params: Promise<
                     {groupedItems.map((item: any, idx: number) => (
                         <tr key={idx}>
                             <td className="border border-slate-900 p-1.5 text-center font-black">{idx + 1}</td>
+                            <td className="border border-slate-900 p-1.5 text-center text-[7.5pt] font-mono font-bold tracking-tighter">
+                                {item.product?.barcode || "-"}
+                            </td>
                             <td className="border border-slate-900 p-1.5 uppercase">
                                 <div className="font-black text-slate-900">{item.product?.name}</div>
-                                {item.product?.barcode && (
-                                    <div className="mt-1.5 flex flex-col items-start">
-                                        <Barcode value={item.product.barcode} format="CODE128" width={1} height={18} displayValue={false} margin={0} background="transparent" />
-                                        <div className="text-[6.5pt] text-slate-500 font-bold font-mono tracking-widest mt-0.5 uppercase">
-                                            NO. BARCODE: {item.product.barcode}
-                                        </div>
-                                    </div>
-                                )}
                                 {Number(item.shippedQuantity) > 0 && (
                                     <div className="text-[7pt] text-slate-400 font-bold italic mt-0.5 tracking-tight">
                                         SUDAH KIRIM: <span className="text-slate-700">{formatNumber(item.shippedQuantity)}</span> | 
@@ -118,12 +114,13 @@ export default async function SalesOrderPrintPage({ params }: { params: Promise<
                             <td className="border border-slate-900"></td><td className="border border-slate-900"></td>
                             <td className="border border-slate-900"></td><td className="border border-slate-900"></td>
                             <td className="border border-slate-900"></td><td className="border border-slate-900"></td>
+                            <td className="border border-slate-900"></td>
                         </tr>
                     ))}
                                 </tbody>
                 <tfoot>
                     <tr className="bg-slate-50 font-black text-[9px]">
-                        <td colSpan={2} className="border border-slate-900 p-1.5 text-right uppercase tracking-widest">TOTAL QTY KESELURUHAN:</td>
+                        <td colSpan={3} className="border border-slate-900 p-1.5 text-right uppercase tracking-widest">TOTAL QTY KESELURUHAN:</td>
                         <td className="border border-slate-900 p-1.5 text-center">{formatNumber(totalQty)}</td>
                         <td colSpan={3} className="border border-slate-900"></td>
                     </tr>
