@@ -146,6 +146,28 @@ function tagTraceabilityStatus(opsRow: any, traceDeliverySet: Set<string>) {
     };
 }
 
+// Calculates mixed accrual/cash operational costs for the Summary section
+function calculateMixedOpsExpenses(ops: any[], traceabilityRows: any[]): { linked: number; unlinked: number; total: number } {
+    let linked = 0;
+    traceabilityRows.forEach((r: any) => {
+        linked += Math.abs(Number(r.OPS || 0));
+    });
+
+    const traceDeliverySet = buildTraceDeliverySet(traceabilityRows);
+    let unlinked = 0;
+    
+    for (const o of ops) {
+        const isExpense = o.transactionType === 'PAYMENT' || o.transactionType === 'EXPENSE' || Number(o.amount) < 0;
+        if (!isExpense) continue;
+        const { adaDiTraceability } = tagTraceabilityStatus(o, traceDeliverySet);
+        if (!adaDiTraceability) {
+            unlinked += Math.abs(Number(o.amount || 0));
+        }
+    }
+    
+    return { linked, unlinked, total: linked + unlinked };
+}
+
 /**
  * FIFO TRACEABILITY SERVICE — v4 (Format Spreadsheet)
  * Kolom disesuaikan persis dengan format gambar referensi:
@@ -831,8 +853,8 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
         // Since we don't have snapshots, we use the current stock and work backwards or use the perpetual sum.
         const endingValue = beginningValue + netPurchases - totalHpp;
 
-        // Calculate Operational Expenses (Absolute value for display)
-        const totalExpenses = expenses.reduce((acc: number, e: any) => acc + Math.abs(Number(e.amount || 0)), 0);
+        // Calculate Operational Expenses (Mixed Basis: Traceability + Unlinked Ops)
+        const { total: totalExpenses } = calculateMixedOpsExpenses(expenses, monthlyTraceability);
 
         // Calculate AR/AP Balances
         const totalAR = arRecords.reduce((acc: number, r: any) => acc + (Number(r.grandTotal) - Number(r.paidAmount)), 0);
@@ -1376,7 +1398,7 @@ export async function getComprehensiveDailyReportService(date?: string, prefix?:
         );
         const totalIncome = incomeTransactions.reduce((s: number, o: any) => s + Math.abs(Number(o.amount || 0)), 0);
 
-        const { linked: linkedOpsExpense, unlinked: generalExpense, total: totalExpense } = splitOpsExpenses(operational);
+        const { linked: linkedOpsExpense, unlinked: generalExpense, total: totalExpense } = calculateMixedOpsExpenses(operational, dailyTraceability);
 
         // Payment status breakdown
         const salesPaid = sales.filter((s: any) => s.paymentStatus === 'PAID').length;
@@ -1793,7 +1815,8 @@ export async function getComprehensiveWeeklyReportService(weekStartDate?: string
         const totalPurchases = purchases.reduce((s: number, d: any) => s + Number(d.grandTotal || 0), 0);
         
         const totalHPP = dailyBreakdown.reduce((sum: number, d: any) => sum + Number(d.hpp || 0), 0);
-        const totalExpenses = dailyBreakdown.reduce((sum: number, d: any) => sum + Number(d.opsExpense || 0), 0);
+        
+        const { linked: linkedOpsExpense, unlinked: generalOps, total: totalExpenses } = calculateMixedOpsExpenses(operational, weeklyTraceability);
 
         const grossProfit = totalSales - totalPurchases; // User requested: Penjualan - Pembelian
         const netProfit = grossProfit - totalExpenses;
@@ -1844,9 +1867,7 @@ export async function getComprehensiveWeeklyReportService(weekStartDate?: string
                 act.totalQtyReceived += (p.items || []).reduce((sum: number, item: any) => sum + Number(item.quantity || 0), 0);
             }
         }
-
-        const { linked: linkedOpsExpense, unlinked: generalOps } = splitOpsExpenses(operational);
-
+        // Ops calculation is now done above and used for totalExpenses
         return {
             staffActivity: {
                 finance: Array.from(financeActivity.values()),
@@ -2047,11 +2068,8 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
         );
         const cashFlowExpenses = expenses.reduce((s: number, o: any) => s + Math.abs(Number(o.amount || 0)), 0);
 
-        // User requested: Total Expenses = Total Cash Flow (47.6M)
-        const totalExpenses = cashFlowExpenses;
-        // Ops Kirim dan Muat (linked to a delivery/invoice) vs Ops Umum (unlinked) — both derived
-        // from the same real transactions backing totalExpenses, so they always add up exactly.
-        const { linked: linkedOpsExpense, unlinked: generalOps } = splitOpsExpenses(expenses);
+        // User requested: Ops Kirim = Traceability, Ops = Detail Operasional yg belum masuk Traceability
+        const { linked: linkedOpsExpense, unlinked: generalOps, total: totalExpenses } = calculateMixedOpsExpenses(expenses, monthlyTraceability);
 
         // companyExpenses = totalExpenses: satu sumber yang sama dengan Detail Operasional,
         // supaya "Ringkasan" dan "Detail Operasional" tidak lagi menampilkan dua total berbeda.
