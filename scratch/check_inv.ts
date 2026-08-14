@@ -1,7 +1,10 @@
 import { PrismaClient } from '@prisma/client';
 async function main() {
     const prisma = new PrismaClient();
-    const sd = await prisma.salesDelivery.findMany({ where: { invoiceNumber: 'KB-TRN-02062026-002' }, select: { deliveryNumber: true, salesPerson: true }});
-    console.log('Deliveries with KB-TRN-02062026-002:', sd);
+    const deliveries = await prisma.salesDelivery.findMany({
+        take: 10,
+        select: { invoiceNumber: true }
+    });
+    console.log(deliveries);
 }
-main().catch(console.error);
+main().finally(() => process.exit(0));

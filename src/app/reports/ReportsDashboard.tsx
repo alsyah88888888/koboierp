@@ -2664,9 +2664,31 @@ function MonthlyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix,
                             <PLRow key={i} label={`  ${cat.name}`} value={cat.value} sub isClient={isClient} />
                         ))}
                         <div className="h-3" />
-                        <PLRow label="Margin" value={pl.netProfit} bold highlight={pl.netProfit >= 0 ? 'green' : 'red'} isClient={isClient} />
+                        <PLRow label="Margin (P&L)" value={pl.netProfit} bold highlight={pl.netProfit >= 0 ? 'green' : 'red'} isClient={isClient} />
+                        
+                        {pl.cashFlowByCategory && pl.cashFlowByCategory.length > 0 && (
+                            <>
+                                <div className="h-6" />
+                                <div className="pt-4 border-t border-slate-200 border-dashed">
+                                    <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">Rekonsiliasi Arus Kas Operasional</h4>
+                                    <PLRow label="Total Uang Keluar (Detail Operasional)" value={pl.cashFlowExpenses || 0} bold negative isClient={isClient} />
+                                    {(pl.cashFlowByCategory || []).map((cat: any, i: number) => (
+                                        <PLRow key={'cf'+i} label={`  ${cat.name}`} value={cat.value} sub isClient={isClient} />
+                                    ))}
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
+                        <div className="h-6" />
+                        <div className="pt-4 border-t border-slate-200 border-dashed">
+                            <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest mb-2">ARUS KAS OPERASIONAL (Cash Flow)</h4>
+                            <PLRow label="TOTAL UANG KELUAR BSH" value={pl.cashFlowExpenses || 0} bold negative isClient={isClient} />
+                            {(pl.cashFlowByCategory || []).map((cat: any, i: number) => (
+                                <PLRow key={i} label={`  ${cat.name}`} value={cat.value} sub isClient={isClient} />
+                            ))}
+                        </div>
+
             </div>
 
             {/* Monthly Chart */}

@@ -147,7 +147,7 @@ function tagTraceabilityStatus(opsRow: any, traceDeliverySet: Set<string>) {
 }
 
 // Calculates mixed accrual/cash operational costs for the Summary section
-function calculateMixedOpsExpenses(ops: any[], traceabilityRows: any[]): { linked: number; unlinked: number; total: number } {
+function calculateAccrualOpsExpenses(ops: any[], traceabilityRows: any[]): { linked: number; unlinked: number; total: number } {
     let linked = 0;
     traceabilityRows.forEach((r: any) => {
         linked += Math.abs(Number(r.OPS || 0));
@@ -162,6 +162,27 @@ function calculateMixedOpsExpenses(ops: any[], traceabilityRows: any[]): { linke
         
         const { adaDiTraceability } = tagTraceabilityStatus(o, traceDeliverySet);
         if (!adaDiTraceability) {
+            unlinked += Math.abs(Number(o.amount || 0));
+        }
+    }
+    
+    return { linked, unlinked, total: linked + unlinked };
+}
+
+function calculateCashFlowOpsExpenses(ops: any[], traceabilityRows: any[]): { linked: number; unlinked: number; total: number } {
+    const traceDeliverySet = buildTraceDeliverySet(traceabilityRows);
+    
+    let linked = 0;
+    let unlinked = 0;
+    
+    for (const o of ops) {
+        const isExpense = o.transactionType === 'PAYMENT' || o.transactionType === 'EXPENSE' || Number(o.amount) < 0;
+        if (!isExpense) continue;
+        
+        const { adaDiTraceability } = tagTraceabilityStatus(o, traceDeliverySet);
+        if (adaDiTraceability) {
+            linked += Math.abs(Number(o.amount || 0));
+        } else {
             unlinked += Math.abs(Number(o.amount || 0));
         }
     }
@@ -855,7 +876,18 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
         const endingValue = beginningValue + netPurchases - totalHpp;
 
         // Calculate Operational Expenses (Mixed Basis: Traceability + Unlinked Ops)
-        const { total: totalExpenses } = calculateMixedOpsExpenses(expenses, monthlyTraceability);
+        const { linked: linkedOpsExpense, unlinked: generalOps, total: totalExpenses } = calculateAccrualOpsExpenses(expenses, monthlyTraceability);
+        const { linked: cashLinked, unlinked: cashUnlinked } = calculateCashFlowOpsExpenses(expenses, monthlyTraceability);
+        
+        const expenseByCategory = [
+            { name: "Ops Kirim (P&L)", value: linkedOpsExpense },
+            { name: "Ops Umum (P&L)", value: generalOps }
+        ].filter(x => x.value > 0);
+
+        const cashFlowByCategory = [
+            { name: "Ops Kirim (Uang Keluar)", value: cashLinked },
+            { name: "Ops Lainnya (Hutang/Muka/Umum)", value: cashUnlinked }
+        ].filter(x => x.value > 0);
 
         // Calculate AR/AP Balances
         const totalAR = arRecords.reduce((acc: number, r: any) => acc + (Number(r.grandTotal) - Number(r.paidAmount)), 0);
@@ -1399,7 +1431,18 @@ export async function getComprehensiveDailyReportService(date?: string, prefix?:
         );
         const totalIncome = incomeTransactions.reduce((s: number, o: any) => s + Math.abs(Number(o.amount || 0)), 0);
 
-        const { linked: linkedOpsExpense, unlinked: generalExpense, total: totalExpense } = calculateMixedOpsExpenses(operational, dailyTraceability);
+        const { linked: linkedOpsExpense, unlinked: generalExpense, total: totalExpense } = calculateAccrualOpsExpenses(operational, dailyTraceability);
+        const { linked: cashLinked, unlinked: cashUnlinked } = calculateCashFlowOpsExpenses(operational, dailyTraceability);
+        
+        const expenseByCategory = [
+            { name: "Ops Kirim (P&L)", value: linkedOpsExpense },
+            { name: "Ops Umum (P&L)", value: generalExpense }
+        ].filter(x => x.value > 0);
+
+        const cashFlowByCategory = [
+            { name: "Ops Kirim (Uang Keluar)", value: cashLinked },
+            { name: "Ops Lainnya (Hutang/Muka/Umum)", value: cashUnlinked }
+        ].filter(x => x.value > 0);
 
         // Payment status breakdown
         const salesPaid = sales.filter((s: any) => s.paymentStatus === 'PAID').length;
@@ -1734,9 +1777,6 @@ export async function getComprehensiveWeeklyReportService(weekStartDate?: string
                 categoryMap[cat] = (categoryMap[cat] || 0) + Math.abs(Number(o.amount || 0));
             }
         });
-        const expenseByCategory = Object.entries(categoryMap)
-            .map(([name, value]) => ({ name, value }))
-            .sort((a, b) => b.value - a.value);
 
         // --- Sales Detail Table ---
         const salesDetail = sales.map((s: any) => {
@@ -1817,7 +1857,18 @@ export async function getComprehensiveWeeklyReportService(weekStartDate?: string
         
         const totalHPP = dailyBreakdown.reduce((sum: number, d: any) => sum + Number(d.hpp || 0), 0);
         
-        const { linked: linkedOpsExpense, unlinked: generalOps, total: totalExpenses } = calculateMixedOpsExpenses(operational, weeklyTraceability);
+        const { linked: linkedOpsExpense, unlinked: generalOps, total: totalExpenses } = calculateAccrualOpsExpenses(operational, weeklyTraceability);
+        const { linked: cashLinked, unlinked: cashUnlinked } = calculateCashFlowOpsExpenses(operational, weeklyTraceability);
+        
+        const expenseByCategory = [
+            { name: "Ops Kirim (P&L)", value: linkedOpsExpense },
+            { name: "Ops Umum (P&L)", value: generalOps }
+        ].filter(x => x.value > 0);
+
+        const cashFlowByCategory = [
+            { name: "Ops Kirim (Uang Keluar)", value: cashLinked },
+            { name: "Ops Lainnya (Hutang/Muka/Umum)", value: cashUnlinked }
+        ].filter(x => x.value > 0);
 
         const grossProfit = totalSales - totalPurchases; // User requested: Penjualan - Pembelian
         const netProfit = grossProfit - totalExpenses;
@@ -1897,10 +1948,7 @@ export async function getComprehensiveWeeklyReportService(weekStartDate?: string
                 companyExpenses: totalExpenses, // Match the totalExpenses
                 netProfit,
                 netMarginPct: Number(netMarginPct.toFixed(1)),
-                expenseByCategory: [
-                    { name: "Ops Kirim dan Muat", value: linkedOpsExpense },
-                    { name: "Ops", value: generalOps }
-                ].filter(x => x.value > 0)
+                expenseByCategory, cashFlowByCategory
             },
             summary: {
                 totalSales, totalPurchases, totalExpenses,
@@ -1916,17 +1964,14 @@ export async function getComprehensiveWeeklyReportService(weekStartDate?: string
                     s + (d.items || []).reduce((q: number, i: any) => q + Number(i.quantity || 0), 0), 0),
                 totalPurchaseQty: purchases.reduce((s: number, d: any) =>
                     s + (d.items || []).reduce((q: number, i: any) => q + Number(i.quantity || 0), 0), 0),
-                salesByTeam: { BC: salesBC, PF: salesPF, Other: salesOther }
+                salesByTeam: { BC: salesBC, PF: salesPF, Other: salesOther },
             },
             arAging,
             apAging,
             dailyBreakdown,
             topBuyers,
             topSuppliers,
-            expenseByCategory: [
-                { name: "Ops Kirim dan Muat", value: linkedOpsExpense },
-                { name: "Ops", value: generalOps }
-            ].filter(x => x.value > 0)
+            expenseByCategory, cashFlowByCategory
         };
     } catch (error: any) {
         console.error('[getComprehensiveWeeklyReportService] ERROR:', error);
@@ -2070,7 +2115,8 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
         const cashFlowExpenses = expenses.reduce((s: number, o: any) => s + Math.abs(Number(o.amount || 0)), 0);
 
         // User requested: Ops Kirim = Traceability, Ops = Detail Operasional yg belum masuk Traceability
-        const { linked: linkedOpsExpense, unlinked: generalOps, total: totalExpenses } = calculateMixedOpsExpenses(expenses, monthlyTraceability);
+        const { linked: linkedOpsExpense, unlinked: generalOps, total: totalExpenses } = calculateAccrualOpsExpenses(expenses, monthlyTraceability);
+        const { linked: cashLinked, unlinked: cashUnlinked, total: cashTotal } = calculateCashFlowOpsExpenses(expenses, monthlyTraceability);
 
         // companyExpenses = totalExpenses: satu sumber yang sama dengan Detail Operasional,
         // supaya "Ringkasan" dan "Detail Operasional" tidak lagi menampilkan dua total berbeda.
@@ -2094,10 +2140,16 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
             else salesOther += v;
         });
 
-        // ── Expense by Category ──────────────────────────────────────────
+        // ── Expense by Category (ACCRUAL P&L) ────────────────────────────
         const expenseByCategory = [
-            { name: "Ops Kirim dan Muat", value: linkedOpsExpense },
-            { name: "Ops", value: generalOps }
+            { name: "Ops Kirim (P&L)", value: linkedOpsExpense },
+            { name: "Ops Umum (P&L)", value: generalOps }
+        ].filter(x => x.value > 0);
+
+        // ── Cash Flow by Category (ARUS KAS) ─────────────────────────────
+        const cashFlowByCategory = [
+            { name: "Ops Kirim (Uang Keluar)", value: cashLinked },
+            { name: "Ops Lainnya (Hutang/Muka/Umum)", value: cashUnlinked }
         ].filter(x => x.value > 0);
 
         // ── Top Buyers ───────────────────────────────────────────────────
