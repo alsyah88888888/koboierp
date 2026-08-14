@@ -148,19 +148,19 @@ function tagTraceabilityStatus(opsRow: any, traceDeliverySet: Set<string>) {
 
 // Calculates mixed accrual/cash operational costs for the Summary section
 function calculateMixedOpsExpenses(ops: any[], traceabilityRows: any[]): { linked: number; unlinked: number; total: number } {
-    let linked = 0;
-    traceabilityRows.forEach((r: any) => {
-        linked += Math.abs(Number(r.OPS || 0));
-    });
-
     const traceDeliverySet = buildTraceDeliverySet(traceabilityRows);
+    
+    let linked = 0;
     let unlinked = 0;
     
     for (const o of ops) {
         const isExpense = o.transactionType === 'PAYMENT' || o.transactionType === 'EXPENSE' || Number(o.amount) < 0;
         if (!isExpense) continue;
+        
         const { adaDiTraceability } = tagTraceabilityStatus(o, traceDeliverySet);
-        if (!adaDiTraceability) {
+        if (adaDiTraceability) {
+            linked += Math.abs(Number(o.amount || 0));
+        } else {
             unlinked += Math.abs(Number(o.amount || 0));
         }
     }
