@@ -201,7 +201,7 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
             const data = {
                 receivedFrom,
                 formNumber,
-                date: new Date(date),
+                date: new Date(date + 'T12:00:00Z'),
                 warehouseId,
                 salesPerson,
                 notes,

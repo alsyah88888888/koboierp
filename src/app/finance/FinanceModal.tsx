@@ -40,7 +40,7 @@ export function FinanceModal({ accounts, onClose }: { accounts: any[], onClose: 
             const result = await callAction("createFinanceTransaction", {
                 transactionType: type,
                 bank: bankAccounts.find(a => a.id === bankAccountId)?.name || "Kas/Bank",
-                date: new Date(date),
+                date: new Date(date + 'T12:00:00Z'),
                 referenceNumber: refNo,
                 description,
                 amount,

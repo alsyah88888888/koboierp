@@ -325,7 +325,7 @@ export default function SalesModal({ products, warehouses, customers, orders = [
                 isPKP: isPKP,
                 totalDiscount: Number(finalDiscountNominal) || 0,
                 taxRate: isPKP ? 11 : 0,
-                createdAt: new Date(date),
+                createdAt: new Date(date + 'T12:00:00Z'),
                 items: items.map(i => ({
                     productId: i.productId,
                     quantity: parseIndoNumber(i.quantity),

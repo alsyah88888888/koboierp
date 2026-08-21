@@ -158,13 +158,13 @@ export function OperationalModal({ isOpen, onClose, coa, transaction }: Operatio
                 res = await callAction("updateFinanceTransaction", transaction.id, {
                     ...formData,
                     amount: parseFloat(formData.amount),
-                    date: new Date(formData.date),
+                    date: new Date(formData.date + 'T12:00:00Z'),
                 });
             } else {
                 res = await callAction("createFinanceTransaction", {
                     ...formData,
                     amount: parseFloat(formData.amount),
-                    date: new Date(formData.date),
+                    date: new Date(formData.date + 'T12:00:00Z'),
                 });
             }
 

@@ -140,7 +140,7 @@ export default function SalesOrderModal({ products, customers, warehouses, initi
                 buyerName,
                 recipient,
                 warehouseId,
-                date: new Date(date),
+                date: new Date(date + 'T12:00:00Z'),
                 salesPerson,
                 items: items.map(i => ({
                     ...i,
