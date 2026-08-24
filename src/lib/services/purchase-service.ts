@@ -347,11 +347,7 @@ export async function updateGoodsReceiptService(id: string, data: any, userId: s
             });
         }
 
-        // ─── Void old ProductLots for this GR before updating ───────────
-        await tx.productLot.updateMany({
-            where: { grNumber: oldReceipt.receiptNumber },
-            data: { isVoided: true, remainingQty: 0 }
-        });
+        // Old lots will be cascade deleted by goodsReceiptItem.deleteMany
         // ────────────────────────────────────────────────────────────────
 
 
@@ -415,6 +411,24 @@ export async function updateGoodsReceiptService(id: string, data: any, userId: s
         }
 
         // 4. Update Header & Items
+        // ─── Save old Lot allocations ───────────
+        const oldLots = await tx.productLot.findMany({
+            where: { grNumber: oldReceipt.receiptNumber },
+            include: { allocations: true }
+        });
+        const savedAllocations: { productId: string, qty: number, hppAtTime: any, createdAt: Date, sdItemId: string }[] = [];
+        for (const lot of oldLots) {
+            for (const alloc of lot.allocations) {
+                savedAllocations.push({
+                    productId: lot.productId,
+                    qty: alloc.qty,
+                    hppAtTime: alloc.hppAtTime,
+                    createdAt: alloc.createdAt,
+                    sdItemId: alloc.sdItemId
+                });
+            }
+        }
+        
         await tx.goodsReceiptItem.deleteMany({ where: { receiptId: id } });
 
         await tx.goodsReceipt.update({
@@ -544,6 +558,35 @@ export async function updateGoodsReceiptService(id: string, data: any, userId: s
                         remainingQty: grItem.quantity
                     }
                 });
+            }
+        }
+        
+        // ─── Restore Lot Allocations ───────────────
+        if (updatedReceipt) {
+            for (const alloc of savedAllocations) {
+                // Find a new lot for this productId that has enough remainingQty, or just any new lot
+                const newLot = await tx.productLot.findFirst({
+                    where: { grNumber: currentReceiptNumber, productId: alloc.productId },
+                    orderBy: { remainingQty: 'desc' }
+                });
+                if (newLot) {
+                    const consume = Math.min(alloc.qty, newLot.remainingQty);
+                    if (consume > 0) {
+                        await tx.lotAllocation.create({
+                            data: {
+                                lotId: newLot.id,
+                                sdItemId: alloc.sdItemId,
+                                qty: consume,
+                                hppAtTime: alloc.hppAtTime,
+                                createdAt: alloc.createdAt
+                            }
+                        });
+                        await tx.productLot.update({
+                            where: { id: newLot.id },
+                            data: { remainingQty: { decrement: consume } }
+                        });
+                    }
+                }
             }
         }
         // ────────────────────────────────────────────────────────────────
