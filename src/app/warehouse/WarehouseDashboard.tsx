@@ -64,7 +64,8 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
         const matchingItem = matchingReceipt?.items?.find((item: any) => item.productId === productId);
         return {
             salesPerson: matchingReceipt?.salesPerson || "-",
-            hpp: matchingItem?.purchasePrice ? Number(matchingItem.purchasePrice) : 0
+            hpp: matchingItem?.purchasePrice ? Number(matchingItem.purchasePrice) : 0,
+            taxRate: matchingReceipt?.taxRate ? Number(matchingReceipt.taxRate) : 0
         };
     };
 
@@ -96,8 +97,10 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                             'Sales Person': meta.salesPerson,
                             'Satuan': p.uom,
                             'Total Stok': s.quantity,
-                            'HPP per Unit': hpp,
-                            'Total Nilai': (s.quantity || 0) * hpp,
+                            'HPP (DPP)': hpp,
+                            'PPN (%)': meta.taxRate || 0,
+                            'HPP + PPN': hpp * (1 + ((meta.taxRate || 0) / 100)),
+                            'Total Nilai (Inc. Tax)': (s.quantity || 0) * (hpp * (1 + ((meta.taxRate || 0) / 100))),
                             'Threshold': p.lowStockThreshold,
                             'Status': s.quantity <= p.lowStockThreshold ? 'LOW' : 'NORMAL'
                         };
@@ -120,8 +123,10 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                         'Nama Barang': item.product?.name || "-",
                         'Qty': item.quantity || 0,
                         'Satuan': item.uom || item.product?.uom || "-",
-                        'HPP per Unit': Number(item.purchasePrice) || 0,
-                        'Total Nilai': (item.quantity || 0) * (Number(item.purchasePrice) || 0),
+                        'HPP (DPP)': Number(item.purchasePrice) || 0,
+                        'PPN (%)': Number(r.taxRate) || 0,
+                        'HPP + PPN': (Number(item.purchasePrice) || 0) * (1 + ((Number(r.taxRate) || 0) / 100)),
+                        'Total Nilai (Inc. Tax)': (item.quantity || 0) * ((Number(item.purchasePrice) || 0) * (1 + ((Number(r.taxRate) || 0) / 100))),
                         'Status': r.isVerified ? 'VERIFIED' : 'PENDING',
                         'Penerima': r.createdBy?.name || '-'
                     });
@@ -147,8 +152,10 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                             'Sales Person': meta.salesPerson,
                             'Satuan': p.uom,
                             'Total Stok': s.quantity,
-                            'HPP per Unit': hpp,
-                            'Total Nilai': (s.quantity || 0) * hpp,
+                            'HPP (DPP)': hpp,
+                            'PPN (%)': meta.taxRate || 0,
+                            'HPP + PPN': hpp * (1 + ((meta.taxRate || 0) / 100)),
+                            'Total Nilai (Inc. Tax)': (s.quantity || 0) * (hpp * (1 + ((meta.taxRate || 0) / 100))),
                             'Threshold': p.lowStockThreshold,
                             'Status': s.quantity <= p.lowStockThreshold ? 'LOW' : 'NORMAL'
                         };
@@ -172,8 +179,10 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                         'Nama Barang': item.product?.name || "-",
                         'Qty': item.quantity || 0,
                         'Satuan': item.uom || item.product?.uom || "-",
-                        'HPP per Unit': Number(item.purchasePrice) || 0,
-                        'Total Nilai': (item.quantity || 0) * (Number(item.purchasePrice) || 0),
+                        'HPP (DPP)': Number(item.purchasePrice) || 0,
+                        'PPN (%)': Number(r.taxRate) || 0,
+                        'HPP + PPN': (Number(item.purchasePrice) || 0) * (1 + ((Number(r.taxRate) || 0) / 100)),
+                        'Total Nilai (Inc. Tax)': (item.quantity || 0) * ((Number(item.purchasePrice) || 0) * (1 + ((Number(r.taxRate) || 0) / 100))),
                         'Status': r.isVerified ? 'VERIFIED' : 'PENDING'
                     });
                 });
