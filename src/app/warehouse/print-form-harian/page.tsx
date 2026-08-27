@@ -229,7 +229,6 @@ export default async function PrintFormHarianPage({ searchParams }: { searchPara
                     </div>
                 </div>
             </div>
-            </div>
         );
     } catch (error: any) {
         return (
