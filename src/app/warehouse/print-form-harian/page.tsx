@@ -76,7 +76,7 @@ export default async function PrintFormHarianPage({ searchParams }: { searchPara
         while(displayOutgoing.length < maxRows) { displayOutgoing.push({ empty: true } as any); }
 
         return (
-            <div className="w-full bg-white text-black font-sans print:m-0 print:p-0 mx-auto" style={{ maxWidth: '297mm', minHeight: '210mm' }}>
+            <div className="min-h-screen bg-slate-50 p-4 md:p-8 font-sans print:p-0 print:bg-white text-black">
                 <style dangerouslySetInnerHTML={{__html: `
                     @media print {
                         @page { size: A4 landscape; margin: 10mm; }
@@ -95,18 +95,32 @@ export default async function PrintFormHarianPage({ searchParams }: { searchPara
                     }
                 `}} />
 
-                <div className="no-print p-4 flex justify-between items-center bg-slate-100 border-b mb-4">
+                <div className="no-print max-w-[297mm] mx-auto mb-8 bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4 transition-all">
                     <div className="flex items-center gap-4">
-                        <span className="font-bold">Pilih Tanggal:</span>
-                        <form method="GET" className="flex items-center gap-2">
-                            <input type="date" name="date" defaultValue={selectedDateStr} className="border p-2 rounded" />
-                            <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded font-bold">Tampilkan</button>
-                        </form>
+                        <div className="bg-blue-100 p-3 rounded-xl text-blue-700">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></svg>
+                        </div>
+                        <div>
+                            <h1 className="text-xl font-bold text-slate-800">Rekap Harian Gudang</h1>
+                            <p className="text-slate-500 text-sm mt-0.5">Cetak & validasi penerimaan dan pengeluaran barang.</p>
+                        </div>
                     </div>
-                    <PrintButton />
+                    
+                    <div className="flex flex-wrap items-center gap-4">
+                        <form method="GET" className="flex items-center bg-slate-50 p-1.5 rounded-xl border border-slate-200 shadow-inner">
+                            <input type="date" name="date" defaultValue={selectedDateStr} className="bg-transparent border-none outline-none text-sm px-3 py-1.5 text-slate-700 font-medium cursor-pointer" />
+                            <button type="submit" className="bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 hover:text-blue-600 transition-colors px-4 py-1.5 rounded-lg text-sm font-semibold shadow-sm ml-2 flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                                Tampilkan
+                            </button>
+                        </form>
+                        <div className="h-8 w-px bg-slate-200 hidden md:block"></div>
+                        <PrintButton />
+                    </div>
                 </div>
 
-                <div className="flex w-full gap-8 p-4">
+                <div className="w-full bg-white mx-auto print:shadow-none shadow-2xl border border-slate-200 print:border-none rounded-sm print:rounded-none" style={{ maxWidth: '297mm', minHeight: '210mm' }}>
+                    <div className="flex w-full gap-8 p-8 print:p-4">
                     {/* LEFT SIDE: BARANG DATANG */}
                     <div className="flex-1 border-r border-dashed border-gray-300 pr-8">
                         <div className="text-center font-bold text-sm mb-6 uppercase">
@@ -215,6 +229,7 @@ export default async function PrintFormHarianPage({ searchParams }: { searchPara
                         </div>
                     </div>
                 </div>
+            </div>
             </div>
         );
     } catch (error: any) {
