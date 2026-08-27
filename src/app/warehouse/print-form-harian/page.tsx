@@ -156,7 +156,7 @@ export default async function PrintFormHarianPage({ searchParams }: { searchPara
                                         <td className="text-xs uppercase font-semibold outline-none focus:bg-blue-50" contentEditable={true} suppressContentEditableWarning={true}>{!item.empty ? item.supplier : ''}</td>
                                         <td className="text-xs uppercase outline-none focus:bg-blue-50" contentEditable={true} suppressContentEditableWarning={true}>{!item.empty ? item.productName : ''}</td>
                                         <td className="text-center font-bold outline-none focus:bg-blue-50" contentEditable={true} suppressContentEditableWarning={true}>{!item.empty && item.qty != null ? formatNumber(Number(item.qty)) : ''}</td>
-                                        <td className="text-xs truncate max-w-[100px] outline-none focus:bg-blue-50" contentEditable={true} suppressContentEditableWarning={true}>{!item.empty ? item.notes : ''}</td>
+                                        <td className="text-[10px] break-all leading-tight outline-none focus:bg-blue-50" contentEditable={true} suppressContentEditableWarning={true}>{!item.empty ? item.notes : ''}</td>
                                         <td className="outline-none focus:bg-blue-50" contentEditable={true} suppressContentEditableWarning={true}></td>
                                     </tr>
                                 ))}
@@ -184,7 +184,7 @@ export default async function PrintFormHarianPage({ searchParams }: { searchPara
                         <div className="mb-4 text-xs space-y-1">
                             <div className="grid grid-cols-[100px_1fr]">
                                 <span>No Bukti</span>
-                                <span className="font-bold">: RHG-IN-{format(selectedDate, "ddMMyyyy")}</span>
+                                <span className="font-bold">: RHG-OUT-{format(selectedDate, "ddMMyyyy")}</span>
                             </div>
                             <div className="grid grid-cols-[100px_1fr]">
                                 <span>Hari Tanggal</span>
@@ -210,7 +210,7 @@ export default async function PrintFormHarianPage({ searchParams }: { searchPara
                                         <td className="text-xs uppercase font-semibold outline-none focus:bg-blue-50" contentEditable={true} suppressContentEditableWarning={true}>{!item.empty ? item.buyer : ''}</td>
                                         <td className="text-xs uppercase outline-none focus:bg-blue-50" contentEditable={true} suppressContentEditableWarning={true}>{!item.empty ? item.productName : ''}</td>
                                         <td className="text-center font-bold outline-none focus:bg-blue-50" contentEditable={true} suppressContentEditableWarning={true}>{!item.empty && item.qty != null ? formatNumber(Number(item.qty)) : ''}</td>
-                                        <td className="text-xs truncate max-w-[100px] outline-none focus:bg-blue-50" contentEditable={true} suppressContentEditableWarning={true}>{!item.empty ? item.notes : ''}</td>
+                                        <td className="text-[10px] break-all leading-tight outline-none focus:bg-blue-50" contentEditable={true} suppressContentEditableWarning={true}>{!item.empty ? item.notes : ''}</td>
                                         <td className="outline-none focus:bg-blue-50" contentEditable={true} suppressContentEditableWarning={true}></td>
                                     </tr>
                                 ))}
