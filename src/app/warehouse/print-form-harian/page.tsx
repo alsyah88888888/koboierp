@@ -66,26 +66,25 @@ export default async function PrintFormHarianPage({ searchParams }: { searchPara
             }))
         );
 
-        const maxRows = Math.max(12, incomingItems.length, outgoingItems.length);
-        
-        // Fill with empty rows to match maxRows
+        const maxRowsIncoming = Math.max(12, incomingItems.length);
         const displayIncoming = [...incomingItems];
-        while(displayIncoming.length < maxRows) { displayIncoming.push({ empty: true } as any); }
+        while(displayIncoming.length < maxRowsIncoming) { displayIncoming.push({ empty: true } as any); }
         
+        const maxRowsOutgoing = Math.max(12, outgoingItems.length);
         const displayOutgoing = [...outgoingItems];
-        while(displayOutgoing.length < maxRows) { displayOutgoing.push({ empty: true } as any); }
+        while(displayOutgoing.length < maxRowsOutgoing) { displayOutgoing.push({ empty: true } as any); }
 
         return (
             <div className="min-h-screen bg-slate-50 p-4 md:p-8 font-sans print:p-0 print:bg-white text-black">
                 <style dangerouslySetInnerHTML={{__html: `
                     @media print {
-                        @page { size: A4 landscape; margin: 10mm; }
+                        @page { size: A4 portrait; margin: 10mm; }
                         body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
                         .no-print { display: none !important; }
                     }
                     .form-table th, .form-table td {
                         border: 1px solid black;
-                        padding: 4px 8px;
+                        padding: 6px 10px;
                         font-size: 11px;
                     }
                     .form-table th {
@@ -95,7 +94,7 @@ export default async function PrintFormHarianPage({ searchParams }: { searchPara
                     }
                 `}} />
 
-                <div className="no-print max-w-[297mm] mx-auto mb-8 bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4 transition-all">
+                <div className="no-print max-w-[210mm] mx-auto mb-8 bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between gap-4 transition-all">
                     <div className="flex items-center gap-4">
                         <div className="bg-blue-100 p-3 rounded-xl text-blue-700">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></svg>
@@ -107,32 +106,30 @@ export default async function PrintFormHarianPage({ searchParams }: { searchPara
                     </div>
                     
                     <div className="flex flex-wrap items-center gap-4">
-                        <form method="GET" className="flex items-center bg-slate-50 p-1.5 rounded-xl border border-slate-200 shadow-inner">
-                            <input type="date" name="date" defaultValue={selectedDateStr} className="bg-transparent border-none outline-none text-sm px-3 py-1.5 text-slate-700 font-medium cursor-pointer" />
-                            <button type="submit" className="bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 hover:text-blue-600 transition-colors px-4 py-1.5 rounded-lg text-sm font-semibold shadow-sm ml-2 flex items-center gap-2">
+                        <form method="GET" className="flex items-center bg-slate-50 p-1.5 rounded-xl border border-slate-200 shadow-inner flex-1">
+                            <input type="date" name="date" defaultValue={selectedDateStr} className="bg-transparent border-none outline-none text-sm px-3 py-1.5 text-slate-700 font-medium cursor-pointer w-full" />
+                            <button type="submit" className="bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 hover:text-blue-600 transition-colors px-4 py-1.5 rounded-lg text-sm font-semibold shadow-sm ml-2 flex items-center gap-2 whitespace-nowrap">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
                                 Tampilkan
                             </button>
                         </form>
-                        <div className="h-8 w-px bg-slate-200 hidden md:block"></div>
                         <PrintButton />
                     </div>
                 </div>
 
-                <div className="w-full bg-white mx-auto print:shadow-none shadow-2xl border border-slate-200 print:border-none rounded-sm print:rounded-none" style={{ maxWidth: '297mm', minHeight: '210mm' }}>
-                    <div className="flex w-full gap-8 p-8 print:p-4">
-                    {/* LEFT SIDE: BARANG DATANG */}
-                    <div className="flex-1 border-r border-dashed border-gray-300 pr-8">
-                        <div className="text-center font-bold text-sm mb-6 uppercase">
+                {/* PAGE 1: BARANG DATANG */}
+                <div className="w-full bg-white mx-auto print:shadow-none shadow-2xl border border-slate-200 print:border-none rounded-sm print:rounded-none mb-12 print:mb-0" style={{ maxWidth: '210mm', minHeight: '297mm', pageBreakAfter: 'always' }}>
+                    <div className="flex flex-col w-full p-8 print:p-0">
+                        <div className="text-center font-bold text-lg mb-8 uppercase border-b-2 border-black pb-2">
                             BUKTI PENERIMAAN BARANG DATANG
                         </div>
                         
-                        <div className="mb-4 text-xs space-y-1">
-                            <div className="grid grid-cols-[100px_1fr]">
+                        <div className="mb-6 text-sm space-y-1">
+                            <div className="grid grid-cols-[120px_1fr]">
                                 <span>No Bukti</span>
                                 <span className="font-bold">: RHG-IN-{format(selectedDate, "ddMMyyyy")}</span>
                             </div>
-                            <div className="grid grid-cols-[100px_1fr]">
+                            <div className="grid grid-cols-[120px_1fr]">
                                 <span>Hari Tanggal</span>
                                 <span>: {format(selectedDate, "EEEE, dd MMMM yyyy")}</span>
                             </div>
@@ -142,51 +139,53 @@ export default async function PrintFormHarianPage({ searchParams }: { searchPara
                             <thead>
                                 <tr>
                                     <th className="w-8">NO</th>
-                                    <th className="w-32">Nama Suplayer</th>
+                                    <th className="w-48">Nama Suplayer</th>
                                     <th>Item Name</th>
-                                    <th className="w-12">QTY</th>
-                                    <th className="w-24">KETERANGAN</th>
-                                    <th className="w-16">TANDA TANGAN</th>
+                                    <th className="w-16">QTY</th>
+                                    <th className="w-40">KETERANGAN</th>
+                                    <th className="w-24">TTD</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {displayIncoming.map((item: any, i: number) => (
-                                    <tr key={i} className="h-6">
+                                    <tr key={i} className="h-8">
                                         <td className="text-center outline-none focus:bg-blue-50" contentEditable={true} suppressContentEditableWarning={true}>{!item.empty ? i + 1 : (i === 0 ? '1' : '.')}</td>
                                         <td className="text-xs uppercase font-semibold outline-none focus:bg-blue-50" contentEditable={true} suppressContentEditableWarning={true}>{!item.empty ? item.supplier : ''}</td>
                                         <td className="text-xs uppercase outline-none focus:bg-blue-50" contentEditable={true} suppressContentEditableWarning={true}>{!item.empty ? item.productName : ''}</td>
                                         <td className="text-center font-bold outline-none focus:bg-blue-50" contentEditable={true} suppressContentEditableWarning={true}>{!item.empty && item.qty != null ? formatNumber(Number(item.qty)) : ''}</td>
-                                        <td className="text-[10px] break-all leading-tight outline-none focus:bg-blue-50" contentEditable={true} suppressContentEditableWarning={true}>{!item.empty ? item.notes : ''}</td>
+                                        <td className="text-[11px] break-words leading-tight outline-none focus:bg-blue-50" contentEditable={true} suppressContentEditableWarning={true}>{!item.empty ? item.notes : ''}</td>
                                         <td className="outline-none focus:bg-blue-50" contentEditable={true} suppressContentEditableWarning={true}></td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
 
-                        <div className="flex justify-between text-xs mt-12 px-4 break-inside-avoid">
-                            <div className="flex flex-col justify-between h-24 text-center">
+                        <div className="flex justify-between text-sm mt-12 px-8 break-inside-avoid">
+                            <div className="flex flex-col justify-between h-32 text-center">
                                 <div>Diterima Oleh</div>
-                                <div>Kepala Gudang</div>
+                                <div>( Kepala Gudang )</div>
                             </div>
-                            <div className="flex flex-col justify-between h-24 text-center">
+                            <div className="flex flex-col justify-between h-32 text-center">
                                 <div>Mengetahui</div>
-                                <div>PIC Admint</div>
+                                <div>( PIC Admin )</div>
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    {/* RIGHT SIDE: BARANG KELUAR */}
-                    <div className="flex-1 pl-4">
-                        <div className="text-center font-bold text-sm mb-6 uppercase">
-                            BUKTI PENERIMAAN BARANG KELUAR
+                {/* PAGE 2: BARANG KELUAR */}
+                <div className="w-full bg-white mx-auto print:shadow-none shadow-2xl border border-slate-200 print:border-none rounded-sm print:rounded-none" style={{ maxWidth: '210mm', minHeight: '297mm' }}>
+                    <div className="flex flex-col w-full p-8 print:p-0">
+                        <div className="text-center font-bold text-lg mb-8 uppercase border-b-2 border-black pb-2">
+                            BUKTI PENGIRIMAN BARANG KELUAR
                         </div>
                         
-                        <div className="mb-4 text-xs space-y-1">
-                            <div className="grid grid-cols-[100px_1fr]">
+                        <div className="mb-6 text-sm space-y-1">
+                            <div className="grid grid-cols-[120px_1fr]">
                                 <span>No Bukti</span>
                                 <span className="font-bold">: RHG-OUT-{format(selectedDate, "ddMMyyyy")}</span>
                             </div>
-                            <div className="grid grid-cols-[100px_1fr]">
+                            <div className="grid grid-cols-[120px_1fr]">
                                 <span>Hari Tanggal</span>
                                 <span>: {format(selectedDate, "EEEE, dd MMMM yyyy")}</span>
                             </div>
@@ -196,35 +195,35 @@ export default async function PrintFormHarianPage({ searchParams }: { searchPara
                             <thead>
                                 <tr>
                                     <th className="w-8">NO</th>
-                                    <th className="w-32">Nama Buyer</th>
+                                    <th className="w-48">Nama Buyer</th>
                                     <th>Item Name</th>
-                                    <th className="w-12">QTY</th>
-                                    <th className="w-24">KETERANGAN</th>
-                                    <th className="w-16">CEK FISIK</th>
+                                    <th className="w-16">QTY</th>
+                                    <th className="w-40">KETERANGAN</th>
+                                    <th className="w-24">CEK FISIK</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {displayOutgoing.map((item: any, i: number) => (
-                                    <tr key={i} className="h-6">
+                                    <tr key={i} className="h-8">
                                         <td className="text-center outline-none focus:bg-blue-50" contentEditable={true} suppressContentEditableWarning={true}>{!item.empty ? i + 1 : (i === 0 ? '1' : '.')}</td>
                                         <td className="text-xs uppercase font-semibold outline-none focus:bg-blue-50" contentEditable={true} suppressContentEditableWarning={true}>{!item.empty ? item.buyer : ''}</td>
                                         <td className="text-xs uppercase outline-none focus:bg-blue-50" contentEditable={true} suppressContentEditableWarning={true}>{!item.empty ? item.productName : ''}</td>
                                         <td className="text-center font-bold outline-none focus:bg-blue-50" contentEditable={true} suppressContentEditableWarning={true}>{!item.empty && item.qty != null ? formatNumber(Number(item.qty)) : ''}</td>
-                                        <td className="text-[10px] break-all leading-tight outline-none focus:bg-blue-50" contentEditable={true} suppressContentEditableWarning={true}>{!item.empty ? item.notes : ''}</td>
+                                        <td className="text-[11px] break-words leading-tight outline-none focus:bg-blue-50" contentEditable={true} suppressContentEditableWarning={true}>{!item.empty ? item.notes : ''}</td>
                                         <td className="outline-none focus:bg-blue-50" contentEditable={true} suppressContentEditableWarning={true}></td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
 
-                        <div className="flex justify-between text-xs mt-12 px-4 break-inside-avoid">
-                            <div className="flex flex-col justify-between h-24 text-center">
-                                <div>Diterima Oleh</div>
-                                <div>Kepala Gudang</div>
+                        <div className="flex justify-between text-sm mt-12 px-8 break-inside-avoid">
+                            <div className="flex flex-col justify-between h-32 text-center">
+                                <div>Disiapkan Oleh</div>
+                                <div>( Kepala Gudang )</div>
                             </div>
-                            <div className="flex flex-col justify-between h-24 text-center">
+                            <div className="flex flex-col justify-between h-32 text-center">
                                 <div>Mengetahui</div>
-                                <div>PIC Admint</div>
+                                <div>( PIC Admin )</div>
                             </div>
                         </div>
                     </div>
