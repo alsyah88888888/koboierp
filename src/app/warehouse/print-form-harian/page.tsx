@@ -116,7 +116,7 @@ export default async function PrintFormHarianPage({ searchParams }: { searchPara
                         <div className="mb-4 text-xs space-y-1">
                             <div className="grid grid-cols-[100px_1fr]">
                                 <span>No Bukti</span>
-                                <span>: .............................</span>
+                                <span className="font-bold">: RHG-IN-{format(selectedDate, "ddMMyyyy")}</span>
                             </div>
                             <div className="grid grid-cols-[100px_1fr]">
                                 <span>Hari Tanggal</span>
@@ -168,7 +168,7 @@ export default async function PrintFormHarianPage({ searchParams }: { searchPara
                         <div className="mb-4 text-xs space-y-1">
                             <div className="grid grid-cols-[100px_1fr]">
                                 <span>No Bukti</span>
-                                <span>: .............................</span>
+                                <span className="font-bold">: RHG-IN-{format(selectedDate, "ddMMyyyy")}</span>
                             </div>
                             <div className="grid grid-cols-[100px_1fr]">
                                 <span>Hari Tanggal</span>
