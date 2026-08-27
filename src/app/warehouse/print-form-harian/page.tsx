@@ -66,11 +66,10 @@ export default async function PrintFormHarianPage({ searchParams }: { searchPara
             }))
         );
 
-        const maxRows = Math.max(12, incomingItems.length, outgoingItems.length);
+        const maxRows = Math.max(12, outgoingItems.length);
         
-        // Fill with empty rows to match maxRows
-        const displayIncoming = [...incomingItems];
-        while(displayIncoming.length < maxRows) { displayIncoming.push({ empty: true } as any); }
+        // Fill with empty rows for manual input
+        const displayIncoming = Array(maxRows).fill({ empty: true });
         
         const displayOutgoing = [...outgoingItems];
         while(displayOutgoing.length < maxRows) { displayOutgoing.push({ empty: true } as any); }
@@ -128,10 +127,11 @@ export default async function PrintFormHarianPage({ searchParams }: { searchPara
                             <thead>
                                 <tr>
                                     <th className="w-8">NO</th>
-                                    <th className="w-40">Nama Suplayer</th>
+                                    <th className="w-32">Nama Suplayer</th>
                                     <th>Item Name</th>
-                                    <th className="w-16">QTY</th>
-                                    <th className="w-32">KETERANGAN</th>
+                                    <th className="w-12">QTY</th>
+                                    <th className="w-24">KETERANGAN</th>
+                                    <th className="w-16">TANDA TANGAN</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -141,7 +141,8 @@ export default async function PrintFormHarianPage({ searchParams }: { searchPara
                                         <td className="text-xs uppercase font-semibold">{!item.empty ? item.supplier : ''}</td>
                                         <td className="text-xs uppercase">{!item.empty ? item.productName : ''}</td>
                                         <td className="text-center font-bold">{!item.empty && item.qty != null ? formatNumber(Number(item.qty)) : ''}</td>
-                                        <td className="text-xs truncate max-w-[120px]">{!item.empty ? item.notes : ''}</td>
+                                        <td className="text-xs truncate max-w-[100px]">{!item.empty ? item.notes : ''}</td>
+                                        <td></td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -180,10 +181,11 @@ export default async function PrintFormHarianPage({ searchParams }: { searchPara
                             <thead>
                                 <tr>
                                     <th className="w-8">NO</th>
-                                    <th className="w-40">Nama Buyer</th>
+                                    <th className="w-32">Nama Buyer</th>
                                     <th>Item Name</th>
-                                    <th className="w-16">QTY</th>
-                                    <th className="w-32">KETERANGAN</th>
+                                    <th className="w-12">QTY</th>
+                                    <th className="w-24">KETERANGAN</th>
+                                    <th className="w-16">CEK FISIK</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -193,7 +195,8 @@ export default async function PrintFormHarianPage({ searchParams }: { searchPara
                                         <td className="text-xs uppercase font-semibold">{!item.empty ? item.buyer : ''}</td>
                                         <td className="text-xs uppercase">{!item.empty ? item.productName : ''}</td>
                                         <td className="text-center font-bold">{!item.empty && item.qty != null ? formatNumber(Number(item.qty)) : ''}</td>
-                                        <td className="text-xs truncate max-w-[120px]">{!item.empty ? item.notes : ''}</td>
+                                        <td className="text-xs truncate max-w-[100px]">{!item.empty ? item.notes : ''}</td>
+                                        <td></td>
                                     </tr>
                                 ))}
                             </tbody>
