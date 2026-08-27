@@ -132,7 +132,7 @@ export default async function PrintFormHarianPage({ searchParams }: { searchPara
                             </tr>
                         </thead>
                         <tbody>
-                            {displayIncoming.map((item, i) => (
+                            {displayIncoming.map((item: any, i: number) => (
                                 <tr key={i} className="h-6">
                                     <td className="text-center">{!item.empty ? i + 1 : (i === 0 ? '1' : '.')}</td>
                                     <td className="text-xs uppercase font-semibold">{!item.empty ? item.supplier : ''}</td>
@@ -184,7 +184,7 @@ export default async function PrintFormHarianPage({ searchParams }: { searchPara
                             </tr>
                         </thead>
                         <tbody>
-                            {displayOutgoing.map((item, i) => (
+                            {displayOutgoing.map((item: any, i: number) => (
                                 <tr key={i} className="h-6">
                                     <td className="text-center">{!item.empty ? i + 1 : (i === 0 ? '1' : '.')}</td>
                                     <td className="text-xs uppercase font-semibold">{!item.empty ? item.buyer : ''}</td>
