@@ -244,6 +244,14 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                 {/* Actions Toolbar */}
                 <div className="flex flex-wrap items-center gap-2">
                     <Link
+                        href="/warehouse/print-form-harian"
+                        target="_blank"
+                        className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs uppercase tracking-wider transition-all"
+                    >
+                        <FileText className="h-4 w-4 text-slate-500" />
+                        <span className="hidden sm:inline">Rekap Harian</span>
+                    </Link>
+                    <Link
                         href="/warehouse/print-database"
                         target="_blank"
                         className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs uppercase tracking-wider transition-all"
