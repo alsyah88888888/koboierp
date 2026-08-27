@@ -66,10 +66,11 @@ export default async function PrintFormHarianPage({ searchParams }: { searchPara
             }))
         );
 
-        const maxRows = Math.max(12, outgoingItems.length);
+        const maxRows = Math.max(12, incomingItems.length, outgoingItems.length);
         
-        // Fill with empty rows for manual input
-        const displayIncoming = Array(maxRows).fill({ empty: true });
+        // Fill with empty rows to match maxRows
+        const displayIncoming = [...incomingItems];
+        while(displayIncoming.length < maxRows) { displayIncoming.push({ empty: true } as any); }
         
         const displayOutgoing = [...outgoingItems];
         while(displayOutgoing.length < maxRows) { displayOutgoing.push({ empty: true } as any); }
@@ -137,12 +138,12 @@ export default async function PrintFormHarianPage({ searchParams }: { searchPara
                             <tbody>
                                 {displayIncoming.map((item: any, i: number) => (
                                     <tr key={i} className="h-6">
-                                        <td className="text-center">{!item.empty ? i + 1 : (i === 0 ? '1' : '.')}</td>
-                                        <td className="text-xs uppercase font-semibold">{!item.empty ? item.supplier : ''}</td>
-                                        <td className="text-xs uppercase">{!item.empty ? item.productName : ''}</td>
-                                        <td className="text-center font-bold">{!item.empty && item.qty != null ? formatNumber(Number(item.qty)) : ''}</td>
-                                        <td className="text-xs truncate max-w-[100px]">{!item.empty ? item.notes : ''}</td>
-                                        <td></td>
+                                        <td className="text-center outline-none focus:bg-blue-50" contentEditable={true} suppressContentEditableWarning={true}>{!item.empty ? i + 1 : (i === 0 ? '1' : '.')}</td>
+                                        <td className="text-xs uppercase font-semibold outline-none focus:bg-blue-50" contentEditable={true} suppressContentEditableWarning={true}>{!item.empty ? item.supplier : ''}</td>
+                                        <td className="text-xs uppercase outline-none focus:bg-blue-50" contentEditable={true} suppressContentEditableWarning={true}>{!item.empty ? item.productName : ''}</td>
+                                        <td className="text-center font-bold outline-none focus:bg-blue-50" contentEditable={true} suppressContentEditableWarning={true}>{!item.empty && item.qty != null ? formatNumber(Number(item.qty)) : ''}</td>
+                                        <td className="text-xs truncate max-w-[100px] outline-none focus:bg-blue-50" contentEditable={true} suppressContentEditableWarning={true}>{!item.empty ? item.notes : ''}</td>
+                                        <td className="outline-none focus:bg-blue-50" contentEditable={true} suppressContentEditableWarning={true}></td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -191,12 +192,12 @@ export default async function PrintFormHarianPage({ searchParams }: { searchPara
                             <tbody>
                                 {displayOutgoing.map((item: any, i: number) => (
                                     <tr key={i} className="h-6">
-                                        <td className="text-center">{!item.empty ? i + 1 : (i === 0 ? '1' : '.')}</td>
-                                        <td className="text-xs uppercase font-semibold">{!item.empty ? item.buyer : ''}</td>
-                                        <td className="text-xs uppercase">{!item.empty ? item.productName : ''}</td>
-                                        <td className="text-center font-bold">{!item.empty && item.qty != null ? formatNumber(Number(item.qty)) : ''}</td>
-                                        <td className="text-xs truncate max-w-[100px]">{!item.empty ? item.notes : ''}</td>
-                                        <td></td>
+                                        <td className="text-center outline-none focus:bg-blue-50" contentEditable={true} suppressContentEditableWarning={true}>{!item.empty ? i + 1 : (i === 0 ? '1' : '.')}</td>
+                                        <td className="text-xs uppercase font-semibold outline-none focus:bg-blue-50" contentEditable={true} suppressContentEditableWarning={true}>{!item.empty ? item.buyer : ''}</td>
+                                        <td className="text-xs uppercase outline-none focus:bg-blue-50" contentEditable={true} suppressContentEditableWarning={true}>{!item.empty ? item.productName : ''}</td>
+                                        <td className="text-center font-bold outline-none focus:bg-blue-50" contentEditable={true} suppressContentEditableWarning={true}>{!item.empty && item.qty != null ? formatNumber(Number(item.qty)) : ''}</td>
+                                        <td className="text-xs truncate max-w-[100px] outline-none focus:bg-blue-50" contentEditable={true} suppressContentEditableWarning={true}>{!item.empty ? item.notes : ''}</td>
+                                        <td className="outline-none focus:bg-blue-50" contentEditable={true} suppressContentEditableWarning={true}></td>
                                     </tr>
                                 ))}
                             </tbody>
