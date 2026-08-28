@@ -6,6 +6,10 @@ import { PublicDashboard } from "./PublicDashboard";
 
 export const dynamic = "force-dynamic";
 
+// In-memory cache untuk public dashboard agar tidak membebani server
+const globalCache = (global as any) || {};
+const CACHE_KEY = "PUBLIC_DASHBOARD_CACHE";
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 menit cache
 export default async function PublicDashboardPage({
   searchParams,
 }: {
@@ -35,6 +39,20 @@ export default async function PublicDashboardPage({
   }
 
   // ── Fetch Data (bypass session — public access) ───────────────────────
+  const nowMs = Date.now();
+  if (globalCache[CACHE_KEY] && (nowMs - globalCache[CACHE_KEY].timestamp < CACHE_TTL_MS)) {
+    // Return dari cache jika masih valid
+    const cached = globalCache[CACHE_KEY].data;
+    return (
+      <PublicDashboard
+        stats={cached.stats}
+        weeklyStats={cached.summary.weeklyStats || []}
+        dailyReport={cached.dailyReport}
+        traceabilityData={cached.traceabilityData}
+      />
+    );
+  }
+
   const prisma = getPrisma();
 
   let summary: any = {
@@ -88,6 +106,12 @@ export default async function PublicDashboardPage({
     { name: "Total Piutang", value: formatCurrency(summary.totalPiutang || 0), sub: "Belum Diterima", trend: "up", color: "sky" },
     { name: "Total Hutang", value: formatCurrency(summary.totalHutang || 0), sub: "Belum Dibayar", trend: "down", color: "amber" },
   ];
+
+  // Simpan ke cache
+  globalCache[CACHE_KEY] = {
+    timestamp: Date.now(),
+    data: { stats, summary, dailyReport, traceabilityData }
+  };
 
   return (
     <PublicDashboard

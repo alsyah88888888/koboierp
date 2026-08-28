@@ -36,14 +36,14 @@ export function PublicDashboard({ stats, weeklyStats, dailyReport, traceabilityD
     return () => clearInterval(interval);
   }, []);
 
-  // Auto-refresh every 5 minutes
+  // Auto-refresh every 30 minutes untuk mengurangi beban server
   useEffect(() => {
     const refresh = setInterval(() => {
       setRefreshing(true);
       setTimeout(() => {
         window.location.reload();
       }, 300);
-    }, 5 * 60 * 1000);
+    }, 30 * 60 * 1000); // 30 minutes
     return () => clearInterval(refresh);
   }, []);
 
