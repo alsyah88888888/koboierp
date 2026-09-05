@@ -37,14 +37,14 @@ export default async function SalesPage() {
             order: true
         },
         orderBy: { createdAt: 'desc' },
-        take: 200
+        take: 2000
     }).catch(() => []));
 
     const receipts = serializeDecimal(await prisma.goodsReceipt.findMany({
         where: { isVerified: true },
         include: { items: true },
         orderBy: { createdAt: 'desc' },
-        take: 200
+        take: 2000
     }).catch(() => []));
 
     const serializedCustomers = serializeDecimal(await prisma.customer.findMany({
@@ -73,7 +73,7 @@ export default async function SalesPage() {
             }
         },
         orderBy: { date: 'desc' },
-        take: 200
+        take: 2000
     });
 
     const salesExpenses = serializeDecimal(salesExpensesRaw.map((t: any) => ({
@@ -94,7 +94,7 @@ export default async function SalesPage() {
             items: { include: { product: true } }
         },
         orderBy: { createdAt: 'desc' },
-        take: 200
+        take: 2000
     }).catch(() => []));
 
     const salesOrders = serializeDecimal(await (prisma as any).salesOrder.findMany({
@@ -107,7 +107,7 @@ export default async function SalesPage() {
         },
         include: { items: { include: { product: true } }, deliveries: true },
         orderBy: { date: 'desc' },
-        take: 200
+        take: 2000
     }).catch(() => []));
 
     const systemSettings = serializeDecimal(await prisma.systemSetting.findUnique({ where: { id: "global" } }).catch(() => null));

@@ -53,7 +53,7 @@ export default async function FinancePage() {
         prisma.journalEntry.findMany({
             include: { account: true, transaction: true },
             orderBy: { date: 'desc' },
-            take: 200
+            take: 2000
         }).catch(() => []),
         prisma.vendor.findMany({
             orderBy: { balance: 'desc' },
@@ -96,18 +96,18 @@ export default async function FinancePage() {
         prisma.financeTransaction.findMany({
             where: userFilter,
             orderBy: { date: 'desc' },
-            take: 200
+            take: 2000
         }).catch(() => []),
         prisma.goodsReceipt.findMany({
             where: { isVoid: false, paymentStatus: "PAID" },
             orderBy: { createdAt: 'desc' },
-            take: 200,
+            take: 2000,
             include: { items: { include: { product: true } }, warehouse: true, createdBy: { select: { name: true } } }
         }).catch(() => []),
         prisma.salesDelivery.findMany({
             where: { isVoid: false, paymentStatus: "PAID" },
             orderBy: { updatedAt: 'desc' },
-            take: 200,
+            take: 2000,
             include: { items: { include: { product: true } }, warehouse: true, order: true, createdBy: { select: { name: true } } }
         }).catch(() => []),
         prisma.goodsReceipt.aggregate({
