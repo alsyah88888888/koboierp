@@ -648,6 +648,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                     'Entity': s.buyerName,
                     'Ref Number': s.deliveryNumber,
                     'Nominal': Number(s.total),
+                    'Detail Pembayaran': getPaymentDetails(s.deliveryNumber),
                     'Status': 'PAID'
                 })),
                 ...filteredSettledPurchases.map(p => ({
@@ -656,6 +657,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                     'Entity': p.receivedFrom,
                     'Ref Number': p.receiptNumber,
                     'Nominal': Number(p.total),
+                    'Detail Pembayaran': getPaymentDetails(p.receiptNumber),
                     'Status': 'PAID'
                 }))
             ];
