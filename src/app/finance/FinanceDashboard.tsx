@@ -200,6 +200,18 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
         };
     };
 
+    const getPaymentDetails = (refNumber: string) => {
+        if (!refNumber || !paymentHistory) return "-";
+        const entries = paymentHistory.filter(j => j.description && j.description.includes(refNumber));
+        if (entries.length === 0) return "-";
+        
+        return entries.map(e => {
+            const date = format(new Date(e.date), "dd/MM/yy");
+            const amount = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(Number(e.credit || e.debit || 0));
+            return `${date} (${e.account?.code || '-'}): ${amount}`;
+        }).join(" | ");
+    };
+
     useEffect(() => {
         setIsClient(true);
     }, []);
@@ -534,6 +546,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                         'Total Tagihan': printedTotal,
                         'Sudah Dibayar': printedPaid,
                         'Sisa Hutang': printedTotal - printedPaid,
+                        'Detail Pembayaran': getPaymentDetails(p.receiptNumber),
                         'Status': p.paymentStatus === 'PAID' ? 'DONE' : p.paymentStatus,
                         'Sales Person Vendor': p.salesPerson || '-',
                         'Gudang': p.warehouse?.name || '-',
@@ -553,6 +566,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                     'Total Tagihan': printedTotal,
                     'Sudah Dibayar': printedPaid,
                     'Sisa Hutang': printedTotal - printedPaid,
+                    'Detail Pembayaran': getPaymentDetails(p.receiptNumber),
                     'Status': p.paymentStatus === 'PAID' ? 'DONE' : p.paymentStatus,
                     'Sales Person Vendor': p.salesPerson || '-',
                     'Gudang': p.warehouse?.name || '-',
@@ -582,6 +596,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                         'Total Tagihan': printedTotal,
                         'Sudah Dibayar': printedPaid,
                         'Sisa Piutang': remaining,
+                        'Detail Pembayaran': getPaymentDetails(s.deliveryNumber),
                         'Status': s.paymentStatus === 'PAID' ? 'DONE' : s.paymentStatus,
                         'Umur Piutang (Hari)': agingDays > 0 ? agingDays : 0,
                         'Gudang Asal': s.warehouse?.name || '-',
@@ -602,6 +617,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                     'Total Tagihan': printedTotal,
                     'Sudah Dibayar': printedPaid,
                     'Sisa Piutang': remaining,
+                    'Detail Pembayaran': getPaymentDetails(s.deliveryNumber),
                     'Status': s.paymentStatus === 'PAID' ? 'DONE' : s.paymentStatus,
                     'Umur Piutang (Hari)': agingDays > 0 ? agingDays : 0,
                     'Gudang Asal': s.warehouse?.name || '-',

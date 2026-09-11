@@ -140,7 +140,7 @@ export default async function FinancePage() {
             },
             include: { account: true },
             orderBy: { date: 'desc' },
-            take: 500
+            take: 5000
         }).catch(() => []),
         prisma.goodsReceipt.aggregate({
             where: { 
