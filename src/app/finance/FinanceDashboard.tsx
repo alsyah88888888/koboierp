@@ -207,9 +207,9 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
         
         return entries.map(e => {
             const date = format(new Date(e.date), "dd/MM/yy");
-            const amount = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(Number(e.credit || e.debit || 0));
+            const amount = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(Number(e.amount || 0));
             return `${date} (${e.account?.code || '-'}): ${amount}`;
-        }).join(" | ");
+        }).join("\n");
     };
 
     useEffect(() => {
