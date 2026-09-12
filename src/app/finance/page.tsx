@@ -96,7 +96,7 @@ export default async function FinancePage() {
         prisma.financeTransaction.findMany({
             where: userFilter,
             orderBy: { date: 'desc' },
-            take: 2000
+            take: 10000
         }).catch(() => []),
         prisma.goodsReceipt.findMany({
             where: { isVoid: false, paymentStatus: "PAID" },
