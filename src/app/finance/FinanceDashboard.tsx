@@ -543,10 +543,11 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                         'No. Invoice Vendor': p.formNumber || '-',
                         'Supplier': p.receivedFrom,
                         'No. Faktur Pajak': p.taxInvoiceNumber || '-',
-                        'Total Tagihan': printedTotal,
-                        'Sudah Dibayar': printedPaid,
-                        'Sisa Hutang': printedTotal - printedPaid,
+                        'Total Tagihan (Faktur)': printedTotal,
+                        'Sudah Dibayar (Faktur)': printedPaid,
+                        'Sisa Hutang (Faktur)': printedTotal - printedPaid,
                         'Detail Pembayaran': getPaymentDetails(p.receiptNumber),
+                        'Subtotal Barang (Item)': 0,
                         'Status': p.paymentStatus === 'PAID' ? 'DONE' : p.paymentStatus,
                         'Sales Person Vendor': p.salesPerson || '-',
                         'Gudang': p.warehouse?.name || '-',
@@ -556,17 +557,18 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                     }];
                 }
 
-                return p.items.map((i: any, idx: number) => ({
+                return p.items.map((i: any) => ({
                     'Bulan': format(new Date(p.date || p.createdAt), "MMMM yyyy"),
                     'Tanggal Terima': format(new Date(p.date || p.createdAt), "dd/MM/yyyy"),
                     'No. Terima (LPB)': p.receiptNumber,
                     'No. Invoice Vendor': p.formNumber || '-',
                     'Supplier': p.receivedFrom,
                     'No. Faktur Pajak': p.taxInvoiceNumber || '-',
-                    'Total Tagihan': idx === 0 ? printedTotal : 0,
-                    'Sudah Dibayar': idx === 0 ? printedPaid : 0,
-                    'Sisa Hutang': idx === 0 ? (printedTotal - printedPaid) : 0,
-                    'Detail Pembayaran': idx === 0 ? getPaymentDetails(p.receiptNumber) : '-',
+                    'Total Tagihan (Faktur)': printedTotal,
+                    'Sudah Dibayar (Faktur)': printedPaid,
+                    'Sisa Hutang (Faktur)': printedTotal - printedPaid,
+                    'Detail Pembayaran': getPaymentDetails(p.receiptNumber),
+                    'Subtotal Barang (Item)': Number(i.quantity || 0) * Number(i.purchasePrice || 0),
                     'Status': p.paymentStatus === 'PAID' ? 'DONE' : p.paymentStatus,
                     'Sales Person Vendor': p.salesPerson || '-',
                     'Gudang': p.warehouse?.name || '-',
@@ -593,10 +595,11 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                         'PO BUYER': s.poNumber || '-',
                         'Pelanggan': s.buyerName,
                         'Sales Person': s.salesPerson || '-',
-                        'Total Tagihan': printedTotal,
-                        'Sudah Dibayar': printedPaid,
-                        'Sisa Piutang': remaining,
+                        'Total Tagihan (Faktur)': printedTotal,
+                        'Sudah Dibayar (Faktur)': printedPaid,
+                        'Sisa Piutang (Faktur)': remaining,
                         'Detail Pembayaran': getPaymentDetails(s.deliveryNumber),
+                        'Subtotal Barang (Item)': 0,
                         'Status': s.paymentStatus === 'PAID' ? 'DONE' : s.paymentStatus,
                         'Umur Piutang (Hari)': agingDays > 0 ? agingDays : 0,
                         'Gudang Asal': s.warehouse?.name || '-',
@@ -606,7 +609,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                     }];
                 }
 
-                return s.items.map((i: any, idx: number) => ({
+                return s.items.map((i: any) => ({
                     'Bulan': format(new Date(s.date || s.createdAt), "MMMM yyyy"),
                     'Tanggal SO': s.order?.date ? format(new Date(s.order.date), "dd/MM/yyyy") : '-',
                     'Tanggal SJ': format(new Date(s.date || s.createdAt), "dd/MM/yyyy"),
@@ -614,10 +617,11 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                     'PO BUYER': s.poNumber || '-',
                     'Pelanggan': s.buyerName,
                     'Sales Person': s.salesPerson || '-',
-                    'Total Tagihan': idx === 0 ? printedTotal : 0,
-                    'Sudah Dibayar': idx === 0 ? printedPaid : 0,
-                    'Sisa Piutang': idx === 0 ? remaining : 0,
-                    'Detail Pembayaran': idx === 0 ? getPaymentDetails(s.deliveryNumber) : '-',
+                    'Total Tagihan (Faktur)': printedTotal,
+                    'Sudah Dibayar (Faktur)': printedPaid,
+                    'Sisa Piutang (Faktur)': remaining,
+                    'Detail Pembayaran': getPaymentDetails(s.deliveryNumber),
+                    'Subtotal Barang (Item)': Number(i.quantity || 0) * Number(i.salesPrice || i.product?.price || 0),
                     'Status': s.paymentStatus === 'PAID' ? 'DONE' : s.paymentStatus,
                     'Umur Piutang (Hari)': agingDays > 0 ? agingDays : 0,
                     'Gudang Asal': s.warehouse?.name || '-',
