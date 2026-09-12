@@ -617,7 +617,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                         'Total Tagihan (Faktur)': printedTotal,
                         'Sudah Dibayar (Faktur)': printedPaid,
                         'Sisa Piutang (Faktur)': remaining,
-                        'Detail Pembayaran': getPaymentDetails(s.deliveryNumber, s.invoiceNumber),
+                        'Detail Pembayaran': getPaymentDetails(s.deliveryNumber, s.realDeliveryNumber || s.invoiceNumber),
                         'Status': s.paymentStatus === 'PAID' ? 'DONE' : s.paymentStatus,
                         'Umur Piutang (Hari)': agingDays > 0 ? agingDays : 0,
                         'Gudang Asal': s.warehouse?.name || '-',
@@ -638,7 +638,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                     'Total Tagihan (Faktur)': idx === 0 ? printedTotal : 0,
                     'Sudah Dibayar (Faktur)': idx === 0 ? printedPaid : 0,
                     'Sisa Piutang (Faktur)': idx === 0 ? remaining : 0,
-                    'Detail Pembayaran': idx === 0 ? getPaymentDetails(s.deliveryNumber, s.invoiceNumber) : '-',
+                    'Detail Pembayaran': idx === 0 ? getPaymentDetails(s.deliveryNumber, s.realDeliveryNumber || s.invoiceNumber) : '-',
                     'Status': s.paymentStatus === 'PAID' ? 'DONE' : s.paymentStatus,
                     'Umur Piutang (Hari)': agingDays > 0 ? agingDays : 0,
                     'Gudang Asal': s.warehouse?.name || '-',
@@ -669,7 +669,7 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                     'Entity': s.buyerName,
                     'Ref Number': s.deliveryNumber,
                     'Nominal': Number(s.total),
-                    'Detail Pembayaran': getPaymentDetails(s.deliveryNumber, s.invoiceNumber),
+                    'Detail Pembayaran': getPaymentDetails(s.deliveryNumber, s.realDeliveryNumber || s.invoiceNumber),
                     'Status': 'PAID'
                 })),
                 ...filteredSettledPurchases.map(p => ({

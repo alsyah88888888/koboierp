@@ -218,6 +218,7 @@ export default async function FinancePage() {
                 grouped.set(key, {
                     ...s,
                     id: `GROUP_${key}`,
+                    realDeliveryNumber: s.deliveryNumber,
                     deliveryNumber: key, 
                     subtotal: 0,
                     totalDiscount: 0,
