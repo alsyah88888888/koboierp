@@ -201,14 +201,29 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
     };
 
     const getPaymentDetails = (refNumber: string) => {
-        if (!refNumber || !paymentHistory) return "-";
-        const entries = paymentHistory.filter(j => j.description && j.description.includes(refNumber));
-        if (entries.length === 0) return "-";
+        if (!refNumber || !transactions) return "-";
+        // Cari di FinanceTransactions berdasarkan invoiceNumber, receiptNumber, atau deskripsi
+        const txs = transactions.filter(t => 
+            t.invoiceNumber === refNumber || 
+            t.receiptNumber === refNumber || 
+            (t.description && t.description.includes(refNumber))
+        );
         
-        return entries.map(e => {
-            const date = format(new Date(e.date), "dd/MM/yy");
-            const amount = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(Number(e.amount || 0));
-            return `${date} (${e.account?.code || '-'}): ${amount}`;
+        if (txs.length === 0) {
+            // Fallback ke paymentHistory (JournalEntry) jika tidak ketemu di FinanceTransaction
+            const entries = (paymentHistory || []).filter(j => j.description && j.description.includes(refNumber));
+            if (entries.length === 0) return "-";
+            return entries.map(e => {
+                const date = format(new Date(e.date), "dd/MM/yy");
+                const amount = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(Number(e.amount || 0));
+                return `${date} (${e.account?.code || '-'}): ${amount}`;
+            }).join("\n");
+        }
+        
+        return txs.map(t => {
+            const date = format(new Date(t.date || t.createdAt), "dd/MM/yy");
+            const amount = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(Number(t.amount || 0));
+            return `${date}: ${amount}`;
         }).join("\n");
     };
 
