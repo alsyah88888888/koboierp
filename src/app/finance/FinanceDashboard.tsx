@@ -658,6 +658,18 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                 'Item Count': r.items.length
             }));
             exportToExcel(data, 'Laporan_Penerimaan_Pending_Gudang', 'Pending');
+        } else if (activeTab === "purchase_requests") {
+            const data = pendingPurchaseRequests.map(r => ({
+                'No. Pengajuan': r.number,
+                'Tanggal': format(new Date(r.date || r.createdAt), "dd/MM/yyyy HH:mm"),
+                'Pemohon': r.requestedBy?.name || "-",
+                'Ringkasan Barang': (r.items || []).map((i: any) => `${i.itemName} (${i.quantity})`).join(", "),
+                'Tipe': r.category || "PEMBELIAN",
+                'Status': r.status,
+                'Catatan': r.notes || "-",
+                'Total Estimasi': (r.items || []).reduce((acc: number, i: any) => acc + (i.quantity * Number(i.estimatedPrice)), 0)
+            }));
+            exportToExcel(data, 'Laporan_Pengajuan_Finance', 'Pengajuan');
         } else if (activeTab === "history") {
             const wb = XLSX.utils.book_new();
             
