@@ -54,16 +54,38 @@ export function PurchaseRequestDashboard({ purchaseRequests, coa = [] }: {
     };
 
     const handleExport = () => {
-        const data = filteredRequests.map(r => ({
-            'No. Pengajuan': r.number,
-            'Tanggal': format(new Date(r.date || r.createdAt), "dd/MM/yyyy HH:mm"),
-            'Pemohon': r.requestedBy?.name,
-            'Ringkasan Barang': r.items.map((i: any) => `${i.itemName} (${i.quantity})`).join(", "),
-            'Tipe': r.category || "PEMBELIAN",
-            'Status': getStatusLabel(r.status),
-            'Catatan': r.notes || "-",
-            'Total Estimasi': r.items.reduce((acc: number, i: any) => acc + (i.quantity * Number(i.estimatedPrice)), 0)
-        }));
+        const data: any[] = [];
+        filteredRequests.forEach(r => {
+            if (!r.items || r.items.length === 0) {
+                data.push({
+                    'No. Pengajuan': r.number,
+                    'Tanggal': format(new Date(r.date || r.createdAt), "dd/MM/yyyy HH:mm"),
+                    'Pemohon': r.requestedBy?.name || "-",
+                    'Tipe': r.category || "PEMBELIAN",
+                    'Status': getStatusLabel(r.status),
+                    'Catatan': r.notes || "-",
+                    'Deskripsi Barang / Kebutuhan': "-",
+                    'Qty': 0,
+                    'Estimasi Harga': 0,
+                    'Total Estimasi': 0
+                });
+            } else {
+                r.items.forEach((i: any) => {
+                    data.push({
+                        'No. Pengajuan': r.number,
+                        'Tanggal': format(new Date(r.date || r.createdAt), "dd/MM/yyyy HH:mm"),
+                        'Pemohon': r.requestedBy?.name || "-",
+                        'Tipe': r.category || "PEMBELIAN",
+                        'Status': getStatusLabel(r.status),
+                        'Catatan': r.notes || "-",
+                        'Deskripsi Barang / Kebutuhan': i.itemName,
+                        'Qty': i.quantity,
+                        'Estimasi Harga': Number(i.estimatedPrice),
+                        'Total Estimasi': i.quantity * Number(i.estimatedPrice)
+                    });
+                });
+            }
+        });
         exportToExcel(data, 'Laporan_Pengajuan', 'Pengajuan');
     };
 
