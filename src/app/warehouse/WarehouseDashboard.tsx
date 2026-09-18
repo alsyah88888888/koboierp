@@ -58,7 +58,6 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
     const getStockMetadata = (productId: string, warehouseId: string, vendorName: string) => {
         const matchingReceipt = unverifiedReceipts.find(r => 
             (r.receivedFrom || "CIBINONG").trim().toLowerCase() === (vendorName || "CIBINONG").trim().toLowerCase() && 
-            r.warehouseId === warehouseId && 
             r.items?.some((item: any) => item.productId === productId)
         );
         const matchingItem = matchingReceipt?.items?.find((item: any) => item.productId === productId);

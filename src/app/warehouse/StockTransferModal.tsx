@@ -165,9 +165,10 @@ export function StockTransferModal({ products, warehouses, onClose, onSuccess, p
                                     <select
                                         value={`${fromWarehouseId}|${fromVendorName}`}
                                         onChange={e => {
-                                            const [wId, vName] = e.target.value.split("|");
-                                            setFromWarehouseId(wId);
-                                            setFromVendorName(vName);
+                                            const [w, v] = e.target.value.split("|");
+                                            setFromWarehouseId(w);
+                                            setFromVendorName(v);
+                                            setToVendorName(v);
                                             setQuantity("");
                                         }}
                                         className="w-full px-3 py-2.5 text-xs bg-white border-2 border-slate-200 rounded-xl focus:outline-none focus:border-violet-500 font-medium transition-colors"
