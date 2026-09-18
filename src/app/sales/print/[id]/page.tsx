@@ -178,6 +178,11 @@ export default async function InvoicePrintPage({ params }: { params: Promise<{ i
                         <p className="text-[9px] italic text-slate-600 leading-tight">
                             Barang yang sudah dibeli tidak dapat ditukar/dikembalikan kecuali ada perjanjian sebelumnya.
                         </p>
+                        <div className="mt-2 text-[7pt] font-black text-slate-500 uppercase tracking-widest not-italic">
+                            <p>Pembayaran Transfer:</p>
+                            <p>BCA 682-5671718 a.n PT KOLA BORASI INDONESIA</p>
+                            <p>MAYBANK (PKP) a.n PT KOLA BORASI INDONESIA</p>
+                        </div>
                     </div>
                     {delivery.poNumber && (
                         <div className="mt-2 text-[9px] font-black">

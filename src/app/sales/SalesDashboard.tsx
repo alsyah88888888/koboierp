@@ -636,7 +636,9 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                     'Qty Pesan': 0,
                     'Qty Terkirim': 0,
                     'Sisa Belum Kirim': 0,
-                    'Satuan': "-"
+                    'Satuan': "-",
+                    'Harga': 0,
+                    'Total': 0
                 });
             } else {
                 items.forEach((item: any) => {
@@ -653,7 +655,9 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                         'Qty Pesan': qty,
                         'Qty Terkirim': shipped,
                         'Sisa Belum Kirim': qty - shipped,
-                        'Satuan': item.product?.uom || "-"
+                        'Satuan': item.product?.uom || "-",
+                        'Harga': Number(item.salesPrice || 0),
+                        'Total': qty * Number(item.salesPrice || 0)
                     });
                 });
             }

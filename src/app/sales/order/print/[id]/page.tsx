@@ -133,9 +133,10 @@ export default async function SalesOrderPrintPage({ params }: { params: Promise<
                     * Barang akan dikirimkan sesuai dengan ketersediaan stok.<br />
                     * Status Order: <span className="text-slate-900 font-black">{order.status}</span>
                     {isDraft && (
-                        <p className="mt-2 text-[7pt] font-black text-slate-500 uppercase tracking-widest not-italic">
-                            BCA 682-5671718 a.n PT KOLA BORASI INDONESIA
-                        </p>
+                        <div className="mt-2 text-[7pt] font-black text-slate-500 uppercase tracking-widest not-italic">
+                            <p>BCA 682-5671718 a.n PT KOLA BORASI INDONESIA</p>
+                            <p>MAYBANK (PKP) a.n PT KOLA BORASI INDONESIA</p>
+                        </div>
                     )}
                 </div>
                 <div className="space-y-1 border border-slate-900 p-2 font-black bg-slate-50/50">
