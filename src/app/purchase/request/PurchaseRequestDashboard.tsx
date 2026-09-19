@@ -8,6 +8,7 @@ import { useSession } from "next-auth/react";
 import { exportToExcel } from "@/lib/excel";
 import { PurchaseRequestTab } from "../PurchaseRequestTab";
 import { PurchaseRequestModal } from "../PurchaseRequestModal";
+import { formatCurrency } from "@/lib/utils";
 import { PurchaseRequestStats } from "./PurchaseRequestStats";
 
 export function PurchaseRequestDashboard({ purchaseRequests, coa = [] }: {
@@ -55,9 +56,12 @@ export function PurchaseRequestDashboard({ purchaseRequests, coa = [] }: {
 
     const handleExport = () => {
         const data: any[] = [];
+        let idx = 0;
         filteredRequests.forEach(r => {
             if (!r.items || r.items.length === 0) {
+                idx++;
                 data.push({
+                    'NO': idx,
                     'No. Pengajuan': r.number,
                     'Tanggal': format(new Date(r.date || r.createdAt), "dd/MM/yyyy HH:mm"),
                     'Pemohon': r.requestedBy?.name || "-",
@@ -71,7 +75,9 @@ export function PurchaseRequestDashboard({ purchaseRequests, coa = [] }: {
                 });
             } else {
                 r.items.forEach((i: any) => {
+                    idx++;
                     data.push({
+                        'NO': idx,
                         'No. Pengajuan': r.number,
                         'Tanggal': format(new Date(r.date || r.createdAt), "dd/MM/yyyy HH:mm"),
                         'Pemohon': r.requestedBy?.name || "-",
@@ -80,8 +86,8 @@ export function PurchaseRequestDashboard({ purchaseRequests, coa = [] }: {
                         'Catatan': r.notes || "-",
                         'Deskripsi Barang / Kebutuhan': i.itemName,
                         'Qty': i.quantity,
-                        'Estimasi Harga': Number(i.estimatedPrice),
-                        'Total Estimasi': i.quantity * Number(i.estimatedPrice)
+                        'Estimasi Harga': formatCurrency(i.estimatedPrice ? Number(i.estimatedPrice) : 0),
+                        'Total Estimasi': formatCurrency(i.quantity * (i.estimatedPrice ? Number(i.estimatedPrice) : 0))
                     });
                 });
             }

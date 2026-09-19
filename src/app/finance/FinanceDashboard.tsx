@@ -660,9 +660,12 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
             exportToExcel(data, 'Laporan_Penerimaan_Pending_Gudang', 'Pending');
         } else if (activeTab === "purchase_requests") {
             const data: any[] = [];
+            let idx = 0;
             pendingPurchaseRequests.forEach(r => {
                 if (!r.items || r.items.length === 0) {
+                    idx++;
                     data.push({
+                        'NO': idx,
                         'No. Pengajuan': r.number,
                         'Tanggal': format(new Date(r.date || r.createdAt), "dd/MM/yyyy HH:mm"),
                         'Pemohon': r.requestedBy?.name || "-",
@@ -676,7 +679,9 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                     });
                 } else {
                     r.items.forEach((i: any) => {
+                        idx++;
                         data.push({
+                            'NO': idx,
                             'No. Pengajuan': r.number,
                             'Tanggal': format(new Date(r.date || r.createdAt), "dd/MM/yyyy HH:mm"),
                             'Pemohon': r.requestedBy?.name || "-",
@@ -685,8 +690,8 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
                             'Catatan': r.notes || "-",
                             'Deskripsi Barang / Kebutuhan': i.itemName,
                             'Qty': i.quantity,
-                            'Estimasi Harga': Number(i.estimatedPrice),
-                            'Total Estimasi': i.quantity * Number(i.estimatedPrice)
+                            'Estimasi Harga': formatCurrency(i.estimatedPrice ? Number(i.estimatedPrice) : 0),
+                            'Total Estimasi': formatCurrency(i.quantity * (i.estimatedPrice ? Number(i.estimatedPrice) : 0))
                         });
                     });
                 }
