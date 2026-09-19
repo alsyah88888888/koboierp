@@ -56,10 +56,17 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
     }, [initialProducts, searchTerm]);
 
     const getStockMetadata = (productId: string, warehouseId: string, vendorName: string) => {
-        const matchingReceipt = unverifiedReceipts.find(r => 
+        let matchingReceipt = unverifiedReceipts.find(r => 
             (r.receivedFrom || "CIBINONG").trim().toLowerCase() === (vendorName || "CIBINONG").trim().toLowerCase() && 
             r.items?.some((item: any) => item.productId === productId)
         );
+
+        if (!matchingReceipt) {
+            matchingReceipt = unverifiedReceipts.find(r => 
+                r.items?.some((item: any) => item.productId === productId)
+            );
+        }
+
         const matchingItem = matchingReceipt?.items?.find((item: any) => item.productId === productId);
         return {
             salesPerson: matchingReceipt?.salesPerson || "-",
