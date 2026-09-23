@@ -97,6 +97,7 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                         const hpp = meta.hpp || Number(p.purchasePrice) || 0;
                         return {
                             'SKU': p.sku,
+                            'Barcode': p.barcode || "-",
                             'Nama Barang': p.name,
                             'Vendor / PT': s.vendorName || "CIBINONG",
                             'Gudang': warehouses.find(w => w.id === s.warehouseId)?.name || 'Unknown',
