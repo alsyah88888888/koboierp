@@ -5,7 +5,6 @@ import { Printer, ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { ClientBarcode as Barcode } from "@/components/print/ClientBarcode";
 
-const BANK_ACCOUNT_TEXT = "BCA 682-5671718 a.n PT KOLA BORASI INDONESIA";
 
 interface DocumentLayoutProps {
     title: string;
@@ -102,9 +101,10 @@ export function DocumentLayout({ title, docNumber, date, children, headerInfo, i
                                     PHONE: <span className="text-slate-500">0857-7444-4805</span> | WEB: <span className="text-slate-500">www.kolaborasiindonesia.com</span>
                                 </p>
                                 {showBankAccountInHeader && (
-                                    <p className="text-[7pt] font-black text-slate-500 uppercase tracking-widest">
-                                        {BANK_ACCOUNT_TEXT}
-                                    </p>
+                                    <div className="text-[7pt] font-black text-slate-500 uppercase tracking-widest leading-tight mt-1">
+                                        <p>BCA 682-5671718 a.n PT KOLA BORASI INDONESIA</p>
+                                        <p>MAYBANK 273-6001269 a.n PT KOLA BORASI INDONESIA</p>
+                                    </div>
                                 )}
                             </div>
                         </div>
