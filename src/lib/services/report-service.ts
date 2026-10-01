@@ -120,7 +120,7 @@ export async function distributeOperationalCosts(operationalData: any[], salesPe
 
     const scaledUnlinked = unlinked.map((ops: any) => ({
         ...ops,
-        amount: Number(ops.amount || 0) * share,
+        amount: Math.round(Number(ops.amount || 0) * share),
         _isProportionalShare: true,
         _sharePct: Math.round(share * 100)
     }));
