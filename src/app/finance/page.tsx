@@ -53,7 +53,7 @@ export default async function FinancePage() {
         prisma.journalEntry.findMany({
             include: { account: true, transaction: true },
             orderBy: { date: 'desc' },
-            take: 500
+            take: 100
         }).catch(() => []),
         prisma.vendor.findMany({
             orderBy: { balance: 'desc' },
@@ -66,48 +66,54 @@ export default async function FinancePage() {
         prisma.goodsReceipt.findMany({
             where: { isVoid: false, paymentStatus: { not: "PAID" } },
             orderBy: { createdAt: 'desc' },
-            include: { items: { include: { product: true } }, warehouse: true }
+            include: { items: { include: { product: true } }, warehouse: true },
+            take: 100
         }).catch(() => []),
         prisma.salesDelivery.findMany({
             where: { isVoid: false, paymentStatus: { not: "PAID" } },
             orderBy: { createdAt: 'desc' },
-            include: { items: { include: { product: true } }, warehouse: true, order: true }
+            include: { items: { include: { product: true } }, warehouse: true, order: true },
+            take: 100
         }).catch(() => []),
         prisma.goodsReceipt.findMany({
             where: { isVerified: false, isVoid: false },
             include: { items: { include: { product: true } }, warehouse: true },
-            orderBy: { createdAt: 'desc' }
+            orderBy: { createdAt: 'desc' },
+            take: 100
         }).catch(() => []),
         prisma.purchaseReturn.findMany({
             where: { status: 'PENDING', isVoid: false },
             include: { items: { include: { product: true } }, receipt: true },
-            orderBy: { createdAt: 'desc' }
+            orderBy: { createdAt: 'desc' },
+            take: 100
         }).catch(() => []),
         prisma.salesReturn.findMany({
             where: { status: 'PENDING', isVoid: false },
             include: { items: { include: { product: true } }, delivery: true },
-            orderBy: { createdAt: 'desc' }
+            orderBy: { createdAt: 'desc' },
+            take: 100
         }).catch(() => []),
         prisma.purchaseRequest.findMany({
             where: { status: 'APPROVED_BY_ADMIN' },
             include: { items: true, requestedBy: true, approvedBy: true },
-            orderBy: { createdAt: 'desc' }
+            orderBy: { createdAt: 'desc' },
+            take: 100
         }).catch(() => []),
         prisma.financeTransaction.findMany({
             where: userFilter,
             orderBy: { date: 'desc' },
-            take: 1000
+            take: 100
         }).catch(() => []),
         prisma.goodsReceipt.findMany({
             where: { isVoid: false, paymentStatus: "PAID" },
             orderBy: { createdAt: 'desc' },
-            take: 500,
+            take: 100,
             include: { items: { include: { product: true } }, warehouse: true, createdBy: { select: { name: true } } }
         }).catch(() => []),
         prisma.salesDelivery.findMany({
             where: { isVoid: false, paymentStatus: "PAID" },
             orderBy: { updatedAt: 'desc' },
-            take: 500,
+            take: 100,
             include: { items: { include: { product: true } }, warehouse: true, order: true, createdBy: { select: { name: true } } }
         }).catch(() => []),
         prisma.goodsReceipt.aggregate({
@@ -140,7 +146,7 @@ export default async function FinancePage() {
             },
             include: { account: true },
             orderBy: { date: 'desc' },
-            take: 1000
+            take: 100
         }).catch(() => []),
         prisma.goodsReceipt.aggregate({
             where: { 
@@ -180,7 +186,8 @@ export default async function FinancePage() {
         }).catch(() => ({ _sum: { grandTotal: 0, paidAmount: 0 } })),
         prisma.bankMutation.findMany({
             include: { financeTransaction: true },
-            orderBy: { date: 'desc' }
+            orderBy: { date: 'desc' },
+            take: 100
         }).catch(() => [])
     ]);
 

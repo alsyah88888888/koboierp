@@ -32,17 +32,15 @@ export async function getDashboardSummaryService(userId: string, prefix: string,
     } : {};
 
     const fetchJournals = async (criteria: any) => {
-        const journals = await prisma.journalEntry.findMany({
-            where: {
-                ...criteria
-            },
-            select: { type: true, amount: true }
+        const grouped = await prisma.journalEntry.groupBy({
+            by: ['type'],
+            where: criteria,
+            _sum: { amount: true }
         });
-        const groups: Record<string, number> = {};
-        journals.forEach((j: any) => {
-            groups[j.type] = (groups[j.type] || 0) + Number(j.amount);
-        });
-        return Object.entries(groups).map(([type, amount]) => ({ type, _sum: { amount } }));
+        return grouped.map((g: any) => ({
+            type: g.type,
+            _sum: { amount: Number(g._sum.amount || 0) }
+        }));
     };
 
     const [

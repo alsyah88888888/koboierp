@@ -33,7 +33,7 @@ export default async function WarehousePage() {
             warehouse: true 
         },
         orderBy: { createdAt: 'desc' },
-        take: 1000
+        take: 100
     }).catch(() => []);
 
     // 3. Fetch Recent Movements

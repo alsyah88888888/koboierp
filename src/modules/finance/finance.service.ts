@@ -28,26 +28,28 @@ export async function getLedger(accountId: string) {
 
 export async function getBalanceSheet() {
     const prisma = getPrisma();
-    const accounts = await prisma.financeAccount.findMany({
-        include: { journals: true }
+    const accounts = await prisma.financeAccount.findMany();
+    
+    const journalAggregations = await prisma.journalEntry.groupBy({
+        by: ['accountId', 'type'],
+        _sum: { amount: true }
     });
 
     return accounts.map((account: any) => {
         const isAssetOrExpense = account.type === "ASSET" || account.type === "EXPENSE";
+        let balance = new Prisma.Decimal(0);
 
-        const balance = (account.journals as any[]).reduce((acc: any, journal: any) => {
-            if (isAssetOrExpense) {
-                if (journal.type === "DEBIT") return acc.add(journal.amount);
-                return acc.sub(journal.amount);
-            } else {
-                if (journal.type === "CREDIT") return acc.add(journal.amount);
-                return acc.sub(journal.amount);
-            }
-        }, new Prisma.Decimal(0));
+        const debits = journalAggregations.find((j: any) => j.accountId === account.id && j.type === "DEBIT")?._sum?.amount || 0;
+        const credits = journalAggregations.find((j: any) => j.accountId === account.id && j.type === "CREDIT")?._sum?.amount || 0;
 
-        const { journals: _journals, ...accountData } = account;
+        if (isAssetOrExpense) {
+            balance = balance.add(debits).sub(credits);
+        } else {
+            balance = balance.add(credits).sub(debits);
+        }
+
         return {
-            ...accountData,
+            ...account,
             balance: balance.toNumber()
         };
     });

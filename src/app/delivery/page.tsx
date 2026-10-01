@@ -40,7 +40,7 @@ export default async function DeliveryPage() {
         where: userFilter,
         include: { warehouse: true, items: { include: { product: true } } },
         orderBy: { createdAt: 'desc' },
-        take: 1000
+        take: 100
     }).catch(() => []));
 
     const serializedCustomers = serializeDecimal(await prisma.customer.findMany({
@@ -51,7 +51,7 @@ export default async function DeliveryPage() {
         where: {},
         include: { items: { include: { product: true } }, deliveries: true },
         orderBy: { date: 'desc' },
-        take: 1000
+        take: 100
     }).catch(() => []));
 
     const systemSettings = serializeDecimal(await prisma.systemSetting.findUnique({ where: { id: "global" } }).catch(() => null));
