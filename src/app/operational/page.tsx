@@ -31,7 +31,7 @@ export default async function OperationalPage() {
                 ...(session?.user?.email === 'chici@kolaborasi.id' ? { salesPerson: 'BC' } : {})
             },
             orderBy: { date: 'desc' },
-            take: 100
+            
         }),
         prisma.financeAccount.findMany({
             orderBy: { code: 'asc' }
@@ -39,13 +39,13 @@ export default async function OperationalPage() {
         prisma.salesDelivery.findMany({
             include: { items: true },
             orderBy: { createdAt: 'desc' },
-            take: 100
+            
         }).catch(() => []),
         prisma.goodsReceipt.findMany({
             where: { isVerified: true },
             include: { items: true },
             orderBy: { createdAt: 'desc' },
-            take: 100
+            
         }).catch(() => [])
     ]);
 

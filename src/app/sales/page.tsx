@@ -46,13 +46,13 @@ export default async function SalesPage() {
                 order: true
             },
             orderBy: { createdAt: 'desc' },
-            take: 100
+            
         }).catch(() => []),
         prisma.goodsReceipt.findMany({
             where: { isVerified: true },
             include: { items: true },
             orderBy: { createdAt: 'desc' },
-            take: 100
+            
         }).catch(() => []),
         prisma.customer.findMany({
             orderBy: { name: 'asc' }
@@ -79,7 +79,7 @@ export default async function SalesPage() {
                 }
             },
             orderBy: { date: 'desc' },
-            take: 100
+            
         }),
         prisma.salesReturn.findMany({
             where: isAdmin ? {} : {
@@ -94,7 +94,7 @@ export default async function SalesPage() {
                 items: { include: { product: true } }
             },
             orderBy: { createdAt: 'desc' },
-            take: 100
+            
         }).catch(() => []),
         (prisma as any).salesOrder.findMany({
             where: isAdmin ? {} : {
@@ -106,7 +106,7 @@ export default async function SalesPage() {
             },
             include: { items: { include: { product: true } }, deliveries: true },
             orderBy: { date: 'desc' },
-            take: 100
+            
         }).catch(() => []),
         prisma.systemSetting.findUnique({ where: { id: "global" } }).catch(() => null)
     ]);

@@ -46,7 +46,7 @@ export default async function DeliveryPage() {
             where: userFilter,
             include: { warehouse: true, items: { include: { product: true } } },
             orderBy: { createdAt: 'desc' },
-            take: 100
+            
         }).catch(() => []),
         prisma.customer.findMany({
             orderBy: { name: 'asc' }
@@ -55,7 +55,7 @@ export default async function DeliveryPage() {
             where: {},
             include: { items: { include: { product: true } }, deliveries: true },
             orderBy: { date: 'desc' },
-            take: 100
+            
         }).catch(() => []),
         prisma.systemSetting.findUnique({ where: { id: "global" } }).catch(() => null)
     ]);

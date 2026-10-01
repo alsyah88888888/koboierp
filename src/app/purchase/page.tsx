@@ -53,17 +53,17 @@ export default async function PurchasePage() {
                     include: { product: true }
                 }
             },
-            orderBy: { createdAt: 'desc' }, take: 100
+            orderBy: { createdAt: 'desc' }
         }).catch(() => []),
         prisma.purchaseReturn.findMany({
             where: returnFilter,
             include: { receipt: true, items: { include: { product: true } } },
-            orderBy: { createdAt: 'desc' }, take: 100
+            orderBy: { createdAt: 'desc' }
         }).catch(() => []),
         prisma.purchaseRequest.findMany({
             where: isAdmin ? {} : { requestedById: session?.user?.id },
             include: { requestedBy: true, items: true, approvedBy: true, verifiedBy: true },
-            orderBy: { createdAt: 'desc' }, take: 100
+            orderBy: { createdAt: 'desc' }
         }).catch(() => []),
         prisma.financeAccount.findMany({
             orderBy: { code: 'asc' }
