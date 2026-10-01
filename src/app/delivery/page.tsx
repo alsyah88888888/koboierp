@@ -29,32 +29,43 @@ export default async function DeliveryPage() {
 
     const userFilter = {};
     
-    const products = serializeDecimal(await prisma.product.findMany({
-        include: { stocks: true },
-        orderBy: { sku: 'asc' }
-    }).catch(() => []));
+    const [
+        rawProducts,
+        rawWarehouses,
+        rawDeliveries,
+        rawCustomers,
+        rawSalesOrders,
+        rawSystemSettings
+    ] = await Promise.all([
+        prisma.product.findMany({
+            include: { stocks: true },
+            orderBy: { sku: 'asc' }
+        }).catch(() => []),
+        prisma.warehouse.findMany().catch(() => []),
+        prisma.salesDelivery.findMany({
+            where: userFilter,
+            include: { warehouse: true, items: { include: { product: true } } },
+            orderBy: { createdAt: 'desc' },
+            take: 100
+        }).catch(() => []),
+        prisma.customer.findMany({
+            orderBy: { name: 'asc' }
+        }).catch(() => []),
+        (prisma as any).salesOrder.findMany({
+            where: {},
+            include: { items: { include: { product: true } }, deliveries: true },
+            orderBy: { date: 'desc' },
+            take: 100
+        }).catch(() => []),
+        prisma.systemSetting.findUnique({ where: { id: "global" } }).catch(() => null)
+    ]);
 
-    const warehouses = serializeDecimal(await prisma.warehouse.findMany().catch(() => []));
-
-    const deliveries = serializeDecimal(await prisma.salesDelivery.findMany({
-        where: userFilter,
-        include: { warehouse: true, items: { include: { product: true } } },
-        orderBy: { createdAt: 'desc' },
-        take: 100
-    }).catch(() => []));
-
-    const serializedCustomers = serializeDecimal(await prisma.customer.findMany({
-        orderBy: { name: 'asc' }
-    }).catch(() => []));
-
-    const salesOrders = serializeDecimal(await (prisma as any).salesOrder.findMany({
-        where: {},
-        include: { items: { include: { product: true } }, deliveries: true },
-        orderBy: { date: 'desc' },
-        take: 100
-    }).catch(() => []));
-
-    const systemSettings = serializeDecimal(await prisma.systemSetting.findUnique({ where: { id: "global" } }).catch(() => null));
+    const products = serializeDecimal(rawProducts);
+    const warehouses = serializeDecimal(rawWarehouses);
+    const deliveries = serializeDecimal(rawDeliveries);
+    const serializedCustomers = serializeDecimal(rawCustomers);
+    const salesOrders = serializeDecimal(rawSalesOrders);
+    const systemSettings = serializeDecimal(rawSystemSettings);
 
     return (
         <DeliveryDashboard

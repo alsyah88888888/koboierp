@@ -23,48 +23,60 @@ export default async function PurchasePage() {
     const receiptFilter = {};
     const returnFilter = {};
     
-    const products = serializeDecimal(await prisma.product.findMany({
-        select: { 
-            id: true, sku: true, name: true, uom: true, barcode: true,
-            stocks: {
-                select: { quantity: true, warehouseId: true, vendorName: true }
-            }
-        },
-        orderBy: { sku: 'asc' }
-    }).catch(() => []));
+    const [
+        rawProducts,
+        rawWarehouses,
+        rawVendors,
+        rawReceipts,
+        rawReturns,
+        rawPurchaseRequests,
+        rawCoa
+    ] = await Promise.all([
+        prisma.product.findMany({
+            select: { 
+                id: true, sku: true, name: true, uom: true, barcode: true,
+                stocks: {
+                    select: { quantity: true, warehouseId: true, vendorName: true }
+                }
+            },
+            orderBy: { sku: 'asc' }
+        }).catch(() => []),
+        prisma.warehouse.findMany().catch(() => []),
+        prisma.vendor.findMany({
+            orderBy: { name: 'asc' }
+        }).catch(() => []),
+        prisma.goodsReceipt.findMany({
+            where: receiptFilter,
+            include: {
+                warehouse: true,
+                items: {
+                    include: { product: true }
+                }
+            },
+            orderBy: { createdAt: 'desc' }, take: 100
+        }).catch(() => []),
+        prisma.purchaseReturn.findMany({
+            where: returnFilter,
+            include: { receipt: true, items: { include: { product: true } } },
+            orderBy: { createdAt: 'desc' }, take: 100
+        }).catch(() => []),
+        prisma.purchaseRequest.findMany({
+            where: isAdmin ? {} : { requestedById: session?.user?.id },
+            include: { requestedBy: true, items: true, approvedBy: true, verifiedBy: true },
+            orderBy: { createdAt: 'desc' }, take: 100
+        }).catch(() => []),
+        prisma.financeAccount.findMany({
+            orderBy: { code: 'asc' }
+        }).catch(() => [])
+    ]);
 
-    const warehouses = serializeDecimal(await prisma.warehouse.findMany().catch(() => []));
-
-    const vendors = serializeDecimal(await prisma.vendor.findMany({
-        orderBy: { name: 'asc' }
-    }).catch(() => []));
-
-    const receipts = serializeDecimal(await prisma.goodsReceipt.findMany({
-        where: receiptFilter,
-        include: {
-            warehouse: true,
-            items: {
-                include: { product: true }
-            }
-        },
-        orderBy: { createdAt: 'desc' }, take: 100
-    }).catch(() => []));
-
-    const returns = serializeDecimal(await prisma.purchaseReturn.findMany({
-        where: returnFilter,
-        include: { receipt: true, items: { include: { product: true } } },
-        orderBy: { createdAt: 'desc' }, take: 100
-    }).catch(() => []));
-
-    const purchaseRequests = serializeDecimal(await prisma.purchaseRequest.findMany({
-        where: isAdmin ? {} : { requestedById: session?.user?.id },
-        include: { requestedBy: true, items: true, approvedBy: true, verifiedBy: true },
-        orderBy: { createdAt: 'desc' }, take: 100
-    }).catch(() => []));
-
-    const coa = serializeDecimal(await prisma.financeAccount.findMany({
-        orderBy: { code: 'asc' }
-    }).catch(() => []));
+    const products = serializeDecimal(rawProducts);
+    const warehouses = serializeDecimal(rawWarehouses);
+    const vendors = serializeDecimal(rawVendors);
+    const receipts = serializeDecimal(rawReceipts);
+    const returns = serializeDecimal(rawReturns);
+    const purchaseRequests = serializeDecimal(rawPurchaseRequests);
+    const coa = serializeDecimal(rawCoa);
 
     return (
         <PurchaseDashboard

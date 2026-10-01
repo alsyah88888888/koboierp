@@ -19,14 +19,35 @@ export default async function OperationalPage() {
     }
 
 
-    const transactions = await prisma.financeTransaction.findMany({
-        where: {
-            category: { notIn: ["PEMBELIAN", "PENJUALAN", "TRANSFER"] },
-            ...(session?.user?.email === 'chici@kolaborasi.id' ? { salesPerson: 'BC' } : {})
-        },
-        orderBy: { date: 'desc' },
-        take: 100
-    });
+    const [
+        transactions,
+        coa,
+        deliveries,
+        receipts
+    ] = await Promise.all([
+        prisma.financeTransaction.findMany({
+            where: {
+                category: { notIn: ["PEMBELIAN", "PENJUALAN", "TRANSFER"] },
+                ...(session?.user?.email === 'chici@kolaborasi.id' ? { salesPerson: 'BC' } : {})
+            },
+            orderBy: { date: 'desc' },
+            take: 100
+        }),
+        prisma.financeAccount.findMany({
+            orderBy: { code: 'asc' }
+        }),
+        prisma.salesDelivery.findMany({
+            include: { items: true },
+            orderBy: { createdAt: 'desc' },
+            take: 100
+        }).catch(() => []),
+        prisma.goodsReceipt.findMany({
+            where: { isVerified: true },
+            include: { items: true },
+            orderBy: { createdAt: 'desc' },
+            take: 100
+        }).catch(() => [])
+    ]);
 
     // Fetch journals separately and merge to maintain relation data
     const transactionIds = transactions.map((t: any) => t.id);
@@ -39,23 +60,6 @@ export default async function OperationalPage() {
         ...t,
         journals: journals.filter((j: any) => j.transactionId === t.id)
     }));
-
-    const coa = await prisma.financeAccount.findMany({
-        orderBy: { code: 'asc' }
-    });
-
-    const deliveries = await prisma.salesDelivery.findMany({
-        include: { items: true },
-        orderBy: { createdAt: 'desc' },
-        take: 100
-    }).catch(() => []);
-
-    const receipts = await prisma.goodsReceipt.findMany({
-        where: { isVerified: true },
-        include: { items: true },
-        orderBy: { createdAt: 'desc' },
-        take: 100
-    }).catch(() => []);
 
     // Serialize Decimal for client
     const serializedTransactions = serializeDecimal(transactionsWithJournals);

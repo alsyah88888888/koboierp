@@ -22,95 +22,108 @@ export default async function SalesPage() {
 
     const userFilter = {};
     
-    const products = serializeDecimal(await prisma.product.findMany({
-        include: { stocks: true },
-        orderBy: { sku: 'asc' }
-    }).catch(() => []));
-
-    const warehouses = serializeDecimal(await prisma.warehouse.findMany().catch(() => []));
-
-    const deliveries = serializeDecimal(await prisma.salesDelivery.findMany({
-        where: userFilter,
-        include: { 
-            warehouse: true, 
-            items: { include: { product: true, lotAllocations: true } },
-            order: true
-        },
-        orderBy: { createdAt: 'desc' },
-        take: 100
-    }).catch(() => []));
-
-    const receipts = serializeDecimal(await prisma.goodsReceipt.findMany({
-        where: { isVerified: true },
-        include: { items: true },
-        orderBy: { createdAt: 'desc' },
-        take: 100
-    }).catch(() => []));
-
-    const serializedCustomers = serializeDecimal(await prisma.customer.findMany({
-        orderBy: { name: 'asc' }
-    }).catch(() => []));
-
-    const salesExpensesRaw = await prisma.financeTransaction.findMany({
-        where: {
-            journals: {
-                some: {
-                    account: { code: { startsWith: '6' } }
+    const [
+        rawProducts,
+        rawWarehouses,
+        rawDeliveries,
+        rawReceipts,
+        rawCustomers,
+        rawSalesExpenses,
+        rawSalesReturns,
+        rawSalesOrders,
+        rawSystemSettings
+    ] = await Promise.all([
+        prisma.product.findMany({
+            include: { stocks: true },
+            orderBy: { sku: 'asc' }
+        }).catch(() => []),
+        prisma.warehouse.findMany().catch(() => []),
+        prisma.salesDelivery.findMany({
+            where: userFilter,
+            include: { 
+                warehouse: true, 
+                items: { include: { product: true, lotAllocations: true } },
+                order: true
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 100
+        }).catch(() => []),
+        prisma.goodsReceipt.findMany({
+            where: { isVerified: true },
+            include: { items: true },
+            orderBy: { createdAt: 'desc' },
+            take: 100
+        }).catch(() => []),
+        prisma.customer.findMany({
+            orderBy: { name: 'asc' }
+        }).catch(() => []),
+        prisma.financeTransaction.findMany({
+            where: {
+                journals: {
+                    some: {
+                        account: { code: { startsWith: '6' } }
+                    }
+                },
+                ...(isAdmin ? {} : {
+                    OR: [
+                        { salesPerson: 'BC' },
+                        { createdById: session?.user?.id }
+                    ],
+                    NOT: { salesPerson: 'PF' }
+                })
+            },
+            include: {
+                journals: {
+                    where: { account: { code: { startsWith: '6' } } },
+                    include: { account: true }
                 }
             },
-            ...(isAdmin ? {} : {
+            orderBy: { date: 'desc' },
+            take: 100
+        }),
+        prisma.salesReturn.findMany({
+            where: isAdmin ? {} : {
                 OR: [
-                    { salesPerson: 'BC' },
+                    { delivery: { salesPerson: "BC" } },
                     { createdById: session?.user?.id }
                 ],
-                NOT: { salesPerson: 'PF' }
-            })
-        },
-        include: {
-            journals: {
-                where: { account: { code: { startsWith: '6' } } },
-                include: { account: true }
-            }
-        },
-        orderBy: { date: 'desc' },
-        take: 100
-    });
+                NOT: { delivery: { salesPerson: "PF" } }
+            },
+            include: {
+                delivery: { include: { items: { include: { product: true } } } },
+                items: { include: { product: true } }
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 100
+        }).catch(() => []),
+        (prisma as any).salesOrder.findMany({
+            where: isAdmin ? {} : {
+                OR: [
+                    { salesPerson: "BC" },
+                    { createdById: session?.user?.id }
+                ],
+                NOT: { salesPerson: "PF" }
+            },
+            include: { items: { include: { product: true } }, deliveries: true },
+            orderBy: { date: 'desc' },
+            take: 100
+        }).catch(() => []),
+        prisma.systemSetting.findUnique({ where: { id: "global" } }).catch(() => null)
+    ]);
 
-    const salesExpenses = serializeDecimal(salesExpensesRaw.map((t: any) => ({
+    const products = serializeDecimal(rawProducts);
+    const warehouses = serializeDecimal(rawWarehouses);
+    const deliveries = serializeDecimal(rawDeliveries);
+    const receipts = serializeDecimal(rawReceipts);
+    const serializedCustomers = serializeDecimal(rawCustomers);
+    
+    const salesExpenses = serializeDecimal(rawSalesExpenses.map((t: any) => ({
         ...t,
         accountCode: t.journals[0]?.account?.code
     })));
-
-    const salesReturns = serializeDecimal(await prisma.salesReturn.findMany({
-        where: isAdmin ? {} : {
-            OR: [
-                { delivery: { salesPerson: "BC" } },
-                { createdById: session?.user?.id }
-            ],
-            NOT: { delivery: { salesPerson: "PF" } }
-        },
-        include: {
-            delivery: { include: { items: { include: { product: true } } } },
-            items: { include: { product: true } }
-        },
-        orderBy: { createdAt: 'desc' },
-        take: 100
-    }).catch(() => []));
-
-    const salesOrders = serializeDecimal(await (prisma as any).salesOrder.findMany({
-        where: isAdmin ? {} : {
-            OR: [
-                { salesPerson: "BC" },
-                { createdById: session?.user?.id }
-            ],
-            NOT: { salesPerson: "PF" }
-        },
-        include: { items: { include: { product: true } }, deliveries: true },
-        orderBy: { date: 'desc' },
-        take: 100
-    }).catch(() => []));
-
-    const systemSettings = serializeDecimal(await prisma.systemSetting.findUnique({ where: { id: "global" } }).catch(() => null));
+    const salesReturns = serializeDecimal(rawSalesReturns);
+    const salesOrders = serializeDecimal(rawSalesOrders);
+    const systemSettings = serializeDecimal(rawSystemSettings);
 
     return (
         <SalesDashboard
