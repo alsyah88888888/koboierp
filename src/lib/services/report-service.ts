@@ -98,10 +98,43 @@ export async function distributeOperationalCosts(operationalData: any[], salesPe
     if (!salesPersonPrefix || salesPersonPrefix === 'ALL') {
         return operationalData;
     }
-    // Each row is already attributed to a single division (either its own salesPerson tag for
-    // unlinked ops, or the referenced delivery's salesPerson after splitLinkedOpsByDelivery) —
-    // no further qty-proportional recomputation is needed here.
-    return operationalData.filter((ops: any) => (ops.salesPerson || '').startsWith(salesPersonPrefix));
+
+    // Linked ops: already tagged with the delivery's salesPerson — filter directly
+    const linked = operationalData.filter((ops: any) =>
+        (ops.salesPerson || '').startsWith(salesPersonPrefix)
+    );
+
+    // Unlinked (general) ops: no salesPerson or a different one — distribute proportionally
+    // by revenue share of this division vs total revenue of both divisions.
+    const unlinked = operationalData.filter((ops: any) =>
+        !(ops.salesPerson || '').startsWith('PF') && !(ops.salesPerson || '').startsWith('BC')
+    );
+
+    if (unlinked.length === 0) return linked;
+
+    // Calculate revenue totals for PF and BC from the linked (already split) ops to get ratio
+    const totalPFRevenue = operationalData
+        .filter((ops: any) => (ops.salesPerson || '').startsWith('PF') && ops._grandTotal)
+        .reduce((sum: number, ops: any) => sum + Number(ops._grandTotal || 0), 0);
+    const totalBCRevenue = operationalData
+        .filter((ops: any) => (ops.salesPerson || '').startsWith('BC') && ops._grandTotal)
+        .reduce((sum: number, ops: any) => sum + Number(ops._grandTotal || 0), 0);
+    const totalRevenue = totalPFRevenue + totalBCRevenue;
+
+    // Proportional share of this division; if we can't determine ratio, split 50/50
+    const share = totalRevenue > 0
+        ? (salesPersonPrefix === 'PF' ? totalPFRevenue : totalBCRevenue) / totalRevenue
+        : 0.5;
+
+    // Create scaled copies of unlinked ops, keeping them identifiable as general ops
+    const scaledUnlinked = unlinked.map((ops: any) => ({
+        ...ops,
+        amount: Number(ops.amount || 0) * share,
+        _isProportionalShare: true,
+        _sharePct: Math.round(share * 100)
+    }));
+
+    return [...linked, ...scaledUnlinked];
 }
 
 // Splits real finance-transaction operational costs into "linked to a delivery/invoice"
