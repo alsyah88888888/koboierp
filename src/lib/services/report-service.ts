@@ -94,7 +94,7 @@ async function fetchHybridOperationalData(prisma: any, startDate: Date, endDate:
         .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
 }
 
-export async function distributeOperationalCosts(operationalData: any[], salesPersonPrefix: string | null) {
+export async function distributeOperationalCosts(operationalData: any[], salesPersonPrefix: string | null, revenueShare?: number) {
     if (!salesPersonPrefix || salesPersonPrefix === 'ALL') {
         return operationalData;
     }
@@ -104,29 +104,20 @@ export async function distributeOperationalCosts(operationalData: any[], salesPe
         (ops.salesPerson || '').startsWith(salesPersonPrefix)
     );
 
-    // Unlinked (general) ops: no salesPerson or a different one — distribute proportionally
-    // by revenue share of this division vs total revenue of both divisions.
+    // Unlinked (general) ops: no salesPerson attributed to any known division
     const unlinked = operationalData.filter((ops: any) =>
         !(ops.salesPerson || '').startsWith('PF') && !(ops.salesPerson || '').startsWith('BC')
     );
 
     if (unlinked.length === 0) return linked;
 
-    // Calculate revenue totals for PF and BC from the linked (already split) ops to get ratio
-    const totalPFRevenue = operationalData
-        .filter((ops: any) => (ops.salesPerson || '').startsWith('PF') && ops._grandTotal)
-        .reduce((sum: number, ops: any) => sum + Number(ops._grandTotal || 0), 0);
-    const totalBCRevenue = operationalData
-        .filter((ops: any) => (ops.salesPerson || '').startsWith('BC') && ops._grandTotal)
-        .reduce((sum: number, ops: any) => sum + Number(ops._grandTotal || 0), 0);
-    const totalRevenue = totalPFRevenue + totalBCRevenue;
-
-    // Proportional share of this division; if we can't determine ratio, split 50/50
-    const share = totalRevenue > 0
-        ? (salesPersonPrefix === 'PF' ? totalPFRevenue : totalBCRevenue) / totalRevenue
+    // Apply proportional share of general ops to this division.
+    // revenueShare = this division's revenue / total all-division revenue (0.0 to 1.0)
+    // Default 0.5 if ratio cannot be determined (equal split)
+    const share = (revenueShare !== undefined && revenueShare >= 0 && revenueShare <= 1)
+        ? revenueShare
         : 0.5;
 
-    // Create scaled copies of unlinked ops, keeping them identifiable as general ops
     const scaledUnlinked = unlinked.map((ops: any) => ({
         ...ops,
         amount: Number(ops.amount || 0) * share,
@@ -136,6 +127,7 @@ export async function distributeOperationalCosts(operationalData: any[], salesPe
 
     return [...linked, ...scaledUnlinked];
 }
+
 
 // Splits real finance-transaction operational costs into "linked to a delivery/invoice"
 // (Ops Kirim dan Muat) vs "general" (Ops) buckets. This is the single source of truth for
@@ -853,7 +845,19 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
         // isExpense definition as the Bulanan report, so Closing and Bulanan never disagree
         // for the same month/prefix (see getComprehensiveMonthlyReportService).
         const rawOperational = await fetchHybridOperationalData(prisma, startDate, endDate);
-        const allOperational = await distributeOperationalCosts(rawOperational, isAll ? null : prefix);
+        // Revenue share for proportional Ops Umum in closing report
+        let closingRevenueShare: number | undefined;
+        if (!isAll && prefix) {
+            const allSalesRaw = await (prisma as any).salesDelivery.findMany({
+                where: { isVoid: false, date: { gte: startDate, lte: endDate } },
+                select: { grandTotal: true, salesPerson: true }
+            }).catch(() => []);
+            const allDivRevenue = allSalesRaw.reduce((sum: number, s: any) => sum + Number(s.grandTotal || 0), 0);
+            const divRevenue = allSalesRaw.filter((s: any) => (s.salesPerson || '').startsWith(prefix))
+                .reduce((sum: number, s: any) => sum + Number(s.grandTotal || 0), 0);
+            closingRevenueShare = allDivRevenue > 0 ? divRevenue / allDivRevenue : 0.5;
+        }
+        const allOperational = await distributeOperationalCosts(rawOperational, isAll ? null : prefix, closingRevenueShare);
         const expenses = allOperational.filter((o: any) =>
             o.transactionType === 'PAYMENT' || o.transactionType === 'EXPENSE' || Number(o.amount) < 0
         );
@@ -1407,7 +1411,19 @@ export async function getComprehensiveDailyReportService(date?: string, prefix?:
         ]);
 
         const rawOperational = await fetchHybridOperationalData(prisma, dayStart, dayEnd);
-        const operational = await distributeOperationalCosts(rawOperational, isAll ? null : prefix);
+        // Revenue share for proportional Ops Umum
+        let dailyRevenueShare: number | undefined;
+        if (!isAll && prefix) {
+            const allSalesRaw = await (prisma as any).salesDelivery.findMany({
+                where: { isVoid: false, date: { gte: dayStart, lte: dayEnd } },
+                select: { grandTotal: true, salesPerson: true }
+            }).catch(() => []);
+            const allDivRevenue = allSalesRaw.reduce((sum: number, s: any) => sum + Number(s.grandTotal || 0), 0);
+            const divRevenue = allSalesRaw.filter((s: any) => (s.salesPerson || '').startsWith(prefix))
+                .reduce((sum: number, s: any) => sum + Number(s.grandTotal || 0), 0);
+            dailyRevenueShare = allDivRevenue > 0 ? divRevenue / allDivRevenue : 0.5;
+        }
+        const operational = await distributeOperationalCosts(rawOperational, isAll ? null : prefix, dailyRevenueShare);
 
         // Traceability memakai window WIB yang sama persis dengan dayStart/dayEnd di atas,
         // supaya sheet Traceability dan sheet lain (Penjualan/Pembelian/Operasional) tidak
@@ -1726,7 +1742,19 @@ export async function getComprehensiveWeeklyReportService(weekStartDate?: string
         ]);
 
         const rawOperational = await fetchHybridOperationalData(prisma, startDate, endDate);
-        const operational = await distributeOperationalCosts(rawOperational, isAll ? null : prefix);
+        // Revenue share for proportional Ops Umum (weekly)
+        let weeklyRevenueShare: number | undefined;
+        if (!isAll && prefix) {
+            const allSalesRaw = await (prisma as any).salesDelivery.findMany({
+                where: { isVoid: false, date: { gte: startDate, lte: endDate } },
+                select: { grandTotal: true, salesPerson: true }
+            }).catch(() => []);
+            const allDivRevenue = allSalesRaw.reduce((sum: number, s: any) => sum + Number(s.grandTotal || 0), 0);
+            const divRevenue = allSalesRaw.filter((s: any) => (s.salesPerson || '').startsWith(prefix))
+                .reduce((sum: number, s: any) => sum + Number(s.grandTotal || 0), 0);
+            weeklyRevenueShare = allDivRevenue > 0 ? divRevenue / allDivRevenue : 0.5;
+        }
+        const operational = await distributeOperationalCosts(rawOperational, isAll ? null : prefix, weeklyRevenueShare);
 
         // Build daily breakdown for the date range
         const dailyBreakdown = [];
@@ -2121,7 +2149,25 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
         ]);
 
         const rawOperational = await fetchHybridOperationalData(prisma, startDate, endDate);
-        const allOperational = await distributeOperationalCosts(rawOperational, isAll ? null : prefix);
+
+        // Hitung revenue share untuk distribusi proporsional Ops Umum
+        let revenueShare: number | undefined;
+        if (!isAll && prefix) {
+            const totalAllRevenue = sales.reduce((sum: number, s: any) => sum + Number(s.grandTotal || 0), 0);
+            const totalAllRevGlobal = totalAllRevenue > 0 ? totalAllRevenue : 1;
+            // Fetch total revenue for all divisions to compute ratio
+            const allSalesRaw = await (prisma as any).salesDelivery.findMany({
+                where: { isVoid: false, date: { gte: startDate, lte: endDate } },
+                select: { grandTotal: true, salesPerson: true }
+            }).catch(() => []);
+            const allDivRevenue = allSalesRaw.reduce((sum: number, s: any) => sum + Number(s.grandTotal || 0), 0);
+            const divRevenue = allSalesRaw
+                .filter((s: any) => (s.salesPerson || '').startsWith(prefix))
+                .reduce((sum: number, s: any) => sum + Number(s.grandTotal || 0), 0);
+            revenueShare = allDivRevenue > 0 ? divRevenue / allDivRevenue : 0.5;
+        }
+
+        const allOperational = await distributeOperationalCosts(rawOperational, isAll ? null : prefix, revenueShare);
 
         // Fetch Modal Awal (initial capital) from SystemSetting
         const systemSetting = await (prisma as any).systemSetting.findUnique({ where: { id: 'global' } }).catch(() => null);
