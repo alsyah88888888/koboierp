@@ -39,7 +39,8 @@ export default async function DeliveryPage() {
     const deliveries = serializeDecimal(await prisma.salesDelivery.findMany({
         where: userFilter,
         include: { warehouse: true, items: { include: { product: true } } },
-        orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: 'desc' },
+        take: 1000
     }).catch(() => []));
 
     const serializedCustomers = serializeDecimal(await prisma.customer.findMany({
@@ -49,7 +50,8 @@ export default async function DeliveryPage() {
     const salesOrders = serializeDecimal(await (prisma as any).salesOrder.findMany({
         where: {},
         include: { items: { include: { product: true } }, deliveries: true },
-        orderBy: { date: 'desc' }
+        orderBy: { date: 'desc' },
+        take: 1000
     }).catch(() => []));
 
     const systemSettings = serializeDecimal(await prisma.systemSetting.findUnique({ where: { id: "global" } }).catch(() => null));

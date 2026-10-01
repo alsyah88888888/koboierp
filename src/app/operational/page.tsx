@@ -24,7 +24,8 @@ export default async function OperationalPage() {
             category: { notIn: ["PEMBELIAN", "PENJUALAN", "TRANSFER"] },
             ...(session?.user?.email === 'chici@kolaborasi.id' ? { salesPerson: 'BC' } : {})
         },
-        orderBy: { date: 'desc' }
+        orderBy: { date: 'desc' },
+        take: 1000
     });
 
     // Fetch journals separately and merge to maintain relation data
@@ -44,12 +45,16 @@ export default async function OperationalPage() {
     });
 
     const deliveries = await prisma.salesDelivery.findMany({
-        include: { items: true }
+        include: { items: true },
+        orderBy: { createdAt: 'desc' },
+        take: 1000
     }).catch(() => []);
 
     const receipts = await prisma.goodsReceipt.findMany({
         where: { isVerified: true },
-        include: { items: true }
+        include: { items: true },
+        orderBy: { createdAt: 'desc' },
+        take: 1000
     }).catch(() => []);
 
     // Serialize Decimal for client

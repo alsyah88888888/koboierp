@@ -32,7 +32,8 @@ export default async function WarehousePage() {
             items: { include: { product: true } },
             warehouse: true 
         },
-        orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: 'desc' },
+        take: 1000
     }).catch(() => []);
 
     // 3. Fetch Recent Movements
