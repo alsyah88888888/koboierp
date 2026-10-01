@@ -132,7 +132,9 @@ export function PurchaseDashboard({ initialReceipts, initialReturns, initialRequ
     const handleExport = () => {
         const exportData: any[] = [];
         
-        (Array.isArray(filteredReceipts) ? filteredReceipts : []).forEach(r => {
+        (Array.isArray(filteredReceipts) ? filteredReceipts : [])
+            .filter(r => !r.isVoid)
+            .forEach(r => {
             const items = r.items || [];
             items.forEach((item: any) => {
                 const qty = Number(item.quantity) || 0;
