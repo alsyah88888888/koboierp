@@ -649,14 +649,39 @@ export function FinanceDashboard({ accounts, ledger, vendors, customers, pending
             });
             exportToExcel(data, `Laporan_Piutang_Dagang_Kompleks_${format(new Date(), "yyyyMMdd")}`, 'AR');
         } else if (activeTab === "checker") {
-            const data = unverifiedReceipts.map(r => ({
-                'Bulan': format(new Date(r.createdAt), "MMMM yyyy"),
-                'Tanggal': format(new Date(r.createdAt), "dd/MM/yyyy"),
-                'No. Terima': r.receiptNumber,
-                'Supplier': r.receivedFrom,
-                'Gudang': r.warehouse?.name,
-                'Item Count': r.items.length
-            }));
+            const data = unverifiedReceipts.flatMap(r => {
+                const items = r.items || [];
+                if (items.length === 0) {
+                    return [{
+                        'Bulan': format(new Date(r.createdAt), "MMMM yyyy"),
+                        'Tanggal': format(new Date(r.createdAt), "dd/MM/yyyy"),
+                        'No. Terima (LPB)': r.receiptNumber,
+                        'Supplier': r.receivedFrom,
+                        'Gudang': r.warehouse?.name || '-',
+                        'SKU': '-',
+                        'Nama Barang': '-',
+                        'Qty': 0,
+                        'Satuan': '-',
+                        'Harga Satuan (HPP)': 0,
+                        'Total Nilai': Number(r.grandTotal || 0),
+                        'Status': r.isVerified ? 'VERIFIED' : 'PENDING CHECK'
+                    }];
+                }
+                return items.map((i: any) => ({
+                    'Bulan': format(new Date(r.createdAt), "MMMM yyyy"),
+                    'Tanggal': format(new Date(r.createdAt), "dd/MM/yyyy"),
+                    'No. Terima (LPB)': r.receiptNumber,
+                    'Supplier': r.receivedFrom,
+                    'Gudang': r.warehouse?.name || '-',
+                    'SKU': i.product?.sku || '-',
+                    'Nama Barang': i.product?.name || 'Unknown',
+                    'Qty': i.quantity || 0,
+                    'Satuan': i.uom || i.product?.uom || 'PCS',
+                    'Harga Satuan (HPP)': Number(i.purchasePrice || 0),
+                    'Total Nilai': Number(i.quantity || 0) * Number(i.purchasePrice || 0),
+                    'Status': r.isVerified ? 'VERIFIED' : 'PENDING CHECK'
+                }));
+            });
             exportToExcel(data, 'Laporan_Penerimaan_Pending_Gudang', 'Pending');
         } else if (activeTab === "purchase_requests") {
             const data: any[] = [];

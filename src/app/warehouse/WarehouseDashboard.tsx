@@ -56,6 +56,12 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
     }, [initialProducts, searchTerm]);
 
     const getStockMetadata = (productId: string, warehouseId: string, vendorName: string) => {
+        const prod = initialProducts.find((p: any) => p.id === productId);
+        const stock = (prod?.stocks || []).find((s: any) =>
+            s.warehouseId === warehouseId &&
+            (s.vendorName || "CIBINONG").trim().toLowerCase() === (vendorName || "CIBINONG").trim().toLowerCase()
+        );
+
         let matchingReceipt = unverifiedReceipts.find(r => 
             (r.receivedFrom || "CIBINONG").trim().toLowerCase() === (vendorName || "CIBINONG").trim().toLowerCase() && 
             r.items?.some((item: any) => item.productId === productId)
@@ -68,10 +74,16 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
         }
 
         const matchingItem = matchingReceipt?.items?.find((item: any) => item.productId === productId);
+        const hpp = matchingItem?.purchasePrice ? Number(matchingItem.purchasePrice) : (stock?.hpp || Number(prod?.purchasePrice) || 0);
+        const salesPerson = (matchingReceipt?.salesPerson && matchingReceipt.salesPerson !== "-") 
+            ? matchingReceipt.salesPerson 
+            : (stock?.salesPerson || "-");
+        const taxRate = matchingReceipt?.taxRate ? Number(matchingReceipt.taxRate) : (stock?.taxRate || 0);
+
         return {
-            salesPerson: matchingReceipt?.salesPerson || "-",
-            hpp: matchingItem?.purchasePrice ? Number(matchingItem.purchasePrice) : 0,
-            taxRate: matchingReceipt?.taxRate ? Number(matchingReceipt.taxRate) : 0
+            salesPerson,
+            hpp,
+            taxRate
         };
     };
 
