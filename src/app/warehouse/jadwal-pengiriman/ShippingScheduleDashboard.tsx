@@ -45,7 +45,7 @@ const COMMON_DRIVERS = [
     "YADI"
 ];
 
-export default function ShippingScheduleDashboard({
+export function ShippingScheduleDashboard({
     initialDate,
     initialDeliveries,
     currentUser
@@ -679,3 +679,5 @@ export default function ShippingScheduleDashboard({
         </div>
     );
 }
+
+export default ShippingScheduleDashboard;

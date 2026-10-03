@@ -5,7 +5,7 @@ import { getAuthOptions } from "@/lib/auth";
 import { getDailyShippingScheduleAction } from "@/actions/warehouse";
 import { format } from "date-fns";
 import { serializeDecimal } from "@/lib/utils";
-import ShippingScheduleDashboard from "./ShippingScheduleDashboard";
+import ShippingScheduleDashboard from "@/app/warehouse/jadwal-pengiriman/ShippingScheduleDashboard";
 
 export const dynamic = 'force-dynamic';
 
