@@ -175,3 +175,76 @@ export async function transferStockAction(data: {
     const { transferStockService } = require("@/lib/services/warehouse-service");
     return await transferStockService(data);
 }
+
+export async function getDailyShippingScheduleAction(dateStr: string) {
+    const { getPrisma } = require("@/lib/prisma");
+    const prisma = getPrisma();
+
+    const startUtc = new Date(dateStr + "T00:00:00.000Z");
+    const endUtc = new Date(dateStr + "T23:59:59.999Z");
+    const minDate = new Date(startUtc.getTime() - 8 * 3600 * 1000);
+    const maxDate = new Date(endUtc.getTime() + 8 * 3600 * 1000);
+
+    const rawDeliveries = await prisma.salesDelivery.findMany({
+        where: {
+            isVoid: false,
+            OR: [
+                { date: { gte: minDate, lte: maxDate } },
+                { createdAt: { gte: minDate, lte: maxDate } }
+            ]
+        },
+        include: {
+            warehouse: { select: { name: true } },
+            items: {
+                include: { product: true },
+                orderBy: { id: "asc" }
+            }
+        },
+        orderBy: [
+            { buyerName: "asc" },
+            { createdAt: "asc" }
+        ]
+    });
+
+    // Filter strictly to the selected date (matching UTC or local WIB)
+    const deliveries = rawDeliveries.filter((r: any) => {
+        const d1 = new Date(r.date).toISOString().slice(0, 10);
+        const d2 = new Date(r.createdAt).toISOString().slice(0, 10);
+        const dLocal = new Date(new Date(r.date).getTime() + 7 * 3600 * 1000).toISOString().slice(0, 10);
+        return d1 === dateStr || d2 === dateStr || dLocal === dateStr;
+    });
+
+    return deliveries.map((d: any) => ({
+        id: d.id,
+        deliveryNumber: d.deliveryNumber,
+        poNumber: d.poNumber || "",
+        buyerName: d.buyerName || "",
+        driver: d.vehicleNumber || "",
+        warehouseName: d.warehouse?.name || "",
+        salesPerson: d.salesPerson || "",
+        date: d.date,
+        items: d.items.map((it: any) => ({
+            id: it.id,
+            productId: it.productId,
+            productName: it.product?.name || "Item",
+            quantity: Number(it.quantity || 0),
+            uom: it.uom || it.product?.uom || "UNIT"
+        }))
+    }));
+}
+
+export async function updateDeliveryDriverAction(deliveryId: string, driver: string) {
+    const { getPrisma } = require("@/lib/prisma");
+    const prisma = getPrisma();
+
+    const updated = await prisma.salesDelivery.update({
+        where: { id: deliveryId },
+        data: { vehicleNumber: driver }
+    });
+
+    revalidatePath("/warehouse");
+    revalidatePath("/warehouse/jadwal-pengiriman");
+    revalidatePath("/delivery");
+    return { success: true, vehicleNumber: updated.vehicleNumber };
+}
+

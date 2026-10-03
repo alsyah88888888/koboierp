@@ -299,6 +299,12 @@ export async function callAction(actionName: string, ...args: any[]) {
         case "transferStock":
             const { transferStockAction } = await import("@/actions/warehouse");
             return await transferStockAction(...args as [any]);
+        case "getDailyShippingSchedule":
+            const { getDailyShippingScheduleAction } = await import("@/actions/warehouse");
+            return await getDailyShippingScheduleAction(...args as [string]);
+        case "updateDeliveryDriver":
+            const { updateDeliveryDriverAction } = await import("@/actions/warehouse");
+            return await updateDeliveryDriverAction(...args as [string, string]);
 
         case "executePurchaseRequest":
             const { executePurchaseRequestAction } = await import("@/actions/purchase");

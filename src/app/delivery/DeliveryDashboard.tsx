@@ -176,6 +176,13 @@ export default function DeliveryDashboard({
                     </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
+                    <Link
+                        href="/warehouse/jadwal-pengiriman"
+                        className="p-3 bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl hover:bg-amber-100 transition-all shadow-sm flex items-center gap-2 text-xs font-bold uppercase tracking-wider"
+                        title="Rekap & Jadwal Pengiriman Harian (Format Driver)"
+                    >
+                        <Truck className="h-4 w-4 text-amber-600" /> Rekap Jadwal Driver
+                    </Link>
                     <button
                         onClick={handleExport}
                         className="p-3 bg-white border border-slate-200 rounded-2xl hover:border-emerald-500 hover:text-emerald-500 transition-all shadow-sm flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500"

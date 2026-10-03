@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from "react";
-import { Plus, Warehouse as WarehouseIcon, Layers, Trash2, FileText, Search, Activity, Box, ArrowUpRight, ArrowDownLeft, Download, Eye, Edit2, ArrowLeftRight, ChevronDown, ChevronRight, AlertTriangle } from "lucide-react";
+import { Plus, Warehouse as WarehouseIcon, Layers, Trash2, FileText, Search, Activity, Box, ArrowUpRight, ArrowDownLeft, Download, Eye, Edit2, ArrowLeftRight, ChevronDown, ChevronRight, AlertTriangle, Truck } from "lucide-react";
 import { StockInputModal } from "./StockInputModal";
 import { StockAdjustmentModal } from "./StockAdjustmentModal";
 import { StockTransferModal } from "./StockTransferModal";
@@ -271,6 +271,13 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
 
                 {/* Actions Toolbar */}
                 <div className="flex flex-wrap items-center gap-2">
+                    <Link
+                        href="/warehouse/jadwal-pengiriman"
+                        className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold text-xs uppercase tracking-wider transition-all shadow-xs"
+                    >
+                        <Truck className="h-4 w-4 text-amber-600" />
+                        <span>Jadwal Pengiriman</span>
+                    </Link>
                     <Link
                         href="/warehouse/print-form-harian"
                         target="_blank"

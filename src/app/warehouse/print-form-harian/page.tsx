@@ -1,4 +1,5 @@
 import React from 'react';
+import Link from 'next/link';
 import { getPrisma } from "@/lib/prisma";
 import { format } from "date-fns";
 import { formatNumber } from "@/lib/utils";
@@ -114,6 +115,13 @@ export default async function PrintFormHarianPage({ searchParams }: { searchPara
                             </button>
                         </form>
                         <PrintButton />
+                        <Link 
+                            href={`/warehouse/jadwal-pengiriman?date=${selectedDateStr}`}
+                            className="bg-amber-50 text-amber-900 border border-amber-200 hover:bg-amber-100 transition-colors px-4 py-1.5 rounded-lg text-sm font-bold shadow-sm flex items-center gap-2 whitespace-nowrap"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-5.5a1.5 1.5 0 0 0-.5-1.1L18 7.5a1.5 1.5 0 0 0-1-.5h-2"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg>
+                            Format Driver & Pengiriman
+                        </Link>
                     </div>
                 </div>
 
