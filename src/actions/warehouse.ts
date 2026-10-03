@@ -257,3 +257,91 @@ export async function updateDeliveryDriverAction(deliveryId: string, driver: str
     return { success: true, vehicleNumber: updated.vehicleNumber };
 }
 
+export async function saveShippingMappingBatchAction(data: {
+    dateStr: string;
+    category: "KB-TRN" | "KB-TRD";
+    rows: Array<{
+        poNumber?: string;
+        buyerName: string;
+        productName: string;
+        quantity: number;
+        driver?: string;
+        notes?: string;
+    }>;
+}) {
+    const { getPrisma } = require("@/lib/prisma");
+    const prisma = getPrisma();
+    const { getServerSession } = require("next-auth");
+    const { getAuthOptions } = require("@/lib/auth");
+
+    const session = (await getServerSession(getAuthOptions())) as any;
+    const userId = session?.user?.id || null;
+
+    const startUtc = new Date(data.dateStr + "T00:00:00.000Z");
+    const endUtc = new Date(data.dateStr + "T23:59:59.999Z");
+
+    await prisma.$transaction(async (tx: any) => {
+        await tx.shippingMapping.deleteMany({
+            where: {
+                date: { gte: startUtc, lte: endUtc },
+                category: data.category
+            }
+        });
+
+        if (data.rows && data.rows.length > 0) {
+            await tx.shippingMapping.createMany({
+                data: data.rows.map(r => ({
+                    date: startUtc,
+                    category: data.category,
+                    poNumber: r.poNumber?.trim() || null,
+                    buyerName: r.buyerName?.trim() || "UMUM",
+                    productName: r.productName?.trim() || "Item",
+                    quantity: Number(r.quantity || 0),
+                    driver: r.driver?.trim() || null,
+                    notes: r.notes?.trim() || null,
+                    createdById: userId
+                }))
+            });
+        }
+    });
+
+    revalidatePath("/warehouse/jadwal-pengiriman");
+    revalidatePath("/delivery");
+    return { success: true };
+}
+
+export async function getShippingMappingsAction(dateStr: string, category?: string) {
+    const { getPrisma } = require("@/lib/prisma");
+    const prisma = getPrisma();
+
+    const startUtc = new Date(dateStr + "T00:00:00.000Z");
+    const endUtc = new Date(dateStr + "T23:59:59.999Z");
+
+    const whereClause: any = {
+        date: { gte: startUtc, lte: endUtc }
+    };
+    if (category && category !== "ALL") {
+        whereClause.category = category;
+    }
+
+    const mappings = await prisma.shippingMapping.findMany({
+        where: whereClause,
+        orderBy: [{ buyerName: 'asc' }, { createdAt: 'asc' }]
+    });
+
+    return mappings.map((m: any) => ({
+        id: m.id,
+        date: m.date,
+        category: m.category,
+        taxType: m.category as "KB-TRN" | "KB-TRD",
+        poNumber: m.poNumber || "",
+        buyerName: m.buyerName || "",
+        productName: m.productName || "",
+        quantity: Number(m.quantity || 0),
+        driver: m.driver || "",
+        notes: m.notes || "",
+        createdAt: m.createdAt
+    }));
+}
+
+

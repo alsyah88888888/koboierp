@@ -2,7 +2,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth/next";
 import { getAuthOptions } from "@/lib/auth";
-import { getDailyShippingScheduleAction } from "@/actions/warehouse";
+import { getDailyShippingScheduleAction, getShippingMappingsAction } from "@/actions/warehouse";
 import { format } from "date-fns";
 import { serializeDecimal } from "@/lib/utils";
 import ShippingScheduleDashboard from "@/app/warehouse/jadwal-pengiriman/ShippingScheduleDashboard";
@@ -24,12 +24,23 @@ export default async function JadwalPengirimanPage({ searchParams }: { searchPar
     // Default to current date (e.g. 2026-10-02 or today)
     const selectedDateStr = rawDate || format(new Date(), 'yyyy-MM-dd');
 
-    const initialDeliveries = await getDailyShippingScheduleAction(selectedDateStr).catch(() => []);
+    const { getPrisma } = require("@/lib/prisma");
+    const prisma = getPrisma();
+
+    const [initialDeliveries, customers, products, initialMappings] = await Promise.all([
+        getDailyShippingScheduleAction(selectedDateStr).catch(() => []),
+        prisma.customer.findMany({ select: { name: true }, orderBy: { name: 'asc' } }).catch(() => []),
+        prisma.product.findMany({ select: { name: true, sku: true }, orderBy: { name: 'asc' } }).catch(() => []),
+        getShippingMappingsAction(selectedDateStr, "ALL").catch(() => [])
+    ]);
 
     return (
         <ShippingScheduleDashboard
             initialDate={selectedDateStr}
             initialDeliveries={serializeDecimal(initialDeliveries)}
+            initialMappings={serializeDecimal(initialMappings)}
+            customerList={customers.map((c: any) => c.name)}
+            productList={products.map((p: any) => p.name)}
             currentUser={session.user}
         />
     );

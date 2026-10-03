@@ -305,6 +305,12 @@ export async function callAction(actionName: string, ...args: any[]) {
         case "updateDeliveryDriver":
             const { updateDeliveryDriverAction } = await import("@/actions/warehouse");
             return await updateDeliveryDriverAction(...args as [string, string]);
+        case "saveShippingMappingBatch":
+            const { saveShippingMappingBatchAction } = await import("@/actions/warehouse");
+            return await saveShippingMappingBatchAction(...args as [any]);
+        case "getShippingMappings":
+            const { getShippingMappingsAction } = await import("@/actions/warehouse");
+            return await getShippingMappingsAction(...args as [string, string?]);
 
         case "executePurchaseRequest":
             const { executePurchaseRequestAction } = await import("@/actions/purchase");

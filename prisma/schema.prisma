@@ -616,3 +616,23 @@ model BankMutation {
   @@index([date])
   @@index([isReconciled])
 }
+
+model ShippingMapping {
+  id          String   @id @default(cuid())
+  date        DateTime
+  category    String   @default("KB-TRN") // "KB-TRN" (PKP) or "KB-TRD" (NON-PKP)
+  poNumber    String?
+  buyerName   String
+  productName String
+  quantity    Int      @default(0)
+  driver      String?
+  notes       String?
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([date])
+  @@index([category])
+  @@index([createdAt])
+}
+

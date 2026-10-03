@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, FileText, Search, Truck, Eye, Edit2, Download, XCircle, ChevronRight, Calendar, Landmark, HelpCircle, Printer } from "lucide-react";
+import { Plus, FileText, Search, Truck, Eye, Edit2, Download, XCircle, ChevronRight, Calendar, Landmark, HelpCircle, Printer, ClipboardList } from "lucide-react";
 import { format } from "date-fns";
 import SalesModal from "@/app/sales/SalesModal";
 import { useSession } from "next-auth/react";
@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { exportToExcel } from "@/lib/excel";
 import { VoidReasonModal } from "@/components/VoidReasonModal";
+import WarehouseMappingInfoModal from "@/components/WarehouseMappingInfoModal";
 
 interface DeliveryDashboardProps {
     initialDeliveries: any[];
@@ -35,6 +36,7 @@ export default function DeliveryDashboard({
     const userRole = session?.user?.role?.toUpperCase() || "";
 
     const [showSalesModal, setShowSalesModal] = useState(false);
+    const [showMappingInfoModal, setShowMappingInfoModal] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [editData, setEditData] = useState<any>(null);
     const [isClient, setIsClient] = useState(false);
@@ -176,6 +178,13 @@ export default function DeliveryDashboard({
                     </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
+                    <button
+                        onClick={() => setShowMappingInfoModal(true)}
+                        className="p-3 bg-blue-50 border border-blue-200 text-blue-900 rounded-2xl hover:bg-blue-100 transition-all shadow-sm flex items-center gap-2 text-xs font-bold uppercase tracking-wider"
+                        title="Lihat Referensi Mapping Muatan dari Gudang"
+                    >
+                        <ClipboardList className="h-4 w-4 text-blue-600" /> Info Mapping Gudang
+                    </button>
                     <Link
                         href="/warehouse/jadwal-pengiriman"
                         className="p-3 bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl hover:bg-amber-100 transition-all shadow-sm flex items-center gap-2 text-xs font-bold uppercase tracking-wider"
@@ -413,6 +422,12 @@ export default function DeliveryDashboard({
                 }}
                 onConfirm={onVoidConfirm}
                 title="Batalkan Surat Jalan (VOID)"
+            />
+
+            {/* Warehouse Mapping Reference Modal for Purchase Admin */}
+            <WarehouseMappingInfoModal
+                isOpen={showMappingInfoModal}
+                onClose={() => setShowMappingInfoModal(false)}
             />
         </div>
     );

@@ -29,6 +29,9 @@ interface ScheduleItem {
 interface ShippingScheduleDashboardProps {
     initialDate: string;
     initialDeliveries: any[];
+    initialMappings?: any[];
+    customerList?: string[];
+    productList?: string[];
     currentUser: any;
 }
 
@@ -50,17 +53,38 @@ const COMMON_DRIVERS = [
 export function ShippingScheduleDashboard({
     initialDate,
     initialDeliveries,
+    initialMappings = [],
+    customerList = [],
+    productList = [],
     currentUser
 }: ShippingScheduleDashboardProps) {
     const [selectedDate, setSelectedDate] = useState<string>(initialDate);
     const [deliveries, setDeliveries] = useState<any[]>(initialDeliveries);
     const [items, setItems] = useState<ScheduleItem[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(false);
+    const [isBatchSaving, setIsBatchSaving] = useState<boolean>(false);
+    const [batchSaveMessage, setBatchSaveMessage] = useState<string | null>(null);
     const [viewMode, setViewMode] = useState<"edit" | "preview">("edit");
     const [taxFilter, setTaxFilter] = useState<"ALL" | "KB-TRN" | "KB-TRD">("ALL");
     const [printDesign, setPrintDesign] = useState<"corporate" | "classic">("corporate");
     const [saveStatus, setSaveStatus] = useState<Record<string, "saving" | "saved" | "error">>({});
     const [isPending, startTransition] = useTransition();
+
+    // Helper to transform saved mappings into ScheduleItem format
+    const buildItemsFromMappings = (maps: any[]): ScheduleItem[] => {
+        return maps.map((m: any) => ({
+            id: m.id,
+            deliveryNumber: "",
+            invoiceNumber: m.category === "KB-TRN" ? "KB-TRN (MAPPING)" : "KB-TRD (MAPPING)",
+            taxType: (m.category === "KB-TRN" ? "KB-TRN" : "KB-TRD") as "KB-TRN" | "KB-TRD",
+            poNumber: m.poNumber || "",
+            buyerName: m.buyerName || "",
+            productName: m.productName || "",
+            quantity: Number(m.quantity || 0),
+            driver: m.driver || "",
+            isManual: true
+        }));
+    };
 
     // Transform deliveries into flat schedule items
     const buildItemsFromDeliveries = (delivs: any[]): ScheduleItem[] => {
@@ -111,16 +135,28 @@ export function ShippingScheduleDashboard({
 
     // Initialize items on mount or delivery change
     useEffect(() => {
-        setItems(buildItemsFromDeliveries(deliveries));
+        if (initialMappings && initialMappings.length > 0) {
+            setItems(buildItemsFromMappings(initialMappings));
+        } else {
+            setItems(buildItemsFromDeliveries(deliveries));
+        }
     }, [deliveries]);
 
-    // Fetch deliveries when selectedDate changes
+    // Fetch deliveries and mappings when selectedDate changes
     const fetchSchedule = async (dateStr: string) => {
         setIsLoading(true);
         try {
-            const res = await callAction("getDailyShippingSchedule", dateStr);
-            if (Array.isArray(res)) {
-                setDeliveries(res);
+            const [delivRes, mapRes] = await Promise.all([
+                callAction("getDailyShippingSchedule", dateStr),
+                callAction("getShippingMappings", dateStr, "ALL")
+            ]);
+            if (Array.isArray(mapRes) && mapRes.length > 0) {
+                setItems(buildItemsFromMappings(mapRes));
+            } else if (Array.isArray(delivRes)) {
+                setDeliveries(delivRes);
+                setItems(buildItemsFromDeliveries(delivRes));
+            } else {
+                setItems([]);
             }
         } catch (err) {
             console.error("Gagal memuat jadwal pengiriman:", err);
@@ -188,6 +224,53 @@ export function ShippingScheduleDashboard({
     // Remove row
     const handleRemoveRow = (id: string) => {
         setItems(prev => prev.filter(i => i.id !== id));
+    };
+
+    // Save entire mapping to database for Admin Purchase reference
+    const handleSaveBatchMapping = async () => {
+        if (items.length === 0) return;
+        setIsBatchSaving(true);
+        setBatchSaveMessage(null);
+        try {
+            const trnRows = items.filter(i => i.taxType === "KB-TRN");
+            const trdRows = items.filter(i => i.taxType === "KB-TRD");
+
+            if (taxFilter === "KB-TRN" || taxFilter === "ALL") {
+                await callAction("saveShippingMappingBatch", {
+                    dateStr: selectedDate,
+                    category: "KB-TRN",
+                    rows: trnRows.map(r => ({
+                        poNumber: r.poNumber,
+                        buyerName: r.buyerName,
+                        productName: r.productName,
+                        quantity: Number(r.quantity || 0),
+                        driver: r.driver
+                    }))
+                });
+            }
+
+            if (taxFilter === "KB-TRD" || taxFilter === "ALL") {
+                await callAction("saveShippingMappingBatch", {
+                    dateStr: selectedDate,
+                    category: "KB-TRD",
+                    rows: trdRows.map(r => ({
+                        poNumber: r.poNumber,
+                        buyerName: r.buyerName,
+                        productName: r.productName,
+                        quantity: Number(r.quantity || 0),
+                        driver: r.driver
+                    }))
+                });
+            }
+
+            setBatchSaveMessage("Mapping pengiriman berhasil disimpan! Informasi acuan ini kini dapat langsung dibaca oleh Admin Purchase.");
+            setTimeout(() => setBatchSaveMessage(null), 5000);
+        } catch (err: any) {
+            console.error("Gagal menyimpan mapping batch:", err);
+            alert("Gagal menyimpan mapping: " + (err.message || String(err)));
+        } finally {
+            setIsBatchSaving(false);
+        }
     };
 
     // Filter items based on active tax filter
@@ -337,6 +420,20 @@ export function ShippingScheduleDashboard({
             <datalist id="driver-suggestions">
                 {COMMON_DRIVERS.map(drv => (
                     <option key={drv} value={drv} />
+                ))}
+            </datalist>
+
+            {/* Datalist for buyer autocomplete */}
+            <datalist id="customer-suggestions">
+                {customerList.map((c, i) => (
+                    <option key={i} value={c} />
+                ))}
+            </datalist>
+
+            {/* Datalist for product autocomplete */}
+            <datalist id="product-suggestions">
+                {productList.map((p, i) => (
+                    <option key={i} value={p} />
                 ))}
             </datalist>
 
@@ -594,14 +691,41 @@ export function ShippingScheduleDashboard({
                                     Ketik nama Driver pada kolom di bawah. Perubahan otomatis tersimpan ke Surat Jalan sistem.
                                 </p>
                             </div>
-                            <button
-                                onClick={handleAddManualRow}
-                                className="flex items-center gap-1.5 bg-slate-900 hover:bg-black text-white px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-xs"
-                            >
-                                <Plus className="h-4 w-4" />
-                                <span>Tambah Baris Manual</span>
-                            </button>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={handleSaveBatchMapping}
+                                    disabled={isBatchSaving || items.length === 0}
+                                    className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer"
+                                    title="Simpan mapping ini sebagai referensi info untuk Admin Purchase"
+                                >
+                                    {isBatchSaving ? (
+                                        <RefreshCw className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                        <Save className="h-4 w-4" />
+                                    )}
+                                    <span>Simpan Mapping Gudang</span>
+                                </button>
+                                <button
+                                    onClick={handleAddManualRow}
+                                    className="flex items-center gap-1.5 bg-slate-900 hover:bg-black text-white px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer"
+                                >
+                                    <Plus className="h-4 w-4" />
+                                    <span>Tambah Baris</span>
+                                </button>
+                            </div>
                         </div>
+
+                        {batchSaveMessage && (
+                            <div className="p-3 bg-emerald-50 border-b border-emerald-200 flex items-center justify-between text-xs text-emerald-800 font-bold">
+                                <div className="flex items-center gap-2">
+                                    <CheckCircle2 className="h-4 w-4 text-emerald-600 flex-shrink-0" />
+                                    <span>{batchSaveMessage}</span>
+                                </div>
+                                <span className="text-[10px] text-emerald-700 uppercase bg-emerald-100 px-2.5 py-0.5 rounded font-black">
+                                    Tersimpan untuk Info Purchase
+                                </span>
+                            </div>
+                        )}
 
                         {displayedItems.length === 0 ? (
                             <div className="text-center py-16 px-4">
@@ -610,7 +734,7 @@ export function ShippingScheduleDashboard({
                                     Tidak ada pengiriman {taxFilter !== "ALL" ? `kategori ${taxFilter}` : ""} untuk tanggal ini
                                 </h4>
                                 <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
-                                    Belum ada Surat Jalan (Sales Delivery) pada tanggal {format(new Date(selectedDate), "dd MMMM yyyy")}. Anda dapat menambahkan baris pengiriman manual di atas.
+                                    Belum ada mapping pengiriman pada tanggal {format(new Date(selectedDate), "dd MMMM yyyy")}. Anda dapat menambahkan baris pengiriman di atas dan klik &quot;Simpan Mapping Gudang&quot;.
                                 </p>
                             </div>
                         ) : (
@@ -639,88 +763,55 @@ export function ShippingScheduleDashboard({
                                                         {index + 1}
                                                     </td>
                                                     <td className="py-2.5 px-3">
-                                                        {item.isManual ? (
-                                                            <select
-                                                                value={item.taxType}
-                                                                onChange={(e) => handleManualRowChange(item.id, "taxType", e.target.value)}
-                                                                className="bg-slate-50 border border-slate-200 px-2 py-1 rounded text-xs font-bold text-slate-800 outline-none"
-                                                            >
-                                                                <option value="KB-TRN">KB-TRN (PKP)</option>
-                                                                <option value="KB-TRD">KB-TRD (NON-PKP)</option>
-                                                            </select>
-                                                        ) : (
-                                                            <div className="flex flex-col">
-                                                                <span className={`inline-flex items-center gap-1 font-black text-[10px] px-1.5 py-0.5 rounded w-fit ${
-                                                                    item.taxType === "KB-TRN"
-                                                                        ? "bg-blue-100 text-blue-800"
-                                                                        : "bg-emerald-100 text-emerald-800"
-                                                                }`}>
-                                                                    {item.taxType}
-                                                                </span>
-                                                                <span className="text-[10px] text-slate-500 font-mono mt-0.5 truncate max-w-[120px]">
-                                                                    {item.invoiceNumber || item.deliveryNumber}
-                                                                </span>
-                                                            </div>
-                                                        )}
+                                                        <select
+                                                            value={item.taxType}
+                                                            onChange={(e) => handleManualRowChange(item.id, "taxType", e.target.value)}
+                                                            className={`border px-2 py-1 rounded text-xs font-black outline-none ${
+                                                                item.taxType === "KB-TRN"
+                                                                    ? "bg-blue-50 border-blue-200 text-blue-800"
+                                                                    : "bg-emerald-50 border-emerald-200 text-emerald-800"
+                                                            }`}
+                                                        >
+                                                            <option value="KB-TRN">KB-TRN (PKP)</option>
+                                                            <option value="KB-TRD">KB-TRD (NON-PKP)</option>
+                                                        </select>
                                                     </td>
                                                     <td className="py-2.5 px-3">
-                                                        {item.isManual ? (
-                                                            <input
-                                                                type="text"
-                                                                value={item.poNumber}
-                                                                onChange={(e) => handleManualRowChange(item.id, "poNumber", e.target.value)}
-                                                                placeholder="No. PO"
-                                                                className="w-full bg-slate-50 border border-slate-200 px-2 py-1 rounded text-xs font-bold text-slate-800"
-                                                            />
-                                                        ) : (
-                                                            <span className="font-bold text-slate-800 uppercase tracking-tight">
-                                                                {item.poNumber || "-"}
-                                                            </span>
-                                                        )}
+                                                        <input
+                                                            type="text"
+                                                            value={item.poNumber}
+                                                            onChange={(e) => handleManualRowChange(item.id, "poNumber", e.target.value)}
+                                                            placeholder="No. PO"
+                                                            className="w-full bg-slate-50/70 focus:bg-white border border-slate-200 focus:border-amber-500 px-2 py-1 rounded text-xs font-bold text-slate-800 outline-none"
+                                                        />
                                                     </td>
                                                     <td className="py-2.5 px-4">
-                                                        {item.isManual ? (
-                                                            <input
-                                                                type="text"
-                                                                value={item.buyerName}
-                                                                onChange={(e) => handleManualRowChange(item.id, "buyerName", e.target.value)}
-                                                                placeholder="Nama Buyer"
-                                                                className="w-full bg-slate-50 border border-slate-200 px-2 py-1 rounded text-xs font-bold text-slate-800"
-                                                            />
-                                                        ) : (
-                                                            <span className="font-bold text-slate-900 uppercase">
-                                                                {item.buyerName}
-                                                            </span>
-                                                        )}
+                                                        <input
+                                                            list="customer-suggestions"
+                                                            type="text"
+                                                            value={item.buyerName}
+                                                            onChange={(e) => handleManualRowChange(item.id, "buyerName", e.target.value.toUpperCase())}
+                                                            placeholder="Nama Buyer"
+                                                            className="w-full bg-slate-50/70 focus:bg-white border border-slate-200 focus:border-amber-500 px-2 py-1 rounded text-xs font-bold text-slate-800 uppercase outline-none"
+                                                        />
                                                     </td>
                                                     <td className="py-2.5 px-4">
-                                                        {item.isManual ? (
-                                                            <input
-                                                                type="text"
-                                                                value={item.productName}
-                                                                onChange={(e) => handleManualRowChange(item.id, "productName", e.target.value)}
-                                                                placeholder="Nama Produk"
-                                                                className="w-full bg-slate-50 border border-slate-200 px-2 py-1 rounded text-xs font-medium text-slate-800"
-                                                            />
-                                                        ) : (
-                                                            <span className="text-slate-800 uppercase font-semibold">
-                                                                {item.productName}
-                                                            </span>
-                                                        )}
+                                                        <input
+                                                            list="product-suggestions"
+                                                            type="text"
+                                                            value={item.productName}
+                                                            onChange={(e) => handleManualRowChange(item.id, "productName", e.target.value)}
+                                                            placeholder="Nama Produk"
+                                                            className="w-full bg-slate-50/70 focus:bg-white border border-slate-200 focus:border-amber-500 px-2 py-1 rounded text-xs font-medium text-slate-800 uppercase outline-none"
+                                                        />
                                                     </td>
                                                     <td className="py-2.5 px-3 text-right">
-                                                        {item.isManual ? (
-                                                            <input
-                                                                type="number"
-                                                                value={item.quantity}
-                                                                onChange={(e) => handleManualRowChange(item.id, "quantity", Number(e.target.value))}
-                                                                className="w-16 text-right bg-slate-50 border border-slate-200 px-2 py-1 rounded text-xs font-black text-slate-900"
-                                                            />
-                                                        ) : (
-                                                            <span className="font-black text-slate-900 tabular-nums">
-                                                                {item.quantity.toLocaleString("id-ID")}
-                                                            </span>
-                                                        )}
+                                                        <input
+                                                            type="number"
+                                                            value={item.quantity}
+                                                            onChange={(e) => handleManualRowChange(item.id, "quantity", Number(e.target.value))}
+                                                            className="w-16 text-right bg-slate-50/70 focus:bg-white border border-slate-200 focus:border-amber-500 px-2 py-1 rounded text-xs font-black text-slate-900 outline-none"
+                                                        />
                                                     </td>
                                                     <td className="py-2.5 px-4">
                                                         <div className="flex items-center gap-1.5">
@@ -730,9 +821,8 @@ export function ShippingScheduleDashboard({
                                                                 value={item.driver}
                                                                 onChange={(e) => {
                                                                     const val = e.target.value;
-                                                                    if (item.isManual) {
-                                                                        handleManualRowChange(item.id, "driver", val.toUpperCase());
-                                                                    } else if (item.deliveryId) {
+                                                                    handleManualRowChange(item.id, "driver", val.toUpperCase());
+                                                                    if (item.deliveryId) {
                                                                         handleDriverChange(item.deliveryId, val);
                                                                     }
                                                                 }}
@@ -748,15 +838,13 @@ export function ShippingScheduleDashboard({
                                                         </div>
                                                     </td>
                                                     <td className="py-2.5 px-3 text-center">
-                                                        {item.isManual && (
-                                                            <button
-                                                                onClick={() => handleRemoveRow(item.id)}
-                                                                className="p-1 text-slate-400 hover:text-rose-600 transition-colors"
-                                                                title="Hapus baris manual"
-                                                            >
-                                                                <Trash2 className="h-4 w-4" />
-                                                            </button>
-                                                        )}
+                                                        <button
+                                                            onClick={() => handleRemoveRow(item.id)}
+                                                            className="p-1 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
+                                                            title="Hapus baris ini"
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </button>
                                                     </td>
                                                 </tr>
                                             );
