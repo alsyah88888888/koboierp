@@ -361,6 +361,7 @@ export function ReceiptModal({ isOpen, onClose, initialData, warehouses, vendors
                                             <option value="">PIC</option>
                                             <option value="BC">BC</option>
                                             <option value="PF">PF</option>
+                                            <option value="OWEN">OWEN</option>
                                         </select>
                                     </div>
                                 </div>

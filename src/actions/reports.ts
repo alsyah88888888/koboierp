@@ -9,7 +9,7 @@ import {
 } from "@/lib/services/report-service";
 import { serializeDecimal } from "@/lib/utils";
 
-export async function getProductTraceabilityAction(month?: number, year?: number, prefix?: 'PF' | 'BC' | 'ALL') {
+export async function getProductTraceabilityAction(month?: number, year?: number, prefix?: 'PF' | 'BC' | 'OWEN' | 'ALL') {
     try {
         return await getProductTraceabilityService(month, year, prefix);
     } catch (error: any) {
@@ -18,7 +18,7 @@ export async function getProductTraceabilityAction(month?: number, year?: number
     }
 }
 
-export async function getComprehensiveDailyReportAction(date?: string, prefix?: 'PF' | 'BC' | 'ALL') {
+export async function getComprehensiveDailyReportAction(date?: string, prefix?: 'PF' | 'BC' | 'OWEN' | 'ALL') {
     try {
         const result = await getComprehensiveDailyReportService(date, prefix);
         return serializeDecimal(result);
@@ -28,7 +28,7 @@ export async function getComprehensiveDailyReportAction(date?: string, prefix?: 
     }
 }
 
-export async function getComprehensiveWeeklyReportAction(weekStartDate?: string, prefix?: 'PF' | 'BC' | 'ALL', weekEndDate?: string) {
+export async function getComprehensiveWeeklyReportAction(weekStartDate?: string, prefix?: 'PF' | 'BC' | 'OWEN' | 'ALL', weekEndDate?: string) {
     try {
         const { getComprehensiveWeeklyReportService } = await import('@/lib/services/report-service');
         const result = await getComprehensiveWeeklyReportService(weekStartDate, prefix, weekEndDate);
@@ -39,7 +39,7 @@ export async function getComprehensiveWeeklyReportAction(weekStartDate?: string,
     }
 }
 
-export async function getComprehensiveMonthlyReportAction(month?: number, year?: number, prefix?: 'PF' | 'BC' | 'ALL') {
+export async function getComprehensiveMonthlyReportAction(month?: number, year?: number, prefix?: 'PF' | 'BC' | 'OWEN' | 'ALL') {
     try {
         const result = await getComprehensiveMonthlyReportService(month, year, prefix);
         return serializeDecimal(result);

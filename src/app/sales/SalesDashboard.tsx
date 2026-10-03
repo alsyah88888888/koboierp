@@ -77,6 +77,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
 
     const bcStats = getStats("BC");
     const pfStats = getStats("PF");
+    const owenStats = getStats("OWEN");
 
     const [showPreview, setShowPreview] = useState(false);
     const [previewData, setPreviewData] = useState<any[]>([]);
@@ -763,7 +764,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                 <DashboardStats month={selectedMonth} year={selectedYear} />
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-[1400px]">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-[1400px]">
                 {/* BC Performance Card */}
                 {(isAdmin || bcStats.sjCount > 0) && (
                     <div className="bg-white border border-slate-200 rounded-[2rem] p-6 md:p-8 relative overflow-hidden group hover:shadow-xl hover:shadow-indigo-500/5 transition-all duration-300">
@@ -869,6 +870,66 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                                                 </div>
                                                 <div className="text-right shrink-0 ml-4">
                                                     <p className="font-black text-amber-600 text-[12px]">{delivery.items.reduce((s: number, i: any) => s + i.quantity, 0)} <span className="text-[9px] uppercase">Pcs</span></p>
+                                                    <p className="text-[9px] font-bold text-slate-400 mt-0.5">{isClient ? format(new Date(delivery.createdAt), "dd MMM") : "..."}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="py-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                                        <p className="text-[10px] font-black text-slate-400 italic uppercase tracking-widest">Belum ada pengiriman</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* OWEN Performance Card */}
+                {(isAdmin || owenStats.sjCount > 0) && (
+                    <div className="bg-white border border-slate-200 rounded-[2rem] p-6 md:p-8 relative overflow-hidden group hover:shadow-xl hover:shadow-emerald-500/5 transition-all duration-300">
+                        <div className="absolute -right-12 -top-12 h-48 w-48 bg-emerald-50 rounded-full blur-3xl transition-transform group-hover:scale-110 opacity-60" />
+                        
+                        <div className="relative z-10">
+                            <div className="flex justify-between items-start mb-6">
+                                <div className="flex items-center gap-4">
+                                    <div className="bg-emerald-50 text-emerald-600 p-3.5 rounded-[1.5rem] shadow-sm border border-emerald-100/50 group-hover:scale-110 transition-transform duration-300">
+                                        <Users className="h-5 w-5" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Performance: OWEN</h3>
+                                        <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 mt-1">Sales Channel</p>
+                                    </div>
+                                </div>
+                                <div className="bg-emerald-50 text-emerald-700 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-emerald-100 shadow-sm hidden sm:block">Active</div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="p-4 bg-slate-50/50 backdrop-blur-sm border border-slate-100 rounded-2xl group-hover:border-emerald-100 transition-colors">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Total Delivery</p>
+                                    <p className="text-2xl font-black text-emerald-600 tracking-tighter">{owenStats.sjCount}</p>
+                                </div>
+                                <div className="p-4 bg-slate-50/50 backdrop-blur-sm border border-slate-100 rounded-2xl group-hover:border-emerald-100 transition-colors">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Total Quantity</p>
+                                    <p className="text-2xl font-black text-emerald-600 tracking-tighter">{owenStats.totalQty}</p>
+                                </div>
+                            </div>
+
+                            <div className="mt-6 pt-5 border-t border-slate-100">
+                                <div className="flex items-center justify-between mb-4">
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Recent Shipments</span>
+                                    <div className="h-1 w-8 bg-emerald-200 rounded-full" />
+                                </div>
+                                {owenStats.recentDeliveries.length > 0 ? (
+                                    <div className="space-y-2">
+                                        {owenStats.recentDeliveries.map((delivery, idx) => (
+                                            <div key={idx} className="flex justify-between items-center text-xs p-3 bg-white border border-slate-100 rounded-xl hover:shadow-md hover:border-emerald-100 transition-all cursor-default">
+                                                <div className="min-w-0">
+                                                    <p className="font-black text-slate-800 text-[12px] tracking-tight">{delivery.deliveryNumber}</p>
+                                                    <p className="text-[10px] font-bold text-slate-400 truncate mt-0.5">{delivery.buyerName}</p>
+                                                </div>
+                                                <div className="text-right shrink-0 ml-4">
+                                                    <p className="font-black text-emerald-600 text-[12px]">{delivery.items.reduce((s: number, i: any) => s + i.quantity, 0)} <span className="text-[9px] uppercase">Pcs</span></p>
                                                     <p className="text-[9px] font-bold text-slate-400 mt-0.5">{isClient ? format(new Date(delivery.createdAt), "dd MMM") : "..."}</p>
                                                 </div>
                                             </div>

@@ -537,6 +537,7 @@ export default function SalesModal({ products, warehouses, customers, orders = [
                                         >
                                             <option value="BC">BC</option>
                                             <option value="PF">PF</option>
+                                            <option value="OWEN">OWEN</option>
                                         </select>
                                     </div>
                                 </div>

@@ -363,6 +363,7 @@ export function OperationalModal({ isOpen, onClose, coa, transaction }: Operatio
                                     <option value="">Pilih Sales...</option>
                                     <option value="BC">Sales BC</option>
                                     <option value="PF">Sales PF</option>
+                                    <option value="OWEN">Sales OWEN</option>
                                 </select>
                             </div>
                             <div className="space-y-2 relative">

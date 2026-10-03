@@ -82,8 +82,8 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
         year: new Date().getFullYear()
     });
     const [drillDownData, setDrillDownData] = useState<{title: string, data: any[], type: string} | null>(null);
-    const [closingPrefix, setClosingPrefix] = useState<'PF' | 'BC' | 'ALL'>('ALL');
-    const [activePrefix, setActivePrefix] = useState<'PF' | 'BC' | 'ALL'>('ALL');
+    const [closingPrefix, setClosingPrefix] = useState<'PF' | 'BC' | 'OWEN' | 'ALL'>('ALL');
+    const [activePrefix, setActivePrefix] = useState<'PF' | 'BC' | 'OWEN' | 'ALL'>('ALL');
 
     useEffect(() => { setIsClient(true); }, []);
 
@@ -1646,6 +1646,7 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
                                     <option value="ALL" className="text-slate-900 bg-white font-black">ALL DIV</option>
                                     <option value="PF" className="text-slate-900 bg-white font-black">PF DIV</option>
                                     <option value="BC" className="text-slate-900 bg-white font-black">BC DIV</option>
+                                    <option value="OWEN" className="text-slate-900 bg-white font-black">OWEN DIV</option>
                                 </select>
                                 <button
                                     onClick={() => window.print()}
@@ -1835,6 +1836,7 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
                                         <option value="ALL">ALL DIV</option>
                                         <option value="PF">PF DIV</option>
                                         <option value="BC">BC DIV</option>
+                                        <option value="OWEN">OWEN DIV</option>
                                     </select>
                                     <select
                                         value={closingPeriod.month}
@@ -2060,7 +2062,7 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
 // ═══════════════════════════════════════════════════════════════════════════
 // DAILY REPORT SUB-COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════
-function DailyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix, setIsTraceModalOpen, setSelectedTraceData }: { data: any; isClient: boolean; fmtDate: (d: any) => string; activePrefix: 'PF' | 'BC' | 'ALL'; setActivePrefix: (val: 'PF' | 'BC' | 'ALL') => void; setIsTraceModalOpen?: any; setSelectedTraceData?: any }) {
+function DailyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix, setIsTraceModalOpen, setSelectedTraceData }: { data: any; isClient: boolean; fmtDate: (d: any) => string; activePrefix: 'PF' | 'BC' | 'OWEN' | 'ALL'; setActivePrefix: (val: 'PF' | 'BC' | 'OWEN' | 'ALL') => void; setIsTraceModalOpen?: any; setSelectedTraceData?: any }) {
     if (data.error) return <ErrorCard message={data.error} />;
     const s = data.summary || {};
     const d = data.details || {};
@@ -2074,6 +2076,7 @@ function DailyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix, s
             <option value="ALL">ALL DIV</option>
             <option value="PF">PF DIV</option>
             <option value="BC">BC DIV</option>
+            <option value="OWEN">OWEN DIV</option>
         </select>
     );
 
@@ -2323,7 +2326,7 @@ function DailyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix, s
 // ═══════════════════════════════════════════════════════════════════════════
 // WEEKLY REPORT SUB-COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════
-function WeeklyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix, setIsTraceModalOpen, setSelectedTraceData }: { data: any; isClient: boolean; fmtDate: (d: any) => string; activePrefix: 'PF' | 'BC' | 'ALL'; setActivePrefix: (val: 'PF' | 'BC' | 'ALL') => void; setIsTraceModalOpen?: any; setSelectedTraceData?: any }) {
+function WeeklyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix, setIsTraceModalOpen, setSelectedTraceData }: { data: any; isClient: boolean; fmtDate: (d: any) => string; activePrefix: 'PF' | 'BC' | 'OWEN' | 'ALL'; setActivePrefix: (val: 'PF' | 'BC' | 'OWEN' | 'ALL') => void; setIsTraceModalOpen?: any; setSelectedTraceData?: any }) {
     if (data.error) return <ErrorCard message={data.error} />;
     const s = data.summary || {};
     const breakdown = data.dailyBreakdown || [];
@@ -2337,6 +2340,7 @@ function WeeklyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix, 
             <option value="ALL">ALL DIV</option>
             <option value="PF">PF DIV</option>
             <option value="BC">BC DIV</option>
+            <option value="OWEN">OWEN DIV</option>
         </select>
     );
 
@@ -2397,12 +2401,13 @@ function WeeklyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix, 
                                             data={[
                                                 { name: 'BC', value: s.salesByTeam.BC || 0 },
                                                 { name: 'PF', value: s.salesByTeam.PF || 0 },
+                                                { name: 'OWEN', value: s.salesByTeam.OWEN || 0 },
                                                 { name: 'Lainnya', value: s.salesByTeam.Other || 0 }
                                             ].filter(d => d.value > 0)}
                                             cx="50%" cy="50%" innerRadius={50} outerRadius={75}
                                             paddingAngle={5} dataKey="value" stroke="none"
                                         >
-                                            {[CHART_COLORS[0], CHART_COLORS[4], CHART_COLORS[2]].map((c, i) => (
+                                            {[CHART_COLORS[0], CHART_COLORS[4], '#10b981', CHART_COLORS[2]].map((c, i) => (
                                                 <Cell key={i} fill={c} />
                                             ))}
                                         </Pie>
@@ -2414,6 +2419,7 @@ function WeeklyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix, 
                             {[
                                 { name: 'Team BC', value: s.salesByTeam?.BC || 0, color: CHART_COLORS[0] },
                                 { name: 'Team PF', value: s.salesByTeam?.PF || 0, color: CHART_COLORS[4] },
+                                { name: 'Team OWEN', value: s.salesByTeam?.OWEN || 0, color: '#10b981' },
                                 { name: 'Lainnya', value: s.salesByTeam?.Other || 0, color: CHART_COLORS[2] },
                             ].map(t => (
                                 <div key={t.name} className="flex items-center justify-between gap-3">
@@ -2603,7 +2609,7 @@ function WeeklyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix, 
 // ═══════════════════════════════════════════════════════════════════════════
 // MONTHLY REPORT SUB-COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════
-function MonthlyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix, setIsTraceModalOpen, setSelectedTraceData }: { data: any; isClient: boolean; fmtDate: (d: any) => string; activePrefix: 'PF' | 'BC' | 'ALL'; setActivePrefix: (val: 'PF' | 'BC' | 'ALL') => void; setIsTraceModalOpen?: any; setSelectedTraceData?: any }) {
+function MonthlyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix, setIsTraceModalOpen, setSelectedTraceData }: { data: any; isClient: boolean; fmtDate: (d: any) => string; activePrefix: 'PF' | 'BC' | 'OWEN' | 'ALL'; setActivePrefix: (val: 'PF' | 'BC' | 'OWEN' | 'ALL') => void; setIsTraceModalOpen?: any; setSelectedTraceData?: any }) {
     if (data.error) return <ErrorCard message={data.error} />;
     const pl = data.profitLoss || {};
     const stats = data.stats || {};
@@ -2617,6 +2623,7 @@ function MonthlyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix,
             <option value="ALL">ALL DIV</option>
             <option value="PF">PF DIV</option>
             <option value="BC">BC DIV</option>
+            <option value="OWEN">OWEN DIV</option>
         </select>
     );
 
@@ -2739,9 +2746,10 @@ function MonthlyReport({ data, isClient, fmtDate, activePrefix, setActivePrefix,
                         {[
                             { name: 'Team BC', value: data.salesByTeam?.BC || 0, color: 'bg-blue-500' },
                             { name: 'Team PF', value: data.salesByTeam?.PF || 0, color: 'bg-purple-500' },
+                            { name: 'Team OWEN', value: data.salesByTeam?.OWEN || 0, color: 'bg-emerald-500' },
                             { name: 'Lainnya', value: data.salesByTeam?.Other || 0, color: 'bg-slate-500' },
                         ].map(t => {
-                            const total = (data.salesByTeam?.BC || 0) + (data.salesByTeam?.PF || 0) + (data.salesByTeam?.Other || 0);
+                            const total = (data.salesByTeam?.BC || 0) + (data.salesByTeam?.PF || 0) + (data.salesByTeam?.OWEN || 0) + (data.salesByTeam?.Other || 0);
                             const pct = total > 0 ? (t.value / total * 100) : 0;
                             return (
                                 <div key={t.name} className="space-y-2">

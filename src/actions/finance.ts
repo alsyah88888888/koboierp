@@ -82,7 +82,7 @@ export async function createFinanceTransactionAction(data: any) {
     return await createFinanceTransactionService(data, session.user.id);
 }
 
-export async function getApprovalHistoryAction(period: 'daily' | 'weekly' | 'monthly', dateStr: string, prefix?: 'PF' | 'BC' | 'ALL') {
+export async function getApprovalHistoryAction(period: 'daily' | 'weekly' | 'monthly', dateStr: string, prefix?: 'PF' | 'BC' | 'OWEN' | 'ALL') {
     const { getAuthOptions } = require("@/lib/auth");
     const { getServerSession } = require("next-auth");
     const { getApprovalHistoryService } = require("@/lib/services/finance-history-service");
@@ -230,7 +230,7 @@ export async function createJournalEntryAction(data: {
     revalidatePath("/");
 }
 
-export async function getMonthlyClosingReportAction(month?: number, year?: number, prefix?: 'PF' | 'BC' | 'ALL') {
+export async function getMonthlyClosingReportAction(month?: number, year?: number, prefix?: 'PF' | 'BC' | 'OWEN' | 'ALL') {
     const { getMonthlyClosingReportService } = require("@/lib/services/report-service");
     return await getMonthlyClosingReportService(month, year, prefix);
 }

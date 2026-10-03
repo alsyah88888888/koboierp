@@ -200,30 +200,34 @@ export async function getDashboardSummaryService(userId: string, prefix: string,
     const totalPaidSales = Number(salesPaidRes._sum?.paidAmount || 0);
     const totalPaidPurchases = Number(purchasePaidRes._sum?.paidAmount || 0);
 
-    let revenueBC = 0, revenuePF = 0;
+    let revenueBC = 0, revenuePF = 0, revenueOWEN = 0;
     deliveries.forEach((d: any) => {
         const net = Number(d.subtotal || 0) - Number(d.totalDiscount || 0);
         if (d.salesPerson === 'BC') revenueBC += net;
         else if (d.salesPerson === 'PF') revenuePF += net;
+        else if (d.salesPerson === 'OWEN') revenueOWEN += net;
     });
 
-    let purchaseBC = 0, purchasePF = 0;
+    let purchaseBC = 0, purchasePF = 0, purchaseOWEN = 0;
     receipts.forEach((r: any) => {
         const cost = Number(r.subtotal || 0);
         if (r.salesPerson === 'BC') purchaseBC += cost;
         else if (r.salesPerson === 'PF') purchasePF += cost;
+        else if (r.salesPerson === 'OWEN') purchaseOWEN += cost;
     });
 
-    let expBC = 0, expPF = 0;
+    let expBC = 0, expPF = 0, expOWEN = 0;
     expenses.forEach((t: any) => {
         const amt = (t.transactionType === "PAYMENT") ? Number(t.amount) : -Number(t.amount);
         if (t.salesPerson === 'BC') expBC += amt;
         else if (t.salesPerson === 'PF') expPF += amt;
+        else if (t.salesPerson === 'OWEN') expOWEN += amt;
     });
 
     const nettMarginSales = (totalRevenue - totalPurchaseCost) - totalOperationalExpenses;
     const nettMarginBC = (revenueBC - purchaseBC) - expBC;
     const nettMarginPF = (revenuePF - purchasePF) - expPF;
+    const nettMarginOWEN = (revenueOWEN - purchaseOWEN) - expOWEN;
 
     const summary = {
         totalRevenue,
@@ -234,6 +238,7 @@ export async function getDashboardSummaryService(userId: string, prefix: string,
         nettMarginSales,
         nettMarginBC,
         nettMarginPF,
+        nettMarginOWEN,
         productCount: inventoryTotals.length,
         lowStockCount,
         activeOrdersToday,

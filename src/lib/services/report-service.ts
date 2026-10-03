@@ -106,7 +106,9 @@ export async function distributeOperationalCosts(operationalData: any[], salesPe
 
     // Unlinked (general) ops: no salesPerson attributed to any known division
     const unlinked = operationalData.filter((ops: any) =>
-        !(ops.salesPerson || '').startsWith('PF') && !(ops.salesPerson || '').startsWith('BC')
+        !(ops.salesPerson || '').startsWith('PF') && 
+        !(ops.salesPerson || '').startsWith('BC') && 
+        !(ops.salesPerson || '').startsWith('OWEN')
     );
 
     if (unlinked.length === 0) return linked;
@@ -221,7 +223,7 @@ function calculateCashFlowOpsExpenses(ops: any[], traceabilityRows: any[]): { li
  * NO | TANGGAL | F.PAJAK | NOMOR | TANGGAL(beli) | NAMA PEMBELI | BARCODE |
  * KETERANGAN ITEM | SALES | [BELI: QTY/HARGA/OPS/TOTAL] | [JUAL: NAMA/QTY/HARGA/TOTAL] |
  */
-export async function calculateProductTraceabilityInternal(startDate: Date, endDate: Date, prefix?: 'PF' | 'BC' | 'ALL') {
+export async function calculateProductTraceabilityInternal(startDate: Date, endDate: Date, prefix?: 'PF' | 'BC' | 'OWEN' | 'ALL') {
     const prisma = getPrisma();
     const isAll = !prefix || prefix === 'ALL';
     try {
@@ -749,7 +751,7 @@ export async function calculateProductTraceabilityInternal(startDate: Date, endD
     }
 }
 
-export async function getProductTraceabilityService(month?: number, year?: number, prefix?: 'PF' | 'BC' | 'ALL') {
+export async function getProductTraceabilityService(month?: number, year?: number, prefix?: 'PF' | 'BC' | 'OWEN' | 'ALL') {
     const filterYear  = year  || new Date().getFullYear();
     const filterMonth = month || (new Date().getMonth() + 1);
 
@@ -773,7 +775,7 @@ export async function getProductTraceabilityService(month?: number, year?: numbe
  * MONTHLY CLOSING REPORT SERVICE
  * Provides a consolidated view of Sales, Purchases, Expenses, and Profit/Loss for a specific period.
  */
-export async function getMonthlyClosingReportService(month?: number, year?: number, prefix?: 'PF' | 'BC' | 'ALL') {
+export async function getMonthlyClosingReportService(month?: number, year?: number, prefix?: 'PF' | 'BC' | 'OWEN' | 'ALL') {
     const prisma = getPrisma();
     const filterYear = year || new Date().getFullYear();
     const filterMonth = month || (new Date().getMonth() + 1);
@@ -1322,7 +1324,7 @@ export async function getBatchTraceabilityService(filters: {
  * COMPREHENSIVE DAILY REPORT SERVICE
  * Returns all transaction data for a single date across all modules
  */
-export async function getComprehensiveDailyReportService(date?: string, prefix?: 'PF' | 'BC' | 'ALL') {
+export async function getComprehensiveDailyReportService(date?: string, prefix?: 'PF' | 'BC' | 'OWEN' | 'ALL') {
     const prisma = getPrisma();
     const isAll = !prefix || prefix === 'ALL';
 
@@ -1653,7 +1655,7 @@ export async function getComprehensiveDailyReportService(date?: string, prefix?:
  * COMPREHENSIVE WEEKLY REPORT SERVICE
  * Returns aggregated data for 7 days with daily breakdowns
  */
-export async function getComprehensiveWeeklyReportService(weekStartDate?: string, prefix?: 'PF' | 'BC' | 'ALL', weekEndDate?: string) {
+export async function getComprehensiveWeeklyReportService(weekStartDate?: string, prefix?: 'PF' | 'BC' | 'OWEN' | 'ALL', weekEndDate?: string) {
     const prisma = getPrisma();
     const isAll = !prefix || prefix === 'ALL';
 
@@ -1937,11 +1939,12 @@ export async function getComprehensiveWeeklyReportService(weekStartDate?: string
         const netMarginPct = totalSales > 0 ? (netProfit / totalSales * 100) : 0;
 
         // Sales by Team
-        let salesBC = 0, salesPF = 0, salesOther = 0;
+        let salesBC = 0, salesPF = 0, salesOWEN = 0, salesOther = 0;
         sales.forEach((s: any) => {
             const v = Number(s.grandTotal || 0);
             if (s.salesPerson === 'BC') salesBC += v;
             else if (s.salesPerson === 'PF') salesPF += v;
+            else if (s.salesPerson === 'OWEN') salesOWEN += v;
             else salesOther += v;
         });
 
@@ -2025,7 +2028,7 @@ export async function getComprehensiveWeeklyReportService(weekStartDate?: string
                     s + (d.items || []).reduce((q: number, i: any) => q + Number(i.quantity || 0), 0), 0),
                 totalPurchaseQty: purchases.reduce((s: number, d: any) =>
                     s + (d.items || []).reduce((q: number, i: any) => q + Number(i.quantity || 0), 0), 0),
-                salesByTeam: { BC: salesBC, PF: salesPF, Other: salesOther },
+                salesByTeam: { BC: salesBC, PF: salesPF, OWEN: salesOWEN, Other: salesOther },
             },
             arAging,
             apAging,
@@ -2045,7 +2048,7 @@ export async function getComprehensiveWeeklyReportService(weekStartDate?: string
  * COMPREHENSIVE MONTHLY REPORT SERVICE
  * Full P&L, AR/AP aging, inventory valuation, top partner analysis
  */
-export async function getComprehensiveMonthlyReportService(month?: number, year?: number, prefix?: 'PF' | 'BC' | 'ALL') {
+export async function getComprehensiveMonthlyReportService(month?: number, year?: number, prefix?: 'PF' | 'BC' | 'OWEN' | 'ALL') {
     const prisma = getPrisma();
     const filterYear = year || new Date().getFullYear();
     const filterMonth = month || (new Date().getMonth() + 1);
@@ -2210,12 +2213,13 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
         const netPurchasesSubtotal = purchases.reduce((s: number, p: any) => s + Number(p.subtotal || 0), 0);
 
         // ── Sales by Team ────────────────────────────────────────────────
-        let salesBC = 0, salesPF = 0, salesOther = 0;
-        let hppBC = 0, hppPF = 0;
+        let salesBC = 0, salesPF = 0, salesOWEN = 0, salesOther = 0;
+        let hppBC = 0, hppPF = 0, hppOWEN = 0;
         sales.forEach((s: any) => {
             const v = Number(s.grandTotal || 0);
             if (s.salesPerson === 'BC') salesBC += v;
             else if (s.salesPerson === 'PF') salesPF += v;
+            else if (s.salesPerson === 'OWEN') salesOWEN += v;
             else salesOther += v;
         });
 
@@ -2472,7 +2476,7 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
                 subtotal: netPurchasesSubtotal,
                 count: purchases.length
             },
-            salesByTeam: { BC: salesBC, PF: salesPF, Other: salesOther },
+            salesByTeam: { BC: salesBC, PF: salesPF, OWEN: salesOWEN, Other: salesOther },
             arAging,
             apAging,
             topBuyers,

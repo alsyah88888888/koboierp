@@ -275,6 +275,7 @@ export default function SalesOrderModal({ products, customers, warehouses, initi
                                     <select value={salesPerson} onChange={e => setSalesPerson(e.target.value)} className="w-full bg-slate-50 border border-slate-100 px-3 py-2.5 rounded-xl text-xs font-black focus:border-indigo-500 outline-none">
                                         <option value="BC">BC</option>
                                         <option value="PF">PF</option>
+                                        <option value="OWEN">OWEN</option>
                                     </select>
                                 </div>
                             </div>

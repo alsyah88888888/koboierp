@@ -3,7 +3,7 @@ import { getPrisma } from "@/lib/prisma";
 export async function getApprovalHistoryService(
     period: 'daily' | 'weekly' | 'monthly', 
     dateStr: string,
-    prefix?: 'PF' | 'BC' | 'ALL'
+    prefix?: 'PF' | 'BC' | 'OWEN' | 'ALL'
 ) {
     const prisma = getPrisma();
     

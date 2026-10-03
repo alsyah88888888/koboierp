@@ -95,7 +95,7 @@ export async function callAction(actionName: string, ...args: any[]) {
             return await getAccountingDataAction();
         case "getMonthlyClosingReport":
             const { getMonthlyClosingReportAction } = await import("@/actions/finance");
-            return await getMonthlyClosingReportAction(...args as [number, number, 'PF' | 'BC' | 'ALL']);
+            return await getMonthlyClosingReportAction(...args as [number, number, 'PF' | 'BC' | 'OWEN' | 'ALL']);
 
         // BANK RECONCILIATION
         case "importBankMutations":

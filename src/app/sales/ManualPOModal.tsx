@@ -135,6 +135,7 @@ export function ManualPOModal({ products, warehouses, onClose }: ManualPOModalPr
                                 >
                                     <option value="BC">BC (Regular / Sales)</option>
                                     <option value="PF">PF (Project Finance)</option>
+                                    <option value="OWEN">OWEN (Sales)</option>
                                 </select>
                             </div>
                             <div className="space-y-2">
