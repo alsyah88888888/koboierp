@@ -214,23 +214,32 @@ export async function getDailyShippingScheduleAction(dateStr: string) {
         return d1 === dateStr || d2 === dateStr || dLocal === dateStr;
     });
 
-    return deliveries.map((d: any) => ({
-        id: d.id,
-        deliveryNumber: d.deliveryNumber,
-        poNumber: d.poNumber || "",
-        buyerName: d.buyerName || "",
-        driver: d.vehicleNumber || "",
-        warehouseName: d.warehouse?.name || "",
-        salesPerson: d.salesPerson || "",
-        date: d.date,
-        items: d.items.map((it: any) => ({
-            id: it.id,
-            productId: it.productId,
-            productName: it.product?.name || "Item",
-            quantity: Number(it.quantity || 0),
-            uom: it.uom || it.product?.uom || "UNIT"
-        }))
-    }));
+    return deliveries.map((d: any) => {
+        const inv = d.invoiceNumber || "";
+        const isTRN = inv.startsWith("KB-TRN") || Number(d.taxRate || 0) > 0;
+        const taxType = isTRN ? "KB-TRN" : "KB-TRD";
+
+        return {
+            id: d.id,
+            deliveryNumber: d.deliveryNumber,
+            invoiceNumber: inv,
+            taxRate: Number(d.taxRate || 0),
+            taxType: taxType,
+            poNumber: d.poNumber || "",
+            buyerName: d.buyerName || "",
+            driver: d.vehicleNumber || "",
+            warehouseName: d.warehouse?.name || "",
+            salesPerson: d.salesPerson || "",
+            date: d.date,
+            items: d.items.map((it: any) => ({
+                id: it.id,
+                productId: it.productId,
+                productName: it.product?.name || "Item",
+                quantity: Number(it.quantity || 0),
+                uom: it.uom || it.product?.uom || "UNIT"
+            }))
+        };
+    });
 }
 
 export async function updateDeliveryDriverAction(deliveryId: string, driver: string) {
