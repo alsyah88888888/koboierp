@@ -257,6 +257,44 @@ export async function updateDeliveryDriverAction(deliveryId: string, driver: str
     return { success: true, vehicleNumber: updated.vehicleNumber };
 }
 
+export async function unloadDriverDeliveriesAction(dateStr: string, driverName: string) {
+    const { getPrisma } = require("@/lib/prisma");
+    const prisma = getPrisma();
+
+    const startUtc = new Date(dateStr + "T00:00:00.000Z");
+    startUtc.setHours(startUtc.getHours() - 12);
+    const endUtc = new Date(dateStr + "T23:59:59.999Z");
+    endUtc.setHours(endUtc.getHours() + 12);
+
+    const cleanDriver = driverName.trim();
+
+    // 1. Clear vehicleNumber in SalesDelivery for this driver around this date
+    await prisma.salesDelivery.updateMany({
+        where: {
+            OR: [
+                { date: { gte: startUtc, lte: endUtc } },
+                { createdAt: { gte: startUtc, lte: endUtc } }
+            ],
+            vehicleNumber: { equals: cleanDriver, mode: 'insensitive' }
+        },
+        data: { vehicleNumber: "" }
+    });
+
+    // 2. Clear driver in ShippingMapping for this driver on this date
+    await prisma.shippingMapping.updateMany({
+        where: {
+            date: { gte: startUtc, lte: endUtc },
+            driver: { equals: cleanDriver, mode: 'insensitive' }
+        },
+        data: { driver: null }
+    });
+
+    revalidatePath("/warehouse");
+    revalidatePath("/warehouse/jadwal-pengiriman");
+    revalidatePath("/delivery");
+    return { success: true };
+}
+
 export async function saveShippingMappingBatchAction(data: {
     dateStr: string;
     category: "KB-TRN" | "KB-TRD";

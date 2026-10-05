@@ -108,6 +108,8 @@ export function ShippingScheduleDashboard({
     const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(new Set());
     const [lastCompletedDriver, setLastCompletedDriver] = useState<string>("");
     const [physicalChecklist, setPhysicalChecklist] = useState<Record<string, boolean>>({});
+    const [editingDriver, setEditingDriver] = useState<string | null>(null);
+    const [unloadingDriver, setUnloadingDriver] = useState<string | null>(null);
 
     // Tax Filter for selection/table
     const [taxFilter, setTaxFilter] = useState<"ALL" | "KB-TRN" | "KB-TRD">("ALL");
@@ -280,8 +282,21 @@ export function ShippingScheduleDashboard({
     }, [activeDrivers]);
 
     // SEPARATION OF QUEUES:
-    // 1. unassignedQueue: Items that have NOT been loaded into any vehicle (shown in Step 1)
+    // 1. selectableItems: Items that can be selected in Step 1.
+    //    If editingDriver is set, includes unassigned items PLUS items belonging to editingDriver.
+    //    If not editing, includes only unassigned items.
     // 2. loadedQueue: Items that have been loaded into vehicles (shown in Completed Fleet)
+    const selectableItems = useMemo(() => {
+        return items.filter(item => {
+            const drv = (item.driver || "").trim().toUpperCase();
+            const isUnassigned = !drv || drv === "PILIH DRIVER" || drv === "-";
+            const isBelongingToCurrentEdit = editingDriver && drv === editingDriver.toUpperCase();
+            if (!isUnassigned && !isBelongingToCurrentEdit) return false;
+            if (taxFilter !== "ALL" && item.taxType !== taxFilter) return false;
+            return true;
+        });
+    }, [items, taxFilter, editingDriver]);
+
     const unassignedItems = useMemo(() => {
         return items.filter(item => {
             const drv = (item.driver || "").trim().toUpperCase();
@@ -313,14 +328,14 @@ export function ShippingScheduleDashboard({
     }, [loadedItems]);
 
     // Selection handling for Step 1
-    const isAllUnassignedSelected = unassignedItems.length > 0 && unassignedItems.every(i => selectedItemIds.has(i.id));
+    const isAllSelectableSelected = selectableItems.length > 0 && selectableItems.every(i => selectedItemIds.has(i.id));
 
     const handleToggleSelectAll = () => {
-        if (isAllUnassignedSelected) {
+        if (isAllSelectableSelected) {
             setSelectedItemIds(new Set());
         } else {
             const next = new Set<string>();
-            unassignedItems.forEach(i => next.add(i.id));
+            selectableItems.forEach(i => next.add(i.id));
             setSelectedItemIds(next);
         }
     };
@@ -329,7 +344,7 @@ export function ShippingScheduleDashboard({
         setSelectedItemIds(prev => {
             const next = new Set(prev);
             if (deliveryId) {
-                const siblingItems = unassignedItems.filter(i => i.deliveryId === deliveryId);
+                const siblingItems = selectableItems.filter(i => i.deliveryId === deliveryId);
                 const isSelected = siblingItems.some(i => next.has(i.id));
                 if (isSelected) {
                     siblingItems.forEach(i => next.delete(i.id));
@@ -371,6 +386,22 @@ export function ShippingScheduleDashboard({
         setWizardStep(2);
     };
 
+    // Edit an already loaded vehicle
+    const handleEditVehicleLoad = (drvName: string) => {
+        const cleanDriver = drvName.trim().toUpperCase();
+        const fleetInfo = getFleetByDriverOrPlate(cleanDriver);
+        const driverItems = items.filter(i => (i.driver || "").trim().toUpperCase() === cleanDriver);
+        const targetItemIds = new Set(driverItems.map(i => i.id));
+
+        setEditingDriver(cleanDriver);
+        setSelectedDriver(cleanDriver);
+        setSelectedVehiclePlate(fleetInfo?.plate || "");
+        setSelectedEtoll(fleetInfo?.etoll || "");
+        setSelectedItemIds(targetItemIds);
+        setMainView("WIZARD");
+        setWizardStep(1);
+    };
+
     // CONFIRM LOADING (Step 2 -> Step 3)
     // Saves driver to database and REMOVES items from the unassigned loading queue!
     const handleConfirmLoading = async () => {
@@ -379,30 +410,55 @@ export function ShippingScheduleDashboard({
         const upperDriver = selectedDriver.trim().toUpperCase();
 
         try {
-            const delivIds = Array.from(new Set(selectedItemsForVerification.map(i => i.deliveryId).filter(Boolean))) as string[];
+            const newlySelectedDelivIds = Array.from(new Set(selectedItemsForVerification.map(i => i.deliveryId).filter(Boolean))) as string[];
 
-            // Update local state
+            // Find items that were previously assigned to this driver (or editingDriver) that are now REMOVED
+            const prevDriverName = (editingDriver || selectedDriver).trim().toUpperCase();
+            const previouslyLoadedItems = items.filter(i => (i.driver || "").trim().toUpperCase() === prevDriverName);
+            const unselectedItems = previouslyLoadedItems.filter(i => !selectedItemIds.has(i.id));
+            const removedDelivIds = Array.from(new Set(unselectedItems.map(i => i.deliveryId).filter(Boolean))) as string[];
+
+            // Update items locally
             setItems(prev => prev.map(item => {
-                if (selectedItemIds.has(item.id) || (item.deliveryId && delivIds.includes(item.deliveryId))) {
+                if (selectedItemIds.has(item.id) || (item.deliveryId && newlySelectedDelivIds.includes(item.deliveryId))) {
                     return { 
                         ...item, 
                         driver: upperDriver,
-                        vehiclePlate: selectedVehiclePlate.trim().toUpperCase()
+                        vehiclePlate: selectedVehiclePlate.trim().toUpperCase(),
+                        etollCard: selectedEtoll.trim()
                     };
+                }
+                if ((item.driver || "").trim().toUpperCase() === prevDriverName) {
+                    return { ...item, driver: "", vehiclePlate: "", etollCard: "" };
                 }
                 return item;
             }));
 
-            // Save to database in parallel
-            if (delivIds.length > 0) {
-                await Promise.all(
-                    delivIds.map(dId => callAction("updateDeliveryDriver", dId, upperDriver).catch(console.error))
-                );
-            }
+            // Also update deliveries state locally
+            setDeliveries(prev => prev.map(d => {
+                if (newlySelectedDelivIds.includes(d.id)) {
+                    return { ...d, driver: upperDriver, vehicleNumber: upperDriver };
+                }
+                if (removedDelivIds.includes(d.id)) {
+                    return { ...d, driver: "", vehicleNumber: "" };
+                }
+                return d;
+            }));
+
+            // Save in database
+            const updatePromises: Promise<any>[] = [];
+            newlySelectedDelivIds.forEach(dId => {
+                updatePromises.push(callAction("updateDeliveryDriver", dId, upperDriver).catch(console.error));
+            });
+            removedDelivIds.forEach(dId => {
+                updatePromises.push(callAction("updateDeliveryDriver", dId, "").catch(console.error));
+            });
+            await Promise.all(updatePromises);
 
             setLastCompletedDriver(upperDriver);
+            setEditingDriver(null);
             setWizardStep(3);
-            setSaveFeedback(`Barang berhasil dimuat ke armada ${upperDriver}! Barang ini telah keluar dari antrian muat.`);
+            setSaveFeedback(`Barang berhasil disimpan ke armada ${upperDriver}! Form manifest siap dicetak.`);
             setTimeout(() => setSaveFeedback(null), 6000);
         } catch (err: any) {
             console.error("Gagal menyimpan muatan:", err);
@@ -412,25 +468,50 @@ export function ShippingScheduleDashboard({
         }
     };
 
-    // Return items from a loaded vehicle back to unassigned queue
+    // Return items from a loaded vehicle back to unassigned queue (Fixed bug & cleans both SalesDelivery and ShippingMapping)
     const handleUnloadVehicle = async (driverName: string) => {
-        const confirmUnload = window.confirm(`Apakah Anda yakin ingin membatalkan pemuatan untuk sopir ${driverName}? Barang akan kembali ke antrian muat.`);
+        const cleanDriver = driverName.trim().toUpperCase();
+        const confirmUnload = window.confirm(
+            `Apakah Anda yakin ingin membatalkan pemuatan untuk armada ${cleanDriver}?\n\nSemua barang pada armada ini akan dikembalikan ke antrian muat lantai gudang.`
+        );
         if (!confirmUnload) return;
 
-        const driverItems = items.filter(i => (i.driver || "").trim().toUpperCase() === driverName);
-        const delivIds = Array.from(new Set(driverItems.map(i => i.deliveryId).filter(Boolean))) as string[];
+        setUnloadingDriver(cleanDriver);
+        try {
+            // 1. Immediately update items locally so UI updates instantly
+            setItems(prev => prev.map(item => {
+                if ((item.driver || "").trim().toUpperCase() === cleanDriver) {
+                    return { ...item, driver: "", vehiclePlate: "", etollCard: "" };
+                }
+                return item;
+            }));
 
-        setItems(prev => prev.map(item => {
-            if ((item.driver || "").trim().toUpperCase() === driverName) {
-                return { ...item, driver: "" };
+            // 2. Also update deliveries state locally
+            setDeliveries(prev => prev.map(d => {
+                if ((d.driver || d.vehicleNumber || "").trim().toUpperCase() === cleanDriver) {
+                    return { ...d, driver: "", vehicleNumber: "" };
+                }
+                return d;
+            }));
+
+            // 3. Call server action to clear both SalesDelivery and ShippingMapping in database
+            await callAction("unloadDriverDeliveries", selectedDate, cleanDriver);
+
+            // If we were editing this driver, reset edit state
+            if (editingDriver === cleanDriver) {
+                setEditingDriver(null);
+                setSelectedItemIds(new Set());
             }
-            return item;
-        }));
 
-        if (delivIds.length > 0) {
-            await Promise.all(
-                delivIds.map(dId => callAction("updateDeliveryDriver", dId, "").catch(console.error))
-            );
+            setSaveFeedback(`Seluruh muatan armada ${cleanDriver} berhasil dibatalkan dan telah kembali ke antrian lantai gudang.`);
+            setTimeout(() => setSaveFeedback(null), 6000);
+        } catch (err: any) {
+            console.error("Gagal membatalkan muatan:", err);
+            alert("Terjadi kesalahan saat membatalkan muatan: " + (err.message || String(err)));
+            // Re-fetch to guarantee consistency
+            await fetchSchedule(selectedDate);
+        } finally {
+            setUnloadingDriver(null);
         }
     };
 
@@ -440,6 +521,7 @@ export function ShippingScheduleDashboard({
         setSelectedDriver("");
         setSelectedVehiclePlate("");
         setSelectedEtoll("");
+        setEditingDriver(null);
         setWizardStep(1);
     };
 
@@ -805,6 +887,37 @@ export function ShippingScheduleDashboard({
                         {/* ------------------------------------------------------------- */}
                         {wizardStep === 1 && (
                             <div className="space-y-4">
+                                {/* Edit Mode Banner if editing an already loaded vehicle */}
+                                {editingDriver && (
+                                    <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm animate-in fade-in">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center font-black shrink-0">
+                                                <Edit3 className="w-5 h-5" />
+                                            </div>
+                                            <div>
+                                                <h4 className="text-xs sm:text-sm font-black text-amber-950 uppercase">
+                                                    Mode Edit Muatan Armada: {editingDriver}
+                                                </h4>
+                                                <p className="text-xs text-amber-800">
+                                                    Anda sedang mengubah muatan sopir <strong className="font-bold">{editingDriver}</strong>. Hapus centang untuk mengembalikan barang ke antrian gudang, atau centang barang baru dari antrian untuk ditambahkan ke mobil ini.
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={() => {
+                                                setEditingDriver(null);
+                                                setSelectedItemIds(new Set());
+                                                setSelectedDriver("");
+                                                setSelectedVehiclePlate("");
+                                                setSelectedEtoll("");
+                                            }}
+                                            className="px-3.5 py-1.5 bg-white border border-amber-300 hover:bg-amber-100 text-amber-900 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer self-start sm:self-center shrink-0"
+                                        >
+                                            Batal Edit
+                                        </button>
+                                    </div>
+                                )}
+
                                 {/* Driver Assignment Setup Card */}
                                 <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
                                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -897,18 +1010,22 @@ export function ShippingScheduleDashboard({
                                     </div>
                                 </div>
 
-                                {/* Table of UNASSIGNED Deliveries Waiting to be Loaded */}
+                                {/* Table of Deliveries Waiting to be Loaded / Being Edited */}
                                 <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                                     <div className="p-4 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
                                         <div>
                                             <h3 className="text-sm font-black text-slate-900 uppercase tracking-wide flex items-center gap-2">
                                                 <span>2. Centang Pesanan yang Dimuat ke Mobil Ini</span>
-                                                <span className="bg-amber-100 text-amber-900 text-[10px] font-black px-2 py-0.5 rounded-full">
-                                                    {unassignedItems.length} Antri di Lantai Gudang
+                                                <span className={`${editingDriver ? "bg-indigo-100 text-indigo-900" : "bg-amber-100 text-amber-900"} text-[10px] font-black px-2 py-0.5 rounded-full`}>
+                                                    {editingDriver 
+                                                        ? `${selectableItems.length} Tersedia (Termasuk Muatan ${editingDriver})`
+                                                        : `${selectableItems.length} Antri di Lantai Gudang`}
                                                 </span>
                                             </h3>
                                             <p className="text-xs text-slate-500 mt-0.5">
-                                                Barang yang sudah selesai dimuat otomatis tidak muncul lagi di antrian ini.
+                                                {editingDriver 
+                                                    ? "Centang untuk menambahkan ke muatan, atau hilangkan centang untuk mengembalikan barang ke antrian gudang."
+                                                    : "Barang yang sudah selesai dimuat otomatis tidak muncul lagi di antrian ini."}
                                             </p>
                                         </div>
 
@@ -917,12 +1034,12 @@ export function ShippingScheduleDashboard({
                                                 onClick={handleToggleSelectAll}
                                                 className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-black transition-all cursor-pointer"
                                             >
-                                                {isAllUnassignedSelected ? "Batalkan Semua" : "Pilih Semua Antrian"}
+                                                {isAllSelectableSelected ? "Batalkan Semua" : "Pilih Semua"}
                                             </button>
                                         </div>
                                     </div>
 
-                                    {unassignedItems.length === 0 ? (
+                                    {selectableItems.length === 0 ? (
                                         <div className="text-center py-16 px-4">
                                             <Truck className="h-12 w-12 text-emerald-500 mx-auto mb-3" />
                                             <h4 className="text-base font-black text-slate-800">
@@ -947,7 +1064,7 @@ export function ShippingScheduleDashboard({
                                                         <th className="py-3 px-3 w-10 text-center">
                                                             <input
                                                                 type="checkbox"
-                                                                checked={isAllUnassignedSelected}
+                                                                checked={isAllSelectableSelected}
                                                                 onChange={handleToggleSelectAll}
                                                                 className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
                                                             />
@@ -958,13 +1075,14 @@ export function ShippingScheduleDashboard({
                                                         <th className="py-3 px-4 w-44">BUYER / CUSTOMER</th>
                                                         <th className="py-3 px-4">NAMA PRODUK</th>
                                                         <th className="py-3 px-3 w-20 text-right">QTY</th>
-                                                        <th className="py-3 px-3 w-20 text-center">STATUS</th>
+                                                        <th className="py-3 px-3 w-24 text-center">STATUS</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody className="divide-y divide-slate-100">
-                                                    {unassignedItems.map((item, index) => {
+                                                    {selectableItems.map((item, index) => {
                                                         const isSelected = selectedItemIds.has(item.id);
                                                         const realInvoice = getRealisticInvoiceNumber(item, index);
+                                                        const isAlreadyInEditingFleet = editingDriver && (item.driver || "").trim().toUpperCase() === editingDriver;
 
                                                         return (
                                                             <tr 
@@ -1004,9 +1122,15 @@ export function ShippingScheduleDashboard({
                                                                     {Number(item.quantity).toLocaleString("id-ID")}
                                                                 </td>
                                                                 <td className="py-2.5 px-3 text-center">
-                                                                    <span className="bg-amber-100 text-amber-800 text-[9px] font-black px-2 py-0.5 rounded-full uppercase">
-                                                                        Belum Muat
-                                                                    </span>
+                                                                    {isAlreadyInEditingFleet ? (
+                                                                        <span className="bg-indigo-100 text-indigo-800 text-[9px] font-black px-2 py-0.5 rounded-full uppercase">
+                                                                            Muatan Saat Ini
+                                                                        </span>
+                                                                    ) : (
+                                                                        <span className="bg-amber-100 text-amber-800 text-[9px] font-black px-2 py-0.5 rounded-full uppercase">
+                                                                            Belum Muat
+                                                                        </span>
+                                                                    )}
                                                                 </td>
                                                             </tr>
                                                         );
@@ -1560,31 +1684,48 @@ export function ShippingScheduleDashboard({
                                                 </div>
                                             </div>
 
-                                            <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+                                            <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-slate-100">
                                                 <button
                                                     onClick={() => handleUnloadVehicle(drvName)}
-                                                    className="text-rose-600 hover:text-rose-700 text-xs font-bold transition-colors cursor-pointer flex items-center gap-1"
+                                                    disabled={unloadingDriver === drvName}
+                                                    className="text-rose-600 hover:text-rose-700 disabled:opacity-50 text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 py-1 px-2 rounded-lg hover:bg-rose-50"
+                                                    title="Batalkan seluruh muatan dan kembalikan ke antrian gudang"
                                                 >
-                                                    <RotateCcw className="w-3.5 h-3.5" />
-                                                    <span>Batalkan Muat</span>
+                                                    {unloadingDriver === drvName ? (
+                                                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                                    ) : (
+                                                        <RotateCcw className="w-3.5 h-3.5" />
+                                                    )}
+                                                    <span>{unloadingDriver === drvName ? "Membatalkan..." : "Batalkan Muat"}</span>
                                                 </button>
 
-                                                <button
-                                                    onClick={() => {
-                                                        const targetItemIds = new Set(drvItems.map(i => i.id));
-                                                        setSelectedItemIds(targetItemIds);
-                                                        setSelectedDriver(drvName);
-                                                        setSelectedVehiclePlate(fleetInfo?.plate || "");
-                                                        setSelectedEtoll(fleetInfo?.etoll || "");
-                                                        setLastCompletedDriver(drvName);
-                                                        setMainView("WIZARD");
-                                                        setWizardStep(3);
-                                                    }}
-                                                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-black px-3.5 py-1.5 rounded-xl text-xs uppercase tracking-wider shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
-                                                >
-                                                    <Printer className="w-3.5 h-3.5" />
-                                                    <span>Lihat / Cetak Form</span>
-                                                </button>
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        onClick={() => handleEditVehicleLoad(drvName)}
+                                                        className="bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold px-3 py-1.5 rounded-xl text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                                                        title="Ubah atau tambah/kurang barang muatan armada ini"
+                                                    >
+                                                        <Edit3 className="w-3.5 h-3.5 text-amber-700" />
+                                                        <span>Edit Muatan</span>
+                                                    </button>
+
+                                                    <button
+                                                        onClick={() => {
+                                                            const targetItemIds = new Set(drvItems.map(i => i.id));
+                                                            setSelectedItemIds(targetItemIds);
+                                                            setSelectedDriver(drvName);
+                                                            setSelectedVehiclePlate(fleetInfo?.plate || "");
+                                                            setSelectedEtoll(fleetInfo?.etoll || "");
+                                                            setLastCompletedDriver(drvName);
+                                                            setMainView("WIZARD");
+                                                            setWizardStep(3);
+                                                        }}
+                                                        className="bg-indigo-600 hover:bg-indigo-700 text-white font-black px-3.5 py-1.5 rounded-xl text-xs uppercase tracking-wider shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                                                    >
+                                                        <Printer className="w-3.5 h-3.5" />
+                                                        <span>Lihat / Cetak Form</span>
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     );
