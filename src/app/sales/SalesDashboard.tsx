@@ -48,6 +48,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
     const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
     const [showExportModal, setShowExportModal] = useState(false);
     const [exportType, setExportType] = useState<"SJ" | "INVOICE" | "PI">("INVOICE");
+    const [salesFilter, setSalesFilter] = useState<string>("ALL");
 
     useEffect(() => {
         setIsClient(true);
@@ -203,13 +204,15 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
         const matchesMonth = selectedDate ? true : (dDate.getMonth() + 1) === selectedMonth;
         const matchesYear = selectedDate ? true : dDate.getFullYear() === selectedYear;
         const matchesDate = selectedDate ? format(dDate, 'yyyy-MM-dd') === selectedDate : true;
+        const matchesSales = salesFilter === "ALL" || (d.salesPerson || "").toUpperCase() === salesFilter.toUpperCase();
         const piNum = d.order?.proformaNumber || (d.order?.orderNumber?.startsWith("KB-PI-") ? d.order.orderNumber : null);
         const matchesSearch = d.deliveryNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
                              d.recipient.toLowerCase().includes(searchTerm.toLowerCase()) ||
                              d.buyerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                             (d.salesPerson && d.salesPerson.toLowerCase().includes(searchTerm.toLowerCase())) ||
                              (d.invoiceNumber && d.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase())) ||
                              (piNum && piNum.toLowerCase().includes(searchTerm.toLowerCase()));
-        return matchesMonth && matchesYear && matchesDate && matchesSearch;
+        return matchesMonth && matchesYear && matchesDate && matchesSales && matchesSearch;
     });
 
     const groupedDeliveries = useMemo(() => {
@@ -262,9 +265,11 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
         const matchesMonth = selectedDate ? true : (rDate.getMonth() + 1) === selectedMonth;
         const matchesYear = selectedDate ? true : rDate.getFullYear() === selectedYear;
         const matchesDate = selectedDate ? format(rDate, 'yyyy-MM-dd') === selectedDate : true;
+        const matchesSales = salesFilter === "ALL" || (r.delivery?.salesPerson || "").toUpperCase() === salesFilter.toUpperCase();
         const matchesSearch = r.returnNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                             (r.delivery?.salesPerson && r.delivery.salesPerson.toLowerCase().includes(searchTerm.toLowerCase())) ||
                              r.delivery?.buyerName.toLowerCase().includes(searchTerm.toLowerCase());
-        return matchesMonth && matchesYear && matchesDate && matchesSearch;
+        return matchesMonth && matchesYear && matchesDate && matchesSales && matchesSearch;
     });
     
     const filteredOrders = initialSalesOrders.filter(o => {
@@ -272,9 +277,11 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
         const matchesMonth = selectedDate ? true : (oDate.getMonth() + 1) === selectedMonth;
         const matchesYear = selectedDate ? true : oDate.getFullYear() === selectedYear;
         const matchesDate = selectedDate ? format(oDate, 'yyyy-MM-dd') === selectedDate : true;
+        const matchesSales = salesFilter === "ALL" || (o.salesPerson || "").toUpperCase() === salesFilter.toUpperCase();
         const matchesSearch = o.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                             o.buyerName.toLowerCase().includes(searchTerm.toLowerCase());
-        return matchesMonth && matchesYear && matchesDate && matchesSearch;
+                             o.buyerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                             (o.salesPerson && o.salesPerson.toLowerCase().includes(searchTerm.toLowerCase()));
+        return matchesMonth && matchesYear && matchesDate && matchesSales && matchesSearch;
     });
 
     const handleExport = () => {
@@ -767,7 +774,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-[1400px]">
                 {/* BC Performance Card */}
                 {(isAdmin || bcStats.sjCount > 0) && (
-                    <div className="bg-white border border-slate-200 rounded-[2rem] p-6 md:p-8 relative overflow-hidden group hover:shadow-xl hover:shadow-indigo-500/5 transition-all duration-300">
+                    <div onClick={() => setSalesFilter(salesFilter === "BC" ? "ALL" : "BC")} className={`bg-white border ${salesFilter === "BC" ? "border-indigo-500 ring-2 ring-indigo-500/20 shadow-lg" : "border-slate-200"} rounded-[2rem] p-6 md:p-8 relative overflow-hidden group hover:shadow-xl hover:shadow-indigo-500/5 transition-all duration-300 cursor-pointer`}>
                         <div className="absolute -right-12 -top-12 h-48 w-48 bg-indigo-50 rounded-full blur-3xl transition-transform group-hover:scale-110 opacity-60" />
                         
                         <div className="relative z-10">
@@ -827,7 +834,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
 
                 {/* PF Performance Card */}
                 {(isAdmin || pfStats.sjCount > 0) && (
-                    <div className="bg-white border border-slate-200 rounded-[2rem] p-6 md:p-8 relative overflow-hidden group hover:shadow-xl hover:shadow-amber-500/5 transition-all duration-300">
+                    <div onClick={() => setSalesFilter(salesFilter === "PF" ? "ALL" : "PF")} className={`bg-white border ${salesFilter === "PF" ? "border-amber-500 ring-2 ring-amber-500/20 shadow-lg" : "border-slate-200"} rounded-[2rem] p-6 md:p-8 relative overflow-hidden group hover:shadow-xl hover:shadow-amber-500/5 transition-all duration-300 cursor-pointer`}>
                         <div className="absolute -right-12 -top-12 h-48 w-48 bg-amber-50 rounded-full blur-3xl transition-transform group-hover:scale-110 opacity-60" />
                         
                         <div className="relative z-10">
@@ -887,7 +894,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
 
                 {/* OWEN Performance Card */}
                 {(isAdmin || owenStats.sjCount > 0) && (
-                    <div className="bg-white border border-slate-200 rounded-[2rem] p-6 md:p-8 relative overflow-hidden group hover:shadow-xl hover:shadow-emerald-500/5 transition-all duration-300">
+                    <div onClick={() => setSalesFilter(salesFilter === "OWEN" ? "ALL" : "OWEN")} className={`bg-white border ${salesFilter === "OWEN" ? "border-emerald-500 ring-2 ring-emerald-500/20 shadow-lg" : "border-slate-200"} rounded-[2rem] p-6 md:p-8 relative overflow-hidden group hover:shadow-xl hover:shadow-emerald-500/5 transition-all duration-300 cursor-pointer`}>
                         <div className="absolute -right-12 -top-12 h-48 w-48 bg-emerald-50 rounded-full blur-3xl transition-transform group-hover:scale-110 opacity-60" />
                         
                         <div className="relative z-10">
@@ -1045,6 +1052,16 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                                 {[2024, 2025, 2026].map(y => (
                                     <option key={y} value={y}>{y}</option>
                                 ))}
+                            </select>
+                            <select 
+                                value={salesFilter}
+                                onChange={(e) => setSalesFilter(e.target.value)}
+                                className="w-full md:w-36 px-4 py-3 bg-slate-50 border-2 border-slate-100 rounded-2xl text-xs font-black uppercase tracking-widest focus:outline-none focus:border-primary transition-all text-slate-700"
+                            >
+                                <option value="ALL">Semua Sales</option>
+                                <option value="BC">Sales BC</option>
+                                <option value="PF">Sales PF</option>
+                                <option value="OWEN">Sales OWEN</option>
                             </select>
                         </div>
                         <div className="relative w-full md:w-80 group">
