@@ -34,6 +34,7 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
     const [categoryFilter, setCategoryFilter] = useState<string>("ALL");
     const [vendorFilter, setVendorFilter] = useState<string>("ALL");
     const [salesFilter, setSalesFilter] = useState<string>("ALL");
+    const [sortBy, setSortBy] = useState<"STOCK_FIRST" | "QTY_DESC" | "QTY_ASC" | "NAME_ASC" | "SKU_ASC">("STOCK_FIRST");
     const [allExpanded, setAllExpanded] = useState<boolean>(false);
 
     const [selectedStockForAdjustment, setSelectedStockForAdjustment] = useState<{product: any, stock: any} | null>(null);
@@ -77,36 +78,122 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
         return Array.from(set).sort((a, b) => a.localeCompare(b));
     }, [initialProducts]);
 
-    // Extract unique sales persons
+    // Pre-indexed map for unverified receipts to ensure O(1) instantaneous lookups and avoid main thread freezes
+    const receiptMetaMap = useMemo(() => {
+        const map = new Map<string, { salesPerson: string; hpp: number; taxRate: number }>();
+        if (!Array.isArray(unverifiedReceipts)) return map;
+        for (const r of unverifiedReceipts) {
+            if (!r || !Array.isArray(r.items)) continue;
+            const vendor = String(r.receivedFrom || "CIBINONG").trim().toLowerCase();
+            const sp = String(r.salesPerson || "").trim();
+            const tax = Number(r.taxRate || 0);
+            for (const item of r.items) {
+                if (!item || !item.productId) continue;
+                const price = Number(item.purchasePrice || 0);
+                const key = `${item.productId}_${vendor}`;
+                if (!map.has(key)) {
+                    map.set(key, { salesPerson: sp && sp !== "-" ? sp : "-", hpp: price, taxRate: tax });
+                }
+                if (!map.has(item.productId)) {
+                    map.set(item.productId, { salesPerson: sp && sp !== "-" ? sp : "-", hpp: price, taxRate: tax });
+                }
+            }
+        }
+        return map;
+    }, [unverifiedReceipts]);
+
+    // Safe, O(1) metadata lookup without nested array searches
+    const getStockMetadata = (productId: string, warehouseId: string, vendorName: string) => {
+        const prod = initialProducts.find((p: any) => p.id === productId);
+        const vKey = String(vendorName || "CIBINONG").trim().toLowerCase();
+        const stock = (prod?.stocks || []).find((s: any) =>
+            s.warehouseId === warehouseId &&
+            String(s.vendorName || "CIBINONG").trim().toLowerCase() === vKey
+        );
+
+        if (stock && stock.salesPerson && stock.salesPerson !== "-") {
+            return {
+                salesPerson: stock.salesPerson,
+                hpp: Number(stock.hpp || prod?.purchasePrice || 0),
+                taxRate: Number(stock.taxRate || 0)
+            };
+        }
+
+        const fallback = receiptMetaMap.get(`${productId}_${vKey}`) || receiptMetaMap.get(productId);
+        return {
+            salesPerson: fallback?.salesPerson || stock?.salesPerson || "-",
+            hpp: fallback?.hpp || Number(stock?.hpp || prod?.purchasePrice || 0),
+            taxRate: fallback?.taxRate || Number(stock?.taxRate || 0)
+        };
+    };
+
+    // Extract unique sales persons safely
     const availableSales = useMemo(() => {
         const set = new Set<string>();
         initialProducts.forEach((p: any) => {
             (p.stocks || []).forEach((s: any) => {
-                const sp = (s.salesPerson || "").trim();
+                const sp = String(s.salesPerson || "").trim();
                 if (sp && sp !== "-") set.add(sp);
             });
         });
         (unverifiedReceipts || []).forEach((r: any) => {
-            const sp = (r.salesPerson || "").trim();
+            const sp = String(r?.salesPerson || "").trim();
             if (sp && sp !== "-") set.add(sp);
         });
         return Array.from(set).sort();
     }, [initialProducts, unverifiedReceipts]);
 
-    // Count products with negative stock
-    const minusCount = useMemo(() => {
-        return initialProducts.filter((p: any) =>
-            (p.stocks || []).some((s: any) => Number(s.quantity || 0) < 0)
-        ).length;
+    // Precalculate net quantities per product matching active warehouse, vendor, and sales filters
+    const productQtyMap = useMemo(() => {
+        const map = new Map<string, number>();
+        for (const p of initialProducts) {
+            let total = 0;
+            for (const s of (p.stocks || [])) {
+                if (warehouseFilter !== "ALL" && s.warehouseId !== warehouseFilter) continue;
+                if (vendorFilter !== "ALL" && String(s.vendorName || "CIBINONG").trim().toLowerCase() !== vendorFilter.trim().toLowerCase()) continue;
+                if (salesFilter !== "ALL") {
+                    const sp = s.salesPerson || getStockMetadata(p.id, s.warehouseId, s.vendorName).salesPerson;
+                    if (sp !== salesFilter) continue;
+                }
+                total += Number(s.quantity || 0);
+            }
+            map.set(p.id, total);
+        }
+        return map;
+    }, [initialProducts, warehouseFilter, vendorFilter, salesFilter, receiptMetaMap]);
+
+    // Single-pass statistical overview of inventory
+    const stockStats = useMemo(() => {
+        let minus = 0;
+        let low = 0;
+        let inStock = 0;
+        let empty = 0;
+
+        for (const p of initialProducts) {
+            const stocks = p.stocks || [];
+            const total = stocks.reduce((sum: number, s: any) => sum + Number(s.quantity || 0), 0);
+            const hasNeg = stocks.some((s: any) => Number(s.quantity || 0) < 0);
+            const threshold = Number(p.lowStockThreshold || 10);
+
+            if (hasNeg || total < 0) {
+                minus++;
+            }
+            if (total > 0 && total <= threshold) {
+                low++;
+            }
+            if (total > 0) {
+                inStock++;
+            }
+            if (total === 0) {
+                empty++;
+            }
+        }
+
+        return { minus, low, inStock, empty };
     }, [initialProducts]);
 
-    // Count products with low stock
-    const lowStockCount = useMemo(() => {
-        return initialProducts.filter((p: any) => {
-            const total = (p.stocks || []).reduce((sum: number, s: any) => sum + Number(s.quantity || 0), 0);
-            return total > 0 && total <= Number(p.lowStockThreshold || 10);
-        }).length;
-    }, [initialProducts]);
+    const minusCount = stockStats.minus;
+    const lowStockCount = stockStats.low;
 
     const isFiltered = Boolean(
         searchTerm.trim() !== "" ||
@@ -114,7 +201,8 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
         statusFilter !== "ALL" ||
         categoryFilter !== "ALL" ||
         vendorFilter !== "ALL" ||
-        salesFilter !== "ALL"
+        salesFilter !== "ALL" ||
+        sortBy !== "STOCK_FIRST"
     );
 
     const resetFilters = () => {
@@ -124,6 +212,7 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
         setCategoryFilter("ALL");
         setVendorFilter("ALL");
         setSalesFilter("ALL");
+        setSortBy("STOCK_FIRST");
     };
 
     const toggleAllExpand = () => {
@@ -141,7 +230,7 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
     };
 
     const filteredProducts = useMemo(() => {
-        return initialProducts.filter(p => {
+        const list = initialProducts.filter(p => {
             // 1. Text Search (SKU, Name, Barcode)
             if (searchTerm.trim()) {
                 const term = searchTerm.toLowerCase();
@@ -168,7 +257,7 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
             // 4. Vendor Filter
             if (vendorFilter !== "ALL") {
                 const hasVendor = allStocks.some((s: any) =>
-                    (s.vendorName || "CIBINONG").trim().toLowerCase() === vendorFilter.trim().toLowerCase()
+                    String(s.vendorName || "CIBINONG").trim().toLowerCase() === vendorFilter.trim().toLowerCase()
                 );
                 if (!hasVendor) return false;
             }
@@ -176,21 +265,25 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
             // 5. Sales Filter
             if (salesFilter !== "ALL") {
                 const hasSales = allStocks.some((s: any) => {
-                    const meta = getStockMetadata(p.id, s.warehouseId, s.vendorName);
-                    return meta.salesPerson === salesFilter;
+                    const sp = s.salesPerson || getStockMetadata(p.id, s.warehouseId, s.vendorName).salesPerson;
+                    return sp === salesFilter;
                 });
                 if (!hasSales) return false;
             }
 
             // 6. Status Filter
             if (statusFilter !== "ALL") {
+                const totalQty = productQtyMap.get(p.id) ?? 0;
                 const relevantStocks = allStocks.filter((s: any) => {
                     if (warehouseFilter !== "ALL" && s.warehouseId !== warehouseFilter) return false;
-                    if (vendorFilter !== "ALL" && (s.vendorName || "CIBINONG").trim().toLowerCase() !== vendorFilter.trim().toLowerCase()) return false;
+                    if (vendorFilter !== "ALL" && String(s.vendorName || "CIBINONG").trim().toLowerCase() !== vendorFilter.trim().toLowerCase()) return false;
+                    if (salesFilter !== "ALL") {
+                        const sp = s.salesPerson || getStockMetadata(p.id, s.warehouseId, s.vendorName).salesPerson;
+                        if (sp !== salesFilter) return false;
+                    }
                     return true;
                 });
 
-                const totalQty = relevantStocks.reduce((sum: number, s: any) => sum + Number(s.quantity || 0), 0);
                 const hasNegativeStock = relevantStocks.some((s: any) => Number(s.quantity || 0) < 0);
                 const threshold = Number(p.lowStockThreshold || 10);
 
@@ -207,39 +300,46 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
 
             return true;
         });
-    }, [initialProducts, searchTerm, warehouseFilter, statusFilter, categoryFilter, vendorFilter, salesFilter]);
 
-    const getStockMetadata = (productId: string, warehouseId: string, vendorName: string) => {
-        const prod = initialProducts.find((p: any) => p.id === productId);
-        const stock = (prod?.stocks || []).find((s: any) =>
-            s.warehouseId === warehouseId &&
-            (s.vendorName || "CIBINONG").trim().toLowerCase() === (vendorName || "CIBINONG").trim().toLowerCase()
-        );
+        // 7. Sort products based on sortBy (Default: Ada Stok Duluan)
+        return list.sort((a, b) => {
+            const qtyA = productQtyMap.get(a.id) ?? 0;
+            const qtyB = productQtyMap.get(b.id) ?? 0;
 
-        let matchingReceipt = unverifiedReceipts.find(r => 
-            (r.receivedFrom || "CIBINONG").trim().toLowerCase() === (vendorName || "CIBINONG").trim().toLowerCase() && 
-            r.items?.some((item: any) => item.productId === productId)
-        );
+            if (sortBy === "STOCK_FIRST") {
+                // Products that have stock (> 0) come first
+                if (qtyA > 0 && qtyB <= 0) return -1;
+                if (qtyA <= 0 && qtyB > 0) return 1;
+                // Among products with stock, order by quantity descending
+                if (qtyA > 0 && qtyB > 0) return qtyB - qtyA;
+                // For zero and minus items, put zero before minus
+                if (qtyA === 0 && qtyB < 0) return -1;
+                if (qtyA < 0 && qtyB === 0) return 1;
+                if (qtyA < 0 && qtyB < 0) return qtyA - qtyB;
+                return (a.name || "").localeCompare(b.name || "");
+            }
 
-        if (!matchingReceipt) {
-            matchingReceipt = unverifiedReceipts.find(r => 
-                r.items?.some((item: any) => item.productId === productId)
-            );
-        }
+            if (sortBy === "QTY_DESC") {
+                if (qtyA !== qtyB) return qtyB - qtyA;
+                return (a.name || "").localeCompare(b.name || "");
+            }
 
-        const matchingItem = matchingReceipt?.items?.find((item: any) => item.productId === productId);
-        const hpp = matchingItem?.purchasePrice ? Number(matchingItem.purchasePrice) : (stock?.hpp || Number(prod?.purchasePrice) || 0);
-        const salesPerson = (matchingReceipt?.salesPerson && matchingReceipt.salesPerson !== "-") 
-            ? matchingReceipt.salesPerson 
-            : (stock?.salesPerson || "-");
-        const taxRate = matchingReceipt?.taxRate ? Number(matchingReceipt.taxRate) : (stock?.taxRate || 0);
+            if (sortBy === "QTY_ASC") {
+                if (qtyA !== qtyB) return qtyA - qtyB;
+                return (a.name || "").localeCompare(b.name || "");
+            }
 
-        return {
-            salesPerson,
-            hpp,
-            taxRate
-        };
-    };
+            if (sortBy === "NAME_ASC") {
+                return (a.name || "").localeCompare(b.name || "");
+            }
+
+            if (sortBy === "SKU_ASC") {
+                return (a.sku || "").localeCompare(b.sku || "");
+            }
+
+            return 0;
+        });
+    }, [initialProducts, searchTerm, warehouseFilter, statusFilter, categoryFilter, vendorFilter, salesFilter, sortBy, productQtyMap]);
 
     const handleDeleteProduct = async (id: string) => {
         if (!confirm("Hapus produk ini? Semua data stok terkait juga akan dihapus.")) return;
@@ -259,10 +359,10 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                 (p.stocks || [])
                     .filter((s: any) => {
                         if (warehouseFilter !== "ALL" && s.warehouseId !== warehouseFilter) return false;
-                        if (vendorFilter !== "ALL" && (s.vendorName || "CIBINONG").trim().toLowerCase() !== vendorFilter.trim().toLowerCase()) return false;
+                        if (vendorFilter !== "ALL" && String(s.vendorName || "CIBINONG").trim().toLowerCase() !== vendorFilter.trim().toLowerCase()) return false;
                         if (salesFilter !== "ALL") {
-                            const meta = getStockMetadata(p.id, s.warehouseId, s.vendorName);
-                            if (meta.salesPerson !== salesFilter) return false;
+                            const sp = s.salesPerson || getStockMetadata(p.id, s.warehouseId, s.vendorName).salesPerson;
+                            if (sp !== salesFilter) return false;
                         }
                         if (statusFilter === "MINUS") return Number(s.quantity || 0) < 0;
                         if (statusFilter === "OUT_OF_STOCK") return Number(s.quantity || 0) === 0;
@@ -270,7 +370,8 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                     })
                     .map((s: any) => {
                         const meta = getStockMetadata(p.id, s.warehouseId, s.vendorName);
-                        const hpp = meta.hpp || Number(p.purchasePrice) || 0;
+                        const hpp = Math.round(s.hpp || meta.hpp || Number(p.purchasePrice) || 0);
+                        const salesPerson = s.salesPerson || meta.salesPerson || "-";
                         return {
                             'SKU': p.sku,
                             'Barcode': p.barcode || "-",
@@ -278,13 +379,13 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                             'Kategori': p.category || "-",
                             'Vendor / PT': s.vendorName || "CIBINONG",
                             'Gudang': warehouses.find(w => w.id === s.warehouseId)?.name || 'Unknown',
-                            'Sales Person': meta.salesPerson,
+                            'Sales Person': salesPerson,
                             'Satuan': p.uom,
                             'Total Stok': s.quantity,
                             'HPP (DPP)': hpp,
                             'PPN (%)': meta.taxRate || 0,
-                            'HPP + PPN': hpp * (1 + ((meta.taxRate || 0) / 100)),
-                            'Total Nilai (Inc. Tax)': (s.quantity || 0) * (hpp * (1 + ((meta.taxRate || 0) / 100))),
+                            'HPP + PPN': Math.round(hpp * (1 + ((meta.taxRate || 0) / 100))),
+                            'Total Nilai (Inc. Tax)': Math.round((s.quantity || 0) * (hpp * (1 + ((meta.taxRate || 0) / 100)))),
                             'Threshold': p.lowStockThreshold,
                             'Status': s.quantity < 0 ? 'MINUS' : s.quantity <= p.lowStockThreshold ? 'LOW' : 'NORMAL'
                         };
@@ -326,10 +427,10 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                 (p.stocks || [])
                     .filter((s: any) => {
                         if (warehouseFilter !== "ALL" && s.warehouseId !== warehouseFilter) return false;
-                        if (vendorFilter !== "ALL" && (s.vendorName || "CIBINONG").trim().toLowerCase() !== vendorFilter.trim().toLowerCase()) return false;
+                        if (vendorFilter !== "ALL" && String(s.vendorName || "CIBINONG").trim().toLowerCase() !== vendorFilter.trim().toLowerCase()) return false;
                         if (salesFilter !== "ALL") {
-                            const meta = getStockMetadata(p.id, s.warehouseId, s.vendorName);
-                            if (meta.salesPerson !== salesFilter) return false;
+                            const sp = s.salesPerson || getStockMetadata(p.id, s.warehouseId, s.vendorName).salesPerson;
+                            if (sp !== salesFilter) return false;
                         }
                         if (statusFilter === "MINUS") return Number(s.quantity || 0) < 0;
                         if (statusFilter === "OUT_OF_STOCK") return Number(s.quantity || 0) === 0;
@@ -337,14 +438,15 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                     })
                     .map((s: any) => {
                         const meta = getStockMetadata(p.id, s.warehouseId, s.vendorName);
-                        const hpp = meta.hpp || Number(p.purchasePrice) || 0;
+                        const hpp = Math.round(s.hpp || meta.hpp || Number(p.purchasePrice) || 0);
+                        const salesPerson = s.salesPerson || meta.salesPerson || "-";
                         return {
                             'SKU': p.sku,
                             'Nama Barang': p.name,
                             'Kategori': p.category || "-",
                             'Vendor / PT': s.vendorName || "CIBINONG",
                             'Gudang': warehouses.find(w => w.id === s.warehouseId)?.name || 'Unknown',
-                            'Sales Person': meta.salesPerson,
+                            'Sales Person': salesPerson,
                             'Satuan': p.uom,
                             'Total Stok': s.quantity,
                             'HPP (DPP)': hpp,
@@ -590,13 +692,19 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                             <button
                                                 onClick={() => setStatusFilter("IN_STOCK")}
                                                 className={cn(
-                                                    "px-3 py-1.5 rounded-lg text-xs font-bold transition-all",
+                                                    "px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5",
                                                     statusFilter === "IN_STOCK"
                                                         ? "bg-emerald-600 text-white shadow-xs"
                                                         : "text-slate-600 hover:text-emerald-700 hover:bg-white/50"
                                                 )}
                                             >
-                                                Ada Stok
+                                                <span>Ada Stok</span>
+                                                <span className={cn(
+                                                    "px-1.5 py-0.2 rounded-full text-[10px] font-extrabold",
+                                                    statusFilter === "IN_STOCK" ? "bg-white/20 text-white" : "bg-emerald-100 text-emerald-800"
+                                                )}>
+                                                    {stockStats.inStock}
+                                                </span>
                                             </button>
 
                                             <button
@@ -644,13 +752,19 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                             <button
                                                 onClick={() => setStatusFilter("OUT_OF_STOCK")}
                                                 className={cn(
-                                                    "px-3 py-1.5 rounded-lg text-xs font-bold transition-all",
+                                                    "px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5",
                                                     statusFilter === "OUT_OF_STOCK"
                                                         ? "bg-slate-800 text-white shadow-xs"
                                                         : "text-slate-600 hover:text-slate-900"
                                                 )}
                                             >
-                                                Kosong (0)
+                                                <span>Kosong</span>
+                                                <span className={cn(
+                                                    "px-1.5 py-0.2 rounded-full text-[10px] font-extrabold",
+                                                    statusFilter === "OUT_OF_STOCK" ? "bg-white/20 text-white" : "bg-slate-200 text-slate-700"
+                                                )}>
+                                                    {stockStats.empty}
+                                                </span>
                                             </button>
                                         </div>
                                     </div>
@@ -767,6 +881,27 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                             </div>
                                         )}
 
+                                        {/* Dropdown Sortir (Tampilkan Barang Yang Ada Stoknya) */}
+                                        <div className="w-full sm:w-auto">
+                                            <select
+                                                value={sortBy}
+                                                onChange={e => setSortBy(e.target.value as any)}
+                                                className={cn(
+                                                    "w-full sm:w-auto px-3 py-2 bg-slate-50 border rounded-xl text-xs font-semibold outline-none cursor-pointer transition-all",
+                                                    sortBy !== "STOCK_FIRST"
+                                                        ? "border-slate-800 text-slate-900 bg-white ring-1 ring-slate-800/10"
+                                                        : "border-slate-200 text-slate-600 hover:border-slate-300 focus:bg-white"
+                                                )}
+                                                title="Urutkan tampilan Master Stock"
+                                            >
+                                                <option value="STOCK_FIRST">Sortir: Ada Stok Duluan</option>
+                                                <option value="QTY_DESC">Sortir: Stok Terbanyak</option>
+                                                <option value="QTY_ASC">Sortir: Stok Terendah / Minus</option>
+                                                <option value="NAME_ASC">Sortir: Nama Produk (A-Z)</option>
+                                                <option value="SKU_ASC">Sortir: SKU (A-Z)</option>
+                                            </select>
+                                        </div>
+
                                         {/* Actions: Buka Semua / Reset */}
                                         <div className="flex items-center gap-1.5 ml-auto">
                                             <button
@@ -812,10 +947,10 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                             {filteredProducts.map((p: any) => {
                                                 const matchingStocks = (p.stocks || []).filter((s: any) => {
                                                     if (warehouseFilter !== "ALL" && s.warehouseId !== warehouseFilter) return false;
-                                                    if (vendorFilter !== "ALL" && (s.vendorName || "CIBINONG").trim().toLowerCase() !== vendorFilter.trim().toLowerCase()) return false;
+                                                    if (vendorFilter !== "ALL" && String(s.vendorName || "CIBINONG").trim().toLowerCase() !== vendorFilter.trim().toLowerCase()) return false;
                                                     if (salesFilter !== "ALL") {
-                                                        const meta = getStockMetadata(p.id, s.warehouseId, s.vendorName);
-                                                        if (meta.salesPerson !== salesFilter) return false;
+                                                        const sp = s.salesPerson || getStockMetadata(p.id, s.warehouseId, s.vendorName).salesPerson;
+                                                        if (sp !== salesFilter) return false;
                                                     }
                                                     return true;
                                                 });
@@ -828,8 +963,8 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                                             ? matchingStocks.filter((s: any) => Number(s.quantity || 0) > 0 && Number(s.quantity || 0) <= Number(p.lowStockThreshold || 10))
                                                             : matchingStocks.filter((s: any) => Number(s.quantity || 0) !== 0);
 
-                                                const totalNetQty = (matchingStocks.length > 0 ? matchingStocks : (p.stocks || []))
-                                                    .reduce((sum: number, s: any) => sum + Number(s.quantity || 0), 0);
+                                                const totalNetQty = productQtyMap.get(p.id) ?? 
+                                                    matchingStocks.reduce((sum: number, s: any) => sum + Number(s.quantity || 0), 0);
                                                 const hasSubStocks = activeStocks.length > 0;
                                                 const isExpanded = Boolean(expandedProducts[p.id] && hasSubStocks);
                                                 const hasNegative = matchingStocks.some((s: any) => Number(s.quantity || 0) < 0);
@@ -887,8 +1022,8 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                                             const isLow = s.quantity > 0 && s.quantity <= p.lowStockThreshold;
                                                             const isNegative = s.quantity < 0;
                                                             const meta = getStockMetadata(p.id, s.warehouseId, s.vendorName);
-                                                            const salesPerson = meta.salesPerson;
-                                                            const hpp = Math.round(meta.hpp || Number(p.purchasePrice) || 0);
+                                                            const salesPerson = s.salesPerson || meta.salesPerson || "-";
+                                                            const hpp = Math.round(s.hpp || meta.hpp || Number(p.purchasePrice) || 0);
                                                             const totalVal = Math.round(hpp * Number(s.quantity || 0));
                                                             
                                                             return (
@@ -955,10 +1090,10 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                     {filteredProducts.map((p: any) => {
                                         const matchingStocks = (p.stocks || []).filter((s: any) => {
                                             if (warehouseFilter !== "ALL" && s.warehouseId !== warehouseFilter) return false;
-                                            if (vendorFilter !== "ALL" && (s.vendorName || "CIBINONG").trim().toLowerCase() !== vendorFilter.trim().toLowerCase()) return false;
+                                            if (vendorFilter !== "ALL" && String(s.vendorName || "CIBINONG").trim().toLowerCase() !== vendorFilter.trim().toLowerCase()) return false;
                                             if (salesFilter !== "ALL") {
-                                                const meta = getStockMetadata(p.id, s.warehouseId, s.vendorName);
-                                                if (meta.salesPerson !== salesFilter) return false;
+                                                const sp = s.salesPerson || getStockMetadata(p.id, s.warehouseId, s.vendorName).salesPerson;
+                                                if (sp !== salesFilter) return false;
                                             }
                                             return true;
                                         });
@@ -971,8 +1106,8 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                                     ? matchingStocks.filter((s: any) => Number(s.quantity || 0) > 0 && Number(s.quantity || 0) <= Number(p.lowStockThreshold || 10))
                                                     : matchingStocks.filter((s: any) => Number(s.quantity || 0) !== 0);
 
-                                        const totalNetQty = (matchingStocks.length > 0 ? matchingStocks : (p.stocks || []))
-                                            .reduce((sum: number, s: any) => sum + Number(s.quantity || 0), 0);
+                                        const totalNetQty = productQtyMap.get(p.id) ?? 
+                                            matchingStocks.reduce((sum: number, s: any) => sum + Number(s.quantity || 0), 0);
                                         const hasSubStocks = activeStocks.length > 0;
                                         const isExpanded = Boolean(expandedProducts[p.id] && hasSubStocks);
                                         const hasNegative = matchingStocks.some((s: any) => Number(s.quantity || 0) < 0);
@@ -1023,7 +1158,8 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                                             const isLow = s.quantity > 0 && s.quantity <= p.lowStockThreshold;
                                                             const isNegative = s.quantity < 0;
                                                             const meta = getStockMetadata(p.id, s.warehouseId, s.vendorName);
-                                                            const hpp = Math.round(meta.hpp || Number(p.purchasePrice) || 0);
+                                                            const salesPerson = s.salesPerson || meta.salesPerson || "-";
+                                                            const hpp = Math.round(s.hpp || meta.hpp || Number(p.purchasePrice) || 0);
                                                             
                                                             return (
                                                                 <div key={`${p.id}-${s.id}`} className="p-4 pl-6 space-y-3 relative overflow-hidden">
