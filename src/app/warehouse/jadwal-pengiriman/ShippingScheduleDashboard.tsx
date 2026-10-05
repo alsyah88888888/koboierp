@@ -7,11 +7,13 @@ import {
     Calendar, Printer, Download, Plus, Trash2, Save, 
     Truck, ArrowLeft, RefreshCw, CheckCircle2, AlertCircle,
     Eye, Edit3, ShieldAlert, FileText, CheckSquare, Square, Layers, X, 
-    UserCheck, ArrowRight, RotateCcw, ListFilter, ClipboardCheck, History
+    UserCheck, ArrowRight, RotateCcw, ListFilter, ClipboardCheck, History,
+    CreditCard
 } from "lucide-react";
 import Link from "next/link";
 import { callAction } from "@/proxy";
 import * as XLSX from "xlsx";
+import { OFFICIAL_FLEET, getFleetByDriverOrPlate } from "@/lib/fleet";
 
 interface ScheduleItem {
     id: string; // unique row id
@@ -25,6 +27,7 @@ interface ScheduleItem {
     quantity: number;
     driver: string;
     vehiclePlate?: string;
+    etollCard?: string;
     isManual?: boolean;
 }
 
@@ -38,16 +41,17 @@ interface ShippingScheduleDashboardProps {
 }
 
 const COMMON_DRIVERS = [
+    "KARNO",
     "KUSWARA",
+    "RAHMAT. H",
+    "CARSIKA",
+    "HERU",
     "TIO",
     "MAMET",
     "KARIM",
-    "HERU",
     "ROKHMAN",
     "EKSPEDISI",
     "TATANG",
-    "KARNO",
-    "RAHMAT",
     "IMAM",
     "YADI"
 ];
@@ -79,6 +83,28 @@ export function ShippingScheduleDashboard({
     // Wizard Form States
     const [selectedDriver, setSelectedDriver] = useState<string>("");
     const [selectedVehiclePlate, setSelectedVehiclePlate] = useState<string>("");
+    const [selectedEtoll, setSelectedEtoll] = useState<string>("");
+
+    const handleDriverSelect = (driverVal: string) => {
+        const upper = driverVal.toUpperCase();
+        setSelectedDriver(upper);
+        const fleet = getFleetByDriverOrPlate(upper);
+        if (fleet) {
+            setSelectedVehiclePlate(fleet.plate);
+            setSelectedEtoll(fleet.etoll);
+        }
+    };
+
+    const handlePlateSelect = (plateVal: string) => {
+        const upper = plateVal.toUpperCase();
+        setSelectedVehiclePlate(upper);
+        const fleet = getFleetByDriverOrPlate(upper);
+        if (fleet) {
+            if (!selectedDriver) setSelectedDriver(fleet.driver);
+            setSelectedEtoll(fleet.etoll);
+        }
+    };
+
     const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(new Set());
     const [lastCompletedDriver, setLastCompletedDriver] = useState<string>("");
     const [physicalChecklist, setPhysicalChecklist] = useState<Record<string, boolean>>({});
@@ -413,6 +439,7 @@ export function ShippingScheduleDashboard({
         setSelectedItemIds(new Set());
         setSelectedDriver("");
         setSelectedVehiclePlate("");
+        setSelectedEtoll("");
         setWizardStep(1);
     };
 
@@ -502,8 +529,16 @@ export function ShippingScheduleDashboard({
 
             {/* Datalists for autocomplete */}
             <datalist id="driver-suggestions">
+                {OFFICIAL_FLEET.map(f => (
+                    <option key={f.driver} value={f.driver}>{`${f.driver} (${f.plate})`}</option>
+                ))}
                 {allDriverOptions.map(drv => (
                     <option key={drv} value={drv} />
+                ))}
+            </datalist>
+            <datalist id="plate-suggestions">
+                {OFFICIAL_FLEET.map(f => (
+                    <option key={f.plate} value={f.plate}>{`${f.plate} - ${f.driver}`}</option>
                 ))}
             </datalist>
 
@@ -784,8 +819,8 @@ export function ShippingScheduleDashboard({
                                                         list="driver-suggestions"
                                                         type="text"
                                                         value={selectedDriver}
-                                                        onChange={(e) => setSelectedDriver(e.target.value.toUpperCase())}
-                                                        placeholder="Pilih Sopir (Kuswara, Tio...)"
+                                                        onChange={(e) => handleDriverSelect(e.target.value)}
+                                                        placeholder="Pilih Sopir (Kuswara, Karno...)"
                                                         className="bg-slate-50 hover:bg-slate-100 focus:bg-white border-2 border-indigo-200 focus:border-indigo-600 px-3.5 py-2 rounded-xl text-xs font-black text-slate-900 uppercase outline-none transition-all min-w-[200px]"
                                                     />
                                                 </div>
@@ -795,11 +830,12 @@ export function ShippingScheduleDashboard({
                                             <div className="flex items-center gap-2">
                                                 <label className="text-xs font-black text-slate-700 uppercase">No. Polisi:</label>
                                                 <input
+                                                    list="plate-suggestions"
                                                     type="text"
                                                     value={selectedVehiclePlate}
-                                                    onChange={(e) => setSelectedVehiclePlate(e.target.value.toUpperCase())}
-                                                    placeholder="Contoh: B 9123 KBA"
-                                                    className="bg-slate-50 hover:bg-slate-100 focus:bg-white border border-slate-200 focus:border-indigo-600 px-3 py-2 rounded-xl text-xs font-bold text-slate-900 uppercase outline-none transition-all w-32"
+                                                    onChange={(e) => handlePlateSelect(e.target.value)}
+                                                    placeholder="Contoh: B 9198 FCM"
+                                                    className="bg-slate-50 hover:bg-slate-100 focus:bg-white border border-slate-200 focus:border-indigo-600 px-3 py-2 rounded-xl text-xs font-bold text-slate-900 uppercase outline-none transition-all w-36"
                                                 />
                                             </div>
 
@@ -811,6 +847,41 @@ export function ShippingScheduleDashboard({
                                                 <Plus className="w-4 h-4" />
                                             </button>
                                         </div>
+                                    </div>
+
+                                    {/* Official Fleet Quick Selector & E-Toll Badge */}
+                                    <div className="flex flex-wrap items-center gap-1.5 pt-3 mt-3 border-t border-slate-100">
+                                        <span className="text-[10px] font-black uppercase text-slate-400 mr-1">Armada Resmi:</span>
+                                        {OFFICIAL_FLEET.map(f => {
+                                            const isSelected = selectedDriver === f.driver;
+                                            return (
+                                                <button
+                                                    key={f.driver}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setSelectedDriver(f.driver);
+                                                        setSelectedVehiclePlate(f.plate);
+                                                        setSelectedEtoll(f.etoll);
+                                                    }}
+                                                    className={`px-2.5 py-1 rounded-lg text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 ${
+                                                        isSelected 
+                                                            ? "bg-indigo-600 text-white shadow-xs" 
+                                                            : "bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 text-slate-700"
+                                                    }`}
+                                                >
+                                                    <span>🚚 {f.driver}</span>
+                                                    <span className={`text-[10px] font-mono ${isSelected ? "text-indigo-200" : "text-slate-500"}`}>
+                                                        {f.plate}
+                                                    </span>
+                                                </button>
+                                            );
+                                        })}
+                                        {selectedEtoll && (
+                                            <div className="ml-auto flex items-center gap-1.5 px-3 py-1 bg-blue-50 border border-blue-200 text-blue-900 rounded-lg text-[11px] font-bold shadow-2xs">
+                                                <CreditCard className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" />
+                                                <span>E-TOLL: <strong className="font-mono font-black">{selectedEtoll}</strong></span>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
@@ -1017,10 +1088,10 @@ export function ShippingScheduleDashboard({
                                     </div>
 
                                     {/* Prominent Vehicle Summary Badges */}
-                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
+                                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mt-4">
                                         <div className="p-3 bg-indigo-50/70 border border-indigo-100 rounded-xl">
                                             <span className="text-[10px] font-black uppercase text-indigo-700 block">Sopir / Driver</span>
-                                            <span className="text-sm font-black text-slate-950 uppercase mt-0.5 block">
+                                            <span className="text-sm font-black text-slate-950 uppercase mt-0.5 block truncate">
                                                 🚚 {selectedDriver}
                                             </span>
                                         </div>
@@ -1028,6 +1099,12 @@ export function ShippingScheduleDashboard({
                                             <span className="text-[10px] font-black uppercase text-slate-500 block">No. Polisi / Kendaraan</span>
                                             <span className="text-sm font-black text-slate-900 uppercase mt-0.5 block">
                                                 {selectedVehiclePlate || "- (Truk Toko)"}
+                                            </span>
+                                        </div>
+                                        <div className="p-3 bg-blue-50/70 border border-blue-100 rounded-xl">
+                                            <span className="text-[10px] font-black uppercase text-blue-700 block">Kartu E-Toll</span>
+                                            <span className="text-xs font-mono font-black text-blue-900 mt-0.5 block truncate">
+                                                {selectedEtoll || getFleetByDriverOrPlate(selectedDriver)?.etoll || "-"}
                                             </span>
                                         </div>
                                         <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
@@ -1208,28 +1285,34 @@ export function ShippingScheduleDashboard({
                                         </div>
 
                                         {/* Prominent Info Box */}
-                                        <div className="grid grid-cols-4 gap-2 text-[10px] bg-slate-100/90 p-2.5 rounded border border-slate-300 mt-3">
+                                        <div className="grid grid-cols-5 gap-2 text-[10px] bg-slate-100/90 p-2.5 rounded border border-slate-300 mt-3">
                                             <div>
                                                 <span className="text-slate-500 block uppercase font-bold text-[9px]">Sopir / Driver:</span>
-                                                <span className="font-black text-slate-950 text-xs sm:text-sm uppercase tracking-wide">
+                                                <span className="font-black text-slate-950 text-xs sm:text-sm uppercase tracking-wide truncate block">
                                                     🚚 {lastCompletedDriver || selectedDriver}
                                                 </span>
                                             </div>
                                             <div>
                                                 <span className="text-slate-500 block uppercase font-bold text-[9px]">No. Polisi / Kendaraan:</span>
-                                                <span className="font-black text-slate-900 uppercase">
-                                                    {selectedVehiclePlate || "- (Truk Toko)"}
+                                                <span className="font-black text-slate-900 uppercase block">
+                                                    {selectedVehiclePlate || getFleetByDriverOrPlate(lastCompletedDriver || selectedDriver)?.plate || "- (Truk Toko)"}
+                                                </span>
+                                            </div>
+                                            <div>
+                                                <span className="text-slate-500 block uppercase font-bold text-[9px]">No. Kartu E-Toll:</span>
+                                                <span className="font-mono font-bold text-slate-900 text-[9.5px] block truncate">
+                                                    {selectedEtoll || getFleetByDriverOrPlate(lastCompletedDriver || selectedDriver)?.etoll || "-"}
                                                 </span>
                                             </div>
                                             <div>
                                                 <span className="text-slate-500 block uppercase font-bold text-[9px]">Total Surat Jalan (Drop):</span>
-                                                <span className="font-black text-slate-900 text-xs">
+                                                <span className="font-black text-slate-900 text-xs block">
                                                     {selectedUniqueDeliveries} Surat Jalan
                                                 </span>
                                             </div>
                                             <div>
                                                 <span className="text-slate-500 block uppercase font-bold text-[9px]">Total Fisik Muatan:</span>
-                                                <span className="font-black text-blue-800 text-xs">
+                                                <span className="font-black text-blue-800 text-xs block">
                                                     {selectedTotalQty.toLocaleString("id-ID")} Unit
                                                 </span>
                                             </div>
@@ -1399,6 +1482,7 @@ export function ShippingScheduleDashboard({
                                 {Array.from(loadedByDriver.entries()).map(([drvName, drvItems]) => {
                                     const totalDriverQty = drvItems.reduce((acc, i) => acc + (Number(i.quantity) || 0), 0);
                                     const totalDriverSJ = new Set(drvItems.map(i => i.deliveryId || i.id)).size;
+                                    const fleetInfo = getFleetByDriverOrPlate(drvName);
 
                                     return (
                                         <div key={drvName} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
@@ -1409,7 +1493,18 @@ export function ShippingScheduleDashboard({
                                                             <span>🚚 ARMADA:</span>
                                                             <span className="text-indigo-600 font-black">{drvName}</span>
                                                         </h3>
-                                                        <p className="text-[10px] text-slate-400 mt-0.5 uppercase">
+                                                        <div className="flex flex-wrap items-center gap-2 mt-1">
+                                                            <span className="text-[10px] bg-slate-100 px-2 py-0.5 rounded font-mono font-bold text-slate-700">
+                                                                {fleetInfo?.plate || "Truk Toko"}
+                                                            </span>
+                                                            {fleetInfo?.etoll && (
+                                                                <span className="text-[9.5px] bg-blue-50 text-blue-800 px-2 py-0.5 rounded font-mono font-bold flex items-center gap-1">
+                                                                    <CreditCard className="w-3 h-3 text-blue-600" />
+                                                                    <span>{fleetInfo.etoll}</span>
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <p className="text-[10px] text-slate-400 mt-1 uppercase">
                                                             {totalDriverSJ} Surat Jalan • {drvItems.length} Baris Produk
                                                         </p>
                                                     </div>
@@ -1447,6 +1542,8 @@ export function ShippingScheduleDashboard({
                                                         const targetItemIds = new Set(drvItems.map(i => i.id));
                                                         setSelectedItemIds(targetItemIds);
                                                         setSelectedDriver(drvName);
+                                                        setSelectedVehiclePlate(fleetInfo?.plate || "");
+                                                        setSelectedEtoll(fleetInfo?.etoll || "");
                                                         setLastCompletedDriver(drvName);
                                                         setMainView("WIZARD");
                                                         setWizardStep(3);

@@ -512,10 +512,11 @@ export default function SalesModal({ products, warehouses, customers, orders = [
                                         />
                                     </div>
                                     <datalist id="vehicle-list-sales">
-                                        <option value="F 8440 GY - Karno" />
-                                        <option value="F 8744 GY - Rahmat/imam" />
-                                        <option value="F 8065 HI - Rohman/yadi" />
-                                        <option value="B 9918 TIT - Heru/Tatang" />
+                                        <option value="F 8840 GY - Karno" />
+                                        <option value="B 9198 FCM - Kuswara" />
+                                        <option value="F 8744 MA - Rahmat. H" />
+                                        <option value="F 8065 HI - Carsika" />
+                                        <option value="B 9918 TIT - Heru" />
                                     </datalist>
                                 </div>
 
