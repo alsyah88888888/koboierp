@@ -769,161 +769,154 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                         </div>
                                     </div>
 
-                                    {/* Second Row: Search & Structured Dropdown Selects */}
-                                    <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-slate-100">
+                                    {/* Second Row: Search & Structured Controls (Strict 1-Line Row) */}
+                                    <div className="flex items-center gap-1.5 xl:gap-2 pt-1 border-t border-slate-100 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
                                         {/* Search Input */}
-                                        <div className="relative flex-1 min-w-[200px] md:min-w-[260px]">
-                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                        <div className="relative flex-1 min-w-[130px] md:min-w-[160px] shrink">
+                                            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
                                             <input
                                                 value={searchTerm}
                                                 onChange={e => setSearchTerm(e.target.value)}
-                                                placeholder="Cari nama produk, SKU, barcode..."
-                                                className="w-full pl-9 pr-8 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:bg-white focus:border-slate-900 focus:ring-1 focus:ring-slate-900/10 outline-none transition-all"
+                                                placeholder="Cari nama, SKU, barcode..."
+                                                className="w-full h-8 pl-8 pr-7 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:bg-white focus:border-slate-900 focus:ring-1 focus:ring-slate-900/10 outline-none transition-all"
                                             />
                                             {searchTerm && (
                                                 <button
                                                     onClick={() => setSearchTerm("")}
-                                                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
+                                                    className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
                                                     title="Bersihkan pencarian"
                                                 >
-                                                    <X className="h-3.5 w-3.5" />
+                                                    <X className="h-3 w-3" />
                                                 </button>
                                             )}
                                         </div>
 
                                         {/* Dropdown Gudang */}
-                                        <div className="w-full sm:w-auto">
-                                            <select
-                                                value={warehouseFilter}
-                                                onChange={e => setWarehouseFilter(e.target.value)}
-                                                className={cn(
-                                                    "w-full sm:w-auto px-3 py-2 bg-slate-50 border rounded-xl text-xs font-semibold outline-none cursor-pointer transition-all",
-                                                    warehouseFilter !== "ALL"
-                                                        ? "border-slate-800 text-slate-900 bg-white ring-1 ring-slate-800/10"
-                                                        : "border-slate-200 text-slate-600 hover:border-slate-300 focus:bg-white"
-                                                )}
-                                            >
-                                                <option value="ALL">Gudang: Semua</option>
-                                                {warehouses.map(w => (
-                                                    <option key={w.id} value={w.id}>
-                                                        Gudang: {w.name}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
+                                        <select
+                                            value={warehouseFilter}
+                                            onChange={e => setWarehouseFilter(e.target.value)}
+                                            className={cn(
+                                                "h-8 px-2.5 py-1 bg-slate-50 border rounded-lg text-xs font-semibold outline-none cursor-pointer transition-all shrink-0 max-w-[130px] truncate",
+                                                warehouseFilter !== "ALL"
+                                                    ? "border-slate-800 text-slate-900 bg-white ring-1 ring-slate-800/10"
+                                                    : "border-slate-200 text-slate-600 hover:border-slate-300 focus:bg-white"
+                                            )}
+                                            title="Filter Gudang"
+                                        >
+                                            <option value="ALL">Gudang: Semua</option>
+                                            {warehouses.map(w => (
+                                                <option key={w.id} value={w.id}>
+                                                    Gudang: {w.name}
+                                                </option>
+                                            ))}
+                                        </select>
 
                                         {/* Dropdown Kategori */}
                                         {availableCategories.length > 0 && (
-                                            <div className="w-full sm:w-auto">
-                                                <select
-                                                    value={categoryFilter}
-                                                    onChange={e => setCategoryFilter(e.target.value)}
-                                                    className={cn(
-                                                        "w-full sm:w-auto px-3 py-2 bg-slate-50 border rounded-xl text-xs font-semibold outline-none cursor-pointer transition-all",
-                                                        categoryFilter !== "ALL"
-                                                            ? "border-slate-800 text-slate-900 bg-white ring-1 ring-slate-800/10"
-                                                            : "border-slate-200 text-slate-600 hover:border-slate-300 focus:bg-white"
-                                                    )}
-                                                >
-                                                    <option value="ALL">Kategori: Semua</option>
-                                                    {availableCategories.map(cat => (
-                                                        <option key={cat} value={cat}>
-                                                            Kategori: {cat}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                            </div>
+                                            <select
+                                                value={categoryFilter}
+                                                onChange={e => setCategoryFilter(e.target.value)}
+                                                className={cn(
+                                                    "h-8 px-2.5 py-1 bg-slate-50 border rounded-lg text-xs font-semibold outline-none cursor-pointer transition-all shrink-0 max-w-[130px] truncate",
+                                                    categoryFilter !== "ALL"
+                                                        ? "border-slate-800 text-slate-900 bg-white ring-1 ring-slate-800/10"
+                                                        : "border-slate-200 text-slate-600 hover:border-slate-300 focus:bg-white"
+                                                )}
+                                                title="Filter Kategori"
+                                            >
+                                                <option value="ALL">Kategori: Semua</option>
+                                                {availableCategories.map(cat => (
+                                                    <option key={cat} value={cat}>
+                                                        Kategori: {cat}
+                                                    </option>
+                                                ))}
+                                            </select>
                                         )}
 
                                         {/* Dropdown Vendor */}
                                         {availableVendors.length > 0 && (
-                                            <div className="w-full sm:w-auto max-w-[220px]">
-                                                <select
-                                                    value={vendorFilter}
-                                                    onChange={e => setVendorFilter(e.target.value)}
-                                                    className={cn(
-                                                        "w-full px-3 py-2 bg-slate-50 border rounded-xl text-xs font-semibold outline-none cursor-pointer transition-all truncate",
-                                                        vendorFilter !== "ALL"
-                                                            ? "border-slate-800 text-slate-900 bg-white ring-1 ring-slate-800/10"
-                                                            : "border-slate-200 text-slate-600 hover:border-slate-300 focus:bg-white"
-                                                    )}
-                                                >
-                                                    <option value="ALL">Vendor: Semua</option>
-                                                    {availableVendors.map(v => (
-                                                        <option key={v} value={v}>
-                                                            Vendor: {v}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                            </div>
+                                            <select
+                                                value={vendorFilter}
+                                                onChange={e => setVendorFilter(e.target.value)}
+                                                className={cn(
+                                                    "h-8 px-2.5 py-1 bg-slate-50 border rounded-lg text-xs font-semibold outline-none cursor-pointer transition-all shrink-0 max-w-[135px] truncate",
+                                                    vendorFilter !== "ALL"
+                                                        ? "border-slate-800 text-slate-900 bg-white ring-1 ring-slate-800/10"
+                                                        : "border-slate-200 text-slate-600 hover:border-slate-300 focus:bg-white"
+                                                )}
+                                                title="Filter Vendor / Pemasok"
+                                            >
+                                                <option value="ALL">Vendor: Semua</option>
+                                                {availableVendors.map(v => (
+                                                    <option key={v} value={v}>
+                                                        Vendor: {v}
+                                                    </option>
+                                                ))}
+                                            </select>
                                         )}
 
                                         {/* Dropdown Sales */}
                                         {availableSales.length > 0 && (
-                                            <div className="w-full sm:w-auto">
-                                                <select
-                                                    value={salesFilter}
-                                                    onChange={e => setSalesFilter(e.target.value)}
-                                                    className={cn(
-                                                        "w-full sm:w-auto px-3 py-2 bg-slate-50 border rounded-xl text-xs font-semibold outline-none cursor-pointer transition-all",
-                                                        salesFilter !== "ALL"
-                                                            ? "border-slate-800 text-slate-900 bg-white ring-1 ring-slate-800/10"
-                                                            : "border-slate-200 text-slate-600 hover:border-slate-300 focus:bg-white"
-                                                    )}
-                                                >
-                                                    <option value="ALL">Sales: Semua</option>
-                                                    {availableSales.map(s => (
-                                                        <option key={s} value={s}>
-                                                            Sales: {s}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                            </div>
-                                        )}
-
-                                        {/* Dropdown Sortir (Tampilkan Barang Yang Ada Stoknya) */}
-                                        <div className="w-full sm:w-auto">
                                             <select
-                                                value={sortBy}
-                                                onChange={e => setSortBy(e.target.value as any)}
+                                                value={salesFilter}
+                                                onChange={e => setSalesFilter(e.target.value)}
                                                 className={cn(
-                                                    "w-full sm:w-auto px-3 py-2 bg-slate-50 border rounded-xl text-xs font-semibold outline-none cursor-pointer transition-all",
-                                                    sortBy !== "STOCK_FIRST"
+                                                    "h-8 px-2.5 py-1 bg-slate-50 border rounded-lg text-xs font-semibold outline-none cursor-pointer transition-all shrink-0 max-w-[110px]",
+                                                    salesFilter !== "ALL"
                                                         ? "border-slate-800 text-slate-900 bg-white ring-1 ring-slate-800/10"
                                                         : "border-slate-200 text-slate-600 hover:border-slate-300 focus:bg-white"
                                                 )}
-                                                title="Urutkan tampilan Master Stock"
+                                                title="Filter Sales"
                                             >
-                                                <option value="STOCK_FIRST">Sortir: Ada Stok Duluan</option>
-                                                <option value="QTY_DESC">Sortir: Stok Terbanyak</option>
-                                                <option value="QTY_ASC">Sortir: Stok Terendah / Minus</option>
-                                                <option value="NAME_ASC">Sortir: Nama Produk (A-Z)</option>
-                                                <option value="SKU_ASC">Sortir: SKU (A-Z)</option>
+                                                <option value="ALL">Sales: Semua</option>
+                                                {availableSales.map(s => (
+                                                    <option key={s} value={s}>
+                                                        Sales: {s}
+                                                    </option>
+                                                ))}
                                             </select>
-                                        </div>
+                                        )}
 
-                                        {/* Actions: Buka Semua / Reset */}
-                                        <div className="flex items-center gap-1.5 ml-auto">
-                                            <button
-                                                onClick={toggleAllExpand}
-                                                className="px-3 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 shadow-2xs"
-                                                title={allExpanded ? "Tutup Semua Rincian Sub-Stok" : "Buka Semua Rincian Sub-Stok"}
-                                            >
-                                                {allExpanded ? <ChevronDown className="h-3.5 w-3.5 text-slate-500" /> : <ChevronRight className="h-3.5 w-3.5 text-slate-500" />}
-                                                <span>{allExpanded ? "Tutup Rincian" : "Buka Sub-Stok"}</span>
-                                            </button>
-
-                                            {isFiltered && (
-                                                <button
-                                                    onClick={resetFilters}
-                                                    className="px-3 py-2 text-rose-600 hover:bg-rose-50 rounded-xl text-xs font-semibold transition-all flex items-center gap-1"
-                                                    title="Reset semua filter"
-                                                >
-                                                    <RotateCcw className="h-3.5 w-3.5" />
-                                                    <span>Reset</span>
-                                                </button>
+                                        {/* Dropdown Sortir */}
+                                        <select
+                                            value={sortBy}
+                                            onChange={e => setSortBy(e.target.value as any)}
+                                            className={cn(
+                                                "h-8 px-2.5 py-1 bg-slate-50 border rounded-lg text-xs font-semibold outline-none cursor-pointer transition-all shrink-0 max-w-[155px] truncate",
+                                                sortBy !== "STOCK_FIRST"
+                                                    ? "border-slate-800 text-slate-900 bg-white ring-1 ring-slate-800/10"
+                                                    : "border-slate-200 text-slate-600 hover:border-slate-300 focus:bg-white"
                                             )}
-                                        </div>
+                                            title="Urutkan tampilan Master Stock"
+                                        >
+                                            <option value="STOCK_FIRST">Sortir: Ada Stok</option>
+                                            <option value="QTY_DESC">Sortir: Terbanyak</option>
+                                            <option value="QTY_ASC">Sortir: Terendah/Minus</option>
+                                            <option value="NAME_ASC">Sortir: Nama (A-Z)</option>
+                                            <option value="SKU_ASC">Sortir: SKU (A-Z)</option>
+                                        </select>
+
+                                        {/* Action: Buka / Tutup Rincian */}
+                                        <button
+                                            onClick={toggleAllExpand}
+                                            className="h-8 px-2.5 py-1 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 shrink-0 whitespace-nowrap shadow-2xs"
+                                            title={allExpanded ? "Tutup Semua Rincian Sub-Stok" : "Buka Semua Rincian Sub-Stok"}
+                                        >
+                                            {allExpanded ? <ChevronDown className="h-3.5 w-3.5 text-slate-500" /> : <ChevronRight className="h-3.5 w-3.5 text-slate-500" />}
+                                            <span>{allExpanded ? "Tutup Rincian" : "Buka Sub-Stok"}</span>
+                                        </button>
+
+                                        {/* Action: Reset Filter */}
+                                        {isFiltered && (
+                                            <button
+                                                onClick={resetFilters}
+                                                className="h-8 px-2.5 py-1 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 rounded-lg text-xs font-semibold transition-all flex items-center gap-1 shrink-0 whitespace-nowrap"
+                                                title="Reset semua filter"
+                                            >
+                                                <RotateCcw className="h-3 w-3" />
+                                                <span>Reset</span>
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
 
