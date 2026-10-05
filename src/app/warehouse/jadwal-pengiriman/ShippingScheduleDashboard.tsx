@@ -633,20 +633,45 @@ export function ShippingScheduleDashboard({
 
     return (
         <div className="min-h-screen bg-slate-50 text-slate-900 pb-16">
-            {/* Print Styles: Dedicated A4 Page per Vehicle Manifest */}
+            {/* Print Styles: Dedicated Full A4 Page per Vehicle Manifest */}
             <style dangerouslySetInnerHTML={{__html: `
                 @media print {
                     @page { 
                         size: A4 portrait; 
-                        margin: 6mm 8mm 8mm 8mm; 
+                        margin: 8mm 10mm 8mm 10mm; 
                     }
-                    body { 
+                    html, body { 
+                        margin: 0 !important;
+                        padding: 0 !important;
+                        width: 100% !important;
+                        height: auto !important;
+                        background: #ffffff !important;
                         -webkit-print-color-adjust: exact !important; 
                         print-color-adjust: exact !important;
+                    }
+                    .no-print, header, .stepper-bar, .feedback-bar { 
+                        display: none !important; 
+                    }
+                    .min-h-screen {
+                        min-height: auto !important;
+                        padding-bottom: 0 !important;
                         background: #ffffff !important;
                     }
-                    .no-print { 
-                        display: none !important; 
+                    main {
+                        padding: 0 !important;
+                        margin: 0 !important;
+                        max-width: 100% !important;
+                        width: 100% !important;
+                    }
+                    .printable-manifest {
+                        width: 100% !important;
+                        max-width: 100% !important;
+                        margin: 0 !important;
+                        padding: 0 !important;
+                        border: none !important;
+                        border-radius: 0 !important;
+                        box-shadow: none !important;
+                        background: transparent !important;
                     }
                     .page-break-after {
                         page-break-after: always !important;
@@ -655,19 +680,31 @@ export function ShippingScheduleDashboard({
                     .print-table {
                         width: 100% !important;
                         border-collapse: collapse !important;
-                        font-family: 'Segoe UI', Arial, sans-serif !important;
-                        font-size: 10px !important;
+                        font-family: Arial, Helvetica, sans-serif !important;
+                        font-size: 9.5px !important;
                         color: #000000 !important;
+                        table-layout: fixed !important;
                     }
                     .print-table th, .print-table td {
                         border: 1px solid #1e293b !important;
-                        padding: 4px 6px !important;
+                        padding: 3.5px 5px !important;
+                    }
+                    .print-table th {
+                        background-color: #0f172a !important;
+                        color: #ffffff !important;
+                        -webkit-print-color-adjust: exact !important;
+                        print-color-adjust: exact !important;
                     }
                     .delivery-separator {
                         border-top: 2px solid #000000 !important;
                     }
                     .avoid-break {
                         page-break-inside: avoid !important;
+                        break-inside: avoid !important;
+                    }
+                    tr {
+                        page-break-inside: avoid !important;
+                        break-inside: avoid !important;
                     }
                 }
             `}} />
@@ -1686,16 +1723,16 @@ export function ShippingScheduleDashboard({
                                 </div>
 
                                 {/* THE PRINTABLE VEHICLE LOADING MANIFEST FORM */}
-                                <div className="bg-white border border-slate-300 rounded-xl shadow-xl p-6 sm:p-9 max-w-[210mm] mx-auto">
+                                <div className="printable-manifest bg-white border border-slate-300 rounded-2xl shadow-xl p-6 sm:p-9 max-w-4xl mx-auto print:border-none print:shadow-none print:p-0 print:m-0 print:max-w-none print:w-full print:rounded-none">
                                     {/* Header Manifest */}
-                                    <div className="border-b-2 border-slate-900 pb-3">
+                                    <div className="border-b-2 border-slate-900 pb-2.5">
                                         <div className="flex justify-between items-start gap-4">
                                             <div className="flex items-center gap-3.5">
-                                                <div className="h-13 w-13 shrink-0 flex items-center justify-center p-1 bg-white border border-slate-200 rounded-lg">
+                                                <div className="h-12 w-12 shrink-0 flex items-center justify-center p-1 bg-white border border-slate-200 rounded-lg">
                                                     <img 
                                                         src="/image/logokoboi.png" 
                                                         alt="Logo PT. Kola Borasi Indonesia" 
-                                                        className="h-11 w-auto object-contain"
+                                                        className="h-10 w-auto object-contain"
                                                         onError={(e) => {
                                                             (e.target as any).src = "/logo.png";
                                                         }}
@@ -1722,41 +1759,41 @@ export function ShippingScheduleDashboard({
                                                 <span className="inline-block px-3 py-1 rounded text-xs font-black uppercase tracking-wider bg-slate-900 text-white">
                                                     SURAT MUATAN KENDARAAN (LOADING MANIFEST)
                                                 </span>
-                                                <p className="text-[10px] font-mono text-slate-500 mt-1 font-bold">
+                                                <p className="text-[10px] font-mono text-slate-700 mt-1 font-bold">
                                                     TANGGAL: {dateFormattedIndo}
                                                 </p>
                                             </div>
                                         </div>
 
                                         {/* Prominent Info Box */}
-                                        <div className="grid grid-cols-5 gap-2 text-[10px] bg-slate-100/90 p-2.5 rounded border border-slate-300 mt-3">
+                                        <div className="grid grid-cols-5 gap-2 text-[10px] bg-slate-100/90 p-2 rounded border border-slate-300 mt-2.5">
                                             <div>
-                                                <span className="text-slate-500 block uppercase font-bold text-[9px]">Sopir / Driver:</span>
+                                                <span className="text-slate-500 block uppercase font-bold text-[8.5px]">Sopir / Driver:</span>
                                                 <span className="font-black text-slate-950 text-xs sm:text-sm uppercase tracking-wide truncate block">
                                                     🚚 {lastCompletedDriver || selectedDriver}
                                                 </span>
                                             </div>
                                             <div>
-                                                <span className="text-slate-500 block uppercase font-bold text-[9px]">No. Polisi / Kendaraan:</span>
-                                                <span className="font-black text-slate-900 uppercase block">
-                                                    {selectedVehiclePlate || getFleetByDriverOrPlate(lastCompletedDriver || selectedDriver)?.plate || "- (Truk Toko)"}
+                                                <span className="text-slate-500 block uppercase font-bold text-[8.5px]">No. Polisi / Plat:</span>
+                                                <span className="font-black text-slate-900 uppercase block font-mono text-xs">
+                                                    {selectedVehiclePlate || getFleetByDriverOrPlate(lastCompletedDriver || selectedDriver)?.plate || "-"}
                                                 </span>
                                             </div>
                                             <div>
-                                                <span className="text-slate-500 block uppercase font-bold text-[9px]">No. Kartu E-Toll:</span>
+                                                <span className="text-slate-500 block uppercase font-bold text-[8.5px]">No. Kartu E-Toll:</span>
                                                 <span className="font-mono font-bold text-slate-900 text-[9.5px] block truncate">
                                                     {selectedEtoll || getFleetByDriverOrPlate(lastCompletedDriver || selectedDriver)?.etoll || "-"}
                                                 </span>
                                             </div>
                                             <div>
-                                                <span className="text-slate-500 block uppercase font-bold text-[9px]">Total Surat Jalan (Drop):</span>
+                                                <span className="text-slate-500 block uppercase font-bold text-[8.5px]">Total Surat Jalan:</span>
                                                 <span className="font-black text-slate-900 text-xs block">
                                                     {selectedUniqueDeliveries} Surat Jalan
                                                 </span>
                                             </div>
                                             <div>
-                                                <span className="text-slate-500 block uppercase font-bold text-[9px]">Total Fisik Muatan:</span>
-                                                <span className="font-black text-blue-800 text-xs block">
+                                                <span className="text-slate-500 block uppercase font-bold text-[8.5px]">Total Fisik Muatan:</span>
+                                                <span className="font-black text-blue-900 text-xs block">
                                                     {selectedTotalQty.toLocaleString("id-ID")} Unit
                                                 </span>
                                             </div>
@@ -1764,18 +1801,18 @@ export function ShippingScheduleDashboard({
                                     </div>
 
                                     {/* Manifest Table */}
-                                    <div className="mt-3">
-                                        <table className="w-full print-table border-collapse text-black text-[10px]">
+                                    <div className="mt-2.5">
+                                        <table className="w-full print-table border-collapse text-black text-[9.5px]">
                                             <thead>
-                                                <tr className="bg-slate-900 text-white text-[9.5px] font-black uppercase">
-                                                    <th className="border border-slate-800 py-1.5 px-1 w-7 text-center">NO</th>
-                                                    <th className="border border-slate-800 py-1.5 px-2 w-28 text-center">NO. FAKTUR</th>
-                                                    <th className="border border-slate-800 py-1.5 px-2 w-24 text-center">NO. PO</th>
-                                                    <th className="border border-slate-800 py-1.5 px-2.5 w-36 text-center">BUYER / TUJUAN</th>
-                                                    <th className="border border-slate-800 py-1.5 px-3 text-center">NAMA PRODUK</th>
-                                                    <th className="border border-slate-800 py-1.5 px-2 w-14 text-center">QTY</th>
-                                                    <th className="border border-slate-800 py-1.5 px-1.5 w-14 text-center">CEK GUDANG</th>
-                                                    <th className="border border-slate-800 py-1.5 px-1.5 w-14 text-center">CEK SOPIR</th>
+                                                <tr className="bg-slate-900 text-white text-[9px] font-black uppercase">
+                                                    <th className="border border-slate-800 py-1.5 px-1 w-[4%] text-center">NO</th>
+                                                    <th className="border border-slate-800 py-1.5 px-1.5 w-[18%] text-center">NO. FAKTUR</th>
+                                                    <th className="border border-slate-800 py-1.5 px-1.5 w-[14%] text-center">NO. PO</th>
+                                                    <th className="border border-slate-800 py-1.5 px-2 w-[22%] text-center">BUYER / TUJUAN</th>
+                                                    <th className="border border-slate-800 py-1.5 px-2 w-[26%] text-center">NAMA PRODUK</th>
+                                                    <th className="border border-slate-800 py-1.5 px-1.5 w-[6%] text-center">QTY</th>
+                                                    <th className="border border-slate-800 py-1.5 px-1 w-[5%] text-center">GUDANG</th>
+                                                    <th className="border border-slate-800 py-1.5 px-1 w-[5%] text-center">SOPIR</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -1799,27 +1836,27 @@ export function ShippingScheduleDashboard({
                                                                 key={idx} 
                                                                 className={`${isFirstOfDeliv && idx !== 0 ? "delivery-separator border-t-2 border-slate-800" : ""}`}
                                                             >
-                                                                <td className="border border-slate-400 py-1 px-1 text-center font-bold text-[9.5px]">
+                                                                <td className="border border-slate-400 py-1 px-1 text-center font-bold text-[9px]">
                                                                     {isFirstOfDeliv ? deliveryIndex : ""}
                                                                 </td>
-                                                                <td className="border border-slate-400 py-1 px-1.5 font-bold text-[9px] uppercase whitespace-nowrap">
+                                                                <td className="border border-slate-400 py-1 px-1.5 font-bold text-[8.5px] uppercase whitespace-nowrap">
                                                                     {isFirstOfDeliv ? (
                                                                         <div>
                                                                             <span className="block font-black">{realInvoice}</span>
-                                                                            <span className="text-[8px] text-slate-500 font-mono">{item.deliveryNumber}</span>
+                                                                            <span className="text-[7.5px] text-slate-500 font-mono">{item.deliveryNumber}</span>
                                                                         </div>
                                                                     ) : ""}
                                                                 </td>
-                                                                <td className="border border-slate-400 py-1 px-1.5 font-semibold uppercase text-[9px]">
+                                                                <td className="border border-slate-400 py-1 px-1.5 font-semibold uppercase text-[8.5px]">
                                                                     {isFirstOfDeliv ? (item.poNumber || "-") : ""}
                                                                 </td>
-                                                                <td className="border border-slate-400 py-1 px-2 font-bold uppercase text-[9.5px]">
+                                                                <td className="border border-slate-400 py-1 px-1.5 font-bold uppercase text-[9px]">
                                                                     {isFirstOfDeliv ? item.buyerName : ""}
                                                                 </td>
-                                                                <td className="border border-slate-400 py-1 px-2 uppercase font-medium text-[9.5px]">
+                                                                <td className="border border-slate-400 py-1 px-1.5 uppercase font-medium text-[9px]">
                                                                     {item.productName}
                                                                 </td>
-                                                                <td className="border border-slate-400 py-1 px-1 text-center font-black text-[10px]">
+                                                                <td className="border border-slate-400 py-1 px-1 text-center font-black text-[9.5px]">
                                                                     {Number(item.quantity) > 0 ? Number(item.quantity).toLocaleString("id-ID") : ""}
                                                                 </td>
                                                                 <td className="border border-slate-400 py-1 px-1 text-center">
@@ -1836,14 +1873,14 @@ export function ShippingScheduleDashboard({
                                                 })()}
                                             </tbody>
                                             <tfoot>
-                                                <tr className="bg-slate-100 font-black text-[10px]">
+                                                <tr className="bg-slate-100 font-black text-[9.5px]">
                                                     <td colSpan={5} className="border border-slate-400 py-1.5 px-3 text-right uppercase">
                                                         TOTAL MUATAN ARMADA INI:
                                                     </td>
-                                                    <td className="border border-slate-400 py-1.5 px-1 text-center text-blue-800 font-black">
+                                                    <td className="border border-slate-400 py-1.5 px-1 text-center text-blue-900 font-black">
                                                         {selectedTotalQty.toLocaleString("id-ID")}
                                                     </td>
-                                                    <td colSpan={2} className="border border-slate-400 py-1.5 px-2 text-center text-[8.5px] text-slate-500">
+                                                    <td colSpan={2} className="border border-slate-400 py-1.5 px-2 text-center text-[8px] text-slate-500">
                                                         Unit / Koli
                                                     </td>
                                                 </tr>
@@ -1852,32 +1889,32 @@ export function ShippingScheduleDashboard({
                                     </div>
 
                                     {/* Signatures 3-Way Accountability */}
-                                    <div className="avoid-break pt-3 mt-4 border-t border-slate-300">
-                                        <div className="grid grid-cols-3 gap-4 text-center text-xs">
-                                            <div className="flex flex-col justify-between h-24 border border-slate-200 p-2 rounded">
-                                                <span className="text-[9.5px] font-black uppercase text-slate-600">Disiapkan / Checker Gudang</span>
+                                    <div className="avoid-break pt-2.5 mt-3 border-t border-slate-300">
+                                        <div className="grid grid-cols-3 gap-3 text-center text-xs">
+                                            <div className="flex flex-col justify-between h-20 border border-slate-300 p-1.5 rounded bg-white">
+                                                <span className="text-[9px] font-black uppercase text-slate-700">Disiapkan / Checker Gudang</span>
                                                 <div className="border-b border-slate-400 w-4/5 mx-auto pb-0.5">
                                                     ( ............................................ )
                                                 </div>
-                                                <span className="text-[8.5px] text-slate-400">Petugas Muat</span>
+                                                <span className="text-[8px] text-slate-500">Petugas Muat</span>
                                             </div>
-                                            <div className="flex flex-col justify-between h-24 border border-slate-200 p-2 rounded bg-slate-50/50">
-                                                <span className="text-[9.5px] font-black uppercase text-slate-700">Diterima di Kendaraan (Sopir)</span>
-                                                <div className="border-b border-slate-400 w-4/5 mx-auto pb-0.5 font-bold text-[9.5px]">
+                                            <div className="flex flex-col justify-between h-20 border border-slate-300 p-1.5 rounded bg-slate-50/50">
+                                                <span className="text-[9px] font-black uppercase text-slate-800">Diterima di Kendaraan (Sopir)</span>
+                                                <div className="border-b border-slate-400 w-4/5 mx-auto pb-0.5 font-bold text-[9px]">
                                                     ( {lastCompletedDriver || selectedDriver} )
                                                 </div>
-                                                <span className="text-[8.5px] text-slate-400">Driver Bertanggung Jawab</span>
+                                                <span className="text-[8px] text-slate-500">Driver Bertanggung Jawab</span>
                                             </div>
-                                            <div className="flex flex-col justify-between h-24 border border-slate-200 p-2 rounded">
-                                                <span className="text-[9.5px] font-black uppercase text-slate-600">Mengetahui / Mengesahkan</span>
+                                            <div className="flex flex-col justify-between h-20 border border-slate-300 p-1.5 rounded bg-white">
+                                                <span className="text-[9px] font-black uppercase text-slate-700">Mengetahui / Mengesahkan</span>
                                                 <div className="border-b border-slate-400 w-4/5 mx-auto pb-0.5">
                                                     ( ............................................ )
                                                 </div>
-                                                <span className="text-[8.5px] text-slate-400">Kepala Gudang / Logistik</span>
+                                                <span className="text-[8px] text-slate-500">Kepala Gudang / Logistik</span>
                                             </div>
                                         </div>
 
-                                        <div className="flex justify-between items-center text-[8px] text-slate-400 mt-3 px-1">
+                                        <div className="flex justify-between items-center text-[7.5px] text-slate-500 mt-2 px-0.5">
                                             <span>Perhatian: Seluruh fisik muatan wajib dihitung bersama Checker Gudang sebelum kendaraan meninggalkan loading dock.</span>
                                             <span>Dicetak: {format(new Date(), "dd/MM/yyyy HH:mm")} WIB • ERP System</span>
                                         </div>
