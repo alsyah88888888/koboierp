@@ -548,23 +548,35 @@ export function ShippingScheduleDashboard({
                     <div className="flex items-center gap-3">
                         <Link
                             href="/warehouse"
-                            className="p-2 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-all"
+                            className="p-2 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-all shrink-0"
                             title="Kembali ke Gudang"
                         >
                             <ArrowLeft className="h-5 w-5" />
                         </Link>
+
+                        <div className="h-10 w-10 bg-slate-50 rounded-xl flex items-center justify-center border border-slate-200 p-1 shrink-0">
+                            <img 
+                                src="/image/logokoboi.png" 
+                                alt="Logo PT. Kola Borasi Indonesia" 
+                                className="h-8 w-auto object-contain"
+                                onError={(e) => {
+                                    (e.target as any).src = "/logo.png";
+                                }}
+                            />
+                        </div>
+
                         <div>
                             <div className="flex items-center gap-2">
                                 <span className="bg-amber-500 text-white text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-wider">
                                     LOGISTIK GUDANG
                                 </span>
-                                <h1 className="text-base sm:text-lg font-black text-slate-800 tracking-tight">
-                                    Pemuatan Barang ke Kendaraan (Loading Dock)
-                                </h1>
+                                <span className="text-[11px] font-black text-slate-500 uppercase tracking-wider hidden sm:inline">
+                                    PT. KOLA BORASI INDONESIA
+                                </span>
                             </div>
-                            <p className="text-xs text-slate-500 font-medium">
-                                Tahapan Penugasan Muatan, Verifikasi Fisik & Cetak Form Manifest Masing-Masing Kendaraan.
-                            </p>
+                            <h1 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
+                                Pemuatan Barang ke Kendaraan (Loading Dock)
+                            </h1>
                         </div>
                     </div>
 
@@ -1265,20 +1277,40 @@ export function ShippingScheduleDashboard({
                                 <div className="bg-white border border-slate-300 rounded-xl shadow-xl p-6 sm:p-9 max-w-[210mm] mx-auto">
                                     {/* Header Manifest */}
                                     <div className="border-b-2 border-slate-900 pb-3">
-                                        <div className="flex justify-between items-start">
-                                            <div>
-                                                <h2 className="text-base sm:text-lg font-black text-slate-950 uppercase tracking-tight">
-                                                    PT. KOLA BORASI INDONESIA
-                                                </h2>
-                                                <p className="text-[9.5px] text-slate-600 font-semibold tracking-wider uppercase mt-0.5">
-                                                    Logistik Gudang & Distribusi Pengiriman Terpadu
-                                                </p>
+                                        <div className="flex justify-between items-start gap-4">
+                                            <div className="flex items-center gap-3.5">
+                                                <div className="h-13 w-13 shrink-0 flex items-center justify-center p-1 bg-white border border-slate-200 rounded-lg">
+                                                    <img 
+                                                        src="/image/logokoboi.png" 
+                                                        alt="Logo PT. Kola Borasi Indonesia" 
+                                                        className="h-11 w-auto object-contain"
+                                                        onError={(e) => {
+                                                            (e.target as any).src = "/logo.png";
+                                                        }}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <div className="flex items-center gap-2">
+                                                        <h2 className="text-base sm:text-lg font-black text-slate-950 uppercase tracking-tight leading-tight">
+                                                            PT. KOLA BORASI INDONESIA
+                                                        </h2>
+                                                        <span className="text-[7.5px] font-black bg-slate-900 text-white px-1.5 py-0.5 rounded uppercase tracking-wider">
+                                                            DISTRIBUSI
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-[9.5px] text-slate-700 font-bold tracking-wider uppercase mt-0.5">
+                                                        Logistik Gudang & Distribusi Pengiriman Terpadu
+                                                    </p>
+                                                    <p className="text-[8px] text-slate-500 font-medium">
+                                                        Jl. Arjuna IV Green Kartika Residence Blok EE NO.2, CIBINONG, KAB. BOGOR
+                                                    </p>
+                                                </div>
                                             </div>
-                                            <div className="text-right">
+                                            <div className="text-right shrink-0">
                                                 <span className="inline-block px-3 py-1 rounded text-xs font-black uppercase tracking-wider bg-slate-900 text-white">
                                                     SURAT MUATAN KENDARAAN (LOADING MANIFEST)
                                                 </span>
-                                                <p className="text-[10px] font-mono text-slate-500 mt-1">
+                                                <p className="text-[10px] font-mono text-slate-500 mt-1 font-bold">
                                                     TANGGAL: {dateFormattedIndo}
                                                 </p>
                                             </div>
@@ -1584,6 +1616,28 @@ export function ShippingScheduleDashboard({
                                     <Printer className="w-4 h-4" />
                                     <span>Cetak Rekap Kantor</span>
                                 </button>
+                            </div>
+                        </div>
+
+                        {/* Printable Header for Full Recap */}
+                        <div className="hidden print:flex items-center justify-between border-b-2 border-slate-900 pb-3 p-5">
+                            <div className="flex items-center gap-3">
+                                <img 
+                                    src="/image/logokoboi.png" 
+                                    alt="Logo PT. Kola Borasi Indonesia" 
+                                    className="h-10 w-auto object-contain"
+                                    onError={(e) => {
+                                        (e.target as any).src = "/logo.png";
+                                    }}
+                                />
+                                <div>
+                                    <h2 className="text-sm font-black text-slate-950 uppercase">PT. KOLA BORASI INDONESIA</h2>
+                                    <p className="text-[9px] text-slate-600 font-bold uppercase">Rekapitulasi Seluruh Pengiriman Harian (Kantor)</p>
+                                    <p className="text-[8px] text-slate-400">Tanggal: {dateFormattedIndo}</p>
+                                </div>
+                            </div>
+                            <div className="text-right">
+                                <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Arsip Logistik</span>
                             </div>
                         </div>
 
