@@ -92,6 +92,13 @@ export function ShippingScheduleDashboard({
         if (fleet) {
             setSelectedVehiclePlate(fleet.plate);
             setSelectedEtoll(fleet.etoll);
+        } else {
+            // CRITICAL FIX: If switching to EKSPEDISI or non-official driver,
+            // clear the official fleet plate and etoll so they don't remain stuck from the previous driver!
+            if (upper === "EKSPEDISI" || !selectedVehiclePlate || OFFICIAL_FLEET.some(f => f.plate === selectedVehiclePlate)) {
+                setSelectedVehiclePlate("");
+            }
+            setSelectedEtoll("");
         }
     };
 
@@ -100,8 +107,16 @@ export function ShippingScheduleDashboard({
         setSelectedVehiclePlate(upper);
         const fleet = getFleetByDriverOrPlate(upper);
         if (fleet) {
-            if (!selectedDriver) setSelectedDriver(fleet.driver);
+            if (!selectedDriver || selectedDriver === "EKSPEDISI") {
+                setSelectedDriver(fleet.driver);
+            }
             setSelectedEtoll(fleet.etoll);
+        } else {
+            // Manual custom plate typed by user (e.g. rental truck, third party ekspedisi)
+            // If the current etoll was from an official fleet driver, clear it so it doesn't show wrong card!
+            if (OFFICIAL_FLEET.some(f => f.etoll === selectedEtoll)) {
+                setSelectedEtoll("");
+            }
         }
     };
 
@@ -142,7 +157,27 @@ export function ShippingScheduleDashboard({
         delivs.forEach((d, dIdx) => {
             const po = d.poNumber || "-";
             const buyer = d.buyerName || "-";
-            const driver = d.driver || "";
+            const rawVehicle = (d.driver || d.vehicleNumber || "").trim();
+            const fleet = getFleetByDriverOrPlate(rawVehicle);
+            let driverName = fleet?.driver || rawVehicle;
+            let vehiclePlate = fleet?.plate || "";
+            let etollCard = fleet?.etoll || "";
+
+            // Check if saved as "DRIVER (PLATE)"
+            if (!fleet && rawVehicle) {
+                const matchParen = rawVehicle.match(/^([^(]+)\s*\(([^)]+)\)$/);
+                if (matchParen) {
+                    driverName = matchParen[1].trim().toUpperCase();
+                    vehiclePlate = matchParen[2].trim().toUpperCase();
+                } else {
+                    const matchDash = rawVehicle.match(/^([^-]+)\s*-\s*(.+)$/);
+                    if (matchDash && !matchDash[1].toUpperCase().startsWith("KB-")) {
+                        driverName = matchDash[1].trim().toUpperCase();
+                        vehiclePlate = matchDash[2].trim().toUpperCase();
+                    }
+                }
+            }
+
             const isTRN = (d.invoiceNumber && d.invoiceNumber.startsWith("KB-TRN")) || Number(d.taxRate || 0) > 0;
             const taxType: "KB-TRN" | "KB-TRD" = isTRN ? "KB-TRN" : "KB-TRD";
             
@@ -163,7 +198,9 @@ export function ShippingScheduleDashboard({
                     buyerName: buyer,
                     productName: "-",
                     quantity: 0,
-                    driver: driver,
+                    driver: driverName,
+                    vehiclePlate: vehiclePlate,
+                    etollCard: etollCard,
                     isManual: false
                 });
             } else {
@@ -178,7 +215,9 @@ export function ShippingScheduleDashboard({
                         buyerName: buyer,
                         productName: it.productName || it.product?.name || "Item",
                         quantity: Number(it.quantity || 0),
-                        driver: driver,
+                        driver: driverName,
+                        vehiclePlate: vehiclePlate,
+                        etollCard: etollCard,
                         isManual: false
                     });
                 });
@@ -205,6 +244,19 @@ export function ShippingScheduleDashboard({
                 : `${taxType}-${dateCode}-${String(idx + 1).padStart(3, "0")}`;
 
             const cleanPo = !isCategoryPo && rawPo ? rawPo : (matchedDeliv?.poNumber || "-");
+            const rawVehicle = (m.driver || matchedDeliv?.driver || matchedDeliv?.vehicleNumber || "").trim();
+            const fleet = getFleetByDriverOrPlate(rawVehicle);
+            let driverName = fleet?.driver || rawVehicle;
+            let vehiclePlate = fleet?.plate || "";
+            let etollCard = fleet?.etoll || "";
+
+            if (!fleet && rawVehicle) {
+                const matchParen = rawVehicle.match(/^([^(]+)\s*\(([^)]+)\)$/);
+                if (matchParen) {
+                    driverName = matchParen[1].trim().toUpperCase();
+                    vehiclePlate = matchParen[2].trim().toUpperCase();
+                }
+            }
 
             return {
                 id: m.id,
@@ -216,7 +268,9 @@ export function ShippingScheduleDashboard({
                 buyerName: m.buyerName || "-",
                 productName: m.productName || "-",
                 quantity: Number(m.quantity || 0),
-                driver: m.driver || matchedDeliv?.driver || "",
+                driver: driverName,
+                vehiclePlate: vehiclePlate,
+                etollCard: etollCard,
                 isManual: !matchedDeliv
             };
         });
@@ -280,6 +334,15 @@ export function ShippingScheduleDashboard({
         activeDrivers.forEach(d => set.add(d));
         return Array.from(set).sort();
     }, [activeDrivers]);
+
+    const allPlateOptions = useMemo(() => {
+        const set = new Set<string>();
+        OFFICIAL_FLEET.forEach(f => set.add(f.plate));
+        items.forEach(i => {
+            if (i.vehiclePlate && i.vehiclePlate.trim()) set.add(i.vehiclePlate.trim().toUpperCase());
+        });
+        return Array.from(set);
+    }, [items]);
 
     // SEPARATION OF QUEUES:
     // 1. selectableItems: Items that can be selected in Step 1.
@@ -393,10 +456,13 @@ export function ShippingScheduleDashboard({
         const driverItems = items.filter(i => (i.driver || "").trim().toUpperCase() === cleanDriver);
         const targetItemIds = new Set(driverItems.map(i => i.id));
 
+        const existingPlate = driverItems.find(i => i.vehiclePlate)?.vehiclePlate || fleetInfo?.plate || "";
+        const existingEtoll = driverItems.find(i => i.etollCard)?.etollCard || fleetInfo?.etoll || "";
+
         setEditingDriver(cleanDriver);
         setSelectedDriver(cleanDriver);
-        setSelectedVehiclePlate(fleetInfo?.plate || "");
-        setSelectedEtoll(fleetInfo?.etoll || "");
+        setSelectedVehiclePlate(existingPlate);
+        setSelectedEtoll(existingEtoll);
         setSelectedItemIds(targetItemIds);
         setMainView("WIZARD");
         setWizardStep(1);
@@ -408,6 +474,11 @@ export function ShippingScheduleDashboard({
         if (!selectedDriver.trim() || selectedItemIds.size === 0) return;
         setIsSaving(true);
         const upperDriver = selectedDriver.trim().toUpperCase();
+        const cleanPlate = selectedVehiclePlate.trim().toUpperCase();
+        const cleanEtoll = selectedEtoll.trim();
+        const vehicleToStore = cleanPlate && upperDriver === "EKSPEDISI"
+            ? `EKSPEDISI (${cleanPlate})`
+            : upperDriver;
 
         try {
             const newlySelectedDelivIds = Array.from(new Set(selectedItemsForVerification.map(i => i.deliveryId).filter(Boolean))) as string[];
@@ -424,8 +495,8 @@ export function ShippingScheduleDashboard({
                     return { 
                         ...item, 
                         driver: upperDriver,
-                        vehiclePlate: selectedVehiclePlate.trim().toUpperCase(),
-                        etollCard: selectedEtoll.trim()
+                        vehiclePlate: cleanPlate,
+                        etollCard: cleanEtoll
                     };
                 }
                 if ((item.driver || "").trim().toUpperCase() === prevDriverName) {
@@ -437,7 +508,7 @@ export function ShippingScheduleDashboard({
             // Also update deliveries state locally
             setDeliveries(prev => prev.map(d => {
                 if (newlySelectedDelivIds.includes(d.id)) {
-                    return { ...d, driver: upperDriver, vehicleNumber: upperDriver };
+                    return { ...d, driver: upperDriver, vehicleNumber: vehicleToStore };
                 }
                 if (removedDelivIds.includes(d.id)) {
                     return { ...d, driver: "", vehicleNumber: "" };
@@ -448,7 +519,7 @@ export function ShippingScheduleDashboard({
             // Save in database
             const updatePromises: Promise<any>[] = [];
             newlySelectedDelivIds.forEach(dId => {
-                updatePromises.push(callAction("updateDeliveryDriver", dId, upperDriver).catch(console.error));
+                updatePromises.push(callAction("updateDeliveryDriver", dId, vehicleToStore).catch(console.error));
             });
             removedDelivIds.forEach(dId => {
                 updatePromises.push(callAction("updateDeliveryDriver", dId, "").catch(console.error));
@@ -611,16 +682,20 @@ export function ShippingScheduleDashboard({
 
             {/* Datalists for autocomplete */}
             <datalist id="driver-suggestions">
+                <option value="EKSPEDISI">EKSPEDISI (Luar / Sewa / Vendor)</option>
                 {OFFICIAL_FLEET.map(f => (
                     <option key={f.driver} value={f.driver}>{`${f.driver} (${f.plate})`}</option>
                 ))}
-                {allDriverOptions.map(drv => (
+                {allDriverOptions.filter(d => d !== "EKSPEDISI").map(drv => (
                     <option key={drv} value={drv} />
                 ))}
             </datalist>
             <datalist id="plate-suggestions">
                 {OFFICIAL_FLEET.map(f => (
                     <option key={f.plate} value={f.plate}>{`${f.plate} - ${f.driver}`}</option>
+                ))}
+                {allPlateOptions.filter(p => !OFFICIAL_FLEET.some(f => f.plate === p)).map(p => (
+                    <option key={p} value={p} />
                 ))}
             </datalist>
 
@@ -938,20 +1013,20 @@ export function ShippingScheduleDashboard({
                                         <div className="flex flex-wrap items-center gap-3">
                                             {/* Driver Select */}
                                             <div className="flex items-center gap-2">
-                                                <label className="text-xs font-black text-slate-700 uppercase">Sopir:</label>
+                                                <label className="text-xs font-black text-slate-700 uppercase">Sopir / Ekspedisi:</label>
                                                 <div className="relative">
                                                     <input
                                                         list="driver-suggestions"
                                                         type="text"
                                                         value={selectedDriver}
                                                         onChange={(e) => handleDriverSelect(e.target.value)}
-                                                        placeholder="Pilih Sopir (Kuswara, Karno...)"
+                                                        placeholder="Pilih Sopir / Ekspedisi..."
                                                         className="bg-slate-50 hover:bg-slate-100 focus:bg-white border-2 border-indigo-200 focus:border-indigo-600 px-3.5 py-2 rounded-xl text-xs font-black text-slate-900 uppercase outline-none transition-all min-w-[200px]"
                                                     />
                                                 </div>
                                             </div>
 
-                                            {/* Vehicle Plate (Optional) */}
+                                            {/* Vehicle Plate (Manual / Auto) */}
                                             <div className="flex items-center gap-2">
                                                 <label className="text-xs font-black text-slate-700 uppercase">No. Polisi:</label>
                                                 <input
@@ -959,8 +1034,20 @@ export function ShippingScheduleDashboard({
                                                     type="text"
                                                     value={selectedVehiclePlate}
                                                     onChange={(e) => handlePlateSelect(e.target.value)}
-                                                    placeholder="Contoh: B 9198 FCM"
-                                                    className="bg-slate-50 hover:bg-slate-100 focus:bg-white border border-slate-200 focus:border-indigo-600 px-3 py-2 rounded-xl text-xs font-bold text-slate-900 uppercase outline-none transition-all w-36"
+                                                    placeholder="Manual / Contoh: B 9198 FCM"
+                                                    className="bg-slate-50 hover:bg-slate-100 focus:bg-white border border-slate-200 focus:border-indigo-600 px-3 py-2 rounded-xl text-xs font-bold text-slate-900 uppercase outline-none transition-all min-w-[170px]"
+                                                />
+                                            </div>
+
+                                            {/* E-Toll Card (Directly editable / clearable) */}
+                                            <div className="flex items-center gap-2">
+                                                <label className="text-xs font-black text-slate-700 uppercase">No. E-Toll:</label>
+                                                <input
+                                                    type="text"
+                                                    value={selectedEtoll}
+                                                    onChange={(e) => setSelectedEtoll(e.target.value)}
+                                                    placeholder="Manual / Kosong"
+                                                    className="bg-slate-50 hover:bg-slate-100 focus:bg-white border border-slate-200 focus:border-indigo-600 px-3 py-2 rounded-xl text-xs font-mono font-bold text-slate-900 outline-none transition-all w-44"
                                                 />
                                             </div>
 
@@ -974,9 +1061,9 @@ export function ShippingScheduleDashboard({
                                         </div>
                                     </div>
 
-                                    {/* Official Fleet Quick Selector & E-Toll Badge */}
+                                    {/* Quick Selector: Armada Resmi & Ekspedisi */}
                                     <div className="flex flex-wrap items-center gap-1.5 pt-3 mt-3 border-t border-slate-100">
-                                        <span className="text-[10px] font-black uppercase text-slate-400 mr-1">Armada Resmi:</span>
+                                        <span className="text-[10px] font-black uppercase text-slate-400 mr-1">Pilihan Cepat:</span>
                                         {OFFICIAL_FLEET.map(f => {
                                             const isSelected = selectedDriver === f.driver;
                                             return (
@@ -1001,10 +1088,40 @@ export function ShippingScheduleDashboard({
                                                 </button>
                                             );
                                         })}
-                                        {selectedEtoll && (
+
+                                        {/* Ekspedisi Quick Selector Button */}
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setSelectedDriver("EKSPEDISI");
+                                                setSelectedVehiclePlate("");
+                                                setSelectedEtoll("");
+                                            }}
+                                            className={`px-2.5 py-1 rounded-lg text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 ${
+                                                selectedDriver === "EKSPEDISI"
+                                                    ? "bg-amber-600 text-white shadow-xs"
+                                                    : "bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200"
+                                            }`}
+                                        >
+                                            <span>📦 EKSPEDISI</span>
+                                        </button>
+
+                                        {selectedEtoll ? (
                                             <div className="ml-auto flex items-center gap-1.5 px-3 py-1 bg-blue-50 border border-blue-200 text-blue-900 rounded-lg text-[11px] font-bold shadow-2xs">
                                                 <CreditCard className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" />
                                                 <span>E-TOLL: <strong className="font-mono font-black">{selectedEtoll}</strong></span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setSelectedEtoll("")}
+                                                    className="ml-1 text-slate-400 hover:text-rose-600 font-bold cursor-pointer"
+                                                    title="Hapus E-Toll"
+                                                >
+                                                    ×
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <div className="ml-auto flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 border border-slate-200 text-slate-500 rounded-lg text-[10px] font-medium">
+                                                <span>Tanpa Kartu E-Toll</span>
                                             </div>
                                         )}
                                     </div>
@@ -1646,17 +1763,26 @@ export function ShippingScheduleDashboard({
                                                 <div className="flex justify-between items-start pb-3 border-b border-slate-100">
                                                     <div>
                                                         <h3 className="text-sm font-black text-slate-900 uppercase tracking-wide flex items-center gap-1.5">
-                                                            <span>🚚 ARMADA:</span>
-                                                            <span className="text-indigo-600 font-black">{drvName}</span>
+                                                            {drvName === "EKSPEDISI" ? (
+                                                                <>
+                                                                    <span>📦</span>
+                                                                    <span className="text-amber-600 font-black">EKSPEDISI (LUAR)</span>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <span>🚚 ARMADA:</span>
+                                                                    <span className="text-indigo-600 font-black">{drvName}</span>
+                                                                </>
+                                                            )}
                                                         </h3>
                                                         <div className="flex flex-wrap items-center gap-2 mt-1">
                                                             <span className="text-[10px] bg-slate-100 px-2 py-0.5 rounded font-mono font-bold text-slate-700">
-                                                                {fleetInfo?.plate || "Truk Toko"}
+                                                                {drvItems.find(i => i.vehiclePlate)?.vehiclePlate || fleetInfo?.plate || (drvName === "EKSPEDISI" ? "Ekspedisi / Sewa" : "Truk Toko")}
                                                             </span>
-                                                            {fleetInfo?.etoll && (
+                                                            {(drvItems.find(i => i.etollCard)?.etollCard || fleetInfo?.etoll) && (
                                                                 <span className="text-[9.5px] bg-blue-50 text-blue-800 px-2 py-0.5 rounded font-mono font-bold flex items-center gap-1">
                                                                     <CreditCard className="w-3 h-3 text-blue-600" />
-                                                                    <span>{fleetInfo.etoll}</span>
+                                                                    <span>{drvItems.find(i => i.etollCard)?.etollCard || fleetInfo?.etoll}</span>
                                                                 </span>
                                                             )}
                                                         </div>
@@ -1712,10 +1838,12 @@ export function ShippingScheduleDashboard({
                                                     <button
                                                         onClick={() => {
                                                             const targetItemIds = new Set(drvItems.map(i => i.id));
+                                                            const itemPlate = drvItems.find(i => i.vehiclePlate)?.vehiclePlate || fleetInfo?.plate || "";
+                                                            const itemEtoll = drvItems.find(i => i.etollCard)?.etollCard || fleetInfo?.etoll || "";
                                                             setSelectedItemIds(targetItemIds);
                                                             setSelectedDriver(drvName);
-                                                            setSelectedVehiclePlate(fleetInfo?.plate || "");
-                                                            setSelectedEtoll(fleetInfo?.etoll || "");
+                                                            setSelectedVehiclePlate(itemPlate);
+                                                            setSelectedEtoll(itemEtoll);
                                                             setLastCompletedDriver(drvName);
                                                             setMainView("WIZARD");
                                                             setWizardStep(3);

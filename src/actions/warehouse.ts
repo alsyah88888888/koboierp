@@ -271,11 +271,21 @@ export async function unloadDriverDeliveriesAction(dateStr: string, driverName: 
     // 1. Clear vehicleNumber in SalesDelivery for this driver around this date
     await prisma.salesDelivery.updateMany({
         where: {
-            OR: [
-                { date: { gte: startUtc, lte: endUtc } },
-                { createdAt: { gte: startUtc, lte: endUtc } }
-            ],
-            vehicleNumber: { equals: cleanDriver, mode: 'insensitive' }
+            AND: [
+                {
+                    OR: [
+                        { date: { gte: startUtc, lte: endUtc } },
+                        { createdAt: { gte: startUtc, lte: endUtc } }
+                    ]
+                },
+                {
+                    OR: [
+                        { vehicleNumber: { equals: cleanDriver, mode: 'insensitive' } },
+                        { vehicleNumber: { startsWith: cleanDriver, mode: 'insensitive' } },
+                        { vehicleNumber: { contains: cleanDriver, mode: 'insensitive' } }
+                    ]
+                }
+            ]
         },
         data: { vehicleNumber: "" }
     });
@@ -284,7 +294,11 @@ export async function unloadDriverDeliveriesAction(dateStr: string, driverName: 
     await prisma.shippingMapping.updateMany({
         where: {
             date: { gte: startUtc, lte: endUtc },
-            driver: { equals: cleanDriver, mode: 'insensitive' }
+            OR: [
+                { driver: { equals: cleanDriver, mode: 'insensitive' } },
+                { driver: { startsWith: cleanDriver, mode: 'insensitive' } },
+                { driver: { contains: cleanDriver, mode: 'insensitive' } }
+            ]
         },
         data: { driver: null }
     });
