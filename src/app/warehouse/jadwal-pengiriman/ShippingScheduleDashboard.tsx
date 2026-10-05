@@ -8,7 +8,7 @@ import {
     Truck, ArrowLeft, RefreshCw, CheckCircle2, AlertCircle,
     Eye, Edit3, ShieldAlert, FileText, CheckSquare, Square, Layers, X, 
     UserCheck, ArrowRight, RotateCcw, ListFilter, ClipboardCheck, History,
-    CreditCard
+    CreditCard, Check, Package, Store
 } from "lucide-react";
 import Link from "next/link";
 import { callAction } from "@/proxy";
@@ -986,77 +986,53 @@ export function ShippingScheduleDashboard({
                                     </div>
                                 )}
 
-                                {/* Driver Assignment Setup Card */}
-                                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-                                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                {/* Driver Assignment & Fleet Selection Center */}
+                                <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-sm space-y-4">
+                                    {/* Header & Status */}
+                                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-slate-100">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
+                                            <div className="w-10 h-10 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shrink-0 shadow-2xs">
                                                 <Truck className="w-5 h-5" />
                                             </div>
                                             <div>
-                                                <h3 className="text-sm font-black text-slate-900 uppercase tracking-wide">
-                                                    1. Tentukan Kendaraan & Sopir Muat
-                                                </h3>
+                                                <div className="flex items-center gap-2">
+                                                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-wide">
+                                                        1. Tentukan Kendaraan & Sopir Muat
+                                                    </h3>
+                                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 uppercase tracking-wider">
+                                                        Pilih 1 Armada / Jalur
+                                                    </span>
+                                                </div>
                                                 <p className="text-xs text-slate-500">
-                                                    Pilih sopir dan armada yang sedang parkir di pintu muat gudang.
+                                                    Klik armada resmi yang sedang parkir di pintu muat gudang, vendor ekspedisi luar, atau opsi ambil sendiri.
                                                 </p>
                                             </div>
                                         </div>
 
-                                        <div className="flex flex-wrap items-center gap-3">
-                                            {/* Driver Select */}
-                                            <div className="flex items-center gap-2">
-                                                <label className="text-xs font-black text-slate-700 uppercase">Sopir / Ekspedisi:</label>
-                                                <div className="relative">
-                                                    <input
-                                                        list="driver-suggestions"
-                                                        type="text"
-                                                        value={selectedDriver}
-                                                        onChange={(e) => handleDriverSelect(e.target.value)}
-                                                        placeholder="Pilih Sopir / Ekspedisi..."
-                                                        className="bg-slate-50 hover:bg-slate-100 focus:bg-white border-2 border-indigo-200 focus:border-indigo-600 px-3.5 py-2 rounded-xl text-xs font-black text-slate-900 uppercase outline-none transition-all min-w-[200px]"
-                                                    />
+                                        {/* Current Active Selection Summary */}
+                                        <div className="flex items-center gap-2">
+                                            {selectedDriver ? (
+                                                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-950 text-xs font-black shadow-2xs">
+                                                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
+                                                    <span>Armada Aktif: <strong className="text-indigo-700">{selectedDriver}</strong></span>
+                                                    {selectedVehiclePlate && (
+                                                        <span className="font-mono bg-white px-2 py-0.5 rounded border border-indigo-100 text-[11px] text-slate-800">
+                                                            {selectedVehiclePlate}
+                                                        </span>
+                                                    )}
                                                 </div>
-                                            </div>
-
-                                            {/* Vehicle Plate (Manual / Auto) */}
-                                            <div className="flex items-center gap-2">
-                                                <label className="text-xs font-black text-slate-700 uppercase">No. Polisi:</label>
-                                                <input
-                                                    list="plate-suggestions"
-                                                    type="text"
-                                                    value={selectedVehiclePlate}
-                                                    onChange={(e) => handlePlateSelect(e.target.value)}
-                                                    placeholder="Manual / Contoh: B 9198 FCM"
-                                                    className="bg-slate-50 hover:bg-slate-100 focus:bg-white border border-slate-200 focus:border-indigo-600 px-3 py-2 rounded-xl text-xs font-bold text-slate-900 uppercase outline-none transition-all min-w-[170px]"
-                                                />
-                                            </div>
-
-                                            {/* E-Toll Card (Directly editable / clearable) */}
-                                            <div className="flex items-center gap-2">
-                                                <label className="text-xs font-black text-slate-700 uppercase">No. E-Toll:</label>
-                                                <input
-                                                    type="text"
-                                                    value={selectedEtoll}
-                                                    onChange={(e) => setSelectedEtoll(e.target.value)}
-                                                    placeholder="Manual / Kosong"
-                                                    className="bg-slate-50 hover:bg-slate-100 focus:bg-white border border-slate-200 focus:border-indigo-600 px-3 py-2 rounded-xl text-xs font-mono font-bold text-slate-900 outline-none transition-all w-44"
-                                                />
-                                            </div>
-
-                                            <button
-                                                onClick={() => setShowAddDriverModal(true)}
-                                                className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 cursor-pointer"
-                                                title="Tambah Sopir Baru"
-                                            >
-                                                <Plus className="w-4 h-4" />
-                                            </button>
+                                            ) : (
+                                                <div className="text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+                                                    <AlertCircle className="w-3.5 h-3.5" />
+                                                    <span>Silakan pilih salah satu armada di bawah:</span>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
 
-                                    {/* Quick Selector: Armada Resmi & Ekspedisi */}
-                                    <div className="flex flex-wrap items-center gap-1.5 pt-3 mt-3 border-t border-slate-100">
-                                        <span className="text-[10px] font-black uppercase text-slate-400 mr-1">Pilihan Cepat:</span>
+                                    {/* 7 Visual Interactive Fleet Cards */}
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5">
+                                        {/* 5 Official Company Fleet */}
                                         {OFFICIAL_FLEET.map(f => {
                                             const isSelected = selectedDriver === f.driver;
                                             return (
@@ -1068,73 +1044,257 @@ export function ShippingScheduleDashboard({
                                                         setSelectedVehiclePlate(f.plate);
                                                         setSelectedEtoll(f.etoll);
                                                     }}
-                                                    className={`px-2.5 py-1 rounded-lg text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 ${
+                                                    className={`relative p-3 rounded-2xl border-2 text-left transition-all duration-150 cursor-pointer flex flex-col justify-between group ${
                                                         isSelected 
-                                                            ? "bg-indigo-600 text-white shadow-xs" 
-                                                            : "bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 text-slate-700"
+                                                            ? "bg-indigo-50/80 border-indigo-600 shadow-md ring-2 ring-indigo-500/20 scale-[1.02]" 
+                                                            : "bg-white hover:bg-slate-50 border-slate-200 hover:border-indigo-300 hover:shadow-xs"
                                                     }`}
                                                 >
-                                                    <span>🚚 {f.driver}</span>
-                                                    <span className={`text-[10px] font-mono ${isSelected ? "text-indigo-200" : "text-slate-500"}`}>
+                                                    {/* Top status & category */}
+                                                    <div className="flex items-center justify-between gap-1 mb-2">
+                                                        <span className={`text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded ${
+                                                            isSelected ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-600 group-hover:bg-indigo-50 group-hover:text-indigo-700"
+                                                        }`}>
+                                                            Resmi
+                                                        </span>
+                                                        {isSelected ? (
+                                                            <div className="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow-xs">
+                                                                <Check className="w-3 h-3 stroke-[3]" />
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-[10px] text-slate-300 group-hover:text-slate-400">●</span>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Truck Icon & Driver Name */}
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                                                            isSelected ? "bg-indigo-600 text-white shadow-xs" : "bg-indigo-50 text-indigo-600 group-hover:bg-indigo-100"
+                                                        }`}>
+                                                            <Truck className="w-4 h-4" />
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <span className="text-[9px] block font-bold text-slate-400 uppercase leading-none">Sopir</span>
+                                                            <h4 className="text-xs font-black text-slate-900 truncate uppercase mt-0.5">
+                                                                {f.driver}
+                                                            </h4>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Indonesian License Plate Style Badge */}
+                                                    <div className="bg-slate-900 text-white rounded-lg px-2 py-1 text-center font-mono font-black text-[11px] tracking-wider border border-slate-800 shadow-2xs mb-1.5">
                                                         {f.plate}
-                                                    </span>
+                                                    </div>
+
+                                                    {/* E-Toll Card Digits */}
+                                                    <div className="flex items-center justify-between text-[10px] text-slate-500 font-mono pt-1.5 border-t border-slate-100">
+                                                        <span className="text-[9px] text-slate-400 uppercase font-sans font-bold flex items-center gap-1">
+                                                            <CreditCard className="w-2.5 h-2.5" />
+                                                            E-Toll:
+                                                        </span>
+                                                        <span className="font-bold text-slate-700">...{f.etoll.slice(-4)}</span>
+                                                    </div>
                                                 </button>
                                             );
                                         })}
 
-                                        {/* Ekspedisi Quick Selector Button */}
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                setSelectedDriver("EKSPEDISI");
-                                                setSelectedVehiclePlate("");
-                                                setSelectedEtoll("");
-                                            }}
-                                            className={`px-2.5 py-1 rounded-lg text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 ${
-                                                selectedDriver === "EKSPEDISI"
-                                                    ? "bg-amber-600 text-white shadow-xs"
-                                                    : "bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200"
-                                            }`}
-                                        >
-                                            <span>📦 EKSPEDISI</span>
-                                        </button>
-
-                                        {/* Ambil Sendiri (Self Pickup) Quick Selector Button */}
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                setSelectedDriver("AMBIL SENDIRI");
-                                                setSelectedVehiclePlate("MOBIL SENDIRI");
-                                                setSelectedEtoll("");
-                                            }}
-                                            className={`px-2.5 py-1 rounded-lg text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 ${
-                                                selectedDriver === "AMBIL SENDIRI" || selectedDriver.includes("SELF PICKUP")
-                                                    ? "bg-emerald-600 text-white shadow-xs"
-                                                    : "bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200"
-                                            }`}
-                                            title="Customer / Toko membawa armada sendiri untuk mengambil barang langsung di gudang"
-                                        >
-                                            <span>🏬 AMBIL SENDIRI (SELF PICKUP)</span>
-                                        </button>
-
-                                        {selectedEtoll ? (
-                                            <div className="ml-auto flex items-center gap-1.5 px-3 py-1 bg-blue-50 border border-blue-200 text-blue-900 rounded-lg text-[11px] font-bold shadow-2xs">
-                                                <CreditCard className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" />
-                                                <span>E-TOLL: <strong className="font-mono font-black">{selectedEtoll}</strong></span>
+                                        {/* Card 6: Ekspedisi (Vendor Pihak Ketiga) */}
+                                        {(() => {
+                                            const isSelected = selectedDriver === "EKSPEDISI";
+                                            return (
                                                 <button
                                                     type="button"
-                                                    onClick={() => setSelectedEtoll("")}
-                                                    className="ml-1 text-slate-400 hover:text-rose-600 font-bold cursor-pointer"
-                                                    title="Hapus E-Toll"
+                                                    onClick={() => {
+                                                        setSelectedDriver("EKSPEDISI");
+                                                        setSelectedVehiclePlate("");
+                                                        setSelectedEtoll("");
+                                                    }}
+                                                    className={`relative p-3 rounded-2xl border-2 text-left transition-all duration-150 cursor-pointer flex flex-col justify-between group ${
+                                                        isSelected 
+                                                            ? "bg-amber-50/80 border-amber-600 shadow-md ring-2 ring-amber-500/20 scale-[1.02]" 
+                                                            : "bg-white hover:bg-amber-50/40 border-slate-200 hover:border-amber-300 hover:shadow-xs"
+                                                    }`}
                                                 >
-                                                    ×
+                                                    <div className="flex items-center justify-between gap-1 mb-2">
+                                                        <span className={`text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded ${
+                                                            isSelected ? "bg-amber-600 text-white" : "bg-amber-100 text-amber-800"
+                                                        }`}>
+                                                            Vendor
+                                                        </span>
+                                                        {isSelected ? (
+                                                            <div className="w-5 h-5 rounded-full bg-amber-600 text-white flex items-center justify-center shadow-xs">
+                                                                <Check className="w-3 h-3 stroke-[3]" />
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-[10px] text-slate-300 group-hover:text-amber-400">●</span>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                                                            isSelected ? "bg-amber-600 text-white shadow-xs" : "bg-amber-100 text-amber-700 group-hover:bg-amber-200"
+                                                        }`}>
+                                                            <Package className="w-4 h-4" />
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <span className="text-[9px] block font-bold text-amber-600 uppercase leading-none">Pihak Ketiga</span>
+                                                            <h4 className="text-xs font-black text-slate-900 truncate uppercase mt-0.5">
+                                                                EKSPEDISI
+                                                            </h4>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="bg-amber-50 text-amber-900 rounded-lg px-2 py-1 text-center font-bold text-[10px] border border-amber-200 shadow-2xs mb-1.5 truncate">
+                                                        Sewa / Luar
+                                                    </div>
+
+                                                    <div className="flex items-center justify-between text-[10px] text-slate-500 pt-1.5 border-t border-slate-100">
+                                                        <span className="text-[9px] text-slate-400 uppercase font-sans font-bold">Plat:</span>
+                                                        <span className="font-bold text-amber-800">Bebas/Manual</span>
+                                                    </div>
                                                 </button>
+                                            );
+                                        })()}
+
+                                        {/* Card 7: Ambil Sendiri (Self Pickup di Gudang) */}
+                                        {(() => {
+                                            const isSelected = selectedDriver === "AMBIL SENDIRI" || selectedDriver.includes("SELF PICKUP");
+                                            return (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setSelectedDriver("AMBIL SENDIRI");
+                                                        setSelectedVehiclePlate("MOBIL SENDIRI");
+                                                        setSelectedEtoll("");
+                                                    }}
+                                                    className={`relative p-3 rounded-2xl border-2 text-left transition-all duration-150 cursor-pointer flex flex-col justify-between group ${
+                                                        isSelected 
+                                                            ? "bg-emerald-50/80 border-emerald-600 shadow-md ring-2 ring-emerald-500/20 scale-[1.02]" 
+                                                            : "bg-white hover:bg-emerald-50/40 border-slate-200 hover:border-emerald-300 hover:shadow-xs"
+                                                    }`}
+                                                    title="Customer / Toko membawa armada sendiri untuk mengambil barang langsung di gudang"
+                                                >
+                                                    <div className="flex items-center justify-between gap-1 mb-2">
+                                                        <span className={`text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded ${
+                                                            isSelected ? "bg-emerald-600 text-white" : "bg-emerald-100 text-emerald-800"
+                                                        }`}>
+                                                            Loco
+                                                        </span>
+                                                        {isSelected ? (
+                                                            <div className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-xs">
+                                                                <Check className="w-3 h-3 stroke-[3]" />
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-[10px] text-slate-300 group-hover:text-emerald-400">●</span>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                                                            isSelected ? "bg-emerald-600 text-white shadow-xs" : "bg-emerald-100 text-emerald-700 group-hover:bg-emerald-200"
+                                                        }`}>
+                                                            <Store className="w-4 h-4" />
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <span className="text-[9px] block font-bold text-emerald-600 uppercase leading-none">Self Pickup</span>
+                                                            <h4 className="text-xs font-black text-slate-900 truncate uppercase mt-0.5">
+                                                                AMBIL SENDIRI
+                                                            </h4>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="bg-emerald-50 text-emerald-900 rounded-lg px-2 py-1 text-center font-bold text-[10px] border border-emerald-200 shadow-2xs mb-1.5 truncate">
+                                                        Pelanggan Jemput
+                                                    </div>
+
+                                                    <div className="flex items-center justify-between text-[10px] text-slate-500 pt-1.5 border-t border-slate-100">
+                                                        <span className="text-[9px] text-slate-400 uppercase font-sans font-bold">Lokasi:</span>
+                                                        <span className="font-bold text-emerald-800">Pintu Gudang</span>
+                                                    </div>
+                                                </button>
+                                            );
+                                        })()}
+                                    </div>
+
+                                    {/* Detail & Fine-Tuning Bar for Selected Vehicle */}
+                                    <div className="bg-slate-50/90 rounded-2xl p-3.5 border border-slate-200 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-600 shadow-2xs shrink-0">
+                                                <Edit3 className="w-4 h-4" />
                                             </div>
-                                        ) : (
-                                            <div className="ml-auto flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 border border-slate-200 text-slate-500 rounded-lg text-[10px] font-medium">
-                                                <span>Tanpa Kartu E-Toll</span>
+                                            <div>
+                                                <h4 className="text-xs font-black text-slate-800 uppercase tracking-wide">
+                                                    Detail & Penyesuaian Armada Terpilih
+                                                </h4>
+                                                <p className="text-[11px] text-slate-500">
+                                                    {selectedDriver 
+                                                        ? `Data plat & e-toll terisi otomatis sesuai ${selectedDriver}. Anda dapat mengedit plat/e-toll jika ada perubahan armada hari ini.`
+                                                        : "Pilih salah satu armada di atas untuk menampilkan dan mengedit detail plat nomor serta e-toll."}
+                                                </p>
                                             </div>
-                                        )}
+                                        </div>
+
+                                        <div className="flex flex-wrap items-center gap-2.5">
+                                            {/* Sopir Input (Customizable or via list) */}
+                                            <div className="flex items-center gap-1.5">
+                                                <label className="text-[11px] font-bold text-slate-600 uppercase">Sopir:</label>
+                                                <input
+                                                    list="driver-suggestions"
+                                                    type="text"
+                                                    value={selectedDriver}
+                                                    onChange={(e) => handleDriverSelect(e.target.value)}
+                                                    placeholder="Nama Sopir / Ekspedisi"
+                                                    className="bg-white border border-slate-200 focus:border-indigo-600 px-3 py-1.5 rounded-xl text-xs font-black text-slate-900 uppercase outline-none transition-all w-36 sm:w-44 shadow-2xs"
+                                                />
+                                            </div>
+
+                                            {/* No. Polisi (Editable) */}
+                                            <div className="flex items-center gap-1.5">
+                                                <label className="text-[11px] font-bold text-slate-600 uppercase">No. Polisi:</label>
+                                                <input
+                                                    list="plate-suggestions"
+                                                    type="text"
+                                                    value={selectedVehiclePlate}
+                                                    onChange={(e) => handlePlateSelect(e.target.value)}
+                                                    placeholder="Contoh: B 9198 FCM"
+                                                    className="bg-white border border-slate-200 focus:border-indigo-600 px-3 py-1.5 rounded-xl text-xs font-mono font-bold text-slate-900 uppercase outline-none transition-all w-36 sm:w-40 shadow-2xs"
+                                                />
+                                            </div>
+
+                                            {/* No. E-Toll (Editable with Clear Button) */}
+                                            <div className="flex items-center gap-1.5">
+                                                <label className="text-[11px] font-bold text-slate-600 uppercase">E-Toll:</label>
+                                                <div className="relative flex items-center">
+                                                    <input
+                                                        type="text"
+                                                        value={selectedEtoll}
+                                                        onChange={(e) => setSelectedEtoll(e.target.value)}
+                                                        placeholder="Manual / Kosong"
+                                                        className="bg-white border border-slate-200 focus:border-indigo-600 pl-3 pr-7 py-1.5 rounded-xl text-xs font-mono font-bold text-slate-900 outline-none transition-all w-44 shadow-2xs"
+                                                    />
+                                                    {selectedEtoll && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setSelectedEtoll("")}
+                                                            className="absolute right-2 text-slate-400 hover:text-rose-600 font-black text-xs cursor-pointer"
+                                                            title="Kosongkan E-Toll"
+                                                        >
+                                                            ×
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* Add Custom Driver Modal Button */}
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowAddDriverModal(true)}
+                                                className="p-1.5 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 text-slate-600 shadow-2xs cursor-pointer transition-all"
+                                                title="Tambah Sopir Baru ke Database"
+                                            >
+                                                <Plus className="w-4 h-4" />
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
 
