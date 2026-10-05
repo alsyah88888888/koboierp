@@ -67,6 +67,7 @@ export default async function SalesPage() {
                 ...(isAdmin ? {} : {
                     OR: [
                         { salesPerson: 'BC' },
+                        { salesPerson: 'OWEN' },
                         { createdById: session?.user?.id }
                     ],
                     NOT: { salesPerson: 'PF' }
@@ -85,6 +86,7 @@ export default async function SalesPage() {
             where: isAdmin ? {} : {
                 OR: [
                     { delivery: { salesPerson: "BC" } },
+                    { delivery: { salesPerson: "OWEN" } },
                     { createdById: session?.user?.id }
                 ],
                 NOT: { delivery: { salesPerson: "PF" } }
@@ -100,6 +102,7 @@ export default async function SalesPage() {
             where: isAdmin ? {} : {
                 OR: [
                     { salesPerson: "BC" },
+                    { salesPerson: "OWEN" },
                     { createdById: session?.user?.id }
                 ],
                 NOT: { salesPerson: "PF" }

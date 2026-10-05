@@ -129,7 +129,7 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
 
     // Extract unique sales persons safely
     const availableSales = useMemo(() => {
-        const set = new Set<string>();
+        const set = new Set<string>(["BC", "PF", "OWEN"]);
         initialProducts.forEach((p: any) => {
             (p.stocks || []).forEach((s: any) => {
                 const sp = String(s.salesPerson || "").trim();

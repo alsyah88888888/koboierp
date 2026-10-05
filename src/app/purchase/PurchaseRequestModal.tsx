@@ -206,7 +206,7 @@ export function PurchaseRequestModal({
                             <div className="space-y-2">
                                 <label className="text-xs font-black uppercase tracking-widest text-slate-400">Klasifikasi Operasional</label>
                                 <div className="flex flex-wrap gap-3">
-                                    {["BC", "PF", "UMUM"].map((sp) => (
+                                    {["BC", "PF", "OWEN", "UMUM"].map((sp) => (
                                         <button
                                             key={sp}
                                             type="button"
