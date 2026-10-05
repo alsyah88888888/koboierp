@@ -555,73 +555,121 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                 })}
                             </div>
 
-                            {/* Inventory List with Filter Dropdowns */}
-                            <div className="bg-white border border-slate-200/80 rounded-2xl md:rounded-3xl shadow-sm overflow-hidden md:min-h-[600px]">
-                                {/* Filter Toolbar Header */}
-                                <div className="p-4 md:p-6 border-b border-slate-100 bg-slate-50/50 backdrop-blur-sm space-y-4">
-                                    {/* Top Row: Title, Counter & Action Buttons */}
-                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                                        <div className="flex items-center gap-3">
-                                            <div className="p-2.5 bg-slate-900 text-white rounded-2xl shadow-xs">
-                                                <Box className="h-5 w-5" />
+                            {/* Master Stock Section */}
+                            <div className="bg-white border border-slate-200/90 rounded-2xl md:rounded-3xl shadow-xs overflow-hidden md:min-h-[600px]">
+                                {/* Professional Filter & Control Bar */}
+                                <div className="p-4 md:p-5 border-b border-slate-200/70 bg-white space-y-3.5">
+                                    {/* Top Row: Title & Quick Segmented Status Tabs */}
+                                    <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3">
+                                        <div>
+                                            <div className="flex items-center gap-2">
+                                                <h3 className="text-base font-extrabold text-slate-900 tracking-tight">Master Stock</h3>
+                                                <span className="text-xs font-semibold text-slate-400">
+                                                    ({filteredProducts.length.toLocaleString("id-ID")} produk)
+                                                </span>
                                             </div>
-                                            <div>
-                                                <div className="flex items-center gap-2">
-                                                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">Master Stock</h3>
-                                                    <span className="bg-slate-200/80 text-slate-700 text-[10px] font-black px-2.5 py-0.5 rounded-full">
-                                                        {filteredProducts.length} dari {initialProducts.length} Produk
-                                                    </span>
-                                                    {minusCount > 0 && (
-                                                        <span className="bg-rose-100 text-rose-700 border border-rose-200 text-[9.5px] font-black px-2 py-0.5 rounded-full flex items-center gap-1">
-                                                            <AlertTriangle className="h-3 w-3" /> {minusCount} Minus
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
-                                                    Real-time inventory overview & filter dropdown
-                                                </p>
-                                            </div>
+                                            <p className="text-xs text-slate-500 font-medium">
+                                                Monitoring posisi stok barang real-time per gudang dan vendor pemasok.
+                                            </p>
                                         </div>
 
-                                        {/* Action buttons: Expand/Collapse all and Reset Filter */}
-                                        <div className="flex items-center gap-2 self-start sm:self-auto">
+                                        {/* Quick Status Tabs (Linear/Shopify style) */}
+                                        <div className="flex flex-wrap items-center gap-1 p-1 bg-slate-100/80 rounded-xl border border-slate-200/60 self-start xl:self-auto">
                                             <button
-                                                onClick={toggleAllExpand}
-                                                className="px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5"
-                                                title={allExpanded ? "Tutup Semua Rincian Sub-Stok" : "Buka Semua Rincian Sub-Stok"}
+                                                onClick={() => setStatusFilter("ALL")}
+                                                className={cn(
+                                                    "px-3 py-1.5 rounded-lg text-xs font-bold transition-all",
+                                                    statusFilter === "ALL"
+                                                        ? "bg-white text-slate-900 shadow-xs"
+                                                        : "text-slate-600 hover:text-slate-900"
+                                                )}
                                             >
-                                                {allExpanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
-                                                <span>{allExpanded ? "Tutup Rincian" : "Buka Semua"}</span>
+                                                Semua ({initialProducts.length})
                                             </button>
 
-                                            {isFiltered && (
-                                                <button
-                                                    onClick={resetFilters}
-                                                    className="px-3 py-1.5 bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-700 rounded-xl text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5"
-                                                    title="Reset semua filter ke default"
-                                                >
-                                                    <RotateCcw className="h-3.5 w-3.5" />
-                                                    <span>Reset Filter</span>
-                                                </button>
-                                            )}
+                                            <button
+                                                onClick={() => setStatusFilter("IN_STOCK")}
+                                                className={cn(
+                                                    "px-3 py-1.5 rounded-lg text-xs font-bold transition-all",
+                                                    statusFilter === "IN_STOCK"
+                                                        ? "bg-emerald-600 text-white shadow-xs"
+                                                        : "text-slate-600 hover:text-emerald-700 hover:bg-white/50"
+                                                )}
+                                            >
+                                                Ada Stok
+                                            </button>
+
+                                            <button
+                                                onClick={() => setStatusFilter("MINUS")}
+                                                className={cn(
+                                                    "px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5",
+                                                    statusFilter === "MINUS"
+                                                        ? "bg-rose-600 text-white shadow-xs"
+                                                        : minusCount > 0
+                                                            ? "text-rose-700 bg-rose-50/80 hover:bg-rose-100"
+                                                            : "text-slate-600 hover:text-slate-900"
+                                                )}
+                                            >
+                                                <span>Stok Minus</span>
+                                                {minusCount > 0 && (
+                                                    <span className={cn(
+                                                        "px-1.5 py-0.2 rounded-full text-[10px] font-extrabold",
+                                                        statusFilter === "MINUS" ? "bg-white/20 text-white" : "bg-rose-200 text-rose-800"
+                                                    )}>
+                                                        {minusCount}
+                                                    </span>
+                                                )}
+                                            </button>
+
+                                            <button
+                                                onClick={() => setStatusFilter("LOW_STOCK")}
+                                                className={cn(
+                                                    "px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5",
+                                                    statusFilter === "LOW_STOCK"
+                                                        ? "bg-amber-500 text-white shadow-xs"
+                                                        : "text-slate-600 hover:text-amber-700 hover:bg-white/50"
+                                                )}
+                                            >
+                                                <span>Menipis</span>
+                                                {lowStockCount > 0 && (
+                                                    <span className={cn(
+                                                        "px-1.5 py-0.2 rounded-full text-[10px] font-extrabold",
+                                                        statusFilter === "LOW_STOCK" ? "bg-white/20 text-white" : "bg-amber-100 text-amber-800"
+                                                    )}>
+                                                        {lowStockCount}
+                                                    </span>
+                                                )}
+                                            </button>
+
+                                            <button
+                                                onClick={() => setStatusFilter("OUT_OF_STOCK")}
+                                                className={cn(
+                                                    "px-3 py-1.5 rounded-lg text-xs font-bold transition-all",
+                                                    statusFilter === "OUT_OF_STOCK"
+                                                        ? "bg-slate-800 text-white shadow-xs"
+                                                        : "text-slate-600 hover:text-slate-900"
+                                                )}
+                                            >
+                                                Kosong (0)
+                                            </button>
                                         </div>
                                     </div>
 
-                                    {/* Dropdown Filters Bar */}
-                                    <div className="flex flex-wrap items-center gap-2.5 pt-1">
-                                        {/* Search Input Box */}
-                                        <div className="relative flex-1 min-w-[220px]">
+                                    {/* Second Row: Search & Structured Dropdown Selects */}
+                                    <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-slate-100">
+                                        {/* Search Input */}
+                                        <div className="relative flex-1 min-w-[200px] md:min-w-[260px]">
                                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                                             <input
                                                 value={searchTerm}
                                                 onChange={e => setSearchTerm(e.target.value)}
-                                                placeholder="Cari SKU, Nama Produk, Barcode..."
-                                                className="w-full pl-9 pr-8 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900/15 transition-all font-medium placeholder:text-slate-400 shadow-2xs"
+                                                placeholder="Cari nama produk, SKU, barcode..."
+                                                className="w-full pl-9 pr-8 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:bg-white focus:border-slate-900 focus:ring-1 focus:ring-slate-900/10 outline-none transition-all"
                                             />
                                             {searchTerm && (
                                                 <button
                                                     onClick={() => setSearchTerm("")}
-                                                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 p-0.5"
+                                                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
                                                     title="Bersihkan pencarian"
                                                 >
                                                     <X className="h-3.5 w-3.5" />
@@ -630,65 +678,43 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                         </div>
 
                                         {/* Dropdown Gudang */}
-                                        <div className="w-full sm:w-auto sm:min-w-[150px]">
+                                        <div className="w-full sm:w-auto">
                                             <select
                                                 value={warehouseFilter}
                                                 onChange={e => setWarehouseFilter(e.target.value)}
                                                 className={cn(
-                                                    "w-full px-3 py-2 bg-white border rounded-xl text-xs font-bold outline-none transition-all shadow-2xs cursor-pointer truncate",
+                                                    "w-full sm:w-auto px-3 py-2 bg-slate-50 border rounded-xl text-xs font-semibold outline-none cursor-pointer transition-all",
                                                     warehouseFilter !== "ALL"
-                                                        ? "border-slate-900 text-slate-900 bg-slate-50 ring-1 ring-slate-900/10"
-                                                        : "border-slate-200 text-slate-600 hover:border-slate-300"
+                                                        ? "border-slate-800 text-slate-900 bg-white ring-1 ring-slate-800/10"
+                                                        : "border-slate-200 text-slate-600 hover:border-slate-300 focus:bg-white"
                                                 )}
                                             >
-                                                <option value="ALL">🏢 Semua Gudang</option>
+                                                <option value="ALL">Gudang: Semua</option>
                                                 {warehouses.map(w => (
                                                     <option key={w.id} value={w.id}>
-                                                        🏢 {w.name}
+                                                        Gudang: {w.name}
                                                     </option>
                                                 ))}
                                             </select>
                                         </div>
 
-                                        {/* Dropdown Status Stok */}
-                                        <div className="w-full sm:w-auto sm:min-w-[170px]">
-                                            <select
-                                                value={statusFilter}
-                                                onChange={e => setStatusFilter(e.target.value)}
-                                                className={cn(
-                                                    "w-full px-3 py-2 bg-white border rounded-xl text-xs font-bold outline-none transition-all shadow-2xs cursor-pointer truncate",
-                                                    statusFilter === "MINUS"
-                                                        ? "border-rose-400 text-rose-700 bg-rose-50 ring-1 ring-rose-400/20"
-                                                        : statusFilter !== "ALL"
-                                                            ? "border-slate-900 text-slate-900 bg-slate-50 ring-1 ring-slate-900/10"
-                                                            : "border-slate-200 text-slate-600 hover:border-slate-300"
-                                                )}
-                                            >
-                                                <option value="ALL">📊 Semua Status</option>
-                                                <option value="IN_STOCK">🟢 Ada Stok (&gt; 0)</option>
-                                                <option value="MINUS">🔴 Stok Minus ({minusCount})</option>
-                                                <option value="LOW_STOCK">🟡 Stok Menipis ({lowStockCount})</option>
-                                                <option value="OUT_OF_STOCK">⚪ Stok Kosong (0)</option>
-                                            </select>
-                                        </div>
-
                                         {/* Dropdown Kategori */}
                                         {availableCategories.length > 0 && (
-                                            <div className="w-full sm:w-auto sm:min-w-[150px]">
+                                            <div className="w-full sm:w-auto">
                                                 <select
                                                     value={categoryFilter}
                                                     onChange={e => setCategoryFilter(e.target.value)}
                                                     className={cn(
-                                                        "w-full px-3 py-2 bg-white border rounded-xl text-xs font-bold outline-none transition-all shadow-2xs cursor-pointer truncate",
+                                                        "w-full sm:w-auto px-3 py-2 bg-slate-50 border rounded-xl text-xs font-semibold outline-none cursor-pointer transition-all",
                                                         categoryFilter !== "ALL"
-                                                            ? "border-slate-900 text-slate-900 bg-slate-50 ring-1 ring-slate-900/10"
-                                                            : "border-slate-200 text-slate-600 hover:border-slate-300"
+                                                            ? "border-slate-800 text-slate-900 bg-white ring-1 ring-slate-800/10"
+                                                            : "border-slate-200 text-slate-600 hover:border-slate-300 focus:bg-white"
                                                     )}
                                                 >
-                                                    <option value="ALL">📦 Semua Kategori</option>
+                                                    <option value="ALL">Kategori: Semua</option>
                                                     {availableCategories.map(cat => (
                                                         <option key={cat} value={cat}>
-                                                            📦 {cat}
+                                                            Kategori: {cat}
                                                         </option>
                                                     ))}
                                                 </select>
@@ -697,21 +723,21 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
 
                                         {/* Dropdown Vendor */}
                                         {availableVendors.length > 0 && (
-                                            <div className="w-full sm:w-auto sm:min-w-[170px] max-w-xs">
+                                            <div className="w-full sm:w-auto max-w-[220px]">
                                                 <select
                                                     value={vendorFilter}
                                                     onChange={e => setVendorFilter(e.target.value)}
                                                     className={cn(
-                                                        "w-full px-3 py-2 bg-white border rounded-xl text-xs font-bold outline-none transition-all shadow-2xs cursor-pointer truncate",
+                                                        "w-full px-3 py-2 bg-slate-50 border rounded-xl text-xs font-semibold outline-none cursor-pointer transition-all truncate",
                                                         vendorFilter !== "ALL"
-                                                            ? "border-slate-900 text-slate-900 bg-slate-50 ring-1 ring-slate-900/10"
-                                                            : "border-slate-200 text-slate-600 hover:border-slate-300"
+                                                            ? "border-slate-800 text-slate-900 bg-white ring-1 ring-slate-800/10"
+                                                            : "border-slate-200 text-slate-600 hover:border-slate-300 focus:bg-white"
                                                     )}
                                                 >
-                                                    <option value="ALL">🚚 Semua Vendor</option>
+                                                    <option value="ALL">Vendor: Semua</option>
                                                     {availableVendors.map(v => (
                                                         <option key={v} value={v}>
-                                                            🚚 {v}
+                                                            Vendor: {v}
                                                         </option>
                                                     ))}
                                                 </select>
@@ -720,43 +746,66 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
 
                                         {/* Dropdown Sales */}
                                         {availableSales.length > 0 && (
-                                            <div className="w-full sm:w-auto sm:min-w-[130px]">
+                                            <div className="w-full sm:w-auto">
                                                 <select
                                                     value={salesFilter}
                                                     onChange={e => setSalesFilter(e.target.value)}
                                                     className={cn(
-                                                        "w-full px-3 py-2 bg-white border rounded-xl text-xs font-bold outline-none transition-all shadow-2xs cursor-pointer truncate",
+                                                        "w-full sm:w-auto px-3 py-2 bg-slate-50 border rounded-xl text-xs font-semibold outline-none cursor-pointer transition-all",
                                                         salesFilter !== "ALL"
-                                                            ? "border-slate-900 text-slate-900 bg-slate-50 ring-1 ring-slate-900/10"
-                                                            : "border-slate-200 text-slate-600 hover:border-slate-300"
+                                                            ? "border-slate-800 text-slate-900 bg-white ring-1 ring-slate-800/10"
+                                                            : "border-slate-200 text-slate-600 hover:border-slate-300 focus:bg-white"
                                                     )}
                                                 >
-                                                    <option value="ALL">👤 Semua Sales</option>
+                                                    <option value="ALL">Sales: Semua</option>
                                                     {availableSales.map(s => (
                                                         <option key={s} value={s}>
-                                                            👤 {s}
+                                                            Sales: {s}
                                                         </option>
                                                     ))}
                                                 </select>
                                             </div>
                                         )}
+
+                                        {/* Actions: Buka Semua / Reset */}
+                                        <div className="flex items-center gap-1.5 ml-auto">
+                                            <button
+                                                onClick={toggleAllExpand}
+                                                className="px-3 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 shadow-2xs"
+                                                title={allExpanded ? "Tutup Semua Rincian Sub-Stok" : "Buka Semua Rincian Sub-Stok"}
+                                            >
+                                                {allExpanded ? <ChevronDown className="h-3.5 w-3.5 text-slate-500" /> : <ChevronRight className="h-3.5 w-3.5 text-slate-500" />}
+                                                <span>{allExpanded ? "Tutup Rincian" : "Buka Sub-Stok"}</span>
+                                            </button>
+
+                                            {isFiltered && (
+                                                <button
+                                                    onClick={resetFilters}
+                                                    className="px-3 py-2 text-rose-600 hover:bg-rose-50 rounded-xl text-xs font-semibold transition-all flex items-center gap-1"
+                                                    title="Reset semua filter"
+                                                >
+                                                    <RotateCcw className="h-3.5 w-3.5" />
+                                                    <span>Reset</span>
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
 
                                 {/* DESKTOP TABLE VIEW */}
                                 <div className="hidden lg:block overflow-auto max-h-[calc(100vh-420px)] min-h-[400px] custom-scrollbar border-b border-slate-100">
                                     <table className="w-full text-xs text-left min-w-[1200px] table-fixed relative">
-                                        <thead className="bg-slate-50 text-slate-500 border-b border-slate-200 sticky top-0 z-20 shadow-xs">
+                                        <thead className="bg-slate-100/80 text-slate-700 border-b border-slate-200 sticky top-0 z-20 shadow-2xs">
                                             <tr>
-                                                <th className="px-6 py-4.5 uppercase text-[9px] font-bold tracking-widest w-64 text-slate-600">Barang / SKU</th>
-                                                <th className="px-6 py-4.5 uppercase text-[9px] font-bold tracking-widest text-left w-40 text-slate-600">Gudang</th>
-                                                <th className="px-6 py-4.5 uppercase text-[9px] font-bold tracking-widest text-left w-48 text-slate-600">Vendor / Pemasok</th>
-                                                <th className="px-6 py-4.5 uppercase text-[9px] font-bold tracking-widest text-center w-28 text-slate-600">Sales</th>
-                                                <th className="px-6 py-4.5 uppercase text-[9px] font-bold tracking-widest text-right w-36 text-slate-600">Qty Tersedia</th>
-                                                <th className="px-6 py-4.5 uppercase text-[9px] font-bold tracking-widest text-right w-36 text-slate-600">HPP per Unit</th>
-                                                <th className="px-6 py-4.5 uppercase text-[9px] font-bold tracking-widest text-right w-36 text-slate-600">Total Nilai</th>
-                                                <th className="px-6 py-4.5 uppercase text-[9px] font-bold tracking-widest text-right w-28 text-slate-600">Status</th>
-                                                {isAdmin && <th className="px-6 py-4.5 uppercase text-[9px] font-bold tracking-widest text-center w-24 text-slate-600">Aksi</th>}
+                                                <th className="px-6 py-3.5 uppercase text-[9.5px] font-extrabold tracking-wider w-64 text-slate-700">Barang / SKU</th>
+                                                <th className="px-6 py-3.5 uppercase text-[9.5px] font-extrabold tracking-wider text-left w-40 text-slate-700">Gudang</th>
+                                                <th className="px-6 py-3.5 uppercase text-[9.5px] font-extrabold tracking-wider text-left w-48 text-slate-700">Vendor / Pemasok</th>
+                                                <th className="px-6 py-3.5 uppercase text-[9.5px] font-extrabold tracking-wider text-center w-28 text-slate-700">Sales</th>
+                                                <th className="px-6 py-3.5 uppercase text-[9.5px] font-extrabold tracking-wider text-right w-36 text-slate-700">Qty Tersedia</th>
+                                                <th className="px-6 py-3.5 uppercase text-[9.5px] font-extrabold tracking-wider text-right w-36 text-slate-700">HPP per Unit</th>
+                                                <th className="px-6 py-3.5 uppercase text-[9.5px] font-extrabold tracking-wider text-right w-36 text-slate-700">Total Nilai</th>
+                                                <th className="px-6 py-3.5 uppercase text-[9.5px] font-extrabold tracking-wider text-right w-28 text-slate-700">Status</th>
+                                                {isAdmin && <th className="px-6 py-3.5 uppercase text-[9.5px] font-extrabold tracking-wider text-center w-24 text-slate-700">Aksi</th>}
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">
@@ -781,111 +830,113 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
 
                                                 const totalNetQty = (matchingStocks.length > 0 ? matchingStocks : (p.stocks || []))
                                                     .reduce((sum: number, s: any) => sum + Number(s.quantity || 0), 0);
-                                                const isExpanded = expandedProducts[p.id];
+                                                const hasSubStocks = activeStocks.length > 0;
+                                                const isExpanded = Boolean(expandedProducts[p.id] && hasSubStocks);
                                                 const hasNegative = matchingStocks.some((s: any) => Number(s.quantity || 0) < 0);
                                                 
                                                 return (
                                                     <React.Fragment key={p.id}>
                                                         {/* Parent Row (Product Level) */}
-                                                        <tr className="bg-slate-50/50 hover:bg-slate-100/50 transition-colors cursor-pointer" onClick={() => toggleProduct(p.id)}>
-                                                            <td className="px-6 py-4" colSpan={4}>
+                                                        <tr 
+                                                            className={cn(
+                                                                "transition-colors",
+                                                                hasSubStocks ? "hover:bg-slate-50/80 cursor-pointer" : "cursor-default",
+                                                                isExpanded ? "bg-slate-50/90" : "bg-white"
+                                                            )}
+                                                            onClick={() => {
+                                                                if (hasSubStocks) toggleProduct(p.id);
+                                                            }}
+                                                        >
+                                                            <td className="px-6 py-3.5" colSpan={4}>
                                                                 <div className="flex items-center gap-3">
-                                                                    <div className="p-1.5 bg-white shadow-xs border border-slate-200 rounded-md text-slate-400">
-                                                                        {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                                                                    </div>
+                                                                    {hasSubStocks ? (
+                                                                        <div className="p-1 bg-white shadow-2xs border border-slate-200 rounded-md text-slate-500">
+                                                                            {isExpanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+                                                                        </div>
+                                                                    ) : (
+                                                                        <div className="w-5 text-center text-slate-300 font-bold text-xs">-</div>
+                                                                    )}
                                                                     <div>
-                                                                        <div className="font-black text-slate-900 text-sm flex items-center gap-2">
-                                                                            {p.name}
+                                                                        <div className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                                                                            <span>{p.name}</span>
                                                                             {hasNegative && (
-                                                                                <span className="inline-flex items-center gap-1 bg-rose-100 text-rose-700 px-2 py-0.5 rounded text-[10px] uppercase tracking-wider border border-rose-200">
-                                                                                    <AlertTriangle className="h-3 w-3" /> Ada Stok Minus
+                                                                                <span className="inline-flex items-center gap-1 bg-rose-50 text-rose-700 px-2 py-0.5 rounded text-[10px] font-bold border border-rose-200">
+                                                                                    <AlertTriangle className="h-3 w-3" /> Minus
                                                                                 </span>
                                                                             )}
                                                                         </div>
-                                                                        <div className="text-[10px] font-mono text-slate-500 mt-0.5 tracking-wider">
-                                                                            {p.sku} | {activeStocks.length} Sub-Stok {p.category ? `• ${p.category}` : ''}
+                                                                        <div className="text-[11px] font-mono text-slate-400 mt-0.5">
+                                                                            {p.sku} {p.category ? `• ${p.category}` : ''} {hasSubStocks ? `• ${activeStocks.length} sub-stok` : ''}
                                                                         </div>
                                                                     </div>
                                                                 </div>
                                                             </td>
-                                                            <td className="px-6 py-4 text-right">
-                                                                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Total Stok</div>
-                                                                <div className={cn("text-lg font-mono font-black", totalNetQty < 0 ? "text-rose-600" : "text-slate-900")}>
-                                                                    {isClient ? totalNetQty.toLocaleString() : "..."}
-                                                                    <span className="text-[10px] text-slate-400 ml-1">{p.uom}</span>
+                                                            <td className="px-6 py-3.5 text-right">
+                                                                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Total Stok</div>
+                                                                <div className={cn("text-base font-mono font-extrabold", totalNetQty < 0 ? "text-rose-600" : "text-slate-900")}>
+                                                                    {isClient ? totalNetQty.toLocaleString("id-ID") : "..."}
+                                                                    <span className="text-[10px] text-slate-400 font-normal ml-1">{p.uom}</span>
                                                                 </div>
                                                             </td>
-                                                            <td className="px-6 py-4" colSpan={4}></td>
+                                                            <td className="px-6 py-3.5" colSpan={isAdmin ? 4 : 3}></td>
                                                         </tr>
                                                         
-                                                        {/* Child Rows (Stock Details) */}
-                                                        {isExpanded && activeStocks.length === 0 && (
-                                                            <tr>
-                                                                <td colSpan={isAdmin ? 9 : 8} className="px-6 py-4 text-center text-slate-400 text-xs italic bg-white">
-                                                                    Tidak ada pergerakan stok yang cocok dengan filter aktif
-                                                                </td>
-                                                            </tr>
-                                                        )}
+                                                        {/* Child Rows (Sub-Stock Details) */}
                                                         {isExpanded && activeStocks.map((s: any) => {
                                                             const whName = warehouses.find(w => w.id === s.warehouseId)?.name || "Unknown";
                                                             const isLow = s.quantity > 0 && s.quantity <= p.lowStockThreshold;
                                                             const isNegative = s.quantity < 0;
                                                             const meta = getStockMetadata(p.id, s.warehouseId, s.vendorName);
                                                             const salesPerson = meta.salesPerson;
-                                                            const hpp = meta.hpp || Number(p.purchasePrice) || 0;
+                                                            const hpp = Math.round(meta.hpp || Number(p.purchasePrice) || 0);
+                                                            const totalVal = Math.round(hpp * Number(s.quantity || 0));
                                                             
                                                             return (
-                                                                <tr key={`${p.id}-${s.id}`} className="bg-white hover:bg-slate-50/50 transition-colors group border-l-4 border-l-transparent hover:border-l-indigo-400">
-                                                                    <td className="px-6 py-3 pl-12">
-                                                                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Sub-Stok</div>
+                                                                <tr key={`${p.id}-${s.id}`} className="bg-slate-50/40 hover:bg-slate-100/60 transition-colors group border-l-2 border-l-slate-300">
+                                                                    <td className="px-6 py-2.5 pl-14 text-slate-400 text-xs font-semibold">
+                                                                        Sub-Stok
                                                                     </td>
-                                                                    <td className="px-6 py-3 text-left font-bold text-slate-600 text-xs truncate">
+                                                                    <td className="px-6 py-2.5 text-left font-bold text-slate-700 text-xs truncate">
                                                                         {whName}
                                                                     </td>
-                                                                    <td className="px-6 py-3 text-left">
-                                                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-50 text-slate-700 text-[10px] font-bold border border-slate-200">
-                                                                            <WarehouseIcon className="h-3 w-3 text-slate-400 shrink-0" />
-                                                                            <span className="truncate">{s.vendorName || "CIBINONG"}</span>
-                                                                        </span>
+                                                                    <td className="px-6 py-2.5 text-left text-xs text-slate-800 font-semibold truncate">
+                                                                        {s.vendorName || "CIBINONG"}
                                                                     </td>
-                                                                    <td className="px-6 py-3 text-center">
+                                                                    <td className="px-6 py-2.5 text-center">
                                                                         {salesPerson !== "-" ? (
-                                                                            <span className={cn(
-                                                                                "px-2 py-0.5 rounded-md text-[9px] font-extrabold border shadow-2xs tracking-wide",
-                                                                                salesPerson === "BC" ? "bg-indigo-50 text-indigo-700 border-indigo-100" : "bg-amber-50 text-amber-700 border-amber-100"
-                                                                            )}>
+                                                                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
                                                                                 {salesPerson}
                                                                             </span>
-                                                                        ) : <span className="text-slate-400">-</span>}
+                                                                        ) : <span className="text-slate-300">-</span>}
                                                                     </td>
-                                                                    <td className="px-6 py-3 text-right">
-                                                                        <div className={cn("text-sm font-mono font-bold", isNegative ? "text-rose-600" : "text-slate-900")}>
-                                                                            {isClient ? (s.quantity || 0).toLocaleString() : "..."} 
-                                                                        </div>
+                                                                    <td className="px-6 py-2.5 text-right font-mono font-bold text-xs">
+                                                                        <span className={isNegative ? "text-rose-600 font-extrabold" : "text-slate-900"}>
+                                                                            {isClient ? Number(s.quantity || 0).toLocaleString("id-ID") : "..."}
+                                                                        </span>
                                                                     </td>
-                                                                    <td className="px-6 py-3 text-right font-mono font-bold text-slate-500 text-[11px]">
+                                                                    <td className="px-6 py-2.5 text-right font-mono text-slate-600 text-xs">
                                                                         {formatCurrency(hpp)}
                                                                     </td>
-                                                                    <td className="px-6 py-3 text-right font-mono font-bold text-slate-800 text-[11px]">
-                                                                        {formatCurrency(hpp * (s.quantity || 0))}
+                                                                    <td className="px-6 py-2.5 text-right font-mono font-bold text-slate-800 text-xs">
+                                                                        {formatCurrency(totalVal)}
                                                                     </td>
-                                                                    <td className="px-6 py-3 text-right">
+                                                                    <td className="px-6 py-2.5 text-right">
                                                                         <span className={cn(
-                                                                            "px-2 py-0.5 rounded-md text-[9px] font-bold border shadow-2xs",
-                                                                            isNegative ? "bg-rose-100 text-rose-700 border-rose-200" 
-                                                                            : isLow ? "bg-amber-50 text-amber-700 border-amber-100" 
-                                                                            : "bg-emerald-50 text-emerald-700 border-emerald-100"
+                                                                            "px-2 py-0.5 rounded text-[10px] font-bold border",
+                                                                            isNegative ? "bg-rose-50 text-rose-700 border-rose-200" 
+                                                                            : isLow ? "bg-amber-50 text-amber-700 border-amber-200" 
+                                                                            : "bg-emerald-50 text-emerald-700 border-emerald-200"
                                                                         )}>
                                                                             {isNegative ? "Minus" : isLow ? "Low Stock" : "In Stock"}
                                                                         </span>
                                                                     </td>
                                                                     {isAdmin && (
-                                                                        <td className="px-6 py-3 text-center">
+                                                                        <td className="px-6 py-2.5 text-center">
                                                                             <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                                <button onClick={() => setSelectedStockForAdjustment({ product: p, stock: s })} className="p-1.5 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-lg" title="Penyesuaian Stok"><Edit2 className="h-3.5 w-3.5" /></button>
-                                                                                <button onClick={() => setSelectedStockForTransfer({ product: p, stock: s })} className="p-1.5 text-slate-400 hover:text-violet-600 hover:bg-violet-50 rounded-lg" title="Mutasi"><ArrowLeftRight className="h-3.5 w-3.5" /></button>
-                                                                                <button onClick={() => { setSelectedProductIdForCard(p.id); setShowStockCard(true); }} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg" title="Kartu Stok"><FileText className="h-3.5 w-3.5" /></button>
-                                                                                <button onClick={() => handleDeleteProduct(p.id)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg" title="Hapus Produk"><Trash2 className="h-3.5 w-3.5" /></button>
+                                                                                <button onClick={() => setSelectedStockForAdjustment({ product: p, stock: s })} className="p-1 text-slate-400 hover:text-slate-900 hover:bg-slate-200 rounded" title="Penyesuaian Stok"><Edit2 className="h-3.5 w-3.5" /></button>
+                                                                                <button onClick={() => setSelectedStockForTransfer({ product: p, stock: s })} className="p-1 text-slate-400 hover:text-violet-600 hover:bg-violet-50 rounded" title="Mutasi"><ArrowLeftRight className="h-3.5 w-3.5" /></button>
+                                                                                <button onClick={() => { setSelectedProductIdForCard(p.id); setShowStockCard(true); }} className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded" title="Kartu Stok"><FileText className="h-3.5 w-3.5" /></button>
+                                                                                <button onClick={() => handleDeleteProduct(p.id)} className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded" title="Hapus Produk"><Trash2 className="h-3.5 w-3.5" /></button>
                                                                             </div>
                                                                         </td>
                                                                     )}
@@ -922,51 +973,57 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
 
                                         const totalNetQty = (matchingStocks.length > 0 ? matchingStocks : (p.stocks || []))
                                             .reduce((sum: number, s: any) => sum + Number(s.quantity || 0), 0);
-                                        const isExpanded = expandedProducts[p.id];
+                                        const hasSubStocks = activeStocks.length > 0;
+                                        const isExpanded = Boolean(expandedProducts[p.id] && hasSubStocks);
                                         const hasNegative = matchingStocks.some((s: any) => Number(s.quantity || 0) < 0);
                                         
                                         return (
                                             <div key={p.id} className="bg-white">
                                                 {/* Parent Card */}
                                                 <div 
-                                                    className="p-4 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors"
-                                                    onClick={() => toggleProduct(p.id)}
+                                                    className={cn(
+                                                        "p-4 flex items-center justify-between transition-colors",
+                                                        hasSubStocks ? "cursor-pointer hover:bg-slate-50" : "cursor-default"
+                                                    )}
+                                                    onClick={() => {
+                                                        if (hasSubStocks) toggleProduct(p.id);
+                                                    }}
                                                 >
                                                     <div className="flex-1 min-w-0 pr-4">
-                                                        <div className="font-black text-slate-900 text-sm flex items-center gap-2 mb-1">
+                                                        <div className="font-bold text-slate-900 text-sm flex items-center gap-2 mb-1">
                                                             <div className="truncate">{p.name}</div>
                                                             {hasNegative && <AlertTriangle className="h-4 w-4 text-rose-500 shrink-0" />}
                                                         </div>
-                                                        <div className="text-[10px] font-mono text-slate-500 tracking-widest">
-                                                            {p.sku} | {activeStocks.length} Sub-Stok {p.category ? `• ${p.category}` : ''}
+                                                        <div className="text-[11px] font-mono text-slate-400">
+                                                            {p.sku} {p.category ? `• ${p.category}` : ''} {hasSubStocks ? `• ${activeStocks.length} sub-stok` : ''}
                                                         </div>
                                                     </div>
                                                     <div className="text-right flex items-center gap-3">
                                                         <div>
-                                                            <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Total Stok</div>
-                                                            <div className={cn("text-lg font-black leading-none", totalNetQty < 0 ? "text-rose-600" : "text-slate-900")}>
-                                                                {isClient ? totalNetQty.toLocaleString() : "..."}
+                                                            <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Total Stok</div>
+                                                            <div className={cn("text-base font-mono font-bold leading-none", totalNetQty < 0 ? "text-rose-600" : "text-slate-900")}>
+                                                                {isClient ? totalNetQty.toLocaleString("id-ID") : "..."}
                                                             </div>
                                                         </div>
-                                                        <div className="text-slate-400">
-                                                            {isExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-                                                        </div>
+                                                        {hasSubStocks ? (
+                                                            <div className="text-slate-400">
+                                                                {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                                                            </div>
+                                                        ) : (
+                                                            <div className="w-4 text-slate-300">-</div>
+                                                        )}
                                                     </div>
                                                 </div>
 
                                                 {/* Child Cards (Details) */}
                                                 {isExpanded && (
                                                     <div className="bg-slate-50/50 border-t border-slate-100 divide-y divide-slate-100">
-                                                        {activeStocks.length === 0 && (
-                                                            <div className="p-4 text-center text-xs text-slate-400 italic">
-                                                                Tidak ada pergerakan stok yang cocok dengan filter
-                                                            </div>
-                                                        )}
                                                         {activeStocks.map((s: any) => {
                                                             const whName = warehouses.find(w => w.id === s.warehouseId)?.name || "Unknown";
                                                             const isLow = s.quantity > 0 && s.quantity <= p.lowStockThreshold;
                                                             const isNegative = s.quantity < 0;
                                                             const meta = getStockMetadata(p.id, s.warehouseId, s.vendorName);
+                                                            const hpp = Math.round(meta.hpp || Number(p.purchasePrice) || 0);
                                                             
                                                             return (
                                                                 <div key={`${p.id}-${s.id}`} className="p-4 pl-6 space-y-3 relative overflow-hidden">
@@ -974,16 +1031,15 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                                                     <div className="flex justify-between items-start gap-3">
                                                                         <div className="flex-1 min-w-0">
                                                                             <div className="font-bold text-slate-700 text-xs truncate mb-1">{whName}</div>
-                                                                            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-white text-slate-600 text-[10px] font-bold border border-slate-200">
-                                                                                <WarehouseIcon className="h-3 w-3 text-slate-400 shrink-0" />
-                                                                                <span className="truncate">{s.vendorName || "CIBINONG"}</span>
+                                                                            <span className="inline-block px-2 py-0.5 rounded bg-white text-slate-700 text-[10px] font-bold border border-slate-200 truncate">
+                                                                                {s.vendorName || "CIBINONG"}
                                                                             </span>
                                                                         </div>
                                                                         <span className={cn(
-                                                                            "shrink-0 px-2 py-0.5 rounded-md text-[9px] font-bold border shadow-2xs",
-                                                                            isNegative ? "bg-rose-100 text-rose-700 border-rose-200"
-                                                                            : isLow ? "bg-amber-50 text-amber-700 border-amber-100" 
-                                                                            : "bg-emerald-50 text-emerald-700 border-emerald-100"
+                                                                            "shrink-0 px-2 py-0.5 rounded text-[10px] font-bold border",
+                                                                            isNegative ? "bg-rose-50 text-rose-700 border-rose-200"
+                                                                            : isLow ? "bg-amber-50 text-amber-700 border-amber-200" 
+                                                                            : "bg-emerald-50 text-emerald-700 border-emerald-200"
                                                                         )}>
                                                                             {isNegative ? "Minus" : isLow ? "Low Stock" : "In Stock"}
                                                                         </span>
@@ -991,10 +1047,10 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                                                     
                                                                     <div className="flex items-end justify-between pt-2 border-t border-slate-200/50">
                                                                         <div>
-                                                                            <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Qty Gudang Ini</div>
-                                                                            <div className={cn("text-xl font-mono font-black leading-none", isNegative ? "text-rose-600" : "text-slate-900")}>
-                                                                                {isClient ? (s.quantity || 0).toLocaleString() : "..."} 
-                                                                                <span className="text-[10px] text-slate-400 font-bold uppercase ml-1">{p.uom}</span>
+                                                                            <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Qty Sub-Stok</div>
+                                                                            <div className={cn("text-lg font-mono font-bold leading-none", isNegative ? "text-rose-600" : "text-slate-900")}>
+                                                                                {isClient ? (s.quantity || 0).toLocaleString("id-ID") : "..."} 
+                                                                                <span className="text-[10px] text-slate-400 font-normal ml-1">{p.uom}</span>
                                                                             </div>
                                                                         </div>
                                                                         {isAdmin && (
@@ -1029,7 +1085,7 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                         <div className="p-3 bg-slate-100 text-slate-400 rounded-2xl mb-3">
                                             <Box className="h-8 w-8" />
                                         </div>
-                                        <h4 className="text-sm font-black text-slate-800">Tidak Ada Produk yang Cocok</h4>
+                                        <h4 className="text-sm font-bold text-slate-800">Tidak Ada Produk yang Cocok</h4>
                                         <p className="text-xs text-slate-400 mt-1 max-w-sm">
                                             Tidak ditemukan produk yang memenuhi kriteria pencarian atau filter yang dipilih.
                                         </p>
