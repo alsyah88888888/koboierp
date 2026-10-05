@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from "react";
-import { Plus, Warehouse as WarehouseIcon, Layers, Trash2, FileText, Search, Activity, Box, ArrowUpRight, ArrowDownLeft, Download, Eye, Edit2, ArrowLeftRight, ChevronDown, ChevronRight, AlertTriangle, Truck } from "lucide-react";
+import { Plus, Warehouse as WarehouseIcon, Layers, Trash2, FileText, Search, Activity, Box, ArrowUpRight, ArrowDownLeft, Download, Eye, Edit2, ArrowLeftRight, ChevronDown, ChevronRight, AlertTriangle, Truck, RotateCcw, X, Filter } from "lucide-react";
 import { StockInputModal } from "./StockInputModal";
 import { StockAdjustmentModal } from "./StockAdjustmentModal";
 import { StockTransferModal } from "./StockTransferModal";
@@ -29,6 +29,13 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
     const [showInputModal, setShowInputModal] = useState(false);
     const [activeTab, setActiveTab] = useState<"inventory" | "checker">("inventory");
     const [searchTerm, setSearchTerm] = useState("");
+    const [warehouseFilter, setWarehouseFilter] = useState<string>("ALL");
+    const [statusFilter, setStatusFilter] = useState<string>("ALL");
+    const [categoryFilter, setCategoryFilter] = useState<string>("ALL");
+    const [vendorFilter, setVendorFilter] = useState<string>("ALL");
+    const [salesFilter, setSalesFilter] = useState<string>("ALL");
+    const [allExpanded, setAllExpanded] = useState<boolean>(false);
+
     const [selectedStockForAdjustment, setSelectedStockForAdjustment] = useState<{product: any, stock: any} | null>(null);
     const [selectedStockForTransfer, setSelectedStockForTransfer] = useState<{product: any, stock: any} | null>(null);
     const [showStockCard, setShowStockCard] = useState(false);
@@ -48,12 +55,159 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
     const [previewData, setPreviewData] = useState<any[]>([]);
     const [previewTitle, setPreviewTitle] = useState("");
 
+    // Extract unique categories from initialProducts
+    const availableCategories = useMemo(() => {
+        const set = new Set<string>();
+        initialProducts.forEach((p: any) => {
+            const cat = (p.category || "").trim().toUpperCase();
+            if (cat) set.add(cat);
+        });
+        return Array.from(set).sort();
+    }, [initialProducts]);
+
+    // Extract unique vendors from stocks
+    const availableVendors = useMemo(() => {
+        const set = new Set<string>();
+        initialProducts.forEach((p: any) => {
+            (p.stocks || []).forEach((s: any) => {
+                const v = (s.vendorName || "").trim();
+                if (v) set.add(v);
+            });
+        });
+        return Array.from(set).sort((a, b) => a.localeCompare(b));
+    }, [initialProducts]);
+
+    // Extract unique sales persons
+    const availableSales = useMemo(() => {
+        const set = new Set<string>();
+        initialProducts.forEach((p: any) => {
+            (p.stocks || []).forEach((s: any) => {
+                const sp = (s.salesPerson || "").trim();
+                if (sp && sp !== "-") set.add(sp);
+            });
+        });
+        (unverifiedReceipts || []).forEach((r: any) => {
+            const sp = (r.salesPerson || "").trim();
+            if (sp && sp !== "-") set.add(sp);
+        });
+        return Array.from(set).sort();
+    }, [initialProducts, unverifiedReceipts]);
+
+    // Count products with negative stock
+    const minusCount = useMemo(() => {
+        return initialProducts.filter((p: any) =>
+            (p.stocks || []).some((s: any) => Number(s.quantity || 0) < 0)
+        ).length;
+    }, [initialProducts]);
+
+    // Count products with low stock
+    const lowStockCount = useMemo(() => {
+        return initialProducts.filter((p: any) => {
+            const total = (p.stocks || []).reduce((sum: number, s: any) => sum + Number(s.quantity || 0), 0);
+            return total > 0 && total <= Number(p.lowStockThreshold || 10);
+        }).length;
+    }, [initialProducts]);
+
+    const isFiltered = Boolean(
+        searchTerm.trim() !== "" ||
+        warehouseFilter !== "ALL" ||
+        statusFilter !== "ALL" ||
+        categoryFilter !== "ALL" ||
+        vendorFilter !== "ALL" ||
+        salesFilter !== "ALL"
+    );
+
+    const resetFilters = () => {
+        setSearchTerm("");
+        setWarehouseFilter("ALL");
+        setStatusFilter("ALL");
+        setCategoryFilter("ALL");
+        setVendorFilter("ALL");
+        setSalesFilter("ALL");
+    };
+
+    const toggleAllExpand = () => {
+        if (allExpanded) {
+            setExpandedProducts({});
+            setAllExpanded(false);
+        } else {
+            const newExpanded: Record<string, boolean> = {};
+            filteredProducts.forEach(p => {
+                newExpanded[p.id] = true;
+            });
+            setExpandedProducts(newExpanded);
+            setAllExpanded(true);
+        }
+    };
+
     const filteredProducts = useMemo(() => {
-        return initialProducts.filter(p =>
-            p.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            p.name.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-    }, [initialProducts, searchTerm]);
+        return initialProducts.filter(p => {
+            // 1. Text Search (SKU, Name, Barcode)
+            if (searchTerm.trim()) {
+                const term = searchTerm.toLowerCase();
+                const matchSku = (p.sku || "").toLowerCase().includes(term);
+                const matchName = (p.name || "").toLowerCase().includes(term);
+                const matchBarcode = (p.barcode || "").toLowerCase().includes(term);
+                if (!matchSku && !matchName && !matchBarcode) return false;
+            }
+
+            // 2. Category Filter
+            if (categoryFilter !== "ALL") {
+                const pCat = (p.category || "").trim().toUpperCase();
+                if (pCat !== categoryFilter) return false;
+            }
+
+            const allStocks = p.stocks || [];
+
+            // 3. Warehouse Filter
+            if (warehouseFilter !== "ALL") {
+                const hasWh = allStocks.some((s: any) => s.warehouseId === warehouseFilter);
+                if (!hasWh) return false;
+            }
+
+            // 4. Vendor Filter
+            if (vendorFilter !== "ALL") {
+                const hasVendor = allStocks.some((s: any) =>
+                    (s.vendorName || "CIBINONG").trim().toLowerCase() === vendorFilter.trim().toLowerCase()
+                );
+                if (!hasVendor) return false;
+            }
+
+            // 5. Sales Filter
+            if (salesFilter !== "ALL") {
+                const hasSales = allStocks.some((s: any) => {
+                    const meta = getStockMetadata(p.id, s.warehouseId, s.vendorName);
+                    return meta.salesPerson === salesFilter;
+                });
+                if (!hasSales) return false;
+            }
+
+            // 6. Status Filter
+            if (statusFilter !== "ALL") {
+                const relevantStocks = allStocks.filter((s: any) => {
+                    if (warehouseFilter !== "ALL" && s.warehouseId !== warehouseFilter) return false;
+                    if (vendorFilter !== "ALL" && (s.vendorName || "CIBINONG").trim().toLowerCase() !== vendorFilter.trim().toLowerCase()) return false;
+                    return true;
+                });
+
+                const totalQty = relevantStocks.reduce((sum: number, s: any) => sum + Number(s.quantity || 0), 0);
+                const hasNegativeStock = relevantStocks.some((s: any) => Number(s.quantity || 0) < 0);
+                const threshold = Number(p.lowStockThreshold || 10);
+
+                if (statusFilter === "IN_STOCK") {
+                    if (totalQty <= 0) return false;
+                } else if (statusFilter === "MINUS") {
+                    if (!hasNegativeStock && totalQty >= 0) return false;
+                } else if (statusFilter === "LOW_STOCK") {
+                    if (totalQty <= 0 || totalQty > threshold) return false;
+                } else if (statusFilter === "OUT_OF_STOCK") {
+                    if (totalQty !== 0 && relevantStocks.length > 0) return false;
+                }
+            }
+
+            return true;
+        });
+    }, [initialProducts, searchTerm, warehouseFilter, statusFilter, categoryFilter, vendorFilter, salesFilter]);
 
     const getStockMetadata = (productId: string, warehouseId: string, vendorName: string) => {
         const prod = initialProducts.find((p: any) => p.id === productId);
@@ -101,9 +255,19 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
 
     const handleExport = () => {
         if (activeTab === "inventory") {
-            const data = initialProducts.flatMap(p =>
+            const data = filteredProducts.flatMap(p =>
                 (p.stocks || [])
-                    .filter((s: any) => s.quantity > 0)
+                    .filter((s: any) => {
+                        if (warehouseFilter !== "ALL" && s.warehouseId !== warehouseFilter) return false;
+                        if (vendorFilter !== "ALL" && (s.vendorName || "CIBINONG").trim().toLowerCase() !== vendorFilter.trim().toLowerCase()) return false;
+                        if (salesFilter !== "ALL") {
+                            const meta = getStockMetadata(p.id, s.warehouseId, s.vendorName);
+                            if (meta.salesPerson !== salesFilter) return false;
+                        }
+                        if (statusFilter === "MINUS") return Number(s.quantity || 0) < 0;
+                        if (statusFilter === "OUT_OF_STOCK") return Number(s.quantity || 0) === 0;
+                        return Number(s.quantity || 0) !== 0;
+                    })
                     .map((s: any) => {
                         const meta = getStockMetadata(p.id, s.warehouseId, s.vendorName);
                         const hpp = meta.hpp || Number(p.purchasePrice) || 0;
@@ -111,6 +275,7 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                             'SKU': p.sku,
                             'Barcode': p.barcode || "-",
                             'Nama Barang': p.name,
+                            'Kategori': p.category || "-",
                             'Vendor / PT': s.vendorName || "CIBINONG",
                             'Gudang': warehouses.find(w => w.id === s.warehouseId)?.name || 'Unknown',
                             'Sales Person': meta.salesPerson,
@@ -121,11 +286,11 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                             'HPP + PPN': hpp * (1 + ((meta.taxRate || 0) / 100)),
                             'Total Nilai (Inc. Tax)': (s.quantity || 0) * (hpp * (1 + ((meta.taxRate || 0) / 100))),
                             'Threshold': p.lowStockThreshold,
-                            'Status': s.quantity <= p.lowStockThreshold ? 'LOW' : 'NORMAL'
+                            'Status': s.quantity < 0 ? 'MINUS' : s.quantity <= p.lowStockThreshold ? 'LOW' : 'NORMAL'
                         };
                     })
             );
-            exportToExcel(data, 'Laporan_Stok_Gudang', 'Inventory');
+            exportToExcel(data, `Laporan_Stok_Gudang_${format(new Date(), "yyyyMMdd")}`, 'Inventory');
         } else {
             // Detailed LPB Export: Exports each receipt item, its quantity, and UOM/Unit, including HPP
             const data: any[] = [];
@@ -157,15 +322,26 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
 
     const handlePreview = () => {
         if (activeTab === "inventory") {
-            const data = initialProducts.flatMap(p =>
+            const data = filteredProducts.flatMap(p =>
                 (p.stocks || [])
-                    .filter((s: any) => s.quantity > 0)
+                    .filter((s: any) => {
+                        if (warehouseFilter !== "ALL" && s.warehouseId !== warehouseFilter) return false;
+                        if (vendorFilter !== "ALL" && (s.vendorName || "CIBINONG").trim().toLowerCase() !== vendorFilter.trim().toLowerCase()) return false;
+                        if (salesFilter !== "ALL") {
+                            const meta = getStockMetadata(p.id, s.warehouseId, s.vendorName);
+                            if (meta.salesPerson !== salesFilter) return false;
+                        }
+                        if (statusFilter === "MINUS") return Number(s.quantity || 0) < 0;
+                        if (statusFilter === "OUT_OF_STOCK") return Number(s.quantity || 0) === 0;
+                        return Number(s.quantity || 0) !== 0;
+                    })
                     .map((s: any) => {
                         const meta = getStockMetadata(p.id, s.warehouseId, s.vendorName);
                         const hpp = meta.hpp || Number(p.purchasePrice) || 0;
                         return {
                             'SKU': p.sku,
                             'Nama Barang': p.name,
+                            'Kategori': p.category || "-",
                             'Vendor / PT': s.vendorName || "CIBINONG",
                             'Gudang': warehouses.find(w => w.id === s.warehouseId)?.name || 'Unknown',
                             'Sales Person': meta.salesPerson,
@@ -176,7 +352,7 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                             'HPP + PPN': hpp * (1 + ((meta.taxRate || 0) / 100)),
                             'Total Nilai (Inc. Tax)': (s.quantity || 0) * (hpp * (1 + ((meta.taxRate || 0) / 100))),
                             'Threshold': p.lowStockThreshold,
-                            'Status': s.quantity <= p.lowStockThreshold ? 'LOW' : 'NORMAL'
+                            'Status': s.quantity < 0 ? 'MINUS' : s.quantity <= p.lowStockThreshold ? 'LOW' : 'NORMAL'
                         };
                     })
             );
@@ -379,33 +555,198 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                 })}
                             </div>
 
-                            {/* Inventory List with Search */}
+                            {/* Inventory List with Filter Dropdowns */}
                             <div className="bg-white border border-slate-200/80 rounded-2xl md:rounded-3xl shadow-sm overflow-hidden md:min-h-[600px]">
-                                <div className="p-4 md:p-6 border-b border-slate-100 flex flex-col md:flex-row gap-4 justify-between bg-slate-50/40 backdrop-blur-sm">
-                                    <div className="flex items-center gap-3">
-                                        <div className="p-2 bg-slate-100 text-slate-800 rounded-xl">
-                                            <Box className="h-5 w-5" />
+                                {/* Filter Toolbar Header */}
+                                <div className="p-4 md:p-6 border-b border-slate-100 bg-slate-50/50 backdrop-blur-sm space-y-4">
+                                    {/* Top Row: Title, Counter & Action Buttons */}
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-2.5 bg-slate-900 text-white rounded-2xl shadow-xs">
+                                                <Box className="h-5 w-5" />
+                                            </div>
+                                            <div>
+                                                <div className="flex items-center gap-2">
+                                                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">Master Stock</h3>
+                                                    <span className="bg-slate-200/80 text-slate-700 text-[10px] font-black px-2.5 py-0.5 rounded-full">
+                                                        {filteredProducts.length} dari {initialProducts.length} Produk
+                                                    </span>
+                                                    {minusCount > 0 && (
+                                                        <span className="bg-rose-100 text-rose-700 border border-rose-200 text-[9.5px] font-black px-2 py-0.5 rounded-full flex items-center gap-1">
+                                                            <AlertTriangle className="h-3 w-3" /> {minusCount} Minus
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
+                                                    Real-time inventory overview & filter dropdown
+                                                </p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Master Stock</h3>
-                                            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest opacity-80">Real-time inventory overview</p>
+
+                                        {/* Action buttons: Expand/Collapse all and Reset Filter */}
+                                        <div className="flex items-center gap-2 self-start sm:self-auto">
+                                            <button
+                                                onClick={toggleAllExpand}
+                                                className="px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5"
+                                                title={allExpanded ? "Tutup Semua Rincian Sub-Stok" : "Buka Semua Rincian Sub-Stok"}
+                                            >
+                                                {allExpanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+                                                <span>{allExpanded ? "Tutup Rincian" : "Buka Semua"}</span>
+                                            </button>
+
+                                            {isFiltered && (
+                                                <button
+                                                    onClick={resetFilters}
+                                                    className="px-3 py-1.5 bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-700 rounded-xl text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5"
+                                                    title="Reset semua filter ke default"
+                                                >
+                                                    <RotateCcw className="h-3.5 w-3.5" />
+                                                    <span>Reset Filter</span>
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
-                                    <div className="relative w-full md:w-80">
-                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                                        <input
-                                            value={searchTerm}
-                                            onChange={e => setSearchTerm(e.target.value)}
-                                            placeholder="Search SKU or Product..."
-                                            className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900/15 transition-all font-medium placeholder:text-slate-400 shadow-sm"
-                                        />
+
+                                    {/* Dropdown Filters Bar */}
+                                    <div className="flex flex-wrap items-center gap-2.5 pt-1">
+                                        {/* Search Input Box */}
+                                        <div className="relative flex-1 min-w-[220px]">
+                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                            <input
+                                                value={searchTerm}
+                                                onChange={e => setSearchTerm(e.target.value)}
+                                                placeholder="Cari SKU, Nama Produk, Barcode..."
+                                                className="w-full pl-9 pr-8 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900/15 transition-all font-medium placeholder:text-slate-400 shadow-2xs"
+                                            />
+                                            {searchTerm && (
+                                                <button
+                                                    onClick={() => setSearchTerm("")}
+                                                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 p-0.5"
+                                                    title="Bersihkan pencarian"
+                                                >
+                                                    <X className="h-3.5 w-3.5" />
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        {/* Dropdown Gudang */}
+                                        <div className="w-full sm:w-auto sm:min-w-[150px]">
+                                            <select
+                                                value={warehouseFilter}
+                                                onChange={e => setWarehouseFilter(e.target.value)}
+                                                className={cn(
+                                                    "w-full px-3 py-2 bg-white border rounded-xl text-xs font-bold outline-none transition-all shadow-2xs cursor-pointer truncate",
+                                                    warehouseFilter !== "ALL"
+                                                        ? "border-slate-900 text-slate-900 bg-slate-50 ring-1 ring-slate-900/10"
+                                                        : "border-slate-200 text-slate-600 hover:border-slate-300"
+                                                )}
+                                            >
+                                                <option value="ALL">🏢 Semua Gudang</option>
+                                                {warehouses.map(w => (
+                                                    <option key={w.id} value={w.id}>
+                                                        🏢 {w.name}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        {/* Dropdown Status Stok */}
+                                        <div className="w-full sm:w-auto sm:min-w-[170px]">
+                                            <select
+                                                value={statusFilter}
+                                                onChange={e => setStatusFilter(e.target.value)}
+                                                className={cn(
+                                                    "w-full px-3 py-2 bg-white border rounded-xl text-xs font-bold outline-none transition-all shadow-2xs cursor-pointer truncate",
+                                                    statusFilter === "MINUS"
+                                                        ? "border-rose-400 text-rose-700 bg-rose-50 ring-1 ring-rose-400/20"
+                                                        : statusFilter !== "ALL"
+                                                            ? "border-slate-900 text-slate-900 bg-slate-50 ring-1 ring-slate-900/10"
+                                                            : "border-slate-200 text-slate-600 hover:border-slate-300"
+                                                )}
+                                            >
+                                                <option value="ALL">📊 Semua Status</option>
+                                                <option value="IN_STOCK">🟢 Ada Stok (&gt; 0)</option>
+                                                <option value="MINUS">🔴 Stok Minus ({minusCount})</option>
+                                                <option value="LOW_STOCK">🟡 Stok Menipis ({lowStockCount})</option>
+                                                <option value="OUT_OF_STOCK">⚪ Stok Kosong (0)</option>
+                                            </select>
+                                        </div>
+
+                                        {/* Dropdown Kategori */}
+                                        {availableCategories.length > 0 && (
+                                            <div className="w-full sm:w-auto sm:min-w-[150px]">
+                                                <select
+                                                    value={categoryFilter}
+                                                    onChange={e => setCategoryFilter(e.target.value)}
+                                                    className={cn(
+                                                        "w-full px-3 py-2 bg-white border rounded-xl text-xs font-bold outline-none transition-all shadow-2xs cursor-pointer truncate",
+                                                        categoryFilter !== "ALL"
+                                                            ? "border-slate-900 text-slate-900 bg-slate-50 ring-1 ring-slate-900/10"
+                                                            : "border-slate-200 text-slate-600 hover:border-slate-300"
+                                                    )}
+                                                >
+                                                    <option value="ALL">📦 Semua Kategori</option>
+                                                    {availableCategories.map(cat => (
+                                                        <option key={cat} value={cat}>
+                                                            📦 {cat}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        )}
+
+                                        {/* Dropdown Vendor */}
+                                        {availableVendors.length > 0 && (
+                                            <div className="w-full sm:w-auto sm:min-w-[170px] max-w-xs">
+                                                <select
+                                                    value={vendorFilter}
+                                                    onChange={e => setVendorFilter(e.target.value)}
+                                                    className={cn(
+                                                        "w-full px-3 py-2 bg-white border rounded-xl text-xs font-bold outline-none transition-all shadow-2xs cursor-pointer truncate",
+                                                        vendorFilter !== "ALL"
+                                                            ? "border-slate-900 text-slate-900 bg-slate-50 ring-1 ring-slate-900/10"
+                                                            : "border-slate-200 text-slate-600 hover:border-slate-300"
+                                                    )}
+                                                >
+                                                    <option value="ALL">🚚 Semua Vendor</option>
+                                                    {availableVendors.map(v => (
+                                                        <option key={v} value={v}>
+                                                            🚚 {v}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        )}
+
+                                        {/* Dropdown Sales */}
+                                        {availableSales.length > 0 && (
+                                            <div className="w-full sm:w-auto sm:min-w-[130px]">
+                                                <select
+                                                    value={salesFilter}
+                                                    onChange={e => setSalesFilter(e.target.value)}
+                                                    className={cn(
+                                                        "w-full px-3 py-2 bg-white border rounded-xl text-xs font-bold outline-none transition-all shadow-2xs cursor-pointer truncate",
+                                                        salesFilter !== "ALL"
+                                                            ? "border-slate-900 text-slate-900 bg-slate-50 ring-1 ring-slate-900/10"
+                                                            : "border-slate-200 text-slate-600 hover:border-slate-300"
+                                                    )}
+                                                >
+                                                    <option value="ALL">👤 Semua Sales</option>
+                                                    {availableSales.map(s => (
+                                                        <option key={s} value={s}>
+                                                            👤 {s}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
                                 {/* DESKTOP TABLE VIEW */}
-                                <div className="hidden lg:block overflow-auto max-h-[calc(100vh-450px)] min-h-[400px] custom-scrollbar border-b border-slate-100">
+                                <div className="hidden lg:block overflow-auto max-h-[calc(100vh-420px)] min-h-[400px] custom-scrollbar border-b border-slate-100">
                                     <table className="w-full text-xs text-left min-w-[1200px] table-fixed relative">
-                                        <thead className="bg-slate-50 text-slate-500 border-b border-slate-200 sticky top-0 z-20 shadow-sm">
+                                        <thead className="bg-slate-50 text-slate-500 border-b border-slate-200 sticky top-0 z-20 shadow-xs">
                                             <tr>
                                                 <th className="px-6 py-4.5 uppercase text-[9px] font-bold tracking-widest w-64 text-slate-600">Barang / SKU</th>
                                                 <th className="px-6 py-4.5 uppercase text-[9px] font-bold tracking-widest text-left w-40 text-slate-600">Gudang</th>
@@ -420,10 +761,28 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">
                                             {filteredProducts.map((p: any) => {
-                                                const activeStocks = (p.stocks || []).filter((s: any) => s.quantity !== 0);
-                                                const totalNetQty = activeStocks.reduce((sum: number, s: any) => sum + Number(s.quantity), 0);
+                                                const matchingStocks = (p.stocks || []).filter((s: any) => {
+                                                    if (warehouseFilter !== "ALL" && s.warehouseId !== warehouseFilter) return false;
+                                                    if (vendorFilter !== "ALL" && (s.vendorName || "CIBINONG").trim().toLowerCase() !== vendorFilter.trim().toLowerCase()) return false;
+                                                    if (salesFilter !== "ALL") {
+                                                        const meta = getStockMetadata(p.id, s.warehouseId, s.vendorName);
+                                                        if (meta.salesPerson !== salesFilter) return false;
+                                                    }
+                                                    return true;
+                                                });
+
+                                                const activeStocks = statusFilter === "OUT_OF_STOCK"
+                                                    ? matchingStocks.filter((s: any) => Number(s.quantity || 0) === 0)
+                                                    : statusFilter === "MINUS"
+                                                        ? matchingStocks.filter((s: any) => Number(s.quantity || 0) < 0)
+                                                        : statusFilter === "LOW_STOCK"
+                                                            ? matchingStocks.filter((s: any) => Number(s.quantity || 0) > 0 && Number(s.quantity || 0) <= Number(p.lowStockThreshold || 10))
+                                                            : matchingStocks.filter((s: any) => Number(s.quantity || 0) !== 0);
+
+                                                const totalNetQty = (matchingStocks.length > 0 ? matchingStocks : (p.stocks || []))
+                                                    .reduce((sum: number, s: any) => sum + Number(s.quantity || 0), 0);
                                                 const isExpanded = expandedProducts[p.id];
-                                                const hasNegative = activeStocks.some((s: any) => s.quantity < 0);
+                                                const hasNegative = matchingStocks.some((s: any) => Number(s.quantity || 0) < 0);
                                                 
                                                 return (
                                                     <React.Fragment key={p.id}>
@@ -431,7 +790,7 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                                         <tr className="bg-slate-50/50 hover:bg-slate-100/50 transition-colors cursor-pointer" onClick={() => toggleProduct(p.id)}>
                                                             <td className="px-6 py-4" colSpan={4}>
                                                                 <div className="flex items-center gap-3">
-                                                                    <div className="p-1.5 bg-white shadow-sm border border-slate-200 rounded-md text-slate-400">
+                                                                    <div className="p-1.5 bg-white shadow-xs border border-slate-200 rounded-md text-slate-400">
                                                                         {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                                                                     </div>
                                                                     <div>
@@ -443,7 +802,9 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                                                                 </span>
                                                                             )}
                                                                         </div>
-                                                                        <div className="text-[10px] font-mono text-slate-500 mt-0.5 tracking-wider">{p.sku} | {activeStocks.length} Gudang/Vendor</div>
+                                                                        <div className="text-[10px] font-mono text-slate-500 mt-0.5 tracking-wider">
+                                                                            {p.sku} | {activeStocks.length} Sub-Stok {p.category ? `• ${p.category}` : ''}
+                                                                        </div>
                                                                     </div>
                                                                 </div>
                                                             </td>
@@ -460,8 +821,8 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                                         {/* Child Rows (Stock Details) */}
                                                         {isExpanded && activeStocks.length === 0 && (
                                                             <tr>
-                                                                <td colSpan={9} className="px-6 py-4 text-center text-slate-400 text-xs italic bg-white">
-                                                                    Tidak ada pergerakan stok
+                                                                <td colSpan={isAdmin ? 9 : 8} className="px-6 py-4 text-center text-slate-400 text-xs italic bg-white">
+                                                                    Tidak ada pergerakan stok yang cocok dengan filter aktif
                                                                 </td>
                                                             </tr>
                                                         )}
@@ -490,7 +851,7 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                                                     <td className="px-6 py-3 text-center">
                                                                         {salesPerson !== "-" ? (
                                                                             <span className={cn(
-                                                                                "px-2 py-0.5 rounded-md text-[9px] font-extrabold border shadow-sm tracking-wide",
+                                                                                "px-2 py-0.5 rounded-md text-[9px] font-extrabold border shadow-2xs tracking-wide",
                                                                                 salesPerson === "BC" ? "bg-indigo-50 text-indigo-700 border-indigo-100" : "bg-amber-50 text-amber-700 border-amber-100"
                                                                             )}>
                                                                                 {salesPerson}
@@ -510,7 +871,7 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                                                     </td>
                                                                     <td className="px-6 py-3 text-right">
                                                                         <span className={cn(
-                                                                            "px-2 py-0.5 rounded-md text-[9px] font-bold border shadow-sm",
+                                                                            "px-2 py-0.5 rounded-md text-[9px] font-bold border shadow-2xs",
                                                                             isNegative ? "bg-rose-100 text-rose-700 border-rose-200" 
                                                                             : isLow ? "bg-amber-50 text-amber-700 border-amber-100" 
                                                                             : "bg-emerald-50 text-emerald-700 border-emerald-100"
@@ -541,10 +902,28 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                 {/* MOBILE & TABLET CARD VIEW */}
                                 <div className="lg:hidden divide-y divide-slate-100 overflow-y-auto max-h-[70vh] custom-scrollbar">
                                     {filteredProducts.map((p: any) => {
-                                        const activeStocks = (p.stocks || []).filter((s: any) => s.quantity !== 0);
-                                        const totalNetQty = activeStocks.reduce((sum: number, s: any) => sum + Number(s.quantity), 0);
+                                        const matchingStocks = (p.stocks || []).filter((s: any) => {
+                                            if (warehouseFilter !== "ALL" && s.warehouseId !== warehouseFilter) return false;
+                                            if (vendorFilter !== "ALL" && (s.vendorName || "CIBINONG").trim().toLowerCase() !== vendorFilter.trim().toLowerCase()) return false;
+                                            if (salesFilter !== "ALL") {
+                                                const meta = getStockMetadata(p.id, s.warehouseId, s.vendorName);
+                                                if (meta.salesPerson !== salesFilter) return false;
+                                            }
+                                            return true;
+                                        });
+
+                                        const activeStocks = statusFilter === "OUT_OF_STOCK"
+                                            ? matchingStocks.filter((s: any) => Number(s.quantity || 0) === 0)
+                                            : statusFilter === "MINUS"
+                                                ? matchingStocks.filter((s: any) => Number(s.quantity || 0) < 0)
+                                                : statusFilter === "LOW_STOCK"
+                                                    ? matchingStocks.filter((s: any) => Number(s.quantity || 0) > 0 && Number(s.quantity || 0) <= Number(p.lowStockThreshold || 10))
+                                                    : matchingStocks.filter((s: any) => Number(s.quantity || 0) !== 0);
+
+                                        const totalNetQty = (matchingStocks.length > 0 ? matchingStocks : (p.stocks || []))
+                                            .reduce((sum: number, s: any) => sum + Number(s.quantity || 0), 0);
                                         const isExpanded = expandedProducts[p.id];
-                                        const hasNegative = activeStocks.some((s: any) => s.quantity < 0);
+                                        const hasNegative = matchingStocks.some((s: any) => Number(s.quantity || 0) < 0);
                                         
                                         return (
                                             <div key={p.id} className="bg-white">
@@ -558,7 +937,9 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                                             <div className="truncate">{p.name}</div>
                                                             {hasNegative && <AlertTriangle className="h-4 w-4 text-rose-500 shrink-0" />}
                                                         </div>
-                                                        <div className="text-[10px] font-mono text-slate-500 tracking-widest">{p.sku} | {activeStocks.length} Gudang</div>
+                                                        <div className="text-[10px] font-mono text-slate-500 tracking-widest">
+                                                            {p.sku} | {activeStocks.length} Sub-Stok {p.category ? `• ${p.category}` : ''}
+                                                        </div>
                                                     </div>
                                                     <div className="text-right flex items-center gap-3">
                                                         <div>
@@ -577,7 +958,9 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                                 {isExpanded && (
                                                     <div className="bg-slate-50/50 border-t border-slate-100 divide-y divide-slate-100">
                                                         {activeStocks.length === 0 && (
-                                                            <div className="p-4 text-center text-xs text-slate-400 italic">Tidak ada stok</div>
+                                                            <div className="p-4 text-center text-xs text-slate-400 italic">
+                                                                Tidak ada pergerakan stok yang cocok dengan filter
+                                                            </div>
                                                         )}
                                                         {activeStocks.map((s: any) => {
                                                             const whName = warehouses.find(w => w.id === s.warehouseId)?.name || "Unknown";
@@ -597,7 +980,7 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                                                             </span>
                                                                         </div>
                                                                         <span className={cn(
-                                                                            "shrink-0 px-2 py-0.5 rounded-md text-[9px] font-bold border shadow-sm",
+                                                                            "shrink-0 px-2 py-0.5 rounded-md text-[9px] font-bold border shadow-2xs",
                                                                             isNegative ? "bg-rose-100 text-rose-700 border-rose-200"
                                                                             : isLow ? "bg-amber-50 text-amber-700 border-amber-100" 
                                                                             : "bg-emerald-50 text-emerald-700 border-emerald-100"
@@ -616,16 +999,16 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                                                         </div>
                                                                         {isAdmin && (
                                                                             <div className="flex items-center gap-1.5">
-                                                                                <button onClick={() => setSelectedStockForAdjustment({ product: p, stock: s })} className="p-2 text-slate-400 hover:text-slate-900 bg-white border border-slate-200 hover:border-slate-300 rounded-lg shadow-sm">
+                                                                                <button onClick={() => setSelectedStockForAdjustment({ product: p, stock: s })} className="p-2 text-slate-400 hover:text-slate-900 bg-white border border-slate-200 hover:border-slate-300 rounded-lg shadow-2xs">
                                                                                     <Edit2 className="h-3.5 w-3.5" />
                                                                                 </button>
-                                                                                <button onClick={() => setSelectedStockForTransfer({ product: p, stock: s })} className="p-2 text-slate-400 hover:text-violet-600 bg-white border border-slate-200 hover:border-violet-300 rounded-lg shadow-sm">
+                                                                                <button onClick={() => setSelectedStockForTransfer({ product: p, stock: s })} className="p-2 text-slate-400 hover:text-violet-600 bg-white border border-slate-200 hover:border-violet-300 rounded-lg shadow-2xs">
                                                                                     <ArrowLeftRight className="h-3.5 w-3.5" />
                                                                                 </button>
-                                                                                <button onClick={() => { setSelectedProductIdForCard(p.id); setShowStockCard(true); }} className="p-2 text-slate-400 hover:text-indigo-600 bg-white border border-slate-200 hover:border-indigo-300 rounded-lg shadow-sm">
+                                                                                <button onClick={() => { setSelectedProductIdForCard(p.id); setShowStockCard(true); }} className="p-2 text-slate-400 hover:text-indigo-600 bg-white border border-slate-200 hover:border-indigo-300 rounded-lg shadow-2xs">
                                                                                     <FileText className="h-3.5 w-3.5" />
                                                                                 </button>
-                                                                                <button onClick={() => handleDeleteProduct(p.id)} className="p-2 text-slate-400 hover:text-red-600 bg-white border border-slate-200 hover:border-red-300 rounded-lg shadow-sm">
+                                                                                <button onClick={() => handleDeleteProduct(p.id)} className="p-2 text-slate-400 hover:text-red-600 bg-white border border-slate-200 hover:border-red-300 rounded-lg shadow-2xs">
                                                                                     <Trash2 className="h-3.5 w-3.5" />
                                                                                 </button>
                                                                             </div>
@@ -642,8 +1025,23 @@ export function WarehouseDashboard({ initialProducts, warehouses, unverifiedRece
                                 </div>
 
                                 {filteredProducts.length === 0 && (
-                                    <div className="px-6 py-20 text-center text-slate-400 italic font-medium">
-                                        Tidak ada produk ditemukan dengan kata kunci "{searchTerm}"
+                                    <div className="px-6 py-16 text-center flex flex-col items-center justify-center">
+                                        <div className="p-3 bg-slate-100 text-slate-400 rounded-2xl mb-3">
+                                            <Box className="h-8 w-8" />
+                                        </div>
+                                        <h4 className="text-sm font-black text-slate-800">Tidak Ada Produk yang Cocok</h4>
+                                        <p className="text-xs text-slate-400 mt-1 max-w-sm">
+                                            Tidak ditemukan produk yang memenuhi kriteria pencarian atau filter yang dipilih.
+                                        </p>
+                                        {isFiltered && (
+                                            <button
+                                                onClick={resetFilters}
+                                                className="mt-4 px-4 py-2 bg-slate-900 hover:bg-black text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-2"
+                                            >
+                                                <RotateCcw className="h-3.5 w-3.5" />
+                                                <span>Reset Semua Filter</span>
+                                            </button>
+                                        )}
                                     </div>
                                 )}
                             </div>
