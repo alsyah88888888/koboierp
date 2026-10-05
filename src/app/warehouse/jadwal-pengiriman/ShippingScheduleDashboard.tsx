@@ -46,14 +46,8 @@ const COMMON_DRIVERS = [
     "RAHMAT. H",
     "CARSIKA",
     "HERU",
-    "TIO",
-    "MAMET",
-    "KARIM",
-    "ROKHMAN",
     "EKSPEDISI",
-    "TATANG",
-    "IMAM",
-    "YADI"
+    "AMBIL SENDIRI (SELF PICKUP)"
 ];
 
 export function ShippingScheduleDashboard({
@@ -93,9 +87,15 @@ export function ShippingScheduleDashboard({
             setSelectedVehiclePlate(fleet.plate);
             setSelectedEtoll(fleet.etoll);
         } else {
-            // CRITICAL FIX: If switching to EKSPEDISI or non-official driver,
+            // CRITICAL: If switching to EKSPEDISI, AMBIL SENDIRI, or custom driver,
             // clear the official fleet plate and etoll so they don't remain stuck from the previous driver!
-            if (upper === "EKSPEDISI" || !selectedVehiclePlate || OFFICIAL_FLEET.some(f => f.plate === selectedVehiclePlate)) {
+            if (upper === "EKSPEDISI") {
+                setSelectedVehiclePlate("");
+            } else if (upper.includes("AMBIL SENDIRI") || upper.includes("SELF PICKUP")) {
+                if (!selectedVehiclePlate || OFFICIAL_FLEET.some(f => f.plate === selectedVehiclePlate)) {
+                    setSelectedVehiclePlate("MOBIL SENDIRI");
+                }
+            } else if (!selectedVehiclePlate || OFFICIAL_FLEET.some(f => f.plate === selectedVehiclePlate)) {
                 setSelectedVehiclePlate("");
             }
             setSelectedEtoll("");
@@ -318,22 +318,14 @@ export function ShippingScheduleDashboard({
         fetchSchedule(newDate);
     };
 
-    // Drivers currently active in items
-    const activeDrivers = useMemo(() => {
-        const set = new Set<string>();
-        items.forEach(i => {
-            const d = (i.driver || "").trim().toUpperCase();
-            if (d && d !== "PILIH DRIVER" && d !== "-") set.add(d);
-        });
-        customDrivers.forEach(d => set.add(d.trim().toUpperCase()));
-        return Array.from(set).sort();
-    }, [items, customDrivers]);
-
     const allDriverOptions = useMemo(() => {
-        const set = new Set<string>(COMMON_DRIVERS);
-        activeDrivers.forEach(d => set.add(d));
-        return Array.from(set).sort();
-    }, [activeDrivers]);
+        const list = [...COMMON_DRIVERS];
+        customDrivers.forEach(d => {
+            const clean = d.trim().toUpperCase();
+            if (clean && !list.includes(clean)) list.push(clean);
+        });
+        return list;
+    }, [customDrivers]);
 
     const allPlateOptions = useMemo(() => {
         const set = new Set<string>();
@@ -682,11 +674,12 @@ export function ShippingScheduleDashboard({
 
             {/* Datalists for autocomplete */}
             <datalist id="driver-suggestions">
-                <option value="EKSPEDISI">EKSPEDISI (Luar / Sewa / Vendor)</option>
                 {OFFICIAL_FLEET.map(f => (
                     <option key={f.driver} value={f.driver}>{`${f.driver} (${f.plate})`}</option>
                 ))}
-                {allDriverOptions.filter(d => d !== "EKSPEDISI").map(drv => (
+                <option value="EKSPEDISI">EKSPEDISI (Luar / Sewa / Vendor)</option>
+                <option value="AMBIL SENDIRI">AMBIL SENDIRI (Self Pickup Gudang)</option>
+                {customDrivers.map(drv => (
                     <option key={drv} value={drv} />
                 ))}
             </datalist>
@@ -1104,6 +1097,24 @@ export function ShippingScheduleDashboard({
                                             }`}
                                         >
                                             <span>📦 EKSPEDISI</span>
+                                        </button>
+
+                                        {/* Ambil Sendiri (Self Pickup) Quick Selector Button */}
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setSelectedDriver("AMBIL SENDIRI");
+                                                setSelectedVehiclePlate("MOBIL SENDIRI");
+                                                setSelectedEtoll("");
+                                            }}
+                                            className={`px-2.5 py-1 rounded-lg text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 ${
+                                                selectedDriver === "AMBIL SENDIRI" || selectedDriver.includes("SELF PICKUP")
+                                                    ? "bg-emerald-600 text-white shadow-xs"
+                                                    : "bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200"
+                                            }`}
+                                            title="Customer / Toko membawa armada sendiri untuk mengambil barang langsung di gudang"
+                                        >
+                                            <span>🏬 AMBIL SENDIRI (SELF PICKUP)</span>
                                         </button>
 
                                         {selectedEtoll ? (
@@ -1768,6 +1779,11 @@ export function ShippingScheduleDashboard({
                                                                     <span>📦</span>
                                                                     <span className="text-amber-600 font-black">EKSPEDISI (LUAR)</span>
                                                                 </>
+                                                            ) : drvName === "AMBIL SENDIRI" || drvName.includes("SELF PICKUP") ? (
+                                                                <>
+                                                                    <span>🏬</span>
+                                                                    <span className="text-emerald-700 font-black">AMBIL SENDIRI (SELF PICKUP)</span>
+                                                                </>
                                                             ) : (
                                                                 <>
                                                                     <span>🚚 ARMADA:</span>
@@ -1777,7 +1793,13 @@ export function ShippingScheduleDashboard({
                                                         </h3>
                                                         <div className="flex flex-wrap items-center gap-2 mt-1">
                                                             <span className="text-[10px] bg-slate-100 px-2 py-0.5 rounded font-mono font-bold text-slate-700">
-                                                                {drvItems.find(i => i.vehiclePlate)?.vehiclePlate || fleetInfo?.plate || (drvName === "EKSPEDISI" ? "Ekspedisi / Sewa" : "Truk Toko")}
+                                                                {drvItems.find(i => i.vehiclePlate)?.vehiclePlate || fleetInfo?.plate || (
+                                                                    drvName === "EKSPEDISI" 
+                                                                        ? "Ekspedisi / Sewa" 
+                                                                        : drvName.includes("AMBIL SENDIRI") || drvName.includes("SELF PICKUP")
+                                                                            ? "Mobil Sendiri / Loco" 
+                                                                            : "Truk Toko"
+                                                                )}
                                                             </span>
                                                             {(drvItems.find(i => i.etollCard)?.etollCard || fleetInfo?.etoll) && (
                                                                 <span className="text-[9.5px] bg-blue-50 text-blue-800 px-2 py-0.5 rounded font-mono font-bold flex items-center gap-1">
