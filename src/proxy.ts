@@ -335,6 +335,26 @@ export async function callAction(actionName: string, ...args: any[]) {
             const { updatePurchaseTaxInvoiceAction } = await import("@/app/tax/actions");
             return await updatePurchaseTaxInvoiceAction(...args as [string, string | null, string | null]);
 
+        // CMS
+        case "getCmsContents":
+            const { getCmsContentsAction } = await import("@/actions/cms");
+            return await getCmsContentsAction();
+        case "getAllCmsContentsForAdmin":
+            const { getAllCmsContentsForAdminAction } = await import("@/actions/cms");
+            return await getAllCmsContentsForAdminAction();
+        case "createCmsContent":
+            const { createCmsContentAction } = await import("@/actions/cms");
+            return await createCmsContentAction(...args as [any]);
+        case "updateCmsContent":
+            const { updateCmsContentAction } = await import("@/actions/cms");
+            return await updateCmsContentAction(...args as [string, any]);
+        case "deleteCmsContent":
+            const { deleteCmsContentAction } = await import("@/actions/cms");
+            return await deleteCmsContentAction(...args as [string]);
+        case "toggleCmsContentActive":
+            const { toggleCmsContentActiveAction } = await import("@/actions/cms");
+            return await toggleCmsContentActiveAction(...args as [string]);
+
         default:
             throw new Error(`Action ${actionName} not found in proxy.`);
     }

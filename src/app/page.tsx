@@ -1,5 +1,6 @@
 import { getPrisma } from "@/lib/prisma";
 import { getDashboardSummaryAction, getDailyReportAction } from "@/actions/system";
+import { getCmsContentsAction } from "@/actions/cms";
 import { formatCurrency, serializeDecimal } from "@/lib/utils";
 import { AdminDashboard } from "./AdminDashboard";
 import { getTraceabilitySummaryService } from "@/lib/services/system-service";
@@ -40,20 +41,23 @@ export default async function DashboardPage() {
   let inventoryData: any[] = [];
   let lowStockProducts: any[] = [];
   let traceabilityData: any = null;
+  let cmsItems: any[] = [];
 
   try {
-    const [summaryRes, reportRes, productsRes, recentJournal, traceRes] = await Promise.all([
+    const [summaryRes, reportRes, productsRes, recentJournal, traceRes, cmsRes] = await Promise.all([
       getDashboardSummaryAction().then((res: any) => serializeDecimal(res)).catch((e: any) => { console.error("Summary Error:", e); return summary; }),
       getDailyReportAction().then((res: any) => serializeDecimal(res)).catch((e: any) => { console.error("Report Error:", e); return dailyReport; }),
       prisma.product.findMany({ include: { stocks: true } }).then((res: any) => serializeDecimal(res)).catch(() => []),
       prisma.journalEntry.findMany({ take: 5, orderBy: { date: 'desc' } }).then((res: any) => serializeDecimal(res)).catch(() => []),
-      getTraceabilitySummaryService().catch((e: any) => { console.error("Traceability Error:", e); return null; })
+      getTraceabilitySummaryService().catch((e: any) => { console.error("Traceability Error:", e); return null; }),
+      getCmsContentsAction().catch((e: any) => { console.error("CMS Contents Error:", e); return []; })
     ]);
 
     summary = summaryRes || summary;
     dailyReport = reportRes || dailyReport;
     traceabilityData = traceRes;
     products = productsRes || [];
+    cmsItems = cmsRes || [];
 
     // 4. Group Inventory by Category & Check Low Stock
     const categoryMap: any = {};
@@ -157,5 +161,6 @@ export default async function DashboardPage() {
     totalPiutangPending={summary.totalPiutangPending || 0}
     totalHutangPending={summary.totalHutangPending || 0}
     traceabilityData={traceabilityData}
+    cmsItems={cmsItems}
   />;
 }

@@ -636,3 +636,28 @@ model ShippingMapping {
   @@index([createdAt])
 }
 
+model CmsContent {
+  id          String   @id @default(cuid())
+  title       String
+  category    String   @default("FLOW_KEGIATAN") // FLOW_KEGIATAN, JADWAL_PENGIRIMAN, PENGUMUMAN, SOP
+  summary     String?
+  content     String
+  steps       String?  // JSON string: Array of { title, desc, linkUrl, linkText, icon }
+  linkUrl     String?  // Direct action button e.g. /warehouse/jadwal-pengiriman
+  linkText    String?  // e.g. "Buka Jadwal Pengiriman"
+  badge       String?  // e.g. "LOGISTIK", "OPERASIONAL", "PENGUMUMAN"
+  colorTheme  String?  @default("indigo") // indigo, blue, emerald, amber, purple, rose
+  icon        String?  @default("Truck") // Truck, Calendar, Activity, Package, AlertCircle, Info
+  priority    Int      @default(0)
+  isPinned    Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  targetRole  String?  @default("ALL")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([category])
+  @@index([isPinned])
+  @@index([isActive])
+  @@index([createdAt])
+}
+

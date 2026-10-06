@@ -49,6 +49,7 @@ import {
 import * as XLSX from 'xlsx';
 import { formatCurrency, cn } from "@/lib/utils";
 import { RoleGuideline } from "@/components/RoleGuideline";
+import { DashboardCmsWidget } from "@/components/cms/DashboardCmsWidget";
 import Link from "next/link";
 
 
@@ -76,7 +77,8 @@ export function AdminDashboard({
     totalPaidPurchases = 0,
     totalPiutangPending = 0,
     totalHutangPending = 0,
-    traceabilityData
+    traceabilityData,
+    cmsItems = []
 }: any) {
     const [isClient, setIsClient] = useState(false);
 
@@ -193,6 +195,9 @@ export function AdminDashboard({
         <div className="space-y-8 md:space-y-12 pb-16 animate-fade-up">
             {/* Role-Specific SOP Guideline */}
             <RoleGuideline role={role} />
+
+            {/* Operational Flow & Announcements CMS Widget */}
+            <DashboardCmsWidget initialItems={cmsItems} role={role} />
 
             {/* ═══════ SO STATUS — PALING ATAS ═══════ */}
             {traceabilityData ? (
