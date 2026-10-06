@@ -1,6 +1,7 @@
 import { getPrisma } from "@/lib/prisma";
 import { getDashboardSummaryAction, getDailyReportAction } from "@/actions/system";
 import { getCmsContentsAction } from "@/actions/cms";
+import { getDailyShippingScheduleAction } from "@/actions/warehouse";
 import { formatCurrency, serializeDecimal } from "@/lib/utils";
 import { AdminDashboard } from "./AdminDashboard";
 import { getTraceabilitySummaryService } from "@/lib/services/system-service";
@@ -42,15 +43,19 @@ export default async function DashboardPage() {
   let lowStockProducts: any[] = [];
   let traceabilityData: any = null;
   let cmsItems: any[] = [];
+  let todayShipping: any[] = [];
+
+  const todayStr = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
 
   try {
-    const [summaryRes, reportRes, productsRes, recentJournal, traceRes, cmsRes] = await Promise.all([
+    const [summaryRes, reportRes, productsRes, recentJournal, traceRes, cmsRes, shipRes] = await Promise.all([
       getDashboardSummaryAction().then((res: any) => serializeDecimal(res)).catch((e: any) => { console.error("Summary Error:", e); return summary; }),
       getDailyReportAction().then((res: any) => serializeDecimal(res)).catch((e: any) => { console.error("Report Error:", e); return dailyReport; }),
       prisma.product.findMany({ include: { stocks: true } }).then((res: any) => serializeDecimal(res)).catch(() => []),
       prisma.journalEntry.findMany({ take: 5, orderBy: { date: 'desc' } }).then((res: any) => serializeDecimal(res)).catch(() => []),
       getTraceabilitySummaryService().catch((e: any) => { console.error("Traceability Error:", e); return null; }),
-      getCmsContentsAction().catch((e: any) => { console.error("CMS Contents Error:", e); return []; })
+      getCmsContentsAction().catch((e: any) => { console.error("CMS Contents Error:", e); return []; }),
+      getDailyShippingScheduleAction(todayStr).catch(() => [])
     ]);
 
     summary = summaryRes || summary;
@@ -58,6 +63,7 @@ export default async function DashboardPage() {
     traceabilityData = traceRes;
     products = productsRes || [];
     cmsItems = cmsRes || [];
+    todayShipping = shipRes || [];
 
     // 4. Group Inventory by Category & Check Low Stock
     const categoryMap: any = {};
@@ -162,5 +168,6 @@ export default async function DashboardPage() {
     totalHutangPending={summary.totalHutangPending || 0}
     traceabilityData={traceabilityData}
     cmsItems={cmsItems}
+    todayShipping={todayShipping}
   />;
 }

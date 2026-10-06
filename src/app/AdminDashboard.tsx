@@ -49,7 +49,7 @@ import {
 import * as XLSX from 'xlsx';
 import { formatCurrency, cn } from "@/lib/utils";
 import { RoleGuideline } from "@/components/RoleGuideline";
-import { DashboardCmsCompactBar } from "@/components/cms/DashboardCmsCompactBar";
+import { DailyOperationsCommandCenter } from "@/components/dashboard/DailyOperationsCommandCenter";
 import Link from "next/link";
 
 
@@ -78,7 +78,8 @@ export function AdminDashboard({
     totalPiutangPending = 0,
     totalHutangPending = 0,
     traceabilityData,
-    cmsItems = []
+    cmsItems = [],
+    todayShipping = []
 }: any) {
     const [isClient, setIsClient] = useState(false);
 
@@ -196,8 +197,14 @@ export function AdminDashboard({
             {/* Role-Specific SOP Guideline */}
             <RoleGuideline role={role} />
 
-            {/* Operational Flow & Announcements CMS Compact Bar */}
-            <DashboardCmsCompactBar items={cmsItems} role={role} />
+            {/* LOGISTIK GUDANG & PUSAT OPERASIONAL HARIAN PT. KOLA BORASI INDONESIA */}
+            <DailyOperationsCommandCenter 
+                dailyReport={dailyReport}
+                todayShipping={todayShipping}
+                role={role}
+                traceabilityData={traceabilityData}
+                cmsItems={cmsItems}
+            />
 
             {/* ═══════ SO STATUS — PALING ATAS ═══════ */}
             {traceabilityData ? (

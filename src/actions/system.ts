@@ -242,12 +242,20 @@ export async function getDailyReportAction() {
     const [sales, purchases, operational, requests] = await Promise.all([
         prisma.salesDelivery.findMany({
             where: { ...userFilter, createdAt: { gte: today, lt: tomorrow } },
-            include: { createdBy: { select: { name: true } } },
+            include: { 
+                createdBy: { select: { name: true } },
+                items: { include: { product: true } },
+                warehouse: { select: { name: true } }
+            },
             orderBy: { createdAt: 'desc' }
         }),
         prisma.goodsReceipt.findMany({
             where: { ...userFilter, createdAt: { gte: today, lt: tomorrow } },
-            include: { createdBy: { select: { name: true } } },
+            include: { 
+                createdBy: { select: { name: true } },
+                warehouse: { select: { name: true } },
+                items: { include: { product: true } }
+            },
             orderBy: { createdAt: 'desc' }
         }),
         prisma.financeTransaction.findMany({
@@ -260,7 +268,7 @@ export async function getDailyReportAction() {
                 ...(isAdmin ? {} : { requestedById: session?.user?.id }), 
                 createdAt: { gte: today, lt: tomorrow } 
             },
-            include: { requestedBy: { select: { name: true } } },
+            include: { requestedBy: { select: { name: true } }, items: true },
             orderBy: { createdAt: 'desc' }
         })
     ]);
