@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth/next";
 import { getAuthOptions } from "@/lib/auth";
 import { getAllCmsContentsForAdminAction } from "@/actions/cms";
-import { CmsModuleDashboard } from "./CmsModuleDashboard";
+import CmsModuleDashboard from "@/app/cms/CmsModuleDashboard";
 
 export const dynamic = "force-dynamic";
 

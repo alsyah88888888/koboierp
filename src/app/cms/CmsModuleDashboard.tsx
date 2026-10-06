@@ -1177,3 +1177,5 @@ export function CmsModuleDashboard({ initialItems = [], currentUser }: CmsModule
         </div>
     );
 }
+
+export default CmsModuleDashboard;
