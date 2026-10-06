@@ -19,7 +19,8 @@ import {
     Shield,
     Search,
     Truck,
-    BarChart3
+    BarChart3,
+    Layers
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { useSidebar } from "./SidebarContext";
@@ -39,6 +40,7 @@ const navigation = [
     { name: "Laporan", href: "/reports", icon: BarChart3, permissionKey: "REPORTS", roles: ["ADMIN", "FINANCE"] },
     { name: "Perpajakan", href: "/tax", icon: FileText, permissionKey: "TAX", roles: ["ADMIN", "FINANCE"] },
     { name: "Master Data", href: "/master-data", icon: Database, permissionKey: "MASTER", roles: ["ADMIN", "PURCHASE"] },
+    { name: "CMS Konten & Alur", href: "/cms", icon: Layers, permissionKey: "CMS", roles: ["ADMIN", "FINANCE", "PURCHASE", "SALES", "WAREHOUSE"] },
     { name: "Settings", href: "/settings", icon: Settings, permissionKey: "SETTINGS", roles: ["ADMIN"] },
 ];
 
@@ -134,6 +136,7 @@ export function Sidebar() {
                         const isMainAdmin = userRole.toUpperCase() === "ADMIN";
                         const hasAccess = isMainAdmin || 
                                           userPermissions.includes(item.permissionKey) ||
+                                          item.permissionKey === "CMS" ||
                                           (item.permissionKey === "DELIVERY" && (
                                               userPermissions.includes("SALES") || 
                                               userPermissions.includes("WAREHOUSE") || 

@@ -49,7 +49,7 @@ import {
 import * as XLSX from 'xlsx';
 import { formatCurrency, cn } from "@/lib/utils";
 import { RoleGuideline } from "@/components/RoleGuideline";
-import { DashboardCmsWidget } from "@/components/cms/DashboardCmsWidget";
+import { DashboardCmsCompactBar } from "@/components/cms/DashboardCmsCompactBar";
 import Link from "next/link";
 
 
@@ -196,8 +196,8 @@ export function AdminDashboard({
             {/* Role-Specific SOP Guideline */}
             <RoleGuideline role={role} />
 
-            {/* Operational Flow & Announcements CMS Widget */}
-            <DashboardCmsWidget initialItems={cmsItems} role={role} />
+            {/* Operational Flow & Announcements CMS Compact Bar */}
+            <DashboardCmsCompactBar items={cmsItems} role={role} />
 
             {/* ═══════ SO STATUS — PALING ATAS ═══════ */}
             {traceabilityData ? (
