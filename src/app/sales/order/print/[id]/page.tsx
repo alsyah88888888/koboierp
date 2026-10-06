@@ -53,7 +53,7 @@ export default async function SalesOrderPrintPage({ params }: { params: Promise<
             title={isDraft ? "Proforma Invoice (PI)" : "Sales Order (SO)"}
             docNumber={order.orderNumber}
             date={format(new Date(order.date), "dd MMM yyyy")}
-            showBankAccountInHeader={!isDraft}
+            showBankAccountInHeader={true}
             headerInfo={
                 <div className="flex flex-col gap-2">
                     <div className="flex justify-between items-start gap-4 text-[10px] font-bold uppercase italic border border-slate-900 p-3 bg-slate-50/20">
@@ -128,10 +128,26 @@ export default async function SalesOrderPrintPage({ params }: { params: Promise<
             </table>
 
             <div className="grid grid-cols-2 mt-4 gap-4">
-                <div className="text-[8px] text-slate-400 italic">
-                    * Dokumen ini adalah bukti pemesanan resmi yang mengikat.<br />
-                    * Barang akan dikirimkan sesuai dengan ketersediaan stok.<br />
-                    * Status Order: <span className="text-slate-900 font-black">{order.status}</span>
+                <div className="flex flex-col justify-between">
+                    <div className="text-[8px] text-slate-400 italic">
+                        * Dokumen ini adalah bukti pemesanan resmi yang mengikat.<br />
+                        * Barang akan dikirimkan sesuai dengan ketersediaan stok.<br />
+                        * Status Order: <span className="text-slate-900 font-black">{order.status}</span>
+                    </div>
+
+                    <div className="mt-2 p-2 bg-slate-50 border border-slate-900 text-[8px] space-y-1">
+                        <span className="text-[7.5pt] font-black uppercase tracking-wider text-slate-900 block border-b border-slate-300 pb-0.5">
+                            PEMBAYARAN TRANSFER KE REKENING:
+                        </span>
+                        <div className="flex justify-between items-center text-slate-900 font-mono font-black text-[8pt]">
+                            <span>BCA: 682-5671718</span>
+                            <span className="text-[6.5pt] font-sans font-bold text-slate-500">a.n PT KOLA BORASI INDONESIA</span>
+                        </div>
+                        <div className="flex justify-between items-center text-slate-900 font-mono font-black text-[8pt]">
+                            <span>MAYBANK: 273-6001269</span>
+                            <span className="text-[6.5pt] font-sans font-bold text-slate-500">a.n PT KOLA BORASI INDONESIA</span>
+                        </div>
+                    </div>
                 </div>
                 <div className="space-y-1 border border-slate-900 p-2 font-black bg-slate-50/50">
                     <div className="flex justify-between text-[9px]">
