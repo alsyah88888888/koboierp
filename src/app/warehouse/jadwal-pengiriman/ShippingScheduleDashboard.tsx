@@ -75,29 +75,146 @@ export function ShippingScheduleDashboard({
     const [wizardStep, setWizardStep] = useState<1 | 2 | 3>(1);
 
     // Wizard Form States
+    const [selectedDrivers, setSelectedDrivers] = useState<string[]>([]);
     const [selectedDriver, setSelectedDriver] = useState<string>("");
     const [selectedVehiclePlate, setSelectedVehiclePlate] = useState<string>("");
     const [selectedEtoll, setSelectedEtoll] = useState<string>("");
 
+    // Toggle driver selection with support for up to 2 drivers (Utama & Pendamping)
+    const handleToggleDriverCard = (driverName: string) => {
+        const upper = driverName.trim().toUpperCase();
+
+        // 1. Handling LOCO / AMBIL SENDIRI (Self Pickup)
+        if (upper === "AMBIL SENDIRI" || upper.includes("SELF PICKUP")) {
+            if (selectedDrivers.includes("AMBIL SENDIRI")) {
+                setSelectedDrivers([]);
+                setSelectedDriver("");
+                setSelectedVehiclePlate("");
+                setSelectedEtoll("");
+            } else {
+                setSelectedDrivers(["AMBIL SENDIRI"]);
+                setSelectedDriver("AMBIL SENDIRI");
+                setSelectedVehiclePlate("MOBIL SENDIRI");
+                setSelectedEtoll("");
+            }
+            return;
+        }
+
+        // 2. Handling EKSPEDISI (Vendor Pihak Ketiga)
+        if (upper === "EKSPEDISI") {
+            if (selectedDrivers.includes("EKSPEDISI")) {
+                const next = selectedDrivers.filter(d => d !== "EKSPEDISI");
+                setSelectedDrivers(next);
+                setSelectedDriver(next.join(" & "));
+                if (next.length === 1) {
+                    const fleet = getFleetByDriverOrPlate(next[0]);
+                    if (fleet) {
+                        setSelectedVehiclePlate(fleet.plate);
+                        setSelectedEtoll(fleet.etoll);
+                    }
+                } else if (next.length === 0) {
+                    setSelectedVehiclePlate("");
+                    setSelectedEtoll("");
+                }
+            } else {
+                const filtered = selectedDrivers.filter(d => d !== "AMBIL SENDIRI");
+                let next: string[];
+                if (filtered.length === 0) {
+                    next = ["EKSPEDISI"];
+                    setSelectedVehiclePlate("");
+                    setSelectedEtoll("");
+                } else {
+                    next = [filtered[0], "EKSPEDISI"];
+                }
+                setSelectedDrivers(next);
+                setSelectedDriver(next.join(" & "));
+            }
+            return;
+        }
+
+        // 3. Official Company Fleet & Custom Drivers
+        const filtered = selectedDrivers.filter(d => d !== "AMBIL SENDIRI");
+        const isAlreadySelected = filtered.includes(upper);
+
+        if (isAlreadySelected) {
+            // Deselect driver
+            const next = filtered.filter(d => d !== upper);
+            setSelectedDrivers(next);
+            setSelectedDriver(next.join(" & "));
+            if (next.length === 1) {
+                const fleet = getFleetByDriverOrPlate(next[0]);
+                if (fleet) {
+                    setSelectedVehiclePlate(fleet.plate);
+                    setSelectedEtoll(fleet.etoll);
+                }
+            } else if (next.length === 0) {
+                setSelectedVehiclePlate("");
+                setSelectedEtoll("");
+            }
+        } else {
+            // Select driver
+            const fleet = getFleetByDriverOrPlate(upper);
+            let next: string[];
+            if (filtered.length === 0) {
+                // First driver (Sopir 1 - Utama)
+                next = [upper];
+                if (fleet) {
+                    setSelectedVehiclePlate(fleet.plate);
+                    setSelectedEtoll(fleet.etoll);
+                }
+            } else if (filtered.length === 1) {
+                // Second driver (Sopir 2 - Pendamping/Cadangan)
+                next = [filtered[0], upper];
+                // Keep Driver 1's truck plate active by default; if empty, use Driver 2's
+                if (!selectedVehiclePlate && fleet) {
+                    setSelectedVehiclePlate(fleet.plate);
+                    setSelectedEtoll(fleet.etoll);
+                }
+            } else {
+                // Already 2 drivers: replace Sopir 2 with clicked driver
+                next = [filtered[0], upper];
+            }
+            setSelectedDrivers(next);
+            setSelectedDriver(next.join(" & "));
+        }
+    };
+
     const handleDriverSelect = (driverVal: string) => {
         const upper = driverVal.toUpperCase();
         setSelectedDriver(upper);
-        const fleet = getFleetByDriverOrPlate(upper);
-        if (fleet) {
-            setSelectedVehiclePlate(fleet.plate);
-            setSelectedEtoll(fleet.etoll);
-        } else {
-            // CRITICAL: If switching to EKSPEDISI, AMBIL SENDIRI, or custom driver,
-            // clear the official fleet plate and etoll so they don't remain stuck from the previous driver!
-            if (upper === "EKSPEDISI") {
-                setSelectedVehiclePlate("");
-            } else if (upper.includes("AMBIL SENDIRI") || upper.includes("SELF PICKUP")) {
-                if (!selectedVehiclePlate || OFFICIAL_FLEET.some(f => f.plate === selectedVehiclePlate)) {
-                    setSelectedVehiclePlate("MOBIL SENDIRI");
+        const parts = upper
+            .split(/[&/,+]+/)
+            .map(s => s.trim())
+            .filter(Boolean);
+        setSelectedDrivers(parts);
+
+        if (parts.length === 1) {
+            const fleet = getFleetByDriverOrPlate(parts[0]);
+            if (fleet) {
+                setSelectedVehiclePlate(fleet.plate);
+                setSelectedEtoll(fleet.etoll);
+            } else {
+                if (parts[0] === "EKSPEDISI") {
+                    setSelectedVehiclePlate("");
+                } else if (parts[0].includes("AMBIL SENDIRI") || parts[0].includes("SELF PICKUP")) {
+                    if (!selectedVehiclePlate || OFFICIAL_FLEET.some(f => f.plate === selectedVehiclePlate)) {
+                        setSelectedVehiclePlate("MOBIL SENDIRI");
+                    }
+                } else if (!selectedVehiclePlate || OFFICIAL_FLEET.some(f => f.plate === selectedVehiclePlate)) {
+                    setSelectedVehiclePlate("");
                 }
-            } else if (!selectedVehiclePlate || OFFICIAL_FLEET.some(f => f.plate === selectedVehiclePlate)) {
-                setSelectedVehiclePlate("");
+                setSelectedEtoll("");
             }
+        } else if (parts.length >= 2) {
+            if (!selectedVehiclePlate) {
+                const fleet1 = getFleetByDriverOrPlate(parts[0]);
+                if (fleet1) {
+                    setSelectedVehiclePlate(fleet1.plate);
+                    setSelectedEtoll(fleet1.etoll);
+                }
+            }
+        } else {
+            setSelectedVehiclePlate("");
             setSelectedEtoll("");
         }
     };
@@ -109,6 +226,7 @@ export function ShippingScheduleDashboard({
         if (fleet) {
             if (!selectedDriver || selectedDriver === "EKSPEDISI") {
                 setSelectedDriver(fleet.driver);
+                setSelectedDrivers([fleet.driver]);
             }
             setSelectedEtoll(fleet.etoll);
         } else {
@@ -158,22 +276,35 @@ export function ShippingScheduleDashboard({
             const po = d.poNumber || "-";
             const buyer = d.buyerName || "-";
             const rawVehicle = (d.driver || d.vehicleNumber || "").trim();
-            const fleet = getFleetByDriverOrPlate(rawVehicle);
-            let driverName = fleet?.driver || rawVehicle;
+            const isCompound = rawVehicle.includes("&") || rawVehicle.includes("+");
+            const fleet = !isCompound ? getFleetByDriverOrPlate(rawVehicle) : undefined;
+            let driverName = isCompound ? rawVehicle : (fleet?.driver || rawVehicle);
             let vehiclePlate = fleet?.plate || "";
             let etollCard = fleet?.etoll || "";
 
             // Check if saved as "DRIVER (PLATE)"
-            if (!fleet && rawVehicle) {
+            if (rawVehicle) {
                 const matchParen = rawVehicle.match(/^([^(]+)\s*\(([^)]+)\)$/);
                 if (matchParen) {
                     driverName = matchParen[1].trim().toUpperCase();
                     vehiclePlate = matchParen[2].trim().toUpperCase();
-                } else {
+                    const matchedFleet = getFleetByDriverOrPlate(vehiclePlate);
+                    if (matchedFleet) etollCard = matchedFleet.etoll;
+                } else if (!fleet) {
                     const matchDash = rawVehicle.match(/^([^-]+)\s*-\s*(.+)$/);
                     if (matchDash && !matchDash[1].toUpperCase().startsWith("KB-")) {
                         driverName = matchDash[1].trim().toUpperCase();
                         vehiclePlate = matchDash[2].trim().toUpperCase();
+                    } else if (isCompound) {
+                        const parts = rawVehicle.split(/[&+,]/).map((s: string) => s.trim().toUpperCase()).filter(Boolean);
+                        for (const p of parts) {
+                            const matchedFleet = getFleetByDriverOrPlate(p);
+                            if (matchedFleet) {
+                                vehiclePlate = matchedFleet.plate;
+                                etollCard = matchedFleet.etoll;
+                                break;
+                            }
+                        }
                     }
                 }
             }
@@ -245,16 +376,29 @@ export function ShippingScheduleDashboard({
 
             const cleanPo = !isCategoryPo && rawPo ? rawPo : (matchedDeliv?.poNumber || "-");
             const rawVehicle = (m.driver || matchedDeliv?.driver || matchedDeliv?.vehicleNumber || "").trim();
-            const fleet = getFleetByDriverOrPlate(rawVehicle);
-            let driverName = fleet?.driver || rawVehicle;
+            const isCompound = rawVehicle.includes("&") || rawVehicle.includes("+");
+            const fleet = !isCompound ? getFleetByDriverOrPlate(rawVehicle) : undefined;
+            let driverName = isCompound ? rawVehicle : (fleet?.driver || rawVehicle);
             let vehiclePlate = fleet?.plate || "";
             let etollCard = fleet?.etoll || "";
 
-            if (!fleet && rawVehicle) {
+            if (rawVehicle) {
                 const matchParen = rawVehicle.match(/^([^(]+)\s*\(([^)]+)\)$/);
                 if (matchParen) {
                     driverName = matchParen[1].trim().toUpperCase();
                     vehiclePlate = matchParen[2].trim().toUpperCase();
+                    const matchedFleet = getFleetByDriverOrPlate(vehiclePlate);
+                    if (matchedFleet) etollCard = matchedFleet.etoll;
+                } else if (!fleet && isCompound) {
+                    const parts = rawVehicle.split(/[&+,]/).map((s: string) => s.trim().toUpperCase()).filter(Boolean);
+                    for (const p of parts) {
+                        const matchedFleet = getFleetByDriverOrPlate(p);
+                        if (matchedFleet) {
+                            vehiclePlate = matchedFleet.plate;
+                            etollCard = matchedFleet.etoll;
+                            break;
+                        }
+                    }
                 }
             }
 
@@ -444,7 +588,8 @@ export function ShippingScheduleDashboard({
     // Edit an already loaded vehicle
     const handleEditVehicleLoad = (drvName: string) => {
         const cleanDriver = drvName.trim().toUpperCase();
-        const fleetInfo = getFleetByDriverOrPlate(cleanDriver);
+        const parts = cleanDriver.split(/[&/,+]+/).map(s => s.trim().toUpperCase()).filter(Boolean);
+        const fleetInfo = parts.length === 1 ? getFleetByDriverOrPlate(cleanDriver) : undefined;
         const driverItems = items.filter(i => (i.driver || "").trim().toUpperCase() === cleanDriver);
         const targetItemIds = new Set(driverItems.map(i => i.id));
 
@@ -453,6 +598,7 @@ export function ShippingScheduleDashboard({
 
         setEditingDriver(cleanDriver);
         setSelectedDriver(cleanDriver);
+        setSelectedDrivers(parts);
         setSelectedVehiclePlate(existingPlate);
         setSelectedEtoll(existingEtoll);
         setSelectedItemIds(targetItemIds);
@@ -564,6 +710,8 @@ export function ShippingScheduleDashboard({
             if (editingDriver === cleanDriver) {
                 setEditingDriver(null);
                 setSelectedItemIds(new Set());
+                setSelectedDrivers([]);
+                setSelectedDriver("");
             }
 
             setSaveFeedback(`Seluruh muatan armada ${cleanDriver} berhasil dibatalkan dan telah kembali ke antrian lantai gudang.`);
@@ -582,6 +730,7 @@ export function ShippingScheduleDashboard({
     const handleStartNextVehicle = () => {
         setSelectedItemIds(new Set());
         setSelectedDriver("");
+        setSelectedDrivers([]);
         setSelectedVehiclePlate("");
         setSelectedEtoll("");
         setEditingDriver(null);
@@ -1034,34 +1183,55 @@ export function ShippingScheduleDashboard({
                                             <div>
                                                 <div className="flex items-center gap-2">
                                                     <h3 className="text-sm font-black text-slate-900 uppercase tracking-wide">
-                                                        1. Tentukan Kendaraan & Sopir Muat
+                                                        1. Tentukan Kendaraan &amp; Sopir Muat
                                                     </h3>
-                                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 uppercase tracking-wider">
-                                                        Pilih 1 Armada / Jalur
+                                                    <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 uppercase tracking-wider flex items-center gap-1">
+                                                        <span>👥</span> Bisa Pilih 1 atau 2 Sopir
                                                     </span>
                                                 </div>
                                                 <p className="text-xs text-slate-500">
-                                                    Klik armada resmi yang sedang parkir di pintu muat gudang, vendor ekspedisi luar, atau opsi ambil sendiri.
+                                                    Klik nama sopir (bisa pilih sampai 2 orang untuk Sopir Utama &amp; Sopir Pendamping), vendor ekspedisi, atau ambil sendiri.
                                                 </p>
                                             </div>
                                         </div>
 
                                         {/* Current Active Selection Summary */}
                                         <div className="flex items-center gap-2">
-                                            {selectedDriver ? (
+                                            {selectedDrivers.length > 0 || selectedDriver ? (
                                                 <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-950 text-xs font-black shadow-2xs">
                                                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
-                                                    <span>Armada Aktif: <strong className="text-indigo-700">{selectedDriver}</strong></span>
+                                                    {selectedDrivers.length <= 1 ? (
+                                                        <span>Armada Aktif: <strong className="text-indigo-700">{selectedDriver || selectedDrivers[0]}</strong></span>
+                                                    ) : (
+                                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                                            <span>Sopir 1: <strong className="text-indigo-700">{selectedDrivers[0]}</strong></span>
+                                                            <span className="text-slate-400 font-normal">&amp;</span>
+                                                            <span>Sopir 2: <strong className="text-emerald-700">{selectedDrivers[1]}</strong></span>
+                                                        </div>
+                                                    )}
                                                     {selectedVehiclePlate && (
                                                         <span className="font-mono bg-white px-2 py-0.5 rounded border border-indigo-100 text-[11px] text-slate-800">
                                                             {selectedVehiclePlate}
                                                         </span>
                                                     )}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setSelectedDrivers([]);
+                                                            setSelectedDriver("");
+                                                            setSelectedVehiclePlate("");
+                                                            setSelectedEtoll("");
+                                                        }}
+                                                        className="text-[10px] text-slate-400 hover:text-rose-600 font-bold ml-1.5 cursor-pointer px-1.5 py-0.5 rounded hover:bg-rose-50 transition-colors"
+                                                        title="Reset pilihan sopir"
+                                                    >
+                                                        Reset
+                                                    </button>
                                                 </div>
                                             ) : (
                                                 <div className="text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
                                                     <AlertCircle className="w-3.5 h-3.5" />
-                                                    <span>Silakan pilih salah satu armada di bawah:</span>
+                                                    <span>Silakan pilih 1 atau 2 sopir di bawah:</span>
                                                 </div>
                                             )}
                                         </div>
@@ -1071,32 +1241,39 @@ export function ShippingScheduleDashboard({
                                     <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5">
                                         {/* 5 Official Company Fleet */}
                                         {OFFICIAL_FLEET.map(f => {
-                                            const isSelected = selectedDriver === f.driver;
+                                            const driverIdx = selectedDrivers.indexOf(f.driver);
+                                            const isSelected = driverIdx !== -1;
+                                            const isPrimary = driverIdx === 0;
+
                                             return (
                                                 <button
                                                     key={f.driver}
                                                     type="button"
-                                                    onClick={() => {
-                                                        setSelectedDriver(f.driver);
-                                                        setSelectedVehiclePlate(f.plate);
-                                                        setSelectedEtoll(f.etoll);
-                                                    }}
+                                                    onClick={() => handleToggleDriverCard(f.driver)}
                                                     className={`relative p-3 rounded-2xl border-2 text-left transition-all duration-150 cursor-pointer flex flex-col justify-between group ${
                                                         isSelected 
-                                                            ? "bg-indigo-50/80 border-indigo-600 shadow-md ring-2 ring-indigo-500/20 scale-[1.02]" 
+                                                            ? isPrimary
+                                                                ? "bg-indigo-50/90 border-indigo-600 shadow-md ring-2 ring-indigo-500/20 scale-[1.02]" 
+                                                                : "bg-emerald-50/90 border-emerald-600 shadow-md ring-2 ring-emerald-500/20 scale-[1.02]"
                                                             : "bg-white hover:bg-slate-50 border-slate-200 hover:border-indigo-300 hover:shadow-xs"
                                                     }`}
                                                 >
                                                     {/* Top status & category */}
                                                     <div className="flex items-center justify-between gap-1 mb-2">
                                                         <span className={`text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded ${
-                                                            isSelected ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-600 group-hover:bg-indigo-50 group-hover:text-indigo-700"
+                                                            isSelected 
+                                                                ? isPrimary
+                                                                    ? "bg-indigo-600 text-white" 
+                                                                    : "bg-emerald-600 text-white"
+                                                                : "bg-slate-100 text-slate-600 group-hover:bg-indigo-50 group-hover:text-indigo-700"
                                                         }`}>
-                                                            Resmi
+                                                            {isSelected ? (isPrimary ? (selectedDrivers.length > 1 ? "Sopir 1" : "Terpilih") : "Sopir 2") : "Resmi"}
                                                         </span>
                                                         {isSelected ? (
-                                                            <div className="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow-xs">
-                                                                <Check className="w-3 h-3 stroke-[3]" />
+                                                            <div className={`w-5 h-5 rounded-full text-white flex items-center justify-center shadow-xs font-black text-[10px] ${
+                                                                isPrimary ? "bg-indigo-600" : "bg-emerald-600"
+                                                            }`}>
+                                                                {selectedDrivers.length > 1 ? (driverIdx + 1) : <Check className="w-3 h-3 stroke-[3]" />}
                                                             </div>
                                                         ) : (
                                                             <span className="text-[10px] text-slate-300 group-hover:text-slate-400">●</span>
@@ -1106,12 +1283,22 @@ export function ShippingScheduleDashboard({
                                                     {/* Truck Icon & Driver Name */}
                                                     <div className="flex items-center gap-2 mb-2">
                                                         <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
-                                                            isSelected ? "bg-indigo-600 text-white shadow-xs" : "bg-indigo-50 text-indigo-600 group-hover:bg-indigo-100"
+                                                            isSelected 
+                                                                ? isPrimary 
+                                                                    ? "bg-indigo-600 text-white shadow-xs" 
+                                                                    : "bg-emerald-600 text-white shadow-xs"
+                                                                : "bg-indigo-50 text-indigo-600 group-hover:bg-indigo-100"
                                                         }`}>
                                                             <Truck className="w-4 h-4" />
                                                         </div>
                                                         <div className="min-w-0">
-                                                            <span className="text-[9px] block font-bold text-slate-400 uppercase leading-none">Sopir</span>
+                                                            <span className={`text-[9px] block font-bold uppercase leading-none ${
+                                                                isSelected 
+                                                                    ? isPrimary ? "text-indigo-600" : "text-emerald-700" 
+                                                                    : "text-slate-400"
+                                                            }`}>
+                                                                {isSelected ? (isPrimary ? "Sopir Utama" : "Pendamping") : "Sopir"}
+                                                            </span>
                                                             <h4 className="text-xs font-black text-slate-900 truncate uppercase mt-0.5">
                                                                 {f.driver}
                                                             </h4>
@@ -1137,15 +1324,14 @@ export function ShippingScheduleDashboard({
 
                                         {/* Card 6: Ekspedisi (Vendor Pihak Ketiga) */}
                                         {(() => {
-                                            const isSelected = selectedDriver === "EKSPEDISI";
+                                            const ekspedisiIdx = selectedDrivers.indexOf("EKSPEDISI");
+                                            const isSelected = ekspedisiIdx !== -1;
+                                            const isPrimary = ekspedisiIdx === 0;
+
                                             return (
                                                 <button
                                                     type="button"
-                                                    onClick={() => {
-                                                        setSelectedDriver("EKSPEDISI");
-                                                        setSelectedVehiclePlate("");
-                                                        setSelectedEtoll("");
-                                                    }}
+                                                    onClick={() => handleToggleDriverCard("EKSPEDISI")}
                                                     className={`relative p-3 rounded-2xl border-2 text-left transition-all duration-150 cursor-pointer flex flex-col justify-between group ${
                                                         isSelected 
                                                             ? "bg-amber-50/80 border-amber-600 shadow-md ring-2 ring-amber-500/20 scale-[1.02]" 
@@ -1156,11 +1342,11 @@ export function ShippingScheduleDashboard({
                                                         <span className={`text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded ${
                                                             isSelected ? "bg-amber-600 text-white" : "bg-amber-100 text-amber-800"
                                                         }`}>
-                                                            Vendor
+                                                            {isSelected ? (selectedDrivers.length > 1 ? (isPrimary ? "Sopir 1" : "Sopir 2") : "Vendor") : "Vendor"}
                                                         </span>
                                                         {isSelected ? (
-                                                            <div className="w-5 h-5 rounded-full bg-amber-600 text-white flex items-center justify-center shadow-xs">
-                                                                <Check className="w-3 h-3 stroke-[3]" />
+                                                            <div className="w-5 h-5 rounded-full bg-amber-600 text-white flex items-center justify-center shadow-xs font-black text-[10px]">
+                                                                {selectedDrivers.length > 1 ? (ekspedisiIdx + 1) : <Check className="w-3 h-3 stroke-[3]" />}
                                                             </div>
                                                         ) : (
                                                             <span className="text-[10px] text-slate-300 group-hover:text-amber-400">●</span>
@@ -1195,15 +1381,11 @@ export function ShippingScheduleDashboard({
 
                                         {/* Card 7: Ambil Sendiri (Self Pickup di Gudang) */}
                                         {(() => {
-                                            const isSelected = selectedDriver === "AMBIL SENDIRI" || selectedDriver.includes("SELF PICKUP");
+                                            const isSelected = selectedDrivers.includes("AMBIL SENDIRI") || selectedDriver === "AMBIL SENDIRI" || selectedDriver.includes("SELF PICKUP");
                                             return (
                                                 <button
                                                     type="button"
-                                                    onClick={() => {
-                                                        setSelectedDriver("AMBIL SENDIRI");
-                                                        setSelectedVehiclePlate("MOBIL SENDIRI");
-                                                        setSelectedEtoll("");
-                                                    }}
+                                                    onClick={() => handleToggleDriverCard("AMBIL SENDIRI")}
                                                     className={`relative p-3 rounded-2xl border-2 text-left transition-all duration-150 cursor-pointer flex flex-col justify-between group ${
                                                         isSelected 
                                                             ? "bg-emerald-50/80 border-emerald-600 shadow-md ring-2 ring-emerald-500/20 scale-[1.02]" 
@@ -1260,18 +1442,56 @@ export function ShippingScheduleDashboard({
                                                 <Edit3 className="w-4 h-4" />
                                             </div>
                                             <div>
-                                                <h4 className="text-xs font-black text-slate-800 uppercase tracking-wide">
-                                                    Detail & Penyesuaian Armada Terpilih
-                                                </h4>
+                                                <div className="flex items-center gap-2">
+                                                    <h4 className="text-xs font-black text-slate-800 uppercase tracking-wide">
+                                                        Detail &amp; Penyesuaian Armada Terpilih
+                                                    </h4>
+                                                    {selectedDrivers.length === 2 && (
+                                                        <span className="text-[10px] font-bold px-2 py-0.2 rounded-full bg-indigo-100 text-indigo-800 uppercase">
+                                                            2 Sopir Aktif
+                                                        </span>
+                                                    )}
+                                                </div>
                                                 <p className="text-[11px] text-slate-500">
                                                     {selectedDriver 
-                                                        ? `Data plat & e-toll terisi otomatis sesuai ${selectedDriver}. Anda dapat mengedit plat/e-toll jika ada perubahan armada hari ini.`
+                                                        ? `Data armada terisi otomatis sesuai ${selectedDriver}. Anda dapat memilih mobil atau mengedit plat/e-toll jika diperlukan.`
                                                         : "Pilih salah satu armada di atas untuk menampilkan dan mengedit detail plat nomor serta e-toll."}
                                                 </p>
                                             </div>
                                         </div>
 
                                         <div className="flex flex-wrap items-center gap-2.5">
+                                            {/* Quick Vehicle Switcher if 2 Official Drivers Selected */}
+                                            {selectedDrivers.length === 2 && (
+                                                <div className="flex items-center gap-1.5 bg-white px-2 py-1 rounded-xl border border-indigo-200 shadow-2xs">
+                                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider pl-1">Mobil:</span>
+                                                    {selectedDrivers.map((drv, idx) => {
+                                                        const f = OFFICIAL_FLEET.find(item => item.driver.toUpperCase() === drv.toUpperCase());
+                                                        if (!f) return null;
+                                                        const isCurrentPlate = selectedVehiclePlate.replace(/\s+/g, "") === f.plate.replace(/\s+/g, "");
+                                                        return (
+                                                            <button
+                                                                key={f.driver}
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setSelectedVehiclePlate(f.plate);
+                                                                    setSelectedEtoll(f.etoll);
+                                                                }}
+                                                                className={`px-2 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                                                                    isCurrentPlate
+                                                                        ? "bg-indigo-600 text-white shadow-2xs"
+                                                                        : "bg-slate-100 hover:bg-slate-200 text-slate-700"
+                                                                }`}
+                                                                title={`Gunakan mobil ${f.driver} (${f.plate})`}
+                                                            >
+                                                                <span>{idx === 0 ? "Mobil 1" : "Mobil 2"}: {f.driver}</span>
+                                                                <span className="font-mono text-[10px] opacity-90">({f.plate})</span>
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
+
                                             {/* Sopir Input (Customizable or via list) */}
                                             <div className="flex items-center gap-1.5">
                                                 <label className="text-[11px] font-bold text-slate-600 uppercase">Sopir:</label>
@@ -1281,7 +1501,7 @@ export function ShippingScheduleDashboard({
                                                     value={selectedDriver}
                                                     onChange={(e) => handleDriverSelect(e.target.value)}
                                                     placeholder="Nama Sopir / Ekspedisi"
-                                                    className="bg-white border border-slate-200 focus:border-indigo-600 px-3 py-1.5 rounded-xl text-xs font-black text-slate-900 uppercase outline-none transition-all w-36 sm:w-44 shadow-2xs"
+                                                    className="bg-white border border-slate-200 focus:border-indigo-600 px-3 py-1.5 rounded-xl text-xs font-black text-slate-900 uppercase outline-none transition-all w-44 sm:w-52 shadow-2xs"
                                                 />
                                             </div>
 
