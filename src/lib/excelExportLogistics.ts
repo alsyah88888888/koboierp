@@ -1,4 +1,4 @@
-import ExcelJS from "exceljs";
+import type ExcelJS from "exceljs";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { getFleetByDriverOrPlate } from "@/lib/fleet";
@@ -99,8 +99,12 @@ export async function generateProfessionalLogisticsExcel({
     const totalArmada = activeDrivers.length;
     const totalSuratJalan = uniqueInvoices.size;
 
+    // Dynamic import of exceljs for fast client bundle and SSR compatibility
+    const ExcelModule = await import("exceljs");
+    const ExcelJSConstructor = (ExcelModule.default || ExcelModule) as typeof ExcelJS;
+
     // Create Workbook
-    const wb = new ExcelJS.Workbook();
+    const wb: ExcelJS.Workbook = new ExcelJSConstructor.Workbook();
     wb.creator = "PT. Kola Borasi Indonesia - Enterprise ERP";
     wb.lastModifiedBy = userName;
     wb.created = new Date();

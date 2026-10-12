@@ -15,9 +15,11 @@ echo ""
 
 # Melakukan update ke server via SSH
 ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${SERVER_IP} "
+    rm -f /root/package-lock.json 2>/dev/null || true
     cd ${REMOTE_PATH} && \
     git fetch --all && \
     git reset --hard origin/main && \
+    npm install && \
     npx prisma generate && \
     npx prisma db push && \
     npm run build && \
