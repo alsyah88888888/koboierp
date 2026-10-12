@@ -8,12 +8,13 @@ import {
     Truck, ArrowLeft, RefreshCw, CheckCircle2, AlertCircle,
     Eye, Edit3, ShieldAlert, FileText, CheckSquare, Square, Layers, X, 
     UserCheck, ArrowRight, RotateCcw, ListFilter, ClipboardCheck, History,
-    CreditCard, Check, Package, Store
+    CreditCard, Check, Package, Store, FileSpreadsheet, ChevronDown, Sparkles
 } from "lucide-react";
 import Link from "next/link";
 import { callAction } from "@/proxy";
 import * as XLSX from "xlsx";
 import { OFFICIAL_FLEET, getFleetByDriverOrPlate } from "@/lib/fleet";
+import { generateProfessionalLogisticsExcel } from "@/lib/excelExportLogistics";
 
 interface ScheduleItem {
     id: string; // unique row id
@@ -76,6 +77,8 @@ export function ShippingScheduleDashboard({
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [isSaving, setIsSaving] = useState<boolean>(false);
     const [saveFeedback, setSaveFeedback] = useState<string | null>(null);
+    const [showExportMenu, setShowExportMenu] = useState<boolean>(false);
+    const [isExportingExcel, setIsExportingExcel] = useState<boolean>(false);
 
     // Activity Filter: "ALL" | "DELIVERY" | "PICKUP"
     const [activityFilter, setActivityFilter] = useState<"ALL" | "DELIVERY" | "PICKUP">("ALL");
@@ -1157,7 +1160,61 @@ export function ShippingScheduleDashboard({
         ? format(parsedDate, "dd MMMM yyyy", { locale: localeId }).toUpperCase() 
         : selectedDate;
 
-    // Export Excel of all deliveries
+    // Export Executive Professional Excel (Format Resmi PT. Kola Borasi Indonesia)
+    const handleExportProfessionalExcel = async () => {
+        if (items.length === 0) {
+            alert("Tidak ada data pengiriman untuk diekspor!");
+            return;
+        }
+
+        try {
+            setIsExportingExcel(true);
+            setSaveFeedback("Sedang menyusun Rekap Excel Profesional (Format Resmi PT. Kola Borasi Indonesia)...");
+            await generateProfessionalLogisticsExcel({
+                items,
+                selectedDate,
+                currentUser,
+                filenamePrefix: "REKAP_LOGISTIK_RESMI"
+            });
+            setSaveFeedback("Rekap Excel Profesional berhasil diunduh!");
+            setTimeout(() => setSaveFeedback(null), 5000);
+        } catch (err: any) {
+            console.error("Gagal export excel profesional:", err);
+            alert("Gagal mengunduh Excel: " + (err.message || String(err)));
+        } finally {
+            setIsExportingExcel(false);
+            setShowExportMenu(false);
+        }
+    };
+
+    // Export Specific Driver Manifest Excel
+    const handleExportDriverExcel = async (drvName: string) => {
+        const drvItems = items.filter(i => (i.driver || "").trim().toUpperCase() === drvName.trim().toUpperCase());
+        if (drvItems.length === 0) {
+            alert(`Tidak ada data muatan untuk armada ${drvName}!`);
+            return;
+        }
+
+        try {
+            setIsExportingExcel(true);
+            setSaveFeedback(`Menyiapkan Manifest Excel Armada ${drvName}...`);
+            await generateProfessionalLogisticsExcel({
+                items: drvItems,
+                selectedDate,
+                currentUser,
+                filenamePrefix: `MANIFEST_${drvName.replace(/[^a-zA-Z0-9]/g, "_")}`
+            });
+            setSaveFeedback(`Manifest Excel armada ${drvName} berhasil diunduh!`);
+            setTimeout(() => setSaveFeedback(null), 5000);
+        } catch (err: any) {
+            console.error("Gagal export excel armada:", err);
+            alert("Gagal mengunduh Excel: " + (err.message || String(err)));
+        } finally {
+            setIsExportingExcel(false);
+        }
+    };
+
+    // Export Excel of all deliveries (Format Sederhana / Raw)
     const handleExportExcel = () => {
         if (items.length === 0) {
             alert("Tidak ada data pengiriman untuk diekspor!");
@@ -1373,14 +1430,92 @@ export function ShippingScheduleDashboard({
                             </button>
                         </div>
 
-                        {/* Excel Export */}
-                        <button
-                            onClick={handleExportExcel}
-                            className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer"
-                        >
-                            <Download className="h-4 w-4" />
-                            <span>Excel</span>
-                        </button>
+                        {/* Excel Export Group */}
+                        <div className="relative">
+                            <div className="inline-flex rounded-xl shadow-xs overflow-hidden border border-emerald-700/30">
+                                <button
+                                    onClick={handleExportProfessionalExcel}
+                                    disabled={isExportingExcel}
+                                    className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 text-xs font-black transition-all cursor-pointer disabled:opacity-75"
+                                    title="Download Rekap Excel Profesional (Format Resmi Eksekutif PT. Kola Borasi)"
+                                >
+                                    {isExportingExcel ? (
+                                        <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                                    ) : (
+                                        <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-100" />
+                                    )}
+                                    <span>Excel Profesional</span>
+                                    <span className="bg-emerald-500 text-[9px] px-1 py-0.2 rounded font-black tracking-wider text-white">
+                                        PRO
+                                    </span>
+                                </button>
+                                <button
+                                    onClick={() => setShowExportMenu(!showExportMenu)}
+                                    className="bg-emerald-700 hover:bg-emerald-800 text-white px-1.5 py-1.5 transition-all cursor-pointer flex items-center justify-center border-l border-emerald-600/50"
+                                    title="Pilihan Format Excel"
+                                >
+                                    <ChevronDown className="h-3.5 w-3.5" />
+                                </button>
+                            </div>
+
+                            {/* Dropdown Menu */}
+                            {showExportMenu && (
+                                <>
+                                    <div 
+                                        className="fixed inset-0 z-40" 
+                                        onClick={() => setShowExportMenu(false)} 
+                                    />
+                                    <div className="absolute right-0 mt-1.5 w-76 bg-white rounded-2xl shadow-2xl border border-slate-200 z-50 p-2 animate-in fade-in slide-in-from-top-2">
+                                        <div className="px-3 py-2 border-b border-slate-100 mb-1">
+                                            <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Opsi Download Excel</span>
+                                            <p className="text-[11px] font-bold text-slate-700">Pilih Format Laporan Logistik</p>
+                                        </div>
+
+                                        <button
+                                            onClick={handleExportProfessionalExcel}
+                                            className="w-full text-left p-2.5 rounded-xl hover:bg-emerald-50 transition-all flex items-start gap-2.5 group cursor-pointer"
+                                        >
+                                            <div className="p-2 bg-emerald-100 text-emerald-700 rounded-lg group-hover:bg-emerald-600 group-hover:text-white transition-all mt-0.5">
+                                                <FileSpreadsheet className="h-4 w-4" />
+                                            </div>
+                                            <div>
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className="text-xs font-black text-slate-900 group-hover:text-emerald-700">
+                                                        Rekap Eksekutif Profesional
+                                                    </span>
+                                                    <span className="text-[8.5px] bg-emerald-100 text-emerald-800 font-extrabold px-1 rounded">
+                                                        RESMI
+                                                    </span>
+                                                </div>
+                                                <p className="text-[10px] text-slate-500 mt-0.5 leading-snug">
+                                                    Format PT. Kola Borasi Indonesia, multi-sheet (Manifest & Rekap Armada), KPI metrics, warna, border & kolom pengesahan TTD.
+                                                </p>
+                                            </div>
+                                        </button>
+
+                                        <button
+                                            onClick={() => {
+                                                setShowExportMenu(false);
+                                                handleExportExcel();
+                                            }}
+                                            className="w-full text-left p-2.5 rounded-xl hover:bg-slate-100 transition-all flex items-start gap-2.5 group cursor-pointer mt-1"
+                                        >
+                                            <div className="p-2 bg-slate-100 text-slate-600 rounded-lg group-hover:bg-slate-600 group-hover:text-white transition-all mt-0.5">
+                                                <Download className="h-4 w-4" />
+                                            </div>
+                                            <div>
+                                                <span className="text-xs font-bold text-slate-800 group-hover:text-slate-900">
+                                                    Format Standar Sederhana
+                                                </span>
+                                                <p className="text-[10px] text-slate-500 mt-0.5 leading-snug">
+                                                    Tabel mentah cepat untuk kebutuhan copy-paste rumus manual.
+                                                </p>
+                                            </div>
+                                        </button>
+                                    </div>
+                                </>
+                            )}
+                        </div>
                     </div>
                 </div>
 
@@ -2777,13 +2912,28 @@ export function ShippingScheduleDashboard({
                                 </p>
                             </div>
 
-                            <button
-                                onClick={handleStartNextVehicle}
-                                className="bg-indigo-600 hover:bg-indigo-700 text-white font-black px-4 py-2 rounded-xl text-xs uppercase tracking-wider transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
-                            >
-                                <Plus className="w-4 h-4" />
-                                <span>Muat Kendaraan Baru</span>
-                            </button>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={handleExportProfessionalExcel}
+                                    disabled={isExportingExcel}
+                                    className="bg-emerald-700 hover:bg-emerald-800 text-white font-black px-4 py-2 rounded-xl text-xs uppercase tracking-wider transition-all shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-75"
+                                    title="Download Seluruh Ringkasan Armada dalam format Excel Profesional"
+                                >
+                                    {isExportingExcel ? (
+                                        <RefreshCw className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                        <FileSpreadsheet className="w-4 h-4" />
+                                    )}
+                                    <span>Export Excel Armada</span>
+                                </button>
+                                <button
+                                    onClick={handleStartNextVehicle}
+                                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-black px-4 py-2 rounded-xl text-xs uppercase tracking-wider transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+                                >
+                                    <Plus className="w-4 h-4" />
+                                    <span>Muat Kendaraan Baru</span>
+                                </button>
+                            </div>
                         </div>
 
                         {loadedByDriver.size === 0 ? (
@@ -2880,7 +3030,17 @@ export function ShippingScheduleDashboard({
                                                     <span>{unloadingDriver === drvName ? "Membatalkan..." : "Batalkan Muat"}</span>
                                                 </button>
 
-                                                <div className="flex items-center gap-2">
+                                                <div className="flex items-center gap-1.5">
+                                                    <button
+                                                        onClick={() => handleExportDriverExcel(drvName)}
+                                                        disabled={isExportingExcel}
+                                                        className="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold px-2.5 py-1.5 rounded-xl text-xs uppercase tracking-wider transition-all flex items-center gap-1 cursor-pointer shadow-2xs disabled:opacity-50"
+                                                        title="Download Manifest Excel untuk Armada ini"
+                                                    >
+                                                        <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-700" />
+                                                        <span className="hidden sm:inline">Excel</span>
+                                                    </button>
+
                                                     <button
                                                         onClick={() => handleEditVehicleLoad(drvName)}
                                                         className="bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold px-3 py-1.5 rounded-xl text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
@@ -2933,6 +3093,19 @@ export function ShippingScheduleDashboard({
                                 </p>
                             </div>
                             <div className="flex items-center gap-2">
+                                <button
+                                    onClick={handleExportProfessionalExcel}
+                                    disabled={isExportingExcel}
+                                    className="px-3.5 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-black transition-all shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-75"
+                                    title="Download Seluruh Rekapitulasi dalam format Excel Profesional (.xlsx)"
+                                >
+                                    {isExportingExcel ? (
+                                        <RefreshCw className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                        <FileSpreadsheet className="w-4 h-4" />
+                                    )}
+                                    <span>Download Rekap Excel Profesional (.xlsx)</span>
+                                </button>
                                 <button
                                     onClick={() => window.print()}
                                     className="px-3.5 py-1.5 bg-slate-900 hover:bg-black text-white rounded-xl text-xs font-black transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
