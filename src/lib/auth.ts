@@ -110,6 +110,7 @@ export function getAuthOptions(): AuthOptions {
         ],
         pages: {
             signIn: "/login",
+            error: "/login",
         },
     };
 }
