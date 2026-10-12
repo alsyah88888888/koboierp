@@ -17,7 +17,9 @@ import { OFFICIAL_FLEET, getFleetByDriverOrPlate } from "@/lib/fleet";
 
 interface ScheduleItem {
     id: string; // unique row id
+    mappingId?: string;
     deliveryId?: string; // present if tied to salesDelivery
+    deliveryItemId?: string; // present if tied to salesDeliveryItem
     receiptId?: string; // present if tied to goodsReceipt (Inbound Pickup PO)
     activityType: "DELIVERY" | "PICKUP";
     deliveryNumber?: string;
@@ -29,6 +31,7 @@ interface ScheduleItem {
     quantity: number;
     originalQuantity?: number; // original quantity before splitting
     remainderCancelled?: boolean; // if true, remainder won't be queued
+    isRemainder?: boolean;
     driver: string;
     vehiclePlate?: string;
     etollCard?: string;
@@ -289,7 +292,7 @@ export function ShippingScheduleDashboard({
     };
 
     // Transform deliveries into flat schedule items with REALISTIC invoice numbers
-    const buildItemsFromDeliveries = (delivs: any[]): ScheduleItem[] => {
+    const buildItemsFromDeliveries = (delivs: any[], currentMappings: any[] = []): ScheduleItem[] => {
         const rows: ScheduleItem[] = [];
         delivs.forEach((d, dIdx) => {
             const po = d.poNumber || "-";
@@ -358,23 +361,64 @@ export function ShippingScheduleDashboard({
             } else {
                 delivItems.forEach((it: any, idx: number) => {
                     const qty = Number(it.quantity || 0);
-                    rows.push({
-                        id: `${d.id}-${it.id || idx}`,
-                        deliveryId: d.id,
-                        activityType: "DELIVERY",
-                        deliveryNumber: d.deliveryNumber,
-                        invoiceNumber: inv,
-                        taxType: taxType,
-                        poNumber: po,
-                        buyerName: buyer,
-                        productName: it.productName || it.product?.name || "Item",
-                        quantity: qty,
-                        originalQuantity: qty,
-                        driver: driverName,
-                        vehiclePlate: vehiclePlate,
-                        etollCard: etollCard,
-                        isManual: false
-                    });
+                    const itId = it.id || String(idx);
+
+                    // Check if this item has split mappings stored in ShippingMapping
+                    const splitMaps = currentMappings.filter(m => 
+                        m.notes && m.notes.includes(`SPLIT:${d.id}:${itId}`)
+                    );
+
+                    if (splitMaps.length > 0) {
+                        splitMaps.forEach((sm, sIdx) => {
+                            const origMatch = sm.notes?.match(/ORIG:(\d+)/);
+                            const origQty = origMatch ? parseInt(origMatch[1], 10) : qty;
+                            const isCancelled = Boolean(sm.notes?.includes("CANCELLED"));
+                            const isRem = Boolean(sm.notes?.includes("REMAINDER"));
+                            const smDriver = (sm.driver || "").trim();
+                            const smFleet = smDriver ? getFleetByDriverOrPlate(smDriver) : undefined;
+
+                            rows.push({
+                                id: sm.id || `${d.id}-${itId}-split-${sIdx}`,
+                                mappingId: sm.id,
+                                deliveryId: d.id,
+                                deliveryItemId: itId,
+                                activityType: "DELIVERY",
+                                deliveryNumber: d.deliveryNumber,
+                                invoiceNumber: inv,
+                                taxType: taxType,
+                                poNumber: sm.poNumber || po,
+                                buyerName: sm.buyerName || buyer,
+                                productName: sm.productName || it.productName || it.product?.name || "Item",
+                                quantity: Number(sm.quantity || 0),
+                                originalQuantity: origQty,
+                                driver: smDriver,
+                                vehiclePlate: smFleet?.plate || "",
+                                etollCard: smFleet?.etoll || "",
+                                remainderCancelled: isCancelled,
+                                isRemainder: isRem,
+                                isManual: false
+                            });
+                        });
+                    } else {
+                        rows.push({
+                            id: `${d.id}-${itId}`,
+                            deliveryId: d.id,
+                            deliveryItemId: itId,
+                            activityType: "DELIVERY",
+                            deliveryNumber: d.deliveryNumber,
+                            invoiceNumber: inv,
+                            taxType: taxType,
+                            poNumber: po,
+                            buyerName: buyer,
+                            productName: it.productName || it.product?.name || "Item",
+                            quantity: qty,
+                            originalQuantity: qty,
+                            driver: driverName,
+                            vehiclePlate: vehiclePlate,
+                            etollCard: etollCard,
+                            isManual: false
+                        });
+                    }
                 });
             }
         });
@@ -522,19 +566,22 @@ export function ShippingScheduleDashboard({
         });
     };
 
-    // Initialize items: prioritize real deliveries and real pickups
+    // Initialize items: prioritize real deliveries and real pickups, merging manual pickups cleanly
     useEffect(() => {
+        const currentMaps = initialMappings || [];
         const deliveryRows = deliveries && deliveries.length > 0 
-            ? buildItemsFromDeliveries(deliveries) 
-            : (initialMappings && initialMappings.length > 0 
-                ? buildItemsFromMappings(initialMappings.filter(m => m.category !== "PICKUP"), initialDeliveries || []) 
+            ? buildItemsFromDeliveries(deliveries, currentMaps) 
+            : (currentMaps.length > 0 
+                ? buildItemsFromMappings(currentMaps.filter(m => m.category !== "PICKUP" && !m.notes?.includes("SPLIT:")), initialDeliveries || []) 
                 : []);
         
-        const pickupRows = pickups && pickups.length > 0 
+        const pickupReceiptRows = pickups && pickups.length > 0 
             ? buildItemsFromPickups(pickups) 
-            : (initialMappings && initialMappings.length > 0 
-                ? buildItemsFromMappings(initialMappings.filter(m => m.category === "PICKUP"), []) 
-                : []);
+            : [];
+        const pickupManualRows = currentMaps.length > 0
+            ? buildItemsFromMappings(currentMaps.filter(m => m.category === "PICKUP"), [])
+            : [];
+        const pickupRows = [...pickupReceiptRows, ...pickupManualRows];
 
         setItems([...deliveryRows, ...pickupRows]);
     }, [deliveries, pickups, initialMappings]);
@@ -557,12 +604,14 @@ export function ShippingScheduleDashboard({
             setPickups(picks);
 
             const deliveryRows = delivs.length > 0 
-                ? buildItemsFromDeliveries(delivs) 
-                : buildItemsFromMappings(maps.filter(m => m.category !== "PICKUP"), delivs);
+                ? buildItemsFromDeliveries(delivs, maps) 
+                : buildItemsFromMappings(maps.filter(m => m.category !== "PICKUP" && !m.notes?.includes("SPLIT:")), delivs);
             
-            const pickupRows = picks.length > 0 
+            const pickupReceiptRows = picks.length > 0 
                 ? buildItemsFromPickups(picks) 
-                : buildItemsFromMappings(maps.filter(m => m.category === "PICKUP"), []);
+                : [];
+            const pickupManualRows = buildItemsFromMappings(maps.filter(m => m.category === "PICKUP"), []);
+            const pickupRows = [...pickupReceiptRows, ...pickupManualRows];
 
             setItems([...deliveryRows, ...pickupRows]);
         } catch (err) {
@@ -595,7 +644,7 @@ export function ShippingScheduleDashboard({
     };
 
     // Handler: Cancel remainder units if rejected or cut order
-    const handleCancelRemainder = (itemId: string) => {
+    const handleCancelRemainder = async (itemId: string) => {
         setItems(prev => prev.map(it => {
             if (it.id !== itemId) return it;
             return {
@@ -603,6 +652,29 @@ export function ShippingScheduleDashboard({
                 remainderCancelled: true
             };
         }));
+
+        const target = items.find(i => i.id === itemId);
+        if (target && target.deliveryId) {
+            const orig = target.originalQuantity ?? target.quantity;
+            const remainder = target.quantity;
+            await callAction("saveSplitScheduleMapping", {
+                dateStr: selectedDate,
+                splits: [{
+                    mappingId: target.mappingId,
+                    deliveryId: target.deliveryId,
+                    deliveryItemId: target.deliveryItemId || target.id,
+                    category: target.taxType,
+                    poNumber: target.poNumber,
+                    buyerName: target.buyerName,
+                    productName: target.productName,
+                    quantity: remainder,
+                    originalQuantity: orig,
+                    driver: "",
+                    isRemainder: true,
+                    remainderCancelled: true
+                }]
+            }).catch(console.error);
+        }
     };
 
     const allDriverOptions = useMemo(() => {
@@ -690,21 +762,11 @@ export function ShippingScheduleDashboard({
         }
     };
 
-    const handleToggleSelectItem = (id: string, deliveryId?: string) => {
+    const handleToggleSelectItem = (id: string) => {
         setSelectedItemIds(prev => {
             const next = new Set(prev);
-            if (deliveryId) {
-                const siblingItems = selectableItems.filter(i => i.deliveryId === deliveryId);
-                const isSelected = siblingItems.some(i => next.has(i.id));
-                if (isSelected) {
-                    siblingItems.forEach(i => next.delete(i.id));
-                } else {
-                    siblingItems.forEach(i => next.add(i.id));
-                }
-            } else {
-                if (next.has(id)) next.delete(id);
-                else next.add(id);
-            }
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
             return next;
         });
     };
@@ -715,7 +777,7 @@ export function ShippingScheduleDashboard({
     }, [items, selectedItemIds]);
 
     const selectedTotalQty = selectedItemsForVerification.reduce((acc, i) => acc + (Number(i.quantity) || 0), 0);
-    const selectedUniqueDeliveries = new Set(selectedItemsForVerification.map(i => i.deliveryId || i.id)).size;
+    const selectedUniqueDeliveries = new Set(selectedItemsForVerification.map(i => i.deliveryId || i.receiptId || i.id)).size;
 
     // Proceed to Step 2 Verification
     const handleProceedToVerification = () => {
@@ -778,32 +840,91 @@ export function ShippingScheduleDashboard({
             const prevDriverName = (editingDriver || selectedDriver).trim().toUpperCase();
             const previouslyLoadedItems = items.filter(i => (i.driver || "").trim().toUpperCase() === prevDriverName);
             const unselectedItems = previouslyLoadedItems.filter(i => !selectedItemIds.has(i.id));
-            const removedDelivIds = Array.from(new Set(unselectedItems.map(i => i.deliveryId).filter(Boolean))) as string[];
-            const removedReceiptIds = Array.from(new Set(unselectedItems.map(i => i.receiptId).filter(Boolean))) as string[];
+            const removedDelivIds = Array.from(new Set(
+                unselectedItems
+                    .map(i => i.deliveryId)
+                    .filter((dId): dId is string => typeof dId === "string" && dId.length > 0 && !newlySelectedDelivIds.includes(dId))
+            ));
+            const removedReceiptIds = Array.from(new Set(
+                unselectedItems
+                    .map(i => i.receiptId)
+                    .filter((rId): rId is string => typeof rId === "string" && rId.length > 0 && !newlySelectedReceiptIds.includes(rId))
+            ));
 
             // Option A: For items where QTY was reduced, create remainder items in unassigned queue
             const splitRemainderItems: ScheduleItem[] = [];
+            const splitsToPersist: any[] = [];
+
             selectedItemsForVerification.forEach(it => {
                 const orig = it.originalQuantity ?? it.quantity;
-                if (it.quantity < orig && !it.remainderCancelled) {
+                if (it.quantity < orig) {
                     const remainder = orig - it.quantity;
-                    splitRemainderItems.push({
-                        ...it,
-                        id: `${it.id}-rem-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-                        quantity: remainder,
-                        originalQuantity: remainder,
-                        driver: "",
-                        vehiclePlate: "",
-                        etollCard: "",
-                        remainderCancelled: false,
+                    const remainderId = `${it.id}-rem-${Date.now()}`;
+
+                    if (!it.remainderCancelled) {
+                        splitRemainderItems.push({
+                            ...it,
+                            id: remainderId,
+                            quantity: remainder,
+                            originalQuantity: remainder,
+                            driver: "",
+                            vehiclePlate: "",
+                            etollCard: "",
+                            remainderCancelled: false,
+                            isRemainder: true
+                        });
+                    }
+
+                    if (it.deliveryId) {
+                        splitsToPersist.push({
+                            mappingId: it.mappingId,
+                            deliveryId: it.deliveryId,
+                            deliveryItemId: it.deliveryItemId || it.id,
+                            category: it.taxType,
+                            poNumber: it.poNumber,
+                            buyerName: it.buyerName,
+                            productName: it.productName,
+                            quantity: it.quantity,
+                            originalQuantity: orig,
+                            driver: vehicleToStore,
+                            isRemainder: false
+                        });
+                        splitsToPersist.push({
+                            deliveryId: it.deliveryId,
+                            deliveryItemId: it.deliveryItemId || it.id,
+                            category: it.taxType,
+                            poNumber: it.poNumber,
+                            buyerName: it.buyerName,
+                            productName: it.productName,
+                            quantity: remainder,
+                            originalQuantity: orig,
+                            driver: "",
+                            isRemainder: true,
+                            remainderCancelled: it.remainderCancelled
+                        });
+                    }
+                } else if (it.isRemainder && it.deliveryId) {
+                    splitsToPersist.push({
+                        mappingId: it.mappingId,
+                        deliveryId: it.deliveryId,
+                        deliveryItemId: it.deliveryItemId || it.id,
+                        category: it.taxType,
+                        poNumber: it.poNumber,
+                        buyerName: it.buyerName,
+                        productName: it.productName,
+                        quantity: it.quantity,
+                        originalQuantity: it.originalQuantity || it.quantity,
+                        driver: vehicleToStore,
+                        isRemainder: true,
+                        remainderCancelled: false
                     });
                 }
             });
 
-            // Update items locally
+            // Update items locally - ONLY items with ID in selectedItemIds get assigned!
             setItems(prev => {
                 const updated = prev.map(item => {
-                    if (selectedItemIds.has(item.id) || (item.deliveryId && newlySelectedDelivIds.includes(item.deliveryId)) || (item.receiptId && newlySelectedReceiptIds.includes(item.receiptId))) {
+                    if (selectedItemIds.has(item.id)) {
                         return { 
                             ...item, 
                             driver: upperDriver,
@@ -856,39 +977,19 @@ export function ShippingScheduleDashboard({
                 updatePromises.push(callAction("updateReceiptDriver", rId, "").catch(console.error));
             });
 
-            // If manual items exist, persist them via saveShippingMappingBatch
-            const manualSelected = selectedItemsForVerification.filter(i => i.isManual);
-            if (manualSelected.length > 0) {
-                const deliveryManuals = manualSelected.filter(i => i.activityType !== "PICKUP");
-                const pickupManuals = manualSelected.filter(i => i.activityType === "PICKUP");
-
-                if (deliveryManuals.length > 0) {
-                    updatePromises.push(callAction("saveShippingMappingBatch", {
-                        dateStr: selectedDate,
-                        category: "KB-TRD",
-                        rows: deliveryManuals.map(i => ({
-                            poNumber: i.poNumber,
-                            buyerName: i.buyerName,
-                            productName: i.productName,
-                            quantity: i.quantity,
-                            driver: vehicleToStore
-                        }))
-                    }).catch(console.error));
-                }
-                if (pickupManuals.length > 0) {
-                    updatePromises.push(callAction("saveShippingMappingBatch", {
-                        dateStr: selectedDate,
-                        category: "PICKUP",
-                        rows: pickupManuals.map(i => ({
-                            poNumber: i.poNumber,
-                            buyerName: i.buyerName,
-                            productName: i.productName,
-                            quantity: i.quantity,
-                            driver: vehicleToStore
-                        }))
-                    }).catch(console.error));
-                }
+            // Persist split allocations if any
+            if (splitsToPersist.length > 0) {
+                updatePromises.push(callAction("saveSplitScheduleMapping", {
+                    dateStr: selectedDate,
+                    splits: splitsToPersist
+                }).catch(console.error));
             }
+
+            // Persist driver on manual items if any
+            const manualSelected = selectedItemsForVerification.filter(i => i.isManual);
+            manualSelected.forEach(m => {
+                updatePromises.push(callAction("updateShippingMappingDriver", m.id, vehicleToStore).catch(console.error));
+            });
 
             await Promise.all(updatePromises);
 
@@ -920,55 +1021,74 @@ export function ShippingScheduleDashboard({
             return;
         }
 
-        const dateCode = format(new Date(selectedDate), "ddMMyyyy");
-        const newItemId = `pu-man-${Date.now()}`;
-        const newPo = newPickupPo.trim() || `PO-INB-${dateCode}`;
-        const newInv = `LPB-${dateCode}-${String(items.length + 1).padStart(3, "0")}`;
-
-        const newItem: ScheduleItem = {
-            id: newItemId,
-            activityType: "PICKUP",
-            deliveryNumber: newInv,
-            invoiceNumber: newInv,
-            taxType: "KB-TRD",
-            poNumber: newPo,
-            buyerName: newPickupVendor.trim().toUpperCase(),
-            productName: newPickupProduct.trim().toUpperCase(),
-            quantity: newPickupQty,
-            originalQuantity: newPickupQty,
-            driver: selectedDriver ? selectedDriver.trim().toUpperCase() : "",
-            vehiclePlate: selectedVehiclePlate || "",
-            etollCard: selectedEtoll || "",
-            isManual: true
-        };
-
-        setItems(prev => [newItem, ...prev]);
-
-        // Persist to database via saveShippingMappingBatch
+        setIsSaving(true);
         try {
-            await callAction("saveShippingMappingBatch", {
+            const created = await callAction("createManualPickupSchedule", {
                 dateStr: selectedDate,
-                category: "PICKUP",
-                rows: [{
-                    poNumber: newItem.poNumber,
-                    buyerName: newItem.buyerName,
-                    productName: newItem.productName,
-                    quantity: newItem.quantity,
-                    driver: newItem.driver
-                }]
+                poNumber: newPickupPo.trim(),
+                vendorName: newPickupVendor.trim(),
+                productName: newPickupProduct.trim(),
+                quantity: newPickupQty,
+                driver: selectedDriver ? selectedDriver.trim().toUpperCase() : ""
             });
-            setSaveFeedback(`Jadwal pengambilan di ${newItem.buyerName} berhasil ditambahkan!`);
-            setTimeout(() => setSaveFeedback(null), 5000);
-        } catch (err) {
-            console.error("Gagal menyimpan jadwal pickup:", err);
-        }
 
-        // Reset form
-        setNewPickupVendor("");
-        setNewPickupPo("");
-        setNewPickupProduct("");
-        setNewPickupQty(100);
-        setShowAddPickupModal(false);
+            const dateCode = format(new Date(selectedDate), "ddMMyyyy");
+            const newInv = `LPB-${dateCode}-${String(items.length + 1).padStart(3, "0")}`;
+
+            const newItem: ScheduleItem = {
+                id: created.id,
+                mappingId: created.id,
+                activityType: "PICKUP",
+                deliveryNumber: newInv,
+                invoiceNumber: newInv,
+                taxType: "KB-TRD",
+                poNumber: created.poNumber || newPickupPo.trim() || `PO-INB-${dateCode}`,
+                buyerName: created.buyerName,
+                productName: created.productName,
+                quantity: created.quantity,
+                originalQuantity: created.quantity,
+                driver: created.driver || (selectedDriver ? selectedDriver.trim().toUpperCase() : ""),
+                vehiclePlate: selectedVehiclePlate || "",
+                etollCard: selectedEtoll || "",
+                isManual: true
+            };
+
+            setItems(prev => [newItem, ...prev]);
+            setShowAddPickupModal(false);
+            setNewPickupVendor("");
+            setNewPickupPo("");
+            setNewPickupProduct("");
+            setNewPickupQty(100);
+            setSaveFeedback(`Jadwal pengambilan di ${newItem.buyerName} berhasil disimpan ke database!`);
+            setTimeout(() => setSaveFeedback(null), 5000);
+        } catch (err: any) {
+            console.error("Gagal menyimpan jadwal pickup:", err);
+            alert("Gagal menyimpan jadwal pengambilan: " + (err.message || String(err)));
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    // Handler: Delete manual pickup schedule item
+    const handleDeleteManualItem = async (e: React.MouseEvent, item: ScheduleItem) => {
+        e.stopPropagation();
+        const confirmDelete = window.confirm(`Hapus jadwal pengambilan di ${item.buyerName} (${item.productName})?`);
+        if (!confirmDelete) return;
+
+        setItems(prev => prev.filter(i => i.id !== item.id));
+        setSelectedItemIds(prev => {
+            const next = new Set(prev);
+            next.delete(item.id);
+            return next;
+        });
+
+        try {
+            await callAction("deleteShippingMapping", item.id);
+            setSaveFeedback(`Jadwal di ${item.buyerName} berhasil dihapus.`);
+            setTimeout(() => setSaveFeedback(null), 4000);
+        } catch (err) {
+            console.error("Gagal menghapus jadwal:", err);
+        }
     };
 
     // Return items from a loaded vehicle back to unassigned queue (Fixed bug & cleans both SalesDelivery and ShippingMapping)
@@ -2000,7 +2120,7 @@ export function ShippingScheduleDashboard({
                                                         return (
                                                             <tr 
                                                                 key={item.id} 
-                                                                onClick={() => handleToggleSelectItem(item.id, item.deliveryId)}
+                                                                onClick={() => handleToggleSelectItem(item.id)}
                                                                 className={`cursor-pointer transition-colors ${
                                                                     isSelected ? "bg-indigo-50/80 font-semibold" : "hover:bg-slate-50/80"
                                                                 }`}
@@ -2009,7 +2129,7 @@ export function ShippingScheduleDashboard({
                                                                     <input
                                                                         type="checkbox"
                                                                         checked={isSelected}
-                                                                        onChange={() => handleToggleSelectItem(item.id, item.deliveryId)}
+                                                                        onChange={() => handleToggleSelectItem(item.id)}
                                                                         className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
                                                                     />
                                                                 </td>
@@ -2044,6 +2164,16 @@ export function ShippingScheduleDashboard({
                                                                                 Pabrik/Vendor
                                                                             </span>
                                                                         )}
+                                                                        {item.isManual && (
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={(e) => handleDeleteManualItem(e, item)}
+                                                                                className="p-1 text-slate-400 hover:text-rose-600 rounded-md hover:bg-rose-50 transition-colors cursor-pointer"
+                                                                                title="Hapus jadwal pengambilan manual ini"
+                                                                            >
+                                                                                <Trash2 className="w-3.5 h-3.5" />
+                                                                            </button>
+                                                                        )}
                                                                     </div>
                                                                 </td>
                                                                 <td className="py-2.5 px-4 font-medium text-slate-800 uppercase">
@@ -2056,9 +2186,9 @@ export function ShippingScheduleDashboard({
                                                                                 type="number"
                                                                                 min="1"
                                                                                 max={item.originalQuantity || 999999}
-                                                                                value={item.quantity}
+                                                                                value={item.quantity || ""}
                                                                                 onChange={(e) => {
-                                                                                    const val = parseInt(e.target.value, 10);
+                                                                                    const val = e.target.value === "" ? 0 : parseInt(e.target.value, 10);
                                                                                     if (!isNaN(val)) {
                                                                                         handleUpdateItemQuantity(item.id, val);
                                                                                     }
@@ -2502,16 +2632,17 @@ export function ShippingScheduleDashboard({
                                                     </thead>
                                                     <tbody>
                                                         {(() => {
-                                                            let lastDelivId: string | null = null;
+                                                            let lastDocId: string | null = null;
                                                             let deliveryIndex = 0;
 
                                                             return selectedItemsForVerification.map((item, idx) => {
-                                                                const isFirstOfDeliv = item.isManual || item.deliveryId !== lastDelivId;
+                                                                const docId = item.deliveryId || item.receiptId || item.id;
+                                                                const isFirstOfDeliv = item.isManual || docId !== lastDocId;
                                                                 if (isFirstOfDeliv) {
                                                                     deliveryIndex++;
                                                                 }
-                                                                if (!item.isManual && item.deliveryId) {
-                                                                    lastDelivId = item.deliveryId;
+                                                                if (!item.isManual) {
+                                                                    lastDocId = docId;
                                                                 }
 
                                                                 const realInvoice = getRealisticInvoiceNumber(item, idx);

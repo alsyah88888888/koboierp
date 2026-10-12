@@ -291,7 +291,8 @@ export async function getDailyPickupScheduleAction(dateStr: string) {
         const d1 = r.date ? new Date(r.date).toISOString().slice(0, 10) : "";
         const d2 = new Date(r.createdAt).toISOString().slice(0, 10);
         const dLocal = r.date ? new Date(new Date(r.date).getTime() + 7 * 3600 * 1000).toISOString().slice(0, 10) : "";
-        return d1 === dateStr || d2 === dateStr || dLocal === dateStr;
+        const d2Local = new Date(new Date(r.createdAt).getTime() + 7 * 3600 * 1000).toISOString().slice(0, 10);
+        return d1 === dateStr || d2 === dateStr || dLocal === dateStr || d2Local === dateStr;
     });
 
     return receipts.map((r: any) => {
@@ -328,10 +329,12 @@ export async function updateReceiptDriverAction(receiptId: string, driver: strin
     if (!existing) return { error: "Receipt not found" };
 
     let currentNotes = existing.notes || "";
-    if (currentNotes.match(/DRIVER:\s*[^\n;]+/i)) {
-        currentNotes = currentNotes.replace(/DRIVER:\s*[^\n;]+/i, driver ? `DRIVER: ${driver}` : "").trim();
-    } else if (driver) {
-        currentNotes = currentNotes ? `${currentNotes}; DRIVER: ${driver}` : `DRIVER: ${driver}`;
+    // Clean old driver notes cleanly
+    currentNotes = currentNotes.replace(/DRIVER:\s*([^\n;]+)/gi, "").trim();
+    currentNotes = currentNotes.replace(/;\s*;/g, ";").replace(/^;\s*|\s*;$/g, "").trim();
+
+    if (driver) {
+        currentNotes = currentNotes ? `${currentNotes}; DRIVER: ${driver.trim()}` : `DRIVER: ${driver.trim()}`;
     }
 
     const updated = await prisma.goodsReceipt.update({
@@ -404,7 +407,8 @@ export async function unloadDriverDeliveriesAction(dateStr: string, driverName: 
         });
         for (const r of receipts) {
             let currentNotes = r.notes || "";
-            currentNotes = currentNotes.replace(/DRIVER:\s*[^\n;]+/i, "").trim();
+            currentNotes = currentNotes.replace(/DRIVER:\s*([^\n;]+)/gi, "").trim();
+            currentNotes = currentNotes.replace(/;\s*;/g, ";").replace(/^;\s*|\s*;$/g, "").trim();
             await prisma.goodsReceipt.update({
                 where: { id: r.id },
                 data: { notes: currentNotes }
@@ -418,6 +422,150 @@ export async function unloadDriverDeliveriesAction(dateStr: string, driverName: 
     revalidatePath("/warehouse/jadwal-pengiriman");
     revalidatePath("/delivery");
     revalidatePath("/purchase");
+    return { success: true };
+}
+
+export async function createManualPickupScheduleAction(data: {
+    dateStr: string;
+    poNumber?: string;
+    vendorName: string;
+    productName: string;
+    quantity: number;
+    driver?: string;
+}) {
+    const { getPrisma } = require("@/lib/prisma");
+    const prisma = getPrisma();
+    const { getServerSession } = require("next-auth");
+    const { getAuthOptions } = require("@/lib/auth");
+
+    const session = (await getServerSession(getAuthOptions())) as any;
+    const userId = session?.user?.id || null;
+
+    const startUtc = new Date(data.dateStr + "T00:00:00.000Z");
+
+    const created = await prisma.shippingMapping.create({
+        data: {
+            date: startUtc,
+            category: "PICKUP",
+            poNumber: data.poNumber?.trim() || null,
+            buyerName: data.vendorName.trim().toUpperCase(),
+            productName: data.productName.trim().toUpperCase(),
+            quantity: Number(data.quantity || 0),
+            driver: data.driver ? data.driver.trim().toUpperCase() : null,
+            createdById: userId
+        }
+    });
+
+    revalidatePath("/warehouse/jadwal-pengiriman");
+    return {
+        id: created.id,
+        date: created.date,
+        category: created.category,
+        taxType: "KB-TRD" as const,
+        poNumber: created.poNumber || "",
+        buyerName: created.buyerName,
+        productName: created.productName,
+        quantity: created.quantity,
+        driver: created.driver || "",
+        notes: created.notes || ""
+    };
+}
+
+export async function deleteShippingMappingAction(id: string) {
+    const { getPrisma } = require("@/lib/prisma");
+    const prisma = getPrisma();
+    await prisma.shippingMapping.delete({ where: { id } }).catch(() => null);
+    revalidatePath("/warehouse/jadwal-pengiriman");
+    return { success: true };
+}
+
+export async function updateShippingMappingDriverAction(id: string, driver: string) {
+    const { getPrisma } = require("@/lib/prisma");
+    const prisma = getPrisma();
+    await prisma.shippingMapping.update({
+        where: { id },
+        data: { driver: driver ? driver.trim().toUpperCase() : null }
+    }).catch(console.error);
+    revalidatePath("/warehouse/jadwal-pengiriman");
+    return { success: true };
+}
+
+export async function saveSplitScheduleMappingAction(data: {
+    dateStr: string;
+    splits: Array<{
+        mappingId?: string;
+        deliveryId: string;
+        deliveryItemId: string;
+        category: "KB-TRN" | "KB-TRD" | "PICKUP";
+        poNumber?: string;
+        buyerName: string;
+        productName: string;
+        quantity: number;
+        originalQuantity: number;
+        driver?: string;
+        isRemainder?: boolean;
+        remainderCancelled?: boolean;
+    }>;
+}) {
+    const { getPrisma } = require("@/lib/prisma");
+    const prisma = getPrisma();
+    const { getServerSession } = require("next-auth");
+    const { getAuthOptions } = require("@/lib/auth");
+
+    const session = (await getServerSession(getAuthOptions())) as any;
+    const userId = session?.user?.id || null;
+    const startUtc = new Date(data.dateStr + "T00:00:00.000Z");
+
+    for (const item of data.splits) {
+        const refTag = `SPLIT:${item.deliveryId}:${item.deliveryItemId}`;
+        const statusNote = item.remainderCancelled ? "CANCELLED" : (item.isRemainder ? "REMAINDER" : "PART");
+        const notes = `${refTag};${statusNote};ORIG:${item.originalQuantity}`;
+
+        if (item.mappingId) {
+            await prisma.shippingMapping.update({
+                where: { id: item.mappingId },
+                data: {
+                    quantity: item.quantity,
+                    driver: item.driver ? item.driver.trim().toUpperCase() : null,
+                    notes: notes
+                }
+            }).catch(console.error);
+        } else {
+            const existing = await prisma.shippingMapping.findFirst({
+                where: {
+                    date: startUtc,
+                    notes: { contains: `${refTag};${statusNote}` }
+                }
+            });
+
+            if (existing) {
+                await prisma.shippingMapping.update({
+                    where: { id: existing.id },
+                    data: {
+                        quantity: item.quantity,
+                        driver: item.driver ? item.driver.trim().toUpperCase() : null,
+                        notes: notes
+                    }
+                });
+            } else {
+                await prisma.shippingMapping.create({
+                    data: {
+                        date: startUtc,
+                        category: item.category,
+                        poNumber: item.poNumber?.trim() || null,
+                        buyerName: item.buyerName.trim().toUpperCase(),
+                        productName: item.productName.trim().toUpperCase(),
+                        quantity: item.quantity,
+                        driver: item.driver ? item.driver.trim().toUpperCase() : null,
+                        notes: notes,
+                        createdById: userId
+                    }
+                });
+            }
+        }
+    }
+
+    revalidatePath("/warehouse/jadwal-pengiriman");
     return { success: true };
 }
 
