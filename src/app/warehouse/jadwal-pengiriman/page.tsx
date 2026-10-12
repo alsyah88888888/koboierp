@@ -2,7 +2,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth/next";
 import { getAuthOptions } from "@/lib/auth";
-import { getDailyShippingScheduleAction, getShippingMappingsAction } from "@/actions/warehouse";
+import { getDailyShippingScheduleAction, getDailyPickupScheduleAction, getShippingMappingsAction } from "@/actions/warehouse";
 import { format } from "date-fns";
 import { serializeDecimal } from "@/lib/utils";
 import ShippingScheduleDashboard from "@/app/warehouse/jadwal-pengiriman/ShippingScheduleDashboard";
@@ -27,9 +27,11 @@ export default async function JadwalPengirimanPage({ searchParams }: { searchPar
     const { getPrisma } = require("@/lib/prisma");
     const prisma = getPrisma();
 
-    const [initialDeliveries, customers, products, initialMappings] = await Promise.all([
+    const [initialDeliveries, initialPickups, customers, vendors, products, initialMappings] = await Promise.all([
         getDailyShippingScheduleAction(selectedDateStr).catch(() => []),
+        getDailyPickupScheduleAction(selectedDateStr).catch(() => []),
         prisma.customer.findMany({ select: { name: true }, orderBy: { name: 'asc' } }).catch(() => []),
+        prisma.vendor.findMany({ select: { name: true }, orderBy: { name: 'asc' } }).catch(() => []),
         prisma.product.findMany({ select: { name: true, sku: true }, orderBy: { name: 'asc' } }).catch(() => []),
         getShippingMappingsAction(selectedDateStr, "ALL").catch(() => [])
     ]);
@@ -38,8 +40,10 @@ export default async function JadwalPengirimanPage({ searchParams }: { searchPar
         <ShippingScheduleDashboard
             initialDate={selectedDateStr}
             initialDeliveries={serializeDecimal(initialDeliveries)}
+            initialPickups={serializeDecimal(initialPickups)}
             initialMappings={serializeDecimal(initialMappings)}
             customerList={customers.map((c: any) => c.name)}
+            vendorList={vendors.map((v: any) => v.name)}
             productList={products.map((p: any) => p.name)}
             currentUser={session.user}
         />

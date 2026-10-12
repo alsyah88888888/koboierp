@@ -257,6 +257,93 @@ export async function updateDeliveryDriverAction(deliveryId: string, driver: str
     return { success: true, vehicleNumber: updated.vehicleNumber };
 }
 
+export async function getDailyPickupScheduleAction(dateStr: string) {
+    const { getPrisma } = require("@/lib/prisma");
+    const prisma = getPrisma();
+
+    const startUtc = new Date(dateStr + "T00:00:00.000Z");
+    const endUtc = new Date(dateStr + "T23:59:59.999Z");
+    const minDate = new Date(startUtc.getTime() - 8 * 3600 * 1000);
+    const maxDate = new Date(endUtc.getTime() + 8 * 3600 * 1000);
+
+    const rawReceipts = await prisma.goodsReceipt.findMany({
+        where: {
+            isVoid: false,
+            OR: [
+                { date: { gte: minDate, lte: maxDate } },
+                { createdAt: { gte: minDate, lte: maxDate } }
+            ]
+        },
+        include: {
+            warehouse: { select: { name: true } },
+            items: {
+                include: { product: true },
+                orderBy: { id: "asc" }
+            }
+        },
+        orderBy: [
+            { receivedFrom: "asc" },
+            { createdAt: "asc" }
+        ]
+    });
+
+    const receipts = rawReceipts.filter((r: any) => {
+        const d1 = r.date ? new Date(r.date).toISOString().slice(0, 10) : "";
+        const d2 = new Date(r.createdAt).toISOString().slice(0, 10);
+        const dLocal = r.date ? new Date(new Date(r.date).getTime() + 7 * 3600 * 1000).toISOString().slice(0, 10) : "";
+        return d1 === dateStr || d2 === dateStr || dLocal === dateStr;
+    });
+
+    return receipts.map((r: any) => {
+        const notes = r.notes || "";
+        const driverMatch = notes.match(/DRIVER:\s*([^\n;]+)/i);
+        const driver = driverMatch ? driverMatch[1].trim() : "";
+
+        return {
+            id: r.id,
+            receiptNumber: r.receiptNumber,
+            formNumber: r.formNumber || "-",
+            poNumber: r.formNumber || "-",
+            vendorName: r.receivedFrom || "-",
+            buyerName: r.receivedFrom || "-",
+            warehouseName: r.warehouse?.name || "",
+            driver: driver,
+            date: r.date || r.createdAt,
+            items: r.items.map((it: any) => ({
+                id: it.id,
+                productId: it.productId,
+                productName: it.product?.name || "Item",
+                quantity: Number(it.quantity || 0),
+                uom: it.uom || it.product?.uom || "KARTON"
+            }))
+        };
+    });
+}
+
+export async function updateReceiptDriverAction(receiptId: string, driver: string) {
+    const { getPrisma } = require("@/lib/prisma");
+    const prisma = getPrisma();
+
+    const existing = await prisma.goodsReceipt.findUnique({ where: { id: receiptId } });
+    if (!existing) return { error: "Receipt not found" };
+
+    let currentNotes = existing.notes || "";
+    if (currentNotes.match(/DRIVER:\s*[^\n;]+/i)) {
+        currentNotes = currentNotes.replace(/DRIVER:\s*[^\n;]+/i, driver ? `DRIVER: ${driver}` : "").trim();
+    } else if (driver) {
+        currentNotes = currentNotes ? `${currentNotes}; DRIVER: ${driver}` : `DRIVER: ${driver}`;
+    }
+
+    const updated = await prisma.goodsReceipt.update({
+        where: { id: receiptId },
+        data: { notes: currentNotes }
+    });
+
+    revalidatePath("/warehouse/jadwal-pengiriman");
+    revalidatePath("/purchase");
+    return { success: true, notes: updated.notes };
+}
+
 export async function unloadDriverDeliveriesAction(dateStr: string, driverName: string) {
     const { getPrisma } = require("@/lib/prisma");
     const prisma = getPrisma();
@@ -303,15 +390,40 @@ export async function unloadDriverDeliveriesAction(dateStr: string, driverName: 
         data: { driver: null }
     });
 
+    // 3. Clear driver in GoodsReceipt notes around this date
+    try {
+        const receipts = await prisma.goodsReceipt.findMany({
+            where: {
+                isVoid: false,
+                OR: [
+                    { date: { gte: startUtc, lte: endUtc } },
+                    { createdAt: { gte: startUtc, lte: endUtc } }
+                ],
+                notes: { contains: cleanDriver, mode: 'insensitive' }
+            }
+        });
+        for (const r of receipts) {
+            let currentNotes = r.notes || "";
+            currentNotes = currentNotes.replace(/DRIVER:\s*[^\n;]+/i, "").trim();
+            await prisma.goodsReceipt.update({
+                where: { id: r.id },
+                data: { notes: currentNotes }
+            });
+        }
+    } catch (err) {
+        console.error("Error clearing GoodsReceipt driver notes:", err);
+    }
+
     revalidatePath("/warehouse");
     revalidatePath("/warehouse/jadwal-pengiriman");
     revalidatePath("/delivery");
+    revalidatePath("/purchase");
     return { success: true };
 }
 
 export async function saveShippingMappingBatchAction(data: {
     dateStr: string;
-    category: "KB-TRN" | "KB-TRD";
+    category: "KB-TRN" | "KB-TRD" | "PICKUP";
     rows: Array<{
         poNumber?: string;
         buyerName: string;

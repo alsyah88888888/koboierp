@@ -302,9 +302,15 @@ export async function callAction(actionName: string, ...args: any[]) {
         case "getDailyShippingSchedule":
             const { getDailyShippingScheduleAction } = await import("@/actions/warehouse");
             return await getDailyShippingScheduleAction(...args as [string]);
+        case "getDailyPickupSchedule":
+            const { getDailyPickupScheduleAction } = await import("@/actions/warehouse");
+            return await getDailyPickupScheduleAction(...args as [string]);
         case "updateDeliveryDriver":
             const { updateDeliveryDriverAction } = await import("@/actions/warehouse");
             return await updateDeliveryDriverAction(...args as [string, string]);
+        case "updateReceiptDriver":
+            const { updateReceiptDriverAction } = await import("@/actions/warehouse");
+            return await updateReceiptDriverAction(...args as [string, string]);
         case "unloadDriverDeliveries":
             const { unloadDriverDeliveriesAction } = await import("@/actions/warehouse");
             return await unloadDriverDeliveriesAction(...args as [string, string]);

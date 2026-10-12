@@ -18,13 +18,17 @@ import { OFFICIAL_FLEET, getFleetByDriverOrPlate } from "@/lib/fleet";
 interface ScheduleItem {
     id: string; // unique row id
     deliveryId?: string; // present if tied to salesDelivery
+    receiptId?: string; // present if tied to goodsReceipt (Inbound Pickup PO)
+    activityType: "DELIVERY" | "PICKUP";
     deliveryNumber?: string;
     invoiceNumber?: string;
     taxType: "KB-TRN" | "KB-TRD";
     poNumber: string;
-    buyerName: string;
+    buyerName: string; // Customer name OR Vendor name
     productName: string;
     quantity: number;
+    originalQuantity?: number; // original quantity before splitting
+    remainderCancelled?: boolean; // if true, remainder won't be queued
     driver: string;
     vehiclePlate?: string;
     etollCard?: string;
@@ -34,8 +38,10 @@ interface ScheduleItem {
 interface ShippingScheduleDashboardProps {
     initialDate: string;
     initialDeliveries: any[];
+    initialPickups?: any[];
     initialMappings?: any[];
     customerList?: string[];
+    vendorList?: string[];
     productList?: string[];
     currentUser: any;
 }
@@ -53,17 +59,30 @@ const COMMON_DRIVERS = [
 export function ShippingScheduleDashboard({
     initialDate,
     initialDeliveries,
+    initialPickups = [],
     initialMappings = [],
     customerList = [],
+    vendorList = [],
     productList = [],
     currentUser
 }: ShippingScheduleDashboardProps) {
     const [selectedDate, setSelectedDate] = useState<string>(initialDate);
     const [deliveries, setDeliveries] = useState<any[]>(initialDeliveries);
+    const [pickups, setPickups] = useState<any[]>(initialPickups);
     const [items, setItems] = useState<ScheduleItem[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [isSaving, setIsSaving] = useState<boolean>(false);
     const [saveFeedback, setSaveFeedback] = useState<string | null>(null);
+
+    // Activity Filter: "ALL" | "DELIVERY" | "PICKUP"
+    const [activityFilter, setActivityFilter] = useState<"ALL" | "DELIVERY" | "PICKUP">("ALL");
+
+    // Modal state for manually scheduling supplier pickup (PO Pembelian)
+    const [showAddPickupModal, setShowAddPickupModal] = useState<boolean>(false);
+    const [newPickupVendor, setNewPickupVendor] = useState<string>("");
+    const [newPickupPo, setNewPickupPo] = useState<string>("");
+    const [newPickupProduct, setNewPickupProduct] = useState<string>("");
+    const [newPickupQty, setNewPickupQty] = useState<number>(100);
 
     // Main View Navigation: "WIZARD" (Proses Muat Baru), "FLEET_HISTORY" (Armada Selesai Dimuat), "FULL_RECAP" (Rekap Gabungan Harian)
     const [mainView, setMainView] = useState<"WIZARD" | "FLEET_HISTORY" | "FULL_RECAP">("WIZARD");
@@ -322,6 +341,7 @@ export function ShippingScheduleDashboard({
                 rows.push({
                     id: `${d.id}-empty`,
                     deliveryId: d.id,
+                    activityType: "DELIVERY",
                     deliveryNumber: d.deliveryNumber,
                     invoiceNumber: inv,
                     taxType: taxType,
@@ -329,6 +349,7 @@ export function ShippingScheduleDashboard({
                     buyerName: buyer,
                     productName: "-",
                     quantity: 0,
+                    originalQuantity: 0,
                     driver: driverName,
                     vehiclePlate: vehiclePlate,
                     etollCard: etollCard,
@@ -336,16 +357,90 @@ export function ShippingScheduleDashboard({
                 });
             } else {
                 delivItems.forEach((it: any, idx: number) => {
+                    const qty = Number(it.quantity || 0);
                     rows.push({
                         id: `${d.id}-${it.id || idx}`,
                         deliveryId: d.id,
+                        activityType: "DELIVERY",
                         deliveryNumber: d.deliveryNumber,
                         invoiceNumber: inv,
                         taxType: taxType,
                         poNumber: po,
                         buyerName: buyer,
                         productName: it.productName || it.product?.name || "Item",
-                        quantity: Number(it.quantity || 0),
+                        quantity: qty,
+                        originalQuantity: qty,
+                        driver: driverName,
+                        vehiclePlate: vehiclePlate,
+                        etollCard: etollCard,
+                        isManual: false
+                    });
+                });
+            }
+        });
+        return rows;
+    };
+
+    // Transform GoodsReceipt (Inbound PO Pickup) into schedule items
+    const buildItemsFromPickups = (pickupReceipts: any[]): ScheduleItem[] => {
+        const rows: ScheduleItem[] = [];
+        pickupReceipts.forEach((r, rIdx) => {
+            const po = r.poNumber || r.formNumber || "-";
+            const vendor = r.vendorName || r.buyerName || "-";
+            const rawVehicle = (r.driver || "").trim();
+            const isCompound = rawVehicle.includes("&") || rawVehicle.includes("+");
+            const fleet = !isCompound ? getFleetByDriverOrPlate(rawVehicle) : undefined;
+            let driverName = isCompound ? rawVehicle : (fleet?.driver || rawVehicle);
+            let vehiclePlate = fleet?.plate || "";
+            let etollCard = fleet?.etoll || "";
+
+            if (rawVehicle) {
+                const matchParen = rawVehicle.match(/^([^(]+)\s*\(([^)]+)\)$/);
+                if (matchParen) {
+                    driverName = matchParen[1].trim().toUpperCase();
+                    vehiclePlate = matchParen[2].trim().toUpperCase();
+                    const matchedFleet = getFleetByDriverOrPlate(vehiclePlate);
+                    if (matchedFleet) etollCard = matchedFleet.etoll;
+                }
+            }
+
+            const dateCode = format(new Date(selectedDate), "ddMMyyyy");
+            const inv = r.receiptNumber || `LPB-${dateCode}-${String(rIdx + 1).padStart(3, "0")}`;
+
+            const rItems = r.items || [];
+            if (rItems.length === 0) {
+                rows.push({
+                    id: `pu-${r.id}-empty`,
+                    receiptId: r.id,
+                    activityType: "PICKUP",
+                    deliveryNumber: r.receiptNumber || "-",
+                    invoiceNumber: inv,
+                    taxType: "KB-TRD",
+                    poNumber: po,
+                    buyerName: vendor,
+                    productName: "-",
+                    quantity: 0,
+                    originalQuantity: 0,
+                    driver: driverName,
+                    vehiclePlate: vehiclePlate,
+                    etollCard: etollCard,
+                    isManual: false
+                });
+            } else {
+                rItems.forEach((it: any, idx: number) => {
+                    const qty = Number(it.quantity || 0);
+                    rows.push({
+                        id: `pu-${r.id}-${it.id || idx}`,
+                        receiptId: r.id,
+                        activityType: "PICKUP",
+                        deliveryNumber: r.receiptNumber || "-",
+                        invoiceNumber: inv,
+                        taxType: "KB-TRD",
+                        poNumber: po,
+                        buyerName: vendor,
+                        productName: it.productName || it.product?.name || "Item",
+                        quantity: qty,
+                        originalQuantity: qty,
                         driver: driverName,
                         vehiclePlate: vehiclePlate,
                         etollCard: etollCard,
@@ -361,6 +456,7 @@ export function ShippingScheduleDashboard({
     const buildItemsFromMappings = (maps: any[], delivs: any[] = []): ScheduleItem[] => {
         const dateCode = format(new Date(selectedDate), "ddMMyyyy");
         return maps.map((m: any, idx: number) => {
+            const isPickup = m.category === "PICKUP";
             const taxType = (m.category === "KB-TRN" ? "KB-TRN" : "KB-TRD") as "KB-TRN" | "KB-TRD";
             const rawPo = (m.poNumber || "").trim();
             const isCategoryPo = rawPo.toUpperCase() === "NON PKP" || rawPo.toUpperCase() === "PKP";
@@ -372,7 +468,9 @@ export function ShippingScheduleDashboard({
 
             const realisticInv = matchedDeliv?.invoiceNumber?.trim() 
                 ? matchedDeliv.invoiceNumber.trim() 
-                : `${taxType}-${dateCode}-${String(idx + 1).padStart(3, "0")}`;
+                : isPickup 
+                    ? `LPB-${dateCode}-${String(idx + 1).padStart(3, "0")}`
+                    : `${taxType}-${dateCode}-${String(idx + 1).padStart(3, "0")}`;
 
             const cleanPo = !isCategoryPo && rawPo ? rawPo : (matchedDeliv?.poNumber || "-");
             const rawVehicle = (m.driver || matchedDeliv?.driver || matchedDeliv?.vehicleNumber || "").trim();
@@ -402,16 +500,20 @@ export function ShippingScheduleDashboard({
                 }
             }
 
+            const qty = Number(m.quantity || 0);
+
             return {
                 id: m.id,
                 deliveryId: matchedDeliv?.id,
-                deliveryNumber: matchedDeliv?.deliveryNumber || `SJ-${dateCode}-${String(idx + 1).padStart(3, "0")}`,
+                activityType: isPickup ? "PICKUP" : "DELIVERY",
+                deliveryNumber: matchedDeliv?.deliveryNumber || (isPickup ? `LPB-${dateCode}-${String(idx + 1).padStart(3, "0")}` : `SJ-${dateCode}-${String(idx + 1).padStart(3, "0")}`),
                 invoiceNumber: realisticInv,
                 taxType: taxType,
                 poNumber: cleanPo,
                 buyerName: m.buyerName || "-",
                 productName: m.productName || "-",
-                quantity: Number(m.quantity || 0),
+                quantity: qty,
+                originalQuantity: qty,
                 driver: driverName,
                 vehiclePlate: vehiclePlate,
                 etollCard: etollCard,
@@ -420,36 +522,51 @@ export function ShippingScheduleDashboard({
         });
     };
 
-    // Initialize items: prioritize real deliveries
+    // Initialize items: prioritize real deliveries and real pickups
     useEffect(() => {
-        if (deliveries && deliveries.length > 0) {
-            setItems(buildItemsFromDeliveries(deliveries));
-        } else if (initialMappings && initialMappings.length > 0) {
-            setItems(buildItemsFromMappings(initialMappings, initialDeliveries || []));
-        } else {
-            setItems([]);
-        }
-    }, [deliveries, initialMappings]);
+        const deliveryRows = deliveries && deliveries.length > 0 
+            ? buildItemsFromDeliveries(deliveries) 
+            : (initialMappings && initialMappings.length > 0 
+                ? buildItemsFromMappings(initialMappings.filter(m => m.category !== "PICKUP"), initialDeliveries || []) 
+                : []);
+        
+        const pickupRows = pickups && pickups.length > 0 
+            ? buildItemsFromPickups(pickups) 
+            : (initialMappings && initialMappings.length > 0 
+                ? buildItemsFromMappings(initialMappings.filter(m => m.category === "PICKUP"), []) 
+                : []);
 
-    // Fetch deliveries and mappings when selectedDate changes
+        setItems([...deliveryRows, ...pickupRows]);
+    }, [deliveries, pickups, initialMappings]);
+
+    // Fetch deliveries, pickups, and mappings when selectedDate changes
     const fetchSchedule = async (dateStr: string) => {
         setIsLoading(true);
         try {
-            const [delivRes, mapRes] = await Promise.all([
+            const [delivRes, pickRes, mapRes] = await Promise.all([
                 callAction("getDailyShippingSchedule", dateStr),
+                callAction("getDailyPickupSchedule", dateStr),
                 callAction("getShippingMappings", dateStr, "ALL")
             ]);
-            if (Array.isArray(delivRes) && delivRes.length > 0) {
-                setDeliveries(delivRes);
-                setItems(buildItemsFromDeliveries(delivRes));
-            } else if (Array.isArray(mapRes) && mapRes.length > 0) {
-                setItems(buildItemsFromMappings(mapRes, delivRes || []));
-            } else {
-                setDeliveries([]);
-                setItems([]);
-            }
+
+            const delivs = Array.isArray(delivRes) ? delivRes : [];
+            const picks = Array.isArray(pickRes) ? pickRes : [];
+            const maps = Array.isArray(mapRes) ? mapRes : [];
+
+            setDeliveries(delivs);
+            setPickups(picks);
+
+            const deliveryRows = delivs.length > 0 
+                ? buildItemsFromDeliveries(delivs) 
+                : buildItemsFromMappings(maps.filter(m => m.category !== "PICKUP"), delivs);
+            
+            const pickupRows = picks.length > 0 
+                ? buildItemsFromPickups(picks) 
+                : buildItemsFromMappings(maps.filter(m => m.category === "PICKUP"), []);
+
+            setItems([...deliveryRows, ...pickupRows]);
         } catch (err) {
-            console.error("Gagal memuat jadwal pengiriman:", err);
+            console.error("Gagal memuat jadwal pengiriman dan pengambilan:", err);
         } finally {
             setIsLoading(false);
         }
@@ -460,6 +577,32 @@ export function ShippingScheduleDashboard({
         setSelectedItemIds(new Set());
         setWizardStep(1);
         fetchSchedule(newDate);
+    };
+
+    // Handler: Update quantity for partial truck loading (Option A: Split Muatan)
+    const handleUpdateItemQuantity = (itemId: string, newQty: number) => {
+        setItems(prev => prev.map(it => {
+            if (it.id !== itemId) return it;
+            const orig = it.originalQuantity ?? it.quantity;
+            const validQty = Math.max(1, Math.min(newQty, orig));
+            return {
+                ...it,
+                quantity: validQty,
+                originalQuantity: orig,
+                remainderCancelled: validQty === orig ? false : it.remainderCancelled
+            };
+        }));
+    };
+
+    // Handler: Cancel remainder units if rejected or cut order
+    const handleCancelRemainder = (itemId: string) => {
+        setItems(prev => prev.map(it => {
+            if (it.id !== itemId) return it;
+            return {
+                ...it,
+                remainderCancelled: true
+            };
+        }));
     };
 
     const allDriverOptions = useMemo(() => {
@@ -483,7 +626,7 @@ export function ShippingScheduleDashboard({
     // SEPARATION OF QUEUES:
     // 1. selectableItems: Items that can be selected in Step 1.
     //    If editingDriver is set, includes unassigned items PLUS items belonging to editingDriver.
-    //    If not editing, includes only unassigned items.
+    //    If not editing, includes only unassigned items. Filtered by activityFilter & taxFilter.
     // 2. loadedQueue: Items that have been loaded into vehicles (shown in Completed Fleet)
     const selectableItems = useMemo(() => {
         return items.filter(item => {
@@ -491,20 +634,28 @@ export function ShippingScheduleDashboard({
             const isUnassigned = !drv || drv === "PILIH DRIVER" || drv === "-";
             const isBelongingToCurrentEdit = editingDriver && drv === editingDriver.toUpperCase();
             if (!isUnassigned && !isBelongingToCurrentEdit) return false;
+            if (activityFilter !== "ALL" && item.activityType !== activityFilter) return false;
             if (taxFilter !== "ALL" && item.taxType !== taxFilter) return false;
             return true;
         });
-    }, [items, taxFilter, editingDriver]);
+    }, [items, activityFilter, taxFilter, editingDriver]);
 
     const unassignedItems = useMemo(() => {
         return items.filter(item => {
             const drv = (item.driver || "").trim().toUpperCase();
             const isUnassigned = !drv || drv === "PILIH DRIVER" || drv === "-";
             if (!isUnassigned) return false;
-            if (taxFilter !== "ALL" && item.taxType !== taxFilter) return false;
             return true;
         });
-    }, [items, taxFilter]);
+    }, [items]);
+
+    const deliveryQueueCount = useMemo(() => {
+        return unassignedItems.filter(i => i.activityType === "DELIVERY").length;
+    }, [unassignedItems]);
+
+    const pickupQueueCount = useMemo(() => {
+        return unassignedItems.filter(i => i.activityType === "PICKUP").length;
+    }, [unassignedItems]);
 
     const loadedItems = useMemo(() => {
         return items.filter(item => {
@@ -608,6 +759,7 @@ export function ShippingScheduleDashboard({
 
     // CONFIRM LOADING (Step 2 -> Step 3)
     // Saves driver to database and REMOVES items from the unassigned loading queue!
+    // Option A: Split partial quantities stay in the unassigned queue for the next vehicle.
     const handleConfirmLoading = async () => {
         if (!selectedDriver.trim() || selectedItemIds.size === 0) return;
         setIsSaving(true);
@@ -620,28 +772,52 @@ export function ShippingScheduleDashboard({
 
         try {
             const newlySelectedDelivIds = Array.from(new Set(selectedItemsForVerification.map(i => i.deliveryId).filter(Boolean))) as string[];
+            const newlySelectedReceiptIds = Array.from(new Set(selectedItemsForVerification.map(i => i.receiptId).filter(Boolean))) as string[];
 
             // Find items that were previously assigned to this driver (or editingDriver) that are now REMOVED
             const prevDriverName = (editingDriver || selectedDriver).trim().toUpperCase();
             const previouslyLoadedItems = items.filter(i => (i.driver || "").trim().toUpperCase() === prevDriverName);
             const unselectedItems = previouslyLoadedItems.filter(i => !selectedItemIds.has(i.id));
             const removedDelivIds = Array.from(new Set(unselectedItems.map(i => i.deliveryId).filter(Boolean))) as string[];
+            const removedReceiptIds = Array.from(new Set(unselectedItems.map(i => i.receiptId).filter(Boolean))) as string[];
+
+            // Option A: For items where QTY was reduced, create remainder items in unassigned queue
+            const splitRemainderItems: ScheduleItem[] = [];
+            selectedItemsForVerification.forEach(it => {
+                const orig = it.originalQuantity ?? it.quantity;
+                if (it.quantity < orig && !it.remainderCancelled) {
+                    const remainder = orig - it.quantity;
+                    splitRemainderItems.push({
+                        ...it,
+                        id: `${it.id}-rem-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                        quantity: remainder,
+                        originalQuantity: remainder,
+                        driver: "",
+                        vehiclePlate: "",
+                        etollCard: "",
+                        remainderCancelled: false,
+                    });
+                }
+            });
 
             // Update items locally
-            setItems(prev => prev.map(item => {
-                if (selectedItemIds.has(item.id) || (item.deliveryId && newlySelectedDelivIds.includes(item.deliveryId))) {
-                    return { 
-                        ...item, 
-                        driver: upperDriver,
-                        vehiclePlate: cleanPlate,
-                        etollCard: cleanEtoll
-                    };
-                }
-                if ((item.driver || "").trim().toUpperCase() === prevDriverName) {
-                    return { ...item, driver: "", vehiclePlate: "", etollCard: "" };
-                }
-                return item;
-            }));
+            setItems(prev => {
+                const updated = prev.map(item => {
+                    if (selectedItemIds.has(item.id) || (item.deliveryId && newlySelectedDelivIds.includes(item.deliveryId)) || (item.receiptId && newlySelectedReceiptIds.includes(item.receiptId))) {
+                        return { 
+                            ...item, 
+                            driver: upperDriver,
+                            vehiclePlate: cleanPlate,
+                            etollCard: cleanEtoll
+                        };
+                    }
+                    if ((item.driver || "").trim().toUpperCase() === prevDriverName) {
+                        return { ...item, driver: "", vehiclePlate: "", etollCard: "" };
+                    }
+                    return item;
+                });
+                return [...updated, ...splitRemainderItems];
+            });
 
             // Also update deliveries state locally
             setDeliveries(prev => prev.map(d => {
@@ -654,6 +830,17 @@ export function ShippingScheduleDashboard({
                 return d;
             }));
 
+            // Also update pickups state locally
+            setPickups(prev => prev.map(p => {
+                if (newlySelectedReceiptIds.includes(p.id)) {
+                    return { ...p, driver: upperDriver };
+                }
+                if (removedReceiptIds.includes(p.id)) {
+                    return { ...p, driver: "" };
+                }
+                return p;
+            }));
+
             // Save in database
             const updatePromises: Promise<any>[] = [];
             newlySelectedDelivIds.forEach(dId => {
@@ -662,19 +849,126 @@ export function ShippingScheduleDashboard({
             removedDelivIds.forEach(dId => {
                 updatePromises.push(callAction("updateDeliveryDriver", dId, "").catch(console.error));
             });
+            newlySelectedReceiptIds.forEach(rId => {
+                updatePromises.push(callAction("updateReceiptDriver", rId, vehicleToStore).catch(console.error));
+            });
+            removedReceiptIds.forEach(rId => {
+                updatePromises.push(callAction("updateReceiptDriver", rId, "").catch(console.error));
+            });
+
+            // If manual items exist, persist them via saveShippingMappingBatch
+            const manualSelected = selectedItemsForVerification.filter(i => i.isManual);
+            if (manualSelected.length > 0) {
+                const deliveryManuals = manualSelected.filter(i => i.activityType !== "PICKUP");
+                const pickupManuals = manualSelected.filter(i => i.activityType === "PICKUP");
+
+                if (deliveryManuals.length > 0) {
+                    updatePromises.push(callAction("saveShippingMappingBatch", {
+                        dateStr: selectedDate,
+                        category: "KB-TRD",
+                        rows: deliveryManuals.map(i => ({
+                            poNumber: i.poNumber,
+                            buyerName: i.buyerName,
+                            productName: i.productName,
+                            quantity: i.quantity,
+                            driver: vehicleToStore
+                        }))
+                    }).catch(console.error));
+                }
+                if (pickupManuals.length > 0) {
+                    updatePromises.push(callAction("saveShippingMappingBatch", {
+                        dateStr: selectedDate,
+                        category: "PICKUP",
+                        rows: pickupManuals.map(i => ({
+                            poNumber: i.poNumber,
+                            buyerName: i.buyerName,
+                            productName: i.productName,
+                            quantity: i.quantity,
+                            driver: vehicleToStore
+                        }))
+                    }).catch(console.error));
+                }
+            }
+
             await Promise.all(updatePromises);
 
             setLastCompletedDriver(upperDriver);
             setEditingDriver(null);
             setWizardStep(3);
-            setSaveFeedback(`Barang berhasil disimpan ke armada ${upperDriver}! Form manifest siap dicetak.`);
+            setSaveFeedback(`Penugasan muatan berhasil disimpan ke armada ${upperDriver}! Form manifest siap dicetak.`);
             setTimeout(() => setSaveFeedback(null), 6000);
         } catch (err: any) {
-            console.error("Gagal menyimpan muatan:", err);
+            console.error("Gagal menyimpan penugasan muatan:", err);
             alert("Gagal menyimpan pemuatan: " + (err.message || String(err)));
         } finally {
             setIsSaving(false);
         }
+    };
+
+    // Handler: Add custom supplier pickup schedule (Inbound Pickup PO)
+    const handleAddNewPickup = async () => {
+        if (!newPickupVendor.trim()) {
+            alert("Silakan masukkan / pilih nama Supplier / Pabrik!");
+            return;
+        }
+        if (!newPickupProduct.trim()) {
+            alert("Silakan masukkan nama produk yang akan diambil!");
+            return;
+        }
+        if (!newPickupQty || newPickupQty <= 0) {
+            alert("Silakan masukkan QTY ambil yang valid (minimal 1)!");
+            return;
+        }
+
+        const dateCode = format(new Date(selectedDate), "ddMMyyyy");
+        const newItemId = `pu-man-${Date.now()}`;
+        const newPo = newPickupPo.trim() || `PO-INB-${dateCode}`;
+        const newInv = `LPB-${dateCode}-${String(items.length + 1).padStart(3, "0")}`;
+
+        const newItem: ScheduleItem = {
+            id: newItemId,
+            activityType: "PICKUP",
+            deliveryNumber: newInv,
+            invoiceNumber: newInv,
+            taxType: "KB-TRD",
+            poNumber: newPo,
+            buyerName: newPickupVendor.trim().toUpperCase(),
+            productName: newPickupProduct.trim().toUpperCase(),
+            quantity: newPickupQty,
+            originalQuantity: newPickupQty,
+            driver: selectedDriver ? selectedDriver.trim().toUpperCase() : "",
+            vehiclePlate: selectedVehiclePlate || "",
+            etollCard: selectedEtoll || "",
+            isManual: true
+        };
+
+        setItems(prev => [newItem, ...prev]);
+
+        // Persist to database via saveShippingMappingBatch
+        try {
+            await callAction("saveShippingMappingBatch", {
+                dateStr: selectedDate,
+                category: "PICKUP",
+                rows: [{
+                    poNumber: newItem.poNumber,
+                    buyerName: newItem.buyerName,
+                    productName: newItem.productName,
+                    quantity: newItem.quantity,
+                    driver: newItem.driver
+                }]
+            });
+            setSaveFeedback(`Jadwal pengambilan di ${newItem.buyerName} berhasil ditambahkan!`);
+            setTimeout(() => setSaveFeedback(null), 5000);
+        } catch (err) {
+            console.error("Gagal menyimpan jadwal pickup:", err);
+        }
+
+        // Reset form
+        setNewPickupVendor("");
+        setNewPickupPo("");
+        setNewPickupProduct("");
+        setNewPickupQty(100);
+        setShowAddPickupModal(false);
     };
 
     // Return items from a loaded vehicle back to unassigned queue (Fixed bug & cleans both SalesDelivery and ShippingMapping)
@@ -751,8 +1045,8 @@ export function ShippingScheduleDashboard({
         }
 
         const excelRows: any[][] = [];
-        excelRows.push([`REKAP PENGIRIMAN HARIAN - ${dateFormattedIndo}`, "", "", "", "", ""]);
-        excelRows.push(["NO. FAKTUR", "NO. PO", "BUYER", "PRODUK", "QTY", "DRIVER / KENDARAAN"]);
+        excelRows.push([`REKAP LOGISTIK PENGIRIMAN & PENGAMBILAN HARIAN - ${dateFormattedIndo}`, "", "", "", "", "", ""]);
+        excelRows.push(["KEGIATAN", "NO. FAKTUR / REF", "NO. PO", "CUSTOMER / SUPPLIER", "PRODUK", "QTY", "DRIVER / KENDARAAN"]);
 
         let lastDelivId: string | null = null;
         items.forEach((item, idx) => {
@@ -762,6 +1056,7 @@ export function ShippingScheduleDashboard({
             }
 
             excelRows.push([
+                item.activityType === "PICKUP" ? "AMBIL SUPPLIER" : "KIRIM CUSTOMER",
                 isFirstOfDeliv ? getRealisticInvoiceNumber(item, idx) : "",
                 isFirstOfDeliv ? (item.poNumber || "") : "",
                 isFirstOfDeliv ? (item.buyerName || "") : "",
@@ -772,12 +1067,12 @@ export function ShippingScheduleDashboard({
         });
 
         const ws = XLSX.utils.aoa_to_sheet(excelRows);
-        ws["!merges"] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 5 } }];
-        ws["!cols"] = [{ wch: 24 }, { wch: 18 }, { wch: 28 }, { wch: 38 }, { wch: 12 }, { wch: 22 }];
+        ws["!merges"] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 6 } }];
+        ws["!cols"] = [{ wch: 18 }, { wch: 24 }, { wch: 18 }, { wch: 28 }, { wch: 38 }, { wch: 12 }, { wch: 22 }];
 
         const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Pengiriman");
-        XLSX.writeFile(wb, `PENGIRIMAN_${selectedDate.replace(/-/g, "")}.xlsx`);
+        XLSX.utils.book_append_sheet(wb, ws, "Logistik_Harian");
+        XLSX.writeFile(wb, `LOGISTIK_${selectedDate.replace(/-/g, "")}.xlsx`);
     };
 
     return (
@@ -874,6 +1169,16 @@ export function ShippingScheduleDashboard({
                     <option key={f.plate} value={f.plate}>{`${f.plate} - ${f.driver}`}</option>
                 ))}
                 {allPlateOptions.filter(p => !OFFICIAL_FLEET.some(f => f.plate === p)).map(p => (
+                    <option key={p} value={p} />
+                ))}
+            </datalist>
+            <datalist id="vendor-suggestions">
+                {vendorList.map(v => (
+                    <option key={v} value={v} />
+                ))}
+            </datalist>
+            <datalist id="product-suggestions">
+                {productList.map(p => (
                     <option key={p} value={p} />
                 ))}
             </datalist>
@@ -1010,35 +1315,96 @@ export function ShippingScheduleDashboard({
                         </button>
                     </div>
 
-                    {/* Tax Category Filter */}
+                    {/* Activity & Tax Category Filters */}
                     {mainView === "WIZARD" && wizardStep === 1 && (
-                        <div className="flex items-center gap-1.5">
-                            <span className="text-[11px] font-black uppercase text-slate-400">Filter Pajak:</span>
-                            <div className="flex bg-white p-0.5 rounded-lg border border-slate-200">
-                                <button
-                                    onClick={() => setTaxFilter("ALL")}
-                                    className={`px-2 py-0.5 text-xs font-bold rounded cursor-pointer ${
-                                        taxFilter === "ALL" ? "bg-slate-900 text-white" : "text-slate-600"
-                                    }`}
-                                >
-                                    Semua
-                                </button>
-                                <button
-                                    onClick={() => setTaxFilter("KB-TRN")}
-                                    className={`px-2 py-0.5 text-xs font-bold rounded cursor-pointer ${
-                                        taxFilter === "KB-TRN" ? "bg-blue-600 text-white" : "text-blue-700"
-                                    }`}
-                                >
-                                    KB-TRN (PKP)
-                                </button>
-                                <button
-                                    onClick={() => setTaxFilter("KB-TRD")}
-                                    className={`px-2 py-0.5 text-xs font-bold rounded cursor-pointer ${
-                                        taxFilter === "KB-TRD" ? "bg-emerald-600 text-white" : "text-emerald-700"
-                                    }`}
-                                >
-                                    KB-TRD (NON-PKP)
-                                </button>
+                        <div className="flex flex-wrap items-center gap-3">
+                            {/* Activity Type Switcher */}
+                            <div className="flex items-center gap-1.5">
+                                <span className="text-[11px] font-black uppercase text-slate-400">Kegiatan:</span>
+                                <div className="flex bg-white p-0.5 rounded-xl border border-slate-200 shadow-2xs">
+                                    <button
+                                        type="button"
+                                        onClick={() => setActivityFilter("ALL")}
+                                        className={`px-2.5 py-1 text-xs font-black rounded-lg transition-all flex items-center gap-1 cursor-pointer ${
+                                            activityFilter === "ALL" ? "bg-slate-900 text-white shadow-xs" : "text-slate-600 hover:text-slate-900"
+                                        }`}
+                                    >
+                                        <span>Semua</span>
+                                        <span className="bg-slate-200 text-slate-800 text-[10px] px-1.5 py-0.2 rounded-full font-black">
+                                            {unassignedItems.length}
+                                        </span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setActivityFilter("DELIVERY")}
+                                        className={`px-2.5 py-1 text-xs font-black rounded-lg transition-all flex items-center gap-1 cursor-pointer ${
+                                            activityFilter === "DELIVERY" ? "bg-emerald-600 text-white shadow-xs" : "text-emerald-700 hover:text-emerald-900"
+                                        }`}
+                                    >
+                                        <span>🟢 Kirim Customer</span>
+                                        {deliveryQueueCount > 0 && (
+                                            <span className="bg-emerald-100 text-emerald-900 text-[10px] px-1.5 py-0.2 rounded-full font-black">
+                                                {deliveryQueueCount}
+                                            </span>
+                                        )}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setActivityFilter("PICKUP")}
+                                        className={`px-2.5 py-1 text-xs font-black rounded-lg transition-all flex items-center gap-1 cursor-pointer ${
+                                            activityFilter === "PICKUP" ? "bg-amber-600 text-white shadow-xs" : "text-amber-700 hover:text-amber-900"
+                                        }`}
+                                    >
+                                        <span>🟡 Ambil Supplier (PO)</span>
+                                        {pickupQueueCount > 0 && (
+                                            <span className="bg-amber-100 text-amber-900 text-[10px] px-1.5 py-0.2 rounded-full font-black">
+                                                {pickupQueueCount}
+                                            </span>
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Button: + Tambah Jadwal Ambil di Supplier */}
+                            <button
+                                type="button"
+                                onClick={() => setShowAddPickupModal(true)}
+                                className="flex items-center gap-1.5 bg-amber-500 hover:bg-amber-600 text-white px-3 py-1 rounded-xl text-xs font-black transition-all shadow-xs cursor-pointer"
+                                title="Tambah Jadwal Sopir Jemput Barang di Supplier / Pabrik (PO Pembelian)"
+                            >
+                                <Plus className="w-3.5 h-3.5" />
+                                <span>+ Jadwal Ambil di Supplier</span>
+                            </button>
+
+                            {/* Tax Category Filter */}
+                            <div className="flex items-center gap-1.5">
+                                <span className="text-[11px] font-black uppercase text-slate-400">Pajak:</span>
+                                <div className="flex bg-white p-0.5 rounded-lg border border-slate-200">
+                                    <button
+                                        onClick={() => setTaxFilter("ALL")}
+                                        className={`px-2 py-0.5 text-xs font-bold rounded cursor-pointer ${
+                                            taxFilter === "ALL" ? "bg-slate-900 text-white" : "text-slate-600"
+                                        }`}
+                                    >
+                                        Semua
+                                    </button>
+                                    <button
+                                        onClick={() => setTaxFilter("KB-TRN")}
+                                        className={`px-2 py-0.5 text-xs font-bold rounded cursor-pointer ${
+                                            taxFilter === "KB-TRN" ? "bg-blue-600 text-white" : "text-blue-700"
+                                        }`}
+                                    >
+                                        PKP
+                                    </button>
+                                    <button
+                                        onClick={() => setTaxFilter("KB-TRD")}
+                                        className={`px-2 py-0.5 text-xs font-bold rounded cursor-pointer ${
+                                            taxFilter === "KB-TRD" ? "bg-emerald-600 text-white" : "text-emerald-700"
+                                        }`}
+                                    >
+                                        Non-PKP
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     )}
@@ -1615,11 +1981,12 @@ export function ShippingScheduleDashboard({
                                                             />
                                                         </th>
                                                         <th className="py-3 px-2 w-8 text-center">NO</th>
-                                                        <th className="py-3 px-3 w-32">NO. FAKTUR</th>
+                                                        <th className="py-3 px-2.5 w-24 text-center">KEGIATAN</th>
+                                                        <th className="py-3 px-3 w-32">NO. FAKTUR / REF</th>
                                                         <th className="py-3 px-3 w-28">NO. PO</th>
-                                                        <th className="py-3 px-4 w-44">BUYER / CUSTOMER</th>
+                                                        <th className="py-3 px-4 w-44">CUSTOMER / SUPPLIER</th>
                                                         <th className="py-3 px-4">NAMA PRODUK</th>
-                                                        <th className="py-3 px-3 w-20 text-right">QTY</th>
+                                                        <th className="py-3 px-3 w-36 text-right">QTY MUAT / AMBIL</th>
                                                         <th className="py-3 px-3 w-24 text-center">STATUS</th>
                                                     </tr>
                                                 </thead>
@@ -1628,6 +1995,7 @@ export function ShippingScheduleDashboard({
                                                         const isSelected = selectedItemIds.has(item.id);
                                                         const realInvoice = getRealisticInvoiceNumber(item, index);
                                                         const isAlreadyInEditingFleet = editingDriver && (item.driver || "").trim().toUpperCase() === editingDriver;
+                                                        const isPickup = item.activityType === "PICKUP";
 
                                                         return (
                                                             <tr 
@@ -1648,6 +2016,17 @@ export function ShippingScheduleDashboard({
                                                                 <td className="py-2.5 px-2 text-center text-slate-400 font-bold">
                                                                     {index + 1}
                                                                 </td>
+                                                                <td className="py-2.5 px-2.5 text-center">
+                                                                    {isPickup ? (
+                                                                        <span className="bg-amber-100 text-amber-900 border border-amber-200 text-[9px] font-black px-2 py-0.5 rounded-full uppercase inline-block">
+                                                                            🟡 Ambil PO
+                                                                        </span>
+                                                                    ) : (
+                                                                        <span className="bg-emerald-100 text-emerald-900 border border-emerald-200 text-[9px] font-black px-2 py-0.5 rounded-full uppercase inline-block">
+                                                                            🟢 Kirim
+                                                                        </span>
+                                                                    )}
+                                                                </td>
                                                                 <td className="py-2.5 px-3 font-mono font-bold text-slate-900">
                                                                     <div>
                                                                         <span className="block">{realInvoice}</span>
@@ -1658,13 +2037,58 @@ export function ShippingScheduleDashboard({
                                                                     {item.poNumber || "-"}
                                                                 </td>
                                                                 <td className="py-2.5 px-4 font-black text-slate-900 uppercase">
-                                                                    {item.buyerName}
+                                                                    <div className="flex items-center gap-1.5">
+                                                                        <span>{item.buyerName}</span>
+                                                                        {isPickup && (
+                                                                            <span className="text-[9px] font-bold text-amber-700 bg-amber-50 px-1 rounded">
+                                                                                Pabrik/Vendor
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
                                                                 </td>
                                                                 <td className="py-2.5 px-4 font-medium text-slate-800 uppercase">
                                                                     {item.productName}
                                                                 </td>
-                                                                <td className="py-2.5 px-3 text-right font-black text-slate-900 text-xs">
-                                                                    {Number(item.quantity).toLocaleString("id-ID")}
+                                                                <td className="py-2.5 px-3 text-right" onClick={(e) => e.stopPropagation()}>
+                                                                    <div className="flex flex-col items-end gap-1">
+                                                                        <div className="flex items-center gap-1">
+                                                                            <input
+                                                                                type="number"
+                                                                                min="1"
+                                                                                max={item.originalQuantity || 999999}
+                                                                                value={item.quantity}
+                                                                                onChange={(e) => {
+                                                                                    const val = parseInt(e.target.value, 10);
+                                                                                    if (!isNaN(val)) {
+                                                                                        handleUpdateItemQuantity(item.id, val);
+                                                                                    }
+                                                                                }}
+                                                                                className="w-20 px-2 py-1 bg-white border border-slate-300 focus:border-indigo-600 rounded-lg text-right font-black text-xs text-slate-900 outline-none shadow-2xs"
+                                                                                title="Ubah QTY jika armada hanya memuat sebagian (Option A: sisa otomatis masuk antrian mobil berikutnya)"
+                                                                            />
+                                                                            <span className="text-[10px] text-slate-500 font-bold">Unit</span>
+                                                                        </div>
+                                                                        {item.originalQuantity && item.quantity < item.originalQuantity && !item.remainderCancelled && (
+                                                                            <div className="flex items-center gap-1">
+                                                                                <span className="bg-amber-100 text-amber-900 text-[9px] font-black px-1.5 py-0.2 rounded">
+                                                                                    Sisa {(item.originalQuantity - item.quantity).toLocaleString("id-ID")} antri
+                                                                                </span>
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => handleCancelRemainder(item.id)}
+                                                                                    className="text-[9px] font-bold text-rose-600 hover:text-rose-800 hover:underline cursor-pointer"
+                                                                                    title="Batalkan sisa unit (penolakan / cut order) agar tidak masuk antrian mobil berikutnya"
+                                                                                >
+                                                                                    Batal Sisa
+                                                                                </button>
+                                                                            </div>
+                                                                        )}
+                                                                        {item.remainderCancelled && (
+                                                                            <span className="bg-rose-100 text-rose-800 text-[9px] font-bold px-1.5 py-0.2 rounded">
+                                                                                Sisa dibatalkan
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
                                                                 </td>
                                                                 <td className="py-2.5 px-3 text-center">
                                                                     {isAlreadyInEditingFleet ? (
@@ -1805,10 +2229,15 @@ export function ShippingScheduleDashboard({
 
                                 {/* Verification Items Table */}
                                 <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                                    <div className="p-4 bg-slate-50 border-b border-slate-200">
+                                    <div className="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
                                         <h3 className="text-xs font-black uppercase tracking-wider text-slate-700">
-                                            Daftar Barang yang Dimuat ke Mobil {selectedDriver}:
+                                            Daftar Kegiatan &amp; Barang Armada {selectedDriver}:
                                         </h3>
+                                        {selectedItemsForVerification.some(i => i.activityType === "PICKUP") && (
+                                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-200">
+                                                🟡 Termasuk Pengambilan Barang di Supplier (Inbound PO)
+                                            </span>
+                                        )}
                                     </div>
 
                                     <div className="overflow-x-auto">
@@ -1816,9 +2245,10 @@ export function ShippingScheduleDashboard({
                                             <thead>
                                                 <tr className="bg-slate-100 border-b border-slate-200 text-slate-700 font-black uppercase tracking-wider text-[11px]">
                                                     <th className="py-3 px-3 w-10 text-center">NO</th>
-                                                    <th className="py-3 px-3 w-36">NO. FAKTUR</th>
+                                                    <th className="py-3 px-2.5 w-24 text-center">KEGIATAN</th>
+                                                    <th className="py-3 px-3 w-36">NO. FAKTUR / REF</th>
                                                     <th className="py-3 px-3 w-32">NO. PO</th>
-                                                    <th className="py-3 px-4 w-48">BUYER / CUSTOMER</th>
+                                                    <th className="py-3 px-4 w-48">CUSTOMER / SUPPLIER</th>
                                                     <th className="py-3 px-4">NAMA PRODUK</th>
                                                     <th className="py-3 px-3 w-24 text-right">QTY MUAT</th>
                                                     <th className="py-3 px-4 w-28 text-center">CEK FISIK GUDANG</th>
@@ -1828,11 +2258,23 @@ export function ShippingScheduleDashboard({
                                                 {selectedItemsForVerification.map((item, index) => {
                                                     const realInvoice = getRealisticInvoiceNumber(item, index);
                                                     const isChecked = Boolean(physicalChecklist[item.id]);
+                                                    const isPickup = item.activityType === "PICKUP";
 
                                                     return (
                                                         <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
                                                             <td className="py-2.5 px-3 text-center text-slate-400 font-bold">
                                                                 {index + 1}
+                                                            </td>
+                                                            <td className="py-2.5 px-2.5 text-center">
+                                                                {isPickup ? (
+                                                                    <span className="bg-amber-100 text-amber-900 border border-amber-200 text-[9px] font-black px-2 py-0.5 rounded-full uppercase inline-block">
+                                                                        🟡 Ambil PO
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="bg-emerald-100 text-emerald-900 border border-emerald-200 text-[9px] font-black px-2 py-0.5 rounded-full uppercase inline-block">
+                                                                        🟢 Kirim
+                                                                    </span>
+                                                                )}
                                                             </td>
                                                             <td className="py-2.5 px-3 font-mono font-bold text-slate-900">
                                                                 <div>
@@ -1844,7 +2286,14 @@ export function ShippingScheduleDashboard({
                                                                 {item.poNumber || "-"}
                                                             </td>
                                                             <td className="py-2.5 px-4 font-black text-slate-900 uppercase">
-                                                                {item.buyerName}
+                                                                <div className="flex items-center gap-1.5">
+                                                                    <span>{item.buyerName}</span>
+                                                                    {isPickup && (
+                                                                        <span className="text-[9px] font-bold text-amber-700 bg-amber-50 px-1 rounded">
+                                                                            Pabrik/Vendor
+                                                                        </span>
+                                                                    )}
+                                                                </div>
                                                             </td>
                                                             <td className="py-2.5 px-4 font-medium text-slate-800 uppercase">
                                                                 {item.productName}
@@ -1871,7 +2320,7 @@ export function ShippingScheduleDashboard({
                                             </tbody>
                                             <tfoot>
                                                 <tr className="bg-slate-100 font-black text-xs">
-                                                    <td colSpan={5} className="py-3 px-4 text-right uppercase">
+                                                    <td colSpan={6} className="py-3 px-4 text-right uppercase">
                                                         Total Muatan Mobil {selectedDriver}:
                                                     </td>
                                                     <td className="py-3 px-3 text-right text-indigo-700 font-black text-sm">
@@ -1888,7 +2337,7 @@ export function ShippingScheduleDashboard({
                                     {/* Confirmation Footer */}
                                     <div className="p-4 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3">
                                         <span className="text-xs text-slate-500">
-                                            Klik tombol konfirmasi untuk menerbitkan Surat Muatan Kendaraan resmi dan mengupdate sistem.
+                                            Klik tombol konfirmasi untuk menerbitkan Surat Tugas &amp; Muatan Kendaraan resmi dan mengupdate sistem.
                                         </span>
                                         <button
                                             onClick={handleConfirmLoading}
@@ -1916,7 +2365,7 @@ export function ShippingScheduleDashboard({
                                         </div>
                                         <div>
                                             <h3 className="text-sm sm:text-base font-black text-white">
-                                                Pemuatan Armada {lastCompletedDriver || selectedDriver} Selesai & Tervalidasi!
+                                                Penugasan Armada {lastCompletedDriver || selectedDriver} Selesai & Tervalidasi!
                                             </h3>
                                             <p className="text-xs text-emerald-300 mt-0.5">
                                                 Barang-barang ini telah dipindahkan ke status <span className="font-bold underline">DIMUAT</span> dan sudah tidak muncul lagi di antrian muat.
@@ -1943,203 +2392,239 @@ export function ShippingScheduleDashboard({
                                 </div>
 
                                 {/* THE PRINTABLE VEHICLE LOADING MANIFEST FORM */}
-                                <div className="printable-manifest bg-white border border-slate-300 rounded-2xl shadow-xl p-6 sm:p-9 max-w-4xl mx-auto print:border-none print:shadow-none print:p-0 print:m-0 print:max-w-none print:w-full print:rounded-none">
-                                    {/* Header Manifest */}
-                                    <div className="border-b-2 border-slate-900 pb-2.5">
-                                        <div className="flex justify-between items-start gap-4">
-                                            <div className="flex items-center gap-3.5">
-                                                <div className="h-12 w-12 shrink-0 flex items-center justify-center p-1 bg-white border border-slate-200 rounded-lg">
-                                                    <img 
-                                                        src="/image/logokoboi.png" 
-                                                        alt="Logo PT. Kola Borasi Indonesia" 
-                                                        className="h-10 w-auto object-contain"
-                                                        onError={(e) => {
-                                                            (e.target as any).src = "/logo.png";
-                                                        }}
-                                                    />
+                                {(() => {
+                                    const hasPickups = selectedItemsForVerification.some(i => i.activityType === "PICKUP");
+                                    const isAllPickups = selectedItemsForVerification.length > 0 && selectedItemsForVerification.every(i => i.activityType === "PICKUP");
+
+                                    return (
+                                        <div className="printable-manifest bg-white border border-slate-300 rounded-2xl shadow-xl p-6 sm:p-9 max-w-4xl mx-auto print:border-none print:shadow-none print:p-0 print:m-0 print:max-w-none print:w-full print:rounded-none">
+                                            {/* Header Manifest */}
+                                            <div className="border-b-2 border-slate-900 pb-2.5">
+                                                <div className="flex justify-between items-start gap-4">
+                                                    <div className="flex items-center gap-3.5">
+                                                        <div className="h-12 w-12 shrink-0 flex items-center justify-center p-1 bg-white border border-slate-200 rounded-lg">
+                                                            <img 
+                                                                src="/image/logokoboi.png" 
+                                                                alt="Logo PT. Kola Borasi Indonesia" 
+                                                                className="h-10 w-auto object-contain"
+                                                                onError={(e) => {
+                                                                    (e.target as any).src = "/logo.png";
+                                                                }}
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <div className="flex items-center gap-2">
+                                                                <h2 className="text-base sm:text-lg font-black text-slate-950 uppercase tracking-tight leading-tight">
+                                                                    PT. KOLA BORASI INDONESIA
+                                                                </h2>
+                                                                <span className="text-[7.5px] font-black bg-slate-900 text-white px-1.5 py-0.5 rounded uppercase tracking-wider">
+                                                                    {isAllPickups ? "LOGISTIK PEMBELIAN" : "DISTRIBUSI"}
+                                                                </span>
+                                                            </div>
+                                                            <p className="text-[9.5px] text-slate-700 font-bold tracking-wider uppercase mt-0.5">
+                                                                {isAllPickups ? "Perintah Penjemputan Barang di Supplier / Pabrik" : "Logistik Gudang & Distribusi Pengiriman Terpadu"}
+                                                            </p>
+                                                            <p className="text-[8px] text-slate-500 font-medium">
+                                                                Jl. Arjuna IV Green Kartika Residence Blok EE NO.2, CIBINONG, KAB. BOGOR
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-right shrink-0">
+                                                        <span className="inline-block px-3 py-1 rounded text-xs font-black uppercase tracking-wider bg-slate-900 text-white">
+                                                            {isAllPickups 
+                                                                ? "SURAT TUGAS & PERINTAH AMBIL BARANG (PICKUP PO)" 
+                                                                : hasPickups 
+                                                                    ? "SURAT TUGAS PENGIRIMAN & PENGAMBILAN BARANG" 
+                                                                    : "SURAT MUATAN KENDARAAN (LOADING MANIFEST)"}
+                                                        </span>
+                                                        <p className="text-[10px] font-mono text-slate-700 mt-1 font-bold">
+                                                            TANGGAL: {dateFormattedIndo}
+                                                        </p>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <div className="flex items-center gap-2">
-                                                        <h2 className="text-base sm:text-lg font-black text-slate-950 uppercase tracking-tight leading-tight">
-                                                            PT. KOLA BORASI INDONESIA
-                                                        </h2>
-                                                        <span className="text-[7.5px] font-black bg-slate-900 text-white px-1.5 py-0.5 rounded uppercase tracking-wider">
-                                                            DISTRIBUSI
+
+                                                {/* Prominent Info Box */}
+                                                <div className="grid grid-cols-5 gap-2 text-[10px] bg-slate-100/90 p-2 rounded border border-slate-300 mt-2.5">
+                                                    <div>
+                                                        <span className="text-slate-500 block uppercase font-bold text-[8.5px]">Sopir / Driver:</span>
+                                                        <span className="font-black text-slate-950 text-xs sm:text-sm uppercase tracking-wide truncate block">
+                                                            🚚 {lastCompletedDriver || selectedDriver}
                                                         </span>
                                                     </div>
-                                                    <p className="text-[9.5px] text-slate-700 font-bold tracking-wider uppercase mt-0.5">
-                                                        Logistik Gudang & Distribusi Pengiriman Terpadu
-                                                    </p>
-                                                    <p className="text-[8px] text-slate-500 font-medium">
-                                                        Jl. Arjuna IV Green Kartika Residence Blok EE NO.2, CIBINONG, KAB. BOGOR
-                                                    </p>
+                                                    <div>
+                                                        <span className="text-slate-500 block uppercase font-bold text-[8.5px]">No. Polisi / Plat:</span>
+                                                        <span className="font-black text-slate-900 uppercase block font-mono text-xs">
+                                                            {selectedVehiclePlate || getFleetByDriverOrPlate(lastCompletedDriver || selectedDriver)?.plate || "-"}
+                                                        </span>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-slate-500 block uppercase font-bold text-[8.5px]">No. Kartu E-Toll:</span>
+                                                        <span className="font-mono font-bold text-slate-900 text-[9.5px] block truncate">
+                                                            {selectedEtoll || getFleetByDriverOrPlate(lastCompletedDriver || selectedDriver)?.etoll || "-"}
+                                                        </span>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-slate-500 block uppercase font-bold text-[8.5px]">
+                                                            {isAllPickups ? "Total Lokasi Supplier:" : "Total Drop/Surat Jalan:"}
+                                                        </span>
+                                                        <span className="font-black text-slate-900 text-xs block">
+                                                            {selectedUniqueDeliveries} {isAllPickups ? "Lokasi Supplier" : "Surat Jalan"}
+                                                        </span>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-slate-500 block uppercase font-bold text-[8.5px]">
+                                                            {isAllPickups ? "Total QTY Ambil:" : "Total Fisik Muatan:"}
+                                                        </span>
+                                                        <span className="font-black text-blue-900 text-xs block">
+                                                            {selectedTotalQty.toLocaleString("id-ID")} Unit
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             </div>
-                                            <div className="text-right shrink-0">
-                                                <span className="inline-block px-3 py-1 rounded text-xs font-black uppercase tracking-wider bg-slate-900 text-white">
-                                                    SURAT MUATAN KENDARAAN (LOADING MANIFEST)
-                                                </span>
-                                                <p className="text-[10px] font-mono text-slate-700 mt-1 font-bold">
-                                                    TANGGAL: {dateFormattedIndo}
-                                                </p>
-                                            </div>
-                                        </div>
 
-                                        {/* Prominent Info Box */}
-                                        <div className="grid grid-cols-5 gap-2 text-[10px] bg-slate-100/90 p-2 rounded border border-slate-300 mt-2.5">
-                                            <div>
-                                                <span className="text-slate-500 block uppercase font-bold text-[8.5px]">Sopir / Driver:</span>
-                                                <span className="font-black text-slate-950 text-xs sm:text-sm uppercase tracking-wide truncate block">
-                                                    🚚 {lastCompletedDriver || selectedDriver}
-                                                </span>
-                                            </div>
-                                            <div>
-                                                <span className="text-slate-500 block uppercase font-bold text-[8.5px]">No. Polisi / Plat:</span>
-                                                <span className="font-black text-slate-900 uppercase block font-mono text-xs">
-                                                    {selectedVehiclePlate || getFleetByDriverOrPlate(lastCompletedDriver || selectedDriver)?.plate || "-"}
-                                                </span>
-                                            </div>
-                                            <div>
-                                                <span className="text-slate-500 block uppercase font-bold text-[8.5px]">No. Kartu E-Toll:</span>
-                                                <span className="font-mono font-bold text-slate-900 text-[9.5px] block truncate">
-                                                    {selectedEtoll || getFleetByDriverOrPlate(lastCompletedDriver || selectedDriver)?.etoll || "-"}
-                                                </span>
-                                            </div>
-                                            <div>
-                                                <span className="text-slate-500 block uppercase font-bold text-[8.5px]">Total Surat Jalan:</span>
-                                                <span className="font-black text-slate-900 text-xs block">
-                                                    {selectedUniqueDeliveries} Surat Jalan
-                                                </span>
-                                            </div>
-                                            <div>
-                                                <span className="text-slate-500 block uppercase font-bold text-[8.5px]">Total Fisik Muatan:</span>
-                                                <span className="font-black text-blue-900 text-xs block">
-                                                    {selectedTotalQty.toLocaleString("id-ID")} Unit
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
+                                            {/* Manifest Table */}
+                                            <div className="mt-2.5">
+                                                <table className="w-full print-table border-collapse text-black text-[9.5px]">
+                                                    <thead>
+                                                        <tr className="bg-slate-900 text-white text-[9px] font-black uppercase">
+                                                            <th className="border border-slate-800 py-1.5 px-1 w-[4%] text-center">NO</th>
+                                                            <th className="border border-slate-800 py-1.5 px-1 w-[7%] text-center">JENIS</th>
+                                                            <th className="border border-slate-800 py-1.5 px-1.5 w-[16%] text-center">NO. FAKTUR / REF</th>
+                                                            <th className="border border-slate-800 py-1.5 px-1.5 w-[13%] text-center">NO. PO</th>
+                                                            <th className="border border-slate-800 py-1.5 px-2 w-[22%] text-center">
+                                                                {isAllPickups ? "NAMA SUPPLIER / PABRIK" : "CUSTOMER / SUPPLIER"}
+                                                            </th>
+                                                            <th className="border border-slate-800 py-1.5 px-2 w-[24%] text-center">NAMA PRODUK</th>
+                                                            <th className="border border-slate-800 py-1.5 px-1.5 w-[6%] text-center">QTY</th>
+                                                            <th className="border border-slate-800 py-1.5 px-1 w-[4%] text-center">FISIK</th>
+                                                            <th className="border border-slate-800 py-1.5 px-1 w-[4%] text-center">PARAF</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {(() => {
+                                                            let lastDelivId: string | null = null;
+                                                            let deliveryIndex = 0;
 
-                                    {/* Manifest Table */}
-                                    <div className="mt-2.5">
-                                        <table className="w-full print-table border-collapse text-black text-[9.5px]">
-                                            <thead>
-                                                <tr className="bg-slate-900 text-white text-[9px] font-black uppercase">
-                                                    <th className="border border-slate-800 py-1.5 px-1 w-[4%] text-center">NO</th>
-                                                    <th className="border border-slate-800 py-1.5 px-1.5 w-[18%] text-center">NO. FAKTUR</th>
-                                                    <th className="border border-slate-800 py-1.5 px-1.5 w-[14%] text-center">NO. PO</th>
-                                                    <th className="border border-slate-800 py-1.5 px-2 w-[22%] text-center">BUYER / TUJUAN</th>
-                                                    <th className="border border-slate-800 py-1.5 px-2 w-[26%] text-center">NAMA PRODUK</th>
-                                                    <th className="border border-slate-800 py-1.5 px-1.5 w-[6%] text-center">QTY</th>
-                                                    <th className="border border-slate-800 py-1.5 px-1 w-[5%] text-center">GUDANG</th>
-                                                    <th className="border border-slate-800 py-1.5 px-1 w-[5%] text-center">SOPIR</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {(() => {
-                                                    let lastDelivId: string | null = null;
-                                                    let deliveryIndex = 0;
+                                                            return selectedItemsForVerification.map((item, idx) => {
+                                                                const isFirstOfDeliv = item.isManual || item.deliveryId !== lastDelivId;
+                                                                if (isFirstOfDeliv) {
+                                                                    deliveryIndex++;
+                                                                }
+                                                                if (!item.isManual && item.deliveryId) {
+                                                                    lastDelivId = item.deliveryId;
+                                                                }
 
-                                                    return selectedItemsForVerification.map((item, idx) => {
-                                                        const isFirstOfDeliv = item.isManual || item.deliveryId !== lastDelivId;
-                                                        if (isFirstOfDeliv) {
-                                                            deliveryIndex++;
-                                                        }
-                                                        if (!item.isManual && item.deliveryId) {
-                                                            lastDelivId = item.deliveryId;
-                                                        }
+                                                                const realInvoice = getRealisticInvoiceNumber(item, idx);
+                                                                const isPickup = item.activityType === "PICKUP";
 
-                                                        const realInvoice = getRealisticInvoiceNumber(item, idx);
+                                                                return (
+                                                                    <tr 
+                                                                        key={idx} 
+                                                                        className={`${isFirstOfDeliv && idx !== 0 ? "delivery-separator border-t-2 border-slate-800" : ""}`}
+                                                                    >
+                                                                        <td className="border border-slate-400 py-1 px-1 text-center font-bold text-[9px]">
+                                                                            {isFirstOfDeliv ? deliveryIndex : ""}
+                                                                        </td>
+                                                                        <td className="border border-slate-400 py-1 px-1 text-center font-bold text-[8px] uppercase">
+                                                                            {isPickup ? "AMBIL PO" : "KIRIM"}
+                                                                        </td>
+                                                                        <td className="border border-slate-400 py-1 px-1.5 font-bold text-[8.5px] uppercase whitespace-nowrap">
+                                                                            {isFirstOfDeliv ? (
+                                                                                <div>
+                                                                                    <span className="block font-black">{realInvoice}</span>
+                                                                                    <span className="text-[7.5px] text-slate-500 font-mono">{item.deliveryNumber}</span>
+                                                                                </div>
+                                                                            ) : ""}
+                                                                        </td>
+                                                                        <td className="border border-slate-400 py-1 px-1.5 font-semibold uppercase text-[8.5px]">
+                                                                            {isFirstOfDeliv ? (item.poNumber || "-") : ""}
+                                                                        </td>
+                                                                        <td className="border border-slate-400 py-1 px-1.5 font-bold uppercase text-[9px]">
+                                                                            {isFirstOfDeliv ? item.buyerName : ""}
+                                                                        </td>
+                                                                        <td className="border border-slate-400 py-1 px-1.5 uppercase font-medium text-[9px]">
+                                                                            {item.productName}
+                                                                        </td>
+                                                                        <td className="border border-slate-400 py-1 px-1 text-center font-black text-[9.5px]">
+                                                                            {Number(item.quantity) > 0 ? Number(item.quantity).toLocaleString("id-ID") : ""}
+                                                                        </td>
+                                                                        <td className="border border-slate-400 py-1 px-1 text-center">
+                                                                            <div className="w-3.5 h-3.5 border border-slate-600 mx-auto rounded-xs flex items-center justify-center font-bold text-[8px]">
+                                                                                ✓
+                                                                            </div>
+                                                                        </td>
+                                                                        <td className="border border-slate-400 py-1 px-1 text-center">
+                                                                            <div className="w-3.5 h-3.5 border border-slate-600 mx-auto rounded-xs" />
+                                                                        </td>
+                                                                    </tr>
+                                                                );
+                                                            });
+                                                        })()}
+                                                    </tbody>
+                                                    <tfoot>
+                                                        <tr className="bg-slate-100 font-black text-[9.5px]">
+                                                            <td colSpan={6} className="border border-slate-400 py-1.5 px-3 text-right uppercase">
+                                                                TOTAL MUATAN ARMADA INI:
+                                                            </td>
+                                                            <td className="border border-slate-400 py-1.5 px-1 text-center text-blue-900 font-black">
+                                                                {selectedTotalQty.toLocaleString("id-ID")}
+                                                            </td>
+                                                            <td colSpan={2} className="border border-slate-400 py-1.5 px-2 text-center text-[8px] text-slate-500">
+                                                                Unit / Koli
+                                                            </td>
+                                                        </tr>
+                                                    </tfoot>
+                                                </table>
+                                            </div>
 
-                                                        return (
-                                                            <tr 
-                                                                key={idx} 
-                                                                className={`${isFirstOfDeliv && idx !== 0 ? "delivery-separator border-t-2 border-slate-800" : ""}`}
-                                                            >
-                                                                <td className="border border-slate-400 py-1 px-1 text-center font-bold text-[9px]">
-                                                                    {isFirstOfDeliv ? deliveryIndex : ""}
-                                                                </td>
-                                                                <td className="border border-slate-400 py-1 px-1.5 font-bold text-[8.5px] uppercase whitespace-nowrap">
-                                                                    {isFirstOfDeliv ? (
-                                                                        <div>
-                                                                            <span className="block font-black">{realInvoice}</span>
-                                                                            <span className="text-[7.5px] text-slate-500 font-mono">{item.deliveryNumber}</span>
-                                                                        </div>
-                                                                    ) : ""}
-                                                                </td>
-                                                                <td className="border border-slate-400 py-1 px-1.5 font-semibold uppercase text-[8.5px]">
-                                                                    {isFirstOfDeliv ? (item.poNumber || "-") : ""}
-                                                                </td>
-                                                                <td className="border border-slate-400 py-1 px-1.5 font-bold uppercase text-[9px]">
-                                                                    {isFirstOfDeliv ? item.buyerName : ""}
-                                                                </td>
-                                                                <td className="border border-slate-400 py-1 px-1.5 uppercase font-medium text-[9px]">
-                                                                    {item.productName}
-                                                                </td>
-                                                                <td className="border border-slate-400 py-1 px-1 text-center font-black text-[9.5px]">
-                                                                    {Number(item.quantity) > 0 ? Number(item.quantity).toLocaleString("id-ID") : ""}
-                                                                </td>
-                                                                <td className="border border-slate-400 py-1 px-1 text-center">
-                                                                    <div className="w-3.5 h-3.5 border border-slate-600 mx-auto rounded-xs flex items-center justify-center font-bold text-[8px]">
-                                                                        ✓
-                                                                    </div>
-                                                                </td>
-                                                                <td className="border border-slate-400 py-1 px-1 text-center">
-                                                                    <div className="w-3.5 h-3.5 border border-slate-600 mx-auto rounded-xs" />
-                                                                </td>
-                                                            </tr>
-                                                        );
-                                                    });
-                                                })()}
-                                            </tbody>
-                                            <tfoot>
-                                                <tr className="bg-slate-100 font-black text-[9.5px]">
-                                                    <td colSpan={5} className="border border-slate-400 py-1.5 px-3 text-right uppercase">
-                                                        TOTAL MUATAN ARMADA INI:
-                                                    </td>
-                                                    <td className="border border-slate-400 py-1.5 px-1 text-center text-blue-900 font-black">
-                                                        {selectedTotalQty.toLocaleString("id-ID")}
-                                                    </td>
-                                                    <td colSpan={2} className="border border-slate-400 py-1.5 px-2 text-center text-[8px] text-slate-500">
-                                                        Unit / Koli
-                                                    </td>
-                                                </tr>
-                                            </tfoot>
-                                        </table>
-                                    </div>
-
-                                    {/* Signatures 3-Way Accountability */}
-                                    <div className="avoid-break pt-2.5 mt-3 border-t border-slate-300">
-                                        <div className="grid grid-cols-3 gap-3 text-center text-xs">
-                                            <div className="flex flex-col justify-between h-20 border border-slate-300 p-1.5 rounded bg-white">
-                                                <span className="text-[9px] font-black uppercase text-slate-700">Disiapkan / Checker Gudang</span>
-                                                <div className="border-b border-slate-400 w-4/5 mx-auto pb-0.5">
-                                                    ( ............................................ )
+                                            {/* Signatures 3-Way Accountability */}
+                                            <div className="avoid-break pt-2.5 mt-3 border-t border-slate-300">
+                                                <div className="grid grid-cols-3 gap-3 text-center text-xs">
+                                                    <div className="flex flex-col justify-between h-20 border border-slate-300 p-1.5 rounded bg-white">
+                                                        <span className="text-[9px] font-black uppercase text-slate-700">
+                                                            {isAllPickups ? "Logistik Kola Borasi (Pemberi Tugas)" : "Disiapkan / Checker Gudang"}
+                                                        </span>
+                                                        <div className="border-b border-slate-400 w-4/5 mx-auto pb-0.5">
+                                                            ( ............................................ )
+                                                        </div>
+                                                        <span className="text-[8px] text-slate-500">
+                                                            {isAllPickups ? "Admin / Logistik" : "Petugas Muat"}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex flex-col justify-between h-20 border border-slate-300 p-1.5 rounded bg-slate-50/50">
+                                                        <span className="text-[9px] font-black uppercase text-slate-800">
+                                                            {isAllPickups ? "Sopir Penjemput (Penerima Tugas)" : "Diterima di Kendaraan (Sopir)"}
+                                                        </span>
+                                                        <div className="border-b border-slate-400 w-4/5 mx-auto pb-0.5 font-bold text-[9px]">
+                                                            ( {lastCompletedDriver || selectedDriver} )
+                                                        </div>
+                                                        <span className="text-[8px] text-slate-500">Driver Bertanggung Jawab</span>
+                                                    </div>
+                                                    <div className="flex flex-col justify-between h-20 border border-slate-300 p-1.5 rounded bg-white">
+                                                        <span className="text-[9px] font-black uppercase text-slate-700">
+                                                            {isAllPickups ? "PIC Supplier / Vendor (Pemberi Barang)" : "Mengetahui / Mengesahkan"}
+                                                        </span>
+                                                        <div className="border-b border-slate-400 w-4/5 mx-auto pb-0.5">
+                                                            ( ............................................ )
+                                                        </div>
+                                                        <span className="text-[8px] text-slate-500">
+                                                            {isAllPickups ? "Tanda Tangan & Cap Supplier" : "Kepala Gudang / Logistik"}
+                                                        </span>
+                                                    </div>
                                                 </div>
-                                                <span className="text-[8px] text-slate-500">Petugas Muat</span>
-                                            </div>
-                                            <div className="flex flex-col justify-between h-20 border border-slate-300 p-1.5 rounded bg-slate-50/50">
-                                                <span className="text-[9px] font-black uppercase text-slate-800">Diterima di Kendaraan (Sopir)</span>
-                                                <div className="border-b border-slate-400 w-4/5 mx-auto pb-0.5 font-bold text-[9px]">
-                                                    ( {lastCompletedDriver || selectedDriver} )
-                                                </div>
-                                                <span className="text-[8px] text-slate-500">Driver Bertanggung Jawab</span>
-                                            </div>
-                                            <div className="flex flex-col justify-between h-20 border border-slate-300 p-1.5 rounded bg-white">
-                                                <span className="text-[9px] font-black uppercase text-slate-700">Mengetahui / Mengesahkan</span>
-                                                <div className="border-b border-slate-400 w-4/5 mx-auto pb-0.5">
-                                                    ( ............................................ )
-                                                </div>
-                                                <span className="text-[8px] text-slate-500">Kepala Gudang / Logistik</span>
-                                            </div>
-                                        </div>
 
-                                        <div className="flex justify-between items-center text-[7.5px] text-slate-500 mt-2 px-0.5">
-                                            <span>Perhatian: Seluruh fisik muatan wajib dihitung bersama Checker Gudang sebelum kendaraan meninggalkan loading dock.</span>
-                                            <span>Dicetak: {format(new Date(), "dd/MM/yyyy HH:mm")} WIB • ERP System</span>
+                                                <div className="flex justify-between items-center text-[7.5px] text-slate-500 mt-2 px-0.5">
+                                                    <span>
+                                                        {isAllPickups 
+                                                            ? "Perhatian: Sopir wajib memeriksa fisik & jumlah barang serta meminta cap/paraf PIC Supplier sebelum meninggalkan lokasi pabrik."
+                                                            : "Perhatian: Seluruh fisik muatan wajib dihitung bersama Checker Gudang sebelum kendaraan meninggalkan loading dock."}
+                                                    </span>
+                                                    <span>Dicetak: {format(new Date(), "dd/MM/yyyy HH:mm")} WIB • ERP System</span>
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
-                                </div>
+                                    );
+                                })()}
                             </div>
                         )}
                     </div>
@@ -2354,9 +2839,10 @@ export function ShippingScheduleDashboard({
                                 <thead>
                                     <tr className="bg-slate-100 border-b border-slate-200 text-slate-700 font-black uppercase tracking-wider text-[11px]">
                                         <th className="py-3 px-3 w-8 text-center">NO</th>
-                                        <th className="py-3 px-3 w-32">NO. FAKTUR</th>
+                                        <th className="py-3 px-2 w-20 text-center">KEGIATAN</th>
+                                        <th className="py-3 px-3 w-32">NO. FAKTUR / REF</th>
                                         <th className="py-3 px-3 w-28">NO. PO</th>
-                                        <th className="py-3 px-4 w-44">BUYER / CUSTOMER</th>
+                                        <th className="py-3 px-4 w-44">CUSTOMER / SUPPLIER</th>
                                         <th className="py-3 px-4">NAMA PRODUK</th>
                                         <th className="py-3 px-3 w-16 text-right">QTY</th>
                                         <th className="py-3 px-4 w-32">DRIVER / KENDARAAN</th>
@@ -2367,11 +2853,23 @@ export function ShippingScheduleDashboard({
                                     {items.map((item, index) => {
                                         const realInvoice = getRealisticInvoiceNumber(item, index);
                                         const isLoaded = item.driver && item.driver.trim() && item.driver !== "PILIH DRIVER" && item.driver !== "-";
+                                        const isPickup = item.activityType === "PICKUP";
 
                                         return (
                                             <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
                                                 <td className="py-2.5 px-3 text-center text-slate-400 font-bold">
                                                     {index + 1}
+                                                </td>
+                                                <td className="py-2.5 px-2 text-center">
+                                                    {isPickup ? (
+                                                        <span className="bg-amber-100 text-amber-900 text-[8.5px] font-black px-1.5 py-0.5 rounded uppercase">
+                                                            Ambil PO
+                                                        </span>
+                                                    ) : (
+                                                        <span className="bg-emerald-100 text-emerald-900 text-[8.5px] font-black px-1.5 py-0.5 rounded uppercase">
+                                                            Kirim
+                                                        </span>
+                                                    )}
                                                 </td>
                                                 <td className="py-2.5 px-3 font-mono font-bold text-slate-900">
                                                     <div>
@@ -2463,6 +2961,103 @@ export function ShippingScheduleDashboard({
                                 className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white px-4 py-1.5 text-xs font-black uppercase rounded-xl shadow-xs transition-all cursor-pointer"
                             >
                                 Tambahkan
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal: Tambah Jadwal Ambil di Supplier (Inbound Pickup PO) */}
+            {showAddPickupModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
+                    <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-slate-200 flex flex-col gap-4">
+                        <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+                            <h4 className="text-sm font-black text-slate-800 uppercase tracking-wide flex items-center gap-1.5">
+                                <Truck className="h-4 w-4 text-amber-600" />
+                                <span>Jadwal Ambil Barang di Supplier (Inbound PO)</span>
+                            </h4>
+                            <button
+                                onClick={() => setShowAddPickupModal(false)}
+                                className="p-1 text-slate-400 hover:text-slate-600 rounded-lg cursor-pointer"
+                            >
+                                <X className="h-4 w-4" />
+                            </button>
+                        </div>
+
+                        <div className="space-y-3">
+                            <div className="space-y-1">
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
+                                    Nama Supplier / Pabrik Vendor:
+                                </label>
+                                <input
+                                    list="vendor-suggestions"
+                                    type="text"
+                                    value={newPickupVendor}
+                                    onChange={(e) => setNewPickupVendor(e.target.value.toUpperCase())}
+                                    placeholder="Pilih atau ketik nama Supplier / Pabrik"
+                                    className="w-full bg-slate-50 border border-slate-200 focus:border-amber-500 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 uppercase outline-none"
+                                    autoFocus
+                                />
+                            </div>
+
+                            <div className="space-y-1">
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
+                                    No. PO / Referensi Pembelian:
+                                </label>
+                                <input
+                                    type="text"
+                                    value={newPickupPo}
+                                    onChange={(e) => setNewPickupPo(e.target.value.toUpperCase())}
+                                    placeholder="Contoh: PO/KB/2610/012 (Opsional)"
+                                    className="w-full bg-slate-50 border border-slate-200 focus:border-amber-500 rounded-xl px-3 py-2 text-xs font-mono font-bold text-slate-900 uppercase outline-none"
+                                />
+                            </div>
+
+                            <div className="space-y-1">
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
+                                    Nama Produk / Barang:
+                                </label>
+                                <input
+                                    list="product-suggestions"
+                                    type="text"
+                                    value={newPickupProduct}
+                                    onChange={(e) => setNewPickupProduct(e.target.value.toUpperCase())}
+                                    placeholder="Ketik atau pilih nama produk"
+                                    className="w-full bg-slate-50 border border-slate-200 focus:border-amber-500 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 uppercase outline-none"
+                                />
+                            </div>
+
+                            <div className="space-y-1">
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
+                                    QTY yang Diambil (Unit / Koli):
+                                </label>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    value={newPickupQty}
+                                    onChange={(e) => setNewPickupQty(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                                    className="w-full bg-slate-50 border border-slate-200 focus:border-amber-500 rounded-xl px-3 py-2 text-xs font-black text-slate-900 outline-none"
+                                />
+                            </div>
+
+                            <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-[11px] text-amber-900">
+                                💡 Jadwal ini akan otomatis masuk ke antrian lantai gudang dengan badge <strong>🟡 Ambil PO</strong> dan dapat ditugaskan langsung ke sopir/mobil mana pun.
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                            <button
+                                onClick={() => setShowAddPickupModal(false)}
+                                className="px-3.5 py-1.5 text-xs font-bold text-slate-500 hover:text-slate-800 rounded-xl cursor-pointer"
+                            >
+                                Batal
+                            </button>
+                            <button
+                                onClick={handleAddNewPickup}
+                                disabled={!newPickupVendor.trim() || !newPickupProduct.trim() || newPickupQty <= 0}
+                                className="bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white px-4 py-1.5 text-xs font-black uppercase rounded-xl shadow-xs transition-all cursor-pointer"
+                            >
+                                Simpan Jadwal Ambil
                             </button>
                         </div>
                     </div>
