@@ -112,7 +112,7 @@ export async function transferFundService(
 }
 
 export async function voidPaymentStatusService(
-    type: "PURCHASE" | "SALE",
+    type: "PURCHASE" | "SALE", 
     id: string,
     userId?: string
 ) {
@@ -154,7 +154,7 @@ export async function voidPaymentStatusService(
 
         // Delete related Finance Transactions
         await tx.financeTransaction.deleteMany({
-            where: {
+            where: { 
                 OR: [
                     { referenceNumber: reference },
                     { invoiceNumber: reference },
@@ -168,10 +168,10 @@ export async function voidPaymentStatusService(
 }
 
 export async function updatePaymentStatusService(
-    type: "PURCHASE" | "SALE",
-    id: string,
-    status: "PAID" | "CREDIT" | "PENDING" | "PARTIAL",
-    partialAmount?: number,
+    type: "PURCHASE" | "SALE", 
+    id: string, 
+    status: "PAID" | "CREDIT" | "PENDING" | "PARTIAL", 
+    partialAmount?: number, 
     paymentDate?: Date,
     userId?: string,
     bankAccountId?: string
@@ -218,7 +218,7 @@ export async function updatePaymentStatusService(
             });
 
             const invAccount = await tx.financeAccount.findUnique({ where: { code: '104' } });
-            const bankAccount = bankAccountId
+            const bankAccount = bankAccountId 
                 ? await tx.financeAccount.findUnique({ where: { id: bankAccountId } })
                 : await tx.financeAccount.findUnique({ where: { code: '102' } });
             const apAccount = await tx.financeAccount.findUnique({ where: { code: '201' } });
@@ -320,7 +320,7 @@ export async function updatePaymentStatusService(
             });
 
             const arAccount = await tx.financeAccount.findUnique({ where: { code: '105' } });
-            const bankAccount = bankAccountId
+            const bankAccount = bankAccountId 
                 ? await tx.financeAccount.findUnique({ where: { id: bankAccountId } })
                 : await tx.financeAccount.findUnique({ where: { code: '102' } });
             const salesAccount = await tx.financeAccount.findUnique({ where: { code: '401' } });
@@ -499,8 +499,8 @@ export async function createFinanceTransactionService(data: any, userId: string)
         let typeBankAccount = isPayment ? "CREDIT" : "DEBIT";
 
         if (isMutation) {
-            typeTargetAccount = "DEBIT";
-            typeBankAccount = "CREDIT";
+            typeTargetAccount = "DEBIT"; 
+            typeBankAccount = "CREDIT";  
         }
 
         await tx.journalEntry.create({
@@ -676,8 +676,8 @@ export async function updateFinanceTransactionService(id: string, data: any, use
         let typeBankAccount = isPayment ? "CREDIT" : "DEBIT";
 
         if (isMutation) {
-            typeTargetAccount = "DEBIT";
-            typeBankAccount = "CREDIT";
+            typeTargetAccount = "DEBIT"; 
+            typeBankAccount = "CREDIT";  
         }
 
         await tx.journalEntry.create({
@@ -813,7 +813,7 @@ export async function editSettledPaymentService(
                 }
 
                 const arAccount = await tx.financeAccount.findUnique({ where: { code: '105' } });
-                const bankAccount = bankAccountId
+                const bankAccount = bankAccountId 
                     ? await tx.financeAccount.findUnique({ where: { id: bankAccountId } })
                     : await tx.financeAccount.findUnique({ where: { code: '102' } });
 
@@ -943,7 +943,7 @@ export async function editSettledPaymentService(
                 }
 
                 const apAccount = await tx.financeAccount.findUnique({ where: { code: '201' } });
-                const bankAccount = bankAccountId
+                const bankAccount = bankAccountId 
                     ? await tx.financeAccount.findUnique({ where: { id: bankAccountId } })
                     : await tx.financeAccount.findUnique({ where: { code: '102' } });
 
@@ -1010,7 +1010,7 @@ export async function updateGroupedPaymentStatusService(
     const prisma = getPrisma();
 
     const deliveries = await prisma.salesDelivery.findMany({
-        where: { OR: [{ invoiceNumber: invoiceNumber }, { deliveryNumber: invoiceNumber }], isVoid: false },
+        where: { OR: [ { invoiceNumber: invoiceNumber }, { deliveryNumber: invoiceNumber } ], isVoid: false },
         orderBy: { createdAt: 'asc' }
     });
 

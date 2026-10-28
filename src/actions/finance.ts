@@ -18,10 +18,10 @@ export async function transferFundAction(
     const { getAuthOptions } = require("@/lib/auth");
     const { getServerSession } = require("next-auth");
     const { transferFundService } = require("@/lib/services/finance-service");
-
+ 
     const session = (await getServerSession(getAuthOptions())) as any;
     if (!session?.user?.id) throw new Error("Unauthorized");
-
+ 
     if (session?.user?.role?.toUpperCase() !== "ADMIN" && session?.user?.role?.toUpperCase() !== "FINANCE") {
         throw new Error("Only Admin or Finance can transfer funds.");
     }
@@ -30,16 +30,16 @@ export async function transferFundAction(
 }
 
 export async function voidPaymentStatusAction(
-    type: "PURCHASE" | "SALE",
+    type: "PURCHASE" | "SALE", 
     id: string
 ) {
     const { getAuthOptions } = require("@/lib/auth");
     const { getServerSession } = require("next-auth");
     const { voidPaymentStatusService } = require("@/lib/services/finance-service");
-
+ 
     const session = (await getServerSession(getAuthOptions())) as any;
     if (!session?.user?.id) throw new Error("Unauthorized");
-
+ 
     if (session?.user?.role?.toUpperCase() !== "ADMIN" && session?.user?.role?.toUpperCase() !== "FINANCE") {
         throw new Error("Only Admin or Finance can void payments.");
     }
@@ -48,20 +48,20 @@ export async function voidPaymentStatusAction(
 }
 
 export async function updatePaymentStatusAction(
-    type: "PURCHASE" | "SALE",
-    id: string,
-    status: "PAID" | "CREDIT" | "PENDING" | "PARTIAL",
-    partialAmount?: number,
+    type: "PURCHASE" | "SALE", 
+    id: string, 
+    status: "PAID" | "CREDIT" | "PENDING" | "PARTIAL", 
+    partialAmount?: number, 
     paymentDate?: Date,
     bankAccountId?: string
 ) {
     const { getAuthOptions } = require("@/lib/auth");
     const { getServerSession } = require("next-auth");
     const { updatePaymentStatusService, updateGroupedPaymentStatusService } = require("@/lib/services/finance-service");
-
+ 
     const session = (await getServerSession(getAuthOptions())) as any;
     if (!session?.user?.id) throw new Error("Unauthorized");
-
+ 
     if (type === "SALE" && id.startsWith("GROUP_")) {
         return await updateGroupedPaymentStatusService(id.replace("GROUP_", ""), status, partialAmount, paymentDate, session.user.id, bankAccountId);
     }
@@ -136,7 +136,7 @@ export async function getFinanceTransactionsAction() {
     return await prisma.financeTransaction.findMany({
         where: userFilter,
         orderBy: { date: 'desc' },
-        take: 200
+        take: 200 
     });
 }
 
@@ -359,7 +359,7 @@ export async function getRecentSalesReferencesAction() {
     for (const d of deliveries) {
         const key = d.invoiceNumber || d.deliveryNumber;
         if (!key) continue;
-
+        
         const sjPart = d.deliveryNumber ? ` (${d.deliveryNumber})` : "";
         const label = `${key}${sjPart} - ${d.buyerName || "No Buyer"} [${d.salesPerson || "No Sales"}]`;
 
