@@ -123,6 +123,13 @@ export const DEFAULT_CMS_ITEMS: CmsItem[] = [
                 desc: "No. Polisi: B 9918 TIT • Kartu E-Toll: 0145 0084 0251 7295",
                 linkUrl: "/warehouse/jadwal-pengiriman",
                 linkText: "Jadwal Heru"
+            },
+            {
+                stepNumber: 6,
+                title: "🚚 TIYO (Armada 6)",
+                desc: "No. Polisi: B 9639 ZAD",
+                linkUrl: "/warehouse/jadwal-pengiriman",
+                linkText: "Jadwal Tiyo"
             }
         ]),
         linkUrl: "/warehouse/jadwal-pengiriman",

@@ -517,6 +517,7 @@ export default function SalesModal({ products, warehouses, customers, orders = [
                                         <option value="F 8744 MA - Rahmat. H" />
                                         <option value="F 8065 HI - Carsika" />
                                         <option value="B 9918 TIT - Heru" />
+                                        <option value="B 9639 ZAD - Tiyo" />
                                     </datalist>
                                 </div>
 

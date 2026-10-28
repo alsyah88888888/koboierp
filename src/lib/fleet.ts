@@ -35,6 +35,12 @@ export const OFFICIAL_FLEET: FleetDriver[] = [
         plate: "B 9918 TIT",
         etoll: "0145 0084 0251 7295",
         alias: ["HERU", "B 9918 TIT", "B 9918 TIT - HERU", "B 9918 TIT - HERU/TATANG"]
+    },
+    {
+        driver: "TIYO",
+        plate: "B 9639 ZAD",
+        etoll: "-",
+        alias: ["TIYO", "TIO", "B 9639 ZAD", "B 9639 ZAD - TIYO", "B 9639 ZAD - TIO"]
     }
 ];
 

@@ -56,6 +56,7 @@ const COMMON_DRIVERS = [
     "RAHMAT. H",
     "CARSIKA",
     "HERU",
+    "TIYO",
     "EKSPEDISI",
     "AMBIL SENDIRI (SELF PICKUP)"
 ];
@@ -1858,9 +1859,9 @@ export function ShippingScheduleDashboard({
                                         </div>
                                     </div>
 
-                                    {/* 7 Visual Interactive Fleet Cards */}
-                                    <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5">
-                                        {/* 5 Official Company Fleet */}
+                                    {/* 8 Visual Interactive Fleet Cards */}
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5">
+                                        {/* 6 Official Company Fleet */}
                                         {OFFICIAL_FLEET.map(f => {
                                             const driverIdx = selectedDrivers.indexOf(f.driver);
                                             const isSelected = driverIdx !== -1;
@@ -1937,7 +1938,7 @@ export function ShippingScheduleDashboard({
                                                             <CreditCard className="w-2.5 h-2.5" />
                                                             E-Toll:
                                                         </span>
-                                                        <span className="font-bold text-slate-700">...{f.etoll.slice(-4)}</span>
+                                                        <span className="font-bold text-slate-700">{f.etoll && f.etoll !== "-" ? `...${f.etoll.slice(-4)}` : "-"}</span>
                                                     </div>
                                                 </button>
                                             );
