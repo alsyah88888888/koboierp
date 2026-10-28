@@ -112,7 +112,7 @@ export async function transferFundService(
 }
 
 export async function voidPaymentStatusService(
-    type: "PURCHASE" | "SALE", 
+    type: "PURCHASE" | "SALE",
     id: string,
     userId?: string
 ) {
@@ -154,7 +154,7 @@ export async function voidPaymentStatusService(
 
         // Delete related Finance Transactions
         await tx.financeTransaction.deleteMany({
-            where: { 
+            where: {
                 OR: [
                     { referenceNumber: reference },
                     { invoiceNumber: reference },
@@ -168,10 +168,10 @@ export async function voidPaymentStatusService(
 }
 
 export async function updatePaymentStatusService(
-    type: "PURCHASE" | "SALE", 
-    id: string, 
-    status: "PAID" | "CREDIT" | "PENDING" | "PARTIAL", 
-    partialAmount?: number, 
+    type: "PURCHASE" | "SALE",
+    id: string,
+    status: "PAID" | "CREDIT" | "PENDING" | "PARTIAL",
+    partialAmount?: number,
     paymentDate?: Date,
     userId?: string,
     bankAccountId?: string
@@ -201,10 +201,12 @@ export async function updatePaymentStatusService(
             const toPay = partialAmount ? Math.round(Number(partialAmount)) : (status === "PAID" ? amount - currentPaid : 0);
 
             let newStatus = status;
-            if ((status === "PAID" || status === "PARTIAL") && currentPaid + toPay < amount) {
-                newStatus = "PARTIAL";
-            } else if (status === "PAID" || (status === "PARTIAL" && currentPaid + toPay >= amount)) {
+            if (status === "PAID") {
                 newStatus = "PAID";
+            } else if (status === "PARTIAL" && currentPaid + toPay >= amount) {
+                newStatus = "PAID";
+            } else if (status === "PARTIAL" && currentPaid + toPay < amount) {
+                newStatus = "PARTIAL";
             }
 
             await tx.goodsReceipt.update({
@@ -216,7 +218,7 @@ export async function updatePaymentStatusService(
             });
 
             const invAccount = await tx.financeAccount.findUnique({ where: { code: '104' } });
-            const bankAccount = bankAccountId 
+            const bankAccount = bankAccountId
                 ? await tx.financeAccount.findUnique({ where: { id: bankAccountId } })
                 : await tx.financeAccount.findUnique({ where: { code: '102' } });
             const apAccount = await tx.financeAccount.findUnique({ where: { code: '201' } });
@@ -301,10 +303,12 @@ export async function updatePaymentStatusService(
             const totalDiscountNominal = Math.round(Number(deliveryRaw[0]?.totalDiscount || 0));
 
             let newStatus = status;
-            if ((status === "PAID" || status === "PARTIAL") && currentPaid + toReceive < amount) {
-                newStatus = "PARTIAL";
-            } else if (status === "PAID" || (status === "PARTIAL" && currentPaid + toReceive >= amount)) {
+            if (status === "PAID") {
                 newStatus = "PAID";
+            } else if (status === "PARTIAL" && currentPaid + toReceive >= amount) {
+                newStatus = "PAID";
+            } else if (status === "PARTIAL" && currentPaid + toReceive < amount) {
+                newStatus = "PARTIAL";
             }
 
             await tx.salesDelivery.update({
@@ -316,7 +320,7 @@ export async function updatePaymentStatusService(
             });
 
             const arAccount = await tx.financeAccount.findUnique({ where: { code: '105' } });
-            const bankAccount = bankAccountId 
+            const bankAccount = bankAccountId
                 ? await tx.financeAccount.findUnique({ where: { id: bankAccountId } })
                 : await tx.financeAccount.findUnique({ where: { code: '102' } });
             const salesAccount = await tx.financeAccount.findUnique({ where: { code: '401' } });
@@ -361,9 +365,10 @@ export async function updatePaymentStatusService(
             } else if (previousStatus === "PENDING" && status === "PAID") {
                 if (bankAccount && salesAccount) {
                     const fullRecDate = paymentDate || new Date();
-                    await tx.journalEntry.create({ data: { description: `Kas Bank (Penjualan Tunai): ${reference} (${party})`, amount: amount as any, type: "DEBIT", accountId: bankAccount.id, date: fullRecDate, createdById: userId } });
+                    const actualReceived = toReceive > 0 ? toReceive : amount;
+                    await tx.journalEntry.create({ data: { description: `Kas Bank (Penjualan Tunai): ${reference} (${party})`, amount: actualReceived as any, type: "DEBIT", accountId: bankAccount.id, date: fullRecDate, createdById: userId } });
                     await tx.journalEntry.create({ data: { description: `Pendapatan Penjualan: ${reference}`, amount: grossAmount as any, type: "CREDIT", accountId: salesAccount.id, date: fullRecDate, createdById: userId } });
-                    await tx.financeTransaction.create({ data: { transactionType: "INCOME", bank: bankAccount.name, date: fullRecDate, referenceNumber: reference, description: `Penerimaan Lunas Penjualan dari ${party}`, amount: amount as any, category: "PENJUALAN", receiptNumber: reference, createdById: userId } });
+                    await tx.financeTransaction.create({ data: { transactionType: "INCOME", bank: bankAccount.name, date: fullRecDate, referenceNumber: reference, description: `Penerimaan Lunas Penjualan dari ${party}`, amount: actualReceived as any, category: "PENJUALAN", receiptNumber: reference, createdById: userId } });
 
                     if (discountAccount && totalAllDiscounts > 0) {
                         await tx.journalEntry.create({ data: { description: `Potongan Penjualan: ${reference}`, amount: totalAllDiscounts as any, type: "DEBIT", accountId: discountAccount.id, date: fullRecDate, createdById: userId } });
@@ -379,10 +384,7 @@ export async function updatePaymentStatusService(
                     await tx.journalEntry.create({ data: { description: `Penyelesaian Piutang: ${reference} (${party})`, amount: toReceive as any, type: "CREDIT", accountId: arAccount.id, date: instRecDate, createdById: userId } });
                     await tx.financeTransaction.create({ data: { transactionType: "INCOME", bank: bankAccount.name, date: instRecDate, referenceNumber: reference, description: `Penerimaan Piutang dari ${party}`, amount: toReceive as any, category: "PENJUALAN", receiptNumber: reference, createdById: userId } });
                 }
-                const customer = await tx.customer.findFirst({ where: { name: party } });
-                if (customer && toReceive > 0) {
-                    await tx.customer.update({ where: { id: customer.id }, data: { balance: { decrement: toReceive } } });
-                }
+                await syncCustomerBalanceAfterPayment(tx, party);
             }
         }
 
@@ -497,8 +499,8 @@ export async function createFinanceTransactionService(data: any, userId: string)
         let typeBankAccount = isPayment ? "CREDIT" : "DEBIT";
 
         if (isMutation) {
-            typeTargetAccount = "DEBIT"; 
-            typeBankAccount = "CREDIT";  
+            typeTargetAccount = "DEBIT";
+            typeBankAccount = "CREDIT";
         }
 
         await tx.journalEntry.create({
@@ -674,8 +676,8 @@ export async function updateFinanceTransactionService(id: string, data: any, use
         let typeBankAccount = isPayment ? "CREDIT" : "DEBIT";
 
         if (isMutation) {
-            typeTargetAccount = "DEBIT"; 
-            typeBankAccount = "CREDIT";  
+            typeTargetAccount = "DEBIT";
+            typeBankAccount = "CREDIT";
         }
 
         await tx.journalEntry.create({
@@ -723,7 +725,8 @@ export async function editSettledPaymentService(
     newPaidAmount: number,
     paymentDate?: Date,
     userId?: string,
-    bankAccountId?: string
+    bankAccountId?: string,
+    overrideStatus?: "PAID" | "PARTIAL"
 ) {
     const { getPrisma } = require("@/lib/prisma");
     const prisma = getPrisma();
@@ -801,16 +804,16 @@ export async function editSettledPaymentService(
 
             if (newPaidAmount > 0) {
                 const toReceive = Math.round(Number(newPaidAmount));
-                if (toReceive >= totalAmount) {
+                if (overrideStatus === "PAID" || toReceive >= totalAmount) {
                     newStatus = "PAID";
-                    finalPaidAmount = totalAmount;
+                    finalPaidAmount = Math.min(toReceive, totalAmount);
                 } else {
                     newStatus = "PARTIAL";
                     finalPaidAmount = toReceive;
                 }
 
                 const arAccount = await tx.financeAccount.findUnique({ where: { code: '105' } });
-                const bankAccount = bankAccountId 
+                const bankAccount = bankAccountId
                     ? await tx.financeAccount.findUnique({ where: { id: bankAccountId } })
                     : await tx.financeAccount.findUnique({ where: { code: '102' } });
 
@@ -855,6 +858,7 @@ export async function editSettledPaymentService(
                     paidAmount: finalPaidAmount
                 }
             });
+            await syncCustomerBalanceAfterPayment(tx, party);
 
         } else if (type === "PURCHASE") {
             // 1. Fetch GoodsReceipt
@@ -930,16 +934,16 @@ export async function editSettledPaymentService(
 
             if (newPaidAmount > 0) {
                 const toPay = Math.round(Number(newPaidAmount));
-                if (toPay >= totalAmount) {
+                if (overrideStatus === "PAID" || toPay >= totalAmount) {
                     newStatus = "PAID";
-                    finalPaidAmount = totalAmount;
+                    finalPaidAmount = Math.min(toPay, totalAmount);
                 } else {
                     newStatus = "PARTIAL";
                     finalPaidAmount = toPay;
                 }
 
                 const apAccount = await tx.financeAccount.findUnique({ where: { code: '201' } });
-                const bankAccount = bankAccountId 
+                const bankAccount = bankAccountId
                     ? await tx.financeAccount.findUnique({ where: { id: bankAccountId } })
                     : await tx.financeAccount.findUnique({ where: { code: '102' } });
 
@@ -1006,7 +1010,7 @@ export async function updateGroupedPaymentStatusService(
     const prisma = getPrisma();
 
     const deliveries = await prisma.salesDelivery.findMany({
-        where: { OR: [ { invoiceNumber: invoiceNumber }, { deliveryNumber: invoiceNumber } ], isVoid: false },
+        where: { OR: [{ invoiceNumber: invoiceNumber }, { deliveryNumber: invoiceNumber }], isVoid: false },
         orderBy: { createdAt: 'asc' }
     });
 
@@ -1040,10 +1044,17 @@ export async function updateGroupedPaymentStatusService(
 
             if (unpaid > 0) {
                 const payForThis = Math.min(unpaid, remainingToDistribute);
-                const newStatus = (payForThis === unpaid && d.paymentStatus !== "PENDING") ? "PAID" : "PARTIAL";
+                const newStatus = status === "PAID" ? "PAID" : ((payForThis === unpaid && d.paymentStatus !== "PENDING") ? "PAID" : "PARTIAL");
                 await updatePaymentStatusService("SALE", d.id, newStatus, payForThis, paymentDate, userId, bankAccountId);
                 remainingToDistribute -= payForThis;
             }
+        }
+        // Jika user memilih status = "PAID" (Sudah Lunas untuk pengiriman parsial), tandai semua SJ aktif di invoice ini sebagai PAID
+        if (status === "PAID") {
+            await prisma.salesDelivery.updateMany({
+                where: { id: { in: deliveries.map((d: any) => d.id) } },
+                data: { paymentStatus: "PAID" }
+            });
         }
         return { success: true };
     }

@@ -245,10 +245,13 @@ export default async function FinancePage() {
             g.paidAmount += Number(s.paidAmount || 0);
             g.total += Number(s.total || 0);
             g.groupedIds.push(s.id);
+            if (s.paymentStatus !== 'PAID') {
+                g.allPaid = false;
+            }
         }
-        
+        
         return Array.from(grouped.values()).map(g => {
-            if (g.paidAmount >= g.total && g.total > 0) {
+            if (g.allPaid !== false || (g.paidAmount >= g.total && g.total > 0)) {
                 g.paymentStatus = 'PAID';
             } else if (g.paidAmount > 0) {
                 g.paymentStatus = 'PARTIAL';
