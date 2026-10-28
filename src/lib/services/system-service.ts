@@ -381,7 +381,7 @@ export async function getTraceabilitySummaryService() {
     ]);
 
     // Process SO status (All Sales Orders including customer POs)
-    const soOpen = salesOrders.filter((o: any) => o.status === 'OPEN' || o.status === 'DRAFT' || o.status === 'CONFIRMED');
+    const soOpen = salesOrders.filter((o: any) => o.status === 'OPEN' || o.status === 'REVISI' || o.status === 'DRAFT' || o.status === 'CONFIRMED');
     const soPartial = salesOrders.filter((o: any) => o.status === 'PARTIAL');
     const soClosed = salesOrders.filter((o: any) => o.status === 'CLOSED');
 

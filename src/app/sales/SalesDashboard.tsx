@@ -638,7 +638,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                     'No. SO Jual': o.orderNumber,
                     'Tgl SO': format(new Date(o.date || o.createdAt), "yyyy-MM-dd"),
                     'Buyer / Customer': o.buyerName,
-                    'Status': o.status,
+                    'Status': o.status === "OPEN" ? "REVISI" : o.status,
                     'Barcode / SKU': "-",
                     'Nama Barang': "-",
                     'Qty Pesan': 0,
@@ -657,7 +657,7 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                         'No. SO Jual': o.orderNumber,
                         'Tgl SO': format(new Date(o.date || o.createdAt), "yyyy-MM-dd"),
                         'Buyer / Customer': o.buyerName,
-                        'Status': o.status,
+                        'Status': o.status === "OPEN" ? "REVISI" : o.status,
                         'Barcode / SKU': item.product?.sku || "-",
                         'Nama Barang': item.product?.name || "-",
                         'Qty Pesan': qty,
@@ -1318,9 +1318,10 @@ export default function SalesDashboard({ initialDeliveries, initialReceipts = []
                                                 "px-3 py-1 text-[10px] font-black rounded-full border",
                                                 o.status === "DRAFT" ? "bg-slate-100 text-slate-600 border-slate-200" :
                                                 o.status === "CONFIRMED" ? "bg-blue-100 text-blue-700 border-blue-200" :
+                                                (o.status === "OPEN" || o.status === "REVISI") ? "bg-amber-100 text-amber-700 border-amber-200" :
                                                 "bg-emerald-100 text-emerald-700 border-emerald-200"
                                             )}>
-                                                {o.status}
+                                                {o.status === "OPEN" ? "REVISI" : o.status}
                                             </span>
                                         </td>
                                         <td data-label="Total Qty" className="text-right font-black text-slate-900 md:pr-6">

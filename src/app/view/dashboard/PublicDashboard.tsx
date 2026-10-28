@@ -207,8 +207,8 @@ export function PublicDashboard({ stats, weeklyStats, dailyReport, traceabilityD
                               </div>
                             </td>
                             <td className="px-4 py-2.5 text-center">
-                              <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${pct > 0 ? "bg-indigo-100 text-indigo-700" : "bg-blue-100 text-blue-700"}`}>
-                                {pct > 0 ? "PARTIAL" : "OPEN"}
+                              <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${pct > 0 ? "bg-indigo-100 text-indigo-700" : "bg-amber-100 text-amber-700"}`}>
+                                {pct > 0 ? "PARTIAL" : "REVISI"}
                               </span>
                             </td>
                           </tr>

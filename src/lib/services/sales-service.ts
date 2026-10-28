@@ -325,7 +325,7 @@ export async function createSalesDeliveryService(data: any, userId: string) {
             
             await tx.salesOrder.update({
                 where: { id: data.orderId },
-                data: { status: allShipped ? "CLOSED" : someShipped ? "PARTIAL" : "OPEN" }
+                data: { status: allShipped ? "CLOSED" : someShipped ? "PARTIAL" : "REVISI" }
             });
         }
 
@@ -828,7 +828,7 @@ export async function deleteSalesDeliveryService(id: string) {
                 
                 await tx.salesOrder.update({
                     where: { id: delivery.orderId },
-                    data: { status: allShipped ? "CLOSED" : someShipped ? "PARTIAL" : "OPEN" }
+                    data: { status: allShipped ? "CLOSED" : someShipped ? "PARTIAL" : "REVISI" }
                 });
             }
         }
@@ -894,7 +894,7 @@ export async function voidSalesDeliveryService(id: string, reason: string) {
                 
                 await tx.salesOrder.update({
                     where: { id: delivery.orderId },
-                    data: { status: allShipped ? "CLOSED" : someShipped ? "PARTIAL" : "OPEN" }
+                    data: { status: allShipped ? "CLOSED" : someShipped ? "PARTIAL" : "REVISI" }
                 });
             }
         }
