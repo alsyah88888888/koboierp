@@ -99,35 +99,11 @@ export async function distributeOperationalCosts(operationalData: any[], salesPe
         return operationalData;
     }
 
-    // Linked ops: already tagged with the delivery's salesPerson — filter directly
-    const linked = operationalData.filter((ops: any) =>
+    // Hanya ambil operasional yang memang ditujukan untuk divisi sales tersebut (BC / PF / OWEN).
+    // Pengeluaran Kantor (tanpa salesPerson) TIDAK ikut terbawa ke tarikan BC / PF / OWEN.
+    return operationalData.filter((ops: any) =>
         (ops.salesPerson || '').startsWith(salesPersonPrefix)
     );
-
-    // Unlinked (general) ops: no salesPerson attributed to any known division
-    const unlinked = operationalData.filter((ops: any) =>
-        !(ops.salesPerson || '').startsWith('PF') && 
-        !(ops.salesPerson || '').startsWith('BC') && 
-        !(ops.salesPerson || '').startsWith('OWEN')
-    );
-
-    if (unlinked.length === 0) return linked;
-
-    // Apply proportional share of general ops to this division.
-    // revenueShare = this division's revenue / total all-division revenue (0.0 to 1.0)
-    // Default 0.5 if ratio cannot be determined (equal split)
-    const share = (revenueShare !== undefined && revenueShare >= 0 && revenueShare <= 1)
-        ? revenueShare
-        : 0.5;
-
-    const scaledUnlinked = unlinked.map((ops: any) => ({
-        ...ops,
-        amount: Math.round(Number(ops.amount || 0) * share),
-        _isProportionalShare: true,
-        _sharePct: Math.round(share * 100)
-    }));
-
-    return [...linked, ...scaledUnlinked];
 }
 
 
