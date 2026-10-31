@@ -38,17 +38,26 @@ export function OperationalModal({ isOpen, onClose, coa, transaction }: Operatio
     const [searchingRef, setSearchingRef] = useState(false);
 
     const [salesRefs, setSalesRefs] = useState<any[]>([]);
+    const [purchaseRefs, setPurchaseRefs] = useState<any[]>([]);
     const [isRefDropdownOpen, setIsRefDropdownOpen] = useState(false);
+    const [isPurchaseDropdownOpen, setIsPurchaseDropdownOpen] = useState(false);
     const [refSearch, setRefSearch] = useState("");
+    const [purchaseSearch, setPurchaseSearch] = useState("");
 
     useEffect(() => {
         if (!isOpen) return;
 
         const loadSalesRefs = async () => {
             try {
-                const res = await callAction("getRecentSalesReferences");
+                const [res, pRes] = await Promise.all([
+                    callAction("getRecentSalesReferences"),
+                    callAction("getRecentPurchaseReferences")
+                ]);
                 if (Array.isArray(res)) {
                     setSalesRefs(res);
+                }
+                if (Array.isArray(pRes)) {
+                    setPurchaseRefs(pRes);
                 }
             } catch (err) {
                 console.error("Error loading sales references:", err);
@@ -184,6 +193,15 @@ export function OperationalModal({ isOpen, onClose, coa, transaction }: Operatio
         return (
             ref.invoiceNumber.toLowerCase().includes(term) ||
             (ref.buyerName || "").toLowerCase().includes(term) ||
+            (ref.salesPerson || "").toLowerCase().includes(term)
+        );
+    });
+
+    const filteredPurchaseRefs = purchaseRefs.filter(ref => {
+        const term = purchaseSearch.toLowerCase();
+        return (
+            ref.receiptNumber.toLowerCase().includes(term) ||
+            (ref.supplierName || "").toLowerCase().includes(term) ||
             (ref.salesPerson || "").toLowerCase().includes(term)
         );
     });
@@ -339,7 +357,7 @@ export function OperationalModal({ isOpen, onClose, coa, transaction }: Operatio
                                 setContextType(type);
                                 setFormData(prev => ({
                                     ...prev,
-                                    salesPerson: type === "SALES" ? prev.salesPerson : "",
+                                    salesPerson: (type === "SALES" || type === "PURCHASE") ? prev.salesPerson : "",
                                     invoiceNumber: type === "SALES" ? prev.invoiceNumber : "",
                                     receiptNumber: type === "PURCHASE" ? prev.receiptNumber : ""
                                 }));
@@ -453,16 +471,103 @@ export function OperationalModal({ isOpen, onClose, coa, transaction }: Operatio
                     )}
 
                     {contextType === "PURCHASE" && (
-                        <div className="space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">No. LPB / Penerimaan Barang</label>
-                            <input
-                                type="text"
-                                placeholder="Contoh: LPB-BC-02062026-001"
-                                className="w-full bg-accent/50 border-none rounded-xl py-2 px-3 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all"
-                                value={formData.receiptNumber}
-                                onChange={(e) => setFormData({ ...formData, receiptNumber: e.target.value })}
-                                required
-                            />
+                        <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-1 duration-200">
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Sales Context (Opsional)</label>
+                                <select
+                                    className="w-full bg-accent/50 border-none rounded-xl py-2 px-3 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all"
+                                    value={formData.salesPerson}
+                                    onChange={(e) => setFormData({ ...formData, salesPerson: e.target.value })}
+                                >
+                                    <option value="">Pilih Sales...</option>
+                                    <option value="BC">Sales BC</option>
+                                    <option value="PF">Sales PF</option>
+                                    <option value="OWEN">Sales OWEN</option>
+                                </select>
+                            </div>
+                            <div className="space-y-2 relative">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">No. LPB / Penerimaan</label>
+                                <div className="relative">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsPurchaseDropdownOpen(!isPurchaseDropdownOpen)}
+                                        className="w-full text-left bg-accent/50 border-none rounded-xl py-2 px-3 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all flex justify-between items-center cursor-pointer min-h-[38px]"
+                                    >
+                                        <span className="truncate">
+                                            {formData.receiptNumber || "Pilih LPB (Bisa >1)..."}
+                                        </span>
+                                        <span className="text-[8px] text-slate-400">▼</span>
+                                    </button>
+
+                                    {isPurchaseDropdownOpen && (
+                                        <>
+                                            <div 
+                                                className="fixed inset-0 z-40 cursor-default" 
+                                                onClick={() => setIsPurchaseDropdownOpen(false)}
+                                            />
+                                            <div className="absolute right-0 left-0 mt-1 bg-card border border-slate-200 shadow-2xl rounded-2xl p-2 z-50 max-h-60 overflow-y-auto space-y-2 animate-in fade-in slide-in-from-top-1 duration-150">
+                                                <input
+                                                    type="text"
+                                                    placeholder="Cari LPB / Supplier..."
+                                                    className="w-full bg-slate-50 border border-slate-100 rounded-lg py-1.5 px-2.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                                    value={purchaseSearch}
+                                                    onChange={(e) => setPurchaseSearch(e.target.value)}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                />
+                                                <div className="space-y-1 max-h-48 overflow-y-auto">
+                                                    {filteredPurchaseRefs.length === 0 ? (
+                                                        <div className="p-3 text-[10px] font-bold text-slate-400 text-center uppercase tracking-wider">
+                                                            Data tidak ditemukan
+                                                        </div>
+                                                    ) : (
+                                                        filteredPurchaseRefs.map((ref) => {
+                                                            const currentReceipts = formData.receiptNumber ? formData.receiptNumber.split(",").map(s => s.trim()).filter(Boolean) : [];
+                                                            const isSelected = currentReceipts.includes(ref.receiptNumber);
+
+                                                            return (
+                                                                <button
+                                                                    key={ref.receiptNumber}
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        let newReceipts;
+                                                                        if (isSelected) {
+                                                                            newReceipts = currentReceipts.filter(r => r !== ref.receiptNumber);
+                                                                        } else {
+                                                                            newReceipts = [...currentReceipts, ref.receiptNumber];
+                                                                        }
+                                                                        
+                                                                        const newReceiptString = newReceipts.join(", ");
+
+                                                                        setFormData(prev => ({
+                                                                            ...prev,
+                                                                            receiptNumber: newReceiptString,
+                                                                            salesPerson: ref.salesPerson || prev.salesPerson,
+                                                                            referenceNumber: newReceiptString || prev.referenceNumber
+                                                                        }));
+                                                                    }}
+                                                                    className={`w-full text-left p-2 rounded-lg transition-colors cursor-pointer flex items-center gap-3 ${isSelected ? "bg-primary/10 border-primary/20" : "hover:bg-slate-50 border-transparent"} border`}
+                                                                >
+                                                                    <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${isSelected ? "bg-primary border-primary text-white" : "border-slate-300"}`}>
+                                                                        {isSelected && <span className="text-[10px]">✓</span>}
+                                                                    </div>
+                                                                    <div className="flex flex-col gap-0.5">
+                                                                        <span className="text-xs font-bold text-slate-800 tracking-tight">
+                                                                            {ref.receiptNumber}
+                                                                        </span>
+                                                                        <span className="text-[10px] font-medium text-slate-500 leading-none">
+                                                                            {ref.supplierName || "No Supplier"} • Sales: {ref.salesPerson || "-"} • Rp {(ref.grandTotal || 0).toLocaleString("id-ID")}
+                                                                        </span>
+                                                                    </div>
+                                                                </button>
+                                                            );
+                                                        })
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
                         </div>
                     )}
                     

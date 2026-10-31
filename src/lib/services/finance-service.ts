@@ -417,7 +417,7 @@ export async function createFinanceTransactionService(data: any, userId: string)
         let salesPerson = data.salesPerson || null;
         let invoiceNumber = data.invoiceNumber || null;
 
-        if (data.referenceNumber && !invoiceNumber) {
+        if (data.referenceNumber && !invoiceNumber && !data.receiptNumber) {
             const cleanedRef = data.referenceNumber.trim();
             // Search in SalesDelivery
             const delivery = await tx.salesDelivery.findFirst({
@@ -445,7 +445,7 @@ export async function createFinanceTransactionService(data: any, userId: string)
                     select: { salesPerson: true, invoiceNumber: true, orderNumber: true }
                 });
                 if (order) {
-                    salesPerson = order.salesPerson || null;
+                    salesPerson = salesPerson || order.salesPerson || null;
                     invoiceNumber = order.invoiceNumber || order.orderNumber;
                 }
             }
@@ -468,26 +468,25 @@ export async function createFinanceTransactionService(data: any, userId: string)
 
         // Allocating Landed Cost if linked to a Purchase Goods Receipt
         if (data.receiptNumber && data.transactionType === "PAYMENT") {
-            const goodsReceipt = await tx.goodsReceipt.findUnique({
-                where: { receiptNumber: data.receiptNumber },
+            const rNums = String(data.receiptNumber).split(',').map((s: string) => s.trim()).filter(Boolean);
+            const goodsReceipts = await tx.goodsReceipt.findMany({
+                where: { receiptNumber: { in: rNums } },
                 include: { items: true }
             });
-            if (goodsReceipt && goodsReceipt.items.length > 0) {
-                const totalQty = goodsReceipt.items.reduce((sum: number, item: any) => sum + item.quantity, 0);
-                if (totalQty > 0) {
-                    const extraCostPerUnit = Number(data.amount) / totalQty;
-                    const lots = await tx.productLot.findMany({
-                        where: { grNumber: data.receiptNumber }
+            const totalQty = goodsReceipts.reduce((sum: number, gr: any) => sum + gr.items.reduce((s: number, item: any) => s + item.quantity, 0), 0);
+            if (totalQty > 0) {
+                const extraCostPerUnit = Number(data.amount) / totalQty;
+                const lots = await tx.productLot.findMany({
+                    where: { grNumber: { in: rNums } }
+                });
+                for (const lot of lots) {
+                    const currentLandedCost = Number(lot.landedCost || lot.purchasePrice);
+                    await tx.productLot.update({
+                        where: { id: lot.id },
+                        data: {
+                            landedCost: currentLandedCost + extraCostPerUnit
+                        }
                     });
-                    for (const lot of lots) {
-                        const currentLandedCost = Number(lot.landedCost || lot.purchasePrice);
-                        await tx.productLot.update({
-                            where: { id: lot.id },
-                            data: {
-                                landedCost: currentLandedCost + extraCostPerUnit
-                            }
-                        });
-                    }
                 }
             }
         }
@@ -555,26 +554,25 @@ export async function updateFinanceTransactionService(id: string, data: any, use
 
         // 2. Revert old Landed Cost if linked to purchase
         if (oldTx && oldTx.receiptNumber && oldTx.transactionType === "PAYMENT") {
-            const goodsReceipt = await tx.goodsReceipt.findUnique({
-                where: { receiptNumber: oldTx.receiptNumber },
+            const oldRNums = String(oldTx.receiptNumber).split(',').map((s: string) => s.trim()).filter(Boolean);
+            const goodsReceipts = await tx.goodsReceipt.findMany({
+                where: { receiptNumber: { in: oldRNums } },
                 include: { items: true }
             });
-            if (goodsReceipt && goodsReceipt.items.length > 0) {
-                const totalQty = goodsReceipt.items.reduce((sum: number, item: any) => sum + item.quantity, 0);
-                if (totalQty > 0) {
-                    const extraCostPerUnit = Number(oldTx.amount) / totalQty;
-                    const lots = await tx.productLot.findMany({
-                        where: { grNumber: oldTx.receiptNumber }
+            const totalQty = goodsReceipts.reduce((sum: number, gr: any) => sum + gr.items.reduce((s: number, item: any) => s + item.quantity, 0), 0);
+            if (totalQty > 0) {
+                const extraCostPerUnit = Number(oldTx.amount) / totalQty;
+                const lots = await tx.productLot.findMany({
+                    where: { grNumber: { in: oldRNums } }
+                });
+                for (const lot of lots) {
+                    const currentLandedCost = Number(lot.landedCost || lot.purchasePrice);
+                    await tx.productLot.update({
+                        where: { id: lot.id },
+                        data: {
+                            landedCost: Math.max(Number(lot.purchasePrice), currentLandedCost - extraCostPerUnit)
+                        }
                     });
-                    for (const lot of lots) {
-                        const currentLandedCost = Number(lot.landedCost || lot.purchasePrice);
-                        await tx.productLot.update({
-                            where: { id: lot.id },
-                            data: {
-                                landedCost: Math.max(Number(lot.purchasePrice), currentLandedCost - extraCostPerUnit)
-                            }
-                        });
-                    }
                 }
             }
         }
@@ -589,7 +587,7 @@ export async function updateFinanceTransactionService(id: string, data: any, use
         let salesPerson = data.salesPerson || null;
         let invoiceNumber = data.invoiceNumber || null;
 
-        if (data.referenceNumber && !invoiceNumber) {
+        if (data.referenceNumber && !invoiceNumber && !data.receiptNumber) {
             const cleanedRef = data.referenceNumber.trim();
             const delivery = await tx.salesDelivery.findFirst({
                 where: {
@@ -615,7 +613,7 @@ export async function updateFinanceTransactionService(id: string, data: any, use
                     select: { salesPerson: true, invoiceNumber: true, orderNumber: true }
                 });
                 if (order) {
-                    salesPerson = order.salesPerson || null;
+                    salesPerson = salesPerson || order.salesPerson || null;
                     invoiceNumber = order.invoiceNumber || order.orderNumber;
                 }
             }
@@ -639,26 +637,25 @@ export async function updateFinanceTransactionService(id: string, data: any, use
 
         // 4. Apply new Landed Cost if linked to a Purchase Goods Receipt
         if (data.receiptNumber && data.transactionType === "PAYMENT") {
-            const goodsReceipt = await tx.goodsReceipt.findUnique({
-                where: { receiptNumber: data.receiptNumber },
+            const newRNums = String(data.receiptNumber).split(',').map((s: string) => s.trim()).filter(Boolean);
+            const goodsReceipts = await tx.goodsReceipt.findMany({
+                where: { receiptNumber: { in: newRNums } },
                 include: { items: true }
             });
-            if (goodsReceipt && goodsReceipt.items.length > 0) {
-                const totalQty = goodsReceipt.items.reduce((sum: number, item: any) => sum + item.quantity, 0);
-                if (totalQty > 0) {
-                    const extraCostPerUnit = Number(data.amount) / totalQty;
-                    const lots = await tx.productLot.findMany({
-                        where: { grNumber: data.receiptNumber }
+            const totalQty = goodsReceipts.reduce((sum: number, gr: any) => sum + gr.items.reduce((s: number, item: any) => s + item.quantity, 0), 0);
+            if (totalQty > 0) {
+                const extraCostPerUnit = Number(data.amount) / totalQty;
+                const lots = await tx.productLot.findMany({
+                    where: { grNumber: { in: newRNums } }
+                });
+                for (const lot of lots) {
+                    const currentLandedCost = Number(lot.landedCost || lot.purchasePrice);
+                    await tx.productLot.update({
+                        where: { id: lot.id },
+                        data: {
+                            landedCost: currentLandedCost + extraCostPerUnit
+                        }
                     });
-                    for (const lot of lots) {
-                        const currentLandedCost = Number(lot.landedCost || lot.purchasePrice);
-                        await tx.productLot.update({
-                            where: { id: lot.id },
-                            data: {
-                                landedCost: currentLandedCost + extraCostPerUnit
-                            }
-                        });
-                    }
                 }
             }
         }

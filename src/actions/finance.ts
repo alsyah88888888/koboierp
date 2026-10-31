@@ -460,6 +460,8 @@ export async function getRecentPurchaseReferencesAction() {
         select: {
             receiptNumber: true,
             receivedFrom: true,
+            salesPerson: true,
+            grandTotal: true,
             date: true
         }
     });
@@ -468,6 +470,8 @@ export async function getRecentPurchaseReferencesAction() {
         return {
             receiptNumber: d.receiptNumber,
             supplierName: d.receivedFrom || "",
+            salesPerson: d.salesPerson || "",
+            grandTotal: Number(d.grandTotal || 0),
             date: d.date ? d.date.toISOString() : null,
             label: `${d.receiptNumber} - ${d.receivedFrom || "No Supplier"}`
         };
