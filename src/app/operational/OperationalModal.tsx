@@ -89,7 +89,7 @@ export function OperationalModal({ isOpen, onClose, coa, transaction }: Operatio
                 invoiceNumber: transaction.invoiceNumber || "",
                 receiptNumber: transaction.receiptNumber || "",
             });
-            setContextType(transaction.invoiceNumber ? "SALES" : transaction.receiptNumber ? "PURCHASE" : "GENERAL");
+            setContextType(transaction.receiptNumber ? "PURCHASE" : (transaction.invoiceNumber || transaction.salesPerson) ? "SALES" : "GENERAL");
         } else if (isOpen) {
             setFormData({
                 transactionType: "PAYMENT",
@@ -348,7 +348,7 @@ export function OperationalModal({ isOpen, onClose, coa, transaction }: Operatio
                     </div>
 
                     <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Konteks Transaksi</label>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Konteks / Alokasi Transaksi</label>
                         <select
                             className="w-full bg-accent/50 border-none rounded-xl py-2 px-3 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all"
                             value={contextType}
@@ -363,16 +363,16 @@ export function OperationalModal({ isOpen, onClose, coa, transaction }: Operatio
                                 }));
                             }}
                         >
-                            <option value="GENERAL">Umum / Non-Transaksi</option>
-                            <option value="SALES">Penjualan (Sales)</option>
-                            <option value="PURCHASE">Pembelian (Purchase/Landed Cost)</option>
+                            <option value="GENERAL">Operasional Umum / Kantor (Non-Sales)</option>
+                            <option value="SALES">Pengeluaran Sales / Penjualan (BC, PF, OWEN)</option>
+                            <option value="PURCHASE">Pembelian Barang / LPB (Purchase / Landed Cost)</option>
                         </select>
                     </div>
 
                     {contextType === "SALES" && (
                         <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-1 duration-200">
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Sales Context (Opsional)</label>
+                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Pilih Divisi Sales</label>
                                 <select
                                     className="w-full bg-accent/50 border-none rounded-xl py-2 px-3 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all"
                                     value={formData.salesPerson}
@@ -385,7 +385,7 @@ export function OperationalModal({ isOpen, onClose, coa, transaction }: Operatio
                                 </select>
                             </div>
                             <div className="space-y-2 relative">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">No. Invoice / SJ</label>
+                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">No. Invoice / SJ (Opsional)</label>
                                 <div className="relative">
                                     <button
                                         type="button"
@@ -473,7 +473,7 @@ export function OperationalModal({ isOpen, onClose, coa, transaction }: Operatio
                     {contextType === "PURCHASE" && (
                         <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-1 duration-200">
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Sales Context (Opsional)</label>
+                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Pilih Divisi Sales</label>
                                 <select
                                     className="w-full bg-accent/50 border-none rounded-xl py-2 px-3 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all"
                                     value={formData.salesPerson}
@@ -573,7 +573,7 @@ export function OperationalModal({ isOpen, onClose, coa, transaction }: Operatio
                     
                     <div className="px-2">
                         <p className="text-[9px] text-slate-400 ml-1 font-medium mt-1 uppercase italic">
-                            {contextType === "SALES" && "*Jika dipilih, transaksi ini akan otomatis memotong Nett Margin Sales."}
+                            {contextType === "SALES" && "*Pilih Divisi Sales saja untuk pengeluaran operasional sales umum (inventaris/bensin/dll), atau pilih juga Invoice/SJ jika menempel ke pengiriman tertentu. Otomatis memotong Laba Bersih Sales."}
                             {contextType === "PURCHASE" && "*Jika dipilih, transaksi ini akan otomatis menambah Landed Cost / HPP barang masuk."}
                             {contextType === "GENERAL" && "*Transaksi operasional umum (tidak menempel ke penjualan/pembelian)."}
                         </p>
