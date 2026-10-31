@@ -357,7 +357,7 @@ export function OperationalModal({ isOpen, onClose, coa, transaction }: Operatio
                                 value={formData.salesPerson}
                                 onChange={(e) => setFormData({ ...formData, salesPerson: e.target.value })}
                             >
-                                <option value="">Umum / Kantor (Non-Sales)</option>
+                                <option value="">Kantor</option>
                                 <option value="BC">Sales BC</option>
                                 <option value="PF">Sales PF</option>
                                 <option value="OWEN">Sales OWEN</option>
@@ -379,7 +379,7 @@ export function OperationalModal({ isOpen, onClose, coa, transaction }: Operatio
                                     }));
                                 }}
                             >
-                                <option value="GENERAL">Umum / Non-Transaksi</option>
+                                <option value="GENERAL">Kantor / Non-Transaksi</option>
                                 <option value="SALES">Penjualan (Sales)</option>
                                 <option value="PURCHASE">Pembelian (Purchase/Landed Cost)</option>
                             </select>
@@ -560,7 +560,7 @@ export function OperationalModal({ isOpen, onClose, coa, transaction }: Operatio
                     
                     <div className="px-2">
                         <p className="text-[9px] text-slate-400 ml-1 font-medium mt-1 uppercase italic">
-                            {formData.salesPerson ? `*Transaksi ini ditujukan untuk Sales ${formData.salesPerson} dan otomatis memotong Laba Bersih Sales ${formData.salesPerson}.` : "*Transaksi ini ditujukan untuk Operasional Umum / Kantor."}
+                            {formData.salesPerson ? `*Transaksi ini ditujukan untuk Sales ${formData.salesPerson} dan otomatis memotong Laba Bersih Sales ${formData.salesPerson}.` : "*Transaksi ini ditujukan untuk pengeluaran Kantor."}
                         </p>
                     </div>
 

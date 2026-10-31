@@ -491,7 +491,7 @@ export function OperationalDashboard({
                                                 </span>
                                             ) : (
                                                 <span className="px-1.5 py-0.5 bg-slate-50 text-slate-400 rounded text-[9px] font-black uppercase tracking-widest border border-slate-100">
-                                                    Untuk: Umum / Kantor
+                                                    Untuk: Kantor
                                                 </span>
                                             )}
                                         </div>

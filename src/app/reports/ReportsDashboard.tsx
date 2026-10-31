@@ -1145,7 +1145,7 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
                     cleanDesc = cleanDesc.replace(/^-\s*/, '').trim();
 
                     return {
-                        'No': i + 1, 'Tanggal': fmtDate(o.date), 'Kode PR': kodePR, 'Ref / SJ': o.referenceNumber || kodeSJ || '-', 'Bank': o.bank, 'Kategori': o.category, 'Jumlah': o.amount, 'Keterangan': cleanDesc || '-',
+                        'No': i + 1, 'Tanggal': fmtDate(o.date), 'Untuk': o.salesPerson ? `Sales ${o.salesPerson}` : 'Kantor', 'Kode PR': kodePR, 'Ref / SJ': o.referenceNumber || kodeSJ || '-', 'Bank': o.bank, 'Kategori': o.category, 'Jumlah': o.amount, 'Keterangan': cleanDesc || '-',
                         'Sales': o.salesPerson || '-', 'Operator': o.operator,
                         'Sudah di Traceability?': o.adaDiTraceability ? 'Sudah' : 'Belum', 'Terkait SJ': o.sourceDeliveryNumber || '-'
                     };
@@ -1249,7 +1249,7 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
                     cleanDesc = cleanDesc.replace(/^-\s*/, '').trim();
 
                     return {
-                        'No': i + 1, 'Tanggal': fmtDate(o.date), 'Kode PR': kodePR, 'Ref / SJ': o.referenceNumber || kodeSJ || '-', 'Bank': o.bank, 'Kategori': o.category, 'Jumlah': o.amount, 'Keterangan': cleanDesc || '-',
+                        'No': i + 1, 'Tanggal': fmtDate(o.date), 'Untuk': o.salesPerson ? `Sales ${o.salesPerson}` : 'Kantor', 'Kode PR': kodePR, 'Ref / SJ': o.referenceNumber || kodeSJ || '-', 'Bank': o.bank, 'Kategori': o.category, 'Jumlah': o.amount, 'Keterangan': cleanDesc || '-',
                         'Sudah di Traceability?': o.adaDiTraceability ? 'Sudah' : 'Belum', 'Terkait SJ': o.sourceDeliveryNumber || '-'
                     };
                 });
@@ -1389,7 +1389,7 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
                     cleanDesc = cleanDesc.replace(/^-\s*/, '').trim();
 
                     return {
-                        'No': i + 1, 'Tanggal': fmtDate(o.date), 'Kode PR': kodePR, 'Ref / SJ': o.referenceNumber || kodeSJ || '-', 'Bank': o.bank, 'Kategori': o.category, 'Jumlah': o.amount, 'Keterangan': cleanDesc || '-',
+                        'No': i + 1, 'Tanggal': fmtDate(o.date), 'Untuk': o.salesPerson ? `Sales ${o.salesPerson}` : 'Kantor', 'Kode PR': kodePR, 'Ref / SJ': o.referenceNumber || kodeSJ || '-', 'Bank': o.bank, 'Kategori': o.category, 'Jumlah': o.amount, 'Keterangan': cleanDesc || '-',
                         'Sudah di Traceability?': o.adaDiTraceability ? 'Sudah' : 'Belum', 'Terkait SJ': o.sourceDeliveryNumber || '-'
                     };
                 });
@@ -1518,7 +1518,7 @@ export function ReportsDashboard({ userRole = 'USER' }: { userRole?: string }) {
                     cleanDesc = cleanDesc.replace(/^-\s*/, '').trim();
 
                     return {
-                        'No': i + 1, 'Tanggal': fmtDate(o.date), 'Kode PR': kodePR, 'Ref / SJ': o.referenceNumber || kodeSJ || '-', 'Bank': o.bank, 'Kategori': o.category, 'Jumlah': o.amount, 'Keterangan': cleanDesc || '-',
+                        'No': i + 1, 'Tanggal': fmtDate(o.date), 'Untuk': o.salesPerson ? `Sales ${o.salesPerson}` : 'Kantor', 'Kode PR': kodePR, 'Ref / SJ': o.referenceNumber || kodeSJ || '-', 'Bank': o.bank, 'Kategori': o.category, 'Jumlah': o.amount, 'Keterangan': cleanDesc || '-',
                         'Sudah di Traceability?': o.adaDiTraceability ? 'Sudah' : 'Belum', 'Terkait SJ': o.sourceDeliveryNumber || '-'
                     };
                 });
