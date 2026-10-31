@@ -151,20 +151,18 @@ function tagTraceabilityStatus(opsRow: any, traceDeliverySet: Set<string>) {
 
 // Calculates mixed accrual/cash operational costs for the Summary section
 function calculateAccrualOpsExpenses(ops: any[], traceabilityRows: any[]): { linked: number; unlinked: number; total: number } {
-    let linked = 0;
-    traceabilityRows.forEach((r: any) => {
-        linked += Math.abs(Number(r.OPS || 0));
-    });
-
     const traceDeliverySet = buildTraceDeliverySet(traceabilityRows);
+    let linked = 0;
     let unlinked = 0;
     
     for (const o of ops) {
-        const isExpense = o.transactionType === 'PAYMENT' || o.transactionType === 'EXPENSE' || Number(o.amount) < 0;
+        const isExpense = o.transactionType === "PAYMENT" || o.transactionType === "EXPENSE" || Number(o.amount) < 0;
         if (!isExpense) continue;
         
         const { adaDiTraceability } = tagTraceabilityStatus(o, traceDeliverySet);
-        if (!adaDiTraceability) {
+        if (adaDiTraceability) {
+            linked += Math.abs(Number(o.amount || 0));
+        } else {
             unlinked += Math.abs(Number(o.amount || 0));
         }
     }
@@ -895,8 +893,8 @@ export async function getMonthlyClosingReportService(month?: number, year?: numb
         const { linked: cashLinked, unlinked: cashUnlinked } = calculateCashFlowOpsExpenses(expenses, monthlyTraceability);
         
         const expenseByCategory = [
-            { name: "Ops Kirim (P&L)", value: linkedOpsExpense },
-            { name: "Ops Umum (P&L)", value: generalOps }
+            { name: "OPS Kirim dan Muat", value: linkedOpsExpense },
+            { name: "Fee, TKBM", value: generalOps }
         ].filter(x => x.value > 0);
 
         const cashFlowByCategory = [
@@ -1462,8 +1460,8 @@ export async function getComprehensiveDailyReportService(date?: string, prefix?:
         const { linked: cashLinked, unlinked: cashUnlinked } = calculateCashFlowOpsExpenses(operational, dailyTraceability);
         
         const expenseByCategory = [
-            { name: "Ops Kirim (P&L)", value: linkedOpsExpense },
-            { name: "Ops Umum (P&L)", value: generalExpense }
+            { name: "OPS Kirim dan Muat", value: linkedOpsExpense },
+            { name: "Fee, TKBM", value: generalExpense }
         ].filter(x => x.value > 0);
 
         const cashFlowByCategory = [
@@ -1585,7 +1583,7 @@ export async function getComprehensiveDailyReportService(date?: string, prefix?:
                     operator: p.createdBy?.name || 'System',
                     totalQty: (p.items || []).reduce((q: number, i: any) => q + Number(i.quantity || 0), 0)
                 })),
-                operational: operational.map((o: any) => ({
+                operational: operational.filter((o: any) => o.transactionType === "PAYMENT" || o.transactionType === "EXPENSE" || Number(o.amount) < 0).map((o: any) => ({
                     id: o.id, date: o.date, description: o.description,
                     bank: o.bank, category: o.category || o.transactionType,
                     amount: Number(o.amount || 0), salesPerson: o.salesPerson,
@@ -1849,7 +1847,7 @@ export async function getComprehensiveWeeklyReportService(weekStartDate?: string
 
         // --- Operational Detail Table ---
         const weeklyTraceDeliverySet = buildTraceDeliverySet(weeklyTraceability);
-        const opsDetail = operational.map((o: any) => ({
+        const opsDetail = operational.filter((o: any) => o.transactionType === "PAYMENT" || o.transactionType === "EXPENSE" || Number(o.amount) < 0).map((o: any) => ({
             date: o.date, description: o.description,
             bank: o.bank, category: o.category || o.transactionType,
             amount: Number(o.amount || 0), salesPerson: o.salesPerson,
@@ -1900,8 +1898,8 @@ export async function getComprehensiveWeeklyReportService(weekStartDate?: string
         const { linked: cashLinked, unlinked: cashUnlinked } = calculateCashFlowOpsExpenses(operational, weeklyTraceability);
         
         const expenseByCategory = [
-            { name: "Ops Kirim (P&L)", value: linkedOpsExpense },
-            { name: "Ops Umum (P&L)", value: generalOps }
+            { name: "OPS Kirim dan Muat", value: linkedOpsExpense },
+            { name: "Fee, TKBM", value: generalOps }
         ].filter(x => x.value > 0);
 
         const cashFlowByCategory = [
@@ -2201,8 +2199,8 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
 
         // ── Expense by Category (ACCRUAL P&L) ────────────────────────────
         const expenseByCategory = [
-            { name: "Ops Kirim (P&L)", value: linkedOpsExpense },
-            { name: "Ops Umum (P&L)", value: generalOps }
+            { name: "OPS Kirim dan Muat", value: linkedOpsExpense },
+            { name: "Fee, TKBM", value: generalOps }
         ].filter(x => x.value > 0);
 
         // ── Cash Flow by Category (ARUS KAS) ─────────────────────────────
@@ -2363,7 +2361,7 @@ export async function getComprehensiveMonthlyReportService(month?: number, year?
 
         // ── Operational Detail Table ─────────────────────────────────────
         const monthlyTraceDeliverySet = buildTraceDeliverySet(monthlyTraceability);
-        const opsDetail = allOperational.map((o: any) => ({
+        const opsDetail = expenses.map((o: any) => ({
             date: o.date, description: o.description,
             bank: o.bank, category: o.category || o.transactionType,
             amount: Number(o.amount || 0), salesPerson: o.salesPerson,

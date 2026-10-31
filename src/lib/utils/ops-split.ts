@@ -94,10 +94,11 @@ export function splitOpsAmountsByDelivery(
 export function buildDeliveriesByInvoiceMap(deliveries: any[]): Map<string, any[]> {
     const map = new Map<string, any[]>();
     deliveries.forEach((d: any) => {
-        const key = d.invoiceNumber || d.deliveryNumber;
-        if (!key) return;
-        if (!map.has(key)) map.set(key, []);
-        map.get(key)!.push(d);
+        const keys = Array.from(new Set([d.invoiceNumber, d.deliveryNumber].filter(Boolean)));
+        keys.forEach((key: string) => {
+            if (!map.has(key)) map.set(key, []);
+            map.get(key)!.push(d);
+        });
     });
     return map;
 }
