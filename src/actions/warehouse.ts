@@ -299,6 +299,9 @@ export async function getDailyPickupScheduleAction(dateStr: string) {
         const notes = r.notes || "";
         const driverMatch = notes.match(/DRIVER:\s*([^\n;]+)/i);
         const driver = driverMatch ? driverMatch[1].trim() : "";
+        const rNum = (r.receiptNumber || "").trim().toUpperCase();
+        const isLPBD = rNum.startsWith("KB-LPBD") || Number(r.taxRate || 0) > 0;
+        const taxType: "KB-LPB" | "KB-LPBD" = isLPBD ? "KB-LPBD" : "KB-LPB";
 
         return {
             id: r.id,
@@ -308,6 +311,9 @@ export async function getDailyPickupScheduleAction(dateStr: string) {
             vendorName: r.receivedFrom || "-",
             buyerName: r.receivedFrom || "-",
             warehouseName: r.warehouse?.name || "",
+            salesPerson: r.salesPerson || "",
+            taxRate: Number(r.taxRate || 0),
+            taxType: taxType,
             driver: driver,
             date: r.date || r.createdAt,
             items: r.items.map((it: any) => ({
@@ -432,6 +438,8 @@ export async function createManualPickupScheduleAction(data: {
     productName: string;
     quantity: number;
     driver?: string;
+    taxType?: "KB-LPB" | "KB-LPBD";
+    salesPerson?: string;
 }) {
     const { getPrisma } = require("@/lib/prisma");
     const prisma = getPrisma();
@@ -442,6 +450,9 @@ export async function createManualPickupScheduleAction(data: {
     const userId = session?.user?.id || null;
 
     const startUtc = new Date(data.dateStr + "T00:00:00.000Z");
+    const chosenTax = data.taxType === "KB-LPBD" ? "KB-LPBD" : "KB-LPB";
+    const chosenSales = (data.salesPerson || "").trim().toUpperCase();
+    const metaNotes = `TAX:${chosenTax}${chosenSales ? `;SALES:${chosenSales}` : ""}`;
 
     const created = await prisma.shippingMapping.create({
         data: {
@@ -452,6 +463,7 @@ export async function createManualPickupScheduleAction(data: {
             productName: data.productName.trim().toUpperCase(),
             quantity: Number(data.quantity || 0),
             driver: data.driver ? data.driver.trim().toUpperCase() : null,
+            notes: metaNotes,
             createdById: userId
         }
     });
@@ -461,7 +473,8 @@ export async function createManualPickupScheduleAction(data: {
         id: created.id,
         date: created.date,
         category: created.category,
-        taxType: "KB-TRD" as const,
+        taxType: chosenTax,
+        salesPerson: chosenSales,
         poNumber: created.poNumber || "",
         buyerName: created.buyerName,
         productName: created.productName,

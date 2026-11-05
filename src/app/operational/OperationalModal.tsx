@@ -43,6 +43,8 @@ export function OperationalModal({ isOpen, onClose, coa, transaction }: Operatio
     const [isPurchaseDropdownOpen, setIsPurchaseDropdownOpen] = useState(false);
     const [refSearch, setRefSearch] = useState("");
     const [purchaseSearch, setPurchaseSearch] = useState("");
+    const [salesDocFilter, setSalesDocFilter] = useState<"ALL" | "KB-TRN" | "KB-TRD">("ALL");
+    const [purchaseDocFilter, setPurchaseDocFilter] = useState<"ALL" | "KB-LPB" | "KB-LPBD">("ALL");
 
     useEffect(() => {
         if (!isOpen) return;
@@ -190,6 +192,12 @@ export function OperationalModal({ isOpen, onClose, coa, transaction }: Operatio
 
     const filteredRefs = salesRefs.filter(ref => {
         const term = refSearch.toLowerCase();
+        const invUpper = (ref.invoiceNumber || "").toUpperCase();
+        if (formData.salesPerson && (ref.salesPerson || "").toUpperCase() !== formData.salesPerson.toUpperCase()) {
+            return false;
+        }
+        if (salesDocFilter === "KB-TRN" && !invUpper.startsWith("KB-TRN")) return false;
+        if (salesDocFilter === "KB-TRD" && !invUpper.startsWith("KB-TRD")) return false;
         return (
             ref.invoiceNumber.toLowerCase().includes(term) ||
             (ref.buyerName || "").toLowerCase().includes(term) ||
@@ -199,6 +207,12 @@ export function OperationalModal({ isOpen, onClose, coa, transaction }: Operatio
 
     const filteredPurchaseRefs = purchaseRefs.filter(ref => {
         const term = purchaseSearch.toLowerCase();
+        const recUpper = (ref.receiptNumber || "").toUpperCase();
+        if (formData.salesPerson && (ref.salesPerson || "").toUpperCase() !== formData.salesPerson.toUpperCase()) {
+            return false;
+        }
+        if (purchaseDocFilter === "KB-LPBD" && !recUpper.startsWith("KB-LPBD")) return false;
+        if (purchaseDocFilter === "KB-LPB" && (!recUpper.startsWith("KB-LPB") || recUpper.startsWith("KB-LPBD"))) return false;
         return (
             ref.receiptNumber.toLowerCase().includes(term) ||
             (ref.supplierName || "").toLowerCase().includes(term) ||
@@ -388,7 +402,23 @@ export function OperationalModal({ isOpen, onClose, coa, transaction }: Operatio
 
                     {contextType === "SALES" && (
                         <div className="space-y-2 relative animate-in fade-in slide-in-from-top-1 duration-200">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">No. Invoice / SJ (Opsional)</label>
+                            <div className="flex items-center justify-between mb-1">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">No. Invoice / SJ (Penjualan)</label>
+                                <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg">
+                                    {(["ALL", "KB-TRN", "KB-TRD"] as const).map((type) => (
+                                        <button
+                                            key={type}
+                                            type="button"
+                                            onClick={() => setSalesDocFilter(type)}
+                                            className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase transition-all cursor-pointer ${
+                                                salesDocFilter === type ? "bg-primary text-white shadow-2xs" : "text-slate-500 hover:text-slate-800"
+                                            }`}
+                                        >
+                                            {type === "ALL" ? "Semua" : type}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
                             <div className="relative">
                                 <button
                                     type="button"
@@ -474,7 +504,23 @@ export function OperationalModal({ isOpen, onClose, coa, transaction }: Operatio
 
                     {contextType === "PURCHASE" && (
                         <div className="space-y-2 relative animate-in fade-in slide-in-from-top-1 duration-200">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">No. LPB / Penerimaan</label>
+                            <div className="flex items-center justify-between mb-1">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">No. LPB / Penerimaan (Pembelian)</label>
+                                <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg">
+                                    {(["ALL", "KB-LPB", "KB-LPBD"] as const).map((type) => (
+                                        <button
+                                            key={type}
+                                            type="button"
+                                            onClick={() => setPurchaseDocFilter(type)}
+                                            className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase transition-all cursor-pointer ${
+                                                purchaseDocFilter === type ? "bg-primary text-white shadow-2xs" : "text-slate-500 hover:text-slate-800"
+                                            }`}
+                                        >
+                                            {type === "ALL" ? "Semua" : type}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
                             <div className="relative">
                                 <button
                                     type="button"

@@ -25,7 +25,8 @@ interface ScheduleItem {
     activityType: "DELIVERY" | "PICKUP";
     deliveryNumber?: string;
     invoiceNumber?: string;
-    taxType: "KB-TRN" | "KB-TRD";
+    taxType: "KB-TRN" | "KB-TRD" | "KB-LPB" | "KB-LPBD";
+    salesPerson?: string;
     poNumber: string;
     buyerName: string; // Customer name OR Vendor name
     productName: string;
@@ -90,6 +91,9 @@ export function ShippingScheduleDashboard({
     const [newPickupPo, setNewPickupPo] = useState<string>("");
     const [newPickupProduct, setNewPickupProduct] = useState<string>("");
     const [newPickupQty, setNewPickupQty] = useState<number>(100);
+    const [newPickupTaxType, setNewPickupTaxType] = useState<"KB-LPB" | "KB-LPBD">("KB-LPB");
+    const [newPickupSales, setNewPickupSales] = useState<string>("BC");
+    const [salesFilter, setSalesFilter] = useState<"ALL" | "BC" | "PF" | "OWEN">("ALL");
 
     // Main View Navigation: "WIZARD" (Proses Muat Baru), "FLEET_HISTORY" (Armada Selesai Dimuat), "FULL_RECAP" (Rekap Gabungan Harian)
     const [mainView, setMainView] = useState<"WIZARD" | "FLEET_HISTORY" | "FULL_RECAP">("WIZARD");
@@ -271,7 +275,7 @@ export function ShippingScheduleDashboard({
     const [unloadingDriver, setUnloadingDriver] = useState<string | null>(null);
 
     // Tax Filter for selection/table
-    const [taxFilter, setTaxFilter] = useState<"ALL" | "KB-TRN" | "KB-TRD">("ALL");
+    const [taxFilter, setTaxFilter] = useState<"ALL" | "KB-TRN" | "KB-TRD" | "KB-LPB" | "KB-LPBD">("ALL");
 
     // Custom driver additions
     const [customDrivers, setCustomDrivers] = useState<string[]>([]);
@@ -281,14 +285,20 @@ export function ShippingScheduleDashboard({
     // Helper: Generate Clean & Realistic Invoice Number
     const getRealisticInvoiceNumber = (item: Partial<ScheduleItem>, index: number = 0): string => {
         const inv = item.invoiceNumber?.trim() || "";
-        if (inv && !inv.includes("(MAPPING)") && !inv.includes("(MANUAL)") && (inv.startsWith("KB-TRN-") || inv.startsWith("KB-TRD-"))) {
+        if (
+            inv &&
+            !inv.includes("(MAPPING)") &&
+            !inv.includes("(MANUAL)") &&
+            (inv.startsWith("KB-TRN-") || inv.startsWith("KB-TRD-") || inv.startsWith("KB-LPB-") || inv.startsWith("KB-LPBD-"))
+        ) {
             return inv;
         }
 
         const dateCode = format(new Date(selectedDate), "ddMMyyyy");
-        const prefix = item.taxType === "KB-TRN" ? "KB-TRN" : "KB-TRD";
+        const prefix = item.activityType === "PICKUP"
+            ? (item.taxType === "KB-LPBD" ? "KB-LPBD" : "KB-LPB")
+            : (item.taxType === "KB-TRN" ? "KB-TRN" : "KB-TRD");
 
-        // Try extracting sequence suffix from deliveryNumber: e.g. SJ-xxx-05102026-015 -> 015
         const sjMatch = item.deliveryNumber?.match(/-(\d+)$/);
         const seq = sjMatch ? sjMatch[1] : String(index + 1).padStart(3, "0");
 
@@ -352,6 +362,7 @@ export function ShippingScheduleDashboard({
                     deliveryNumber: d.deliveryNumber,
                     invoiceNumber: inv,
                     taxType: taxType,
+                    salesPerson: d.salesPerson || "",
                     poNumber: po,
                     buyerName: buyer,
                     productName: "-",
@@ -390,6 +401,7 @@ export function ShippingScheduleDashboard({
                                 deliveryNumber: d.deliveryNumber,
                                 invoiceNumber: inv,
                                 taxType: taxType,
+                                salesPerson: d.salesPerson || "",
                                 poNumber: sm.poNumber || po,
                                 buyerName: sm.buyerName || buyer,
                                 productName: sm.productName || it.productName || it.product?.name || "Item",
@@ -412,7 +424,8 @@ export function ShippingScheduleDashboard({
                             deliveryNumber: d.deliveryNumber,
                             invoiceNumber: inv,
                             taxType: taxType,
-                            poNumber: po,
+                    salesPerson: d.salesPerson || "",
+                    poNumber: po,
                             buyerName: buyer,
                             productName: it.productName || it.product?.name || "Item",
                             quantity: qty,
@@ -453,7 +466,12 @@ export function ShippingScheduleDashboard({
             }
 
             const dateCode = format(new Date(selectedDate), "ddMMyyyy");
-            const inv = r.receiptNumber || `LPB-${dateCode}-${String(rIdx + 1).padStart(3, "0")}`;
+            const rNum = (r.receiptNumber || "").trim().toUpperCase();
+            const isLPBD = r.taxType === "KB-LPBD" || rNum.startsWith("KB-LPBD") || Number(r.taxRate || 0) > 0;
+            const pTaxType: "KB-LPB" | "KB-LPBD" = isLPBD ? "KB-LPBD" : "KB-LPB";
+            const inv = (r.receiptNumber && (rNum.startsWith("KB-LPB-") || rNum.startsWith("KB-LPBD-")))
+                ? r.receiptNumber
+                : `${pTaxType}-${dateCode}-${String(rIdx + 1).padStart(3, "0")}`;
 
             const rItems = r.items || [];
             if (rItems.length === 0) {
@@ -461,9 +479,10 @@ export function ShippingScheduleDashboard({
                     id: `pu-${r.id}-empty`,
                     receiptId: r.id,
                     activityType: "PICKUP",
-                    deliveryNumber: r.receiptNumber || "-",
+                    deliveryNumber: r.receiptNumber || inv,
                     invoiceNumber: inv,
-                    taxType: "KB-TRD",
+                    taxType: pTaxType,
+                    salesPerson: r.salesPerson || "",
                     poNumber: po,
                     buyerName: vendor,
                     productName: "-",
@@ -481,9 +500,10 @@ export function ShippingScheduleDashboard({
                         id: `pu-${r.id}-${it.id || idx}`,
                         receiptId: r.id,
                         activityType: "PICKUP",
-                        deliveryNumber: r.receiptNumber || "-",
+                        deliveryNumber: r.receiptNumber || inv,
                         invoiceNumber: inv,
-                        taxType: "KB-TRD",
+                        taxType: pTaxType,
+                        salesPerson: r.salesPerson || "",
                         poNumber: po,
                         buyerName: vendor,
                         productName: it.productName || it.product?.name || "Item",
@@ -505,20 +525,28 @@ export function ShippingScheduleDashboard({
         const dateCode = format(new Date(selectedDate), "ddMMyyyy");
         return maps.map((m: any, idx: number) => {
             const isPickup = m.category === "PICKUP";
-            const taxType = (m.category === "KB-TRN" ? "KB-TRN" : "KB-TRD") as "KB-TRN" | "KB-TRD";
+            const notesStr = m.notes || "";
+            const taxMatch = notesStr.match(/TAX:(KB-LPBD|KB-LPB|KB-TRN|KB-TRD)/i);
+            const salesMatch = notesStr.match(/SALES:([A-Z0-9_]+)/i);
+            const taxType = (
+                taxMatch
+                    ? taxMatch[1].toUpperCase()
+                    : isPickup
+                        ? "KB-LPB"
+                        : (m.category === "KB-TRN" ? "KB-TRN" : "KB-TRD")
+            ) as "KB-TRN" | "KB-TRD" | "KB-LPB" | "KB-LPBD";
             const rawPo = (m.poNumber || "").trim();
             const isCategoryPo = rawPo.toUpperCase() === "NON PKP" || rawPo.toUpperCase() === "PKP";
 
-            // Check if there is a matching real delivery for this buyer
             const matchedDeliv = delivs.find(d => 
                 d.buyerName?.trim().toLowerCase() === m.buyerName?.trim().toLowerCase()
             );
 
+            const parsedSales = salesMatch ? salesMatch[1].toUpperCase() : (matchedDeliv?.salesPerson || "");
+
             const realisticInv = matchedDeliv?.invoiceNumber?.trim() 
                 ? matchedDeliv.invoiceNumber.trim() 
-                : isPickup 
-                    ? `LPB-${dateCode}-${String(idx + 1).padStart(3, "0")}`
-                    : `${taxType}-${dateCode}-${String(idx + 1).padStart(3, "0")}`;
+                : `${taxType}-${dateCode}-${String(idx + 1).padStart(3, "0")}`;
 
             const cleanPo = !isCategoryPo && rawPo ? rawPo : (matchedDeliv?.poNumber || "-");
             const rawVehicle = (m.driver || matchedDeliv?.driver || matchedDeliv?.vehicleNumber || "").trim();
@@ -554,9 +582,10 @@ export function ShippingScheduleDashboard({
                 id: m.id,
                 deliveryId: matchedDeliv?.id,
                 activityType: isPickup ? "PICKUP" : "DELIVERY",
-                deliveryNumber: matchedDeliv?.deliveryNumber || (isPickup ? `LPB-${dateCode}-${String(idx + 1).padStart(3, "0")}` : `SJ-${dateCode}-${String(idx + 1).padStart(3, "0")}`),
+                deliveryNumber: matchedDeliv?.deliveryNumber || realisticInv,
                 invoiceNumber: realisticInv,
                 taxType: taxType,
+                salesPerson: parsedSales,
                 poNumber: cleanPo,
                 buyerName: m.buyerName || "-",
                 productName: m.productName || "-",
@@ -712,9 +741,10 @@ export function ShippingScheduleDashboard({
             if (!isUnassigned && !isBelongingToCurrentEdit) return false;
             if (activityFilter !== "ALL" && item.activityType !== activityFilter) return false;
             if (taxFilter !== "ALL" && item.taxType !== taxFilter) return false;
+            if (salesFilter !== "ALL" && (item.salesPerson || "").toUpperCase() !== salesFilter) return false;
             return true;
         });
-    }, [items, activityFilter, taxFilter, editingDriver]);
+    }, [items, activityFilter, taxFilter, salesFilter, editingDriver]);
 
     const unassignedItems = useMemo(() => {
         return items.filter(item => {
@@ -1033,11 +1063,13 @@ export function ShippingScheduleDashboard({
                 vendorName: newPickupVendor.trim(),
                 productName: newPickupProduct.trim(),
                 quantity: newPickupQty,
-                driver: selectedDriver ? selectedDriver.trim().toUpperCase() : ""
+                driver: selectedDriver ? selectedDriver.trim().toUpperCase() : "",
+                taxType: newPickupTaxType,
+                salesPerson: newPickupSales
             });
 
             const dateCode = format(new Date(selectedDate), "ddMMyyyy");
-            const newInv = `LPB-${dateCode}-${String(items.length + 1).padStart(3, "0")}`;
+            const newInv = `${newPickupTaxType}-${dateCode}-${String(items.length + 1).padStart(3, "0")}`;
 
             const newItem: ScheduleItem = {
                 id: created.id,
@@ -1045,7 +1077,8 @@ export function ShippingScheduleDashboard({
                 activityType: "PICKUP",
                 deliveryNumber: newInv,
                 invoiceNumber: newInv,
-                taxType: "KB-TRD",
+                taxType: newPickupTaxType,
+                salesPerson: newPickupSales,
                 poNumber: created.poNumber || newPickupPo.trim() || `PO-INB-${dateCode}`,
                 buyerName: created.buyerName,
                 productName: created.productName,
@@ -1632,11 +1665,31 @@ export function ShippingScheduleDashboard({
                                 <span>+ Jadwal Ambil di Supplier</span>
                             </button>
 
-                            {/* Tax Category Filter */}
+                            {/* Sales Filter */}
                             <div className="flex items-center gap-1.5">
-                                <span className="text-[11px] font-black uppercase text-slate-400">Pajak:</span>
+                                <span className="text-[11px] font-black uppercase text-slate-400">Sales:</span>
                                 <div className="flex bg-white p-0.5 rounded-lg border border-slate-200">
+                                    {(["ALL", "BC", "PF", "OWEN"] as const).map((sp) => (
+                                        <button
+                                            key={sp}
+                                            type="button"
+                                            onClick={() => setSalesFilter(sp)}
+                                            className={`px-2 py-0.5 text-xs font-bold rounded cursor-pointer transition-all ${
+                                                salesFilter === sp ? "bg-indigo-600 text-white" : "text-slate-600 hover:text-slate-900"
+                                            }`}
+                                        >
+                                            {sp === "ALL" ? "Semua" : sp}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Kode Penjualan (KB-TRN / KB-TRD) & Pembelian (KB-LPB / KB-LPBD) Filter */}
+                            <div className="flex items-center gap-1.5">
+                                <span className="text-[11px] font-black uppercase text-slate-400">Kode:</span>
+                                <div className="flex flex-wrap bg-white p-0.5 rounded-lg border border-slate-200 gap-0.5">
                                     <button
+                                        type="button"
                                         onClick={() => setTaxFilter("ALL")}
                                         className={`px-2 py-0.5 text-xs font-bold rounded cursor-pointer ${
                                             taxFilter === "ALL" ? "bg-slate-900 text-white" : "text-slate-600"
@@ -1644,22 +1697,54 @@ export function ShippingScheduleDashboard({
                                     >
                                         Semua
                                     </button>
-                                    <button
-                                        onClick={() => setTaxFilter("KB-TRN")}
-                                        className={`px-2 py-0.5 text-xs font-bold rounded cursor-pointer ${
-                                            taxFilter === "KB-TRN" ? "bg-blue-600 text-white" : "text-blue-700"
-                                        }`}
-                                    >
-                                        PKP
-                                    </button>
-                                    <button
-                                        onClick={() => setTaxFilter("KB-TRD")}
-                                        className={`px-2 py-0.5 text-xs font-bold rounded cursor-pointer ${
-                                            taxFilter === "KB-TRD" ? "bg-emerald-600 text-white" : "text-emerald-700"
-                                        }`}
-                                    >
-                                        Non-PKP
-                                    </button>
+                                    {(activityFilter === "ALL" || activityFilter === "DELIVERY") && (
+                                        <>
+                                            <button
+                                                type="button"
+                                                onClick={() => setTaxFilter("KB-TRN")}
+                                                className={`px-2 py-0.5 text-xs font-bold rounded cursor-pointer ${
+                                                    taxFilter === "KB-TRN" ? "bg-blue-600 text-white" : "text-blue-700 hover:bg-blue-50"
+                                                }`}
+                                                title="Penjualan PKP (KB-TRN)"
+                                            >
+                                                KB-TRN
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setTaxFilter("KB-TRD")}
+                                                className={`px-2 py-0.5 text-xs font-bold rounded cursor-pointer ${
+                                                    taxFilter === "KB-TRD" ? "bg-emerald-600 text-white" : "text-emerald-700 hover:bg-emerald-50"
+                                                }`}
+                                                title="Penjualan Non-PKP (KB-TRD)"
+                                            >
+                                                KB-TRD
+                                            </button>
+                                        </>
+                                    )}
+                                    {(activityFilter === "ALL" || activityFilter === "PICKUP") && (
+                                        <>
+                                            <button
+                                                type="button"
+                                                onClick={() => setTaxFilter("KB-LPB")}
+                                                className={`px-2 py-0.5 text-xs font-bold rounded cursor-pointer ${
+                                                    taxFilter === "KB-LPB" ? "bg-amber-600 text-white" : "text-amber-700 hover:bg-amber-50"
+                                                }`}
+                                                title="Pembelian Non-PKP (KB-LPB)"
+                                            >
+                                                KB-LPB
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setTaxFilter("KB-LPBD")}
+                                                className={`px-2 py-0.5 text-xs font-bold rounded cursor-pointer ${
+                                                    taxFilter === "KB-LPBD" ? "bg-orange-600 text-white" : "text-orange-700 hover:bg-orange-50"
+                                                }`}
+                                                title="Pembelian PKP (KB-LPBD)"
+                                            >
+                                                KB-LPBD
+                                            </button>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -2286,7 +2371,14 @@ export function ShippingScheduleDashboard({
                                                                 <td className="py-2.5 px-3 font-mono font-bold text-slate-900">
                                                                     <div>
                                                                         <span className="block">{realInvoice}</span>
-                                                                        <span className="text-[9px] text-slate-400">{item.deliveryNumber}</span>
+                                                                        <div className="flex items-center gap-1 mt-0.5">
+                                                                            <span className="text-[9px] text-slate-400">{item.deliveryNumber}</span>
+                                                                            {item.salesPerson && (
+                                                                                <span className="bg-indigo-50 text-indigo-700 border border-indigo-200 text-[8.5px] font-black px-1.5 py-0.1 rounded uppercase">
+                                                                                    Sales: {item.salesPerson}
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
                                                                     </div>
                                                                 </td>
                                                                 <td className="py-2.5 px-3 text-slate-600 font-bold">
@@ -3290,6 +3382,36 @@ export function ShippingScheduleDashboard({
                         </div>
 
                         <div className="space-y-3">
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
+                                        Tipe Pembelian (LPB):
+                                    </label>
+                                    <select
+                                        value={newPickupTaxType}
+                                        onChange={(e) => setNewPickupTaxType(e.target.value as "KB-LPB" | "KB-LPBD")}
+                                        className="w-full bg-slate-50 border border-slate-200 focus:border-amber-500 rounded-xl px-3 py-2 text-xs font-black text-slate-900 uppercase outline-none"
+                                    >
+                                        <option value="KB-LPB">KB-LPB (Non-PKP)</option>
+                                        <option value="KB-LPBD">KB-LPBD (PKP)</option>
+                                    </select>
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
+                                        Pilih Sales:
+                                    </label>
+                                    <select
+                                        value={newPickupSales}
+                                        onChange={(e) => setNewPickupSales(e.target.value)}
+                                        className="w-full bg-slate-50 border border-slate-200 focus:border-amber-500 rounded-xl px-3 py-2 text-xs font-black text-slate-900 uppercase outline-none"
+                                    >
+                                        <option value="BC">Sales BC</option>
+                                        <option value="PF">Sales PF</option>
+                                        <option value="OWEN">Sales OWEN</option>
+                                    </select>
+                                </div>
+                            </div>
+
                             <div className="space-y-1">
                                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
                                     Nama Supplier / Pabrik Vendor:

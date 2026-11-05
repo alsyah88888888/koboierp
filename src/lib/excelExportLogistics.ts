@@ -8,7 +8,8 @@ export interface ExportScheduleItem {
     activityType: "DELIVERY" | "PICKUP";
     deliveryNumber?: string;
     invoiceNumber?: string;
-    taxType?: "KB-TRN" | "KB-TRD";
+    taxType?: "KB-TRN" | "KB-TRD" | "KB-LPB" | "KB-LPBD";
+    salesPerson?: string;
     poNumber?: string;
     buyerName?: string;
     productName?: string;
@@ -31,13 +32,20 @@ export interface ExportLogisticsOptions {
  */
 export function getExportInvoiceNumber(item: Partial<ExportScheduleItem>, selectedDate: string, index: number = 0): string {
     const inv = item.invoiceNumber?.trim() || "";
-    if (inv && !inv.includes("(MAPPING)") && !inv.includes("(MANUAL)") && (inv.startsWith("KB-TRN-") || inv.startsWith("KB-TRD-"))) {
+    if (
+        inv &&
+        !inv.includes("(MAPPING)") &&
+        !inv.includes("(MANUAL)") &&
+        (inv.startsWith("KB-TRN-") || inv.startsWith("KB-TRD-") || inv.startsWith("KB-LPB-") || inv.startsWith("KB-LPBD-"))
+    ) {
         return inv;
     }
 
     const parsedDate = new Date(selectedDate);
     const dateCode = !isNaN(parsedDate.getTime()) ? format(parsedDate, "ddMMyyyy") : "13102026";
-    const prefix = item.taxType === "KB-TRN" ? "KB-TRN" : "KB-TRD";
+    const prefix = item.activityType === "PICKUP"
+        ? (item.taxType === "KB-LPBD" ? "KB-LPBD" : "KB-LPB")
+        : (item.taxType === "KB-TRN" ? "KB-TRN" : "KB-TRD");
 
     const sjMatch = item.deliveryNumber?.match(/-(\d+)$/);
     const seq = sjMatch ? sjMatch[1] : String(index + 1).padStart(3, "0");
