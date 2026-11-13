@@ -6,6 +6,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import prisma from "@/lib/prisma";
 
 const db = prisma;
+const PERMISSION_REFRESH_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 
 export function getAuthOptions(): AuthOptions {
     return {
@@ -29,28 +30,32 @@ export function getAuthOptions(): AuthOptions {
                     // First login: set initial data from user object
                     token.role = (user as any).role;
                     token.permissions = (user as any).permissions || [];
+                    (token as any).permissionsFetchedAt = Date.now();
                 } else if (token.sub) {
-                    // Subsequent requests: always re-fetch permissions from DB
-                    // so admin changes take effect without requiring re-login
-                    try {
-                        const freshUser = await db.user.findUnique({
-                            where: { id: token.sub },
-                            select: { role: true, permissions: true }
-                        });
-                        if (freshUser) {
-                            token.role = freshUser.role;
-                            let parsedPermissions: string[] = [];
-                            try {
-                                parsedPermissions = freshUser.permissions
-                                    ? JSON.parse(freshUser.permissions as string)
-                                    : [];
-                            } catch {
-                                parsedPermissions = [];
+                    // Throttle DB re-fetches to once every 5 minutes to prevent exhausting Supabase connection pool
+                    const lastFetched = Number((token as any).permissionsFetchedAt || 0);
+                    if (Date.now() - lastFetched > PERMISSION_REFRESH_INTERVAL_MS) {
+                        try {
+                            const freshUser = await db.user.findUnique({
+                                where: { id: token.sub },
+                                select: { role: true, permissions: true }
+                            });
+                            if (freshUser) {
+                                token.role = freshUser.role;
+                                let parsedPermissions: string[] = [];
+                                try {
+                                    parsedPermissions = freshUser.permissions
+                                        ? JSON.parse(freshUser.permissions as string)
+                                        : [];
+                                } catch {
+                                    parsedPermissions = [];
+                                }
+                                token.permissions = parsedPermissions;
+                                (token as any).permissionsFetchedAt = Date.now();
                             }
-                            token.permissions = parsedPermissions;
+                        } catch {
+                            // Keep existing token data if DB fetch fails
                         }
-                    } catch {
-                        // Keep existing token data if DB fetch fails
                     }
                 }
                 return token;
@@ -66,34 +71,51 @@ export function getAuthOptions(): AuthOptions {
                         password: { label: "Password", type: "password" }
                     },
                     async authorize(credentials: any) {
-                        if (!credentials?.email || !credentials?.password) {
+                        const normalizedEmail = credentials?.email?.trim();
+                        if (!normalizedEmail || !credentials?.password) {
                             throw new Error("Missing credentials");
                         }
- 
+
                         const bcrypt = require("bcryptjs");
- 
-                        const user = await db.user.findUnique({
-                            where: { email: credentials.email }
-                        });
- 
+
+                        let user: any = null;
+                        try {
+                            user = await db.user.findFirst({
+                                where: {
+                                    email: {
+                                        equals: normalizedEmail,
+                                        mode: "insensitive"
+                                    }
+                                }
+                            });
+                        } catch (dbErr) {
+                            console.error("[Auth] Database error during login:", dbErr);
+                            throw new Error("DB_ERROR");
+                        }
+
                         if (!user) throw new Error("User Salah");
- 
+
                         const isValid = await (bcrypt as any).compare(credentials.password, user.password || "");
                         if (!isValid) throw new Error("Password Salah");
- 
-                        const { logAction } = require("./audit");
-                        await logAction({
-                            userId: user.id,
-                            action: "LOGIN",
-                            resource: "User",
-                            resourceId: user.id,
-                            details: { email: user.email }
-                        });
- 
+
+                        // Non-blocking audit log so slow DB does not block login
+                        try {
+                            const { logAction } = require("./audit");
+                            logAction({
+                                userId: user.id,
+                                action: "LOGIN",
+                                resource: "User",
+                                resourceId: user.id,
+                                details: { email: user.email }
+                            }).catch((err: any) => console.error("[Auth] Audit log error:", err));
+                        } catch {
+                            // Ignore audit log error during login
+                        }
+
                         let parsedPermissions: string[] = [];
                         try {
                             parsedPermissions = (user as any).permissions ? JSON.parse((user as any).permissions) : [];
-                        } catch (e) {
+                        } catch {
                             parsedPermissions = [];
                         }
 

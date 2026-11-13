@@ -3,12 +3,10 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import {
-    LayoutDashboard,
     Lock,
     Mail,
     ArrowRight,
     ShieldCheck,
-    Building2,
     Loader2,
     Eye,
     EyeOff
@@ -27,7 +25,7 @@ export default function SignInPage() {
         e.preventDefault();
         
         if (failedAttempts >= 3) {
-            setError("Terlalu banyak percobaan. Harap hubungi Admin.");
+            setError("Terlalu banyak percobaan gagal. Silakan refresh halaman atau hubungi Admin.");
             return;
         }
 
@@ -36,27 +34,32 @@ export default function SignInPage() {
 
         try {
             const result = await signIn("credentials", {
-                email,
+                email: email.trim(),
                 password,
                 redirect: false,
                 callbackUrl: "/"
             });
 
             if (result?.error) {
-                setFailedAttempts(prev => prev + 1);
-                // Handle specific error messages from lib/auth.ts
                 if (result.error === "User Salah") {
-                    setError("User Salah");
+                    setFailedAttempts(prev => prev + 1);
+                    setError("User / Email tidak ditemukan.");
                 } else if (result.error === "Password Salah") {
-                    setError("Password Salah");
+                    setFailedAttempts(prev => prev + 1);
+                    setError("Password salah.");
+                } else if (result.error === "DB_ERROR" || result.error.includes("database") || result.error.includes("Can't reach")) {
+                    setError("Server database sedang sibuk/terputus. Silakan coba beberapa saat lagi.");
                 } else {
-                    setError("Invalid email or password. Please try again.");
+                    setFailedAttempts(prev => prev + 1);
+                    setError("Email atau password tidak sesuai. Silakan coba lagi.");
                 }
-            } else if (result?.url) {
-                window.location.href = result.url;
+            } else if (result?.ok) {
+                // Prevent redirect loop back to /login if callbackUrl cookie previously stored /login
+                const targetUrl = result?.url && !result.url.includes("/login") ? result.url : "/";
+                window.location.href = targetUrl;
             }
-        } catch (err) {
-            setError("An unexpected error occurred. Please try again later.");
+        } catch {
+            setError("Gagal terhubung ke server. Silakan periksa koneksi atau coba beberapa saat lagi.");
         } finally {
             setLoading(false);
         }
@@ -128,8 +131,8 @@ export default function SignInPage() {
 
                             {error && (
                                 <div className="p-3 bg-red-50 border border-red-100 text-red-600 rounded-xl text-xs font-bold flex items-center gap-2 animate-in slide-in-from-top-2">
-                                    <div className="h-1.5 w-1.5 bg-red-600 rounded-full" />
-                                    {error}
+                                    <div className="h-1.5 w-1.5 bg-red-600 rounded-full shrink-0" />
+                                    <span>{error}</span>
                                 </div>
                             )}
 
